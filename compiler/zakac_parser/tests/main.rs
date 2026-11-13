@@ -6,6 +6,7 @@ mod clause;
 mod cli;
 mod common;
 mod expr;
+mod generics;
 mod heap;
 mod limits;
 mod lists;

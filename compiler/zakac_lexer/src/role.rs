@@ -136,6 +136,23 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::AllocHead
         | Kw::HeapHead
         | Kw::DataKindOpen
+        | Kw::GenericKind
+        | Kw::Substitutable
+        | Kw::Itself
+        | Kw::SubstitutedRel
+        | Kw::Substituting
+        | Kw::Trait
+        | Kw::ToHave
+        | Kw::MustContain
+        | Kw::ToAddRel
+        | Kw::Functions
+        | Kw::Here
+        | Kw::NoteThat
+        | Kw::Notes
+        | Kw::Has
+        | Kw::InCompiler
+        | Kw::CalledRel
+        | Kw::IncludedWith
         | Kw::Plural
         | Kw::FieldsClose
         | Kw::FieldsCloseAnd

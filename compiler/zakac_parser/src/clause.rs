@@ -690,6 +690,14 @@ impl Parser<'_>
     /// The operand or the call statement, or a diagnostic.
     fn parse_head(&mut self, mode: Mode) -> PResult<Head>
     {
+        // Kind arguments in the word form come before the call that takes them.
+        if let Some(closer) = self.word_call_kind_args()
+        {
+            let start = self.peek().span;
+            let kind_args = self.parse_word_kind_args(closer)?;
+            let head = self.parse_head(mode)?;
+            return self.give_kind_args(head, kind_args, start);
+        }
         let first = match self.parse_first(mode)?
         {
             Head::Expr(first) => first,

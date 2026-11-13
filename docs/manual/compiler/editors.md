@@ -28,7 +28,12 @@ program never differ in version.
   shows its kind, in the short form the messages use, such as `i32`, `usize` or `text`.
 - **Go to the declaration** of a variable, a parameter, a constant (also one used in a
   list count above its declaration), a function, a struct, a field, an enumeration, a
-  member or a kind alias, in the open file or in a file it imports.
+  member or a kind alias, in the open file or in a file it imports. A declaration of
+  the stdlib opens in a replica of its module that the server writes to
+  `zakac/stdlib/<version>/` in the cache folder of the user (`~/.cache` on Linux and
+  macOS), from the source `zakac` carries; a change to the replica changes nothing, and the
+  next replica writes over it. The replica, and a file of the `stdlib` folder of the Zaka repo,
+  is checked as its module, so its compiler marks are no ZK0349.
 - **Find the uses** of a name, in the checks of all open files, and **rename** it at
   each of them. A new name must lex as one name: a reserved word, several words or a
   number is refused.
@@ -68,7 +73,9 @@ $ cargo build -p zakac
 ```
 
 and the setting names `target/debug/zakac`. After a rebuild, restart the server: in VS
-Code, **Developer: Reload Window**; in Zed, **editor: restart language server**.
+Code, **Zaka: Restart the Language Server**; in Zed, **editor: restart language
+server**. A new value of the setting takes a reload of the VS Code window
+(**Developer: Reload Window**).
 
 To put `zakac` on the `PATH` instead, run `cargo install --path compiler/zakac` in the
 Zaka repo.

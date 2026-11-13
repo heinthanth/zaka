@@ -106,4 +106,4 @@ objects](../structs/objects.md#objects-that-point-at-each-other) frees the pair.
 - Change the counter so that its function also gives back the count as its result.
 - Make three closures in a loop over the cells of a text list, each printing its own cell.
 
-Next: [Modules](../modules/README.md).
+Next: [Generics](../generics/README.md).

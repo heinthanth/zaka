@@ -9,6 +9,9 @@ en = "Bit width of the platform-sized integer kinds."
 [semcheck.strict_particles]
 en = "Report particle idiom warnings as errors."
 
+[semcheck.instance_use]
+en = "in the instance \"%{n}\", which this use asks for"
+
 [semcheck.want.number]
 en = "a number"
 

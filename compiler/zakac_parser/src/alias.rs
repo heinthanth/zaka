@@ -30,8 +30,9 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 /// Each alias under its name, and under its stem when the name ends in
-/// `များ`, with the kind it names as written and the name in its declaration.
-type Aliases = HashMap<Name, (Kind, Ident)>;
+/// `များ`, with the kind it names as written, the name in its declaration and
+/// its kind parameters.
+type Aliases = HashMap<Name, (Kind, Ident, Vec<Name>)>;
 
 /// Each alias name the expansion met, where it stands, beside the name in
 /// its declaration; each declared alias name stands beside itself too. The
@@ -54,15 +55,16 @@ pub fn expand_aliases(program: &mut Program) -> (Vec<Diagnostic>, AliasRefs)
     let mut diags = Vec::new();
     let aliases = collect(program, &mut diags);
     ret_if!(aliases.is_empty(), (diags, AliasRefs::new()));
-    let own = aliases.values().map(|(_, decl)| (decl.span, decl.span)).collect();
+    let own = aliases.values().map(|(_, decl, _)| (decl.span, decl.span)).collect();
     #[rustfmt::skip]
     let mut swap = Swap { aliases: &aliases, trail: Vec::new(), looped: BTreeSet::new(),
-        refs: own };
+        refs: own, diags: Vec::new() };
     swap.visit_program_mut(program);
     let refs = std::mem::take(&mut swap.refs);
+    diags.append(&mut swap.diags);
     let looped = swap.looped.into_iter().filter_map(|name| aliases.get(&name));
     diags.extend(
-        looped.map(|(_, ident)| rd::alias_loop(ident.span, ident.name.as_str())),
+        looped.map(|(_, ident, _)| rd::alias_loop(ident.span, ident.name.as_str())),
     );
     diags.sort_by_key(|d| d.span.lo);
     (diags, refs)
@@ -95,7 +97,8 @@ fn collect(program: &Program, diags: &mut Vec<Diagnostic>) -> Aliases
             diags.push(rd::duplicate_struct(decl.name.span, name.as_str()));
             continue;
         }
-        let pair = (decl.kind.clone(), decl.name.clone());
+        let params = decl.kind_params.iter().map(|p| p.name.name).collect();
+        let pair = (decl.kind.clone(), decl.name.clone(), params);
         do_for!(n in with_stem(name), {
             taken.insert(n);
             aliases.insert(n, pair.clone());
@@ -149,6 +152,8 @@ struct Swap<'a>
     looped: BTreeSet<Name>,
     /// Each alias name met, beside its declaration.
     refs: AliasRefs,
+    /// The uses of a generic alias with another count of kinds, ZK0340.
+    diags: Vec<Diagnostic>,
 }
 
 impl Swap<'_>
@@ -160,7 +165,7 @@ impl Swap<'_>
     /// * `used` - The name, when it is an alias.
     fn note(&mut self, used: &Ident)
     {
-        let decl = self.aliases.get(&used.name).map(|(_, d)| d.span);
+        let decl = self.aliases.get(&used.name).map(|(_, d, _)| d.span);
         do_if!(let Some(decl) = decl, self.refs.push((used.span, decl)));
     }
 
@@ -176,7 +181,7 @@ impl Swap<'_>
     /// itself.
     fn expanded(&mut self, name: Name) -> Option<Kind>
     {
-        let (kind, ident) = self.aliases.get(&name)?;
+        let (kind, ident, _) = self.aliases.get(&name)?;
         let first = ident.name;
         if let Some(at) = self.trail.iter().position(|n| *n == first)
         {
@@ -210,6 +215,31 @@ impl Swap<'_>
         bare.then_some(kind.name?.name)
     }
 
+    /// The kind of a generic alias with the kinds of its use in place of its
+    /// kind parameters. Another count of kinds than the alias declares is
+    /// ZK0340.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The kind the alias names.
+    /// * `used` - The kind as written at the use, with its kinds.
+    ///
+    /// # Returns
+    ///
+    /// The kind, or `None` after a report.
+    fn with_args(&mut self, mut target: Kind, used: &Kind) -> Option<Kind>
+    {
+        let ident = used.name.as_ref()?;
+        let (_, _, params) = self.aliases.get(&ident.name)?;
+        let (want, got) = (params.len(), used.args.len());
+        let count = rd::kind_arg_count(ident.span, &ident.name, want, got);
+        ret_if!(want != got, self.diags.push(count), None);
+        let bound: HashMap<Name, Kind> =
+            params.iter().copied().zip(used.args.iter().cloned()).collect();
+        target.substitute(&bound);
+        Some(target)
+    }
+
     /// Put the enumeration an alias stands for before `ထဲမှ`:
     /// `<alias>များထဲမှ <member>`.
     ///
@@ -229,7 +259,7 @@ impl Swap<'_>
         {
             return;
         };
-        let decl = alias.and_then(|n| self.aliases.get(&n)).map(|(_, d)| d.span);
+        let decl = alias.and_then(|n| self.aliases.get(&n)).map(|(_, d, _)| d.span);
         do_if!(let Some(decl) = decl, self.refs.push((qualifier.span, decl)));
         // before `ထဲမှ` an enumeration name ends in `များ`
         let text = target.as_str();
@@ -263,9 +293,11 @@ impl VisitorMut for Swap<'_>
 {
     fn visit_kind_mut(&mut self, n: &mut Kind)
     {
+        do_for!(arg in &mut n.args, self.visit_kind_mut(arg));
         let alias = (n.base == BaseKind::Named).then_some(n.name.as_ref()).flatten();
         do_if!(let Some(used) = alias, self.note(used));
         let target = alias.and_then(|ident| self.expanded(ident.name));
+        let target = target.and_then(|t| self.with_args(t, n));
         do_if!(let Some(target) = target, *n = spliced(target, n));
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
         do_if!(let Some(t) = &mut n.table, walk_table_mut(self, t));

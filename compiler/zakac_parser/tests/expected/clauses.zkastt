@@ -778,6 +778,7 @@ program:
             span:
               lo: 2044
               hi: 2059
+          kind_args: []
           place: null
           args:
           - infix:

@@ -684,3 +684,187 @@ pub fn c_name_twice(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::CNameTwice, t!("codes.ZK0338.message", n = name), span)
         .with_help(t!("codes.ZK0338.help"))
 }
+
+/// A call or a kind gives a generic another number of kind arguments than it
+/// declares.
+///
+/// # Arguments
+///
+/// * `span` - The call or the kind.
+/// * `name` - The generic.
+/// * `want` - The number of kind parameters it declares.
+/// * `got` - The number of kind arguments written.
+///
+/// # Returns
+///
+/// The `ZK0340` diagnostic.
+pub fn kind_arg_count(span: Span, name: &str, want: usize, got: usize) -> Diagnostic
+{
+    let msg = t!("codes.ZK0340.message", n = name, w = want, g = got);
+    Diagnostic::new(Code::KindArgCount, msg, span).with_help(t!("codes.ZK0340.help"))
+}
+
+/// The kinds of a call of a generic function or a value of a generic struct
+/// cannot be worked out.
+///
+/// # Arguments
+///
+/// * `span` - The call or the value.
+/// * `name` - The generic function or struct.
+///
+/// # Returns
+///
+/// The `ZK0341` diagnostic.
+pub fn kinds_unknown(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0341.message", n = name);
+    Diagnostic::new(Code::KindsUnknown, msg, span)
+        .with_help(t!("codes.ZK0341.help", n = name))
+}
+
+/// A call of a generic function asks for an instance past the limit of
+/// instances, as when each instance calls the function with a deeper kind.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The generic function.
+///
+/// # Returns
+///
+/// The `ZK0342` diagnostic.
+pub fn instances_endless(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0342.message", n = name);
+    Diagnostic::new(Code::InstancesEndless, msg, span)
+        .with_help(t!("codes.ZK0342.help"))
+}
+
+/// A kind given to a generic does not have a trait its kind parameter needs.
+///
+/// # Arguments
+///
+/// * `span` - The use of the generic.
+/// * `kind` - The kind.
+/// * `bound` - The trait.
+/// * `missing` - The function of the trait the kind lacks, or blank for a
+///   built-in trait.
+///
+/// # Returns
+///
+/// The `ZK0343` diagnostic.
+pub fn bound_not_met(span: Span, kind: &str, bound: &str, missing: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0343.message", k = kind, t = bound);
+    let help = tern!(
+        missing.is_empty(),
+        t!("codes.ZK0343.help_builtin", k = kind, t = bound),
+        t!("codes.ZK0343.help", k = kind, f = missing)
+    );
+    Diagnostic::new(Code::BoundNotMet, msg, span).with_help(help)
+}
+
+/// A constraint or a trait block names no trait.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0344` diagnostic.
+pub fn unknown_trait(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0344.message", n = name);
+    Diagnostic::new(Code::UnknownTrait, msg, span)
+        .with_help(t!("codes.ZK0344.help", n = name))
+}
+
+/// A trait block lacks a function of its trait.
+///
+/// # Arguments
+///
+/// * `span` - The head of the block.
+/// * `trait_name` - The trait.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0345` diagnostic.
+pub fn trait_fn_missing(span: Span, trait_name: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0345.message", t = trait_name, f = name);
+    Diagnostic::new(Code::TraitFnMissing, msg, span).with_help(t!("codes.ZK0345.help"))
+}
+
+/// A function of a trait block is not one of its trait, or has other
+/// parameter or result kinds than the trait gives it.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+/// * `trait_name` - The trait.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0346` diagnostic.
+pub fn trait_fn_foreign(span: Span, trait_name: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0346.message", t = trait_name, f = name);
+    Diagnostic::new(Code::TraitFnForeign, msg, span).with_help(t!("codes.ZK0346.help"))
+}
+
+/// Two functions give a kind the same function of a trait.
+///
+/// # Arguments
+///
+/// * `span` - The use that needs the trait.
+/// * `kind` - The kind.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0347` diagnostic.
+pub fn trait_fn_twice(span: Span, kind: &str, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0347.message", k = kind, f = name);
+    Diagnostic::new(Code::TraitFnTwice, msg, span).with_help(t!("codes.ZK0347.help"))
+}
+
+/// A trait block stands in a file that declares neither its kind nor its
+/// trait.
+///
+/// # Arguments
+///
+/// * `span` - The head of the block.
+/// * `kind` - The kind.
+/// * `trait_name` - The trait.
+///
+/// # Returns
+///
+/// The `ZK0348` diagnostic.
+pub fn trait_block_place(span: Span, kind: &str, trait_name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0348.message", k = kind, t = trait_name);
+    Diagnostic::new(Code::TraitBlockPlace, msg, span).with_help(t!("codes.ZK0348.help"))
+}
+
+/// The mark of a declaration the compiler gives,
+/// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော`, stands outside the modules of the
+/// stdlib.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+///
+/// # Returns
+///
+/// The `ZK0349` diagnostic.
+pub fn builtin_outside_prelude(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0349.message");
+    Diagnostic::new(Code::BuiltinOutsidePrelude, msg, span)
+        .with_help(t!("codes.ZK0349.help"))
+}

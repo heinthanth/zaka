@@ -11,6 +11,7 @@ program:
         span:
           lo: 219
           hi: 237
+      kind_params: []
       params:
       - edit: false
         fill: false
@@ -193,6 +194,7 @@ program:
           hi: 1079
       exported: false
       unchecked: true
+      builtin: false
       start: false
       external: false
       lib: null
@@ -276,6 +278,7 @@ program:
         span:
           lo: 1373
           hi: 1391
+      kind_args: []
       place: null
       args:
       - verb:

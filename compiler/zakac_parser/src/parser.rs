@@ -30,6 +30,7 @@ use crate::cursor::Cursor;
 use crate::describe::kw_text;
 use crate::describe::one_of;
 use crate::describe::quote;
+use crate::generics::angle_len_with;
 
 /// Result of a parse step; the error is the diagnostic to report.
 pub(crate) type PResult<T> = Result<T, Diagnostic>;
@@ -212,11 +213,14 @@ fn declares_kind(tokens: &[Token], at: usize) -> bool
         _ => None,
     };
     ret_false!(tokens[at].kind != TokenKind::Ident);
+    // A generic declaration has its kind parameters right after its name.
+    let kind_at = |n: usize| tokens.get(n).map_or(TokenKind::Eof, |t| t.kind);
+    let next = at + 1 + angle_len_with(at + 1, kind_at).unwrap_or(0);
     let alias = at > 0 && kw(at - 1) == Some(Kw::DataKindOpen);
-    ret_true!(alias && kw(at + 1) == Some(Kw::Ko));
-    ret_false!(kw(at + 1) != Some(Kw::Called));
+    ret_true!(alias && kw(next) == Some(Kw::Ko));
+    ret_false!(kw(next) != Some(Kw::Called));
     let marks = [Kw::Export, Kw::Shareable, Kw::External];
-    let word = (at + 2..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));
+    let word = (next + 1..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));
     matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
 }
 
@@ -294,6 +298,18 @@ pub(crate) struct Parser<'t>
     /// parentheses.
     #[builder(default)]
     pub(crate) in_word_list: bool,
+    /// Whether the first half of a `>>` closed a `<…>` group, so its second
+    /// half closes the group around it.
+    #[builder(default)]
+    pub(crate) half_close: bool,
+    /// Whether the kinds of a list of kind arguments in the word form are
+    /// being parsed: no kind in it starts another such list.
+    #[builder(default)]
+    pub(crate) in_kind_args: bool,
+    /// Whether a scan for kind arguments in the word form is running, so the
+    /// scan of a kind inside it does not start another.
+    #[builder(default)]
+    pub(crate) scanning_kind_args: std::cell::Cell<bool>,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]

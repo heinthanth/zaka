@@ -127,6 +127,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0244 | nesting of parentheses, operands, calls, lists or blocks more than 128 levels deep | [The nesting limit](../internals/parser.md#the-nesting-limit) |
 | ZK0245 | a list in words of two or more items without `နှင့်` before the last item, or with a `၊` after it | [Lists in words](../language/words.md#lists-in-words) |
 | ZK0246 | the word that closes a list in words does not fit its count: `တို့` after one item, or none after two or more | [Lists in words](../language/words.md#lists-in-words) |
+| ZK0247 | a trait or a trait block inside a block | [Generics and traits](../language/generics.md) |
+| ZK0248 | a note in a notes block on a name that is no kind parameter of its declaration | [Generics and traits](../language/generics.md) |
 
 ### ZK03: names
 
@@ -171,6 +173,16 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0337 | a C function whose name is no C name | [Functions](../language/functions.md) |
 | ZK0338 | a C function declared twice with other parameter or result kinds | [Functions](../language/functions.md) |
 | ZK0339 | a function with a result whose block can reach its end with no return | [Results](../../learn/functions/results.md) |
+| ZK0340 | a call or a kind that gives a generic another number of kinds than it declares, or kinds for a function that is not generic | [Generics and traits](../language/generics.md) |
+| ZK0341 | a call of a generic function, or a value of a generic struct, whose kinds its values do not show | [Generics and traits](../language/generics.md) |
+| ZK0342 | instances of a generic function or struct that each ask for a deeper one, past the limit | [Generics and traits](../language/generics.md) |
+| ZK0343 | a kind given to a generic that lacks a trait its kind parameter needs | [Generics and traits](../language/generics.md) |
+| ZK0344 | a constraint or a trait block that names no trait | [Generics and traits](../language/generics.md) |
+| ZK0345 | a trait block that lacks a function of its trait | [Generics and traits](../language/generics.md) |
+| ZK0346 | a function of a trait block that is not one of its trait | [Generics and traits](../language/generics.md) |
+| ZK0347 | two functions that give a kind one function of a trait | [Generics and traits](../language/generics.md) |
+| ZK0348 | a trait block outside the file of its kind and of its trait | [Generics and traits](../language/generics.md) |
+| ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The prelude](../language/prelude.md) |
 
 ### ZK04: kinds
 

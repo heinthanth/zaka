@@ -189,7 +189,7 @@ fn invalid_words_are_skipped()
 #[test]
 fn identifiers_of_several_scripts()
 {
-    for text in ["အသက်", "age", "_x1", "春天", "🔥", "၎င်း"]
+    for text in ["အသက်", "age", "_x1", "春天", "🔥", "၎င်းအရာ"]
     {
         assert_eq!(kinds(text), [TokenKind::Ident], "{text}");
     }

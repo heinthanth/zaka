@@ -131,6 +131,12 @@ pub enum Stmt
     Switch(SwitchStmt),
     /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     Alias(AliasDecl),
+    /// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။`
+    BuiltinKind(BuiltinKindDecl),
+    /// `<name> ဟူသည့် ဂုဏ်သတ္တိ သည် … ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။ …`
+    Trait(TraitDecl),
+    /// `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။ …`
+    TraitBlock(TraitBlock),
 }
 
 /// Variable or constant declaration.
@@ -446,6 +452,11 @@ pub struct FnDecl
 {
     /// The function name.
     pub name: Ident,
+    /// The kind parameters of a generic declaration, `<name><T၊ U>` or
+    /// `ယေဘုယျဒေတာအမျိုးအစား T … ကိုအစားထိုးသုံးနိုင်၍ ၎င်း…`; none for a plain one.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_params: Vec<KindParam>,
     /// The parameters.
     #[builder(default)]
     pub params: Vec<Param>,
@@ -462,6 +473,12 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub unchecked: bool,
+    /// `true` for a function the compiler gives, marked
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` after `သည်`: it has no block of its
+    /// own, and an operator or a verb stands for it.
+    #[builder(default)]
+    #[serde(default)]
+    pub builtin: bool,
     /// `true` for the start block, where the program starts; no call can
     /// name it.
     #[builder(default)]
@@ -534,6 +551,11 @@ pub struct CallStmt
     /// The function name, or the variable that holds a function value. With
     /// a [`CallStmt::place`], the first name of that place.
     pub callee: Ident,
+    /// The kind arguments written for a generic, `::<A၊ B>` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့်`; none when the check works them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_args: Vec<Kind>,
     /// The place that holds the function value, in a long call form whose
     /// function is a field, a cell or a read through a pointer.
     #[serde(default)]
@@ -723,6 +745,11 @@ pub struct StructDecl
 {
     /// The struct name.
     pub name: Ident,
+    /// The kind parameters of a generic declaration, `<name><T၊ U>` or
+    /// `ယေဘုယျဒေတာအမျိုးအစား T … ကိုအစားထိုးသုံးနိုင်၍ ၎င်း…`; none for a plain one.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_params: Vec<KindParam>,
     /// The fields in order, each a kind and a name.
     pub fields: Vec<Param>,
     /// The classifier that counts values of the struct, when written.
@@ -796,6 +823,11 @@ pub struct AliasDecl
     pub kind: Kind,
     /// The alias.
     pub name: Ident,
+    /// The kind parameters of a generic declaration, `<name><T၊ U>` or
+    /// `ယေဘုယျဒေတာအမျိုးအစား T … ကိုအစားထိုးသုံးနိုင်၍ ၎င်း…`; none for a plain one.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_params: Vec<KindParam>,
     /// The classifier that counts values of the alias, when written; with
     /// none, the alias counts with the word of its kind.
     #[serde(default)]
@@ -862,5 +894,94 @@ pub struct ImportStmt
     /// The unit of the imported file, once the loader has read it.
     pub unit: Option<u32>,
     /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// One kind parameter of a generic declaration, with the traits it must have
+/// when written inline: `T` or `T: <trait> နှင့် <trait>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct KindParam
+{
+    /// The name the declaration uses for the kind.
+    pub name: Ident,
+    /// The traits it must have: written inline after a `:`, or in the notes
+    /// block of the declaration. Each is the trait name with the kinds after
+    /// the first, such as `စီနိုင်သော` or `ပြောင်းနိုင်သော<စာသား>`.
+    #[builder(default)]
+    #[serde(default)]
+    pub bounds: Vec<Kind>,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A trait: the functions each kind that has it has.
+/// `<name> ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
+/// အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။`, or `<name><A> ဟူသည့် ဂုဏ်သတ္တိ တွင် …`, then a
+/// notes block of the traits it needs, the function heads, and
+/// `ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct TraitDecl
+{
+    /// The trait name.
+    pub name: Ident,
+    /// The kind parameters; the first is the kind that has the trait, and
+    /// its bounds are the traits this one needs.
+    pub kind_params: Vec<KindParam>,
+    /// The function heads, with no block.
+    #[builder(default)]
+    pub fns: Vec<FnDecl>,
+    /// `true` when `အများသုံး` marks it, so other files can import it.
+    #[builder(default)]
+    pub exported: bool,
+    /// `true` for a trait the compiler gives, marked
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော`: the built-in kinds have it through the
+    /// compiler's rule, the other kinds through their functions.
+    #[builder(default)]
+    #[serde(default)]
+    pub builtin: bool,
+    /// Source region, the closer included.
+    pub span: Span,
+}
+
+/// A built-in kind as the prelude names it, for its documentation:
+/// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအမျိုးအစား ဖြစ်သည်။`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct BuiltinKindDecl
+{
+    /// The kind.
+    pub kind: Kind,
+    /// `true` when `အများသုံး` marks it.
+    #[builder(default)]
+    #[serde(default)]
+    pub exported: bool,
+    /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// The name of the stdlib module that each file sees with no import: the
+/// prelude, which declares the built-in traits, kinds and verbs.
+pub const PRELUDE: &str = "စံကား/အခြေခံအုတ်မြစ်";
+
+/// A trait block: functions that give a kind a trait.
+/// `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။`,
+/// the functions, then `ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။`. The
+/// functions are plain functions of the file: the parser puts them after
+/// the block and keeps their names here.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct TraitBlock
+{
+    /// The kind that gets the trait.
+    pub kind: Kind,
+    /// The trait, with the kinds after the first.
+    pub bound: Kind,
+    /// The functions, until the parser moves them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub fns: Vec<FnDecl>,
+    /// The name of each function of the block.
+    #[builder(default)]
+    #[serde(default)]
+    pub fn_names: Vec<Ident>,
+    /// Source region, the closer included.
     pub span: Span,
 }

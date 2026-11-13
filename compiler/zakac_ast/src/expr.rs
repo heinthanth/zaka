@@ -387,6 +387,11 @@ pub struct StructLit
     pub id: NodeId,
     /// The struct name.
     pub name: Ident,
+    /// The kind arguments written for a generic, `::<A၊ B>` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့်`; none when the check works them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_args: Vec<Kind>,
     /// The classifier after `တစ်`, such as `ယောက်`; the notation form has none.
     pub classifier: Option<Ident>,
     /// The fields, as written.
@@ -447,6 +452,11 @@ pub struct FnAddrExpr
     pub id: NodeId,
     /// The function name.
     pub name: Ident,
+    /// The kind arguments written for a generic, `::<A၊ B>` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့်`; none when the check works them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_args: Vec<Kind>,
     /// Source region, from `လုပ်ဆောင်ချက်` to `လိပ်စာ`.
     pub span: Span,
 }
@@ -747,6 +757,11 @@ pub struct CallExpr
     /// The function name, or the variable that holds a function value. With
     /// a [`CallExpr::place`], the first name of that place.
     pub callee: Ident,
+    /// The kind arguments written for a generic, `::<A၊ B>` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့်`; none when the check works them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_args: Vec<Kind>,
     /// The value that holds the function: a field, a cell or a read through
     /// a pointer in a long call form, `(ဂရစ် ၏ အကွက် i) ဟူသော လုပ်ဆောင်ချက်ကို …`, or
     /// the call before it in a sign-form chain, `f(a)(b)`.
@@ -819,6 +834,42 @@ impl Expr
             Expr::Str(n) => n.id,
             Expr::Member(n) => n.id,
             Expr::FnAddr(n) => n.id,
+        }
+    }
+
+    /// The node number, to change.
+    ///
+    /// # Returns
+    ///
+    /// The number of the wrapped node.
+    pub fn id_mut(&mut self) -> &mut NodeId
+    {
+        match self
+        {
+            Expr::Int(n) => &mut n.id,
+            Expr::Float(n) => &mut n.id,
+            Expr::Char(n) => &mut n.id,
+            Expr::Bool(n) => &mut n.id,
+            Expr::Name(n) => &mut n.id,
+            Expr::Group(n) => &mut n.id,
+            Expr::Prefix(n) => &mut n.id,
+            Expr::Infix(n) => &mut n.id,
+            Expr::Not(n) => &mut n.id,
+            Expr::Logic(n) => &mut n.id,
+            Expr::Verb(n) => &mut n.id,
+            Expr::Call(n) => &mut n.id,
+            Expr::Null(n) => &mut n.id,
+            Expr::SizeOf(n) => &mut n.id,
+            Expr::Index(n) => &mut n.id,
+            Expr::Field(n) => &mut n.id,
+            Expr::Range(n) => &mut n.id,
+            Expr::List(n) => &mut n.id,
+            Expr::Struct(n) => &mut n.id,
+            Expr::BlankList(n) => &mut n.id,
+            Expr::Table(n) => &mut n.id,
+            Expr::Str(n) => &mut n.id,
+            Expr::Member(n) => &mut n.id,
+            Expr::FnAddr(n) => &mut n.id,
         }
     }
 

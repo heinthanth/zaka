@@ -32,5 +32,8 @@ zakac_rust_sugars = { workspace = true }
 zakac_semcheck = { workspace = true }
 zakac_span = { workspace = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+etcetera = { workspace = true }
+
 [build-dependencies]
 cargo-build = { workspace = true }

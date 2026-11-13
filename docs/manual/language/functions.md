@@ -541,7 +541,8 @@ error[ZK0237]: some parameters have a mark and some do not
 ## One name, several functions
 
 A file can declare several functions of one name when their parameter kinds or their
-marks differ. A call runs the one its arguments fit: an argument for each parameter, the
+marks differ. One function for each kind, written once, is a
+[generic](generics.md) instead. A call runs the one its arguments fit: an argument for each parameter, the
 marks of the parameters when the call writes marks, and each argument fit for the kind of
 its parameter, under the rules a call to a single function follows. The marks can tell two
 functions apart on their own, so a marked call chooses with the words written too.

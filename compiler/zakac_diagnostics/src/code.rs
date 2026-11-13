@@ -162,6 +162,10 @@ ListNeedsAnd = ("ZK0245", Level::Error),
 /// The word that closes a list does not fit the count of its items: one item
 /// takes the word with no `တို့`, two or more the word with `တို့`.
 ListWordCount = ("ZK0246", Level::Error),
+/// A trait or a trait block stands inside a block.
+NestedTrait = ("ZK0247", Level::Error),
+/// A constraint in a notes block names no kind parameter of its declaration.
+NoteNamesNoParam = ("ZK0248", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -242,6 +246,31 @@ NotACName = ("ZK0337", Level::Error),
 CNameTwice = ("ZK0338", Level::Error),
 /// A function with a result can reach the end of its block with no return.
 EndWithoutReturn = ("ZK0339", Level::Error),
+/// A call or a kind gives a generic another number of kind arguments than
+/// it declares.
+KindArgCount = ("ZK0340", Level::Error),
+/// The kinds of a call of a generic function or a value of a generic struct
+/// cannot be worked out, or two values give one kind parameter two kinds.
+KindsUnknown = ("ZK0341", Level::Error),
+/// A generic function makes instances that make further instances without
+/// end, past the limit of instances.
+InstancesEndless = ("ZK0342", Level::Error),
+/// A kind given to a generic does not have a trait its kind parameter needs.
+BoundNotMet = ("ZK0343", Level::Error),
+/// A constraint or a trait block names no trait.
+UnknownTrait = ("ZK0344", Level::Error),
+/// A trait block lacks a function of its trait.
+TraitFnMissing = ("ZK0345", Level::Error),
+/// A function of a trait block is not one of its trait, or has other
+/// parameter or result kinds.
+TraitFnForeign = ("ZK0346", Level::Error),
+/// Two functions give a kind the same function of a trait.
+TraitFnTwice = ("ZK0347", Level::Error),
+/// A trait block stands in a file that declares neither its kind nor its
+/// trait.
+TraitBlockPlace = ("ZK0348", Level::Error),
+/// The mark of a declaration the compiler gives stands outside the stdlib.
+BuiltinOutsidePrelude = ("ZK0349", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

@@ -257,6 +257,10 @@ impl Parser<'_>
             }
             TokenKind::Punct(Punct::LParen) => self.parse_group(),
             TokenKind::Punct(Punct::LBracket) => self.parse_bracket_list(),
+            TokenKind::Ident | TokenKind::RawIdent if self.at_turbofish() =>
+            {
+                self.parse_turbofish()
+            }
             TokenKind::Ident if self.at_call_struct_lit() =>
             {
                 self.parse_call_struct_lit()
@@ -849,7 +853,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` if it does.
-    fn at_sign_open(&self) -> bool
+    pub(crate) fn at_sign_open(&self) -> bool
     {
         let open = self.peek();
         open.kind == TokenKind::Punct(Punct::LParen) && open.joined
@@ -866,7 +870,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The call, or a diagnostic.
-    fn parse_sign_tail(
+    pub(crate) fn parse_sign_tail(
         &mut self, callee: Ident, value: Option<Box<Expr>>,
     ) -> PResult<Expr>
     {

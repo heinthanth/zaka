@@ -54,5 +54,11 @@ en = "loop variable"
 [lsp.hover_alias]
 en = "kind alias"
 
+[lsp.hover_kind_param]
+en = "kind parameter of %{name}: each use of it gives the kind"
+
+[lsp.hover_trait]
+en = "trait: a kind has it when functions give it each function below"
+
 [lsp.hover_c_fn]
 en = "C function from %{lib}"

@@ -150,3 +150,24 @@ fn an_exported_alias_starts_a_kind_in_the_file_that_imports_it()
     let start = loaded.program.stmts.last().expect("a start block").to_sexpr();
     assert!(start.contains("နေရာ") && !start.contains("အမှတ်"), "{start}");
 }
+
+/// A generic alias puts the kinds of each use in place of its kind
+/// parameters; another count of kinds is ZK0340.
+#[test]
+fn a_generic_alias_takes_the_kinds_of_its_use()
+{
+    let pair = "အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေးတွင် ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု \
+                တို့ပါဝင်သည်။\nဒေတာအမျိုးအစား အမည်တွဲ<T> ကို စာသား နှင့် T တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ ဟုလည်း \
+                မှတ်ယူနိုင်ပါသည်။\n";
+    let decl = |kind: &str| {
+        format!(
+            "{pair}ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် တ သည် {kind} တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
+             ကနဦးတန်ဖိုး ဖြစ်ပါစေ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+        )
+    };
+    let loaded = load(&decl("အမည်တွဲ<ကိန်းပြည့်>"));
+    assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
+    let tree = loaded.program.stmts.last().expect("a start block").to_sexpr();
+    assert!(tree.contains("အတွဲ<text isize>"), "{tree}");
+    assert_eq!(load_codes(&decl("အမည်တွဲ<ကိန်းပြည့်၊ စာသား>")), [Code::KindArgCount]);
+}

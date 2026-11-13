@@ -8,6 +8,7 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AllocStmt;
@@ -41,6 +42,8 @@ use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::SwitchStmt;
+use zakac_ast::stmt::TraitBlock;
+use zakac_ast::stmt::TraitDecl;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
@@ -70,10 +73,18 @@ use crate::consts::write_counts;
 use crate::enum_check::KnownEnums;
 use crate::enum_check::collect_enums;
 use crate::foreign;
+use crate::generic;
+use crate::generic::Templates;
+use crate::generic::Uses;
+use crate::generic::Wanted;
+use crate::generic_struct::leftovers;
+use crate::generic_struct::name_instances;
 use crate::host;
 use crate::host::IO_ERROR;
 use crate::kind::DataKind;
 use crate::list::KindUse;
+use crate::op_calls::OpCalls;
+use crate::op_calls::write_op_calls;
 use crate::ops::Want;
 use crate::ops::kw_label;
 use crate::overloads::Chosen;
@@ -94,6 +105,8 @@ use crate::scope::FnSigs;
 use crate::scope::Scopes;
 use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
+use crate::traits::Traits;
+use crate::traits::traits;
 use crate::units::StructHomes;
 use crate::units::private_in_exports;
 use crate::units::start_rules;
@@ -212,21 +225,63 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
     // A run writes each count it works out back as digits, so the names in a
     // count are met in the earlier runs alone: their records are kept.
     let mut refs = RefTable::new();
+    let templates = generic::templates(program);
+    let mut depth = 0;
+    // The instances of generic functions and structs, from each run so far.
+    let mut instances = Instances::default();
     loop
     {
-        let (mut out, counts, found, found_enums, chosen, captured) =
-            check_once(program, options, known.clone(), &enums);
+        let (mut out, counts, found, found_enums, chosen, captured, asked, op_calls) =
+            check_once(program, options, known.clone(), &enums, &templates, &instances);
         refs.extend(std::mem::take(&mut out.refs));
         let written = write_counts(program, &counts);
         let settled = counts.is_empty() || (written == 0 && found == known);
         let enums_settled = found_enums == enums;
         enums = found_enums;
-        if settled && enums_settled
+        // The next run checks each new instance, and the instances it calls.
+        instances.structs.extend(asked.structs);
+        instances.fns.extend(asked.fns.clone());
+        for (name, at) in asked.uses
         {
+            instances.uses.entry(name).or_insert(at);
+        }
+        let deep = depth >= generic::INSTANCE_DEPTH;
+        let structs = &out.structs;
+        let named = name_instances(
+            program,
+            structs,
+            &templates,
+            &mut instances.structs,
+            &mut instances.uses,
+            deep,
+        );
+        let added = !deep
+            && generic::add_instances(
+                program,
+                &templates,
+                &asked.fns,
+                &instances.structs,
+            );
+        depth += u32::from(added);
+        if settled && enums_settled && !added && !named
+        {
+            out.diagnostics.extend(leftovers(program, &templates, &out.structs));
             out.diagnostics
                 .extend(counts.into_values().filter_map(Result::err).flatten());
             out.diagnostics.sort_by_key(|d| d.span.lo);
+            // Instances of one generic function share its spans, and each
+            // reports the faults common to them.
+            let mut seen = Vec::new();
+            out.diagnostics.retain(|d| {
+                let key = (d.code, d.span, d.message.clone());
+                !seen.contains(&key) && {
+                    seen.push(key);
+                    true
+                }
+            });
             write_overloads(program, &chosen);
+            let next = generic::next_id(program);
+            write_op_calls(program, &op_calls, &mut out.kinds, next);
             write_captures(program, &captured);
             refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
             refs.dedup();
@@ -234,6 +289,19 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
         }
         known = found;
     }
+}
+
+/// Instances of generic functions and structs: the ones a run of the check
+/// asks for, or the ones known so far.
+#[derive(Default)]
+struct Instances
+{
+    /// The instances of generic functions.
+    fns: Wanted,
+    /// The instances of generic structs.
+    structs: Wanted,
+    /// The first use of each instance.
+    uses: Uses,
 }
 
 /// Run the check once.
@@ -244,16 +312,28 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
 /// * `options` - The options.
 /// * `known` - The top-level constants an earlier run found.
 /// * `known_enums` - The enumeration values an earlier run worked out.
+/// * `templates` - The generic functions and structs.
+/// * `instances` - The instances of generic functions and structs so far.
 ///
 /// # Returns
 ///
 /// The output, the list counts the run met, the top-level constants it
-/// found, the enumeration values it worked out and the function each call of
-/// an overloaded name chose.
+/// found, the enumeration values it worked out, the function each call of
+/// an overloaded or generic name chose, the captures, and the instances its
+/// calls and struct values ask for.
 fn check_once(
     program: &Program, options: &SemcheckOptions, known: KnownConsts,
-    known_enums: &KnownEnums,
-) -> (SemcheckOutput, CountTable, KnownConsts, KnownEnums, Chosen, Captured)
+    known_enums: &KnownEnums, templates: &Templates, instances: &Instances,
+) -> (
+    SemcheckOutput,
+    CountTable,
+    KnownConsts,
+    KnownEnums,
+    Chosen,
+    Captured,
+    Instances,
+    OpCalls,
+)
 {
     let mut diags = Vec::new();
     let enums = collect_enums(program, known_enums, &mut diags);
@@ -270,8 +350,12 @@ fn check_once(
         .diags(diags).platform(options.platform_bits).no_unsafe(options.no_unsafe)
         .as_module(options.as_module)
         .known(known).open_structs(open_structs(program)).decls(decls)
-        .classifiers(struct_classifiers(program)).build();
+        .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
+        .uses(instances.uses.clone())
+        .maybe_prelude_unit((0..program.units.len() as u32).find(|u| generic::in_prelude(program, *u)))
+        .traits(traits(program)).build();
     checker.scopes.push();
+    checker.check_struct_bounds();
     checker.visit_program(program);
     let own = checker.decls.own();
     checker.refs.extend(own);
@@ -282,7 +366,11 @@ fn check_once(
     #[rustfmt::skip]
     let out = SemcheckOutput::builder().kinds(checker.kinds).structs(checker.structs).diagnostics(checker.diags).refs(checker.refs).build();
     let captured = std::mem::take(&mut checker.captured);
-    (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured)
+    #[rustfmt::skip]
+    #[rustfmt::skip]
+    let asked = Instances { fns: checker.wanted, structs: checker.struct_wanted, uses: checker.uses };
+    #[rustfmt::skip]
+    return (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured, asked, checker.op_calls);
 }
 
 /// The function whose block is being checked.
@@ -314,10 +402,49 @@ pub(crate) struct Checker
     pub classifiers: HashMap<String, String>,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
-    /// The function each call of an overloaded name chose, under the span
-    /// of its name at the call.
+    /// The function each call of an overloaded or generic name chose.
     #[builder(default)]
     pub chosen: Chosen,
+    /// The generic functions, which the walk checks through their instances.
+    #[builder(default)]
+    pub templates: Templates,
+    /// The instances the calls of generic functions ask for.
+    #[builder(default)]
+    pub wanted: Wanted,
+    /// The traits of the program.
+    #[builder(default)]
+    pub traits: Traits,
+    /// The instances of generic functions from the runs before.
+    #[builder(default)]
+    pub known_fns: Wanted,
+    /// The instances of generic structs from the runs before.
+    #[builder(default)]
+    pub known_structs: Wanted,
+    /// The first use of each instance, from the runs before and this one.
+    #[builder(default)]
+    pub uses: Uses,
+    /// The instances the struct values of generic structs ask for.
+    #[builder(default)]
+    pub struct_wanted: Wanted,
+    /// The kind the place of the call expression being checked expects, for
+    /// the kinds of a generic function its arguments leave open; the check
+    /// of the call takes it.
+    pub call_expect: Option<DataKind>,
+    /// The unit of the prelude, when the program reads it.
+    pub prelude_unit: Option<u32>,
+    /// Whether the walk is in an instance of a generic function, which sees
+    /// the functions of the files of its generic, its kinds and its traits.
+    #[builder(default)]
+    pub in_instance: bool,
+    /// The call each operator, print and template slot on a struct takes.
+    #[builder(default)]
+    pub op_calls: OpCalls,
+    /// The operator the next two-operand inference stands for, with its
+    /// node, when a struct can take it through a function.
+    pub pending_op: Option<(NodeId, (&'static str, bool))>,
+    /// The top-level function the walk is in; a blank name outside one.
+    #[builder(default = Name::new(""))]
+    pub top: Name,
     /// The locals and closures each nested function uses from around it.
     #[builder(default)]
     pub captured: Captured,
@@ -600,6 +727,7 @@ impl Checker
     /// # Arguments
     ///
     /// * `callee` - The function name, or the first name of the place.
+    /// * `kind_args` - The kinds written for a generic function.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
     /// * `marks` - The word after each argument of a marked call.
@@ -610,11 +738,22 @@ impl Checker
     /// The result kind of the function (`Some(None)` when it has none), or
     /// `None` when the call names no function it can run.
     pub fn check_call(
-        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr],
-        marks: &[Ident], span: Span,
+        &mut self, callee: &Ident, kind_args: &[Kind], place: Option<&Expr>,
+        args: &[Expr], marks: &[Ident], span: Span,
     ) -> Option<Option<DataKind>>
     {
-        let Some(sigs) = self.call_target(callee, place)
+        let expect = self.call_expect.take();
+        let template = self.template_named(&callee.name).filter(|_| place.is_none());
+        let target = match template
+        {
+            Some(t) =>
+            {
+                let sig = self.generic_callee(&t, callee, kind_args, args, expect);
+                sig.map(|s| vec![s])
+            }
+            None => self.plain_callee(callee, kind_args, place),
+        };
+        let Some(sigs) = target
         else
         {
             self.infer_all(args);
@@ -626,6 +765,7 @@ impl Checker
             self.infer_all(args);
             return None;
         };
+        self.name_foreign(&sig, callee.span);
         self.refer(&callee.name, callee.span, sig.decl);
         let call = format!("a call of \"{}\", an unsafe function,", callee.name);
         do_if!(sig.unchecked, self.need_unchecked(span, &call));
@@ -765,7 +905,7 @@ impl Checker
         {
             [one] =>
             {
-                self.chosen.insert(callee.span, one.inner);
+                self.chosen.insert((self.top, callee.span), one.inner);
                 Some((*one).clone())
             }
             [] =>
@@ -1716,6 +1856,7 @@ impl Visitor for Checker
     fn visit_print(&mut self, n: &PrintStmt)
     {
         let kind = self.infer(&n.value, None);
+        self.struct_text(&n.value, kind);
         // An optional of a handle prints its handle when it holds one.
         let good = kind.and_then(|k| k.fallible_parts()).and_then(|(ok, _)| ok);
         let handle = kind.or(good).and_then(DataKind::as_external);
@@ -1794,6 +1935,10 @@ impl Visitor for Checker
     /// The values are worked out once the file has its top-level names, see
     /// `visit_program`.
     fn visit_enum(&mut self, _n: &EnumDecl) {}
+
+    fn visit_trait(&mut self, n: &TraitDecl) { self.check_trait(n) }
+
+    fn visit_trait_block(&mut self, n: &TraitBlock) { self.check_trait_block(n) }
 
     fn visit_if_arm(&mut self, n: &IfArm)
     {
@@ -1952,7 +2097,8 @@ impl Visitor for Checker
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
         let place = n.place.as_deref();
-        let ret = self.check_call(&n.callee, place, &n.args, &n.marks, n.span);
+        let ret =
+            self.check_call(&n.callee, &n.kind_args, place, &n.args, &n.marks, n.span);
         do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
     }
 

@@ -544,6 +544,35 @@ cell; `k အနေဖြင့် v နှင့် … တို့ပါသေ
 statement marked `row`. An each loop reads its part, `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `အညွှန်းတိုင်း`
 or `အတန်းတိုင်း`, and a first name before `နှင့်` when there are two.
 
+## Generics and traits
+
+Kind parameters stand after a name in the notation form (`parse_notation_params`) or
+after `သည်` in the word form (`parse_word_params`); while a declaration is parsed the
+parameters are kind names (`add_kind_names`). Kind arguments go on `Kind.args` and on calls,
+function values and struct values (`kind_args`): after `::` or the name in the sign
+form, before it in the word form (`zakac_parser/src/generics.rs`). Inside kind
+arguments a `>>` token reads as two closers (`half_close`).
+
+A trait (`at_trait_decl`: a name, then `ဂုဏ်သတ္တိ`) and a trait block (`at_trait_block`:
+`ရှိစေရန်` in the statement) parse in `zakac_parser/src/traits.rs`. The functions of a
+trait block come out of it into the statement list of the file (`parse_program`), each
+a plain function; the block keeps their names. A notes block after the head of a
+function or a trait gives the kind parameters their traits (`give_bounds`), and its
+local kinds become kind names for the rest of the function, then their kinds stand in
+their place (`expand_local_kinds`), marked in `Kind.alias` to count with `ခု`.
+
+## The prelude
+
+The loader reads the prelude, `"စံကား/အခြေခံအုတ်မြစ်"` (`stdlib/prelude.zaka`, in
+`STD_MODULES`), as a file of the program once a file names one of its functions or
+traits that the file does not declare itself (`uses_prelude`), ahead of that file. The
+compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` stands where `ပြင်ပမှလာသော` stands:
+after `သည်` on a function head with no block (`parse_builtin_fn`), after `ဟူသည့်` on a
+trait, and after `<kind> သည်` on a built-in kind (`parse_builtin_kind`). The loader
+gives each marked function of the prelude its statements, written in Zaka in
+`zakac_parser/src/builtin.rs` and parsed from files of their own, which artifacts embed
+beside the prelude.
+
 ## Reading the imports
 
 An import whose path starts with `စံကား/` (`STD_PREFIX`) reads a module of the stdlib

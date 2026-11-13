@@ -11,6 +11,7 @@ program:
         span:
           lo: 40
           hi: 97
+      kind_params: []
       params:
       - edit: false
         fill: false
@@ -254,6 +255,7 @@ program:
           hi: 929
       exported: false
       unchecked: false
+      builtin: false
       start: false
       external: false
       lib: null
@@ -269,6 +271,7 @@ program:
         span:
           lo: 971
           hi: 995
+      kind_params: []
       params: []
       ret: null
       block:
@@ -293,6 +296,7 @@ program:
           hi: 1230
       exported: false
       unchecked: false
+      builtin: false
       start: false
       external: false
       lib: null
@@ -308,6 +312,7 @@ program:
         span:
           lo: 1232
           hi: 1250
+      kind_args: []
       place: null
       args:
       - name:

@@ -94,8 +94,11 @@ pub fn lower(
 ) -> Module
 {
     let unit_sigs = collect_sigs(program, structs, options.platform_bits);
-    let top_count =
-        program.stmts.iter().filter(|s| matches!(s, st::Stmt::Fn(_))).count();
+    let top_count = program
+        .stmts
+        .iter()
+        .filter(|s| matches!(s, st::Stmt::Fn(f) if !is_generic(f)))
+        .count();
     #[rustfmt::skip]
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
         .top_count(top_count as u32).platform(options.platform_bits)
@@ -174,9 +177,24 @@ fn unsafe_spans(program: &st::Program) -> Vec<Span>
 fn unit_suffix(program: &st::Program, unit: u32) -> String
 {
     ret_if!(program.is_root(unit), String::new());
-    let name = &program.units[unit as usize].name;
+    format!("@{}", unit_stem(program, unit))
+}
+
+/// The stem of the file of a unit: its name with no folder and no extension.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `unit` - The unit.
+///
+/// # Returns
+///
+/// The stem; a program not read from a file has a blank one.
+fn unit_stem(program: &st::Program, unit: u32) -> String
+{
+    let name = program.units.get(unit as usize).map_or("", |u| u.name.as_str());
     let stem = std::path::Path::new(name).file_stem().and_then(|s| s.to_str());
-    format!("@{}", stem.unwrap_or(name))
+    stem.unwrap_or(name).to_string()
 }
 
 /// What a call needs to know about a function.
@@ -301,6 +319,17 @@ fn value_sig(f: &FnKind) -> Sig
     }
 }
 
+/// Whether a function is generic: a template the check made instances of.
+///
+/// # Arguments
+///
+/// * `f` - The function.
+///
+/// # Returns
+///
+/// `true` when it has kind parameters.
+fn is_generic(f: &st::FnDecl) -> bool { !f.kind_params.is_empty() }
+
 /// The signatures of the top-level functions of each file, numbered in
 /// source order across the files; the first of two with one name in a file
 /// wins, as in the check. The start block takes its number and no name.
@@ -320,7 +349,8 @@ fn collect_sigs(
 {
     let mut sigs = vec![HashMap::new(); program.units.len().max(1)];
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
-        tern!(let st::Stmt::Fn(f) = s, Some((program.unit_of(i) as usize, f)), None)
+        let f = tern!(let st::Stmt::Fn(f) = s, Some(f), None)?;
+        tern!(is_generic(f), None, Some((program.unit_of(i) as usize, f)))
     });
     for (index, (unit, f)) in decls.enumerate()
     {
@@ -348,6 +378,17 @@ fn collect_sigs(
             own: None,
         };
         do_if!(f.start, continue);
+        // An instance of a generic is a function of each file, and each
+        // function is known in each file as its name, `@` and the stem of its
+        // file, as an instance calls a function of another file.
+        let shared =
+            Name::from(format!("{}@{}", f.name.name, unit_stem(program, unit as u32)));
+        do_for!(table in sigs.iter_mut(), _ = table.entry(shared).or_insert(sig.clone()));
+        let instance = f.name.name.contains('<');
+        do_if!(
+            instance,
+            do_for!(table in sigs.iter_mut(), _ = table.entry(f.name.name).or_insert(sig.clone()))
+        );
         sigs[unit].entry(f.name.name).or_insert(sig);
     }
     sigs
@@ -868,6 +909,8 @@ impl Lowerer<'_>
         {
             return self.stmt(s, out);
         };
+        // A generic function runs through its instances, which the check added.
+        ret_if!(is_generic(f));
         let params = f.params.iter().map(|p| param_kind(p, self.structs)).collect();
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs).repr());
         let index = self.funcs.len() as u32;
@@ -1050,7 +1093,12 @@ impl Lowerer<'_>
                 out.push(Stmt::RemoveCell { dest, kind, span: n.span })
             }
             st::Stmt::Replace(n) => out.push(self.replace_text(n)),
-            st::Stmt::Struct(_) | st::Stmt::Enum(_) | st::Stmt::Alias(_) => (),
+            st::Stmt::Struct(_)
+            | st::Stmt::Enum(_)
+            | st::Stmt::Alias(_)
+            | st::Stmt::Trait(_)
+            | st::Stmt::TraitBlock(_)
+            | st::Stmt::BuiltinKind(_) => (),
             st::Stmt::Import(n) => self.import(n),
             st::Stmt::Switch(n) => self.switch_stmt(n, out),
         }

@@ -57,6 +57,8 @@
   - [Enumeration mistakes](enums/mistakes.md)
 - [Functions as values](function-values/README.md)
   - [Closures](function-values/closures.md)
+- [Generics](generics/README.md)
+  - [Traits](generics/traits.md)
 - [Modules](modules/README.md)
   - [Module mistakes](modules/mistakes.md)
 - [Input and output](io/README.md)

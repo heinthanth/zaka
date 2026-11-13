@@ -65,7 +65,14 @@ fn node_of(file: &FileCheck, stmt: &Stmt) -> Option<DocumentSymbol>
         |name: &Ident, span: Span, kind| node(file, name, span, kind, Vec::new());
     match stmt
     {
+        // An instance of a generic is the compiler's own.
+        Stmt::Fn(f) if f.name.name.contains('<') => None,
         Stmt::Fn(f) => Some(fn_node(file, f)),
+        Stmt::Trait(t) =>
+        {
+            let heads = t.fns.iter().map(|f| leaf(&f.name, f.span, SymbolKind::Method));
+            Some(node(file, &t.name, t.span, SymbolKind::Interface, heads.collect()))
+        }
         Stmt::Struct(s) =>
         {
             let fields =

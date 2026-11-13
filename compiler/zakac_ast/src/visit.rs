@@ -39,6 +39,7 @@ use crate::stmt::AssignStmt;
 use crate::stmt::BlitStmt;
 use crate::stmt::BlockStmt;
 use crate::stmt::BreakStmt;
+use crate::stmt::BuiltinKindDecl;
 use crate::stmt::CallStmt;
 use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
@@ -68,6 +69,8 @@ use crate::stmt::StructDecl;
 use crate::stmt::SwitchArm;
 use crate::stmt::SwitchDefault;
 use crate::stmt::SwitchStmt;
+use crate::stmt::TraitBlock;
+use crate::stmt::TraitDecl;
 use crate::stmt::WhileStmt;
 
 /// A tree node with a source span.
@@ -141,6 +144,9 @@ StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
 EnumDecl => "enum", visit_enum;
 AliasDecl => "alias", visit_alias;
+TraitDecl => "trait", visit_trait;
+TraitBlock => "trait_block", visit_trait_block;
+BuiltinKindDecl => "builtin_kind", visit_builtin_kind;
 EnumMember => "enum_member", visit_enum_member;
 SwitchStmt => "switch", visit_switch;
 SwitchArm => "switch_arm", visit_switch_arm;
@@ -213,6 +219,9 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Enum(s) => s,
         Stmt::Switch(s) => s,
         Stmt::Alias(s) => s,
+        Stmt::Trait(s) => s,
+        Stmt::TraitBlock(s) => s,
+        Stmt::BuiltinKind(s) => s,
     }
 }
 
@@ -349,6 +358,17 @@ pub trait Visitor
     fn visit_enum(&mut self, n: &EnumDecl) { walk_enum(self, n) }
     /// Visit a kind alias.
     fn visit_alias(&mut self, n: &AliasDecl) { walk_alias(self, n) }
+    /// Visit a trait.
+    fn visit_trait(&mut self, n: &TraitDecl) { walk_trait(self, n) }
+    /// Visit a trait block.
+    fn visit_trait_block(&mut self, n: &TraitBlock) { walk_trait_block(self, n) }
+    /// Visit a built-in kind of the prelude.
+    fn visit_builtin_kind(&mut self, n: &BuiltinKindDecl)
+    {
+        self.enter(n);
+        self.visit_kind(&n.kind);
+        self.leave(n);
+    }
     /// Visit a member of an enumeration declaration.
     fn visit_enum_member(&mut self, n: &EnumMember) { walk_enum_member(self, n) }
     /// Visit a switch.
@@ -458,6 +478,9 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Enum(s) => v.visit_enum(s),
         Stmt::Switch(s) => v.visit_switch(s),
         Stmt::Alias(s) => v.visit_alias(s),
+        Stmt::Trait(s) => v.visit_trait(s),
+        Stmt::TraitBlock(s) => v.visit_trait_block(s),
+        Stmt::BuiltinKind(s) => v.visit_builtin_kind(s),
     }
 }
 
@@ -614,6 +637,7 @@ pub fn walk_call_stmt<V: Visitor + ?Sized>(v: &mut V, n: &CallStmt)
 {
     v.enter(n);
     v.visit_ident(&n.callee);
+    do_for!(k in &n.kind_args, v.visit_kind(k));
     do_if!(let Some(place) = &n.place, v.visit_expr(place));
     do_for!(a in &n.args, v.visit_expr(a));
     v.leave(n);
@@ -728,6 +752,27 @@ pub fn walk_alias<V: Visitor + ?Sized>(v: &mut V, n: &AliasDecl)
     v.visit_kind(&n.kind);
     v.visit_ident(&n.name);
     do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
+    v.leave(n);
+}
+
+/// Visit the name, the bounds and the function heads of a trait.
+pub fn walk_trait<V: Visitor + ?Sized>(v: &mut V, n: &TraitDecl)
+{
+    v.enter(n);
+    v.visit_ident(&n.name);
+    do_for!(b in n.kind_params.iter().flat_map(|p| &p.bounds), v.visit_kind(b));
+    do_for!(f in &n.fns, v.visit_fn(f));
+    v.leave(n);
+}
+
+/// Visit the kind, the trait and the function names of a trait block.
+pub fn walk_trait_block<V: Visitor + ?Sized>(v: &mut V, n: &TraitBlock)
+{
+    v.enter(n);
+    v.visit_kind(&n.kind);
+    v.visit_kind(&n.bound);
+    do_for!(f in &n.fns, v.visit_fn(f));
+    do_for!(name in &n.fn_names, v.visit_ident(name));
     v.leave(n);
 }
 
@@ -861,6 +906,7 @@ pub fn walk_fn_addr<V: Visitor + ?Sized>(v: &mut V, n: &FnAddrExpr)
 {
     v.enter(n);
     v.visit_ident(&n.name);
+    do_for!(k in &n.kind_args, v.visit_kind(k));
     v.leave(n);
 }
 
@@ -927,6 +973,7 @@ pub fn walk_call_expr<V: Visitor + ?Sized>(v: &mut V, n: &CallExpr)
 {
     v.enter(n);
     v.visit_ident(&n.callee);
+    do_for!(k in &n.kind_args, v.visit_kind(k));
     do_if!(let Some(place) = &n.place, v.visit_expr(place));
     do_for!(a in &n.args, v.visit_expr(a));
     v.leave(n);
@@ -994,6 +1041,7 @@ pub fn walk_struct_lit<V: Visitor + ?Sized>(v: &mut V, n: &StructLit)
         v.visit_expr(&f.value);
     }
     v.visit_ident(&n.name);
+    do_for!(k in &n.kind_args, v.visit_kind(k));
     do_if!(let Some(word) = &n.classifier, v.visit_ident(word));
     v.leave(n);
 }
@@ -1069,6 +1117,7 @@ pub trait VisitorMut
         do_if!(let Some(sig) = &mut n.sig, walk_sig_mut(self, sig));
         do_if!(let Some(t) = &mut n.table, walk_table_mut(self, t));
         do_if!(let Some(word) = &mut n.classifier, self.visit_ident_mut(word));
+        do_for!(k in &mut n.args, self.visit_kind_mut(k));
     }
     /// Visit a heap allocation.
     fn visit_alloc_mut(&mut self, n: &mut AllocStmt) { walk_alloc_mut(self, n) }
@@ -1188,6 +1237,27 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
             v.visit_kind_mut(&mut s.kind);
             v.visit_ident_mut(&mut s.name);
             do_if!(let Some(word) = &mut s.classifier, v.visit_ident_mut(word));
+        }
+        Stmt::Trait(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_ident_mut(&mut s.name);
+            let bounds = s.kind_params.iter_mut().flat_map(|p| &mut p.bounds);
+            do_for!(b in bounds, v.visit_kind_mut(b));
+            do_for!(f in &mut s.fns, walk_fn_mut(v, f));
+        }
+        Stmt::BuiltinKind(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_kind_mut(&mut s.kind);
+        }
+        Stmt::TraitBlock(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_kind_mut(&mut s.kind);
+            v.visit_kind_mut(&mut s.bound);
+            do_for!(f in &mut s.fns, walk_fn_mut(v, f));
+            do_for!(name in &mut s.fn_names, v.visit_ident_mut(name));
         }
     }
 }
@@ -1360,6 +1430,7 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
+    do_for!(k in &mut n.kind_args, v.visit_kind_mut(k));
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_marks_mut(v, &mut n.using, &mut n.marks);
@@ -1483,6 +1554,7 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         {
             v.visit_span_mut(&mut e.span);
             v.visit_ident_mut(&mut e.name);
+            do_for!(k in &mut e.kind_args, v.visit_kind_mut(k));
         }
     }
 }
@@ -1526,6 +1598,7 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_ident_mut(&mut n.callee);
+    do_for!(k in &mut n.kind_args, v.visit_kind_mut(k));
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_marks_mut(v, &mut n.using, &mut n.marks);
@@ -1564,6 +1637,7 @@ pub fn walk_struct_lit_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut StructLit)
         v.visit_expr_mut(&mut f.value);
     }
     v.visit_ident_mut(&mut n.name);
+    do_for!(k in &mut n.kind_args, v.visit_kind_mut(k));
     do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
 

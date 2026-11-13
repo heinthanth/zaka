@@ -8,6 +8,7 @@ mod counts;
 mod edits;
 mod external;
 mod faults;
+mod generics;
 mod initial;
 mod kind;
 mod kinds;

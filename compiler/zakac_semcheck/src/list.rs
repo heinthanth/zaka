@@ -353,22 +353,32 @@ impl Checker
     }
 
     /// Infer a struct literal: each field it sets takes the kind of that
-    /// field.
+    /// field. A literal of a generic struct with no kinds written takes the
+    /// instance its place expects or its field values give.
     ///
     /// # Arguments
     ///
     /// * `n` - The literal.
+    /// * `expect` - The kind its place expects, when known.
     ///
     /// # Returns
     ///
     /// The struct kind, or `None` after an error.
-    pub(crate) fn infer_struct_lit(&mut self, n: &StructLit) -> Option<DataKind>
+    pub(crate) fn infer_struct_lit(
+        &mut self, n: &StructLit, expect: Option<DataKind>,
+    ) -> Option<DataKind>
     {
         let name = &n.name;
-        let kind = self.structs.get(&name.name).copied();
+        let template = self.templates.structs.get(&name.name).cloned();
+        let template = template.filter(|_| n.kind_args.is_empty());
+        let kind = match &template
+        {
+            Some(t) => self.generic_struct_lit(t, n, expect),
+            None => self.structs.get(&name.name).copied(),
+        };
         do_if!(let Some(d) = self.decls.name(&name.name), self.refer(&name.name, name.span, d));
         do_if!(
-            kind.is_none(),
+            kind.is_none() && template.is_none(),
             self.report(rd::unknown_kind_name(name.span, &name.name))
         );
         let handle = kind.and_then(DataKind::as_external);

@@ -11,6 +11,7 @@ program:
         span:
           lo: 76
           hi: 82
+      kind_params: []
       fields:
       - edit: false
         fill: false
@@ -63,6 +64,7 @@ program:
         span:
           lo: 292
           hi: 319
+      kind_params: []
       classifier: null
       exported: false
       span:
@@ -82,6 +84,7 @@ program:
         span:
           lo: 451
           hi: 466
+      kind_params: []
       classifier: null
       exported: false
       span:
@@ -107,6 +110,7 @@ program:
         span:
           lo: 639
           hi: 651
+      kind_params: []
       classifier: null
       exported: false
       span:
@@ -149,6 +153,7 @@ program:
         span:
           lo: 823
           hi: 841
+      kind_params: []
       classifier: null
       exported: false
       span:
@@ -223,6 +228,7 @@ program:
         span:
           lo: 1121
           hi: 1154
+      kind_params: []
       classifier: null
       exported: false
       span:
@@ -242,6 +248,7 @@ program:
         span:
           lo: 1685
           hi: 1697
+      kind_params: []
       classifier: null
       exported: true
       span:
@@ -253,6 +260,7 @@ program:
         span:
           lo: 1796
           hi: 1820
+      kind_params: []
       params: []
       ret: null
       block:
@@ -290,6 +298,7 @@ program:
                   span:
                     lo: 2046
                     hi: 2073
+                kind_args: []
                 classifier: null
                 fields:
                 - field:
@@ -321,6 +330,7 @@ program:
           hi: 2191
       exported: false
       unchecked: false
+      builtin: false
       start: true
       external: false
       lib: null

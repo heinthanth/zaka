@@ -366,3 +366,21 @@ fn hover_shows_the_marks_of_a_function_and_its_parameters()
     assert!(owned.starts_with("```zaka\nစိတ်မချရသော လုပ်ဆောင်ချက် ရှင်း"), "{owned}");
     assert!(owned.contains("ပ: အပိုင်အနေဖြင့် isize*"), "{owned}");
 }
+
+/// A function of the stdlib goes to a replica of its module in the cache
+/// folder, and the replica reads as the module, so its compiler marks hold.
+#[test]
+fn a_stdlib_function_goes_to_a_replica_of_its_module()
+{
+    let text = "\"စံကား/စာရင်း\" မှ ထည့် ကို ထည့်သွင်းမည်။\n\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် \
+                ကိန်းစု သည် [၁] ဖြစ်ပါစေ။\n၂ ကို ကိန်းစု ထဲသို့ ထည့် မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let file = check("stdcopy.zaka", text, Buffers::default());
+    let found = definition(&file, at(text, 4, "ထည့် မည်")).unwrap();
+    let path = found.uri.to_file_path().unwrap();
+    assert!(path.ends_with("list.zaka"), "{path:?}");
+    let replica = std::fs::read_to_string(&path).unwrap();
+    let uri = Uri::from_file_path(&path).unwrap();
+    let opened = check_file(&uri, &path, &replica, Buffers::default());
+    let codes: Vec<_> = opened.diagnostics.iter().map(|d| d.code.clone()).collect();
+    assert!(!codes.contains(&Some(Code::String("ZK0349".into()))), "{codes:?}");
+}

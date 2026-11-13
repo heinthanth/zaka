@@ -124,7 +124,21 @@ impl Checker
     ) -> Option<DataKind>
     {
         let name = &n.name;
-        let Some(sigs) = self.fns_named(&name.name)
+        let template = self.template_named(&name.name);
+        let count = rd::kind_arg_count(name.span, &name.name, 0, n.kind_args.len());
+        ret_if!(
+            template.is_none() && !n.kind_args.is_empty(),
+            self.report(count),
+            None
+        );
+        let generic =
+            template.map(|t| self.generic_value(&t, name, &n.kind_args, expect));
+        let sigs = match generic
+        {
+            Some(sig) => Some(vec![sig?]),
+            None => self.fns_named(&name.name),
+        };
+        let Some(sigs) = sigs
         else
         {
             let diag = rd::undeclared_function(name.span, &name.name);
@@ -151,7 +165,11 @@ impl Checker
             self.report(kd::unsafe_fn_value(n.span, &name.name)),
             None
         );
-        do_if!(sigs.len() > 1, _ = self.chosen.insert(name.span, one.inner));
+        do_if!(
+            sigs.len() > 1,
+            _ = self.chosen.insert((self.top, name.span), one.inner)
+        );
+        self.name_foreign(one, name.span);
         self.refer(&name.name, name.span, one.decl);
         Some(DataKind::Fn(sig_kind(one)))
     }
@@ -186,7 +204,7 @@ impl Checker
     /// * `n` - The declaration.
     pub(crate) fn declare_nested(&mut self, n: &FnDecl)
     {
-        let mut sig = sig_of(n, &self.structs, 0);
+        let mut sig = sig_of(n, &self.structs, 0, None);
         (sig.closure, sig.borrows) = (false, false);
         let prior = self.scopes.declare_fn(n.name.name, sig);
         do_if!(

@@ -5,6 +5,7 @@
 use std::cell::RefCell;
 
 use bon::Builder;
+use js_sys::Array;
 use js_sys::Promise;
 use js_sys::Reflect;
 use serde::Serialize;
@@ -26,6 +27,10 @@ extern "C" {
     /// Stop the server.
     #[wasm_bindgen(method)]
     fn stop(this: &LanguageClient) -> Promise;
+
+    /// Stop the server, then start it again.
+    #[wasm_bindgen(method)]
+    fn restart(this: &LanguageClient) -> Promise;
 }
 
 #[wasm_bindgen(module = "vscode")]
@@ -40,6 +45,10 @@ extern "C" {
     /// The value of a setting, or `undefined`.
     #[wasm_bindgen(method)]
     fn get(this: &Settings, name: &str) -> JsValue;
+
+    /// Add a command to the editor.
+    #[wasm_bindgen(js_namespace = commands, js_name = registerCommand)]
+    fn register_command(id: &str, run: &JsValue) -> JsValue;
 
     /// The workspace of the window.
     #[wasm_bindgen(thread_local_v2, js_name = workspace)]
@@ -91,18 +100,22 @@ thread_local! {
 }
 
 /// Start the language server, with the command of the `zaka.server.path`
-/// setting.
+/// setting, and add the `zaka.restartServer` command.
 ///
 /// # Arguments
 ///
-/// * `_context` - The extension context; unused.
+/// * `context` - The extension context, which disposes of the command.
 ///
 /// # Returns
 ///
 /// A promise that settles once the client runs.
 #[wasm_bindgen]
-pub fn activate(_context: JsValue) -> Result<Promise, JsValue>
+pub fn activate(context: JsValue) -> Result<Promise, JsValue>
 {
+    let restart = Closure::<dyn Fn() -> JsValue>::new(restart_server).into_js_value();
+    let command = register_command("zaka.restartServer", &restart);
+    let subscriptions = Reflect::get(&context, &"subscriptions".into())?;
+    subscriptions.unchecked_into::<Array>().push(&command);
     let command = settings("zaka").get("server.path").as_string();
     let command = command.map_or_else(|| "zakac".into(), in_workspace);
     let run = ServerRun::builder().command(command).args(["lsp"]).build();
@@ -114,6 +127,19 @@ pub fn activate(_context: JsValue) -> Result<Promise, JsValue>
     let started = client.start();
     CLIENT.with(|slot| slot.replace(Some(client)));
     Ok(started)
+}
+
+/// Restart the language server, as after a new build of `zakac`.
+///
+/// # Returns
+///
+/// A promise that settles once the server runs again, or `undefined` when no
+/// client runs.
+fn restart_server() -> JsValue
+{
+    let client =
+        CLIENT.with(|slot| slot.borrow().as_ref().map(LanguageClient::restart));
+    client.map_or(JsValue::UNDEFINED, Into::into)
 }
 
 /// A command path from the settings: a relative path such as

@@ -694,3 +694,34 @@ pub fn list_word_count(span: Span, count: usize, want: &str, found: &str)
     Diagnostic::new(Code::ListWordCount, message, span)
         .with_help(t!("codes.ZK0246.help"))
 }
+
+/// A trait or a trait block is declared inside a block.
+///
+/// # Arguments
+///
+/// * `span` - The declaration.
+///
+/// # Returns
+///
+/// The `ZK0247` diagnostic.
+pub fn nested_trait(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::NestedTrait, t!("codes.ZK0247.message"), span)
+}
+
+/// A constraint in a notes block names no kind parameter of its declaration.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0248` diagnostic.
+pub fn note_names_no_param(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0248.message", n = name);
+    Diagnostic::new(Code::NoteNamesNoParam, msg, span)
+        .with_help(t!("codes.ZK0248.help"))
+}

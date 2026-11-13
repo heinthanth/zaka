@@ -4,9 +4,11 @@ use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use bon::Builder;
 use zakac_ast::stmt::ImportStmt;
+use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::Unit;
@@ -20,6 +22,10 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::spelling::canonical;
+use zakac_lexer::token::Kw;
+use zakac_lexer::token::LexOutput;
+use zakac_lexer::token::Token;
+use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -30,6 +36,7 @@ use zakac_span::source_map::SourceMap;
 
 use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
+use crate::builtin::give_bodies;
 use crate::parser::parse;
 use crate::parser::parse_with;
 
@@ -54,17 +61,69 @@ pub struct Loaded
 /// The start of the import path of a module of the stdlib.
 pub const STD_PREFIX: &str = "စံကား/";
 
-/// The modules of the stdlib: the name a program imports, and the source,
-/// which the compiler carries, so a program read from storage imports them
-/// too. Each name is in normalized spelling, as an import path is.
-pub static STD_MODULES: &[(&str, &str)] =
-    &[("စံကား/အဝင်အထွက်", include_str!("../../../stdlib/io.zaka"))];
+/// A row of [`STD_MODULES`]: the import name, the file name in the `stdlib`
+/// folder of the source tree, and the source of that file.
+macro_rules! std_module {
+    ($name:expr, $file:literal) => {
+        ($name, $file, include_str!(concat!("../../../stdlib/", $file)))
+    };
+}
+
+/// The modules of the stdlib: the name a program imports, the file in the
+/// source tree, and the source, which the compiler carries, so a program read
+/// from storage imports them too. Each name is in normalized spelling, as an
+/// import path is.
+pub static STD_MODULES: &[(&str, &str, &str)] = &[
+    std_module!("စံကား/အဝင်အထွက်", "io.zaka"),
+    std_module!(PRELUDE, "prelude.zaka"),
+    std_module!("စံကား/စာရင်း", "list.zaka"),
+    std_module!("စံကား/စာသား", "text.zaka"),
+];
+
+/// The folder of the replicas of the stdlib that a language server writes, so
+/// an editor can open a declaration of the stdlib: `zakac/stdlib/<version>`
+/// in a cache folder.
+///
+/// # Arguments
+///
+/// * `cache` - The cache folder of the user.
+///
+/// # Returns
+///
+/// The folder.
+pub fn std_replicas(cache: &Path) -> PathBuf
+{
+    cache.join("zakac").join("stdlib").join(env!("CARGO_PKG_VERSION"))
+}
+
+/// The module of the stdlib a file holds when it is a file of the source tree
+/// or a replica in [`std_replicas`], so a check of `stdlib/list.zaka` in an
+/// editor reads it as `စံကား/စာရင်း`, compiler marks and all.
+///
+/// # Arguments
+///
+/// * `path` - The path of the file.
+///
+/// # Returns
+///
+/// The import name, or `None` for a file outside the `stdlib` folder this
+/// compiler was built from and outside a folder of replicas.
+fn std_module_at(path: &Path) -> Option<&'static str>
+{
+    let tree = normalize(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib"));
+    let path = normalize(&std::path::absolute(path).ok()?);
+    let folder = path.parent()?;
+    ret_if!(folder != tree && !folder.ends_with(std_replicas(Path::new(""))), None);
+    let file = path.file_name()?;
+    STD_MODULES.iter().find(|(_, f, _)| file == *f).map(|(module, ..)| *module)
+}
 
 impl Loaded
 {
     /// Lex and parse one file that cannot read other files: each import it
     /// has is reported, except an import from the stdlib, which reads the
-    /// module the compiler carries.
+    /// module the compiler carries; a file that names a declaration of the
+    /// prelude reads the prelude too.
     ///
     /// # Arguments
     ///
@@ -79,15 +138,17 @@ impl Loaded
         let lexed = lex(source, options);
         let parsed = parse(source, &lexed);
         let mut imports = parsed.program.stmts.iter().filter_map(as_import);
-        ret_if!(imports.any(is_std), Loaded::with_std(source, options));
+        let std = imports.any(is_std) || uses_prelude(source, &lexed);
+        ret_if!(std, Loaded::with_std(source, options));
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
         diagnostics.extend(refuse_imports(&parsed.program));
         loaded(parsed.program, Vec::new(), diagnostics)
     }
 
-    /// Read one file that imports from the stdlib, with the modules it
-    /// imports, in a source map of its own that starts with the file.
+    /// Read one file with the prelude and the stdlib modules it imports, in a
+    /// source map of its own that starts with the file; each other import is
+    /// reported.
     ///
     /// # Arguments
     ///
@@ -190,6 +251,7 @@ pub fn load(
     };
     let path = normalize(&real.local_path);
     let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
+    let path = std_module_at(&path).map_or(path, PathBuf::from);
     #[rustfmt::skip]
     let mut loader = Loader::builder().source_map(source_map).options(options)
         .folder(folder).build();
@@ -243,6 +305,12 @@ struct Loader<'a>
     /// imports from the stdlib alone.
     #[builder(default = true)]
     disk: bool,
+    /// Whether a file read so far names a declaration of the prelude.
+    #[builder(default)]
+    wants_prelude: bool,
+    /// Whether the prelude was read, or is being read.
+    #[builder(default)]
+    prelude_read: bool,
 }
 
 impl Loader<'_>
@@ -263,6 +331,7 @@ impl Loader<'_>
     ) -> zakac_host_errors::Result<u32>
     {
         let lexed = lex(&file, self.options);
+        self.wants_prelude |= uses_prelude(&file, &lexed);
         // The imports do not hang on struct names, so a first parse finds
         // them; the second parse knows the struct names those imports bring.
         let first = parse(&file, &lexed);
@@ -275,13 +344,39 @@ impl Loader<'_>
             targets.push(self.import(&path, n)?);
         }
         self.chain.pop();
+        // The prelude is read once a file names one of its declarations, as
+        // a file of its own ahead of that file.
+        do_if!(self.wants_prelude, self.read_prelude());
         let structs = imported_structs(&imports, &targets, &self.structs);
-        let marked = imported_marked(&imports, &targets, &self.marked);
+        let mut marked = imported_marked(&imports, &targets, &self.marked);
+        // Each file sees the marked functions of the prelude, as if it
+        // imported them; a name it imports hides the prelude's.
+        let prelude = self
+            .done
+            .get(Path::new(PRELUDE))
+            .and_then(|u| self.marked.get(*u as usize));
+        for (name, marks) in prelude.into_iter().flatten()
+        {
+            marked.entry(name.clone()).or_insert_with(|| marks.clone());
+        }
         let parsed = parse_with(&file, &lexed, self.next_id, &structs, &marked);
         self.next_id = parsed.next_id;
         self.diagnostics.extend(lexed.diagnostics);
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
+        if path.to_str().is_some_and(|p| p.starts_with(STD_PREFIX))
+        {
+            let module = path.to_string_lossy().into_owned();
+            let (diags, files) = give_bodies(
+                &mut program,
+                &module,
+                self.source_map,
+                self.options,
+                &mut self.next_id,
+            );
+            self.diagnostics.extend(diags);
+            self.imports.extend(files);
+        }
         set_targets(&mut program, &imports, &targets);
         do_if!(self.disk, lib_paths_from(&mut program, &path));
         let unit = self.units.len() as u32;
@@ -356,6 +451,25 @@ impl Loader<'_>
 
 impl Loader<'_>
 {
+    /// Read the prelude, the module of the stdlib each file sees with no
+    /// import, as a file of the program, once.
+    fn read_prelude(&mut self)
+    {
+        ret_if!(self.prelude_read);
+        self.prelude_read = true;
+        let path = PathBuf::from(PRELUDE);
+        let (_, _, src) = STD_MODULES
+            .iter()
+            .find(|(module, ..)| *module == PRELUDE)
+            .expect("the stdlib carries the prelude");
+        let file = self
+            .source_map
+            .new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
+        self.imports.push(EmbeddedFile::of(&file));
+        let read = self.visit(file, path);
+        read.expect("the prelude reads no file from disk");
+    }
+
     /// Read the module of the stdlib an import names, from the source the
     /// compiler carries, unless it was read before. A name the stdlib does
     /// not have is reported.
@@ -372,11 +486,11 @@ impl Loader<'_>
         let name = canonical(&n.path.lit.value).into_owned();
         let path = PathBuf::from(&name);
         ret_if!(let Some(unit) = self.done.get(&path), Some(*unit));
-        let Some((_, src)) = STD_MODULES.iter().find(|(module, _)| *module == name)
+        let Some((_, _, src)) = STD_MODULES.iter().find(|(module, ..)| *module == name)
         else
         {
             let list: Vec<&str> =
-                STD_MODULES.iter().map(|(module, _)| *module).collect();
+                STD_MODULES.iter().map(|(module, ..)| *module).collect();
             let diag = diag::unknown_std_module(n.path.span, &name, &list.join(", "));
             self.diagnostics.push(diag);
             return None;
@@ -597,4 +711,68 @@ fn lib_paths_from(program: &mut Program, file: &Path)
         let full = std::path::absolute(&joined).unwrap_or(joined);
         lib.lit.value = full.to_string_lossy().into_owned();
     }
+}
+
+/// Whether the words of a file name a declaration of the prelude: one of
+/// its functions or traits, and no name the file declares itself, which
+/// hides the prelude's.
+///
+/// # Arguments
+///
+/// * `file` - The file.
+/// * `lexed` - Its tokens.
+///
+/// # Returns
+///
+/// `true` when one of its names is a name the prelude declares.
+fn uses_prelude(file: &SourceFile, lexed: &LexOutput) -> bool
+{
+    let names = prelude_names();
+    let text = |t: &Token| {
+        let lo = file.relative_position(&t.span.lo);
+        let hi = file.relative_position(&t.span.hi);
+        file.snippet(&lo, &hi).unwrap_or("")
+    };
+    let tokens = &lexed.tokens;
+    // A name after `လုပ်ဆောင်ချက်`, `ကိန်းရှင်` or `ကိန်းသေ`, or before `ဟူသော`, is
+    // declared here.
+    let opens =
+        |t: &Token| matches!(t.kind, TokenKind::Kw(Kw::Function | Kw::Var | Kw::Const));
+    let called = |t: &Token| t.kind == TokenKind::Kw(Kw::Called);
+    let declared: HashSet<&str> = tokens
+        .windows(2)
+        .filter_map(|w| match (opens(&w[0]), called(&w[1]))
+        {
+            (true, _) => Some(text(&w[1])),
+            (_, true) => Some(text(&w[0])),
+            _ => None,
+        })
+        .collect();
+    let idents = tokens.iter().filter(|t| t.kind == TokenKind::Ident).map(text);
+    idents.into_iter().any(|t| names.contains(t) && !declared.contains(t))
+}
+
+/// The names the prelude declares: its functions and its traits.
+///
+/// # Returns
+///
+/// The names, read from the prelude once.
+fn prelude_names() -> &'static HashSet<String>
+{
+    static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
+    NAMES.get_or_init(|| {
+        let src =
+            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let mut sm = SourceMap::new();
+        let file =
+            sm.new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
+        let parsed = parse(&file, &lex(&file, &LexerOptions::default()));
+        let named = parsed.program.stmts.iter().filter_map(|s| match s
+        {
+            Stmt::Fn(d) => Some(d.name.name.to_string()),
+            Stmt::Trait(d) => Some(d.name.name.to_string()),
+            _ => None,
+        });
+        named.collect()
+    })
 }

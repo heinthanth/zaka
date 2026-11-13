@@ -143,6 +143,10 @@ pub enum Punct
     /// `:`
     #[strum(serialize = ":")]
     Colon,
+    /// `::`, before the kind arguments of a call, a function value or a
+    /// struct literal in the notation form: `f::<A၊ B>(a)`
+    #[strum(serialize = "::")]
+    PathSep,
     /// `+`
     #[strum(serialize = "+")]
     Plus,
@@ -714,6 +718,49 @@ pub enum Kw
     // structs
     /// `အချက်အလက်အမျိုးအစား`, also written `ဒေတာအမျိုးအစား`: opens a kind alias
     DataKindOpen,
+
+    // generics
+    /// `ယေဘုယျအချက်အလက်အမျိုးအစား`, also written `ယေဘုယျဒေတာအမျိုးအစား`,
+    /// "generic data kind": before each kind parameter in the word form
+    GenericKind,
+    /// `အစားထိုးသုံးနိုင်၍`, "can be put in place": closes the kind parameters
+    /// of a declaration in the word form, after `ကို` or `တို့ကို`
+    Substitutable,
+    /// `၎င်း`, "it": after the kind parameters of a declaration, before `သည်`
+    /// or `တွင်`
+    Itself,
+    /// `အစားထိုးအသုံးပြုသည့်`, "which puts in place": closes the kind arguments
+    /// before a generic kind or a function, after `ကို` or `တို့ကို`
+    SubstitutedRel,
+    /// `အစားထိုးအသုံးပြု၍`, "putting in place": closes the kind arguments of a
+    /// call written arguments first
+    Substituting,
+    /// `ဂုဏ်သတ္တိ`, "trait": names a trait after its name
+    Trait,
+    /// `ရှိစေရန်`, "so that it has": closes the head of a trait block
+    ToHave,
+    /// `ပါဝင်ရမည်`, "must hold": closes the head of a trait
+    MustContain,
+    /// `ထည့်သွင်းမည့်`, "to be added": opens the closer of a trait block
+    ToAddRel,
+    /// `လုပ်ဆောင်ချက်များ`, "functions": in the heads and closers of traits
+    /// and trait blocks
+    Functions,
+    /// `ဤနေရာတွင်`, "here": opens the head of a notes block
+    Here,
+    /// `သတိပြုရန်မှာ`, "to note": closes the head of a notes block
+    NoteThat,
+    /// `သတိပြုစရာများ`, "the notes": opens the closer of a notes block
+    Notes,
+    /// `ရှိသည်`, "has": closes a constraint in a notes block
+    Has,
+    /// `ကွန်ပိုင်လာထဲတွင်`, "inside the compiler": opens the mark of a
+    /// declaration the compiler gives
+    InCompiler,
+    /// `ဟူသည့်`, "called": after the name of a trait in its declaration
+    CalledRel,
+    /// `တစ်ပါတည်းပါဝင်သော`, "included with it": closes that mark
+    IncludedWith,
     /// `တို့`, a piece of the field list closers
     Plural,
     /// `ပါဝင်သည်`

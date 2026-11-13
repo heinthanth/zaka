@@ -31,11 +31,24 @@ pub(crate) fn collect_fns(
 ) -> Vec<FnSigs>
 {
     let mut fns = vec![FnSigs::new(); program.units.len().max(1)];
+    // An instance of a generic function is a function of each file, as its
+    // generic is wherever its file is imported.
+    let instances = program.stmts.iter().enumerate().filter_map(|(i, s)| match s
+    {
+        Stmt::Fn(d) if d.name.name.contains('<') => Some((program.unit_of(i), d)),
+        _ => None,
+    });
+    for (home, decl) in instances
+    {
+        let others = (0..fns.len() as u32).filter(|u| *u != home);
+        do_for!(unit in others, add_fn(&mut fns[unit as usize], decl, structs, diags, Some(home)));
+    }
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
         let decl = tern!(let Stmt::Fn(decl) = s, Some(decl), None)?;
-        tern!(decl.start, None, Some((program.unit_of(i) as usize, decl)))
+        let plain = !decl.start && decl.kind_params.is_empty();
+        tern!(plain, Some((program.unit_of(i) as usize, decl)), None)
     });
-    do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags));
+    do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags, Some(unit as u32)));
     fns
 }
 
@@ -48,13 +61,15 @@ pub(crate) fn collect_fns(
 /// * `structs` - The kind of each declared struct.
 /// * `diags` - Where to report a function whose parameters and marks another
 ///   function of its name has.
+/// * `unit` - The file that declares it.
 fn add_fn(
-    fns: &mut FnSigs, decl: &FnDecl, structs: &StructTable, diags: &mut Vec<Diagnostic>,
+    fns: &mut FnSigs, decl: &FnDecl, structs: &StructTable,
+    diags: &mut Vec<Diagnostic>, unit: Option<u32>,
 )
 {
     let n = &decl.name.name;
     let list = fns.entry(*n).or_default();
-    let sig = sig_of(decl, structs, list.len());
+    let sig = sig_of(decl, structs, list.len(), unit);
     let same = list.iter().any(|s| s.same_params(&sig));
     ret_if!(same, diags.push(duplicate_function(decl.name.span, n)));
     list.push(sig);
@@ -67,11 +82,15 @@ fn add_fn(
 /// * `decl` - The declaration.
 /// * `structs` - The kind of each declared struct.
 /// * `index` - Its place among the functions of its name in its file.
+/// * `unit` - The file that declares it; `None` for a function inside a
+///   function.
 ///
 /// # Returns
 ///
 /// The signature.
-pub(crate) fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSig
+pub(crate) fn sig_of(
+    decl: &FnDecl, structs: &StructTable, index: usize, unit: Option<u32>,
+) -> FnSig
 {
     let kind = |k| DataKind::from_ast(k, structs);
     let params = decl.params.iter().map(|p| kind(&p.kind)).collect();
@@ -82,5 +101,5 @@ pub(crate) fn sig_of(decl: &FnDecl, structs: &StructTable, index: usize) -> FnSi
         decl.params.iter().map(|p| p.mark.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_marks(marks).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).build();
+        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_marks(marks).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
@@ -9,6 +11,7 @@ use zakac_span::span::Span;
 
 use crate::expr::Expr;
 use crate::expr::Ident;
+use crate::name::Name;
 
 /// The base of a kind, without its size or sign.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -187,6 +190,11 @@ pub struct Kind
     /// word is the alias's.
     #[serde(default)]
     pub alias: Option<Ident>,
+    /// The kind arguments of a generic kind, `<name><A၊ B>` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် <name>`; none for each other kind.
+    #[builder(default)]
+    #[serde(default)]
+    pub args: Vec<Kind>,
     /// Source region of the whole kind phrase, the measure word left out.
     pub span: Span,
 }
@@ -205,11 +213,14 @@ impl Serialize for Kind
         let skip_table = skip && self.table.is_none();
         let skip_word = skip && self.classifier.is_none();
         let skip_alias = skip && self.alias.is_none();
+        let skip_args = skip && self.args.is_empty();
         /// The number of fields, each that can be left out included.
-        const FIELDS: usize = 11;
-        let skipped =
-            [skip_name, skip_parts, skip_sig, skip_table, skip_word, skip_alias]
-                .map(usize::from);
+        const FIELDS: usize = 12;
+        let skipped = [
+            skip_name, skip_parts, skip_sig, skip_table, skip_word, skip_alias,
+            skip_args,
+        ]
+        .map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
         let mut state = serializer.serialize_struct("Kind", n)?;
         state.serialize_field("base", &self.base)?;
@@ -246,6 +257,11 @@ impl Serialize for Kind
             state.skip_field("alias")?,
             state.serialize_field("alias", &self.alias)?
         );
+        tern!(
+            skip_args,
+            state.skip_field("args")?,
+            state.serialize_field("args", &self.args)?
+        );
         state.serialize_field("span", &self.span)?;
         state.end()
     }
@@ -269,5 +285,48 @@ impl Kind
     pub fn outer_ptr_wrap(&self) -> Option<Wrap>
     {
         self.wraps.last().filter(|w| matches!(w, Wrap::Ptr)).cloned()
+    }
+
+    /// Put the kind each kind parameter stands for in place of its name, in
+    /// this kind and in each kind inside it. The levels written after the
+    /// parameter wrap its kind, and the measure word remains the one written.
+    ///
+    /// # Arguments
+    ///
+    /// * `bound` - The kind of each kind parameter.
+    pub fn substitute(&mut self, bound: &HashMap<Name, Kind>)
+    {
+        if let Some(parts) = self.parts.as_deref_mut()
+        {
+            parts
+                .ok
+                .iter_mut()
+                .chain(parts.err.iter_mut())
+                .for_each(|k| k.substitute(bound));
+        }
+        if let Some(table) = self.table.as_deref_mut()
+        {
+            table.index.substitute(bound);
+            table.value.substitute(bound);
+        }
+        if let Some(sig) = self.sig.as_deref_mut()
+        {
+            sig.params.iter_mut().for_each(|p| p.kind.substitute(bound));
+            sig.ret.iter_mut().for_each(|k| k.substitute(bound));
+        }
+        self.args.iter_mut().for_each(|k| k.substitute(bound));
+        let named = self.base == BaseKind::Named;
+        let found =
+            self.name.as_ref().filter(|_| named).and_then(|n| bound.get(&n.name));
+        let Some(found) = found
+        else
+        {
+            return;
+        };
+        let mut phrase = found.clone();
+        phrase.wraps.append(&mut self.wraps);
+        phrase.classifier = self.classifier.take().or(phrase.classifier);
+        phrase.span = self.span;
+        *self = phrase;
     }
 }

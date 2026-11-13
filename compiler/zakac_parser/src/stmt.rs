@@ -18,6 +18,7 @@ use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::ImportStmt;
+use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::START_NAME;
@@ -34,6 +35,7 @@ use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -48,6 +50,7 @@ use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::traits::expand_local_kinds;
 use crate::using::CallParts;
 use crate::using::is_mark_text;
 
@@ -57,17 +60,17 @@ pub(crate) type ItemMarkers = (bool, bool, bool, Option<Ident>);
 
 /// A parameter clause: the parameters, the word that ended it, and whether it
 /// ends in `နှင့် အခြားတန်ဖိုးများ`, or `အခြားတန်ဖိုးများနှင့်အတူ` in the item form.
-type ParamClause = (Vec<Param>, Option<Kw>, bool);
+pub(crate) type ParamClause = (Vec<Param>, Option<Kw>, bool);
 
 /// The result clause of a function header.
 #[derive(Default)]
-struct RetClause
+pub(crate) struct RetClause
 {
     /// The result kind with its measure word, `None` when the header gives
     /// none.
-    kind: Option<Kind>,
+    pub kind: Option<Kind>,
     /// Whether the result is the program's own, `အပိုင်အနေဖြင့်`.
-    owned: bool,
+    pub owned: bool,
 }
 
 /// The count word `တစ်ခု` ("one") in `လုပ်ဆောင်ချက် တစ်ခု`.
@@ -107,7 +110,19 @@ impl Parser<'_>
         {
             let stmt = self.parse_stmt_recover();
             self.imports_closed |= !matches!(stmt, Some(Stmt::Import(_)));
-            do_if!(let Some(stmt) = stmt, stmts.push(stmt));
+            let Some(mut stmt) = stmt
+            else
+            {
+                continue;
+            };
+            // The functions of a trait block are functions of the file.
+            let fns = match &mut stmt
+            {
+                Stmt::TraitBlock(b) => std::mem::take(&mut b.fns),
+                _ => Vec::new(),
+            };
+            stmts.push(stmt);
+            stmts.extend(fns.into_iter().map(Stmt::Fn));
         }
         stmts
     }
@@ -120,6 +135,9 @@ impl Parser<'_>
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
+        ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
+        ret_if!(self.at_trait_decl(), self.parse_trait_decl());
+        ret_if!(self.at_trait_block(), self.parse_trait_block());
         let tok = self.peek();
         let Some(kw) = kw_of(&tok)
         else
@@ -247,6 +265,7 @@ impl Parser<'_>
             Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Alias(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
+            Stmt::BuiltinKind(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
         };
         let top = self.depth == 0;
@@ -741,16 +760,54 @@ impl Parser<'_>
     ///
     /// The declaration, or a diagnostic. A start block inside a block is
     /// parsed and reported.
-    fn parse_fn_decl(&mut self) -> PResult<Stmt>
+    pub(crate) fn parse_fn_decl(&mut self) -> PResult<Stmt>
     {
         let head = self.bump();
         let start = head.span;
         let is_start = head.kind == TokenKind::Kw(Kw::Program);
         let start_name = || Ident::builder().name(START_NAME).span(start).build();
         let name = tern!(is_start, start_name(), self.parse_ident()?);
+        let mut kind_params = self.parse_notation_params()?;
         self.expect(Kw::Thi)?;
+        if kind_params.is_empty() && self.at(Kw::GenericKind)
+        {
+            kind_params = self.parse_word_params()?;
+            self.expect(Kw::Thi)?;
+        }
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external && !is_start, self.parse_external(start, name));
+        if self.at(Kw::InCompiler) && !is_start
+        {
+            let added = self.add_kind_names(&kind_params);
+            let parsed = self.parse_builtin_fn(start, name, kind_params);
+            self.drop_kind_names(added);
+            return parsed;
+        }
+        let added = self.add_kind_names(&kind_params);
+        let parsed = self.parse_fn_rest(start, name, is_start, kind_params);
+        self.drop_kind_names(added);
+        parsed
+    }
+
+    /// Parse the rest of a function declaration after its name, its kind
+    /// parameters and `သည်`: the parameters, the opener, the result, then the
+    /// block.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The function name.
+    /// * `is_start` - Whether it is the start block.
+    /// * `kind_params` - The kind parameters of a generic function.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_fn_rest(
+        &mut self, start: Span, name: Ident, is_start: bool,
+        mut kind_params: Vec<KindParam>,
+    ) -> PResult<Stmt>
+    {
         let (params, _, _) = self.parse_params(&[Kw::Accepting], false)?;
         let open = self.expect_one_of(&[Kw::BlockOpen, Kw::FnOpenRet])?;
         let RetClause { kind: ret, owned } =
@@ -763,16 +820,21 @@ impl Parser<'_>
             self.diags.push(diag::nested_function(fn_span))
         );
         self.expect_stop()?;
+        let notes = tern!(self.at(Kw::Here), self.parse_notes()?, Default::default());
+        self.give_bounds(&mut kind_params, notes.bounds);
         let stmts = self.parse_stmts_to_close();
-        let block_span = self.parse_close(
-            open.span,
-            tern!(is_start, Kw::ProgramClose, Kw::BlockClose),
-        )?;
+        let locals: Vec<String> =
+            notes.kinds.iter().map(|(n, _)| n.name.to_string()).collect();
+        let closed = self
+            .parse_close(open.span, tern!(is_start, Kw::ProgramClose, Kw::BlockClose));
+        do_for!(n in &locals, _ = self.structs.remove(n));
+        let block_span = closed?;
         let block = BlockStmt::builder().stmts(stmts).span(block_span).build();
         let span = start.to(&block_span);
         #[rustfmt::skip]
-        let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .start(is_start).owned_ret(owned).span(span).build();
+        let mut node = FnDecl::builder().name(name).kind_params(kind_params).params(params)
+            .maybe_ret(ret).block(block).start(is_start).owned_ret(owned).span(span).build();
+        expand_local_kinds(&mut node, &notes.kinds);
         Ok(Stmt::Fn(node))
     }
 
@@ -877,8 +939,12 @@ impl Parser<'_>
     {
         let start = self.bump().span;
         let name = self.parse_ident()?;
+        let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Ko)?;
-        let kind = self.parse_kind()?;
+        let added = self.add_kind_names(&kind_params);
+        let kind = self.parse_kind();
+        self.drop_kind_names(added);
+        let kind = kind?;
         let close = self.expect_one_of(&[Kw::AliasClose, Kw::AliasCloseAnd])?;
         let named = close.kind == TokenKind::Kw(Kw::AliasCloseAnd);
         let classifier = tern!(named, Some(self.parse_classifier()?), None);
@@ -886,8 +952,8 @@ impl Parser<'_>
         let span = start.to(&stop.span);
         do_if!(self.depth > 0, self.diags.push(diag::nested_alias(span)));
         #[rustfmt::skip]
-        let node = AliasDecl::builder().kind(kind).name(name).maybe_classifier(classifier)
-            .span(span).build();
+        let node = AliasDecl::builder().kind(kind).name(name).kind_params(kind_params)
+            .maybe_classifier(classifier).span(span).build();
         Ok(Stmt::Alias(node))
     }
 
@@ -901,9 +967,10 @@ impl Parser<'_>
     fn at_kind_decl(&self) -> bool
     {
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
-        ret_if!(!named || kw_of(&self.peek_n(1)) != Some(Kw::Called), false);
+        let next = 1 + self.angle_len(1).unwrap_or(0);
+        ret_if!(!named || kw_of(&self.peek_n(next)) != Some(Kw::Called), false);
         let marks = [Kw::Export, Kw::Shareable, Kw::External];
-        let word = (2..)
+        let word = (next + 1..)
             .map(|n| kw_of(&self.peek_n(n)))
             .find(|kw| !kw.is_some_and(|kw| marks.contains(&kw)));
         matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
@@ -920,6 +987,7 @@ impl Parser<'_>
     {
         let start = self.peek().span;
         let name = self.parse_ident()?;
+        let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
         let exported = self.eat(Kw::Export);
         let external = self.eat(Kw::External);
@@ -933,7 +1001,7 @@ impl Parser<'_>
         {
             Some(Kw::EnumWord) => self.parse_enum_decl(start, name)?,
             _ if external => self.parse_external_kind(start, name)?,
-            _ => self.parse_struct_decl(start, name)?,
+            _ => self.parse_struct_decl(start, name, kind_params)?,
         };
         match &mut stmt
         {
@@ -963,15 +1031,24 @@ impl Parser<'_>
     ///
     /// The declaration, or a diagnostic. A declaration inside a block is
     /// parsed and reported.
-    fn parse_struct_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    fn parse_struct_decl(
+        &mut self, start: Span, name: Ident, mut kind_params: Vec<KindParam>,
+    ) -> PResult<Stmt>
     {
+        if kind_params.is_empty() && self.eat(Kw::Thi)
+        {
+            kind_params = self.parse_word_params()?;
+        }
         self.expect(Kw::At)?;
-        let fields = self.parse_listed_fields(true)?;
+        let added = self.add_kind_names(&kind_params);
+        let fields = self.parse_listed_fields(true);
+        self.drop_kind_names(added);
+        let fields = fields?;
         let (classifier, span) = self.parse_decl_end(start)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
-        let node = StructDecl::builder().name(name).fields(fields).maybe_classifier(classifier)
-            .span(span).build();
+        let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
+            .maybe_classifier(classifier).span(span).build();
         Ok(Stmt::Struct(node))
     }
 
@@ -1309,7 +1386,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The clause, blank when not written, or a diagnostic.
-    fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<RetClause>
+    pub(crate) fn parse_ret_clause(&mut self, has_ret: bool) -> PResult<RetClause>
     {
         ret_if!(!has_ret, Ok(RetClause::default()));
         let kind = self.parse_slot_kind()?;
@@ -1346,7 +1423,9 @@ impl Parser<'_>
     /// The parameters, in source order, the word that ended them, and
     /// whether the list ends in `အခြားတန်ဖိုးများနှင့်အတူ`; none when no parameter
     /// starts here; or a diagnostic.
-    fn parse_params(&mut self, ends: &[Kw], rest: bool) -> PResult<ParamClause>
+    pub(crate) fn parse_params(
+        &mut self, ends: &[Kw], rest: bool,
+    ) -> PResult<ParamClause>
     {
         ret_if!(!self.at_param(), Ok((Vec::new(), None, false)));
         let outer = std::mem::replace(&mut self.in_list, true);

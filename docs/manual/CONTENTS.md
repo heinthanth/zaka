@@ -20,6 +20,8 @@
   - [Values and objects](language/objects.md)
   - [Enumerations](language/enums.md)
   - [Kind aliases](language/aliases.md)
+  - [Generics and traits](language/generics.md)
+  - [The prelude](language/prelude.md)
   - [Modules](language/modules.md)
   - [Input and output](language/io.md)
   - [Natural wording](language/naturalness.md)

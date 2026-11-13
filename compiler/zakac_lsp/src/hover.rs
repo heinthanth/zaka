@@ -8,6 +8,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
 use zakac_ast::kind::Kind;
+use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AliasDecl;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
@@ -15,7 +16,9 @@ use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
+use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::StructDecl;
+use zakac_ast::stmt::TraitDecl;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alias;
@@ -65,6 +68,9 @@ const TO_FILL: &str = "ဒေတာ ထည့်ပေးရန်";
 const OWNED: &str = "အပိုင်အနေဖြင့်";
 /// The word of a kind alias.
 const DATA_KIND: &str = "ဒေတာအမျိုးအစား";
+
+/// The word of a trait.
+const TRAIT: &str = "ဂုဏ်သတ္တိ";
 /// The word between the name of a struct or an enumeration and its marks.
 const CALLED: &str = "ဟူသော";
 /// The word of a struct.
@@ -335,16 +341,70 @@ impl CardMaker<'_>
     /// The head.
     fn head(&self, n: &FnDecl) -> String
     {
+        // A generic shows its kinds as written, each kind parameter as its
+        // name.
+        let generic = !n.kind_params.is_empty();
+        let text = |k: &Kind| tern!(generic, k.to_sexpr(), self.kind_of(k).name());
         let param = |p: &zakac_ast::stmt::Param| {
-            let kind = self.kind_of(&p.kind).name();
+            let kind = text(&p.kind);
             format!("{}: {}{kind}", shown_name(&p.name), param_marks(p))
         };
         let params: Vec<String> = n.params.iter().map(param).collect();
-        let ret = n.ret.as_ref().map(|k| format!(": {}", self.kind_of(k).name()));
+        let ret = n.ret.as_ref().map(|k| format!(": {}", text(k)));
         let name = shown_name(&n.name);
         let mark = tern!(n.unchecked, format!("{UNSAFE} "), String::new());
         let params = params.join("၊ ");
         format!("{mark}{FUNCTION} {name}({params}){}", ret.unwrap_or_default())
+    }
+
+    /// The card of a kind parameter of a generic or a trait, with the traits
+    /// it needs.
+    ///
+    /// # Arguments
+    ///
+    /// * `owner` - The name of the generic or the trait.
+    /// * `params` - Its kind parameters.
+    fn kind_param_card(&mut self, owner: &Ident, params: &[KindParam])
+    {
+        let Some(p) = params.iter().find(|p| self.is_target(&p.name))
+        else
+        {
+            return;
+        };
+        let bounds: Vec<String> = p.bounds.iter().map(Kind::to_sexpr).collect();
+        let code = tern!(
+            bounds.is_empty(),
+            shown_name(&p.name),
+            format!("{}: {}", shown_name(&p.name), bounds.join(" + "))
+        );
+        let of = t!("lsp.hover_kind_param", name = shown_name(owner)).to_string();
+        self.keep(code, vec![Some(of)], None);
+    }
+
+    /// The head of a function of a trait, as a line of its card.
+    ///
+    /// # Arguments
+    ///
+    /// * `_trait` - The trait.
+    /// * `f` - The function head.
+    ///
+    /// # Returns
+    ///
+    /// The head, its kinds as written.
+    fn head_of_trait(&self, _trait: &TraitDecl, f: &FnDecl) -> String
+    {
+        let params: Vec<String> = f
+            .params
+            .iter()
+            .map(|p| format!("{}: {}", shown_name(&p.name), p.kind.to_sexpr()))
+            .collect();
+        let ret = f.ret.as_ref().map(|k| format!(": {}", k.to_sexpr()));
+        format!(
+            "`{FUNCTION} {}({}){}`",
+            shown_name(&f.name),
+            params.join("၊ "),
+            ret.unwrap_or_default()
+        )
     }
 
     /// The card of a struct and its fields, or of one of its fields.
@@ -455,6 +515,7 @@ impl Visitor for CardMaker<'_>
             let marked = n.unchecked.then(|| t!("lsp.hover_unsafe").to_string());
             self.keep(head.clone(), vec![c_fn, marked], Some(n.span));
         }
+        self.kind_param_card(&n.name, &n.kind_params);
         let param = n.params.iter().find(|p| self.is_target(&p.name));
         if let Some(p) = param
         {
@@ -482,8 +543,27 @@ impl Visitor for CardMaker<'_>
         walk_decl(self, n);
     }
 
+    fn visit_trait(&mut self, n: &TraitDecl)
+    {
+        if self.is_target(&n.name)
+        {
+            let params: Vec<&str> =
+                n.kind_params.iter().map(|p| p.name.name.as_str()).collect();
+            let code =
+                format!("{} {}<{}>", TRAIT, shown_name(&n.name), params.join("၊ "));
+            let heads = n.fns.iter().map(|f| Some(self.head_of_trait(n, f)));
+            let mut notes = vec![Some(t!("lsp.hover_trait").to_string())];
+            notes.extend(heads);
+            self.keep(code, notes, Some(n.span));
+        }
+        // The function heads of a trait name its kind parameters, which a
+        // hover of a plain function would read as kinds.
+        self.kind_param_card(&n.name, &n.kind_params);
+    }
+
     fn visit_struct(&mut self, n: &StructDecl)
     {
+        self.kind_param_card(&n.name, &n.kind_params);
         self.struct_card(n);
         walk_struct(self, n);
     }

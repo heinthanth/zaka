@@ -266,7 +266,7 @@ impl Parser<'_>
 
     /// Whether the kind phrase of `len` tokens starts a value instead: a size
     /// whose word is missing, which the size reports, or a struct literal in
-    /// the sign form.
+    /// the sign form, with or without `::<…>`.
     ///
     /// # Arguments
     ///
@@ -277,7 +277,7 @@ impl Parser<'_>
     /// `true` if the value goes on past the kind.
     fn value_goes_on(&self, len: usize) -> bool
     {
-        let marks = [Punct::Ei, Punct::LParen].map(TokenKind::Punct);
+        let marks = [Punct::Ei, Punct::LParen, Punct::PathSep].map(TokenKind::Punct);
         marks.contains(&self.peek_n(len).kind)
     }
 

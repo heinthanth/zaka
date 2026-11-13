@@ -334,6 +334,9 @@ pub(crate) struct FnSig
     /// The name each later stage gives the function: the written name for
     /// the first function of a name in its file, `<name>#<n>` for the n-th.
     pub inner: Name,
+    /// The file that declares a top-level function; `None` for a function
+    /// inside a function and for a function value.
+    pub unit: Option<u32>,
 }
 
 impl FnSig

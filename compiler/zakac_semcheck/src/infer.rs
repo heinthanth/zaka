@@ -33,6 +33,8 @@ use crate::kind::DataKind;
 use crate::kind::InitialGap;
 use crate::list::KindUse;
 use crate::list::data_of;
+use crate::op_calls::infix_fn;
+use crate::op_calls::verb_fn;
 use crate::ops::OpClass;
 use crate::ops::Want;
 use crate::ops::infix_class;
@@ -91,7 +93,11 @@ impl Checker
             Expr::Not(n) => self.infer_bool(&n.inner, &kw_label(Kw::Not)),
             Expr::Logic(n) => self.infer_logic(n),
             Expr::Verb(n) => self.infer_verb(n, expect),
-            Expr::Call(n) => self.infer_call(n),
+            Expr::Call(n) =>
+            {
+                self.call_expect = expect;
+                self.infer_call(n)
+            }
             Expr::Null(n) if n.blank => self.infer_no_data(n.span, expect),
             Expr::Null(n) if n.initial => self.infer_initial(n.span, expect),
             Expr::Null(_) =>
@@ -107,7 +113,7 @@ impl Checker
             Expr::Field(n) => self.infer_field(n),
             Expr::Range(n) => self.infer_range(n),
             Expr::List(n) => self.infer_list(n, expect),
-            Expr::Struct(n) => self.infer_struct_lit(n),
+            Expr::Struct(n) => self.infer_struct_lit(n, expect),
             Expr::BlankList(n) => self.infer_blank(n, expect),
             Expr::Table(n) => self.infer_table(n, expect),
             Expr::Str(n) => self.infer_str(n),
@@ -162,7 +168,14 @@ impl Checker
     /// `စာသား`, or `None` after an error in a template slot.
     fn infer_str(&mut self, n: &StrExpr) -> Option<DataKind>
     {
-        let slots: Vec<_> = n.template_slots().map(|h| self.infer(h, None)).collect();
+        let slots: Vec<_> = n
+            .template_slots()
+            .map(|h| {
+                let kind = self.infer(h, None);
+                self.struct_text(h, kind);
+                kind
+            })
+            .collect();
         tern!(slots.iter().all(Option::is_some), Some(DataKind::TEXT), None)
     }
 
@@ -415,6 +428,7 @@ impl Checker
         let op = n.op.as_ref();
         let class = infix_class(n.op);
         ret_if!(class == OpClass::Shift, self.infer_shift(op, &n.lhs, &n.rhs, expect));
+        self.pending_op = infix_fn(n.op).map(|f| (n.id, f));
         self.infer_pair(class, op, &n.lhs, &n.rhs, expect, n.span)
     }
 
@@ -509,7 +523,11 @@ impl Checker
                 | OpClass::Order
                 | OpClass::Same,
                 [l, r],
-            ) => self.infer_pair(class, &op, l, r, expect, n.span),
+            ) =>
+            {
+                self.pending_op = verb_fn(n.op).map(|f| (n.id, f));
+                self.infer_pair(class, &op, l, r, expect, n.span)
+            }
             _ => self.infer_all(&n.args),
         }
     }
@@ -735,7 +753,8 @@ impl Checker
     fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
         let place = n.place.as_deref();
-        let ret = self.check_call(&n.callee, place, &n.args, &n.marks, n.span)?;
+        let ret =
+            self.check_call(&n.callee, &n.kind_args, place, &n.args, &n.marks, n.span)?;
         self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.

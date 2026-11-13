@@ -29,7 +29,7 @@ use crate::parser::kw_of;
 
 /// A level after the base of a kind, before a count is matched to it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Suffix
+pub(crate) enum Suffix
 {
     /// `လိပ်စာ`
     Ptr,
@@ -178,6 +178,7 @@ impl Parser<'_>
     /// The token count, or `None` when no kind starts there.
     pub(crate) fn kind_len_at(&self, at: usize, form: FnForm) -> Option<usize>
     {
+        ret_if!(let Some(len) = self.word_generic_kind_len(at), Some(len));
         let levels = |core: usize| core + self.scan_suffixes(at + core, true).0;
         ret_if!(let Some(core) = self.table_kind_len(at, form), Some(levels(core)));
         ret_if!(let Some(core) = self.fn_head_at(at, form), Some(levels(core)));
@@ -277,8 +278,9 @@ impl Parser<'_>
         let is_base = word.and_then(base_kind).is_some() || named;
         let bare = n == pre && word == Some(Kw::Address);
         ret_if!(!is_base && !bare, None);
-        let (len, _) = self.scan_suffixes(at + n + 1, is_base);
-        Some(n + 1 + len)
+        let angle = tern!(named, self.angle_len(at + n + 1).unwrap_or(0), 0);
+        let (len, _) = self.scan_suffixes(at + n + 1 + angle, is_base);
+        Some(n + 1 + angle + len)
     }
 
     /// Whether `အကွက် <count> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
@@ -381,7 +383,9 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The token count of the suffixes, and the suffixes, innermost first.
-    fn scan_suffixes(&self, n: usize, after_base: bool) -> (usize, Vec<Suffix>)
+    pub(crate) fn scan_suffixes(
+        &self, n: usize, after_base: bool,
+    ) -> (usize, Vec<Suffix>)
     {
         let (mut len, mut found, mut bare_ptr) = (0, Vec::new(), after_base);
         while let Some((suffix, more)) = self.suffix_at(n + len, bare_ptr)
@@ -448,6 +452,16 @@ impl Parser<'_>
     pub(crate) fn parse_kind_with(&mut self, form: FnForm) -> PResult<Kind>
     {
         let start = self.peek().span;
+        // `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် <name>`: the kind arguments of a
+        // generic kind come first in the word form.
+        if self.word_generic_kind_len(0).is_some()
+        {
+            let args = self.parse_word_kind_args(Kw::SubstitutedRel)?;
+            let mut kind = self.parse_kind_with(form)?;
+            kind.args = args;
+            kind.span = start.to(&kind.span);
+            return Ok(kind);
+        }
         if self.table_kind_len(0, form).is_some()
         {
             let mut kind = self.parse_table_kind(form, start)?;
@@ -738,7 +752,11 @@ impl Parser<'_>
         if self.peek().kind == TokenKind::Ident
         {
             let name = self.parse_ident()?;
-            let kind = Kind::builder().base(BaseKind::Named).span(start);
+            // `<name><A၊ B>`: the kind arguments of a generic kind.
+            let generic = self.angle_len(0).is_some();
+            let args = tern!(generic, self.parse_sign_kind_args()?, Vec::new());
+            let span = start.to(&self.prev_span());
+            let kind = Kind::builder().base(BaseKind::Named).span(span).args(args);
             return Ok(kind.name(name).build());
         }
         let signed = kw_of(&self.peek()).and_then(sign_of);

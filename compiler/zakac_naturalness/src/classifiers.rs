@@ -127,6 +127,9 @@ impl Sizes<'_>
         {
             return own.unwrap_or_else(|| self.want(target, depth + 1));
         }
+        // A name that is no alias is a local kind of a generic, which counts
+        // with `ခု` as a kind parameter does.
+        ret_if!(alias.is_some(), GENERAL_CLASSIFIER);
         ret_if!(!kind.wraps.is_empty(), GENERAL_CLASSIFIER);
         ret_if!(kind.base == BaseKind::Char, CHARACTER_CLASSIFIER);
         let named = kind.name.as_ref().filter(|_| kind.base == BaseKind::Named);

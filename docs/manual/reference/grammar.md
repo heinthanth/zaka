@@ -91,7 +91,8 @@ An import after another statement, or inside a block, is parsed and reported. Se
 
 ```text
 declaration  = var-decl | fn-decl | external-fn | struct-decl | handle-decl
-             | enum-decl | alias-decl ;
+             | enum-decl | alias-decl | trait-decl | trait-block
+             | builtin-fn | builtin-kind ;
 
 var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
                ( "သည်" decl-head "ဖြစ်ပါစေ"
@@ -99,10 +100,39 @@ var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်"
 decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်" clause ]
              | clause ;                           (* the kind comes from the value *)
 
-fn-decl      = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name "သည်"
+fn-decl      = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name [ sign-params ] "သည်"
+               [ word-params "သည်" ]
                [ params "လက်ခံပြီး" ] fn-open "။"
+               [ notes ]
                { stmt }
                block-close "။" ;
+
+sign-params  = "<" kind-param { "၊" kind-param } ">" ;     (* no space before "<" *)
+kind-param   = name [ ":" trait-ref { "နှင့်" trait-ref } ] ;
+word-params  = items("ယေဘုယျဒေတာအမျိုးအစား" name) ( "ကို" | "တို့ကို" )
+               "အစားထိုးသုံးနိုင်၍" "၎င်း" ;
+trait-ref    = [ items(kind) ( "ကို" | "တို့ကို" ) "သုံး၍" ] name [ kind-args ] ;
+notes        = "ဤနေရာတွင်" "သတိပြုရန်မှာ"
+               { name "သည်" slot-kind "ဖြစ်သည်" "။"                       (* a local kind *)
+               | name "တွင်" items(trait-ref "ဂုဏ်သတ္တိ") [ "တို့" ] "ရှိသည်" "။" }
+               "သတိပြုစရာများ" done "။" ;
+
+trait-decl   = name [ sign-params ] "ဟူသည့်" [ "အများသုံး" ] [ compiler-mark ]
+               ( "ဂုဏ်သတ္တိ" (* with sign-params *) | "ဂုဏ်သတ္တိ" "သည်" word-params )
+               "တွင်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ" "ပါဝင်ရမည်" "။"
+               [ notes ]
+               { fn-head }
+               "ဂုဏ်သတ္တိ" "တွင်" "ပါသော" "လုပ်ဆောင်ချက်များ" done "။" ;
+fn-head      = "လုပ်ဆောင်ချက်" name "သည်"
+               ( params ( "လက်ခံမည်" | "လက်ခံပြီး" result ) | result ) "။" ;
+compiler-mark = "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;   (* the prelude alone, ZK0349 *)
+builtin-fn   = [ "အများသုံး" ] "လုပ်ဆောင်ချက်" name [ sign-params ] "သည်" compiler-mark
+               "လုပ်ဆောင်ချက်" ( "ဖြစ်သည်" | "ဖြစ်၍" ext-tail ) "။" ;
+builtin-kind = [ "အများသုံး" ] kind "သည်" compiler-mark "ဒေတာအမျိုးအစား" "ဖြစ်သည်" "။" ;
+trait-block  = kind "တွင်" trait-ref "ဂုဏ်သတ္တိ" "ရှိစေရန်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ"
+               "ကို" "ထည့်သွင်းမည်" "။"
+               { fn-decl }
+               "ထည့်သွင်းမည့်" "လုပ်ဆောင်ချက်များ" done "။" ;
 fn-open      = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
              | "အောက်ပါတို့ကို လုပ်ဆောင်ကာ" result ;
 result       = slot-kind "ကို" [ "အပိုင်အနေဖြင့်" ] "ပြန်ပေးမည်" ;
@@ -125,7 +155,8 @@ ext-tail     = c-params "လက်ခံမည်"                (* no result *
 c-params     = params
              | param "လည်းကောင်း" { param "လည်းကောင်း" } "အခြားတန်ဖိုးများနှင့်အတူ" ;
 
-struct-decl  = name "ဟူသော" [ "အများသုံး" ] [ "မျှဝေနိုင်သော" ] "ဒေတာအစုအဝေး" "တွင်"
+struct-decl  = name [ sign-params ] "ဟူသော" [ "အများသုံး" ] [ "မျှဝေနိုင်သော" ] "ဒေတာအစုအဝေး"
+               ( "တွင်" | "သည်" word-params "တွင်" )
                fields closer "။" ;
 handle-decl  = name "ဟူသော" [ "အများသုံး" ] "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
                ( "ဖြစ်သည်" | "တွင်" fields ( "ပါဝင်သည်" | "တို့ပါဝင်သည်" ) ) "။" ;
@@ -140,7 +171,7 @@ closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word
              | ( "တို့ပါဝင်သည်" | "တို့ပါဝင်ပြီး" word-clause ) ;  (* after two or more *)
 word-clause  = "မျိုးပြပစ္စည်းမှာ" classifier "ဖြစ်သည်" ;
 
-alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name "ကို" kind
+alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name [ sign-params ] "ကို" kind
                ( "ဟုလည်း မှတ်ယူနိုင်ပါသည်" | "ဟုလည်း မှတ်ယူနိုင်ပြီး" word-clause ) "။" ;
 ```
 
@@ -150,10 +181,15 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
   another function.
+- A declaration takes its kind parameters in one form: `sign-params` after the name or
+  `word-params` after `သည်`. A trait takes one kind parameter or more. The functions of
+  a trait block are functions of its file. A trait or a trait block inside a block is
+  ZK0247.
 
 See [Statements](../language/statements.md#declarations),
 [Functions](../language/functions.md), [Structs](../language/structs.md),
-[Enumerations](../language/enums.md), [Kind aliases](../language/aliases.md) and
+[Enumerations](../language/enums.md), [Kind aliases](../language/aliases.md),
+[Generics and traits](../language/generics.md) and
 [C functions](../language/functions.md#c-functions).
 
 ## Statements
@@ -308,15 +344,18 @@ See [Expressions](../language/expressions.md), [Operator precedence](precedence.
 call         = long-call | first-call | short-call | marked-call | sign-call ;
 
 long-call    = long-head [ items(expr) ( "ဖြင့်" | "တို့ဖြင့်" ) ] long-end ;
-long-head    = callee ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" ;
+long-head    = [ word-kinds "အစားထိုးအသုံးပြုသည့်" ] callee ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" ;
+word-kinds   = items(kind) ( "ကို" | "တို့ကို" ) ;
 callee       = name | "(" name "၏" ... ")" ;      (* a name, or a place that holds a function value *)
 args         = expr { "၊" expr } ;
-first-call   = operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
+first-call   = [ word-kinds "အစားထိုးအသုံးပြု၍" ]
+               operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
 marked-call  = operand mark-word { notation mark-word }
                ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end ) ;
-sign-call    = name "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
+sign-call    = name [ "::" kind-args ] "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
+kind-args    = "<" kind { "၊" kind } ">" ;       (* ">>" closes two *)
 
 long-end     = "လုပ်ဆောင်မည်" | "လုပ်ဆောင်သော ရလဒ်" | "လုပ်ဆောင်သော ရလဒ်ကောင်း" ;
 short-end    = "မည်" | "သည့် ရလဒ်" | "သည့် ရလဒ်ကောင်း" ;
@@ -336,6 +375,9 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
   marks and their count fits.
 - In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
   name, then a group. A `(` right after `)` calls the function value the call gives.
+- Kinds for a generic function stand after `::` in the sign form and before the name in
+  the word forms; `<name> "::" kind-args` alone is a function value of the generic, and
+  `<struct> "::" kind-args "(" … ")"` a struct value with its kinds.
 
 See [Calls](../language/functions.md#calls),
 [Arguments first](../language/functions.md#arguments-first),
@@ -388,7 +430,8 @@ See [Numbers](../language/words.md#numbers),
 kind         = { count } ( core | cell-kind | table-kind | fn-kind | "(" fn-kind ")" ) { level } ;
 table-kind   = ( core { level } | cell-kind ) "ဖြင့်" "ညွှန်းသော" kind "ဇယား" ;
 core         = [ sign ] [ digits "ဘစ်" ] base
-             | name                               (* a struct, an enumeration or an alias *)
+             | name [ kind-args ]                 (* a struct, an enumeration or an alias *)
+             | word-kinds "အစားထိုးအသုံးပြုသည့်" name   (* a generic with its kinds *)
              | "လိပ်စာ" ;                          (* an address of no kind *)
 sign         = "လက္ခဏာရှိ" | "လက္ခဏာမဲ့" ;          (* integers alone *)
 base         = "ကိန်းပြည့်" | "ဒဿမကိန်း" | "စာလုံး" | "စာသား"

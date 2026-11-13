@@ -23,12 +23,15 @@ use crate::stmt::FnDecl;
 use crate::stmt::GenericStmt;
 use crate::stmt::IfStmt;
 use crate::stmt::ImportStmt;
+use crate::stmt::KindParam;
 use crate::stmt::Param;
 use crate::stmt::Program;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StructDecl;
 use crate::stmt::SwitchStmt;
+use crate::stmt::TraitBlock;
+use crate::stmt::TraitDecl;
 use crate::verb::Dir;
 use crate::verb::VerbOp;
 
@@ -69,7 +72,7 @@ impl ToSexpr for Kind
         // Burmese words.
         let skip = usize::from(self.base == BaseKind::Opaque);
         let marks: String = self.wraps.iter().skip(skip).map(wrap_mark).collect();
-        format!("{}{marks}", base_name(self))
+        format!("{}{}{marks}", base_name(self), kind_args_text(&self.args))
     }
 }
 
@@ -93,7 +96,9 @@ impl ToSexpr for Expr
             Expr::Call(n) =>
             {
                 let word = tern!(n.pass, "call-pass", "call");
-                list(word, call_parts(&callee_text(&n.callee, &n.place), &n.args))
+                let callee =
+                    callee_text(&n.callee, &n.place) + &kind_args_text(&n.kind_args);
+                list(word, call_parts(&callee, &n.args))
             }
             Expr::Null(n) if n.initial => "initial".into(),
             Expr::Null(n) if n.blank => "blank".into(),
@@ -123,7 +128,13 @@ impl ToSexpr for Expr
             {
                 let fields =
                     n.fields.iter().map(|f| list(&f.field.name, [f.value.to_sexpr()]));
-                list("struct", std::iter::once(n.name.name.to_string()).chain(fields))
+                list(
+                    "struct",
+                    std::iter::once(
+                        n.name.name.to_string() + &kind_args_text(&n.kind_args),
+                    )
+                    .chain(fields),
+                )
             }
             Expr::BlankList(_) => "blank_list".into(),
             Expr::Str(n) => str_sexpr(n),
@@ -131,7 +142,10 @@ impl ToSexpr for Expr
                 "member",
                 [n.qualifier.name.to_string(), n.member.name.to_string()],
             ),
-            Expr::FnAddr(n) => list("fn_addr", [n.name.name.to_string()]),
+            Expr::FnAddr(n) => list(
+                "fn_addr",
+                [n.name.name.to_string() + &kind_args_text(&n.kind_args)],
+            ),
         }
     }
 }
@@ -179,7 +193,9 @@ impl ToSexpr for Stmt
             Stmt::Call(s) =>
             {
                 let word = tern!(s.pass, "call-pass", "call");
-                list(word, call_parts(&callee_text(&s.callee, &s.place), &s.args))
+                let callee =
+                    callee_text(&s.callee, &s.place) + &kind_args_text(&s.kind_args);
+                list(word, call_parts(&callee, &s.args))
             }
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
@@ -219,6 +235,9 @@ impl ToSexpr for Stmt
             Stmt::Enum(s) => exported(s.exported, enum_sexpr(s)),
             Stmt::Switch(s) => switch_sexpr(s),
             Stmt::Alias(s) => exported(s.exported, alias_sexpr(s)),
+            Stmt::Trait(s) => exported(s.exported, trait_sexpr(s)),
+            Stmt::TraitBlock(s) => trait_block_sexpr(s),
+            Stmt::BuiltinKind(s) => list("builtin_kind", [s.kind.to_sexpr()]),
         }
     }
 }
@@ -616,7 +635,8 @@ fn fn_sexpr(s: &FnDecl) -> String
     };
     let taken: Vec<String> = s.captures.iter().map(taken).collect();
     let taken = (!taken.is_empty()).then(|| format!("[{}]", taken.join(", ")));
-    let head = [s.name.name.to_string(), format!("[{}]", params.join(", "))];
+    let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+    let head = [name, format!("[{}]", params.join(", "))];
     let parts: Vec<String> = head.into_iter().chain(taken).chain([ret]).collect();
     let lib = s.lib.iter().map(|l| format!("\"{}\"", l.lit.value));
     ret_if!(s.external, list("external", lib.chain(parts)));
@@ -635,7 +655,8 @@ fn fn_sexpr(s: &FnDecl) -> String
 fn struct_sexpr(s: &StructDecl) -> String
 {
     let fields: Vec<String> = s.fields.iter().map(param_sexpr).collect();
-    let parts = [s.name.name.to_string(), format!("[{}]", fields.join(", "))];
+    let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+    let parts = [name, format!("[{}]", fields.join(", "))];
     let head = tern!(s.external, "external_struct", "struct");
     list(head, parts.into_iter().chain(s.classifier.iter().map(|c| c.name.to_string())))
 }
@@ -659,6 +680,38 @@ fn enum_sexpr(s: &EnumDecl) -> String
     list("enum", [s.name.name.to_string(), format!("[{}]", members.join(", "))])
 }
 
+/// `(trait name<params> fn ...)` for a trait.
+///
+/// # Arguments
+///
+/// * `s` - The declaration.
+///
+/// # Returns
+///
+/// The text.
+fn trait_sexpr(s: &TraitDecl) -> String
+{
+    let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+    list("trait", std::iter::once(name).chain(s.fns.iter().map(fn_sexpr)))
+}
+
+/// `(impl kind trait [name, ...])` for a trait block.
+///
+/// # Arguments
+///
+/// * `s` - The block.
+///
+/// # Returns
+///
+/// The text.
+fn trait_block_sexpr(s: &TraitBlock) -> String
+{
+    let names: Vec<&str> = s.fn_names.iter().map(|n| n.name.as_str()).collect();
+    let head =
+        [s.kind.to_sexpr(), s.bound.to_sexpr(), format!("[{}]", names.join(" "))];
+    list("impl", head)
+}
+
 /// `(alias name kind)` for a kind alias.
 ///
 /// # Arguments
@@ -670,7 +723,8 @@ fn enum_sexpr(s: &EnumDecl) -> String
 /// The text.
 fn alias_sexpr(s: &AliasDecl) -> String
 {
-    list("alias", [s.name.name.to_string(), s.kind.to_sexpr()])
+    let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+    list("alias", [name, s.kind.to_sexpr()])
 }
 
 /// `kind name` for a parameter.
@@ -703,4 +757,46 @@ fn verb_name(n: &VerbExpr) -> &str
 {
     ret_if!(n.op != VerbOp::Shift, n.op.as_ref());
     tern!(n.dir == Some(Dir::Left), "shl", "shr")
+}
+
+/// `<A B>` after a name, for the kind arguments written for it; nothing when
+/// none is written.
+///
+/// # Arguments
+///
+/// * `args` - The kind arguments.
+///
+/// # Returns
+///
+/// The text.
+fn kind_args_text(args: &[Kind]) -> String
+{
+    ret_if!(args.is_empty(), String::new());
+    let parts: Vec<String> = args.iter().map(ToSexpr::to_sexpr).collect();
+    format!("<{}>", parts.join(" "))
+}
+
+/// `<T U:trait>` after the name of a generic declaration, for its kind
+/// parameters, each with the traits written for it; nothing for a plain one.
+///
+/// # Arguments
+///
+/// * `params` - The kind parameters.
+///
+/// # Returns
+///
+/// The text.
+fn kind_params_text(params: &[KindParam]) -> String
+{
+    ret_if!(params.is_empty(), String::new());
+    let one = |p: &KindParam| {
+        let bounds: Vec<String> = p.bounds.iter().map(ToSexpr::to_sexpr).collect();
+        tern!(
+            bounds.is_empty(),
+            p.name.name.to_string(),
+            format!("{}:{}", p.name.name, bounds.join("+"))
+        )
+    };
+    let parts: Vec<String> = params.iter().map(one).collect();
+    format!("<{}>", parts.join(" "))
 }

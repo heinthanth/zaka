@@ -392,6 +392,15 @@ row serves both. The tests are phrases of the two
 words after `ထဲတွင်`: `ထဲတွင်` is a word of its own, and a phrase such as `HasData` holds the
 word the test asks about and the `ရှိ`, `ရှိနေ`, `မရှိ` or `မရှိနေ` that ends it.
 
+## Generics and traits
+
+The words of generics and traits are reserved words like the others:
+`ယေဘုယျဒေတာအမျိုးအစား`, `အစားထိုးသုံးနိုင်၍`, `၎င်း`, `အစားထိုးအသုံးပြုသည့်`,
+`အစားထိုးအသုံးပြု၍`, `ဂုဏ်သတ္တိ`, `ရှိစေရန်`, `ပါဝင်ရမည်`, `ထည့်သွင်းမည့်`,
+`လုပ်ဆောင်ချက်များ`, `ဤနေရာတွင်`, `သတိပြုရန်မှာ`, `သတိပြုစရာများ` and `ရှိသည်`. Each
+splits off a word it is written against, as `ဂုဏ်သတ္တိရှိစေရန်` does. `::` is one
+token, `Punct::PathSep`; a `:` alone remains the field mark of a struct value.
+
 ## Numbers and scripts
 
 Zaka reads digits in two scripts, Burmese `၀၁၂၃၄၅၆၇၈၉` and Western `0123456789`. The

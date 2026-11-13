@@ -4,6 +4,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::FieldInit;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::StructLit;
+use zakac_ast::kind::Kind;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
@@ -98,12 +99,15 @@ impl Parser<'_>
                 TokenKind::Kw(Kw::Having | Kw::ListOf | Kw::ItemOf)
             )
         };
-        self.word_list_end(3, close)
+        self.word_list_end(2, close)
             .is_some_and(|n| self.peek_n(n).kind == TokenKind::Kw(Kw::Having))
     }
 
     /// Parse `<field> အနေဖြင့် <value>` pairs as a list in words, then
     /// `ရှိသော <struct>တစ်<classifier>`.
+    ///
+    /// The kinds of a generic struct stand after `ရှိသော` when written:
+    /// `<kinds> တို့ကို အစားထိုးအသုံးပြုသည့်`.
     ///
     /// # Returns
     ///
@@ -113,12 +117,15 @@ impl Parser<'_>
         let start = self.peek().span;
         let fields = self.parse_word_list(Self::parse_field_init)?;
         self.expect(Kw::Having)?;
+        let generic = self.word_kind_args_len(0, Kw::SubstitutedRel).is_some();
+        let kind_args =
+            tern!(generic, self.parse_word_kind_args(Kw::SubstitutedRel)?, Vec::new());
         let (name, classifier) = self.parse_struct_count()?;
         let span = start.to(&classifier.span);
         let id = self.new_id();
         #[rustfmt::skip]
-        let lit = StructLit::builder().id(id).name(name).classifier(classifier).fields(fields)
-            .span(span).build();
+        let lit = StructLit::builder().id(id).name(name).kind_args(kind_args)
+            .classifier(classifier).fields(fields).span(span).build();
         Ok(Expr::Struct(lit))
     }
 
@@ -147,14 +154,33 @@ impl Parser<'_>
     pub(crate) fn parse_call_struct_lit(&mut self) -> PResult<Expr>
     {
         let name = self.parse_ident()?;
+        self.call_struct_lit_rest(name, Vec::new())
+    }
+
+    /// Parse the rest of a struct literal in the notation form after its
+    /// name and its kind arguments, `(<field>: <value>၊ …)` or `()`.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The struct name.
+    /// * `kind_args` - The kind arguments of a generic struct, written as
+    ///   `::<A၊ B>`.
+    ///
+    /// # Returns
+    ///
+    /// The literal, or a diagnostic.
+    pub(crate) fn call_struct_lit_rest(
+        &mut self, name: Ident, kind_args: Vec<Kind>,
+    ) -> PResult<Expr>
+    {
         self.bump();
         let bare = self.at_punct(Punct::RParen);
         let fields = tern!(bare, Vec::new(), self.parse_named_fields()?);
         let close = self.expect_punct(Punct::RParen)?;
         let span = name.span.to(&close.span);
         let id = self.new_id();
-        let lit = StructLit::builder().id(id).name(name).fields(fields).span(span);
-        Ok(Expr::Struct(lit.build()))
+        let lit = StructLit::builder().id(id).name(name).kind_args(kind_args);
+        Ok(Expr::Struct(lit.fields(fields).span(span).build()))
     }
 
     /// Parse `<field>: <value>` pairs with `၊` between them.

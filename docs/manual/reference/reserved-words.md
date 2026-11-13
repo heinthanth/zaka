@@ -282,6 +282,30 @@ name that ends in `ထဲမှ` into the name and `ထဲမှ`, so no name ca
 The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနိုင်ပါသည်` ("can be taken as") and
 `မှတ်ယူနိုင်ပြီး` ("can be taken as, and"), are reserved on their own too. `ဟုလည်း` can be written as one word or as two.
 
+## Generics and traits
+
+| Word | Reads as | Page |
+| --- | --- | --- |
+| `ယေဘုယျဒေတာအမျိုးအစား`, `ယေဘုယျအချက်အလက်အမျိုးအစား` | "general data kind": names a kind parameter in the word form, `ယေဘုယျဒေတာအမျိုးအစား T` | [Generics](../../learn/generics/README.md) |
+| `အစားထိုးသုံးနိုင်၍` | "can be put in place, and": after the kind parameters of the word form, `… ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်` | [Generics and traits](../language/generics.md#kind-parameters) |
+| `၎င်း` | "it": the declaration again, after its kind parameters, `၎င်းသည်` or `၎င်းတွင်` | [Generics and traits](../language/generics.md#kind-parameters) |
+| `အစားထိုးအသုံးပြုသည့်` | "that puts in place": after the kinds of a generic in the word form, before its name | [Generics and traits](../language/generics.md#kinds-at-a-use) |
+| `အစားထိုးအသုံးပြု၍` | "putting in place": after the kinds of a call written arguments first | [Generics and traits](../language/generics.md#calls) |
+| `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |
+| `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Generics and traits](../language/generics.md#traits) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a declaration of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
+| `ဂုဏ်သတ္တိ` | "trait": after the name of a trait, in its declaration, its closer, a constraint and a trait block | [Traits](../../learn/generics/traits.md) |
+| `ပါဝင်ရမည်` | "must hold": closes the head of a trait, `… အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။` | [Generics and traits](../language/generics.md#traits) |
+| `လုပ်ဆောင်ချက်များ` | "functions": in the heads and closers of traits and trait blocks | [Generics and traits](../language/generics.md#traits) |
+| `ရှိစေရန်` | "so that it has": in the head of a trait block, `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန်` | [Generics and traits](../language/generics.md#trait-blocks) |
+| `ထည့်သွင်းမည့်` | "to be added": opens the closer of a trait block | [Generics and traits](../language/generics.md#trait-blocks) |
+| `ဤနေရာတွင်`, `သတိပြုရန်မှာ` | "here", "to note": open a notes block | [Generics and traits](../language/generics.md#the-notes-block) |
+| `သတိပြုစရာများ` | "the notes": opens the closer of a notes block | [Generics and traits](../language/generics.md#the-notes-block) |
+| `ရှိသည်` | "has": closes a constraint in a notes block, `A တွင် … ဂုဏ်သတ္တိ ရှိသည်။` | [Generics and traits](../language/generics.md#the-notes-block) |
+
+The names the [prelude](../language/prelude.md) declares, its traits and its functions,
+are no reserved words: a name a program declares hides the prelude's.
+
 ## Modules
 
 | Word | Reads as | Page |

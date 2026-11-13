@@ -375,7 +375,11 @@ fn declared(stmt: &Stmt) -> Option<(&Ident, CompletionItemKind)>
 {
     match stmt
     {
-        Stmt::Fn(f) if !f.start => Some((&f.name, CompletionItemKind::Function)),
+        Stmt::Fn(f) if !f.start && !f.name.name.contains('<') =>
+        {
+            Some((&f.name, CompletionItemKind::Function))
+        }
+        Stmt::Trait(t) => Some((&t.name, CompletionItemKind::Interface)),
         Stmt::Struct(s) => Some((&s.name, CompletionItemKind::Struct)),
         Stmt::Enum(e) => Some((&e.name, CompletionItemKind::Enum)),
         Stmt::Alias(a) => Some((&a.name, CompletionItemKind::TypeParameter)),

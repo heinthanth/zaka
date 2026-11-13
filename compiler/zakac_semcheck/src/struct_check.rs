@@ -152,10 +152,15 @@ fn set_c_fields(decl: &StructDecl, table: &StructTable, diags: &mut Vec<Diagnost
 ///
 /// # Returns
 ///
-/// The declaration, or `None` for another statement.
+/// The declaration, or `None` for another statement and for a generic
+/// struct, which has no kind of its own.
 fn as_struct(stmt: &Stmt) -> Option<&StructDecl>
 {
-    tern!(let Stmt::Struct(decl) = stmt, Some(decl), None)
+    match stmt
+    {
+        Stmt::Struct(decl) if decl.kind_params.is_empty() => Some(decl),
+        _ => None,
+    }
 }
 
 /// The name of a top-level function statement.
@@ -236,6 +241,12 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
     {
         return unknown_name(&t.index, names).or_else(|| unknown_name(&t.value, names));
     }
+    // A generic with its kinds waits for its instance; once the check
+    // settles, one that kept its kinds has a report of its own.
+    ret_if!(
+        !kind.args.is_empty(),
+        kind.args.iter().find_map(|k| unknown_name(k, names))
+    );
     let name = kind.name.as_ref()?;
     ret_if!(names.contains(name.name.as_str()), None);
     Some(rd::unknown_kind_name(name.span, &name.name))

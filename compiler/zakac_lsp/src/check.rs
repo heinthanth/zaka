@@ -206,6 +206,47 @@ pub fn file_uri(path: &Path) -> Option<Uri>
     return Uri::parse(&format!("file://{}", path.display())).ok();
 }
 
+/// The replica of a module of the stdlib in the cache folder of the user,
+/// written when it is missing or differs from the source the compiler carries,
+/// so a declaration of the stdlib has a file the editor can open.
+///
+/// # Arguments
+///
+/// * `module` - The import name of the module.
+///
+/// # Returns
+///
+/// The path of the replica, or `None` for a name of no module of the stdlib or
+/// a replica that cannot be written.
+#[cfg(not(target_arch = "wasm32"))]
+fn std_replica(module: &str) -> Option<PathBuf>
+{
+    use etcetera::BaseStrategy;
+    use zakac_parser::load::STD_MODULES;
+    use zakac_parser::load::std_replicas;
+    use zakac_rust_sugars::ret_if;
+
+    let (_, file, src) = STD_MODULES.iter().find(|(m, ..)| *m == module)?;
+    let cache = etcetera::choose_base_strategy().ok()?.cache_dir();
+    let path = std_replicas(&cache).join(file);
+    ret_if!(std::fs::read_to_string(&path).is_ok_and(|text| text == *src), Some(path));
+    std::fs::create_dir_all(path.parent()?).ok()?;
+    std::fs::write(&path, src).ok()?;
+    Some(path)
+}
+
+/// The browser has no file to hold a replica of the stdlib.
+///
+/// # Arguments
+///
+/// * `_module` - The import name of the module.
+///
+/// # Returns
+///
+/// `None`.
+#[cfg(target_arch = "wasm32")]
+fn std_replica(_module: &str) -> Option<PathBuf> { None }
+
 /// Whether an open file is a module for other files: it exports a name and
 /// has no start block. A module is checked with no start block required.
 ///
@@ -323,13 +364,14 @@ impl FileCheck
     /// The file, or `None` when it has no path or cannot be read.
     fn read(&self, file: &SourceFile) -> Option<Imported>
     {
-        let FileName::Real(real) = &file.name
-        else
+        let path = match &file.name
         {
-            return None;
+            FileName::Real(real) => real.local_path.clone(),
+            FileName::Custom(module) => std_replica(module)?,
+            _ => return None,
         };
-        let original = self.sm.file_loader().read_file(&real.local_path).ok()?;
-        let uri = file_uri(&real.local_path)?;
+        let original = self.sm.file_loader().read_file(&path).ok()?;
+        let uri = file_uri(&path)?;
         Some(Imported { uri, lines: LineIndex::new(&original), original })
     }
 

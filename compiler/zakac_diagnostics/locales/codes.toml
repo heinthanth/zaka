@@ -669,6 +669,98 @@ en = "end each path with \"<value> ကို ပြန်ပေးမည်။\"
 [codes.ZK0339.explain]
 en = """A function whose header gives a result kind gives a value back on each path, with \"<value> ကို ပြန်ပေးမည်။\". A path ends at a return, or at an \"if\" with an else, or a switch with a default, whose arms each end in one. A loop is no such end, since its condition can be false at the start."""
 
+[codes.ZK0340.title]
+en = "wrong number of kind arguments"
+[codes.ZK0340.message]
+en = "\"%{n}\" takes %{w} kind argument(s), but %{g} are written"
+[codes.ZK0340.help]
+en = "write one kind for each kind parameter of the declaration, in its order"
+[codes.ZK0340.explain]
+en = """A generic function, struct or alias declares its kind parameters, and a use that writes kind arguments, as \"f::<A၊ B>(…)\" or \"အတွဲ<A၊ B>\", gives one kind for each of them, in the order of the declaration."""
+
+[codes.ZK0341.title]
+en = "kinds that cannot be worked out"
+[codes.ZK0341.message]
+en = "the kinds of \"%{n}\" cannot be worked out from the values given here"
+[codes.ZK0341.help]
+en = "write the kinds, as \"%{n}::<…>(…)\", or give each value a kind of its own"
+[codes.ZK0341.explain]
+en = """A call of a generic function works out each kind parameter from the kinds of its arguments, and a value of a generic struct from the kind its place expects or else from the kinds of its field values. A kind parameter that no parameter or field names, such as one in the result alone, cannot be worked out, and two values that give one kind parameter two kinds do not fit; the call or the value then writes its kinds after \"::\", or before the name in the word form."""
+
+[codes.ZK0342.title]
+en = "instances without end"
+[codes.ZK0342.message]
+en = "the instances of \"%{n}\" do not end: each one asks for one more"
+[codes.ZK0342.help]
+en = "make the calls inside the generic function keep the kinds it was given, not deeper ones"
+[codes.ZK0342.explain]
+en = """The compiler makes one instance of a generic function for each set of kinds a call gives it. An instance that calls the function with a kind built on its own, such as a list of its kind parameter, asks for a new instance each time, and the compiler stops at a limit of instances."""
+
+[codes.ZK0343.title]
+en = "constraint not met"
+[codes.ZK0343.message]
+en = "%{k} does not have the trait \"%{t}\" that this generic needs"
+[codes.ZK0343.help]
+en = "give %{k} the function \"%{f}\" of the trait, in a trait block or as a plain function"
+[codes.ZK0343.help_builtin]
+en = "\"%{t}\" is a built-in trait that %{k} does not have; use a kind that has it"
+[codes.ZK0343.explain]
+en = """A kind parameter can need traits, written after \":\" or in the notes block of its declaration. A kind has a trait when a function of the program gives each function of the trait for it, with the parameter and result kinds the trait names. The built-in traits are the ones the compiler knows: numbers have \"နံပါတ်နှင့်တူသော\", and so on. A use of the generic with a kind that lacks a trait stops here, before the compiler makes the instance."""
+
+[codes.ZK0344.title]
+en = "unknown trait"
+[codes.ZK0344.message]
+en = "no trait named \"%{n}\" is declared"
+[codes.ZK0344.help]
+en = "declare the trait with \"%{n} ဂုဏ်သတ္တိ သည် …\", or import it"
+[codes.ZK0344.explain]
+en = """A constraint and a trait block name a trait: one the program declares or imports, or a built-in one."""
+
+[codes.ZK0345.title]
+en = "trait function left out"
+[codes.ZK0345.message]
+en = "this trait block lacks \"%{f}\", a function of \"%{t}\""
+[codes.ZK0345.help]
+en = "add the function to the block, with the parameter and result kinds the trait gives it"
+[codes.ZK0345.explain]
+en = """A trait block gives its kind each function of its trait. Each function the trait names must be in the block, with the kind of the block in place of the first kind parameter."""
+
+[codes.ZK0346.title]
+en = "function that is not the trait's"
+[codes.ZK0346.message]
+en = "\"%{f}\" is not a function of \"%{t}\" with these parameter and result kinds"
+[codes.ZK0346.help]
+en = "give the function the name, the parameter kinds and the result kind the trait gives it, or move it out of the block"
+[codes.ZK0346.explain]
+en = """A trait block holds the functions of its trait alone, each with the kinds the trait gives it once the kind of the block stands for the first kind parameter."""
+
+[codes.ZK0347.title]
+en = "two functions for one trait function"
+[codes.ZK0347.message]
+en = "two functions give %{k} the trait function \"%{f}\""
+[codes.ZK0347.help]
+en = "keep one of them"
+[codes.ZK0347.explain]
+en = """A kind has a trait through the functions of the program that fit its functions. Two that fit one trait function leave the compiler with no single one to call."""
+
+[codes.ZK0348.title]
+en = "trait block in a third file"
+[codes.ZK0348.message]
+en = "a trait block for %{k} and \"%{t}\" stands in the file of the kind or of the trait"
+[codes.ZK0348.help]
+en = "move the block to the file that declares the kind or the trait"
+[codes.ZK0348.explain]
+en = """A trait block gives a kind a trait for the whole program, so it stands where one of the two is declared: two files that each declare neither could give a kind one trait twice."""
+
+[codes.ZK0349.title]
+en = "compiler mark outside the stdlib"
+[codes.ZK0349.message]
+en = "\"ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော\" marks the declarations of the stdlib alone"
+[codes.ZK0349.help]
+en = "write the declaration with no mark, and give it its code"
+[codes.ZK0349.explain]
+en = """The compiler gives the meaning and the code of a declaration marked \"ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော\", and it knows the ones of the stdlib modules, the prelude \"စံကား/အခြေခံအုတ်မြစ်\" among them, alone. A program declares its own functions, kinds and traits with their code and their rules written out."""
+
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
 [codes.ZK0338.message]
@@ -1402,6 +1494,22 @@ en = "a list of %{n} takes \"%{w}\" here, not \"%{f}\""
 en = "one item takes the word with no \"တို့\"; two or more take the word with \"တို့\""
 [codes.ZK0246.explain]
 en = """The word that closes a list tells the count of its items: \"ကို\", \"ဖြင့်\", \"ပါသော\" and \"ပါဝင်\" follow one item, and \"တို့ကို\", \"တို့ဖြင့်\", \"တို့ပါသော\" and \"တို့ ပါဝင်\" follow two or more."""
+
+[codes.ZK0247.title]
+en = "trait inside a block"
+[codes.ZK0247.message]
+en = "a trait or a trait block stands at the top level of a file, not inside a block"
+[codes.ZK0247.explain]
+en = """A trait and a trait block declare what each part of the file can see, so the two stand at the top level, as functions and structs do."""
+
+[codes.ZK0248.title]
+en = "note on no kind parameter"
+[codes.ZK0248.message]
+en = "\"%{n}\" is no kind parameter of this declaration"
+[codes.ZK0248.help]
+en = "a constraint \"<name> တွင် … ဂုဏ်သတ္တိ ရှိသည်\" names one of the kind parameters the declaration takes"
+[codes.ZK0248.explain]
+en = """The notes block after the head of a generic function or a trait gives a kind parameter the traits it needs. The name before \"တွင်\" must be one of the kind parameters of the declaration."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

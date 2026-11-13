@@ -21,7 +21,10 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::enums::stem_of;
+use crate::generic::in_stdlib;
+use crate::generic::is_template;
 use crate::kind::DataKind;
+use crate::overloads::top_name;
 use crate::scope::Binding;
 use crate::scope::FnSig;
 use crate::semcheck::Checker;
@@ -105,13 +108,13 @@ fn exported_kinds(stmt: &Stmt) -> Option<(&Ident, Vec<&Kind>)>
 {
     match stmt
     {
-        Stmt::Fn(f) if f.exported =>
+        Stmt::Fn(f) if f.exported && f.kind_params.is_empty() =>
         {
             let params = f.params.iter().map(|p| &p.kind);
             Some((&f.name, params.chain(f.ret.as_ref()).collect()))
         }
         Stmt::Decl(d) if d.exported => Some((&d.name, d.kind.iter().collect())),
-        Stmt::Struct(d) if d.exported =>
+        Stmt::Struct(d) if d.exported && d.kind_params.is_empty() =>
         {
             Some((&d.name, d.fields.iter().map(|f| &f.kind).collect()))
         }
@@ -193,8 +196,8 @@ fn is_text_list(kind: &Kind) -> bool
 ///
 /// # Returns
 ///
-/// `false` for a function, a struct, an enumeration, a kind alias, a variable,
-/// a constant or an import.
+/// `false` for a function, a struct, an enumeration, a kind alias, a trait, a
+/// trait block, a variable, a constant or an import.
 fn runs_in_place(stmt: &Stmt) -> bool
 {
     !matches!(
@@ -205,6 +208,9 @@ fn runs_in_place(stmt: &Stmt) -> bool
             | Stmt::Alias(_)
             | Stmt::Decl(_)
             | Stmt::Import(_)
+            | Stmt::Trait(_)
+            | Stmt::TraitBlock(_)
+            | Stmt::BuiltinKind(_)
     )
 }
 
@@ -251,6 +257,20 @@ impl Checker
     {
         let unit = program.unit_of(index);
         self.enter_unit(unit);
+        // A generic function is checked through each of its instances.
+        let marked = match stmt
+        {
+            Stmt::Fn(d) => d.builtin,
+            Stmt::Trait(d) => d.builtin,
+            Stmt::BuiltinKind(_) => true,
+            _ => false,
+        };
+        let outside = marked && !in_stdlib(program, unit);
+        do_if!(outside, self.report(rd::builtin_outside_prelude(stmt.span())));
+        ret_if!(is_template(stmt));
+        self.top = top_name(stmt);
+        let outer = self.open_instance(stmt);
+        let from = self.diags.len();
         let runs = runs_in_place(stmt) || start_of(stmt).is_some();
         let name = || self.unit_names[unit as usize].clone();
         let imported = !program.is_root(unit);
@@ -267,6 +287,10 @@ impl Checker
         let report = bare.map(|n| kd::module_global_needs_value(n.span, &n.name));
         do_if!(let Some(d) = report, self.report(d));
         self.visit_stmt(stmt);
+        do_if!(let Some(fns) = outer, {
+            self.close_instance(fns);
+            self.label_instance(stmt, from);
+        });
     }
 
     /// Check the header of the start block: no parameter, one or two, each a
@@ -304,6 +328,25 @@ impl Checker
         }
         self.fns = self.unit_fns[unit as usize].clone();
         self.unit = unit;
+        self.see_prelude();
+    }
+
+    /// Let the file being checked see the exported functions of the prelude,
+    /// as if it imported each one; a name the file has hides the prelude's.
+    fn see_prelude(&mut self)
+    {
+        let Some(prelude) = self.prelude_unit.filter(|p| *p != self.unit)
+        else
+        {
+            return;
+        };
+        let theirs = self.unit_fns.get(prelude as usize).cloned().unwrap_or_default();
+        for (name, sigs) in theirs
+        {
+            let shown: Vec<FnSig> = sigs.into_iter().filter(|s| s.exported).collect();
+            let fresh = !shown.is_empty() && !self.fns.contains_key(&name);
+            do_if!(fresh, _ = self.fns.insert(name, shown));
+        }
     }
 
     /// Bring the names of an import into the scope of its file.
@@ -341,12 +384,39 @@ impl Checker
         let binding = saved.filter(|b| b.exported).copied();
         let home = self.homes.get(wanted).copied();
         let is_struct = home == Some((target, true));
-        let found = !sigs.is_empty() || binding.is_some() || is_struct;
+        let generic = self.exports_generic(target, name);
+        let found = !sigs.is_empty() || binding.is_some() || is_struct || generic;
         do_if!(!sigs.is_empty(), self.import_fn(name, sigs));
         do_if!(let Some(binding) = binding, self.import_binding(name, binding));
         ret_if!(found);
         let private = self.declared_in(target, wanted);
         self.report(rd::import_not_found(name.span, file, wanted, private));
+    }
+
+    /// Whether a file exports a generic function, a generic struct or a
+    /// trait of a name: the whole program sees each of them through its name,
+    /// so the import brings nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The unit of the file.
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    fn exports_generic(&mut self, unit: u32, name: &Ident) -> bool
+    {
+        let here = self.templates.units.get(&name.name) == Some(&unit);
+        let fns = self.templates.fns.get(&name.name).filter(|d| here && d.exported);
+        let structs =
+            self.templates.structs.get(&name.name).filter(|d| here && d.exported);
+        let decl = fns.map(|d| d.name.span).or(structs.map(|d| d.name.span));
+        let traits =
+            self.traits.get(&name.name).filter(|(u, d)| *u == unit && d.exported);
+        let decl = decl.or(traits.map(|(_, d)| d.name.span));
+        do_if!(let Some(decl) = decl, self.refer(&name.name, name.span, decl));
+        decl.is_some()
     }
 
     /// Bring the exported functions of an imported name into scope, each

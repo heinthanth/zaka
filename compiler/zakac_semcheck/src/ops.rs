@@ -540,8 +540,14 @@ impl Checker
             OpClass::Bit => int_expect(expect),
             _ => expect.filter(|k| !k.is_address()),
         };
+        // The operator the call stands for, taken before the operands, which
+        // can hold operators of their own.
+        let pending = self.pending_op.take();
         let (l, r) = self.infer_sides(lhs, rhs, side);
-        self.pair_result(class, op, (l?, lhs), (r?, rhs), span)
+        let (l, r) = (l?, r?);
+        let by_fn = pending.and_then(|p| self.struct_operator(p, l, r));
+        ret_if!(by_fn.is_some(), by_fn);
+        self.pair_result(class, op, (l, lhs), (r, rhs), span)
     }
 
     /// The result kind of a two-operand operation whose operand kinds are

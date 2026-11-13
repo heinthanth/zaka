@@ -20,6 +20,11 @@ language = "zaka"
 scopeName = "source.zaka"
 path = "./.cache/zaka.tmLanguage.json"
 
+[[contributes.commands]]
+command = "zaka.restartServer"
+title = "Restart the Language Server"
+category = "Zaka"
+
 [contributes.configuration]
 title = "Zaka"
 

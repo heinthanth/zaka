@@ -14,13 +14,32 @@ use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::VisitorMut;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::generic::is_template;
 use crate::scope::overload_name;
 
-/// The inner name of the function each call of an overloaded name chose,
-/// under the span of the name at the call.
-pub(crate) type Chosen = HashMap<Span, Name>;
+/// The inner name of the function each call of an overloaded or generic name
+/// chose, under the top-level function the call stands in and the span of the
+/// name at the call: each instance of a generic function holds the spans of
+/// its template.
+pub(crate) type Chosen = HashMap<(Name, Span), Name>;
+
+/// The name a top-level statement checks its calls under: the name of a
+/// function, and a blank name for each other statement.
+///
+/// # Arguments
+///
+/// * `stmt` - The statement.
+///
+/// # Returns
+///
+/// The name.
+pub(crate) fn top_name(stmt: &Stmt) -> Name
+{
+    tern!(let Stmt::Fn(d) = stmt, d.name.name, Name::new(""))
+}
 
 /// Write the inner names of overloaded functions into the program.
 ///
@@ -33,7 +52,11 @@ pub(crate) fn write_overloads(program: &mut Program, chosen: &Chosen)
     let (decls, extra) = overloaded_decls(program);
     let mut names = chosen.clone();
     names.extend(decls);
-    do_if!(!names.is_empty(), Renamer(&names).visit_program_mut(program));
+    for stmt in program.stmts.iter_mut().filter(|_| !names.is_empty())
+    {
+        let top = top_name(stmt);
+        Renamer { names: &names, top }.visit_stmt_mut(stmt);
+    }
     add_to_imports(program, &extra);
 }
 
@@ -61,13 +84,14 @@ fn overloaded_decls(program: &Program) -> (Chosen, Vec<HashMap<Name, Vec<Name>>>
         {
             continue;
         };
+        do_if!(is_template(s), continue);
         let unit = program.unit_of(i);
         let index = seen.entry((unit, decl.name.name)).or_default();
         let inner = overload_name(decl.name.name, *index);
         *index += 1;
         if inner != decl.name.name
         {
-            renames.insert(decl.name.span, inner);
+            renames.insert((decl.name.name, decl.name.span), inner);
             gained[unit as usize].entry(decl.name.name).or_default().push(inner);
         }
     }
@@ -108,12 +132,18 @@ fn add_to_imports(program: &mut Program, gained: &[HashMap<Name, Vec<Name>>])
 }
 
 /// The walker that gives a name its inner name, found from its span.
-struct Renamer<'a>(&'a Chosen);
+struct Renamer<'a>
+{
+    /// The inner names.
+    names: &'a Chosen,
+    /// The top-level function the walk is in.
+    top: Name,
+}
 
 impl VisitorMut for Renamer<'_>
 {
     fn visit_ident_mut(&mut self, n: &mut Ident)
     {
-        do_if!(let Some(inner) = self.0.get(&n.span), n.name = *inner);
+        do_if!(let Some(inner) = self.names.get(&(self.top, n.span)), n.name = *inner);
     }
 }

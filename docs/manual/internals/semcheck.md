@@ -549,6 +549,54 @@ inferred with no expected kind, and an error in a template slot leaves the liter
 `ops.rs`, `+` with text on each side is a join, of kind `text`; each other operator on text, and `+` of text with a number, is
 ZK0403.
 
+## Generics
+
+A generic function or struct is a *template*: `collect_fns` and `collect_structs` leave
+it out, and the walk skips it (`generic::is_template`). The driver runs the check again
+while a run asks for instances (`zakac_semcheck/src/generic.rs`,
+`generic_struct.rs`, `traits.rs`):
+
+1. A call of a template works out its kinds: written, or matched from the argument
+   kinds (`infer_kinds`, through `Binder`), then from the kind its place expects. It
+   checks the constraints of each kind parameter (`meets_bounds`, `has_trait`), names the
+   instance (`instance_name`: `f<isize၊ text>`), records it in `wanted`, and records its
+   choice in `Chosen` under the top-level function it stands in and the span of the
+   name, as each instance holds the spans of its template. The run checks the call
+   against the instance once the instance exists.
+2. Between two runs, `name_instances` gives each kind that names a generic struct with
+   known kinds the name of its instance, inner kinds first, and records the instance.
+   A struct value with no kinds asks the checker for its instance
+   (`generic_struct_lit`), from the kind its place expects or its field values.
+3. `add_instances` appends each new instance: a duplicate of the template with kind
+   phrases in place of its kind parameters (`kind_ast`, `Kind::substitute`), with
+   fresh node numbers. An instance of a function stands right after its template, in
+   its file (`place_instance`, which moves the start of each later file); an instance
+   of a struct at the end. While an instance is checked (`open_instance`), it sees the
+   functions of the files of its kinds and its traits too, and a call from it into
+   another file takes the name `<name>@<file>` (`name_foreign`), which the IR builder
+   knows in each file. A report from an instance takes a label at the first use that
+   asked for it (`uses`, `label_instance`).
+4. Once a run asks for nothing new, the last run writes the choices back
+   (`write_overloads`), and `leftovers` reports each kind that kept its kinds. At most 64
+   runs add instances (ZK0342).
+
+The traits are collected per file (`traits::traits`). A trait block is checked against
+its trait (`check_trait_block`): each function head with the kind in place, each
+function of the block one of the trait, and the file rule. The built-in traits are
+predicates on the kind (`traits::builtin`).
+
+## Operators on structs
+
+An operator on two values of one struct a file declares calls the function its trait
+names, when the file of the use or of the struct has one with those parameter kinds
+(`op_calls.rs`): `infer_infix` and `infer_verb` leave the operator in `pending_op`,
+`infer_pair` takes it before the operands, and `struct_operator` records the call.
+`ပြသမည်` and a template slot record a call of `စာသားအဖြစ်ပြောင်း`. Once the check
+settles, `write_op_calls` puts each call into the tree, `!` around a negated one, with
+fresh node numbers and their kinds. A name a file declares, or a variable, hides a
+generic of the prelude (`template_named`); a template or a trait of a file hides one of
+the prelude. The compiler mark outside the prelude is ZK0349.
+
 ## Codes
 
 | Range | Stage |
