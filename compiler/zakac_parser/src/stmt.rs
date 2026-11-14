@@ -590,8 +590,14 @@ impl Parser<'_>
         }
         self.expect(Kw::Thi)?;
         let head = self.parse_decl_head()?;
-        do_if!(let Some(kind) = &head.kind, self.note_preposition_value(&name.name, kind));
-        do_if!(let Some(init) = &head.init, self.note_preposition_addr(&name.name, init));
+        // A written kind gives the prepositions of a call through the name; the
+        // starting value gives them when no kind is written.
+        match (&head.kind, &head.init)
+        {
+            (Some(kind), _) => self.note_preposition_value(&name.name, kind),
+            (None, Some(init)) => self.note_preposition_addr(&name.name, init),
+            (None, None) => (),
+        }
         if self.at(Kw::Being)
         {
             ret_if!(is_const, Err(diag::const_loop(word.span)));

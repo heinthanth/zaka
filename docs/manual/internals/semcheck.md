@@ -119,7 +119,9 @@ declaration of a name in a file wins, and a second in the same file is ZK0304. T
 can each hold a function of one name. A signature keeps the preposition of each parameter
 (`FnSig::prepositions`, `None` with no prepositions); `check_prepositions` compares the prepositions of a preposition call
 with it, one argument after another, after the count check (ZK0314), and reports another word
-as ZK0331.
+as ZK0331. A preposition call of a signature with none is ZK0332: a call through a value
+takes the prepositions of the value's kind, so the parser's name table, which knows no
+scopes, cannot widen what a kind allows.
 
 A file can declare several functions of one name: `FnSigs` maps a name to its overloads in
 the order of their declarations, and the same parameter kinds and prepositions twice are ZK0304.

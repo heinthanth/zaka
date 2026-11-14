@@ -360,7 +360,8 @@ impl Parser<'_>
     /// Register a variable that starts as the address of a function with
     /// prepositions, `ကိန်းရှင် <name> သည် <fn> ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။`, with the
     /// prepositions of that function, so a preposition call through it can be
-    /// read.
+    /// read. A declaration that writes a kind takes the prepositions of that
+    /// kind instead, and never comes here.
     ///
     /// # Arguments
     ///

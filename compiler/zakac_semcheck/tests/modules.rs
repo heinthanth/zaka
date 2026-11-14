@@ -180,3 +180,36 @@ fn an_export_that_names_an_exported_or_imported_struct_passes()
     let main = "\"lib.zaka\" မှ လူ ကို ထည့်သွင်းမည်။\nအများသုံး ကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(codes(&[("/m/main.zaka", main), ("/m/lib.zaka", lib)]), []);
 }
+
+/// A file with an exported function `ရေး` whose parameters have prepositions.
+const WRITE_LIB: &str = "\
+အများသုံး လုပ်ဆောင်ချက် ရေး သည်
+စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ \
+                         လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စာ ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+/// A variable that starts as an imported function with prepositions takes a
+/// preposition call when its declaration writes no kind, and none when it
+/// writes a kind with no prepositions.
+#[test]
+fn an_imported_function_as_a_starting_value_gives_its_prepositions_alone()
+{
+    let main = |kind: &str| {
+        format!(
+            "\"lib.zaka\" မှ ရေး ကို ထည့်သွင်းမည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် ဖ သည် \
+             {kind}ရေး ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\n\"က\" ကို \"ခ\" သို့ ဖ မည်။\nပရိုဂရမ် \
+             ပြီးဆုံးပါပြီး။"
+        )
+    };
+    let bare = main("");
+    assert_eq!(codes(&[("/m/main.zaka", &bare), ("/m/lib.zaka", WRITE_LIB)]), []);
+    let plain = main(
+        "စာသား တစ်ခု ကို လည်းကောင်း စာသား တစ်ခု ကို လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု ဖြစ်၍ \
+         တန်ဖိုးသည် ",
+    );
+    let found = codes(&[("/m/main.zaka", &plain), ("/m/lib.zaka", WRITE_LIB)]);
+    assert_eq!(found, [Code::UnclosedClause]);
+}

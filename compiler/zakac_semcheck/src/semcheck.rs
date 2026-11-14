@@ -796,7 +796,7 @@ impl Checker
             );
         }
         self.check_edits_apart(args, &sig.edits);
-        self.check_prepositions(callee, prepositions, sig.prepositions.as_deref());
+        self.check_prepositions(callee, prepositions, &sig, span);
         ret
     }
 
@@ -1005,22 +1005,27 @@ impl Checker
     }
 
     /// Check that each argument of a preposition call carries the preposition
-    /// of its parameter.
+    /// of its parameter. A preposition call of a function with no
+    /// prepositions, such as a call through a value whose kind has none, is
+    /// ZK0332: the kind of a value, not the function it holds, gives the
+    /// prepositions of a call through it.
     ///
     /// # Arguments
     ///
     /// * `callee` - The function name.
     /// * `prepositions` - The prepositions written; blank for the other call
     ///   forms.
-    /// * `want` - The prepositions of the parameters, when the parameters have
-    ///   prepositions.
+    /// * `sig` - The function the call runs.
+    /// * `span` - The call.
     fn check_prepositions(
-        &mut self, callee: &Ident, prepositions: &[Ident], want: Option<&[Name]>,
+        &mut self, callee: &Ident, prepositions: &[Ident], sig: &FnSig, span: Span,
     )
     {
-        let Some(want) = want
+        let Some(want) = sig.prepositions.as_deref()
         else
         {
+            let none = rd::no_overload_fits(span, &callee.name, &params_text(sig));
+            do_if!(!prepositions.is_empty(), self.report(none));
             return;
         };
         let wrong = prepositions

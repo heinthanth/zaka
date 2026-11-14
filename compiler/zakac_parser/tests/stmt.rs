@@ -661,6 +661,37 @@ fn other_sentences_keep_their_meaning()
     assert!(matches!(stmts(&import)[0], Stmt::Import(_)));
 }
 
+/// A function kind with two text parameters and no prepositions.
+const PLAIN_KIND: &str =
+    "စာသား တစ်ခု ကို လည်းကောင်း စာသား တစ်ခု ကို လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား";
+
+/// The function kind of `ရေး`, with its prepositions.
+const WRITE_KIND: &str = "(စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" \
+                          ကို သုံး၍ လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)";
+
+/// A declaration that writes a kind gives a variable the prepositions of that
+/// kind, whatever its starting value; with no kind written, the starting
+/// function gives them.
+#[test]
+fn a_written_kind_gives_the_prepositions_of_a_variable()
+{
+    let call = "\"က\" ကို \"ခ\" သို့ ဖ မည်။";
+    let plain = |word: &str| {
+        with_write(&format!(
+            "{word} ဖ သည် {PLAIN_KIND} တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ရေး ဟူသော လုပ်ဆောင်ချက် \
+             ဖြစ်ပါစေ။\n{call}"
+        ))
+    };
+    assert_eq!(codes(&plain("ကိန်းရှင်")), [Code::UnclosedClause]);
+    assert_eq!(codes(&plain("ကိန်းသေ")), [Code::UnclosedClause]);
+    let bare = with_write(&format!("ကိန်းရှင် ဖ သည် ရေး ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\n{call}"));
+    assert!(matches!(stmts(&bare)[2], Stmt::Call(_)), "{bare}");
+    let blank = with_write(&format!(
+        "ကိန်းရှင် ဖ သည် {WRITE_KIND} တစ်ခု ဖြစ်ပါစေ။\nဖ ကို ရေး ဟူသော လုပ်ဆောင်ချက် ဟု ထားမည်။\n{call}"
+    ));
+    assert!(matches!(stmts(&blank)[3], Stmt::Call(_)), "{blank}");
+}
+
 /// The header of an external function, in each shape: no parameters and no
 /// result, parameters with or without a result, or a result alone; with or
 /// without `တစ်ခု`, glued or apart.

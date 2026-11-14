@@ -458,7 +458,9 @@ statement through `parse_first`. The long call forms read their function with
 `Kw::FnValue` and `ကို`; for a group, `group_end` scans to its `)` first. The place goes into
 `CallExpr::place` or `CallStmt::place`, and `callee` keeps its first name. A parameter or a variable declared with a function kind that has prepositions
 joins `Parser::functions` under its name (`note_preposition_value`), so a preposition call through it
-reads; `fn_header` counts the prepositions of a header outside parentheses alone, so the
+reads. A variable declared with no kind that starts as `<fn> ဟူသော လုပ်ဆောင်ချက်` joins it with
+the prepositions of that function (`note_preposition_addr`); a written kind wins over the
+starting value, so a kind with no prepositions adds nothing; `fn_header` counts the prepositions of a header outside parentheses alone, so the
 prepositions of a function kind in it do not count.
 
 Kinds and literals have their own modules. `kind.rs` reads `(လက္ခဏာရှိ|လက္ခဏာမဲ့)? (N ဘစ်)?

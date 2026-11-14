@@ -476,8 +476,16 @@ does, so a kind with none takes a function with prepositions:
 | prepositions | a function with the same prepositions, in the same order, alone |
 
 A call through a value uses the prepositions of its kind. Through a kind with prepositions, the call
-reads as a sentence. A variable reads so when its declaration writes a kind with prepositions,
-or when it starts as a function with prepositions:
+reads as a sentence. A variable or a constant reads so in two cases:
+
+| The declaration | Its prepositions |
+| --- | --- |
+| writes a kind | those of the kind; a kind with none gives none, whatever the starting value |
+| writes no kind, and starts as a function with prepositions | those of the function, imported or not |
+
+A parameter, a field and a result have the prepositions of their kinds alone. Below, the
+parameter `ပို့သူ` and the variable `ပို့ရန်` take a sentence, and `ဖ`, whose kind has
+none, takes its arguments in a list:
 
 ```zaka
 လုပ်ဆောင်ချက် ရေး သည်
@@ -506,6 +514,39 @@ or when it starts as a function with prepositions:
 စာပုံး: နောက်တစ်စောင်
 ဖိုင်: ပြန်စာ
 ```
+
+A sentence through `ဖ` is an error, though `ဖ` starts as `ရေး`: the kind written in the
+declaration has no prepositions, and the variable can later hold a function with none,
+as here. The sentence does not read as a call, so its operands wait for a verb (ZK0208),
+as with a parameter of such a kind:
+
+```zaka-error ZK0208
+လုပ်ဆောင်ချက် ရေး သည်
+စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{နေရာ}: {စာ}" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ရေးခြင်း သည်
+စာ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{နေရာ}- {စာ}" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဖ သည် စာသား တစ်ခု ကို လည်းကောင်း စာသား တစ်ခု ကို လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ရေး ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။
+ဖ ကို ရေးခြင်း ဟူသော လုပ်ဆောင်ချက် ဟု ထားမည်။
+"ပြန်စာ" ကို "ဖိုင်" သို့ ဖ မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0208]: operands wait for a verb: "ပြန်စာ" (ကို), "ဖိုင်" (no particle)
+```
+
+Where the sentence still reads as a call through a value whose kind has no prepositions,
+such as through a name in an inner block that shadows a name with prepositions, the
+check reports it as ZK0332: no function of that name takes the arguments.
 
 
 ## How a function value is held
