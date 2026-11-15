@@ -1338,7 +1338,7 @@ does, so the program finds its lib wherever it runs from.
 ### How each build calls C
 
 - `zakac run` opens each lib as the program first calls a C function: `libX` is the file
-  `libX.dylib`, `libX.so` or `X.dll`, a path opens as it is, and a C name the lib does not
+  `libX.dylib`, `libX.so` or `X.dll` (libc and libm on Windows are `ucrtbase.dll`), a path opens as it is, and a C name the lib does not
   hold is looked up in the process, which holds libc. An address that lies in a block of
   the VM reaches C as the native address of that octet, so C reads and writes the block in
   place. After each call the VM writes out what C holds back for its streams, so the text

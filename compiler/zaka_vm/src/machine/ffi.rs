@@ -384,13 +384,7 @@ mod with_ffi
             let cells = cells.inspect_err(|_| self.end_lends(lent_from))?;
             let ffi_kinds = kinds.iter().map(|k| ffi_kind(*k, platform));
             let text_ret = def.ret.filter(|k| is_c_text_result(*k));
-            let ret_kind = match def.ret
-            {
-                // C gives the string as an address.
-                _ if text_ret.is_some() => Type::pointer(),
-                Some(k) => ffi_kind(k, platform),
-                None => Type::void(),
-            };
+            let ret_kind = def.ret.map_or_else(Type::void, |k| ffi_kind(k, platform));
             let fixed = def.params.len();
             let cif = tern!(
                 def.variadic,
@@ -1246,7 +1240,9 @@ mod with_ffi
     }
 
     /// The libffi kind of a kind C passes. A counted list in a struct is its
-    /// cells, one after the other, as C holds them there.
+    /// cells, one after the other, as C holds them there. An optional of text
+    /// or of a handle is the address C passes, NULL for none: never the
+    /// struct the program holds, which Win64 would pass through a pointer.
     ///
     /// # Arguments
     ///
@@ -1258,6 +1254,7 @@ mod with_ffi
     /// The libffi kind.
     fn ffi_kind(kind: DataKind, platform: u16) -> Type
     {
+        ret_if!(is_c_text_result(kind) || is_c_handle_result(kind), Type::pointer());
         match kind
         {
             DataKind::Int(n) => match (n.signed, n.bits(platform))
@@ -1424,8 +1421,8 @@ mod with_ffi
     }
 
     /// Open a lib from the name a program gives it: `libX` is the file
-    /// `libX.dylib`, `libX.so` or `X.dll`, as the host names it, and libc on
-    /// Windows is the UCRT. A path opens as it is; the loader made a
+    /// `libX.dylib`, `libX.so` or `X.dll`, as the host names it, and libc and
+    /// libm on Windows are the UCRT. A path opens as it is; the loader made a
     /// relative one start at the folder of its file.
     ///
     /// # Arguments
@@ -1457,7 +1454,7 @@ mod with_ffi
         opened.map_err(|e| e.to_string())
     }
 
-    /// The UCRT for libc on Windows.
+    /// The UCRT for libc and libm on Windows, which has no `m.dll`.
     ///
     /// # Arguments
     ///
@@ -1465,10 +1462,11 @@ mod with_ffi
     ///
     /// # Returns
     ///
-    /// `ucrtbase.dll` for libc on Windows, else `None`.
+    /// `ucrtbase.dll` for libc and libm on Windows, else `None`.
     fn windows_libc(stem: &str) -> Option<String>
     {
-        (cfg!(windows) && stem == "c").then(|| "ucrtbase.dll".to_string())
+        let crt = matches!(stem, "c" | "m");
+        (cfg!(windows) && crt).then(|| "ucrtbase.dll".to_string())
     }
 
     /// The process itself, which holds libc on each host but Windows.

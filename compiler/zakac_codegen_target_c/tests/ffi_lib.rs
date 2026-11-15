@@ -220,10 +220,12 @@ fn native_run(cc: &Tool, path: &Path, lib: &Path) -> Output
     let files = c_files(path, OverflowMode::Stop, Checks::Default).unwrap();
     let dir = tempfile::tempdir().unwrap();
     let sources = write_cache(dir.path(), &files).unwrap();
-    let exe = dir.path().join(format!("program{}", std::env::consts::EXE_SUFFIX));
-    let folder = lib.parent().unwrap().display();
+    let folder = lib.parent().unwrap();
+    // Windows finds a lib in the folder of the executable or on the PATH, so
+    // the executable goes beside the lib.
+    let exe = folder.join(format!("program{}", std::env::consts::EXE_SUFFIX));
+    let folder = folder.display();
     let mut libs = vec![lib.display().to_string()];
-    // Windows finds a lib in the folder of the executable or on the PATH.
     if !cfg!(windows)
     {
         libs.push(format!("-Wl,-rpath,{folder}"));
