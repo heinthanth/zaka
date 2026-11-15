@@ -623,8 +623,6 @@ pub enum Kw
     WillFill,
 
     // lists
-    /// `စာရင်း`
-    List,
     /// `စာရင်းအလွတ်`
     BlankList,
     /// `အကွက်`
@@ -656,9 +654,6 @@ pub enum Kw
     CellWord,
 
     // tables
-    /// `ဇယား`, "table": ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind>
-    /// ဇယား`
-    Table,
     /// `ဇယားအလွတ်`, "blank table": a ဇယား with no rows
     BlankTable,
     /// `ညွှန်းသော`, "indexed": in a ဇယား kind, after `<index kind> ဖြင့်`
@@ -722,6 +717,14 @@ pub enum Kw
     ContainsAnd,
     /// `မျိုးပြပစ္စည်းမှာ`
     ClassifierIs,
+    /// `ရေးသားရာတွင်`, "when written": opens the written-as hint of a generic
+    /// kind or trait, which `ဟု` closes
+    WritingOpen,
+    /// `ရေးသားနိုင်သည်`, "can be written": ends the written-as hint of a kind
+    CanWrite,
+    /// `ရေးသားနိုင်ပြီး`, "can be written, and": ends the written-as hint in
+    /// the head of a trait
+    CanWriteAnd,
     /// `ဖြစ်သည်`
     Is,
     /// `တို့ ပါဝင်သည်`

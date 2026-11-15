@@ -770,6 +770,11 @@ pub struct StructDecl
     #[builder(default)]
     #[serde(default)]
     pub external: bool,
+    /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
+    /// order, each kind parameter among them a slot; none when not written.
+    #[builder(default)]
+    #[serde(default)]
+    pub hint: Vec<Ident>,
     /// Source region, the full stop included.
     pub span: Span,
 }
@@ -941,6 +946,12 @@ pub struct TraitDecl
     #[builder(default)]
     #[serde(default)]
     pub builtin: bool,
+    /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်ပြီး`: its words in
+    /// order, each kind parameter among them a slot; the first parameter,
+    /// the kind that has the trait, never stands in it; none when not written.
+    #[builder(default)]
+    #[serde(default)]
+    pub hint: Vec<Ident>,
     /// Source region, the closer included.
     pub span: Span,
 }
@@ -963,6 +974,11 @@ pub struct BuiltinKindDecl
     #[builder(default)]
     #[serde(default)]
     pub exported: bool,
+    /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
+    /// order, each kind parameter among them a slot; none when not written.
+    #[builder(default)]
+    #[serde(default)]
+    pub hint: Vec<Ident>,
     /// Source region, the full stop included.
     pub span: Span,
 }

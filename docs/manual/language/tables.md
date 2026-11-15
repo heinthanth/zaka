@@ -42,6 +42,10 @@ were first added. The Learn book starts in small steps with [Tables](../../learn
 
 - The index kind comes first, then `ဖြင့် ညွှန်းသော` ("indexed with"), then the value kind,
   then `ဇယား`. `ဖြင့်` can be written joined to the index kind.
+- The phrase is the [written-as hint](generics.md#written-as-hints) of the prelude's
+  `ဇယား`, a name and not a reserved word, so the long form
+  `စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် ဇယား` and `ဇယား<စာသား၊ ကိန်းပြည့်>`
+  name the same kind.
 - The value kind is each kind: a list, a struct, an optional, a shared object or another ဇယား.
   The index kind is a kind that can be hashed (see [Index kinds](#index-kinds)).
 - A ဇယား counts with `ခု` (ZK0509). The index kind and the value kind take no measure word,

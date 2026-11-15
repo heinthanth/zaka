@@ -37,6 +37,7 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::describe::kw_text;
+use crate::fn_kind::FnForm;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -100,10 +101,21 @@ impl Parser<'_>
         let builtin = self.eat_builtin_mark()?;
         let exported = self.eat(Kw::Export);
         self.expect(Kw::Trait)?;
+        let mut hint = Vec::new();
         if params.is_empty()
         {
             self.expect(Kw::Thi)?;
-            params = self.parse_word_params()?;
+            params = self.parse_word_params_open()?;
+            hint = self.parse_trait_hint(&name, &params)?;
+            do_if!(!params.is_empty(), _ = self.expect(Kw::Itself)?);
+        }
+        else if self.eat(Kw::Thi)
+        {
+            // The sign form takes a hint as the word form does:
+            // `<name><A၊ B> ဟူသည့် ဂုဏ်သတ္တိ သည် ရေးသားရာတွင် … ၎င်းတွင်`.
+            do_if!(!self.at(Kw::WritingOpen), _ = self.expect(Kw::WritingOpen)?);
+            hint = self.parse_trait_hint(&name, &params)?;
+            self.expect(Kw::Itself)?;
         }
         do_if!(params.is_empty(), _ = self.expect(Kw::GenericKind)?);
         self.expect(Kw::At)?;
@@ -119,8 +131,28 @@ impl Parser<'_>
         do_if!(self.depth > 0, self.diags.push(diag::nested_trait(span)));
         #[rustfmt::skip]
         let node = TraitDecl::builder().name(name).kind_params(params).fns(fns).span(span)
-            .exported(exported).builtin(builtin).build();
+            .exported(exported).builtin(builtin).hint(hint).build();
         Ok(Stmt::Trait(node))
+    }
+
+    /// Parse the hint in the head of a trait, `ရေးသားရာတွင် <words> ဟု
+    /// ရေးသားနိုင်ပြီး`, when it comes next.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The trait.
+    /// * `params` - Its kind parameters.
+    ///
+    /// # Returns
+    ///
+    /// The words, none when no hint comes next, or a diagnostic.
+    fn parse_trait_hint(
+        &mut self, name: &Ident, params: &[KindParam],
+    ) -> PResult<Vec<Ident>>
+    {
+        let words = self.parse_hint_decl(name, params, true)?;
+        do_if!(!words.is_empty(), _ = self.expect(Kw::CanWriteAnd)?);
+        Ok(words)
     }
 
     /// Parse the part of a trait after its head: a notes block when written,
@@ -293,8 +325,7 @@ impl Parser<'_>
     pub(crate) fn at_builtin_kind(&self) -> bool
     {
         let head = self.peek();
-        let named = head.kind == TokenKind::Ident
-            || matches!(kw_of(&head), Some(Kw::List | Kw::Table));
+        let named = head.kind == TokenKind::Ident;
         let next = kw_of(&self.peek_n(2));
         named
             && kw_of(&self.peek_n(1)) == Some(Kw::Thi)
@@ -321,11 +352,18 @@ impl Parser<'_>
         self.expect(Kw::IncludedWith)?;
         let exported = self.eat(Kw::Export);
         self.expect(Kw::DataKindOpen)?;
-        self.expect(Kw::Is)?;
+        let hinted = self.eat(Kw::Being);
+        do_if!(!hinted, _ = self.expect(Kw::Is)?);
+        let hint = tern!(
+            hinted,
+            self.parse_hint_decl(&name, &kind_params, false)?,
+            Vec::new()
+        );
+        do_if!(hinted, _ = self.expect(Kw::CanWrite)?);
         let span = head.span.to(&self.expect_stop()?.span);
         #[rustfmt::skip]
         let node = BuiltinKindDecl::builder().name(name).kind_params(kind_params)
-            .exported(exported).span(span).build();
+            .exported(exported).hint(hint).span(span).build();
         Ok(Stmt::BuiltinKind(node))
     }
 
@@ -353,8 +391,13 @@ impl Parser<'_>
     pub(crate) fn parse_trait_ref(&mut self) -> PResult<Kind>
     {
         let start = self.peek().span;
-        let word = self.word_kind_args_len(0, Kw::Using).is_some();
-        let mut args = tern!(word, self.parse_word_kind_args(Kw::Using)?, Vec::new());
+        if let Some((idx, _)) = self.hint_trait_at(0)
+        {
+            return self.parse_hint(idx, None, start, FnForm::NoParams);
+        }
+        let closer = Kw::SubstitutedRel;
+        let word = self.word_kind_args_len(0, closer).is_some();
+        let mut args = tern!(word, self.parse_word_kind_args(closer)?, Vec::new());
         let name = self.parse_ident()?;
         if args.is_empty() && self.at_punct(Punct::Lt)
         {

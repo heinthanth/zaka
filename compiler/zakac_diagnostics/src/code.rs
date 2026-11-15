@@ -172,6 +172,8 @@ PrepositionEiNotLast = ("ZK0249", Level::Error),
 NameIsPrepositionWord = ("ZK0250", Level::Warning),
 /// A declared name reads as a function the file sees with a glued call end.
 NameReadsAsCall = ("ZK0251", Level::Warning),
+/// A written-as hint breaks a rule of its form.
+BadHint = ("ZK0252", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

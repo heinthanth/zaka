@@ -536,10 +536,11 @@ stop, which no item holds; so `က နှင့် ခ ကို ပေါင်
 
 ### ဇယား kinds, rows and the fallback
 
-A ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, is the first form `kind_len_at` and
-`parse_kind_with` test. The index kind is a kind with no ဇယား of its own at its start, so the
-search ends; an optional or a result index parses, so the check can refuse it. The value
-kind is each kind, a ဇယား included, and the levels after `ဇယား` wrap the ဇယား.
+A ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, is the written-as hint of the
+prelude's `ဇယား` (see [Generics and traits](#generics-and-traits)): after the index kind,
+the rest of the hint is a level, as `စာရင်း` is, and the parser builds the ဇယား kind from its
+two slots. The value kind is each kind, a ဇယား included, and the levels after `ဇယား` wrap the
+ဇယား; an optional or a result index parses, so the check can refuse it.
 
 A row is a postfix of an operand, as `ထဲမှ ဒေတာ` is: `ထဲမှ အညွှန်း <notation>` builds the
 verb `row`, and `၏ တန်ဖိုး` right after it makes it `row_value`. The index is a notation
@@ -570,6 +571,24 @@ a plain function; the block keeps their names. A notes block after the head of a
 function or a trait gives the kind parameters their traits (`give_bounds`), and its
 local kinds become kind names for the rest of the function, then their kinds stand in
 their place (`expand_local_kinds`), marked in `Kind.alias` to count with `ခု`.
+
+A written-as hint (`zakac_parser/src/hint.rs`) is read twice. Before a file is parsed,
+`declared_hints` reads each hint of the file from its tokens, so a use can come before
+its declaration; `prelude_hints` reads those of the prelude once, and the loader hands
+on the hints of the exported structs and traits a file imports (`exported_hints`,
+`imported_hints`). Each hint is a list of parts, a slot (the index of the kind argument
+it gives) or a fixed word. The declaration then parses its own hint
+(`parse_hint_decl`), keeps the words on the declaration's `hint`, and reports a rule it
+breaks (ZK0252, `hint_fault`).
+
+At a use, a hint that starts with a slot is a level after a kind (`Suffix::Hint`, from
+`hint_level_at`), so it nests with the pointer and list levels; one that starts with a
+word is a base (`hint_kind_at`); a trait hint stands where a trait is named
+(`hint_trait_at`, in `parse_trait_ref`). The longest hint that fits wins, and a slot
+reads the longest kind (`kind_len_at`, then `parse_kind_with`). `builtin_generic` turns
+`စာရင်း` and `ဇယား` with their kind arguments, from a hint, the long word form or the sign
+form, into the list wrap and the ဇယား kind, unless the file declares a kind of that name.
+The list remains a level of its own (`Suffix::List`), since count prefixes go with it.
 
 ## The prelude
 

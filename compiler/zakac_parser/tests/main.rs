@@ -8,6 +8,7 @@ mod common;
 mod expr;
 mod generics;
 mod heap;
+mod hints;
 mod limits;
 mod lists;
 mod modules;

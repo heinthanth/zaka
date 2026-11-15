@@ -11,7 +11,7 @@ them. To use one of these as a name all the same, wrap it in braces (`{ကြီ
 see [Names](../../learn/variables/names.md).
 
 The names of the built-in kinds, `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`,
-`မှန်မှားတန်ဖိုး` and `ဘူလီယန်`, are not reserved words: the compiler knows them as names,
+`မှန်မှားတန်ဖိုး`, `ဘူလီယန်`, `စာရင်း` and `ဇယား`, are not reserved words: the compiler knows them as names,
 and a file can declare a kind of its own under one of them. A word glued from them and reserved words, such as
 `လုံးမြောက်စာလုံးမှ`, still splits.
 
@@ -196,7 +196,7 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `စာရင်း` | "list": after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count; `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
+| `စာရင်း` | "list", a name of the prelude (not a reserved word): after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count, through its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a counted list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်`, `လုံးမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` or `t ၏ n လုံးမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
@@ -217,7 +217,7 @@ as well.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ဇယား` | "table": ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`; `တို့ပါသော ဇယား` closes a ဇယား literal | [Tables](../language/tables.md) |
+| `ဇယား` | "table", a name of the prelude (not a reserved word): ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော ဇယား` closes a ဇယား literal | [Tables](../language/tables.md) |
 | `ဇယားအလွတ်` | "blank table": a ဇယား with no rows, as `[:]` is | [Tables](../language/tables.md#literals) |
 | `ညွှန်းသော` | "indexed", after `<index kind> ဖြင့်` in a ဇယား kind; `မညွှန်းသော` of the null address is a word of its own | [Tables](../language/tables.md) |
 | `အညွှန်း` | "index": `<table> ထဲမှ အညွှန်း <index>` is the row of the index, and `၏ တန်ဖိုး` after it its value | [Tables](../language/tables.md#reading-a-row) |
@@ -287,6 +287,8 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |
 | `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Generics and traits](../language/generics.md#traits) |
 | `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a kind, a trait or a function of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
+| `ရေးသားရာတွင်` | "when written": opens the written-as hint of a generic struct, kind or trait, which `ဟု` closes | [Generics and traits](../language/generics.md#written-as-hints) |
+| `ရေးသားနိုင်သည်`, `ရေးသားနိုင်ပြီး` | "can be written", "can be written, and": end the clause of a written-as hint, in a struct or a kind and in the head of a trait | [Generics and traits](../language/generics.md#written-as-hints) |
 | `ဂုဏ်သတ္တိ` | "trait": after the name of a trait, in its declaration, its closer, a constraint and a trait block | [Traits](../../learn/generics/traits.md) |
 | `ပါဝင်ရမည်` | "must hold": closes the head of a trait, `… အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။` | [Generics and traits](../language/generics.md#traits) |
 | `လုပ်ဆောင်ချက်များ` | "functions": in the heads and closers of traits and trait blocks | [Generics and traits](../language/generics.md#traits) |

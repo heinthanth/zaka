@@ -236,7 +236,7 @@ fn sampled_triples_split_back()
 #[test]
 fn list_words_lex_and_split()
 {
-    assert_eq!(lookup("စာရင်း"), Some(Kw::List));
+    assert_eq!(lookup("စာရင်း"), None);
     assert_eq!(lookup("စာရင်းအလွတ်"), Some(Kw::BlankList));
     // The count is a name the prelude declares, read as the count after `၏`.
     assert_eq!(lookup("အကွက်အရေအတွက်"), None);
@@ -252,7 +252,7 @@ fn list_words_lex_and_split()
 #[test]
 fn table_words_lex_and_split()
 {
-    assert_eq!(lookup("ဇယား"), Some(Kw::Table));
+    assert_eq!(lookup("ဇယား"), None);
     assert_eq!(lookup("ဇယားအလွတ်"), Some(Kw::BlankTable));
     assert_eq!(lookup("ညွှန်းသော"), Some(Kw::Indexed));
     assert_eq!(lookup("အညွှန်း"), Some(Kw::IndexWord));

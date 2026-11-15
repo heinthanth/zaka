@@ -2,7 +2,6 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::ResultParts;
-use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
@@ -11,6 +10,7 @@ use zakac_lexer::reserved::BOOL_NAME;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_lexer::reserved::FLOAT_NAME;
 use zakac_lexer::reserved::INT_NAME;
+use zakac_lexer::reserved::LIST_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
@@ -23,7 +23,6 @@ use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
-use crate::describe::kw_text;
 use crate::describe::one_of;
 use crate::describe::quote;
 use crate::fn_kind::FnForm;
@@ -41,6 +40,9 @@ pub(crate) enum Suffix
     Ptr,
     /// `စာရင်း`
     List,
+    /// The part of a written-as hint after its first slot: the index of the
+    /// hint.
+    Hint(usize),
 }
 
 /// Bit counts of integer kinds.
@@ -106,12 +108,13 @@ impl Parser<'_>
         let starts =
             |kw| sign_of(kw).is_some() || matches!(kw, Kw::Address | Kw::SuccessNews);
         ret_true!(kw.is_some_and(starts) || self.is_struct_at(0));
-        ret_true!(self.builtin_at(0).is_some());
+        ret_true!(self.builtin_at(0).is_some() || self.generic_builtin_at(0));
+        ret_true!(self.hint_kind_at(0).is_some());
         ret_true!(kw == Some(Kw::FnKind) || self.paren_fn_len(0).is_some());
         self.at_sized_kind(0) || self.at_count_prefix(0)
     }
 
-    /// Whether `N ဘစ် (ကိန်းပြည့်|    /// How far ahead the `)` that closes the `(`
+    /// How far ahead the `)` that closes the `(`
     /// `at` tokens ahead stands, within the sentence.
     ///
     /// # Arguments
@@ -203,7 +206,6 @@ impl Parser<'_>
     {
         ret_if!(let Some(len) = self.word_generic_kind_len(at), Some(len));
         let levels = |core: usize| core + self.scan_suffixes(at + core, true).0;
-        ret_if!(let Some(core) = self.table_kind_len(at, form), Some(levels(core)));
         ret_if!(let Some(core) = self.fn_head_at(at, form), Some(levels(core)));
         let pre = self.count_prefixes_len(at);
         // A function kind in parentheses can be the good side of a result kind.
@@ -212,34 +214,6 @@ impl Parser<'_>
         let fn_core = self.paren_fn_len(at + pre).or(prefixed);
         ret_if!(let Some(core) = fn_core, Some(levels(pre + core)));
         self.plain_kind_len(at)
-    }
-
-    /// The number of tokens in a ဇယား kind that starts `at` tokens ahead,
-    /// `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, its levels after
-    /// `ဇယား` left out. The index kind is a kind with no result sides; the
-    /// value kind is each kind, a ဇယား kind included.
-    ///
-    /// # Arguments
-    ///
-    /// * `at` - How far ahead.
-    /// * `form` - The bare function kinds the value kind can be.
-    ///
-    /// # Returns
-    ///
-    /// The token count, or `None` when no ဇယား kind starts there.
-    fn table_kind_len(&self, at: usize, form: FnForm) -> Option<usize>
-    {
-        let kw = |n: usize| kw_of(&self.peek_n(n));
-        let cell = |n: usize| {
-            self.cell_kind_len(n).map(|len| len + self.scan_suffixes(n + len, true).0)
-        };
-        let index = cell(at).or_else(|| self.plain_kind_len(at))?;
-        let head = kw(at + index) == Some(Kw::Hpjint)
-            && kw(at + index + 1) == Some(Kw::Indexed);
-        ret_if!(!head, None);
-        let value = self.kind_len_at(at + index + 2, form)?;
-        let end = at + index + 2 + value;
-        (kw(end) == Some(Kw::Table)).then_some(end + 1 - at)
     }
 
     /// The number of tokens in an optional or a result kind that ends in
@@ -292,12 +266,17 @@ impl Parser<'_>
     /// The token count, or `None` when no kind starts there.
     fn plain_kind_len(&self, at: usize) -> Option<usize>
     {
+        if let Some((_, core)) = self.hint_kind_at(at)
+        {
+            return Some(core + self.scan_suffixes(at + core, true).0);
+        }
         let pre = self.count_prefixes_len(at);
         let signed = kw_of(&self.peek_n(at + pre)).and_then(sign_of).is_some();
         let n = pre + usize::from(signed);
         let n = n + tern!(self.at_sized_kind(at + n), 2, 0);
         let word = kw_of(&self.peek_n(at + n));
-        let named = n == pre && self.is_struct_at(at + n);
+        let named =
+            n == pre && (self.is_struct_at(at + n) || self.generic_builtin_at(at + n));
         let is_base = self.builtin_at(at + n).is_some() || named;
         let bare = n == pre && word == Some(Kw::Address);
         ret_if!(!is_base && !bare, None);
@@ -385,13 +364,12 @@ impl Parser<'_>
     fn suffix_at(&self, n: usize, bare_ptr: bool) -> Option<(Suffix, usize)>
     {
         let ei = usize::from(self.peek_n(n).kind == TokenKind::Punct(Punct::Ei));
-        let suffix = match kw_of(&self.peek_n(n + ei))?
-        {
-            Kw::Address if ei == 1 || bare_ptr => Suffix::Ptr,
-            Kw::List => Suffix::List,
-            _ => return None,
-        };
-        Some((suffix, ei + 1))
+        let list = self.is_builtin_word_at(n + ei, LIST_NAME);
+        ret_if!(list, Some((Suffix::List, ei + 1)));
+        let hint = tern!(ei == 0, self.hint_level_at(n), None);
+        ret_if!(let Some((idx, len)) = hint, Some((Suffix::Hint(idx), len)));
+        let ptr = kw_of(&self.peek_n(n + ei)) == Some(Kw::Address);
+        (ptr && (ei == 1 || bare_ptr)).then_some((Suffix::Ptr, ei + 1))
     }
 
     /// The suffixes that start `n` tokens ahead. A `၏` before another word
@@ -415,7 +393,7 @@ impl Parser<'_>
         {
             len += more;
             found.push(suffix);
-            bare_ptr = suffix == Suffix::List;
+            bare_ptr = suffix != Suffix::Ptr;
         }
         (len, found)
     }
@@ -483,13 +461,7 @@ impl Parser<'_>
             let mut kind = self.parse_kind_with(form)?;
             kind.args = args;
             kind.span = start.to(&kind.span);
-            return Ok(kind);
-        }
-        if self.table_kind_len(0, form).is_some()
-        {
-            let mut kind = self.parse_table_kind(form, start)?;
-            self.parse_levels(&mut kind, Vec::new(), true, start)?;
-            return Ok(kind);
+            return Ok(self.builtin_generic(kind));
         }
         if self.fn_head_at(0, form).is_some()
         {
@@ -510,40 +482,6 @@ impl Parser<'_>
         let mut kind = self.parse_cell_kind(start, &mut counts)?;
         self.parse_levels(&mut kind, counts, true, start)?;
         Ok(kind)
-    }
-
-    /// Parse a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`,
-    /// without the levels after it; [`Parser::table_kind_len`] found one here.
-    ///
-    /// # Arguments
-    ///
-    /// * `form` - The bare function kinds the value kind can be.
-    /// * `start` - Where the kind phrase starts.
-    ///
-    /// # Returns
-    ///
-    /// The kind, or a diagnostic.
-    fn parse_table_kind(&mut self, form: FnForm, start: Span) -> PResult<Kind>
-    {
-        // An optional or a result index parses, so the check can refuse it.
-        let index = match self.cell_kind_len(0).is_some()
-        {
-            true =>
-            {
-                let mut kind = self.parse_cell_kind(start, &mut Vec::new())?;
-                self.parse_levels(&mut kind, Vec::new(), true, start)?;
-                kind
-            }
-            false => self.parse_plain_kind()?,
-        };
-        self.expect(Kw::Hpjint)?;
-        self.expect(Kw::Indexed)?;
-        let value = self.parse_kind_with(form)?;
-        self.expect(Kw::Table)?;
-        let parts = TableParts::builder().index(index).value(value).build();
-        let span = start.to(&self.prev_span());
-        #[rustfmt::skip]
-        return Ok(Kind::builder().base(BaseKind::Table).table(Box::new(parts)).span(span).build());
     }
 
     /// Parse a function kind after count prefixes, or in parentheses, then
@@ -627,7 +565,7 @@ impl Parser<'_>
     {
         let mut counts = Vec::new();
         let kind = self.parse_plain_kind_with(&mut counts)?;
-        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
+        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(LIST_NAME))));
         Ok(kind)
     }
 
@@ -649,7 +587,7 @@ impl Parser<'_>
         counts.extend(self.parse_counts()?);
         let mut kind = self.parse_core()?;
         let bare_ptr = kind.base != BaseKind::Opaque;
-        self.take_levels(&mut kind, counts, bare_ptr, start);
+        self.take_levels(&mut kind, counts, bare_ptr, start)?;
         Ok(kind)
     }
 
@@ -670,13 +608,14 @@ impl Parser<'_>
         &mut self, kind: &mut Kind, mut counts: Vec<Cells>, bare_ptr: bool, start: Span,
     ) -> PResult<()>
     {
-        self.take_levels(kind, &mut counts, bare_ptr, start);
-        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(&kw_text(Kw::List)))));
+        self.take_levels(kind, &mut counts, bare_ptr, start)?;
+        ret_if!(!counts.is_empty(), Err(self.err_expected(&quote(LIST_NAME))));
         Ok(())
     }
 
-    /// Read the pointer and list levels after a base or a result kind, and
-    /// give each `စာရင်း` the innermost count prefix left, leaving the rest.
+    /// Read the pointer, list and hint levels after a base or a result kind,
+    /// and give each list level the innermost count prefix left, leaving the
+    /// rest. A hint level makes the kind so far the first slot of its hint.
     ///
     /// # Arguments
     ///
@@ -684,24 +623,29 @@ impl Parser<'_>
     /// * `counts` - The count prefixes left, outermost first.
     /// * `bare_ptr` - Whether a pointer word without `၏` can follow the kind.
     /// * `start` - Where the kind phrase starts.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a diagnostic from a slot of a hint.
     fn take_levels(
-        &mut self, kind: &mut Kind, counts: &mut Vec<Cells>, bare_ptr: bool,
+        &mut self, kind: &mut Kind, counts: &mut Vec<Cells>, mut bare_ptr: bool,
         start: Span,
-    )
+    ) -> PResult<()>
     {
-        let (len, suffixes) = self.scan_suffixes(0, bare_ptr);
-        do_for!(_ in 0..len, self.advance());
-        for suffix in suffixes
+        while let Some((suffix, len)) = self.suffix_at(0, bare_ptr)
         {
-            kind.wraps.push(match suffix
+            bare_ptr = suffix != Suffix::Ptr;
+            let Suffix::Hint(idx) = suffix
+            else
             {
-                Suffix::Ptr => Wrap::Ptr,
-                // A written count makes a list of that count of cells; with none,
-                // `စာရင်း` is a plain list.
-                Suffix::List => Wrap::List(counts.pop().unwrap_or(Cells::Inferred)),
-            });
+                do_for!(_ in 0..len, self.advance());
+                kind.wraps.push(level_wrap(suffix, counts));
+                continue;
+            };
+            *kind = self.parse_hint(idx, Some(kind.clone()), start, self.fn_form())?;
         }
         kind.span = start.to(&self.prev_span());
+        Ok(())
     }
 
     /// Parse the count prefixes `အကွက် <count> ခုရှိသော` that come next.
@@ -773,6 +717,10 @@ impl Parser<'_>
         // Where a kind must stand, each name but a kind name the compiler
         // gives is read as a struct name; the check reports one that no
         // struct declares.
+        if let Some((idx, _)) = self.hint_kind_at(0)
+        {
+            return self.parse_hint(idx, None, start, self.fn_form());
+        }
         if self.peek().kind == TokenKind::Ident && self.builtin_at(0).is_none()
         {
             let name = self.parse_ident()?;
@@ -781,7 +729,7 @@ impl Parser<'_>
             let args = tern!(generic, self.parse_sign_kind_args()?, Vec::new());
             let span = start.to(&self.prev_span());
             let kind = Kind::builder().base(BaseKind::Named).span(span).args(args);
-            return Ok(kind.name(name).build());
+            return Ok(self.builtin_generic(kind.name(name).build()));
         }
         let signed = kw_of(&self.peek()).and_then(sign_of);
         do_if!(signed.is_some(), self.advance());
@@ -900,4 +848,24 @@ pub(crate) fn result_kind(ok: Option<Kind>, err: Option<Kind>, span: Span) -> Ki
 {
     let parts = ResultParts::builder().maybe_ok(ok).maybe_err(err).build();
     Kind::builder().base(BaseKind::Result).parts(Box::new(parts)).span(span).build()
+}
+
+/// The wrap of a pointer or list level.
+///
+/// # Arguments
+///
+/// * `suffix` - The level: [`Suffix::Ptr`] or [`Suffix::List`].
+/// * `counts` - The count prefixes left; a list level takes the innermost.
+///
+/// # Returns
+///
+/// The wrap. A written count makes a list of that count of cells; with none,
+/// the list is a plain list.
+fn level_wrap(suffix: Suffix, counts: &mut Vec<Cells>) -> Wrap
+{
+    match suffix
+    {
+        Suffix::List => Wrap::List(counts.pop().unwrap_or(Cells::Inferred)),
+        _ => Wrap::Ptr,
+    }
 }

@@ -39,6 +39,8 @@ use crate::describe::quote;
 use crate::generics::angle_len_with;
 use crate::glued::clash_warnings;
 use crate::glued::split_glued;
+use crate::hint::Hint;
+use crate::hint::declared_hints;
 use crate::load::STD_MODULES;
 use crate::using::Functions;
 use crate::using::preposition_words;
@@ -89,13 +91,14 @@ pub fn parse(source: &SourceFile, lexed: &LexOutput) -> ParseOutput
 /// * `functions` - The functions the file imports, with the prepositions of
 ///   each, so a preposition call of each can be read and a glued call end
 ///   splits off.
+/// * `hints` - The written-as hints of the kinds and traits the file imports.
 ///
 /// # Returns
 ///
 /// The program and the parser diagnostics, with absolute spans.
 pub fn parse_with(
     source: &SourceFile, lexed: &LexOutput, first_id: u32, structs: &HashSet<String>,
-    functions: &Functions,
+    functions: &Functions, hints: &[Hint],
 ) -> ParseOutput
 {
     let (text, base) = (source.src.as_str(), source.start_pos);
@@ -113,6 +116,8 @@ pub fn parse_with(
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
     parser.set_functions(known);
+    let own = declared_hints(text, base, &lexed.tokens);
+    parser.set_hints(hints.iter().cloned().chain(own));
     finish(parser, span)
 }
 
@@ -255,6 +260,7 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
     let mut parser = Parser::new(text, base, &split);
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
     parser.set_functions(known);
+    parser.set_hints(declared_hints(text, base, &lexed.tokens));
     finish(parser, span)
 }
 
@@ -280,6 +286,7 @@ pub fn parse_lone_expr(
     let split = split_glued(text, base, lexed, &known);
     let mut parser = Parser::new(text, base, &split);
     parser.set_functions(known);
+    parser.set_hints(Vec::new());
     let expr = parser.parse_expr()?;
     ret_if!(!parser.at_eof(), Err(parser.err_expected(&t!("parser.eof"))));
     Ok(expr)
@@ -453,6 +460,10 @@ pub(crate) struct Parser<'t>
     /// level, so a later import is out of place.
     #[builder(default)]
     pub(crate) imports_closed: bool,
+    /// The written-as hints the file sees: those of the prelude, its imports
+    /// and its own.
+    #[builder(default)]
+    pub(crate) hints: Vec<Hint>,
 }
 
 impl<'t> Parser<'t>

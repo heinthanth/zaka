@@ -137,6 +137,34 @@ kinds out through the struct: its argument is an `အတွဲ<text၊ isize>`, 
 
 `အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေးတွင် …` declares the same struct in the sign form.
 
+## Writing a kind in its own words
+
+A generic struct can end its declaration with a *written-as hint*:
+`ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်` ("when written, it can be written as …"),
+after `ဖြစ်ကာ` in its classifier clause. The words of the hint that are kind parameters
+are the places where a use writes a kind:
+
+```zaka
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
+ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု
+တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်ကာ ရေးသားရာတွင် က နှင့် ခ အတွဲဟု ရေးသားနိုင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် လူ သည် စာသား နှင့် ကိန်းပြည့် အတွဲ တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် ပထမ အနေဖြင့် "မောင်မောင်" နှင့် ဒုတိယ အနေဖြင့် ၂၄ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
+လူ ၏ ပထမ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မောင်မောင်
+```
+
+`စာသား နှင့် ကိန်းပြည့် အတွဲ` is the same kind as
+`စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ`; the hint adds a spelling. The
+list and the table have hints of their own in the prelude: so a program writes
+`ကိန်းပြည့် စာရင်း` and `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား`.
+[Written-as hints](../../manual/language/generics.md#written-as-hints) holds the rules.
+
 ## Local kinds
 
 Long kinds in a header read better with a short name. A notes block after the header,

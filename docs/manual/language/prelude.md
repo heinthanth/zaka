@@ -39,7 +39,7 @@ trait or a function of the prelude. In the head of a kind or a trait, `အမျ
 right before the noun, after the mark:
 
 ```text
-<kind> သည် [<params> ၎င်းသည်] ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။
+<kind> သည် [<params> ၎င်းသည်] ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား (ဖြစ်သည်။|ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။)
 <name>[<<params>>] ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဂုဏ်သတ္တိ …
 [အများသုံး] လုပ်ဆောင်ချက် <name> သည် [<params> ၎င်းသည်] ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍ <parameters> လက်ခံမည်။
 ```
@@ -48,8 +48,8 @@ right before the noun, after the mark:
 
 - A marked kind names a built-in kind for its doc comment: `ကိန်းပြည့်`, `ဒဿမကိန်း`,
   `စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, and, with their kind parameters, the list `စာရင်း`
-  and the table `ဇယား`. How a program writes each kind remains grammar: `A စာရင်း`,
-  `K ဖြင့် ညွှန်းသော V ဇယား`.
+  and the table `ဇယား`. Those two end in a [written-as hint](generics.md#written-as-hints),
+  `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`, which tells how a program writes them.
 - A marked trait: the built-in kinds have it through the compiler's rule, and each
   kind a program declares has it through its functions, with the rule of
   [Traits](generics.md#traits).

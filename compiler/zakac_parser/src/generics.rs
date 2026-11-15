@@ -6,6 +6,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -167,6 +168,20 @@ impl Parser<'_>
     /// The parameters, or a diagnostic.
     pub(crate) fn parse_word_params(&mut self) -> PResult<Vec<KindParam>>
     {
+        let params = self.parse_word_params_open()?;
+        do_if!(!params.is_empty(), _ = self.expect(Kw::Itself)?);
+        Ok(params)
+    }
+
+    /// Parse the kind parameters of a declaration in the word form, as
+    /// [`Self::parse_word_params`] does, up to `အစားထိုးသုံးနိုင်၍`: the hint
+    /// of a trait stands before the `၎င်း` after it.
+    ///
+    /// # Returns
+    ///
+    /// The parameters, or a diagnostic.
+    pub(crate) fn parse_word_params_open(&mut self) -> PResult<Vec<KindParam>>
+    {
         ret_if!(!self.at(Kw::GenericKind), Ok(Vec::new()));
         let params = self.parse_word_list(|p| {
             let start = p.expect(Kw::GenericKind)?.span;
@@ -176,7 +191,6 @@ impl Parser<'_>
         })?;
         self.expect_list_word(params.len(), Kw::Ko, Kw::ListKo)?;
         self.expect(Kw::Substitutable)?;
-        self.expect(Kw::Itself)?;
         Ok(params)
     }
 
@@ -279,7 +293,8 @@ impl Parser<'_>
     pub(crate) fn word_generic_kind_len(&self, at: usize) -> Option<usize>
     {
         let args = self.word_kind_args_len(at, Kw::SubstitutedRel)?;
-        ret_if!(!self.is_struct_at(at + args), None);
+        let named = self.is_struct_at(at + args) || self.is_generic_name_at(at + args);
+        ret_if!(!named, None);
         let (levels, _) = self.scan_suffixes(at + args + 1, true);
         Some(args + 1 + levels)
     }

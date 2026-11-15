@@ -39,12 +39,28 @@ pub const BOOL_NAME: &str = "မှန်မှားတန်ဖိုး";
 /// `ဘူလီယန်`, the loanword name of the boolean kind.
 pub const BOOL_LOAN_NAME: &str = "ဘူလီယန်";
 
+/// `စာရင်း`, the name of the list kind, which takes the kind of its cells:
+/// `ကိန်းပြည့် စာရင်း`.
+pub const LIST_NAME: &str = "စာရင်း";
+
+/// `ဇယား`, the name of the table kind, which takes the index kind and the
+/// value kind: `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား`.
+pub const TABLE_NAME: &str = "ဇယား";
+
 /// The names of the kinds the compiler gives, which the prelude declares.
 /// These are names, not reserved words: a file can declare a kind of its own
 /// under one of them. A word glued from these names and reserved words still
 /// splits, and each name in it lexes as an identifier.
-pub static KIND_NAMES: &[&str] =
-    &[INT_NAME, FLOAT_NAME, CHAR_NAME, TEXT_NAME, BOOL_NAME, BOOL_LOAN_NAME];
+pub static KIND_NAMES: &[&str] = &[
+    INT_NAME,
+    FLOAT_NAME,
+    CHAR_NAME,
+    TEXT_NAME,
+    BOOL_NAME,
+    BOOL_LOAN_NAME,
+    LIST_NAME,
+    TABLE_NAME,
+];
 
 /// Whether a word is the name of a kind the compiler gives.
 ///
@@ -218,7 +234,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("အကုန်", Kw::All),
     ("ဖြည့်မည်", Kw::WillFill),
     // lists
-    ("စာရင်း", Kw::List),
     ("စာရင်းအလွတ်", Kw::BlankList),
     ("အကွက်", Kw::Cell),
     ("နောက်ဆုံးအကွက်", Kw::LastCell),
@@ -236,7 +251,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ထိ", Kw::Upto),
     ("ကွက်", Kw::CellWord),
     // tables
-    ("ဇယား", Kw::Table),
     ("ဇယားအလွတ်", Kw::BlankTable),
     ("ညွှန်းသော", Kw::Indexed),
     ("အညွှန်း", Kw::IndexWord),
@@ -269,6 +283,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပါဝင်သည်", Kw::Contains),
     ("ပါဝင်ပြီး", Kw::ContainsAnd),
     ("မျိုးပြပစ္စည်းမှာ", Kw::ClassifierIs),
+    // the written-as hint of a generic kind or trait
+    ("ရေးသားရာတွင်", Kw::WritingOpen),
+    ("ရေးသားနိုင်သည်", Kw::CanWrite),
+    ("ရေးသားနိုင်ပြီး", Kw::CanWriteAnd),
     ("ဖြစ်သည်", Kw::Is),
     // the function kind phrase
     ("အမျိုးအစား", Kw::KindWord),

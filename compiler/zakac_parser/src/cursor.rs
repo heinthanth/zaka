@@ -14,7 +14,7 @@ pub(crate) struct Cursor<'t>
     pos: usize,
 }
 
-impl Cursor<'_>
+impl<'t> Cursor<'t>
 {
     /// The token `n` places ahead of the current one, or the end-of-input
     /// token past the end.
@@ -64,6 +64,13 @@ impl Cursor<'_>
     ///
     /// The index.
     pub(crate) fn pos(&self) -> usize { self.pos }
+
+    /// The tokens from the current one to the end.
+    ///
+    /// # Returns
+    ///
+    /// The tokens.
+    pub(crate) fn rest(&self) -> &'t [Token] { &self.tokens[self.pos..] }
 }
 
 /// Advance `pos` past `tok` unless it is the end-of-input token.

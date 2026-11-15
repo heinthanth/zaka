@@ -1547,6 +1547,27 @@ en = "write {%{n}} where the name is meant, or pick another name"
 [codes.ZK0251.explain]
 en = """When a file sees a function \"f\", a word that is \"f\" with a call end glued to it (\"မည်\", \"မည့်ရလဒ်\", \"သည့်ရလဒ်\", \"သောရလဒ်\", their \"ကောင်း\" forms, \"သည်\" or \"ပါ\") reads as a call of \"f\". A name that is spelled so reads as that call wherever it is not being declared; a name in braces remains a name."""
 
+[codes.ZK0252.title]
+en = "bad written-as hint"
+[codes.ZK0252.message]
+en = "the written-as hint of \"%{n}\" %{r}"
+[codes.ZK0252.help]
+en = "a hint holds words and kind parameters: each parameter once, a word between two parameters, and the name last"
+[codes.ZK0252.missing]
+en = "leaves out the kind parameter \"%{p}\""
+[codes.ZK0252.twice]
+en = "names the kind parameter \"%{p}\" twice"
+[codes.ZK0252.first]
+en = "names \"%{p}\", the kind that has the trait, which the sentence names before the hint"
+[codes.ZK0252.last]
+en = "must end in \"%{n}\", the name it writes, and hold that name once"
+[codes.ZK0252.meet]
+en = "puts the kind parameters \"%{p}\" and \"%{q}\" side to side, with no word between them"
+[codes.ZK0252.sign]
+en = "holds \"%{w}\", which is no word"
+[codes.ZK0252.explain]
+en = """A generic kind or trait can tell how it is written, with \"ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်\" at the end of its declaration (\"ရေးသားနိုင်ပြီး\" in the head of a trait). Each word of the hint that is a kind parameter of the declaration is a slot, where a use writes a kind; the other words stand as written. Each kind parameter stands in the hint once, in the order the hint chooses; a trait leaves out its first parameter, the kind that has the trait. The hint ends in the name of the kind or trait, which stands nowhere else in it. Two slots need a word between them, so a use has one reading: a kind in a slot can be a written-as kind itself. A sign or a name in braces cannot be a word of a hint."""
+
 [codes.ZK0472.title]
 en = "C function must be unsafe"
 [codes.ZK0472.message]

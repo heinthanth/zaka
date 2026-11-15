@@ -791,3 +791,47 @@ pub fn name_reads_as_call(span: Span, name: &str, func: &str, end: &str) -> Diag
     Diagnostic::new(Code::NameReadsAsCall, msg, span)
         .with_help(t!("codes.ZK0251.help", n = name))
 }
+
+/// The rule of its form that a written-as hint breaks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HintFault
+{
+    /// A kind parameter stands nowhere in it.
+    Missing(String),
+    /// A kind parameter stands in it twice.
+    Twice(String),
+    /// It names the first kind parameter of a trait.
+    First(String),
+    /// It does not end in the name it writes, or holds that name twice.
+    Last,
+    /// Two kind parameters stand side to side.
+    Meet(String, String),
+    /// It holds a sign, a literal or a name in braces.
+    Sign(String),
+}
+
+/// Make a diagnostic for a written-as hint that breaks a rule of its form.
+///
+/// # Arguments
+///
+/// * `span` - The hint.
+/// * `name` - The kind or trait the hint writes.
+/// * `fault` - The rule it breaks.
+///
+/// # Returns
+///
+/// The `ZK0252` diagnostic.
+pub fn bad_hint(span: Span, name: &str, fault: &HintFault) -> Diagnostic
+{
+    let reason = match fault
+    {
+        HintFault::Missing(p) => t!("codes.ZK0252.missing", p = p),
+        HintFault::Twice(p) => t!("codes.ZK0252.twice", p = p),
+        HintFault::First(p) => t!("codes.ZK0252.first", p = p),
+        HintFault::Last => t!("codes.ZK0252.last", n = name),
+        HintFault::Meet(p, q) => t!("codes.ZK0252.meet", p = p, q = q),
+        HintFault::Sign(w) => t!("codes.ZK0252.sign", w = w),
+    };
+    let msg = t!("codes.ZK0252.message", n = name, r = reason);
+    Diagnostic::new(Code::BadHint, msg, span).with_help(t!("codes.ZK0252.help"))
+}

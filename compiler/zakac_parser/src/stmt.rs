@@ -1061,34 +1061,48 @@ impl Parser<'_>
         let fields = self.parse_listed_fields(true);
         self.drop_kind_names(added);
         let fields = fields?;
-        let (classifier, span) = self.parse_decl_end(start)?;
+        let hint_of = Some((&name, kind_params.as_slice()));
+        let (classifier, hint, span) = self.parse_decl_end(start, hint_of)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
-            .maybe_classifier(classifier).span(span).build();
+            .maybe_classifier(classifier).hint(hint).span(span).build();
         Ok(Stmt::Struct(node))
     }
 
     /// Parse the end of a struct or an enumeration declaration after its
     /// closer: the classifier clause when the closer ends in `ပြီး`, then the
-    /// full stop.
+    /// full stop. A struct can end the classifier clause with its hint,
+    /// `ဖြစ်ကာ ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`.
     ///
     /// # Arguments
     ///
     /// * `start` - Where the declaration starts.
+    /// * `hint_of` - The name and the kind parameters of a struct, which can
+    ///   take a hint; `None` for an enumeration.
     ///
     /// # Returns
     ///
-    /// The classifier, when written, and the span of the declaration; or a
-    /// diagnostic.
-    fn parse_decl_end(&mut self, start: Span) -> PResult<(Option<Ident>, Span)>
+    /// The classifier, when written, the words of the hint, and the span of
+    /// the declaration; or a diagnostic.
+    fn parse_decl_end(
+        &mut self, start: Span, hint_of: Option<(&Ident, &[KindParam])>,
+    ) -> PResult<(Option<Ident>, Vec<Ident>, Span)>
     {
         let and_kws =
             [TokenKind::Kw(Kw::ContainsAnd), TokenKind::Kw(Kw::FieldsCloseAnd)];
         let named = self.cur.back(1).is_some_and(|t| and_kws.contains(&t.kind));
-        let classifier = tern!(named, Some(self.parse_classifier()?), None);
+        let classifier = tern!(named, Some(self.parse_classifier_word()?), None);
+        let hinted = named && hint_of.is_some() && self.eat(Kw::Being);
+        do_if!(named && !hinted, _ = self.expect(Kw::Is)?);
+        let hint = match hint_of.filter(|_| hinted)
+        {
+            Some((name, params)) => self.parse_hint_decl(name, params, false)?,
+            None => Vec::new(),
+        };
+        do_if!(hinted, _ = self.expect(Kw::CanWrite)?);
         let stop = self.expect_stop()?;
-        Ok((classifier, start.to(&stop.span)))
+        Ok((classifier, hint, start.to(&stop.span)))
     }
 
     /// Parse a kind that comes from outside the program, after
@@ -1183,7 +1197,7 @@ impl Parser<'_>
         self.expect(Kw::At)?;
         let members = self.parse_word_list(Self::parse_enum_member)?;
         self.expect_one_of(member_closers(members.len(), true))?;
-        let (classifier, span) = self.parse_decl_end(start)?;
+        let (classifier, _, span) = self.parse_decl_end(start, None)?;
         do_if!(self.depth > 0, self.diags.push(diag::nested_enum(span)));
         #[rustfmt::skip]
         let node = EnumDecl::builder().name(name).members(members).maybe_classifier(classifier)
@@ -1376,6 +1390,18 @@ impl Parser<'_>
     /// The classifier, or a diagnostic.
     fn parse_classifier(&mut self) -> PResult<Ident>
     {
+        let word = self.parse_classifier_word()?;
+        self.expect(Kw::Is)?;
+        Ok(word)
+    }
+
+    /// Parse `မျိုးပြပစ္စည်းမှာ <classifier>`, the start of a classifier clause.
+    ///
+    /// # Returns
+    ///
+    /// The classifier, or a diagnostic.
+    fn parse_classifier_word(&mut self) -> PResult<Ident>
+    {
         self.expect(Kw::ClassifierIs)?;
         let cell = self.peek();
         let word = match kw_of(&cell)
@@ -1387,7 +1413,6 @@ impl Parser<'_>
             }
             _ => self.parse_ident()?,
         };
-        self.expect(Kw::Is)?;
         Ok(word)
     }
 

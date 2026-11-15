@@ -28,6 +28,8 @@ use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::reserved::CHAR_NAME;
+use zakac_lexer::reserved::LIST_NAME;
+use zakac_lexer::reserved::TABLE_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::role::builtin_count;
 use zakac_lexer::role::builtin_verb;
@@ -821,9 +823,8 @@ impl Parser<'_>
     /// `true` if it does.
     fn at_table_rest(&self) -> bool
     {
-        let close = |p: &Self, n: usize| {
-            p.at_list_close(n) && p.peek_n(n + 1).kind == TokenKind::Kw(Kw::Table)
-        };
+        let close =
+            |p: &Self, n: usize| p.at_list_close(n) && p.is_word_at(n + 1, TABLE_NAME);
         self.peek().kind == TokenKind::Kw(Kw::CountAs) && self.word_list_ahead(1, close)
     }
 
@@ -848,7 +849,7 @@ impl Parser<'_>
             p.table_row(index)
         })?;
         self.expect_list_word(rows.len(), Kw::ItemOf, Kw::ListOf)?;
-        self.expect(Kw::Table)?;
+        self.expect_word(TABLE_NAME)?;
         self.table_rest(start, rows)
     }
 
@@ -950,7 +951,7 @@ impl Parser<'_>
     {
         let cells = self.parse_word_list_from(first, Self::parse_notation)?;
         self.expect_list_word(cells.len(), Kw::ItemOf, Kw::ListOf)?;
-        self.expect(Kw::List)?;
+        self.expect_word(LIST_NAME)?;
         let kind = tern!(self.at_literal_kind(), Some(self.parse_list_kind()?), None);
         let span = cells[0].span().to(&self.prev_span());
         let id = self.new_id();

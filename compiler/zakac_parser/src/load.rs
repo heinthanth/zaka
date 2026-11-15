@@ -37,6 +37,8 @@ use zakac_span::source_map::SourceMap;
 
 use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
+use crate::hint::Hint;
+use crate::hint::exported_hints;
 use crate::parser::parse;
 use crate::parser::parse_with;
 use crate::using::Functions;
@@ -305,6 +307,9 @@ struct Loader<'a>
     /// number of prepositions of each.
     #[builder(default)]
     prepositions: Vec<Prepositions>,
+    /// The written-as hints of the kinds and traits each unit exports.
+    #[builder(default)]
+    hints: Vec<Vec<Hint>>,
     /// The unit of each file read so far, indexed on its path.
     #[builder(default)]
     done: HashMap<PathBuf, u32>,
@@ -372,7 +377,9 @@ impl Loader<'_>
         let structs = imported_structs(&imports, &targets, &self.structs);
         let prepositions =
             imported_prepositions(&imports, &targets, &self.prepositions);
-        let parsed = parse_with(&file, &lexed, self.next_id, &structs, &prepositions);
+        let hints = imported_hints(&imports, &targets, &self.hints);
+        #[rustfmt::skip]
+        let parsed = parse_with(&file, &lexed, self.next_id, &structs, &prepositions, &hints);
         self.next_id = parsed.next_id;
         self.diagnostics.extend(lexed.diagnostics);
         self.diagnostics.extend(parsed.diagnostics);
@@ -385,6 +392,7 @@ impl Loader<'_>
         self.units.push(Unit::builder().name(name).first_stmt(first_stmt).build());
         self.structs.push(exported_structs(&program));
         self.prepositions.push(exported_prepositions(&program));
+        self.hints.push(exported_hints(&program));
         self.stmts.extend(program.stmts);
         self.done.insert(path, unit);
         Ok(unit)
@@ -579,6 +587,31 @@ fn imported_prepositions(
     let mut merged = Prepositions::new();
     found.for_each(|(name, lists)| merged.entry(name).or_default().extend(lists));
     merged
+}
+
+/// The imported names that are kinds or traits with written-as hints, with
+/// the hint of each.
+///
+/// # Arguments
+///
+/// * `imports` - The imports of the file.
+/// * `targets` - The unit each import reads.
+/// * `exports` - The hints each unit exports.
+///
+/// # Returns
+///
+/// The hints.
+fn imported_hints(
+    imports: &[ImportStmt], targets: &[Option<u32>], exports: &[Vec<Hint>],
+) -> Vec<Hint>
+{
+    let pairs = imports.iter().zip(targets);
+    let pairs = pairs.filter_map(|(n, t)| Some((n, &exports[(*t)? as usize])));
+    let found = pairs.flat_map(|(n, hints)| {
+        let named = |h: &&Hint| n.names.iter().any(|i| i.name.as_str() == h.name);
+        hints.iter().filter(named).cloned().collect::<Vec<_>>()
+    });
+    found.collect()
 }
 
 /// The exported functions of a file, with the prepositions of each.

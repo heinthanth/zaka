@@ -171,7 +171,7 @@ that is not canonical (a struct name glued to its count word), so its set of str
 names holds each name in both spellings (`spelling::spellings`).
 
 The names of the built-in kinds (`reserved::KIND_NAMES`: `ကိန်းပြည့်`, `ဒဿမကိန်း`,
-`စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, `ဘူလီယန်`) are not in the table: a whole word of one
+`စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, `ဘူလီယန်`, `စာရင်း`, `ဇယား`) are not in the table: a whole word of one
 of them is an identifier, which the parser reads as the kind (see
 [The parser](parser.md)).
 
@@ -286,7 +286,8 @@ a built-in kind name takes the role of a kind noun.
 
 ### The words of a ဇယား
 
-`ဇယား`, `ဇယားအလွတ်`, `ညွှန်းသော`, `အညွှန်း`, `အညွှန်းအရေအတွက်`, `အညွှန်းတိုင်း` and `အတန်းတိုင်း` are
+`ဇယားအလွတ်`, `ညွှန်းသော`, `အညွှန်း`, `အညွှန်းအရေအတွက်`, `အညွှန်းတိုင်း` and `အတန်းတိုင်း` are
+`ဇယား` itself is a kind name, not a reserved word (see above).
 reserved words ([Tables](../language/tables.md)). `မညွှန်းသော` of the null address is a word of
 its own: the whole word is looked up before a split, so it never reads as `မ` and
 `ညွှန်းသော`. A joined `ဖြင့်ညွှန်းသော` splits into `ဖြင့်` and `ညွှန်းသော`, and a name that ends
@@ -407,7 +408,8 @@ word the test asks about and the `ရှိ`, `ရှိနေ`, `မရှိ` 
 The words of generics and traits are reserved words like the others:
 `ယေဘုယျဒေတာအမျိုးအစား`, `အစားထိုးသုံးနိုင်၍`, `၎င်း`, `အစားထိုးအသုံးပြုသည့်`,
 `အစားထိုးအသုံးပြု၍`, `ဂုဏ်သတ္တိ`, `ရှိစေရန်`, `ပါဝင်ရမည်`, `ထည့်သွင်းမည့်`,
-`လုပ်ဆောင်ချက်များ`, `ဤနေရာတွင်`, `သတိပြုရန်မှာ`, `သတိပြုစရာများ` and `ရှိသည်`. Each
+`လုပ်ဆောင်ချက်များ`, `ဤနေရာတွင်`, `သတိပြုရန်မှာ`, `သတိပြုစရာများ`, `ရှိသည်`, and the words
+of a written-as hint, `ရေးသားရာတွင်`, `ရေးသားနိုင်သည်` and `ရေးသားနိုင်ပြီး`. Each
 splits off a word it is written against, as `ဂုဏ်သတ္တိရှိစေရန်` does. `::` is one
 token, `Punct::PathSep`; a `:` alone remains the field mark of a struct value.
 

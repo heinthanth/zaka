@@ -239,6 +239,9 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::FieldsClose
         | Kw::FieldsCloseAnd
         | Kw::ClassifierIs
+        | Kw::WritingOpen
+        | Kw::CanWrite
+        | Kw::CanWriteAnd
         | Kw::KindWord
         | Kw::Among
         | Kw::Other
@@ -384,9 +387,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::FnValue
         | Kw::Octets
         | Kw::Items
-        | Kw::Table
-        | Kw::Indexed
-        | Kw::List => TokenRole::Kind,
+        | Kw::Indexed => TokenRole::Kind,
         Kw::True
         | Kw::False
         | Kw::Null

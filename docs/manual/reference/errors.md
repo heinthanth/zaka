@@ -132,6 +132,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0249 | a preposition that starts with `၏` on a parameter other than the last | [Functions](../language/functions.md#prepositions) |
 | ZK0250 | warning: a declared name that is a word of the preposition of a function the file sees | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 | ZK0251 | warning: a declared name that reads as a function the file sees with a glued call end | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
+| ZK0252 | a written-as hint that breaks a rule of its form | [Generics and traits](../language/generics.md#written-as-hints) |
 
 ### ZK03: names
 

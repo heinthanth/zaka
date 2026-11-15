@@ -1,6 +1,6 @@
 ---
 title: Generics and traits
-description: Functions, structs and aliases with kind parameters, the notes block, traits and trait blocks, and the errors of each.
+description: Functions, structs and aliases with kind parameters, written-as hints, the notes block, traits and trait blocks, and the errors of each.
 ---
 
 # Generics and traits
@@ -90,6 +90,7 @@ as `အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေး�
 ```text
 <name><<kind>၊ …>                                      (sign form)
 <kind> [၊ <kind> …] [နှင့် <kind>] (ကို|တို့ကို) အစားထိုးအသုံးပြုသည့် <name>   (word form)
+<the words of its hint>                                       (written-as form)
 ```
 
 - A kind that names a generic struct or alias gives its kinds in the sign form, after
@@ -213,6 +214,93 @@ goes on to the kind the alias names.
 The loader puts the kind in place of each use, with the kinds of the use in place of
 the parameters, as for a plain [alias](aliases.md). Another count of kinds is ZK0340.
 
+## Written-as hints
+
+```text
+… မျိုးပြပစ္စည်းမှာ <word> ဖြစ်ကာ ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။                  (struct)
+… ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။                         (kind of the prelude)
+… (ကို|တို့ကို)အစားထိုးသုံးနိုင်၍ ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး ၎င်းတွင် …            (trait)
+<name><<A>၊ …> ဟူသည့် ဂုဏ်သတ္တိ သည် ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး ၎င်းတွင် …      (trait, sign form)
+```
+
+A generic struct or trait can tell how a use writes it: its *written-as hint*, at the
+end of its declaration. The hint adds a spelling; the sign form and the long word form
+name the same kind.
+
+- Each word of the hint that is a kind parameter of the declaration is a *slot*, where a
+  use writes a kind. The other words stand as written.
+- Each kind parameter stands in the hint once, in the order the hint chooses; a use
+  gives the kinds back to the parameters in their declared order.
+- The hint ends in the name of the struct or trait, which stands nowhere else in it.
+  `ဟု` can stand glued to that name: `အတွဲဟု`.
+- A fixed word stands between two slots: a kind in a slot can be a written-as kind
+  itself, so two slots side to side would have more than one reading.
+- A struct takes its hint at the end of its classifier clause, after `ဖြစ်ကာ`, so a
+  struct with a hint names its classifier.
+- A trait leaves out its first kind parameter, the kind that has the trait, since the
+  sentence around a use names it: `T တွင် စာသား အဖြစ် ပြောင်းနိုင်သော ဂုဏ်သတ္တိ ရှိသည်။`
+- A use reads the longest hint that fits there, and the kind in a slot is the longest
+  kind that fits it.
+- An imported struct or trait brings its hint along.
+- A hint that breaks one of these rules is ZK0252.
+
+```zaka
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က နှင့် ယေဘုယျဒေတာအမျိုးအစား ခ တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင်
+ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု
+တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်ကာ ရေးသားရာတွင် က နှင့် ခ အတွဲဟု ရေးသားနိုင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် စာသား နှင့် ကိန်းပြည့် အတွဲ တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် ပထမ အနေဖြင့် "မောင်မောင်" နှင့် ဒုတိယ အနေဖြင့် ၂၄ ရှိသော အတွဲ တစ်တွဲ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် စာသား ဖြင့် ညွှန်းသော စာသား နှင့် ကိန်းပြည့် အတွဲ ဇယား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဇယားအလွတ် ဖြစ်ပါစေ။
+ခ ထဲမှ အညွှန်း "မ" ၏ တန်ဖိုး ကို က ဟု ထားမည်။
+ခ ကို ပြသမည်။
+ကိန်းရှင် ဂ သည် စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ တစ်တွဲ ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
+ဂ ၏ ဒုတိယ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+["မ": အတွဲ<text၊ isize>(ပထမ: "မောင်မောင်"၊ ဒုတိယ: ၂၄)]
+၂၄
+```
+
+The [list](lists.md) and the [table](tables.md) are written through hints the
+[prelude](prelude.md) gives them: `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`. `စာရင်း`
+and `ဇယား` are names, not reserved words, so the long and sign forms name them too:
+`ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် စာရင်း`, `ဇယား<စာသား၊ ကိန်းပြည့်>`. A file that
+declares a kind of either name hides the one of the prelude.
+
+A trait with a hint:
+
+```zaka
+ပြောင်းနိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A နှင့် ယေဘုယျဒေတာအမျိုးအစား B တို့ကိုအစားထိုးသုံးနိုင်၍ ရေးသားရာတွင် B အဖြစ် ပြောင်းနိုင်သောဟု ရေးသားနိုင်ပြီး ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+လုပ်ဆောင်ချက် ပြောင်း သည်
+က ဟူသော A တစ်ခု ကို လက်ခံပြီး B တစ်ခု ကို ပြန်ပေးမည်။
+ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ပြောင်း သည်
+က ဟူသော မှန်မှားတန်ဖိုး တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ က ဖြစ်လျှင် "ဟုတ်" ကို ပြန်ပေးမည်။
+"မဟုတ်" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ဖြေ သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
+က ဟူသော T တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+ဤနေရာတွင် သတိပြုရန်မှာ
+T တွင် စာသား အဖြစ် ပြောင်းနိုင်သော ဂုဏ်သတ္တိ ရှိသည်။
+သတိပြုစရာများ ပြီးဆုံးပါပြီး။
+ပြောင်း(က) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဖြေ(မှန်) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ဟုတ်
+```
+
 ## The notes block
 
 A generic function and a trait can follow their head with a notes block:
@@ -261,8 +349,9 @@ D သည် B နှင့် A တို့ကို အစားထိုး�
 ## Traits
 
 ```text
-<name> ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား <A> [… ] (ကို|တို့ကို)အစားထိုးသုံးနိုင်၍ ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+<name> ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား <A> [… ] (ကို|တို့ကို)အစားထိုးသုံးနိုင်၍ [ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး] ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
 <name><<A>၊ …> ဟူသည့် ဂုဏ်သတ္တိ တွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+<name><<A>၊ …> ဟူသည့် ဂုဏ်သတ္တိ သည် ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
 [notes block]
 <function heads>
 ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
@@ -270,7 +359,8 @@ D သည် B နှင့် A တို့ကို အစားထိုး�
 
 - A trait has one kind parameter or more. The first is the kind that has the trait; the
   others are kinds the trait names beside it, given where the trait is used:
-  `ပြောင်းနိုင်သော<စာသား>` or `စာသား ကို သုံး၍ ပြောင်းနိုင်သော`.
+  `ပြောင်းနိုင်သော<စာသား>`, `စာသား ကို အစားထိုးအသုံးပြုသည့် ပြောင်းနိုင်သော`, or the words of
+  its [hint](#written-as-hints).
 - Each function head is a header with no block: `လုပ်ဆောင်ချက် <name> သည် <params>
   လက်ခံပြီး <kind> ကို ပြန်ပေးမည်။`, `… လက်ခံမည်။` for no result, or the result clause alone.
 - The notes block of a trait gives its first kind parameter the traits it needs: a kind
@@ -400,6 +490,7 @@ An instance has a name no program can write, the generic's name and its kinds:
 | Code | When |
 | --- | --- |
 | ZK0247 | a trait or a trait block inside a block |
+| ZK0252 | a written-as hint that breaks a rule of its form |
 | ZK0248 | a note on a name that is no kind parameter |
 | ZK0340 | another count of kinds than the generic declares, or kinds for a function that is not generic |
 | ZK0341 | kinds a call or a struct value cannot work out |
