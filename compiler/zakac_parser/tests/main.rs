@@ -5,6 +5,7 @@ mod artifact;
 mod clause;
 mod cli;
 mod common;
+mod comptime;
 mod expr;
 mod generics;
 mod heap;

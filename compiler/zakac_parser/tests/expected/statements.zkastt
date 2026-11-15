@@ -48,6 +48,7 @@ program:
             lo: 96
             hi: 165
       exported: false
+      builtin: false
       span:
         lo: 45
         hi: 193
@@ -81,6 +82,7 @@ program:
             lo: 242
             hi: 309
       exported: false
+      builtin: false
       span:
         lo: 194
         hi: 337
@@ -273,6 +275,7 @@ program:
         span:
           lo: 1171
           hi: 1238
+      comptime: false
       span:
         lo: 638
         hi: 1238
@@ -508,6 +511,7 @@ program:
         lo: 2163
         hi: 2196
   units: []
+  target: null
   span:
     lo: 0
     hi: 2197

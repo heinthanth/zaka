@@ -39,6 +39,12 @@ en = "no C compiler found: set CC, pass --cc, set cc in a config file, or put gc
 [errors.flag_not_for_target]
 en = "%{flag} does not go with --target %{target}"
 
+[errors.built_for_other_host]
+en = "this program was built for %{built}, and this host is %{host}: build it again with the --target-os and --target-arch of this host"
+
+[errors.c_for_other_host]
+en = "the C compiler builds for this host, %{host}, not for %{target}: give --emit c to write the C files and build them there"
+
 [errors.tool_not_found]
 en = "can't find %{tool}: give a program on the PATH, or a path to one"
 

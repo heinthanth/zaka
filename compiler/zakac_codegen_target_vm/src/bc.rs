@@ -4,6 +4,7 @@ use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::IntoStaticStr;
+use zakac_ast::target::Target;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_ir_builder::ir::CmpOp;
 pub use zakac_ir_builder::ir::ForeignFn;
@@ -22,6 +23,10 @@ pub struct Module
 {
     /// Bit count of the platform-sized integer kinds.
     pub platform_bits: u16,
+    /// The target the program was settled for, when it depends on one: the
+    /// VM refuses to run it on another OS or CPU.
+    #[serde(default)]
+    pub built_for: Option<Target>,
     /// The global slots.
     #[builder(default)]
     pub globals: Vec<Slot>,

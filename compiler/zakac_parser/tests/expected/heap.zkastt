@@ -110,6 +110,7 @@ program:
                   lo: 758
                   hi: 787
             exported: false
+            builtin: false
             span:
               lo: 613
               hi: 815
@@ -240,6 +241,7 @@ program:
             lo: 1129
             hi: 1195
       exported: false
+      builtin: false
       span:
         lo: 1081
         hi: 1223
@@ -274,6 +276,7 @@ program:
             lo: 1278
             hi: 1344
       exported: false
+      builtin: false
       span:
         lo: 1224
         hi: 1372
@@ -387,6 +390,7 @@ program:
             lo: 1854
             hi: 1948
       exported: false
+      builtin: false
       span:
         lo: 1785
         hi: 1976
@@ -421,6 +425,7 @@ program:
             lo: 2040
             hi: 2134
       exported: false
+      builtin: false
       span:
         lo: 1977
         hi: 2162
@@ -447,6 +452,7 @@ program:
       is_const: false
       init: null
       exported: false
+      builtin: false
       span:
         lo: 2163
         hi: 2326
@@ -539,6 +545,7 @@ program:
           lo: 2567
           hi: 2799
       else_block: null
+      comptime: false
       span:
         lo: 2567
         hi: 2799
@@ -682,6 +689,7 @@ program:
                 lo: 2975
                 hi: 3631
             else_block: null
+            comptime: false
             span:
               lo: 2975
               hi: 3631
@@ -964,6 +972,7 @@ program:
       is_const: false
       init: null
       exported: false
+      builtin: false
       span:
         lo: 4945
         hi: 5144
@@ -1051,6 +1060,7 @@ program:
       is_const: false
       init: null
       exported: false
+      builtin: false
       span:
         lo: 5421
         hi: 5597
@@ -1189,6 +1199,7 @@ program:
         lo: 6044
         hi: 6192
   units: []
+  target: null
   span:
     lo: 0
     hi: 6193

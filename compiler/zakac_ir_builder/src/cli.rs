@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use zakac_ast::target::BuildTarget;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
 use zakac_cli_common::artifact_output::output_format_from_matches;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
@@ -19,10 +20,12 @@ use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::cli::attach_target_os_args;
+use zakac_semcheck::cli::target_from;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::dump_artifact;
@@ -100,7 +103,7 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .long("no-unsafe")
         .help(t!("ir.no_unsafe"))
         .action(ArgAction::SetTrue);
-    cmd.arg(platform_bits).arg(strict).arg(fold).arg(no_unsafe)
+    attach_target_os_args(cmd.arg(platform_bits).arg(strict).arg(fold).arg(no_unsafe))
 }
 
 /// The check options from the command line.
@@ -292,7 +295,12 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    let loaded = load_for(
+        &source,
+        &mut source_map,
+        &LexerOptions::default(),
+        &target_from(matches, BuildTarget::Vm),
+    );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();
 

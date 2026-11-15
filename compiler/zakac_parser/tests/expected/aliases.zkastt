@@ -321,6 +321,7 @@ program:
                   lo: 2046
                   hi: 2092
             exported: false
+            builtin: false
             span:
               lo: 1913
               hi: 2120
@@ -343,6 +344,7 @@ program:
         lo: 1796
         hi: 2191
   units: []
+  target: null
   span:
     lo: 0
     hi: 2192

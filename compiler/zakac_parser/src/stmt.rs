@@ -133,6 +133,26 @@ fn hoist_defaults(decl: &mut TraitDecl) -> Vec<FnDecl>
     with_block.map(hoist).collect()
 }
 
+/// Add a top-level statement: the functions of a trait block are functions
+/// of the file, and so is the default of each function of a trait, as a
+/// generic function of the kinds that have the trait.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements so far.
+/// * `stmt` - The statement.
+fn push_top(stmts: &mut Vec<Stmt>, mut stmt: Stmt)
+{
+    let fns = match &mut stmt
+    {
+        Stmt::TraitBlock(b) => std::mem::take(&mut b.fns),
+        Stmt::Trait(t) => hoist_defaults(t),
+        _ => Vec::new(),
+    };
+    stmts.push(stmt);
+    stmts.extend(fns.into_iter().map(Stmt::Fn));
+}
+
 impl Parser<'_>
 {
     /// Parse statements up to the end of the input.
@@ -147,22 +167,7 @@ impl Parser<'_>
         {
             let stmt = self.parse_stmt_recover();
             self.imports_closed |= !matches!(stmt, Some(Stmt::Import(_)));
-            let Some(mut stmt) = stmt
-            else
-            {
-                continue;
-            };
-            // The functions of a trait block are functions of the file, and
-            // so is the default of each function of a trait, as a generic
-            // function of the kinds that have the trait.
-            let fns = match &mut stmt
-            {
-                Stmt::TraitBlock(b) => std::mem::take(&mut b.fns),
-                Stmt::Trait(t) => hoist_defaults(t),
-                _ => Vec::new(),
-            };
-            stmts.push(stmt);
-            stmts.extend(fns.into_iter().map(Stmt::Fn));
+            do_if!(let Some(stmt) = stmt, push_top(&mut stmts, stmt));
         }
         stmts
     }
@@ -283,7 +288,7 @@ impl Parser<'_>
         self.expect(Kw::Import)?;
         let stop = self.expect_stop()?;
         let span = tok.span.to(&stop.span);
-        let late = self.depth > 0 || self.imports_closed;
+        let late = self.nested() || self.imports_closed;
         do_if!(late, self.diags.push(diag::import_not_first(span)));
         let lit = self.strings[idx as usize].clone();
         let path = StrArg::builder().lit(lit).span(tok.span).build();
@@ -311,7 +316,7 @@ impl Parser<'_>
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
         };
-        let top = self.depth == 0;
+        let top = !self.nested();
         let Some((exported, span)) = flag.filter(|_| top)
         else
         {
@@ -472,6 +477,27 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     fn parse_if(&mut self) -> PResult<Stmt>
     {
+        let comptime = self.peek_n(1).kind == TokenKind::Kw(Kw::AtCompileTime);
+        // The branches of a compile-time conditional at the top level hold
+        // top-level statements: declarations, imports, the start block.
+        let lift = comptime && !self.nested();
+        do_if!(lift, self.top += 1);
+        let parsed = self.parse_if_chain(comptime);
+        do_if!(lift, self.top -= 1);
+        parsed
+    }
+
+    /// Parse the arms and the else block of a conditional.
+    ///
+    /// # Arguments
+    ///
+    /// * `comptime` - Whether `ကွန်ပိုင်းလုပ်ချိန်တွင်` follows `အကယ်၍`.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or a diagnostic.
+    fn parse_if_chain(&mut self, comptime: bool) -> PResult<Stmt>
+    {
         let start = self.peek().span;
         let mut arms = vec![self.parse_if_arm()?];
         while self.at(Kw::ElseIf)
@@ -485,11 +511,13 @@ impl Parser<'_>
         };
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        let node = IfStmt::builder().arms(arms).maybe_else_block(else_block).span(span).build();
+        let node = IfStmt::builder().arms(arms).maybe_else_block(else_block).comptime(comptime)
+            .span(span).build();
         Ok(Stmt::If(node))
     }
 
-    /// Parse `(အကယ်၍|ထိုသို့မဟုတ်ဘဲ) <cond> (လျှင်|ဖြစ်လျှင်) <block>`.
+    /// Parse `(အကယ်၍|ထိုသို့မဟုတ်ဘဲ) <cond> (လျှင်|ဖြစ်လျှင်) <block>`, with
+    /// `ကွန်ပိုင်းလုပ်ချိန်တွင်` after `အကယ်၍` for a compile-time conditional.
     ///
     /// # Returns
     ///
@@ -497,6 +525,7 @@ impl Parser<'_>
     fn parse_if_arm(&mut self) -> PResult<IfArm>
     {
         let start = self.bump().span;
+        self.eat(Kw::AtCompileTime);
         let cond = self.parse_expr()?;
         self.expect_one_of(&[Kw::Then, Kw::ThenIs])?;
         let block = self.parse_branch(false)?;
@@ -557,10 +586,18 @@ impl Parser<'_>
     fn parse_stmts_to_close(&mut self) -> Vec<Stmt>
     {
         self.depth += 1;
+        // The block of a compile-time conditional at the top level holds
+        // top-level statements.
+        let top = !self.nested();
         let mut stmts = Vec::new();
         while !self.at_close() && !self.at_eof()
         {
-            do_if!(let Some(stmt) = self.parse_stmt_recover(), stmts.push(stmt));
+            let Some(stmt) = self.parse_stmt_recover()
+            else
+            {
+                continue;
+            };
+            tern!(top, push_top(&mut stmts, stmt), stmts.push(stmt));
         }
         self.depth -= 1;
         stmts
@@ -628,6 +665,10 @@ impl Parser<'_>
             return self.parse_decl_into(word.span, is_const, name);
         }
         self.expect(Kw::Thi)?;
+        ret_if!(
+            is_const && self.at(Kw::InCompiler),
+            self.parse_builtin_const(word.span, name)
+        );
         let head = self.parse_decl_head()?;
         // A written kind gives the prepositions of a call through the name; the
         // starting value gives them when no kind is written.
@@ -648,6 +689,30 @@ impl Parser<'_>
         #[rustfmt::skip]
         let node = DeclStmt::builder().name(name).maybe_kind(head.kind)
             .is_const(is_const).maybe_init(head.init).span(span).build();
+        Ok(Stmt::Decl(node))
+    }
+
+    /// Parse the rest of a constant the compiler gives, after `ကိန်းသေ <name>
+    /// သည်`: `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော <kind> တစ်<word> ဖြစ်သည်။`, with no
+    /// value; the loader writes the value of the target in.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_builtin_const(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    {
+        self.eat_builtin_mark()?;
+        let kind = self.parse_slot_kind()?;
+        self.expect(Kw::Is)?;
+        let span = start.to(&self.expect_stop()?.span);
+        #[rustfmt::skip]
+        let node = DeclStmt::builder().name(name).kind(kind).is_const(true).builtin(true)
+            .span(span).build();
         Ok(Stmt::Decl(node))
     }
 
@@ -887,7 +952,7 @@ impl Parser<'_>
         // A function inside a block borrows the locals around it; the start
         // block has its place at the top level alone.
         do_if!(
-            self.depth > 0 && is_start,
+            self.nested() && is_start,
             self.diags.push(diag::nested_function(fn_span))
         );
         self.expect_stop()?;
@@ -942,7 +1007,7 @@ impl Parser<'_>
         );
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_function(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_function(span)));
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
@@ -1027,7 +1092,7 @@ impl Parser<'_>
         let classifier = tern!(named, Some(self.parse_classifier()?), None);
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_alias(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_alias(span)));
         #[rustfmt::skip]
         let node = AliasDecl::builder().kind(kind).name(name).kind_params(kind_params)
             .maybe_classifier(classifier).span(span).build();
@@ -1124,7 +1189,7 @@ impl Parser<'_>
         let fields = fields?;
         let hint_of = Some((&name, kind_params.as_slice()));
         let (classifier, hint, span) = self.parse_decl_end(start, hint_of)?;
-        do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
             .maybe_classifier(classifier).hint(hint).span(span).build();
@@ -1186,7 +1251,7 @@ impl Parser<'_>
         let fields = tern!(with_fields, self.parse_listed_fields(false)?, Vec::new());
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_struct(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).fields(fields).shared(true).external(true)
             .span(span).build();
@@ -1259,7 +1324,7 @@ impl Parser<'_>
         let members = self.parse_word_list(Self::parse_enum_member)?;
         self.expect_one_of(member_closers(members.len(), true))?;
         let (classifier, _, span) = self.parse_decl_end(start, None)?;
-        do_if!(self.depth > 0, self.diags.push(diag::nested_enum(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_enum(span)));
         #[rustfmt::skip]
         let node = EnumDecl::builder().name(name).members(members).maybe_classifier(classifier)
             .span(span).build();

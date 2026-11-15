@@ -10,6 +10,9 @@ use zaka_vm::trap::Trap;
 pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Program;
+use zakac_ast::target::BuildTarget;
+use zakac_ast::target::TargetArch;
+use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::borrow_check;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::MemCheck;
@@ -696,6 +699,27 @@ impl Unit<'_>
     }
 }
 
+/// The target the explorer builds for. The page runs as WebAssembly with no
+/// OS of its own, so it settles a program for Linux on x86-64, at the bit
+/// count and for the code of its settings.
+///
+/// # Arguments
+///
+/// * `options` - The options.
+///
+/// # Returns
+///
+/// The target.
+fn explorer_target(options: &Options) -> zakac_ast::target::Target
+{
+    // shortcut: a fixed OS and CPU; add a picker to the settings when a
+    // reader wants to see another branch of a compile-time conditional.
+    let output = tern!(options.target == Target::C, BuildTarget::C, BuildTarget::Vm);
+    #[rustfmt::skip]
+    return zakac_ast::target::Target::builder().os(TargetOs::Linux)
+        .arch(TargetArch::X86_64).bits(options.platform_bits).output(output).build();
+}
+
 /// Run all phases over `source`.
 ///
 /// # Arguments
@@ -720,8 +744,9 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     // The explorer holds one file, so it has no folder to import from: an
     // import from the stdlib reads the module the compiler carries, and each
     // other import is reported.
-    let (loaded, parse_time) =
-        timed(|| Loaded::single(&file, &LexerOptions::default()));
+    let (loaded, parse_time) = timed(|| {
+        Loaded::single_for(&file, &LexerOptions::default(), &explorer_target(options))
+    });
     // The imported modules join the map in reading order, as the loader placed
     // them, so their spans resolve and the C target gives each its own file.
     loaded.imports.iter().for_each(|f| {

@@ -5,6 +5,7 @@ source: "\n/// အကွက်များကို ပေါင်းသည်�
 imports: []
 module:
   platform_bits: 64
+  built_for: null
   globals: []
   texts: []
   seqs:

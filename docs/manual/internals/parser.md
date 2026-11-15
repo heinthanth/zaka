@@ -668,15 +668,28 @@ For each file, from the file that is run:
 3. Parse the file a second time with `parse_with`: its node numbers go on from the file
    before, so each expression of the program has a number of its own, and the struct
    names it imports from exported structs start a kind.
-4. Set `unit` on each import to the unit it reads, append a `Unit` and the statements
-   of the file to the program, and note the structs, enumerations and kind aliases the
-   file exports.
+4. Settle each compile-time conditional for the target (`comptime::settle`, run on the
+   first parse too, so the imports of the arm it keeps are read), set `unit` on each
+   import to the unit it reads, give a file that names a fact of the target an import
+   of it from the prelude (`import_facts`), append a `Unit` and the statements of the
+   file to the program, and note the structs, enumerations and kind aliases the file
+   exports.
 
    For a file read from disk, `lib_paths_from` makes the lib of each C function that is a
    path (`is_lib_path`, in `zakac_ast`: it holds `/` or `\`, ends in `.so`, `.dylib` or
    `.dll`, or holds `.so.`) absolute: a relative one starts at the folder of the file that
    declares the function, as an import does. A lib name is left as it is, and so is a
    program read from storage.
+
+A compile-time conditional (`IfStmt.comptime`, from `ကွန်ပိုင်းလုပ်ချိန်တွင်` after
+`အကယ်၍`) parses as a conditional; at the top level its arms raise `Parser::top`, so their
+statements count as top-level ones (`nested()`), with the functions of a trait block and
+the defaults of a trait moved out (`push_top`). `settle` keeps the statements of the first
+arm whose condition holds, spliced in place, through each block, and reports ZK0255 for a
+condition outside the facts. `load_for` and `Loaded::single_for` take the target;
+`load` and `Loaded::single` take the host's. `fill_facts` writes the value of the target
+into each marked constant of the prelude (`DeclStmt.builtin`), and `Program.target`
+records the target when a file holds a conditional or names a fact.
 
 Once the files are read, `expand_aliases` (`src/alias.rs`) puts the kind of each alias in
 place of each use of its name: in a kind, where the levels written after the alias go

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use strum::IntoEnumIterator;
+use zakac_ast::target::BuildTarget;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
@@ -25,11 +26,12 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::cli::target_from;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::dump_artifact;
 use zakac_session::artifact::load_artifact;
@@ -316,7 +318,12 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    let loaded = load_for(
+        &source,
+        &mut source_map,
+        &LexerOptions::default(),
+        &target_from(matches, BuildTarget::Vm),
+    );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();
 

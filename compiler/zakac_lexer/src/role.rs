@@ -163,6 +163,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
     match kw
     {
         Kw::If
+        | Kw::AtCompileTime
         | Kw::Then
         | Kw::ThenIs
         | Kw::ElseIf

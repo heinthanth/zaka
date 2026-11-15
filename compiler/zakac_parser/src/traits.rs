@@ -128,7 +128,7 @@ impl Parser<'_>
         self.drop_kind_names(added);
         let (fns, end) = rest?;
         let span = start.to(&end);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_trait(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_trait(span)));
         #[rustfmt::skip]
         let node = TraitDecl::builder().name(name).kind_params(params).fns(fns).span(span)
             .exported(exported).builtin(builtin).hint(hint).build();
@@ -265,7 +265,7 @@ impl Parser<'_>
         self.expect(Kw::Functions)?;
         self.expect(Kw::Done)?;
         let span = start.to(&self.expect_stop()?.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_trait(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_trait(span)));
         let fn_names = fns.iter().map(|f| f.name.clone()).collect();
         #[rustfmt::skip]
         let node = TraitBlock::builder().kind(kind).bound(bound).fns(fns).fn_names(fn_names)
@@ -366,7 +366,7 @@ impl Parser<'_>
         let ret = tern!(no_ret, Default::default(), self.parse_ret_clause(true)?);
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);
-        do_if!(self.depth > 0, self.diags.push(diag::nested_function(span)));
+        do_if!(self.nested(), self.diags.push(diag::nested_function(span)));
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).kind_params(kind_params).params(params)
@@ -433,7 +433,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// Whether it stood here, or a diagnostic for half of it.
-    fn eat_builtin_mark(&mut self) -> PResult<bool>
+    pub(crate) fn eat_builtin_mark(&mut self) -> PResult<bool>
     {
         ret_if!(!self.eat(Kw::InCompiler), Ok(false));
         self.expect(Kw::IncludedWith)?;

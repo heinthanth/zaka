@@ -133,6 +133,8 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--platform-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
+| `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos` or `linux` |
+| `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
 | `--strict-particles` | off | report the [natural wording](../language/naturalness.md) warnings (ZK05) as errors |
 
 These belong to `irgen` and the stages after it, and to `run`:

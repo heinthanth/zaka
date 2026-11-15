@@ -1,5 +1,12 @@
 use std::sync::Arc;
 
+use strum::VariantNames;
+use zakac_ast::target::BuildTarget;
+use zakac_ast::target::Target;
+use zakac_ast::target::TargetArch;
+use zakac_ast::target::TargetOs;
+use zakac_ast::target::host_arch;
+use zakac_ast::target::host_os;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
 use zakac_cli_common::artifact_output::output_format_from_matches;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
@@ -19,7 +26,7 @@ use zakac_cli_common::command::ExitCode;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -40,6 +47,8 @@ const PLATFORM_BITS_ARG: &str = "platform_bits";
 const STRICT_PARTICLES_ARG: &str = "strict_particles";
 /// Bit counts the platform-sized integer kinds can have.
 const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64"];
+const TARGET_OS_ARG: &str = "target_os";
+const TARGET_ARCH_ARG: &str = "target_arch";
 
 /// The `zakac-semcheck` command, `zakac semcheck` as a subcommand.
 pub struct ZakacSemcheck
@@ -68,8 +77,57 @@ fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
         .long("strict-particles")
         .help(t!("semcheck.strict_particles"))
         .action(ArgAction::SetTrue);
+    let cmd = attach_common_io_args(cmd).arg(platform_bits).arg(strict);
+    attach_target_os_args(cmd).about(t!("semcheck.about"))
+}
+
+/// Add `--target-os` and `--target-arch`, the OS and the CPU a program
+/// is built for, each the host's unless given.
+///
+/// # Arguments
+///
+/// * `cmd` - The command.
+///
+/// # Returns
+///
+/// The command with the flags.
+pub fn attach_target_os_args(cmd: clap::Command) -> clap::Command
+{
+    let os = Arg::new(TARGET_OS_ARG)
+        .long("target-os")
+        .value_name("OS")
+        .help(t!("semcheck.target_os"))
+        .value_parser(TargetOs::VARIANTS.to_vec())
+        .default_value(<&'static str>::from(host_os()));
+    let arch = Arg::new(TARGET_ARCH_ARG)
+        .long("target-arch")
+        .value_name("ARCH")
+        .help(t!("semcheck.target_arch"))
+        .value_parser(TargetArch::VARIANTS.to_vec())
+        .default_value(<&'static str>::from(host_arch()));
+    cmd.arg(os).arg(arch)
+}
+
+/// The target a command builds for, from `--target-os`, `--target-arch` and
+/// `--platform-bits`.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+/// * `output` - The code the command gives out.
+///
+/// # Returns
+///
+/// The target; the host's facts for a flag the command lacks.
+pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
+{
+    let word = |id: &str| matches.try_get_one::<String>(id).ok().flatten();
+    let os = word(TARGET_OS_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_os);
+    let arch = word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok());
+    let bits = word(PLATFORM_BITS_ARG).and_then(|b| b.parse().ok()).unwrap_or(64);
     #[rustfmt::skip]
-    return attach_common_io_args(cmd).arg(platform_bits).arg(strict).about(t!("semcheck.about"));
+    return Target::builder().os(os).arch(arch.unwrap_or_else(host_arch)).bits(bits)
+        .output(output).build();
 }
 
 /// The check options from the command line.
@@ -229,7 +287,12 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    let loaded = load_for(
+        &source,
+        &mut source_map,
+        &LexerOptions::default(),
+        &target_from(matches, BuildTarget::Vm),
+    );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();
 

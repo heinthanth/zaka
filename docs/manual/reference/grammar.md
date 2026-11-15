@@ -95,6 +95,7 @@ declaration  = var-decl | fn-decl | external-fn | struct-decl | handle-decl
 
 var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
                ( "သည်" decl-head "ဖြစ်ပါစေ"
+               | "သည်" compiler-mark slot-kind "ဖြစ်သည်"     (* a constant of the prelude *)
                | "ထဲသို့" clause "ကို" ( "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) ) "။" ;
 decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်" clause ]
              | clause ;                           (* the kind comes from the value *)
@@ -205,7 +206,7 @@ block-open   = "အောက်ပါတို့ကို လုပ်ဆော
              | "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်" ;   (* unsafe code *)
 branch       = block | stmt ;                     (* one statement in place of a block *)
 
-if-stmt      = "အကယ်၍" expr then branch
+if-stmt      = "အကယ်၍" [ "ကွန်ပိုင်းလုပ်ချိန်တွင်" ] expr then branch
                { "ထိုသို့မဟုတ်ဘဲ" expr then branch }
                [ "သို့မဟုတ်ပါက" branch ] ;
 then         = "လျှင်" | "ဖြစ်လျှင်" ;

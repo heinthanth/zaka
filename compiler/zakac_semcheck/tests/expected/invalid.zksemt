@@ -59,6 +59,7 @@ program:
                   lo: 303
                   hi: 312
             exported: false
+            builtin: false
             span:
               lo: 153
               hi: 340
@@ -84,6 +85,7 @@ program:
             is_const: false
             init: null
             exported: false
+            builtin: false
             span:
               lo: 341
               hi: 457
@@ -109,6 +111,7 @@ program:
             is_const: true
             init: null
             exported: false
+            builtin: false
             span:
               lo: 458
               hi: 568
@@ -165,6 +168,7 @@ program:
                 lo: 616
                 hi: 699
             else_block: null
+            comptime: false
             span:
               lo: 616
               hi: 699
@@ -280,6 +284,7 @@ program:
         lo: 0
         hi: 1110
   units: []
+  target: null
   span:
     lo: 0
     hi: 1111

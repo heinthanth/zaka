@@ -2,6 +2,9 @@ use std::ffi::OsString;
 use std::sync::Arc;
 
 use zaka_host::TermWorld;
+use zakac_ast::target::BuildTarget;
+use zakac_ast::target::host_arch;
+use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::clap;
@@ -33,12 +36,13 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load as load_program;
+use zakac_parser::load::load_for as load_program;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::cli::target_from;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 use zakac_session::artifact::load_artifact;
@@ -258,6 +262,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
         return ExitCode::Failure;
     };
+    ret_if!(let Some(error) = other_host(&module), report_command_error(io, &cmd_info, error));
 
     let options = run_options(matches);
     let name = matches.get_one::<String>("input").map_or("-", String::as_str);
@@ -282,6 +287,28 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         Error::RuntimeTrap { msg: trap.report(&source_map, backtrace()) },
     );
     ExitCode::Failure
+}
+
+/// The error of a program settled for an OS or a CPU other than the
+/// host's: its compile-time conditionals chose for that one.
+///
+/// # Arguments
+///
+/// * `module` - The ops.
+///
+/// # Returns
+///
+/// The error, or `None` for a program the host can run.
+fn other_host(module: &Module) -> Option<Error>
+{
+    let built = module.built_for?;
+    ret_if!(built.os == host_os() && built.arch == host_arch(), None);
+    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
+    let host = pair(host_os().into(), host_arch().into());
+    Some(Error::BuiltForOtherHost {
+        built: pair(built.os.into(), built.arch.into()),
+        host,
+    })
 }
 
 /// How much of the calls in progress a stop lists, from `ZAKA_BACKTRACE`.
@@ -421,7 +448,12 @@ fn compiled(
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let program = load_program(source, source_map, &LexerOptions::default())?;
+    let program = load_program(
+        source,
+        source_map,
+        &LexerOptions::default(),
+        &target_from(matches, BuildTarget::Vm),
+    )?;
     let emitted = run_loaded(program, &options, &folding, &mem, emit_options(matches));
     let diagnostics = emitted.diagnostics().to_vec();
     let mut module = emitted.module;

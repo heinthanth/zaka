@@ -5,6 +5,7 @@ source: "ပရိုဂရမ်သည် အောက်ပါတို့က�
 imports: []
 module:
   platform_bits: 64
+  built_for: null
   globals: []
   texts:
   - ok

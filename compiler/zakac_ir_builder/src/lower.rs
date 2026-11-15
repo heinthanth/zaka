@@ -125,7 +125,8 @@ pub fn lower(
     #[rustfmt::skip]
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
-        .unsafe_spans(unsafe_spans(program)).span(program.span).build();
+        .unsafe_spans(unsafe_spans(program)).maybe_built_for(program.target)
+        .span(program.span).build();
     module
 }
 

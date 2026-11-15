@@ -1595,6 +1595,23 @@ en = "name \"%{b}\", the trait of the block"
 [codes.ZK0254.explain]
 en = """A trait block can end with \"<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\", which gives its kind the default of each function of the trait that the block leaves out. The line names the trait of its block, as the block's own head does."""
 
+[codes.ZK0255.title]
+en = "bad compile-time condition"
+[codes.ZK0255.message]
+en = "this compile-time condition %{r}"
+[codes.ZK0255.help]
+en = "a compile-time condition reads the facts of the target (အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်, အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ, အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်, ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား), text, digits, == and != (and < <= > >= on the bits), ဖြစ်၍ (&&), သို့မဟုတ် (||), မဟုတ် and parentheses"
+[codes.ZK0255.form]
+en = "holds \"%{w}\", which the compiler cannot settle before the program runs"
+[codes.ZK0255.name]
+en = "names \"%{n}\", which is no fact of the target"
+[codes.ZK0255.value]
+en = "compares \"%{f}\" with \"%{v}\", a value it never holds; it holds one of %{l}"
+[codes.ZK0255.mixed]
+en = "compares text with a number, or orders text"
+[codes.ZK0255.explain]
+en = """A conditional written `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` is settled when the program is built: the compiler keeps the branch whose condition holds for the target and drops the others before it checks names and kinds. Its conditions read the four facts of the target, which the prelude declares as constants: the OS, the CPU architecture, the platform bit count and the code the compiler gives out. Each condition of the chain is settled, so a value that a fact never holds, such as \"window\", is this error and not a branch that never runs."""
+
 [codes.ZK0472.title]
 en = "C function must be unsafe"
 [codes.ZK0472.message]

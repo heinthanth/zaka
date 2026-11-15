@@ -180,6 +180,9 @@ HintSlotTwoKinds = ("ZK0253", Level::Error),
 /// The line that takes the defaults of a trait names another trait than its
 /// trait block.
 InheritOtherTrait = ("ZK0254", Level::Error),
+/// The condition of a compile-time conditional holds what the compiler
+/// cannot settle from the target.
+BadCompileTimeTest = ("ZK0255", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

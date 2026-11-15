@@ -185,7 +185,7 @@ then the values:
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-printf ဟူသော လုပ်ဆောင်ချက်ကို "%s is %ld\n"၊ "x" နှင့် ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+printf ဟူသော လုပ်ဆောင်ချက်ကို "%s is %lld\n"၊ "x" နှင့် ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -193,8 +193,9 @@ printf ဟူသော လုပ်ဆောင်ချက်ကို "%s is %
 x is 42
 ```
 
-The format must fit the values, as in C: `%ld` for a `ကိန်းပြည့်`, which has 64 bits, `%d`
-for a `၃၂ ဘစ် ကိန်းပြည့်`, `%f` for a decimal number and `%s` for text.
+The format must fit the values, as in C: `%lld` for a `ကိန်းပြည့်`, which has 64 bits (a C
+`long`, which `%ld` reads, has 32 bits on Windows), `%d` for a `၃၂ ဘစ် ကိန်းပြည့်`, `%f` for a
+decimal number and `%s` for text.
 
 A C function that takes other values can still mark a list `ဒေတာ ပြောင်းလဲရန်`:
 
@@ -307,6 +308,44 @@ full rules.
 The text before `မှလာသော` names the lib, as `"libc"` does, or gives the path to its file,
 as `"./libpair.so"` does. A path that does not start at `/` starts at the folder of the
 program file.
+
+## Each OS its own lib
+
+A lib is not named and laid out the same on each OS: the UCRT of Windows calls `strdup`
+`_strdup`. `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင်` is a conditional the compiler settles before
+the program runs: it keeps the arm whose condition holds for the target, so each OS
+declares its own C functions. Its conditions read the facts of the target, constants
+the prelude declares, as `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`:
+
+```zaka
+အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ကူး သည်
+s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+_strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် ကူး သည်
+s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကူး ဟူသော လုပ်ဆောင်ချက်ကို "စံကား" ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ဒေတာ("စံကား")
+```
+
+The arm the target drops is never checked, so it can name a C function this host lacks.
+[Compile-time conditionals](../../manual/language/compile-time.md) has the full rules.
 
 ## Addresses
 

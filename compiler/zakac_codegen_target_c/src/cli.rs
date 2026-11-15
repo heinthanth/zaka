@@ -3,6 +3,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use strum::IntoEnumIterator;
+use zakac_ast::target::BuildTarget;
+use zakac_ast::target::host_arch;
+use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_cli_common::clap;
@@ -27,10 +30,11 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::cli::target_from;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::load_artifact;
 use zakac_session::config::Input;
@@ -367,7 +371,12 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &info, error));
     let source = source.unwrap();
-    let loaded = load(&source, &mut source_map, &LexerOptions::default());
+    let loaded = load_for(
+        &source,
+        &mut source_map,
+        &LexerOptions::default(),
+        &target_from(matches, BuildTarget::C),
+    );
     ret_if!(let Err(error) = loaded, report_command_error(io, &info, error));
 
     let target = target_options(matches);
@@ -391,6 +400,9 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let stem = input_path(&input);
     let cache = arg(CACHE_ARG).map_or_else(|| default_cache(&stem), PathBuf::from);
     let emit: Emit = arg(EMIT_ARG).unwrap_or_default().parse().unwrap_or_default();
+    let cross =
+        other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit == Emit::Bin);
+    ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
     let out = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
     let out = with_exe(out);
     let files = files.unwrap();
@@ -402,6 +414,28 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
+}
+
+/// The error of an executable asked for an OS or a CPU other than the
+/// host's, which the C compiler does not build for.
+///
+/// # Arguments
+///
+/// * `target` - The target.
+///
+/// # Returns
+///
+/// The error, or `None` for the host.
+fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
+{
+    let (os, arch) = (host_os(), host_arch());
+    ret_if!(target.os == os && target.arch == arch, None);
+    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
+    let host = pair(os.into(), arch.into());
+    Some(Error::CForOtherHost {
+        target: pair(target.os.into(), target.arch.into()),
+        host,
+    })
 }
 
 /// The path of the input: its file, or `main.zaka` in the working folder

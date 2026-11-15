@@ -9,6 +9,7 @@ use crate::expr::Expr;
 use crate::expr::Ident;
 use crate::expr::UsingParticle;
 use crate::kind::Kind;
+use crate::target::Target;
 use crate::verb::Slot;
 
 /// A whole program: the top-level statements of each of its files in order.
@@ -25,6 +26,10 @@ pub struct Program
     /// The files, in the order their statements appear in `stmts`.
     #[builder(default)]
     pub units: Vec<Unit>,
+    /// The target the program was settled for, when a compile-time
+    /// conditional or a marked constant of the target made it depend on one.
+    #[serde(default)]
+    pub target: Option<Target>,
     /// Source region of the file that is run.
     pub span: Span,
 }
@@ -156,6 +161,12 @@ pub struct DeclStmt
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
+    /// `true` for a constant the compiler gives, marked
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` after `သည်`: no value is written, and
+    /// the loader writes the value of the target in.
+    #[builder(default)]
+    #[serde(default)]
+    pub builtin: bool,
     /// Source region, the full stop included.
     pub span: Span,
 }
@@ -236,6 +247,11 @@ pub struct IfStmt
     pub arms: Vec<IfArm>,
     /// The `သို့မဟုတ်ပါက` block.
     pub else_block: Option<BlockStmt>,
+    /// `true` for `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …`: the loader keeps the arm
+    /// whose condition holds for the target and drops the others.
+    #[builder(default)]
+    #[serde(default)]
+    pub comptime: bool,
     /// Source region.
     pub span: Span,
 }

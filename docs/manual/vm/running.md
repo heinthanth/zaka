@@ -54,7 +54,9 @@ $ zakac run program.zkc
 ```
 
 The artifact holds the source and the diagnostics too, so a run from it reports the same
-warnings as a run from source.
+warnings as a run from source. A program settled for a target, through a
+[compile-time conditional](../language/compile-time.md) or a fact of the target it names,
+records that target, and the VM refuses to run it on another OS or CPU.
 
 ## Checking an artifact
 

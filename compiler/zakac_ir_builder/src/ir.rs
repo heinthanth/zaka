@@ -6,6 +6,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_ast::stmt::CountMode;
+use zakac_ast::target::Target;
 pub use zakac_semcheck::const_op::CmpOp;
 pub use zakac_semcheck::const_op::InfixOp;
 pub use zakac_semcheck::const_op::LogicOp;
@@ -50,6 +51,9 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub unsafe_spans: Vec<Span>,
+    /// The target the program was settled for, when it depends on one.
+    #[serde(default)]
+    pub built_for: Option<Target>,
     /// Source region of the whole program.
     pub span: Span,
 }

@@ -135,6 +135,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0252 | a written-as hint that breaks a rule of its form | [Generics and traits](../language/generics.md#written-as-hints) |
 | ZK0253 | a use of a written-as hint that writes two kinds for one kind parameter the hint names twice | [Generics and traits](../language/generics.md#written-as-hints) |
 | ZK0254 | the line that takes the defaults of a trait, naming another trait than its trait block | [Generics and traits](../language/generics.md#trait-blocks) |
+| ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact of the target with a value it never holds | [Compile-time conditionals](../language/compile-time.md) |
 
 ### ZK03: names
 

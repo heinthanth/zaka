@@ -82,7 +82,8 @@ pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Mo
     funcs.push(main_func(&mut shared, module));
     let main = funcs.len() as u32 - 1;
     #[rustfmt::skip]
-    return Module::builder().platform_bits(platform_bits).globals(shared.globals)
+    return Module::builder().platform_bits(platform_bits).maybe_built_for(module.built_for)
+        .globals(shared.globals)
         .texts(shared.texts).seqs(shared.seqs).formats(shared.formats).funcs(funcs)
         .main(main).host(module.host).foreign(shared.foreign)
         .foreign_calls(shared.foreign_calls).build();

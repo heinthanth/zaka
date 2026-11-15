@@ -42,6 +42,7 @@ right before the noun, after the mark:
 <kind> သည် [<params> ၎င်းသည်] ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား (ဖြစ်သည်။|ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။)
 <name>[<<params>>] ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဂုဏ်သတ္တိ …
 [အများသုံး] လုပ်ဆောင်ချက် <name> သည် [<params> ၎င်းသည်] ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍ <parameters> လက်ခံမည်။
+[အများသုံး] ကိန်းသေ <name> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော <kind> တစ်<word> ဖြစ်သည်။
 ```
 
 `<params>` is the word form of the kind parameters, `ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍`.
@@ -58,6 +59,10 @@ right before the noun, after the mark:
   `ထည့်`, `ဖျက်` and `အစားထိုး` are the sentences that add, remove and replace; and
   `အကွက်အရေအတွက်`, `စာလုံးအရေအတွက်` and `အညွှန်းအရေအတွက်` are the counts read after `၏`.
   A function a file declares with one of these names joins the overloads, as below.
+- A marked constant names no value: the compiler gives it the value of the target it
+  builds for. The four of the prelude are the facts a
+  [compile-time conditional](compile-time.md) reads, and a file that names one sees it
+  with no import.
 - The mark belongs to the modules of the stdlib, the prelude among them: in another
   file it is ZK0349.
 
@@ -74,10 +79,11 @@ right before the noun, after the mark:
 | `နှိုင်းယှဉ်နိုင်သော` | the kinds that take `< > <= >=`: the numbers, the characters, and each kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | the kinds that take `==` and `!=`: each kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the kinds `ပြသမည်` prints: each kind but a handle of a kind from outside |
+| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the platform bit count and the code of the target ([Compile-time conditionals](compile-time.md)) |
 
 A name a file declares hides the prelude's: a trait named `ပေါင်းနိုင်သော` in a file is
 the file's own. The compiler reads the prelude for a program that names one of its
-traits. The built-in kinds, verbs and counts are names, not reserved words
+traits or one of its constants. The built-in kinds, verbs and counts are names, not reserved words
 ([Reserved words](../reference/reserved-words.md)).
 
 ## Verbs on structs

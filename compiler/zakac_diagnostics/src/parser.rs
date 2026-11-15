@@ -870,3 +870,43 @@ pub fn inherit_other_trait(span: Span, written: &str, block: &str) -> Diagnostic
     Diagnostic::new(Code::InheritOtherTrait, msg, span)
         .with_help(t!("codes.ZK0254.help", b = block))
 }
+
+/// The reason the condition of a compile-time conditional cannot be settled.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TestFault
+{
+    /// It holds an expression of another form, with its text.
+    Form(String),
+    /// It names a name that is no fact of the target.
+    Name(String),
+    /// It compares a fact with a value the fact never holds: the fact, the
+    /// value and the values it holds.
+    Value(String, String, String),
+    /// It compares text with a number, or orders text.
+    Mixed,
+}
+
+/// Make a diagnostic for a compile-time condition that the compiler cannot
+/// settle from the target.
+///
+/// # Arguments
+///
+/// * `span` - The part of the condition at fault.
+/// * `fault` - The reason.
+///
+/// # Returns
+///
+/// The `ZK0255` diagnostic.
+pub fn bad_compile_time_test(span: Span, fault: &TestFault) -> Diagnostic
+{
+    let reason = match fault
+    {
+        TestFault::Form(w) => t!("codes.ZK0255.form", w = w),
+        TestFault::Name(n) => t!("codes.ZK0255.name", n = n),
+        TestFault::Value(f, v, l) => t!("codes.ZK0255.value", f = f, v = v, l = l),
+        TestFault::Mixed => t!("codes.ZK0255.mixed"),
+    };
+    let msg = t!("codes.ZK0255.message", r = reason);
+    Diagnostic::new(Code::BadCompileTimeTest, msg, span)
+        .with_help(t!("codes.ZK0255.help"))
+}

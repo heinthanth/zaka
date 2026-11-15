@@ -7,13 +7,23 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 
 use bon::Builder;
+use zakac_ast::expr::Expr;
+use zakac_ast::expr::Ident;
+use zakac_ast::expr::IntLit;
+use zakac_ast::expr::NodeId;
+use zakac_ast::expr::StrExpr;
+use zakac_ast::expr::StrPiece;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::Unit;
 use zakac_ast::stmt::is_lib_path;
+use zakac_ast::target::FACTS;
+use zakac_ast::target::FactValue;
+use zakac_ast::target::Target;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_host_errors::Error;
@@ -23,8 +33,10 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::spelling::canonical;
+use zakac_lexer::token::DigitScript;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
+use zakac_lexer::token::StrLit;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
@@ -34,9 +46,11 @@ use zakac_session::artifact::EmbeddedFile;
 use zakac_span::filename::FileName;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
+use zakac_span::span::Span;
 
 use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
+use crate::comptime::settle;
 use crate::hint::Hint;
 use crate::hint::exported_hints;
 use crate::parser::parse;
@@ -153,18 +167,44 @@ impl Loaded
     ///
     /// # Returns
     ///
-    /// The program of the file.
+    /// The program of the file, settled for the host.
     pub fn single(source: &SourceFile, options: &LexerOptions) -> Self
+    {
+        Loaded::single_for(source, options, &Target::host())
+    }
+
+    /// [`Loaded::single`] for a target: each compile-time conditional keeps
+    /// the arm that holds for it, and the prelude's marked constants hold
+    /// its facts.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The file.
+    /// * `options` - The lexer options.
+    /// * `target` - The target.
+    ///
+    /// # Returns
+    ///
+    /// The program of the file.
+    pub fn single_for(
+        source: &SourceFile, options: &LexerOptions, target: &Target,
+    ) -> Self
     {
         let lexed = lex(source, options);
         let parsed = parse(source, &lexed);
         let mut imports = parsed.program.stmts.iter().filter_map(as_import);
         let std = imports.any(is_std) || uses_prelude(source, &lexed);
-        ret_if!(std, Loaded::with_std(source, options));
+        ret_if!(std, Loaded::with_std(source, options, target));
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
-        diagnostics.extend(refuse_imports(&parsed.program));
-        loaded(parsed.program, Vec::new(), diagnostics)
+        let mut program = parsed.program;
+        let text_of = |span: Span| snippet(source, span);
+        let (stmts, settled, met) = settle(program.stmts, target, &text_of);
+        program.stmts = stmts;
+        diagnostics.extend(settled);
+        diagnostics.extend(refuse_imports(&program));
+        let fixed = Fixed { target, next_id: parsed.next_id, used: met };
+        loaded(program, Vec::new(), diagnostics, &fixed)
     }
 
     /// Read one file with the prelude and the stdlib modules it imports, in a
@@ -179,39 +219,56 @@ impl Loaded
     /// # Returns
     ///
     /// The program, imported modules first.
-    fn with_std(source: &SourceFile, options: &LexerOptions) -> Self
+    fn with_std(source: &SourceFile, options: &LexerOptions, target: &Target) -> Self
     {
         let root = Arc::new(source.clone());
         let mut source_map = SourceMap::new();
         source_map.add_file(root.clone());
         #[rustfmt::skip]
         let mut loader = Loader::builder().source_map(&mut source_map).options(options)
-            .folder(PathBuf::new()).disk(false).build();
+            .folder(PathBuf::new()).disk(false).target(*target).build();
         let path = PathBuf::from(source.name.to_string());
         let read = loader.visit(root, path);
         read.expect("a file read from storage reads no file from disk");
+        let fixed = Fixed { target, next_id: loader.next_id, used: loader.target_used };
         let Loader { stmts, units, imports, diagnostics, .. } = loader;
         let span = zakac_span::span::Span::new(source.start_pos, source.end_pos());
         let program = Program::builder().stmts(stmts).units(units).span(span).build();
-        loaded(program, imports, diagnostics)
+        loaded(program, imports, diagnostics, &fixed)
     }
 }
 
-/// A program read with its imports, each kind alias in it expanded.
+/// What a program read for a target is settled with.
+struct Fixed<'t>
+{
+    /// The target.
+    target: &'t Target,
+    /// The first node number no node of the program holds.
+    next_id: u32,
+    /// Whether a compile-time conditional or a fact of the target is met.
+    used: bool,
+}
+
+/// A program read with its imports, each kind alias in it expanded and each
+/// marked constant of the prelude given the value of the target.
 ///
 /// # Arguments
 ///
 /// * `program` - The program.
 /// * `imports` - The imported files.
 /// * `diagnostics` - The diagnostics so far; the alias diagnostics follow.
+/// * `fixed` - The target, and what the program met of it.
 ///
 /// # Returns
 ///
 /// The loaded program.
 fn loaded(
     mut program: Program, imports: Vec<EmbeddedFile>, mut diagnostics: Vec<Diagnostic>,
+    fixed: &Fixed<'_>,
 ) -> Loaded
 {
+    fill_facts(&mut program, fixed.target, fixed.next_id);
+    program.target = fixed.used.then_some(*fixed.target);
     let (expanded, alias_refs) = expand_aliases(&mut program);
     diagnostics.extend(expanded);
     #[rustfmt::skip]
@@ -260,27 +317,50 @@ pub fn refuse_imports(program: &Program) -> Vec<Diagnostic>
 ///
 /// # Returns
 ///
-/// The program, or the error of a file that could not be read.
+/// The program, settled for the host, or the error of a file that could not
+/// be read.
 pub fn load(
     root: &Arc<SourceFile>, source_map: &mut SourceMap, options: &LexerOptions,
+) -> zakac_host_errors::Result<Loaded>
+{
+    load_for(root, source_map, options, &Target::host())
+}
+
+/// [`load`] for a target: each compile-time conditional keeps the arm that
+/// holds for it, and the prelude's marked constants hold its facts.
+///
+/// # Arguments
+///
+/// * `root` - The file that is run.
+/// * `source_map` - The source map; imported files are added to it.
+/// * `options` - The lexer options.
+/// * `target` - The target.
+///
+/// # Returns
+///
+/// The program, or the error of a file that could not be read.
+pub fn load_for(
+    root: &Arc<SourceFile>, source_map: &mut SourceMap, options: &LexerOptions,
+    target: &Target,
 ) -> zakac_host_errors::Result<Loaded>
 {
     let FileName::Real(real) = &root.name
     else
     {
-        return Ok(Loaded::single(root, options));
+        return Ok(Loaded::single_for(root, options, target));
     };
     let path = normalize(&real.local_path);
     let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
     let path = std_module_at(&path).map_or(path, PathBuf::from);
     #[rustfmt::skip]
     let mut loader = Loader::builder().source_map(source_map).options(options)
-        .folder(folder).build();
+        .folder(folder).target(*target).build();
     loader.visit(root.clone(), path)?;
+    let fixed = Fixed { target, next_id: loader.next_id, used: loader.target_used };
     let Loader { stmts, units, imports, diagnostics, .. } = loader;
     let span = zakac_span::span::Span::new(root.start_pos, root.end_pos());
     let program = Program::builder().stmts(stmts).units(units).span(span).build();
-    Ok(loaded(program, imports, diagnostics))
+    Ok(loaded(program, imports, diagnostics, &fixed))
 }
 
 /// The state of [`load`].
@@ -335,6 +415,13 @@ struct Loader<'a>
     /// Whether the prelude was read, or is being read.
     #[builder(default)]
     prelude_read: bool,
+    /// The target the files are settled for.
+    #[builder(default)]
+    target: Target,
+    /// Whether a file read so far holds a compile-time conditional or names a
+    /// fact of the target.
+    #[builder(default)]
+    target_used: bool,
 }
 
 impl Loader<'_>
@@ -362,8 +449,12 @@ impl Loader<'_>
         // The imports do not hang on struct names, so a first parse finds
         // them; the second parse knows the struct names those imports bring.
         let first = parse(&file, &lexed);
+        // A compile-time conditional can hold imports: the arm it keeps gives
+        // them, in both parses alike.
+        let text_of = |span: Span| snippet(&file, span);
+        let (first_stmts, _, _) = settle(first.program.stmts, &self.target, &text_of);
         let imports: Vec<ImportStmt> =
-            first.program.stmts.iter().filter_map(as_import).cloned().collect();
+            first_stmts.iter().filter_map(as_import).cloned().collect();
         self.chain.push(path.clone());
         let mut targets = Vec::new();
         for n in &imports
@@ -381,10 +472,16 @@ impl Loader<'_>
         #[rustfmt::skip]
         let parsed = parse_with(&file, &lexed, self.next_id, &structs, &prepositions, &hints);
         self.next_id = parsed.next_id;
-        self.diagnostics.extend(lexed.diagnostics);
+        self.diagnostics.extend(lexed.diagnostics.iter().cloned());
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
+        let (stmts, settled, met) = settle(program.stmts, &self.target, &text_of);
+        program.stmts = stmts;
+        self.diagnostics.extend(settled);
         set_targets(&mut program, &imports, &targets);
+        let facts = named_facts(&file, &lexed);
+        self.target_used |= met || !facts.is_empty();
+        self.import_facts(&mut program, &path, facts);
         do_if!(self.disk, lib_paths_from(&mut program, &path));
         let unit = self.units.len() as u32;
         let name = self.shown(&path);
@@ -459,6 +556,33 @@ impl Loader<'_>
 
 impl Loader<'_>
 {
+    /// Give a file the facts of the target it names, as an import of them
+    /// from the prelude ahead of its statements: the prelude's constants are
+    /// seen in each file with no import written.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - The program of the file.
+    /// * `path` - Its path.
+    /// * `facts` - The facts it names, each at its first use.
+    fn import_facts(&mut self, program: &mut Program, path: &Path, facts: Vec<Ident>)
+    {
+        let prelude = self.done.get(Path::new(PRELUDE)).copied();
+        let Some(unit) =
+            prelude.filter(|_| path != Path::new(PRELUDE) && !facts.is_empty())
+        else
+        {
+            return;
+        };
+        let span = facts[0].span;
+        let lit = StrLit { parts: Vec::new(), value: PRELUDE.to_string() };
+        let path = StrArg::builder().lit(lit).span(span).build();
+        #[rustfmt::skip]
+        let import = ImportStmt::builder().path(path).names(facts).unit(unit).span(span)
+            .build();
+        program.stmts.insert(0, Stmt::Import(import));
+    }
+
     /// Read the prelude, the module of the stdlib each file sees with no
     /// import, as a file of the program, once.
     fn read_prelude(&mut self)
@@ -763,18 +887,51 @@ fn lib_paths_from(program: &mut Program, file: &Path)
 fn uses_prelude(file: &SourceFile, lexed: &LexOutput) -> bool
 {
     let names = prelude_names();
-    let text = |t: &Token| {
-        let lo = file.relative_position(&t.span.lo);
-        let hi = file.relative_position(&t.span.hi);
-        file.snippet(&lo, &hi).unwrap_or("")
-    };
+    !undeclared_names(file, lexed, |t| names.contains(t)).is_empty()
+}
+
+/// The facts of the target a file names and does not declare itself, each
+/// at its first use.
+///
+/// # Arguments
+///
+/// * `file` - The file.
+/// * `lexed` - Its tokens.
+///
+/// # Returns
+///
+/// The names.
+fn named_facts(file: &SourceFile, lexed: &LexOutput) -> Vec<Ident>
+{
+    let mut found = undeclared_names(file, lexed, |t| FACTS.contains(&t));
+    let mut seen = HashSet::new();
+    found.retain(|n| seen.insert(n.name));
+    found
+}
+
+/// The names of a file that a test picks and that the file does not
+/// declare: a name after `လုပ်ဆောင်ချက်`, `ကိန်းရှင်` or `ကိန်းသေ`, or before
+/// `ဟူသော`, is declared there.
+///
+/// # Arguments
+///
+/// * `file` - The file.
+/// * `lexed` - Its tokens.
+/// * `pick` - The test of a name.
+///
+/// # Returns
+///
+/// Each use of such a name, in source order.
+fn undeclared_names(
+    file: &SourceFile, lexed: &LexOutput, pick: impl Fn(&str) -> bool,
+) -> Vec<Ident>
+{
+    let text = |t: &Token| snippet(file, t.span);
     let tokens = &lexed.tokens;
-    // A name after `လုပ်ဆောင်ချက်`, `ကိန်းရှင်` or `ကိန်းသေ`, or before `ဟူသော`, is
-    // declared here.
     let opens =
         |t: &Token| matches!(t.kind, TokenKind::Kw(Kw::Function | Kw::Var | Kw::Const));
     let called = |t: &Token| t.kind == TokenKind::Kw(Kw::Called);
-    let declared: HashSet<&str> = tokens
+    let declared: HashSet<String> = tokens
         .windows(2)
         .filter_map(|w| match (opens(&w[0]), called(&w[1]))
         {
@@ -783,8 +940,67 @@ fn uses_prelude(file: &SourceFile, lexed: &LexOutput) -> bool
             _ => None,
         })
         .collect();
-    let idents = tokens.iter().filter(|t| t.kind == TokenKind::Ident).map(text);
-    idents.into_iter().any(|t| names.contains(t) && !declared.contains(t))
+    let idents = tokens.iter().filter(|t| t.kind == TokenKind::Ident);
+    let named = idents.map(|t| (text(t), t.span));
+    let named = named.filter(|(n, _)| pick(n) && !declared.contains(n));
+    named
+        .map(|(n, span)| Ident::builder().name(n.as_str()).span(span).build())
+        .collect()
+}
+
+/// The source text of a region of a file.
+///
+/// # Arguments
+///
+/// * `file` - The file.
+/// * `span` - The region.
+///
+/// # Returns
+///
+/// The text; `""` for a region outside the file.
+fn snippet(file: &SourceFile, span: Span) -> String
+{
+    let lo = file.relative_position(&span.lo);
+    let hi = file.relative_position(&span.hi);
+    file.snippet(&lo, &hi).unwrap_or("").to_string()
+}
+
+/// Give each marked constant of the prelude the value of the target: the
+/// declaration names no value, and the later stages see a plain constant.
+///
+/// # Arguments
+///
+/// * `program` - The program.
+/// * `target` - The target.
+/// * `next_id` - The first node number no node holds.
+fn fill_facts(program: &mut Program, target: &Target, mut next_id: u32)
+{
+    let marked = program.stmts.iter_mut().filter_map(|s| match s
+    {
+        Stmt::Decl(d) if d.builtin && d.init.is_none() => Some(d),
+        _ => None,
+    });
+    for decl in marked
+    {
+        let Some(value) = target.fact(&decl.name.name)
+        else
+        {
+            continue;
+        };
+        let (id, span) = (NodeId(next_id), decl.name.span);
+        next_id += 1;
+        decl.init = Some(match value
+        {
+            FactValue::Text(text, _) =>
+            {
+                let pieces = vec![StrPiece::Text(text.to_string())];
+                Expr::Str(StrExpr::builder().id(id).pieces(pieces).span(span).build())
+            }
+            #[rustfmt::skip]
+            FactValue::Bits(bits) => Expr::Int(IntLit::builder().id(id).value(u128::from(bits))
+                .base(10).script(DigitScript::Burmese).span(span).build()),
+        });
+    }
 }
 
 /// The names of the traits the prelude declares.
@@ -796,12 +1012,15 @@ fn prelude_names() -> &'static HashSet<String>
 {
     static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
-        let traits = prelude_stmts().iter().filter_map(|s| match s
+        // The traits, and the constants the compiler gives: the facts of the
+        // target.
+        let names = prelude_stmts().iter().filter_map(|s| match s
         {
             Stmt::Trait(d) => Some(d.name.name.to_string()),
+            Stmt::Decl(d) if d.builtin => Some(d.name.name.to_string()),
             _ => None,
         });
-        traits.collect()
+        names.collect()
     })
 }
 

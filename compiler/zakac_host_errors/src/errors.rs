@@ -70,6 +70,16 @@ pub enum Error
     {
         flag: String, target: String
     },
+    #[error("{}", t!("errors.built_for_other_host", built = built, host = host))]
+    BuiltForOtherHost
+    {
+        built: String, host: String
+    },
+    #[error("{}", t!("errors.c_for_other_host", target = target, host = host))]
+    CForOtherHost
+    {
+        target: String, host: String
+    },
     #[error("{}", t!("errors.tool_not_found", tool = tool))]
     ToolNotFound
     {

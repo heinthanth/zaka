@@ -441,6 +441,9 @@ pub enum Kw
     // control
     /// `အကယ်၍`
     If,
+    /// `ကွန်ပိုင်းလုပ်ချိန်တွင်`, "at compile time": after `အကယ်၍`, it makes the
+    /// conditional one the compiler settles for the target it builds for
+    AtCompileTime,
     /// `လျှင်`
     Then,
     /// `ဖြစ်လျှင်`

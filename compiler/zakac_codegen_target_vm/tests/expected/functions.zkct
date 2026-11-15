@@ -5,6 +5,7 @@ source: "\nလုပ်ဆောင်ချက် နှစ်ဆတိုး�
 imports: []
 module:
   platform_bits: 64
+  built_for: null
   globals: []
   texts:
   - မင်္ဂလာပါ

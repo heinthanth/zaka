@@ -396,6 +396,11 @@ pub(crate) struct Parser<'t>
     /// The number of blocks that enclose the current statement.
     #[builder(default)]
     pub(crate) depth: u32,
+    /// The number of blocks of compile-time conditionals at the top level
+    /// that enclose the current statement: their statements stand at the top
+    /// level all the same.
+    #[builder(default)]
+    pub(crate) top: u32,
     /// The number of notation expressions that enclose the current one.
     #[builder(default)]
     pub(crate) nest: u32,
@@ -678,6 +683,15 @@ impl<'t> Parser<'t>
     /// # Returns
     ///
     /// `true` if it is.
+    /// Whether the current statement stands inside a block, not at the top
+    /// level of the file. The blocks of a compile-time conditional at the top
+    /// level count as the top level.
+    ///
+    /// # Returns
+    ///
+    /// `true` inside a block.
+    pub(crate) fn nested(&self) -> bool { self.depth > self.top }
+
     pub(crate) fn at(&self, kw: Kw) -> bool { self.peek().kind == TokenKind::Kw(kw) }
 
     /// Whether the current token is the punctuation `punct`.

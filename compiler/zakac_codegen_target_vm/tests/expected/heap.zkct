@@ -5,6 +5,7 @@ source: "// လိပ်စာများမှတစ်ဆင့် တန်�
 imports: []
 module:
   platform_bits: 64
+  built_for: null
   globals: []
   texts:
   - နေရာ မရပါ

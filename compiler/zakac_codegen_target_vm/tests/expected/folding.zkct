@@ -5,6 +5,7 @@ source: "// ကိန်းသေ တွက်ချက်ခြင်း - ပ�
 imports: []
 module:
   platform_bits: 64
+  built_for: null
   globals: []
   texts:
   - ကြီးသည်
