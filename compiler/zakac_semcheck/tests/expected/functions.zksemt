@@ -262,6 +262,7 @@ program:
       variadic: false
       owned_ret: false
       captures: []
+      has_default: false
       span:
         lo: 1
         hi: 942
@@ -401,6 +402,7 @@ program:
       variadic: false
       owned_ret: false
       captures: []
+      has_default: false
       span:
         lo: 944
         hi: 1606
@@ -448,6 +450,7 @@ program:
       variadic: false
       owned_ret: false
       captures: []
+      has_default: false
       span:
         lo: 1608
         hi: 1953
@@ -540,6 +543,7 @@ program:
       variadic: false
       owned_ret: false
       captures: []
+      has_default: false
       span:
         lo: 1955
         hi: 2536

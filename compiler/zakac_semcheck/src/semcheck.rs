@@ -106,6 +106,7 @@ use crate::scope::Scopes;
 use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
 use crate::traits::Traits;
+use crate::traits::inheriting;
 use crate::traits::traits;
 use crate::units::StructHomes;
 use crate::units::prelude_twins;
@@ -267,6 +268,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
         if settled && enums_settled && !added && !named
         {
             out.diagnostics.extend(leftovers(program, &templates, &out.structs));
+            out.diagnostics.extend(templates.diags.iter().cloned());
             out.diagnostics
                 .extend(counts.into_values().filter_map(Result::err).flatten());
             out.diagnostics.sort_by_key(|d| d.span.lo);
@@ -356,7 +358,7 @@ fn check_once(
         .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
         .uses(instances.uses.clone())
         .maybe_prelude_unit((0..program.units.len() as u32).find(|u| generic::in_prelude(program, *u)))
-        .traits(traits(program)).build();
+        .traits(traits(program)).inheriting(inheriting(program)).build();
     checker.scopes.push();
     checker.check_struct_bounds();
     checker.visit_program(program);
@@ -417,6 +419,10 @@ pub(crate) struct Checker
     /// The traits of the program.
     #[builder(default)]
     pub traits: Traits,
+    /// The kind and the trait of each trait block that takes the defaults of
+    /// its trait.
+    #[builder(default)]
+    pub inheriting: Vec<(Kind, Name)>,
     /// The instances of generic functions from the runs before.
     #[builder(default)]
     pub known_fns: Wanted,
@@ -746,15 +752,26 @@ impl Checker
     ) -> Option<Option<DataKind>>
     {
         let expect = self.call_expect.take();
-        let template = self.template_named(&callee.name).filter(|_| place.is_none());
-        let target = match template
+        let templates =
+            tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
+        let target = match templates.is_empty()
         {
-            Some(t) =>
+            false =>
             {
-                let sig = self.generic_callee(&t, callee, kind_args, args, expect);
+                let t = self.choose_template(
+                    templates,
+                    callee,
+                    kind_args,
+                    args,
+                    prepositions,
+                    expect,
+                );
+                let sig = t.and_then(|t| {
+                    self.generic_callee(&t, callee, kind_args, args, expect)
+                });
                 sig.map(|s| vec![s])
             }
-            None => self.plain_or_generic(
+            true => self.plain_or_generic(
                 callee,
                 kind_args,
                 place,
@@ -954,17 +971,20 @@ impl Checker
         args: &[Expr], prepositions: &[Ident], expect: Option<DataKind>,
     ) -> Option<Vec<FnSig>>
     {
-        let generic = self.templates.fns.get(&callee.name).cloned();
-        let generic =
-            generic.filter(|_| place.is_none() && self.fns.contains_key(&callee.name));
-        let Some(template) = generic
-        else
-        {
-            return self.plain_callee(callee, kind_args, place);
-        };
+        let open = place.is_none() && self.fns.contains_key(&callee.name);
+        let generic = tern!(open, self.templates.fns_of(&callee.name), Vec::new());
+        ret_if!(generic.is_empty(), self.plain_callee(callee, kind_args, place));
         let plain = self.fns.get(&callee.name).cloned().unwrap_or_default();
         let fits = plain.iter().any(|s| self.fits_call(s, args, prepositions));
         ret_if!(fits, self.plain_callee(callee, kind_args, place));
+        let template = self.choose_template(
+            generic,
+            callee,
+            kind_args,
+            args,
+            prepositions,
+            expect,
+        )?;
         let sig = self.generic_callee(&template, callee, kind_args, args, expect);
         sig.map(|s| vec![s])
     }

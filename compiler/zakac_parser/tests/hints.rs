@@ -75,12 +75,13 @@ fn a_bad_hint_is_reported()
                 တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် x ဟူသော A တစ်ခု နှင့် y ဟူသော B တစ်ခု တို့ပါဝင်ပြီး \
                 မျိုးပြပစ္စည်းမှာ ခု ဖြစ်ကာ ရေးသားရာတွင်";
     let bad = |hint: &str| codes(&format!("{head} {hint} ရေးသားနိုင်သည်။\n"));
-    for hint in ["A B ကဟု", "A ဖြင့် B ခဟု", "A ဖြင့် ကဟု", "A ဖြင့် A ဖြင့် B ကဟု", "A ၊ B ကဟု"]
+    for hint in ["A B ကဟု", "A ဖြင့် B ခဟု", "A ဖြင့် ကဟု", "A ၊ B ကဟု"]
     {
         assert_eq!(bad(hint), vec![Code::BadHint], "{hint}");
     }
     assert!(bad("A ဖြင့် B ကဟု").is_empty());
     assert!(bad("A ဖြင့် B က ဟု").is_empty());
+    assert!(bad("A ဖြင့် A ဖြင့် B ကဟု").is_empty());
 }
 
 /// A file that declares a kind named `စာရင်း` hides the list of the prelude.
@@ -143,4 +144,23 @@ fn the_sign_form_takes_a_hint()
                 မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်ကာ ရေးသားရာတွင် က နှင့် ခ အတွဲဟု ရေးသားနိုင်သည်။\n";
     let hinted = kind_tree(pair, "စာသား နှင့် ကိန်းပြည့် အတွဲ");
     assert!(hinted.contains("အတွဲ<text isize>"), "{hinted}");
+}
+
+/// A pair of two values of one kind, whose hint names its kind parameter
+/// twice.
+const TWIN: &str = "ညီအတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား က ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် ပထမ \
+                    ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော က တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်ကာ \
+                    ရေးသားရာတွင် က ကို က ဖြင့် တွဲသော ညီအတွဲဟု ရေးသားနိုင်သည်။\n";
+
+/// A kind parameter that stands twice in a hint takes one kind, which a use
+/// writes in each place; another kind in the second place is ZK0253.
+#[test]
+fn a_repeated_slot_takes_one_kind()
+{
+    let twin = kind_tree(TWIN, "ကိန်းပြည့် ကို ကိန်းပြည့် ဖြင့် တွဲသော ညီအတွဲ");
+    assert!(twin.contains("ညီအတွဲ<isize>"), "{twin}");
+    let long = kind_tree(TWIN, "ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် ညီအတွဲ");
+    assert_eq!(long, twin);
+    let mixed = format!("{TWIN}ကိန်းရှင် တ သည် ကိန်းပြည့် ကို စာသား ဖြင့် တွဲသော ညီအတွဲ တစ်ခု ဖြစ်ပါစေ။\n");
+    assert_eq!(codes(&mixed), vec![Code::HintSlotTwoKinds]);
 }

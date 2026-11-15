@@ -205,6 +205,7 @@ program:
       variadic: false
       owned_ret: false
       captures: []
+      has_default: false
       span:
         lo: 145
         hi: 1079

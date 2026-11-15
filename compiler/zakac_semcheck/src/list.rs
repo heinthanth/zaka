@@ -358,7 +358,7 @@ impl Checker
     fn fits_method(&mut self, n: &FieldExpr) -> bool
     {
         let name = &n.field.name;
-        ret_if!(self.template_named(&Name::from(name.as_str())).is_some(), true);
+        ret_if!(!self.templates_named(&Name::from(name.as_str())).is_empty(), true);
         let sigs = self.fns.get(name).cloned().unwrap_or_default();
         let args = [(*n.base).clone()];
         sigs.iter().any(|s| self.fits_call(s, &args, &[]))

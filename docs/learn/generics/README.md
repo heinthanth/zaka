@@ -100,6 +100,36 @@ Kinds written before the name fix it,
 declared kind:
 `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဗလာ() ဖြစ်ပါစေ။`
 
+## Two generic functions of one name
+
+Generic functions can share a name, as plain functions do. Each call runs the one its
+arguments and prepositions fit. Here the stdlib's `ဖယ်` counts cells from 0, and the
+program adds one that counts from 1, with a preposition of its own:
+
+```zaka
+"စံကား/စာရင်း" မှ ဖယ် ကို ထည့်သွင်းမည်။
+
+လုပ်ဆောင်ချက် ဖယ် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
+ပစ္စည်းများ ဟူသော T စာရင်း တစ်ခု ကို ဝိဘတ် "မှ" ကို သုံး၍ လည်းကောင်း
+နေရာ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကွက်မြောက်ကို" ကို သုံး၍ လည်းကောင်း
+လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ T စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
+ပစ္စည်းများ မှ နေရာ - ၁ အကွက်ကို ဖယ် သည့် ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် l သည် [၁၀၊ ၂၀၊ ၃၀] ဖြစ်ပါစေ။
+l မှ ၁ အကွက်ကို ဖယ် သည့် ရလဒ် ကို ပြသမည်။
+l မှ ၁ ကွက်မြောက်ကို ဖယ် သည့် ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၁၀၊ ၃၀]
+[၂၀၊ ၃၀]
+```
+
+A call that two of them fit alike is ZK0333; the call then writes its prepositions.
+
 ## Generic structs
 
 A struct can take kind parameters too. Its head then ends in `ဒေတာအစုအဝေးသည်`, and
@@ -163,6 +193,9 @@ are the places where a use writes a kind:
 `စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ`; the hint adds a spelling. The
 list and the table have hints of their own in the prelude: so a program writes
 `ကိန်းပြည့် စာရင်း` and `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား`.
+A hint can name a kind parameter twice, as
+`ရေးသားရာတွင် က ကို က ဖြင့် တွဲသော ညီအတွဲဟု ရေးသားနိုင်သည်` does: a use then writes one kind in
+both places, `ကိန်းပြည့် ကို ကိန်းပြည့် ဖြင့် တွဲသော ညီအတွဲ`.
 [Written-as hints](../../manual/language/generics.md#written-as-hints) holds the rules.
 
 ## Local kinds

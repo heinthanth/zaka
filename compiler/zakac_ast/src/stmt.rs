@@ -510,6 +510,12 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub captures: Vec<CaptureItem>,
+    /// `true` for a function of a trait written with a block: a kind whose
+    /// trait block takes the defaults of the trait runs it when the kind
+    /// gives no function of its own.
+    #[builder(default)]
+    #[serde(default)]
+    pub has_default: bool,
     /// Source region.
     pub span: Span,
 }
@@ -1007,6 +1013,12 @@ pub struct TraitBlock
     #[builder(default)]
     #[serde(default)]
     pub fn_names: Vec<Ident>,
+    /// `true` when the block ends in `<trait> ဂုဏ်သတ္တိ၏
+    /// အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။`: the kind takes the
+    /// default of each function of the trait that the block leaves out.
+    #[builder(default)]
+    #[serde(default)]
+    pub inherits: bool,
     /// Source region, the closer included.
     pub span: Span,
 }

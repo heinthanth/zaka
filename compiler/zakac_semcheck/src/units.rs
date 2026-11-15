@@ -461,10 +461,12 @@ impl Checker
     /// `true` when it does.
     fn exports_generic(&mut self, unit: u32, name: &Ident) -> bool
     {
-        let here = self.templates.units.get(&name.name) == Some(&unit);
-        let fns = self.templates.fns.get(&name.name).filter(|d| here && d.exported);
-        let structs =
-            self.templates.structs.get(&name.name).filter(|d| here && d.exported);
+        let here = |inner: &Name| self.templates.units.get(inner) == Some(&unit);
+        let fns = self.templates.of_name.get(&name.name).into_iter().flatten();
+        let fns = fns.filter(|k| here(k)).filter_map(|k| self.templates.fns.get(k));
+        let fns = fns.filter(|d| d.exported).next();
+        let structs = self.templates.structs.get(&name.name);
+        let structs = structs.filter(|d| here(&name.name) && d.exported);
         let decl = fns.map(|d| d.name.span).or(structs.map(|d| d.name.span));
         let traits =
             self.traits.get(&name.name).filter(|(u, d)| *u == unit && d.exported);

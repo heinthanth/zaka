@@ -405,3 +405,180 @@ fn operators_on_a_struct_call_its_functions()
     let none = check(point, "ကိန်းရှင် က သည် ဗက်တာ(x: ၁) ဖြစ်ပါစေ။\n(က + က) ကို ပြသမည်။");
     assert!(!none.out.diagnostics.is_empty());
 }
+
+/// A generic function of one value, for the overload tests.
+const PICK_ONE: &str = "လုပ်ဆောင်ချက် ရွေး<T> သည်\nက ဟူသော T တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ \
+                        T တစ်ခု ကို ပြန်ပေးမည်။\nက ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+
+/// A generic function of two values, written with the kind parameter `P`.
+fn pick_two(param: &str) -> String
+{
+    format!(
+        "လုပ်ဆောင်ချက် ရွေး<{param}> သည်\nက ဟူသော {param} တစ်ခု ကို လည်းကောင်း ခ ဟူသော {param} တစ်ခု \
+         ကို လည်းကောင်း\nလက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ {param} တစ်ခု ကို ပြန်ပေးမည်။\nခ ကို \
+         ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n"
+    )
+}
+
+/// Generic functions of one name are overloads: each call runs the one its
+/// arguments fit, and the instance of a later one keeps its number last.
+#[test]
+fn generic_functions_of_one_name_are_overloads()
+{
+    let decls = format!("{PICK_ONE}{}", pick_two("T"));
+    let checked = check(&decls, "ရွေး(၁) ကို ပြသမည်။\nရွေး(၁၊ ၂) ကို ပြသမည်။");
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    let names = fn_names(&checked);
+    assert!(names.contains(&"ရွေး<isize>".to_string()), "{names:?}");
+    assert!(names.contains(&"ရွေး<isize>#2".to_string()), "{names:?}");
+}
+
+/// Two generic functions with one head, whatever their kind parameters are
+/// named, are ZK0304.
+#[test]
+fn two_generic_functions_with_one_head_are_zk0304()
+{
+    let decls = format!("{}{}", pick_two("T"), pick_two("U"));
+    assert_eq!(codes(&decls, "ရွေး(၁၊ ၂) ကို ပြသမည်။"), [Code::DuplicateFunction]);
+}
+
+/// A call that no generic function of its name fits is ZK0332, and one that
+/// two fit is ZK0333.
+#[test]
+fn a_call_of_generic_overloads_fits_one()
+{
+    let decls = format!("{PICK_ONE}{}", pick_two("T"));
+    assert_eq!(codes(&decls, "ရွေး(၁၊ ၂၊ ၃) ကို ပြသမည်။"), [Code::NoOverloadFits]);
+    let lists = "လုပ်ဆောင်ချက် ရွေး<T> သည်\nက ဟူသော T စာရင်း တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ \
+                 T စာရင်း တစ်ခု ကို ပြန်ပေးမည်။\nက ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+    let decls = format!("{PICK_ONE}{lists}");
+    assert_eq!(codes(&decls, "ရွေး([၁]) ကို ပြသမည်။"), [Code::OverloadUnclear]);
+}
+
+/// A parameter of a fixed kind tells two generic functions apart when the
+/// kind parameters fit both.
+#[test]
+fn a_fixed_parameter_tells_generic_overloads_apart()
+{
+    let with = |kind: &str, out: &str| {
+        format!(
+            "လုပ်ဆောင်ချက် တွဲ<T> သည်\nက ဟူသော T တစ်ခု ကို လည်းကောင်း ခ ဟူသော {kind} တစ်ခု ကို \
+             လည်းကောင်း\nလက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\n{out} ကို \
+             ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n"
+        )
+    };
+    let decls = format!("{}{}", with("ကိန်းပြည့်", "၁"), with("စာသား", "၂"));
+    let checked = check(&decls, "တွဲ(၁.၅၊ \"x\") ကို ပြသမည်။");
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    let names = fn_names(&checked);
+    assert!(names.contains(&"တွဲ<f64>#2".to_string()), "{names:?}");
+}
+
+/// A value of an overloaded generic function names the one whose count of
+/// kind parameters the value writes.
+#[test]
+fn a_value_of_generic_overloads_picks_through_its_kinds()
+{
+    let two_kinds = "လုပ်ဆောင်ချက် ရွေး<A၊ B> သည်\nက ဟူသော A တစ်ခု ကို လည်းကောင်း ခ ဟူသော B တစ်ခု ကို \
+                     လည်းကောင်း\nလက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ A တစ်ခု ကို ပြန်ပေးမည်။\nက ကို \
+                     ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+    let decls = format!("{PICK_ONE}{two_kinds}");
+    let checked =
+        check(&decls, "ကိန်းရှင် f သည် ရွေး::<ကိန်းပြည့်၊ စာသား> ဖြစ်ပါစေ။\nf(၁၊ \"x\") ကို ပြသမည်။");
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    let names = fn_names(&checked);
+    assert!(names.contains(&"ရွေး<isize၊ text>#2".to_string()), "{names:?}");
+}
+
+/// A trait whose second function has a default that calls the first.
+const GREET: &str = "နှုတ်ဆက်နိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် \
+                     အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။\nလုပ်ဆောင်ချက် နာမည်ယူ သည်\nက ဟူသော A တစ်ခု ကို \
+                     လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။\nလုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nက ဟူသော A တစ်ခု ကို \
+                     လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\n\"hi \" + \
+                     နာမည်ယူ(က) ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nဂုဏ်သတ္တိတွင် ပါသော \
+                     လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\nလူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား \
+                     တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။\n";
+
+/// The function of a trait block that gives `လူ` the first function of
+/// [`GREET`].
+const NAME_FN: &str = "လုပ်ဆောင်ချက် နာမည်ယူ သည်\nက ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
+                       လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\nက ၏ နာမည် ကို \
+                       ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+
+/// A trait block of `လူ` for [`GREET`]: its functions, then the line that
+/// takes the defaults of the trait `takes` names, when given.
+fn greet_block(fns: &str, takes: Option<&str>) -> String
+{
+    let line =
+        takes.map(|t| format!("{t} ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\n"));
+    format!(
+        "{GREET}လူ တွင် နှုတ်ဆက်နိုင်သော ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို \
+         ထည့်သွင်းမည်။\n{fns}{}ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\n",
+        line.unwrap_or_default()
+    )
+}
+
+/// The call of the default of [`GREET`] on a `လူ`.
+const GREET_CALL: &str = "နှုတ်ဆက်(လူ(နာမည်: \"အေး\")) ကို ပြသမည်။";
+
+/// A trait block that ends with the line that takes the defaults gives its
+/// kind the default of each function it leaves out, and a call runs it.
+#[test]
+fn a_block_that_inherits_takes_the_defaults()
+{
+    let checked = check(&greet_block(NAME_FN, Some("နှုတ်ဆက်နိုင်သော")), GREET_CALL);
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+    let names = fn_names(&checked);
+    assert!(names.contains(&"နှုတ်ဆက်<လူ>".to_string()), "{names:?}");
+}
+
+/// A generic function that needs the trait runs the default through it.
+#[test]
+fn a_generic_runs_the_default_through_its_constraint()
+{
+    let generic = "လုပ်ဆောင်ချက် နှစ်ခါ<T: နှုတ်ဆက်နိုင်သော> သည်\nက ဟူသော T တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို \
+                   လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\nနှုတ်ဆက်(က) ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ \
+                   ပြီးဆုံးပါပြီး။\n";
+    let decls = format!("{}{generic}", greet_block(NAME_FN, Some("နှုတ်ဆက်နိုင်သော")));
+    let checked = check(&decls, "နှစ်ခါ(လူ(နာမည်: \"အေး\")) ကို ပြသမည်။");
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+}
+
+/// A block that leaves out a function with a default and does not take the
+/// defaults is ZK0345, and a line that takes no default is ZK0351.
+#[test]
+fn the_defaults_take_the_line_of_their_block()
+{
+    assert!(codes(&greet_block(NAME_FN, None), "").contains(&Code::TraitFnMissing));
+    let own = "လုပ်ဆောင်ချက် နှုတ်ဆက် သည်\nက ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား \
+               တစ်ခု ကို ပြန်ပေးမည်။\n\"hello\" ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+    let both = greet_block(&format!("{NAME_FN}{own}"), Some("နှုတ်ဆက်နိုင်သော"));
+    assert_eq!(codes(&both, ""), [Code::InheritsNothing]);
+}
+
+/// A kind with no trait block gives each function itself: the default does
+/// not count for it, so a call of the default on it is ZK0343.
+#[test]
+fn a_kind_with_no_block_takes_no_default()
+{
+    let plain = NAME_FN.replace("လူ", "ကြောင်").replace("တစ်ယောက်", "တစ်ကောင်");
+    let cat = "ကြောင် ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ကောင် \
+               ဖြစ်သည်။\n";
+    let decls = format!("{GREET}{cat}{plain}");
+    let call = "နှုတ်ဆက်(ကြောင်(နာမည်: \"ဝါ\")) ကို ပြသမည်။";
+    assert!(codes(&decls, call).contains(&Code::BoundNotMet));
+}
+
+/// A block can hold the line alone, and take each default.
+#[test]
+fn a_block_of_the_line_alone_takes_each_default()
+{
+    let all_default = GREET.replace(
+        "လုပ်ဆောင်ချက် နာမည်ယူ သည်\nက ဟူသော A တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။\n",
+        "လုပ်ဆောင်ချက် နာမည်ယူ သည်\nက ဟူသော A တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို \
+         ပြန်ပေးမည်။\n\"someone\" ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n",
+    );
+    let block = greet_block("", Some("နှုတ်ဆက်နိုင်သော")).replace(GREET, &all_default);
+    let checked = check(&block, GREET_CALL);
+    assert!(checked.out.diagnostics.is_empty(), "{:?}", checked.out.diagnostics);
+}

@@ -159,3 +159,68 @@ fn the_compiler_mark_stands_where_an_external_mark_stands()
         "{list:?}"
     );
 }
+
+/// A trait with a function that has a default: the function of one value
+/// gives back text.
+const SHOWN: &str = "ပြနိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် \
+                     အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။\nလုပ်ဆောင်ချက် ပြ သည်\nက ဟူသော A တစ်ခု ကို \
+                     လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။\n\"?\" ကို \
+                     ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nဂုဏ်သတ္တိတွင် ပါသော \
+                     လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\n";
+
+/// A trait block of `ကိန်းပြည့်` for [`SHOWN`] that holds the line alone,
+/// naming the trait `named`.
+fn shown_block(named: &str) -> String
+{
+    format!(
+        "{SHOWN}ကိန်းပြည့် တွင် ပြနိုင်သော ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။\n{named} \
+         ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\nထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ \
+         ပြီးဆုံးပါပြီး။\n"
+    )
+}
+
+/// A function of a trait written with a block is a default: the trait keeps
+/// its head, and the file gains a generic function of it whose kind
+/// parameter needs the trait.
+#[test]
+fn a_trait_function_with_a_block_is_a_default()
+{
+    let list = stmts(&shown_block("ပြနိုင်သော"));
+    let Some(Stmt::Trait(decl)) = list.first()
+    else
+    {
+        panic!("a trait comes first: {list:?}");
+    };
+    assert!(decl.fns[0].has_default && decl.fns[0].block.stmts.is_empty());
+    let Some(Stmt::Fn(hoisted)) = list.get(1)
+    else
+    {
+        panic!("the default follows the trait: {list:?}");
+    };
+    assert_eq!(hoisted.kind_params.len(), 1);
+    let bound =
+        hoisted.kind_params[0].bounds[0].name.as_ref().map(|n| n.name.to_string());
+    assert_eq!(bound.as_deref(), Some("ပြနိုင်သော"));
+    assert!(!hoisted.block.stmts.is_empty());
+    let Some(Stmt::TraitBlock(block)) = list.get(2)
+    else
+    {
+        panic!("the trait block comes last: {list:?}");
+    };
+    assert!(block.inherits && block.fns.is_empty());
+}
+
+/// The line that takes the defaults names the trait of its block (ZK0254
+/// otherwise) and stands last in it.
+#[test]
+fn the_line_that_takes_defaults_names_its_trait_and_ends_the_block()
+{
+    assert_eq!(codes(&shown_block("တခြားနိုင်သော")), [Code::InheritOtherTrait]);
+    let late = shown_block("ပြနိုင်သော").replace(
+        "ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ",
+        "လုပ်ဆောင်ချက် ပြ သည်\nက ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို \
+         ပြန်ပေးမည်။\n\"!\" ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nထည့်သွင်းမည့် \
+         လုပ်ဆောင်ချက်များ",
+    );
+    assert!(!codes(&late).is_empty());
+}

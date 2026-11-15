@@ -59,6 +59,9 @@ pub struct Hint
     /// The number of kind arguments a use gives: each kind parameter, but
     /// the first of a trait.
     pub arg_count: usize,
+    /// The name of the kind parameter of each slot index, for reports.
+    #[builder(default)]
+    pub slots: Vec<String>,
     /// Whether the hint writes a trait, not a kind.
     #[builder(default)]
     pub is_trait: bool,
@@ -90,8 +93,16 @@ impl Hint
         };
         let parts = words.iter().map(part).collect();
         #[rustfmt::skip]
-        return Some(Hint::builder().name(name.to_string()).parts(parts).arg_count(given.len())
-            .is_trait(is_trait).build());
+        let slots = given.iter().map(|p| (*p).to_string()).collect();
+        return Some(
+            Hint::builder()
+                .name(name.to_string())
+                .parts(parts)
+                .arg_count(given.len())
+                .slots(slots)
+                .is_trait(is_trait)
+                .build(),
+        );
     }
 
     /// Whether a hint starts with a slot, so it follows a kind as a level.
@@ -145,8 +156,6 @@ pub(crate) fn hint_fault(
     let count = |p: &str| words.iter().filter(|w| **w == p).count();
     let first = params.first().filter(|p| is_trait && count(p) > 0);
     ret_if!(let Some(p) = first, Some(HintFault::First(p.to_string())));
-    let twice = given.iter().find(|p| count(p) > 1);
-    ret_if!(let Some(p) = twice, Some(HintFault::Twice(p.to_string())));
     let missing = given.iter().find(|p| count(p) == 0);
     ret_if!(let Some(p) = missing, Some(HintFault::Missing(p.to_string())));
     let last = words.last() == Some(&name) && count(name) == 1;
@@ -557,7 +566,11 @@ impl Parser<'_>
             match part
             {
                 HintPart::Word(_) => name_span = self.bump().span,
-                HintPart::Slot(i) => args[*i] = Some(self.parse_kind_with(form)?),
+                HintPart::Slot(i) =>
+                {
+                    let kind = self.parse_kind_with(form)?;
+                    self.fill_slot(&hint, &mut args[*i], *i, kind);
+                }
             }
         }
         let name = Ident::builder().name(hint.name.as_str()).span(name_span).build();
@@ -567,6 +580,31 @@ impl Parser<'_>
         let kind = Kind::builder().base(BaseKind::Named).name(name).args(args).span(span)
             .build();
         Ok(self.builtin_generic(kind))
+    }
+
+    /// Give a slot of a hint use its kind. A kind parameter that stands twice
+    /// in the hint takes the kind its first place gives; another kind in a
+    /// later place is ZK0253.
+    ///
+    /// # Arguments
+    ///
+    /// * `hint` - The hint.
+    /// * `arg` - The kind argument of the slot, when an earlier place gave it.
+    /// * `slot` - The index of the slot.
+    /// * `kind` - The kind this place writes.
+    fn fill_slot(
+        &mut self, hint: &Hint, arg: &mut Option<Kind>, slot: usize, kind: Kind,
+    )
+    {
+        let Some(held) = arg
+        else
+        {
+            *arg = Some(kind);
+            return;
+        };
+        ret_if!(held.same_as(&kind));
+        let param = hint.slots.get(slot).map_or("", String::as_str);
+        self.diags.push(diag::hint_slot_two_kinds(kind.span, &hint.name, param));
     }
 
     /// Parse the hint of a declaration, `ရေးသားရာတွင် <words> ဟု`, when it

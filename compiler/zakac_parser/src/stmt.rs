@@ -1,5 +1,6 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
 use zakac_ast::stmt::BlockStmt;
@@ -28,6 +29,7 @@ use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::SwitchArm;
 use zakac_ast::stmt::SwitchDefault;
 use zakac_ast::stmt::SwitchStmt;
+use zakac_ast::stmt::TraitDecl;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
@@ -97,6 +99,40 @@ fn count_mode(kw: Kw) -> Option<CountMode>
     }
 }
 
+/// Take the default of each function of a trait out of it, as a generic
+/// function of the file: the kind parameters of the trait, the first one
+/// needing the trait itself. The trait keeps the head.
+///
+/// # Arguments
+///
+/// * `decl` - The trait.
+///
+/// # Returns
+///
+/// The generic functions.
+fn hoist_defaults(decl: &mut TraitDecl) -> Vec<FnDecl>
+{
+    let params = &decl.kind_params;
+    let span = decl.name.span;
+    let arg = |p: &KindParam| {
+        Kind::builder().base(BaseKind::Named).name(p.name.clone()).span(p.span).build()
+    };
+    let others = params.iter().skip(1).map(arg).collect();
+    #[rustfmt::skip]
+    let itself = Kind::builder().base(BaseKind::Named).name(decl.name.clone()).args(others)
+        .span(span).build();
+    let mut kind_params = params.clone();
+    do_if!(let Some(first) = kind_params.first_mut(), first.bounds.push(itself));
+    let exported = decl.exported;
+    let with_block = decl.fns.iter_mut().filter(|f| f.has_default);
+    let hoist = |f: &mut FnDecl| {
+        let blank = BlockStmt::builder().span(f.block.span).build();
+        let block = std::mem::replace(&mut f.block, blank);
+        FnDecl { kind_params: kind_params.clone(), block, exported, ..f.clone() }
+    };
+    with_block.map(hoist).collect()
+}
+
 impl Parser<'_>
 {
     /// Parse statements up to the end of the input.
@@ -116,10 +152,13 @@ impl Parser<'_>
             {
                 continue;
             };
-            // The functions of a trait block are functions of the file.
+            // The functions of a trait block are functions of the file, and
+            // so is the default of each function of a trait, as a generic
+            // function of the kinds that have the trait.
             let fns = match &mut stmt
             {
                 Stmt::TraitBlock(b) => std::mem::take(&mut b.fns),
+                Stmt::Trait(t) => hoist_defaults(t),
                 _ => Vec::new(),
             };
             stmts.push(stmt);
@@ -815,10 +854,32 @@ impl Parser<'_>
     /// The declaration, or a diagnostic.
     fn parse_fn_rest(
         &mut self, start: Span, name: Ident, is_start: bool,
-        mut kind_params: Vec<KindParam>,
+        kind_params: Vec<KindParam>,
     ) -> PResult<Stmt>
     {
         let (params, _, _) = self.parse_params(&[Kw::Accepting], false)?;
+        self.parse_fn_block(start, name, is_start, kind_params, params)
+    }
+
+    /// Parse the rest of a function declaration after its parameters: the
+    /// opener, the result, then the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The function name.
+    /// * `is_start` - Whether it is the start block.
+    /// * `kind_params` - The kind parameters of a generic function.
+    /// * `params` - The parameters.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    pub(crate) fn parse_fn_block(
+        &mut self, start: Span, name: Ident, is_start: bool,
+        mut kind_params: Vec<KindParam>, params: Vec<Param>,
+    ) -> PResult<Stmt>
+    {
         let open = self.expect_one_of(&[Kw::BlockOpen, Kw::FnOpenRet])?;
         let RetClause { kind: ret, owned } =
             self.parse_ret_clause(open.kind == TokenKind::Kw(Kw::FnOpenRet))?;

@@ -21,7 +21,9 @@ use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::FnDecl;
+use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::PRELUDE;
+use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
@@ -29,11 +31,13 @@ use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr;
 use zakac_ast::visit::walk_expr_mut;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
@@ -44,18 +48,109 @@ use crate::kind::DataKind;
 use crate::kind::Width;
 use crate::scope::FnSig;
 use crate::scope::FnSigs;
+use crate::scope::overload_name;
 use crate::semcheck::Checker;
 
 /// The generic functions and structs of a program, under their names.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Templates
 {
-    /// The generic functions.
+    /// The generic functions, each under its inner name: the written name
+    /// for the first of a name, then `<name>#2`, `<name>#3`, ... as for the
+    /// plain functions of one name. Each declaration holds its inner name.
     pub fns: HashMap<Name, FnDecl>,
+    /// The inner names of the generic functions of each written name, in order.
+    pub of_name: HashMap<Name, Vec<Name>>,
     /// The generic structs.
     pub structs: HashMap<Name, StructDecl>,
-    /// The file of each generic function and struct.
+    /// The file of each generic function, under its inner name, and of each
+    /// generic struct.
     pub units: HashMap<Name, u32>,
+    /// A generic function whose kind parameters, parameters and prepositions
+    /// another of its name has: ZK0304.
+    pub diags: Vec<Diagnostic>,
+}
+
+impl Templates
+{
+    /// The generic functions of a written name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The written name.
+    ///
+    /// # Returns
+    ///
+    /// Each one, its inner name as its name.
+    pub(crate) fn fns_of(&self, name: &Name) -> Vec<FnDecl>
+    {
+        let inner = self.of_name.get(name).into_iter().flatten();
+        inner.filter_map(|k| self.fns.get(k).cloned()).collect()
+    }
+
+    /// Record a generic function as one more of its name. The ones of a file
+    /// hide those of the prelude.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - The program.
+    /// * `decl` - The generic function.
+    /// * `unit` - Its file.
+    fn add_fn(&mut self, program: &Program, decl: &FnDecl, unit: u32)
+    {
+        let name = decl.name.name;
+        let inner = self.of_name.get(&name).cloned().unwrap_or_default();
+        let prelude =
+            |k: &Name| self.units.get(k).is_some_and(|u| in_prelude(program, *u));
+        let held_in_file = inner.iter().any(|k| !prelude(k));
+        ret_if!(in_prelude(program, unit) && held_in_file);
+        let hidden = !in_prelude(program, unit) && !inner.is_empty() && !held_in_file;
+        do_if!(hidden, self.drop_fns(&name));
+        let held = self.fns_of(&name);
+        let twice = held.iter().any(|h| same_head(h, decl));
+        ret_if!(twice, self.diags.push(rd::duplicate_function(decl.name.span, &name)));
+        let inner = overload_name(name, held.len());
+        let mut renamed = decl.clone();
+        renamed.name.name = inner;
+        self.fns.insert(inner, renamed);
+        self.units.insert(inner, unit);
+        self.of_name.entry(name).or_default().push(inner);
+    }
+
+    /// Forget each generic function of a name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The written name.
+    fn drop_fns(&mut self, name: &Name)
+    {
+        let inner = self.of_name.remove(name).unwrap_or_default();
+        for each in inner
+        {
+            self.fns.remove(&each);
+            self.units.remove(&each);
+        }
+    }
+
+    /// Record a generic struct: the first of a name wins, but one of a file
+    /// hides one of the prelude.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - The program.
+    /// * `decl` - The generic struct.
+    /// * `unit` - Its file.
+    fn add_struct(&mut self, program: &Program, decl: &StructDecl, unit: u32)
+    {
+        let name = decl.name.name;
+        let held =
+            self.structs.contains_key(&name).then(|| self.units.get(&name)).flatten();
+        let taken =
+            held.is_some_and(|u| !in_prelude(program, *u) || in_prelude(program, unit));
+        ret_if!(taken);
+        self.units.insert(name, unit);
+        self.structs.insert(name, decl.clone());
+    }
 }
 
 /// The instances a run of the check asks for: each instance name with its
@@ -65,6 +160,43 @@ pub(crate) type Wanted = BTreeMap<Name, (Name, Vec<DataKind>)>;
 /// The first use of each instance: the name of a call, a value or a kind
 /// that asked for it, where a report about the instance points.
 pub(crate) type Uses = HashMap<Name, Span>;
+
+/// Whether two generic functions have one head: one count of kind parameters,
+/// and the same parameters and prepositions once the kind parameters of each
+/// stand in order for one set of kinds.
+///
+/// # Arguments
+///
+/// * `a` - One function.
+/// * `b` - The other.
+///
+/// # Returns
+///
+/// `true` when the two do.
+fn same_head(a: &FnDecl, b: &FnDecl) -> bool
+{
+    ret_false!(
+        a.kind_params.len() != b.kind_params.len() || a.params.len() != b.params.len()
+    );
+    let stand_in = |d: &FnDecl| -> Vec<Kind> {
+        let slot = |(i, p): (usize, &KindParam)| {
+            let name = Ident::builder().name(format!("%{i}")).span(p.name.span).build();
+            (
+                p.name.name,
+                Kind::builder().base(BaseKind::Named).name(name).span(p.span).build(),
+            )
+        };
+        let bound: HashMap<Name, Kind> =
+            d.kind_params.iter().enumerate().map(slot).collect();
+        let kinds = d.params.iter().map(|p| p.kind.clone());
+        kinds.map(|mut k| (k.substitute(&bound), k).1).collect()
+    };
+    let word = |d: &FnDecl| -> Vec<Option<Name>> {
+        d.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name)).collect()
+    };
+    let (ka, kb) = (stand_in(a), stand_in(b));
+    word(a) == word(b) && ka.iter().zip(&kb).all(|(l, r)| l.same_as(r))
+}
 
 /// Whether a statement declares a generic function or struct.
 ///
@@ -85,7 +217,7 @@ pub(crate) fn is_template(stmt: &Stmt) -> bool
     }
 }
 
-/// The generic functions at the top level of a program.
+/// The generic functions and structs at the top level of a program.
 ///
 /// # Arguments
 ///
@@ -93,31 +225,19 @@ pub(crate) fn is_template(stmt: &Stmt) -> bool
 ///
 /// # Returns
 ///
-/// Each template under its name; the first of a name wins, and a template
-/// of a file hides one of the prelude.
+/// The templates: each generic function of a name, and the first generic
+/// struct of a name; the ones of a file hide those of the prelude.
 pub(crate) fn templates(program: &Program) -> Templates
 {
     let mut found = Templates::default();
     let all = program.stmts.iter().enumerate().filter(|(_, s)| is_template(s));
     for (i, stmt) in all
     {
-        let Some(name) = declared_name(stmt)
-        else
-        {
-            continue;
-        };
         let unit = program.unit_of(i);
-        // The first of a name wins, but a generic of a file hides one of the
-        // prelude.
-        let held = found.units.get(&name).copied();
-        let taken =
-            held.is_some_and(|u| !in_prelude(program, u) || in_prelude(program, unit));
-        do_if!(taken, continue);
-        found.units.insert(name, unit);
         match stmt
         {
-            Stmt::Fn(d) => _ = found.fns.insert(name, d.clone()),
-            Stmt::Struct(d) => _ = found.structs.insert(name, d.clone()),
+            Stmt::Fn(d) => found.add_fn(program, d, unit),
+            Stmt::Struct(d) => found.add_struct(program, d, unit),
             _ => (),
         }
     }
@@ -155,7 +275,9 @@ pub(crate) fn in_prelude(program: &Program, unit: u32) -> bool
 }
 
 /// The name of the instance of a template for some kinds, `f<isize၊ text>`;
-/// no written name holds a `<`.
+/// no written name holds a `<`. The inner name of a later generic function of a
+/// name keeps its number last, `f<isize>#2`, so the name a stop prints shows
+/// the kinds.
 ///
 /// # Arguments
 ///
@@ -168,7 +290,10 @@ pub(crate) fn in_prelude(program: &Program, unit: u32) -> bool
 pub(crate) fn instance_name(template: Name, kinds: &[DataKind]) -> Name
 {
     let parts: Vec<String> = kinds.iter().map(|k| k.name()).collect();
-    Name::from(format!("{template}<{}>", parts.join("၊ ")))
+    let text = template.as_str();
+    let (written, number) = text.split_once('#').map_or((text, ""), |(w, n)| (w, n));
+    let number = tern!(number.is_empty(), String::new(), format!("#{number}"));
+    Name::from(format!("{written}<{}>{number}", parts.join("၊ ")))
 }
 
 /// Work out the kind of each kind parameter of a template from pairs of a
@@ -579,25 +704,248 @@ impl Checker
     {
         let kinds = match kind_args.is_empty()
         {
-            true =>
-            {
-                let f = expect.and_then(DataKind::as_fn);
-                let params = f.map(|f| f.param_kinds()).unwrap_or_default();
-                let found = params.into_iter().map(Some).chain([f.and_then(|f| f.ret)]);
-                let written =
-                    template.params.iter().map(|p| &p.kind).chain(&template.ret);
-                infer_kinds(
-                    &params_of(template),
-                    written.zip(found),
-                    &self.known_structs,
-                )
-            }
+            true => self.value_kinds(template, expect),
             false =>
             {
                 Some(self.written_kinds(template.kind_params.len(), name, kind_args)?)
             }
         };
         self.instance_sig(template, name, kinds)
+    }
+
+    /// The kinds a value of a generic function takes from the function kind
+    /// its place expects.
+    ///
+    /// # Arguments
+    ///
+    /// * `template` - The generic function.
+    /// * `expect` - The kind the place of the value expects, when known.
+    ///
+    /// # Returns
+    ///
+    /// The kinds, or `None` when one remains unknown.
+    fn value_kinds(
+        &self, template: &FnDecl, expect: Option<DataKind>,
+    ) -> Option<Vec<DataKind>>
+    {
+        let f = expect.and_then(DataKind::as_fn);
+        let params = f.map(|f| f.param_kinds()).unwrap_or_default();
+        let found = params.into_iter().map(Some).chain([f.and_then(|f| f.ret)]);
+        let written = template.params.iter().map(|p| &p.kind).chain(&template.ret);
+        infer_kinds(&params_of(template), written.zip(found), &self.known_structs)
+    }
+
+    /// The generic function a call runs, of the generic functions of its
+    /// name: the one whose parameters and prepositions fit the call and whose
+    /// kinds the call shows. A lone one is the choice with no test, so its
+    /// own check reports what does not fit. ZK0332 when none fits, ZK0333
+    /// when more than one does.
+    ///
+    /// # Arguments
+    ///
+    /// * `templates` - The generic functions of the name.
+    /// * `callee` - The name at the call.
+    /// * `kind_args` - The kinds written at the call.
+    /// * `args` - The arguments.
+    /// * `prepositions` - The word after each argument of a preposition call.
+    /// * `expect` - The kind the place of the call expects.
+    ///
+    /// # Returns
+    ///
+    /// The generic function, or `None` after a report.
+    pub(crate) fn choose_template(
+        &mut self, mut templates: Vec<FnDecl>, callee: &Ident, kind_args: &[Kind],
+        args: &[Expr], prepositions: &[Ident], expect: Option<DataKind>,
+    ) -> Option<FnDecl>
+    {
+        ret_if!(templates.len() == 1, templates.pop());
+        let mut fits: Vec<(FnDecl, Vec<DataKind>)> = templates
+            .iter()
+            .filter_map(|t| {
+                let kinds =
+                    self.fitting_kinds(t, kind_args, args, prepositions, expect)?;
+                Some((t.clone(), kinds))
+            })
+            .collect();
+        // Kinds that fit the parameters written with kind parameters can
+        // still miss the others; the full test tells such functions apart.
+        if fits.len() > 1
+        {
+            let full: Vec<_> = fits
+                .iter()
+                .filter(|(t, k)| self.template_fits(t, k, args))
+                .cloned()
+                .collect();
+            do_if!(!full.is_empty(), fits = full);
+        }
+        let list =
+            || templates.iter().map(|t| self.template_text(t)).collect::<Vec<_>>();
+        match fits.len()
+        {
+            1 => fits.pop().map(|(t, _)| t),
+            0 =>
+            {
+                let list = list().join(" / ");
+                self.report(rd::no_overload_fits(callee.span, &callee.name, &list));
+                None
+            }
+            _ =>
+            {
+                self.report(rd::overload_unclear(callee.span, &callee.name));
+                None
+            }
+        }
+    }
+
+    /// The generic function a value names, of the generic functions of its
+    /// name: the one that takes the count of kinds the value writes, or else
+    /// whose kinds the function kind of the place shows. ZK0333 when more
+    /// than one does; when none does, the first, whose own check reports.
+    ///
+    /// # Arguments
+    ///
+    /// * `templates` - The generic functions of the name.
+    /// * `name` - The name in the value.
+    /// * `kind_args` - The kinds written.
+    /// * `expect` - The kind the place of the value expects, when known.
+    ///
+    /// # Returns
+    ///
+    /// The generic function, or `None` after a report.
+    pub(crate) fn choose_value_template(
+        &mut self, mut templates: Vec<FnDecl>, name: &Ident, kind_args: &[Kind],
+        expect: Option<DataKind>,
+    ) -> Option<FnDecl>
+    {
+        ret_if!(templates.len() == 1, templates.pop());
+        let fits = |t: &&FnDecl| match kind_args.is_empty()
+        {
+            true => self.value_kinds(t, expect).is_some(),
+            false => t.kind_params.len() == kind_args.len(),
+        };
+        let mut found: Vec<FnDecl> = templates.iter().filter(fits).cloned().collect();
+        match found.len()
+        {
+            1 => found.pop(),
+            0 => templates.into_iter().next(),
+            _ =>
+            {
+                self.report(rd::overload_unclear(name.span, &name.name));
+                None
+            }
+        }
+    }
+
+    /// The kinds of a generic function for a call, when the call fits its
+    /// head: an argument for each parameter, the prepositions of the
+    /// parameters when the call writes prepositions, and kinds written or
+    /// shown for each kind parameter.
+    ///
+    /// # Arguments
+    ///
+    /// * `template` - The generic function.
+    /// * `kind_args` - The kinds written at the call.
+    /// * `args` - The arguments.
+    /// * `prepositions` - The prepositions written.
+    /// * `expect` - The kind the place of the call expects.
+    ///
+    /// # Returns
+    ///
+    /// The kinds, or `None` when the call does not fit.
+    fn fitting_kinds(
+        &mut self, template: &FnDecl, kind_args: &[Kind], args: &[Expr],
+        prepositions: &[Ident], expect: Option<DataKind>,
+    ) -> Option<Vec<DataKind>>
+    {
+        ret_if!(template.params.len() != args.len(), None);
+        let words: Option<Vec<Name>> = template
+            .params
+            .iter()
+            .map(|p| p.preposition.as_ref().map(|m| m.name))
+            .collect();
+        let named = |w: Vec<Name>| prepositions.iter().map(|m| m.name).eq(w);
+        ret_if!(!prepositions.is_empty() && !words.is_some_and(named), None);
+        ret_if!(kind_args.is_empty(), self.call_kinds(template, args, expect));
+        ret_if!(kind_args.len() != template.kind_params.len(), None);
+        Some(kind_args.iter().map(|k| DataKind::from_ast(k, &self.structs)).collect())
+    }
+
+    /// Whether a call fits a generic function for some kinds, with no report:
+    /// each kind meets its constraints, and each argument fits its parameter
+    /// once the kinds stand in it.
+    ///
+    /// # Arguments
+    ///
+    /// * `template` - The generic function.
+    /// * `kinds` - The kind of each kind parameter.
+    /// * `args` - The arguments.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it fits.
+    fn template_fits(
+        &mut self, template: &FnDecl, kinds: &[DataKind], args: &[Expr],
+    ) -> bool
+    {
+        let span = template.name.span;
+        let phrases: Option<Vec<Kind>> =
+            kinds.iter().map(|k| kind_ast(*k, span)).collect();
+        let Some(phrases) = phrases
+        else
+        {
+            return false;
+        };
+        let bound: HashMap<Name, Kind> =
+            params_of(template).into_iter().zip(phrases).collect();
+        let kind_of = |p: &Param| {
+            let mut k = p.kind.clone();
+            k.substitute(&bound);
+            DataKind::from_ast(&k, &self.structs)
+        };
+        let params: Vec<DataKind> = template.params.iter().map(kind_of).collect();
+        let before = self.diags.len();
+        let met = self.meets_bounds(&template.kind_params, kinds, span);
+        args.iter()
+            .zip(&params)
+            .for_each(|(arg, kind)| self.expect_kind(arg, Some(*kind)));
+        let clean = met && self.diags.len() == before;
+        self.diags.truncate(before);
+        clean
+    }
+
+    /// The parameters of a generic function as a list of ZK0332 shows them:
+    /// a kind parameter as its name, each other kind as its kind name.
+    ///
+    /// # Arguments
+    ///
+    /// * `template` - The generic function.
+    ///
+    /// # Returns
+    ///
+    /// The text, `(T[](မှ), usize(အကွက်ကို))`.
+    fn template_text(&self, template: &FnDecl) -> String
+    {
+        let params = params_of(template);
+        // shortcut: a kind parameter inside a result, a ဇယား or a generic
+        // struct shows as the kind a missing name stands for; spell those
+        // too if the list misleads.
+        let kind = |k: &Kind| {
+            let name = k.name.as_ref().map(|n| n.name).filter(|n| params.contains(n));
+            let Some(name) = name.filter(|_| k.base == BaseKind::Named)
+            else
+            {
+                return DataKind::from_ast(k, &self.structs).name();
+            };
+            let levels =
+                k.wraps.iter().map(|w| tern!(matches!(w, Wrap::Ptr), "*", "[]"));
+            format!("{name}{}", levels.collect::<String>())
+        };
+        let word = |p: &Param| p.preposition.as_ref().map(|m| format!("({})", m.name));
+        let each = template
+            .params
+            .iter()
+            .map(|p| format!("{}{}", kind(&p.kind), word(p).unwrap_or_default()));
+        format!("({})", each.collect::<Vec<_>>().join(", "))
     }
 
     /// The instance of a generic function for kinds, asked for: ZK0341 when
@@ -744,7 +1092,7 @@ impl Checker
 
 impl Checker
 {
-    /// The generic function a name calls: none when the file declares a
+    /// The generic functions a name calls: none when the file declares a
     /// function of the name, or a variable or a parameter holds it, as the
     /// file's own name hides a generic, the prelude's ones included.
     ///
@@ -754,14 +1102,14 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The generic function, or `None`.
-    pub(crate) fn template_named(&self, name: &Name) -> Option<FnDecl>
+    /// The generic functions, each with its inner name as its name.
+    pub(crate) fn templates_named(&self, name: &Name) -> Vec<FnDecl>
     {
         ret_if!(
             self.fns_named(name).is_some() || self.scopes.lookup(name).is_some(),
-            None
+            Vec::new()
         );
-        self.templates.fns.get(name).cloned()
+        self.templates.fns_of(name)
     }
 
     /// Start the check of an instance of a generic function: it sees the
@@ -955,9 +1303,16 @@ pub(crate) fn add_instances(
 /// The index of its statement.
 fn template_at(program: &Program, template: &Stmt) -> Option<usize>
 {
-    let name = declared_name(template)?;
+    // Generic functions of one name share it, so the place of the name tells
+    // them apart.
+    let Stmt::Fn(template) = template
+    else
+    {
+        return None;
+    };
+    let span = template.name.span;
     let at =
-        |s: &Stmt| is_template(s) && matches!(s, Stmt::Fn(d) if d.name.name == name);
+        |s: &Stmt| is_template(s) && matches!(s, Stmt::Fn(d) if d.name.span == span);
     program.stmts.iter().position(at)
 }
 

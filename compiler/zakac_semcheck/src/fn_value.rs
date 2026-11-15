@@ -124,15 +124,18 @@ impl Checker
     ) -> Option<DataKind>
     {
         let name = &n.name;
-        let template = self.template_named(&name.name);
+        let templates = self.templates_named(&name.name);
         let count = rd::kind_arg_count(name.span, &name.name, 0, n.kind_args.len());
         ret_if!(
-            template.is_none() && !n.kind_args.is_empty(),
+            templates.is_empty() && !n.kind_args.is_empty(),
             self.report(count),
             None
         );
-        let generic =
-            template.map(|t| self.generic_value(&t, name, &n.kind_args, expect));
+        let generic = (!templates.is_empty()).then(|| {
+            let t =
+                self.choose_value_template(templates, name, &n.kind_args, expect)?;
+            self.generic_value(&t, name, &n.kind_args, expect)
+        });
         let sigs = match generic
         {
             Some(sig) => Some(vec![sig?]),

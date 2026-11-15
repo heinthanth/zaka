@@ -409,7 +409,9 @@ The words of generics and traits are reserved words like the others:
 `ယေဘုယျဒေတာအမျိုးအစား`, `အစားထိုးသုံးနိုင်၍`, `၎င်း`, `အစားထိုးအသုံးပြုသည့်`,
 `အစားထိုးအသုံးပြု၍`, `ဂုဏ်သတ္တိ`, `ရှိစေရန်`, `ပါဝင်ရမည်`, `ထည့်သွင်းမည့်`,
 `လုပ်ဆောင်ချက်များ`, `ဤနေရာတွင်`, `သတိပြုရန်မှာ`, `သတိပြုစရာများ`, `ရှိသည်`, and the words
-of a written-as hint, `ရေးသားရာတွင်`, `ရေးသားနိုင်သည်` and `ရေးသားနိုင်ပြီး`. Each
+of a written-as hint, `ရေးသားရာတွင်`, `ရေးသားနိုင်သည်` and `ရေးသားနိုင်ပြီး`, and those of
+the line that takes the defaults of a trait, `အခြားလုပ်ဆောင်ချက်များကိုလည်း`,
+`မူရင်းအတိုင်း` and `ဆက်ခံမည်`. Each
 splits off a word it is written against, as `ဂုဏ်သတ္တိရှိစေရန်` does. `::` is one
 token, `Punct::PathSep`; a `:` alone remains the field mark of a struct value.
 

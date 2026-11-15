@@ -558,10 +558,20 @@ it out, and the walk skips it (`generic::is_template`). The driver runs the chec
 while a run asks for instances (`zakac_semcheck/src/generic.rs`,
 `generic_struct.rs`, `traits.rs`):
 
+Generic functions of one name are overloads (`Templates`): the first keeps the written
+name as its inner name and each later one takes `<name>#2`, `<name>#3`, … (`overload_name`),
+and two with one head are ZK0304 (`same_head`). A call picks one (`choose_template`):
+the templates whose parameter count and prepositions fit and whose kinds the call
+shows (`fitting_kinds`), narrowed when more than one fits through the parameters of fixed
+kinds (`template_fits`); none is ZK0332 and more ZK0333. A plain function of the name
+that fits comes first (`plain_or_generic`), and a function value picks through its count of
+kinds or the function kind its place expects (`choose_value_template`).
+
 1. A call of a template works out its kinds: written, or matched from the argument
    kinds (`infer_kinds`, through `Binder`), then from the kind its place expects. It
    checks the constraints of each kind parameter (`meets_bounds`, `has_trait`), names the
-   instance (`instance_name`: `f<isize၊ text>`), records it in `wanted`, and records its
+   instance (`instance_name`: `f<isize၊ text>`, `f<isize>#2` for a later overload),
+   records it in `wanted`, and records its
    choice in `Chosen` under the top-level function it stands in and the span of the
    name, as each instance holds the spans of its template. The run checks the call
    against the instance once the instance exists.
@@ -584,7 +594,10 @@ while a run asks for instances (`zakac_semcheck/src/generic.rs`,
 
 The traits are collected per file (`traits::traits`). A trait block is checked against
 its trait (`check_trait_block`): each function head with the kind in place, each
-function of the block one of the trait, and the file rule. The built-in traits are
+function of the block one of the trait, and the file rule. A block that takes the
+defaults (`inheriting`) leaves out each function with a default: `gives` counts the
+default for its kind (`takes_default`) when the kind gives none, and the call reaches the
+default through the generic overloads; a block that takes no default is ZK0351. The built-in traits are
 predicates on the kind (`traits::builtin`).
 
 ## Operators on structs
@@ -599,7 +612,7 @@ struct, record theirs through `struct_call` (`infer_prefix`, `infer_neg`,
 for a shift. `ပြသမည်` and a template slot record a call of `စာသားအဖြစ်ပြောင်း`. Once the check
 settles, `write_op_calls` puts each call into the tree, `!` around a negated one, with
 fresh node numbers and their kinds. A name a file declares, or a variable, hides a
-generic of the prelude (`template_named`); a template or a trait of a file hides one of
+generic of the prelude (`templates_named`); a template or a trait of a file hides one of
 the prelude. The compiler mark outside the prelude is ZK0349.
 
 ## Calls a node stands for

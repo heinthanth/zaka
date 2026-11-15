@@ -174,6 +174,12 @@ NameIsPrepositionWord = ("ZK0250", Level::Warning),
 NameReadsAsCall = ("ZK0251", Level::Warning),
 /// A written-as hint breaks a rule of its form.
 BadHint = ("ZK0252", Level::Error),
+/// A use of a written-as hint writes two kinds for one kind parameter that
+/// stands twice in it.
+HintSlotTwoKinds = ("ZK0253", Level::Error),
+/// The line that takes the defaults of a trait names another trait than its
+/// trait block.
+InheritOtherTrait = ("ZK0254", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -282,6 +288,9 @@ BuiltinOutsidePrelude = ("ZK0349", Level::Error),
 /// A function of a file has the name, the kinds and the prepositions of a function
 /// the compiler gives in the prelude.
 SameAsPrelude = ("ZK0350", Level::Warning),
+/// A trait block takes the defaults of its trait, but gives each function
+/// that has one itself, or the trait has none.
+InheritsNothing = ("ZK0351", Level::Warning),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

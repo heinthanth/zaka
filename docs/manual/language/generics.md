@@ -118,6 +118,13 @@ as `အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေး�
 - Kinds written for a function that is not generic are ZK0340.
 - A function value of a generic names its kinds, `<f>::<<kind>၊ …>`, or takes them from
   the function kind its place expects.
+- Generic functions of one name are overloads, as plain functions are. A call runs the
+  one whose parameter count and prepositions fit it and whose kinds it shows; when the
+  kinds fit more than one, the parameters of fixed kinds tell them apart. A plain
+  function of the name that fits comes first. No generic function that fits is ZK0332,
+  more than one ZK0333, and two with one head (the same parameters and prepositions,
+  whatever their kind parameters are named) ZK0304. A function value picks its generic
+  function through the count of kinds it writes, or the function kind its place expects.
 
 ```zaka
 လုပ်ဆောင်ချက် ဗလာ သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
@@ -145,6 +152,31 @@ as `အတွဲ<က၊ ခ> ဟူသော ဒေတာအစုအဝေး�
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ဗလာ() ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```zaka
+လုပ်ဆောင်ချက် ရွေး<T> သည်
+က ဟူသော T တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
+က ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+လုပ်ဆောင်ချက် ရွေး<T> သည်
+က ဟူသော T တစ်ခု ကို လည်းကောင်း ခ ဟူသော T တစ်ခု ကို လည်းကောင်း
+လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
+ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// one value, then two
+ရွေး(၁) ကို ပြသမည်။
+ရွေး("က"၊ "ခ") ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁
+ခ
 ```
 
 ## Generic structs
@@ -229,8 +261,12 @@ name the same kind.
 
 - Each word of the hint that is a kind parameter of the declaration is a *slot*, where a
   use writes a kind. The other words stand as written.
-- Each kind parameter stands in the hint once, in the order the hint chooses; a use
-  gives the kinds back to the parameters in their declared order.
+- Each kind parameter stands in the hint at least once, in the order the hint chooses; a
+  use gives the kinds back to the parameters in their declared order. A parameter that
+  stands twice takes one kind, which a use writes in each place:
+  `ရေးသားရာတွင် က ကို က ဖြင့် တွဲသော ညီအတွဲဟု ရေးသားနိုင်သည်` reads
+  `ကိန်းပြည့် ကို ကိန်းပြည့် ဖြင့် တွဲသော ညီအတွဲ`, and another kind in the second place is
+  ZK0253.
 - The hint ends in the name of the struct or trait, which stands nowhere else in it.
   `ဟု` can stand glued to that name: `အတွဲဟု`.
 - A fixed word stands between two slots: a kind in a slot can be a written-as kind
@@ -363,6 +399,11 @@ D သည် B နှင့် A တို့ကို အစားထိုး�
   its [hint](#written-as-hints).
 - Each function head is a header with no block: `လုပ်ဆောင်ချက် <name> သည် <params>
   လက်ခံပြီး <kind> ကို ပြန်ပေးမည်။`, `… လက်ခံမည်။` for no result, or the result clause alone.
+- A function of a trait written as a whole function, with `အောက်ပါတို့ကို လုပ်ဆောင်ကာ`
+  and a block, has a *default*: a kind whose [trait block](#trait-blocks) takes the
+  defaults runs it when the kind gives no function of its own. The default is a generic
+  function of the file, of the kind parameters of the trait, the first of them needing
+  the trait; `အများသုံး` on the trait exports it too.
 - The notes block of a trait gives its first kind parameter the traits it needs: a kind
   has the trait when it has those too.
 - A kind *has* a trait when, for each function head, a function of the program has its
@@ -435,6 +476,7 @@ T တွင် ငယ်စဉ်ကြီးလိုက်စီနိုင�
 ```text
 <kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။
 <functions>
+[<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။]
 ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
 ```
 
@@ -446,6 +488,62 @@ T တွင် ငယ်စဉ်ကြီးလိုက်စီနိုင�
   reaches the others, and the block adds nothing a plain function does not.
 - A block stands in the file that declares its kind or its trait (ZK0348), and at the
   top level (ZK0247). A trait that the program does not declare is ZK0344.
+- The line `<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။`, last in
+  the block, *takes the defaults*: the kind gets the default of each function of the
+  trait that the block leaves out, and a block of this line alone takes each default.
+  A kind's own function in the block replaces the default.
+- Without the line, a function left out is ZK0345, default or not. The line names the
+  trait of its block (ZK0254), and a line that takes no default, as the block gives each
+  function that has one, is ZK0351, a warning.
+- A default counts for a kind through a block alone: a kind with no block has a trait
+  when it gives each function itself, defaults included.
+
+```zaka
+နှုတ်ဆက်နိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+လုပ်ဆောင်ချက် နာမည်ယူ သည်
+က ဟူသော A တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။
+လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
+က ဟူသော A တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"မင်္ဂလာပါ " + နာမည်ယူ(က) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+ကြောင် ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ကောင် ဖြစ်သည်။
+
+လူ တွင် နှုတ်ဆက်နိုင်သော ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် နာမည်ယူ သည်
+က ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က ၏ နာမည် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+နှုတ်ဆက်နိုင်သော ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။
+ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+ကြောင် တွင် နှုတ်ဆက်နိုင်သော ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။
+လုပ်ဆောင်ချက် နာမည်ယူ သည်
+က ဟူသော ကြောင် တစ်ကောင် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က ၏ နာမည် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
+က ဟူသော ကြောင် တစ်ကောင် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"ညောင် " + နာမည်ယူ(က) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ထည့်သွင်းမည့် လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+နှုတ်ဆက်(လူ(နာမည်: "အေးအေး")) ကို ပြသမည်။
+နှုတ်ဆက်(ကြောင်(နာမည်: "ဝါဝါ")) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ အေးအေး
+ညောင် ဝါဝါ
+```
 
 ## Built-in traits
 
@@ -482,7 +580,9 @@ The check runs again while the program asks for new instances. Each run adds the
 instances the run before asked for, with the kinds in place of the kind parameters, and
 checks them as plain functions and structs; the stages after the check see no generic.
 An instance has a name no program can write, the generic's name and its kinds:
-`ထပ်<isize>`, `အတွဲ<text၊ isize>`. A chain of instances deeper than 64 stops with ZK0342.
+`ထပ်<isize>`, `အတွဲ<text၊ isize>`. The instance of a later generic function of a name
+keeps its number last, `ရွေး<isize>#2`, as a later plain function of a name is
+`<name>#2`; a stop prints the name without it. A chain of instances deeper than 64 stops with ZK0342.
 [Names and kinds](../internals/semcheck.md#generics) follows the build one step at a time.
 
 ## Errors
@@ -491,6 +591,8 @@ An instance has a name no program can write, the generic's name and its kinds:
 | --- | --- |
 | ZK0247 | a trait or a trait block inside a block |
 | ZK0252 | a written-as hint that breaks a rule of its form |
+| ZK0253 | two kinds in the places of one kind parameter that a hint names twice |
+| ZK0254 | a line that takes the defaults of another trait than its block |
 | ZK0248 | a note on a name that is no kind parameter |
 | ZK0340 | another count of kinds than the generic declares, or kinds for a function that is not generic |
 | ZK0341 | kinds a call or a struct value cannot work out |
@@ -502,3 +604,4 @@ An instance has a name no program can write, the generic's name and its kinds:
 | ZK0347 | two functions that give a kind one function of a trait |
 | ZK0348 | a trait block outside the file of its kind and of its trait |
 | ZK0349 | the compiler mark outside the [prelude](prelude.md) |
+| ZK0351 | a trait block that takes the defaults of its trait when none is left to take (warning) |

@@ -133,6 +133,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0250 | warning: a declared name that is a word of the preposition of a function the file sees | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 | ZK0251 | warning: a declared name that reads as a function the file sees with a glued call end | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 | ZK0252 | a written-as hint that breaks a rule of its form | [Generics and traits](../language/generics.md#written-as-hints) |
+| ZK0253 | a use of a written-as hint that writes two kinds for one kind parameter the hint names twice | [Generics and traits](../language/generics.md#written-as-hints) |
+| ZK0254 | the line that takes the defaults of a trait, naming another trait than its trait block | [Generics and traits](../language/generics.md#trait-blocks) |
 
 ### ZK03: names
 
@@ -188,6 +190,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0348 | a trait block outside the file of its kind and of its trait | [Generics and traits](../language/generics.md) |
 | ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The prelude](../language/prelude.md) |
 | ZK0350 | warning: a function with the name, the kinds and the prepositions of a function the prelude gives, which then takes over each sentence of it | [The prelude](../language/prelude.md#verbs-on-structs) |
+| ZK0351 | warning: a trait block that takes the defaults of its trait when no function it leaves out has one | [Generics and traits](../language/generics.md#trait-blocks) |
 
 ### ZK04: kinds
 

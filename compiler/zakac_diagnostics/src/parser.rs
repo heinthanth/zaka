@@ -798,8 +798,6 @@ pub enum HintFault
 {
     /// A kind parameter stands nowhere in it.
     Missing(String),
-    /// A kind parameter stands in it twice.
-    Twice(String),
     /// It names the first kind parameter of a trait.
     First(String),
     /// It does not end in the name it writes, or holds that name twice.
@@ -826,7 +824,6 @@ pub fn bad_hint(span: Span, name: &str, fault: &HintFault) -> Diagnostic
     let reason = match fault
     {
         HintFault::Missing(p) => t!("codes.ZK0252.missing", p = p),
-        HintFault::Twice(p) => t!("codes.ZK0252.twice", p = p),
         HintFault::First(p) => t!("codes.ZK0252.first", p = p),
         HintFault::Last => t!("codes.ZK0252.last", n = name),
         HintFault::Meet(p, q) => t!("codes.ZK0252.meet", p = p, q = q),
@@ -834,4 +831,42 @@ pub fn bad_hint(span: Span, name: &str, fault: &HintFault) -> Diagnostic
     };
     let msg = t!("codes.ZK0252.message", n = name, r = reason);
     Diagnostic::new(Code::BadHint, msg, span).with_help(t!("codes.ZK0252.help"))
+}
+
+/// Make a diagnostic for a use of a written-as hint that writes two kinds for
+/// one kind parameter, which stands twice in the hint.
+///
+/// # Arguments
+///
+/// * `span` - The second kind.
+/// * `name` - The kind or trait the hint writes.
+/// * `param` - The kind parameter.
+///
+/// # Returns
+///
+/// The `ZK0253` diagnostic.
+pub fn hint_slot_two_kinds(span: Span, name: &str, param: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0253.message", n = name, p = param);
+    Diagnostic::new(Code::HintSlotTwoKinds, msg, span)
+        .with_help(t!("codes.ZK0253.help", p = param))
+}
+
+/// Make a diagnostic for the line that takes the defaults of a trait when it
+/// names another trait than its trait block.
+///
+/// # Arguments
+///
+/// * `span` - The trait the line names.
+/// * `written` - That trait.
+/// * `block` - The trait of the block.
+///
+/// # Returns
+///
+/// The `ZK0254` diagnostic.
+pub fn inherit_other_trait(span: Span, written: &str, block: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0254.message", w = written, b = block);
+    Diagnostic::new(Code::InheritOtherTrait, msg, span)
+        .with_help(t!("codes.ZK0254.help", b = block))
 }

@@ -289,6 +289,7 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a kind, a trait or a function of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
 | `ရေးသားရာတွင်` | "when written": opens the written-as hint of a generic struct, kind or trait, which `ဟု` closes | [Generics and traits](../language/generics.md#written-as-hints) |
 | `ရေးသားနိုင်သည်`, `ရေးသားနိုင်ပြီး` | "can be written", "can be written, and": end the clause of a written-as hint, in a struct or a kind and in the head of a trait | [Generics and traits](../language/generics.md#written-as-hints) |
+| `အခြားလုပ်ဆောင်ချက်များကိုလည်း`, `မူရင်းအတိုင်း`, `ဆက်ခံမည်` | "the other functions too", "as in the original", "will inherit": the last line of a trait block, `<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။`, which takes the defaults of the trait | [Generics and traits](../language/generics.md#trait-blocks) |
 | `ဂုဏ်သတ္တိ` | "trait": after the name of a trait, in its declaration, its closer, a constraint and a trait block | [Traits](../../learn/generics/traits.md) |
 | `ပါဝင်ရမည်` | "must hold": closes the head of a trait, `… အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။` | [Generics and traits](../language/generics.md#traits) |
 | `လုပ်ဆောင်ချက်များ` | "functions": in the heads and closers of traits and trait blocks | [Generics and traits](../language/generics.md#traits) |

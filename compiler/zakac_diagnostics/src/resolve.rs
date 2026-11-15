@@ -799,6 +799,43 @@ pub fn trait_fn_missing(span: Span, trait_name: &str, name: &str) -> Diagnostic
     Diagnostic::new(Code::TraitFnMissing, msg, span).with_help(t!("codes.ZK0345.help"))
 }
 
+/// A trait block leaves out a function of its trait that has a default, and
+/// does not take the defaults.
+///
+/// # Arguments
+///
+/// * `span` - The trait block.
+/// * `trait_name` - The trait.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The `ZK0345` diagnostic, whose help names the line that takes defaults.
+pub fn trait_fn_missing_default(span: Span, trait_name: &str, name: &str)
+-> Diagnostic
+{
+    let msg = t!("codes.ZK0345.message", t = trait_name, f = name);
+    Diagnostic::new(Code::TraitFnMissing, msg, span)
+        .with_help(t!("codes.ZK0345.inherit", t = trait_name))
+}
+
+/// A trait block takes the defaults of its trait, and none is left for it
+/// to take.
+///
+/// # Arguments
+///
+/// * `span` - The trait block.
+/// * `trait_name` - The trait.
+///
+/// # Returns
+///
+/// The `ZK0351` diagnostic.
+pub fn inherits_nothing(span: Span, trait_name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0351.message", t = trait_name);
+    Diagnostic::new(Code::InheritsNothing, msg, span).with_help(t!("codes.ZK0351.help"))
+}
+
 /// A function of a trait block is not one of its trait, or has other
 /// parameter or result kinds than the trait gives it.
 ///

@@ -287,6 +287,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ရေးသားရာတွင်", Kw::WritingOpen),
     ("ရေးသားနိုင်သည်", Kw::CanWrite),
     ("ရေးသားနိုင်ပြီး", Kw::CanWriteAnd),
+    // the line of a trait block that takes the default functions of its trait
+    ("အခြားလုပ်ဆောင်ချက်များကိုလည်း", Kw::OtherFnsToo),
+    ("မူရင်းအတိုင်း", Kw::AsOriginal),
+    ("ဆက်ခံမည်", Kw::Inherit),
     ("ဖြစ်သည်", Kw::Is),
     // the function kind phrase
     ("အမျိုးအစား", Kw::KindWord),

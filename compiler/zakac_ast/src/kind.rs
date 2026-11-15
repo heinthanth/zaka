@@ -331,4 +331,129 @@ impl Kind
         phrase.span = self.span;
         *self = phrase;
     }
+
+    /// Whether two kinds name the same kind, at each place it is written: the
+    /// spans, the measure words and the alias names do not count, and two
+    /// counts written as expressions count as one.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the two name the same kind.
+    pub fn same_as(&self, other: &Kind) -> bool
+    {
+        let name = |k: &Kind| k.name.as_ref().map(|n| n.name);
+        let plain = self.base == other.base
+            && self.bits == other.bits
+            && self.signed == other.signed
+            && name(self) == name(other);
+        plain
+            && same_list(&self.wraps, &other.wraps, same_wrap)
+            && same_list(&self.args, &other.args, Kind::same_as)
+            && same_opt(self.parts.as_deref(), other.parts.as_deref(), same_parts)
+            && same_opt(self.sig.as_deref(), other.sig.as_deref(), same_sig)
+            && same_opt(self.table.as_deref(), other.table.as_deref(), |a, b| {
+                a.index.same_as(&b.index) && a.value.same_as(&b.value)
+            })
+    }
+}
+
+/// Whether two lists hold the same items, as a test tells.
+///
+/// # Arguments
+///
+/// * `a` - One list.
+/// * `b` - The other.
+/// * `same` - The test of two items.
+///
+/// # Returns
+///
+/// `true` when the two do.
+fn same_list<T>(a: &[T], b: &[T], same: impl Fn(&T, &T) -> bool) -> bool
+{
+    a.len() == b.len() && a.iter().zip(b).all(|(l, r)| same(l, r))
+}
+
+/// Whether two parts are both missing, or both there and the same.
+///
+/// # Arguments
+///
+/// * `a` - One part.
+/// * `b` - The other.
+/// * `same` - The test of two parts.
+///
+/// # Returns
+///
+/// `true` when the two are.
+fn same_opt<T>(a: Option<&T>, b: Option<&T>, same: impl Fn(&T, &T) -> bool) -> bool
+{
+    match (a, b)
+    {
+        (Some(l), Some(r)) => same(l, r),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+/// Whether two levels are the same: a pointer, or a list of one count.
+///
+/// # Arguments
+///
+/// * `a` - One level.
+/// * `b` - The other.
+///
+/// # Returns
+///
+/// `true` when the two are.
+fn same_wrap(a: &Wrap, b: &Wrap) -> bool
+{
+    match (a, b)
+    {
+        (Wrap::List(Cells::Expr(_)), Wrap::List(Cells::Expr(_))) => true,
+        _ => a == b,
+    }
+}
+
+/// Whether two result or optional kinds are the same.
+///
+/// # Arguments
+///
+/// * `a` - One kind.
+/// * `b` - The other.
+///
+/// # Returns
+///
+/// `true` when the two are.
+fn same_parts(a: &ResultParts, b: &ResultParts) -> bool
+{
+    a.optional == b.optional
+        && same_opt(a.ok.as_ref(), b.ok.as_ref(), Kind::same_as)
+        && same_opt(a.err.as_ref(), b.err.as_ref(), Kind::same_as)
+}
+
+/// Whether two function kinds are the same: the parameters with their marks
+/// and prepositions, and the result.
+///
+/// # Arguments
+///
+/// * `a` - One function kind.
+/// * `b` - The other.
+///
+/// # Returns
+///
+/// `true` when the two are.
+fn same_sig(a: &FnSig, b: &FnSig) -> bool
+{
+    let word = |p: &SigParam| p.preposition.as_ref().map(|m| m.name);
+    let param = |l: &SigParam, r: &SigParam| {
+        l.edit == r.edit
+            && l.owned == r.owned
+            && word(l) == word(r)
+            && l.kind.same_as(&r.kind)
+    };
+    same_list(&a.params, &b.params, param)
+        && same_opt(a.ret.as_ref(), b.ret.as_ref(), Kind::same_as)
 }

@@ -194,9 +194,11 @@ impl Parser<'_>
         Ok((fns, stop.span))
     }
 
-    /// Parse the head of a function of a trait, which has no block:
+    /// Parse the head of a function of a trait:
     /// `လုပ်ဆောင်ချက် <name> သည် <params> လက်ခံပြီး <kind> ကို ပြန်ပေးမည်။`, with
-    /// `လက်ခံမည်။` for no result, or the result alone.
+    /// `လက်ခံမည်။` for no result, or the result alone. A head that goes on as a
+    /// function does, `လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ …`, takes a block: the
+    /// default of the function.
     ///
     /// # Returns
     ///
@@ -208,6 +210,17 @@ impl Parser<'_>
         self.expect(Kw::Thi)?;
         let (params, end, _) =
             self.parse_params(&[Kw::Accepting, Kw::WillAccept], false)?;
+        let opens = self.at(Kw::BlockOpen) || self.at(Kw::FnOpenRet);
+        if end != Some(Kw::WillAccept) && opens
+        {
+            let Stmt::Fn(decl) =
+                self.parse_fn_block(start, name, false, Vec::new(), params)?
+            else
+            {
+                return Err(self.err_expected("လုပ်ဆောင်ချက်"));
+            };
+            return Ok(FnDecl { has_default: true, ..decl });
+        }
         let bare = end == Some(Kw::WillAccept);
         let ret = tern!(bare, Default::default(), self.parse_ret_clause(true)?);
         let stop = self.expect_stop()?;
@@ -241,9 +254,12 @@ impl Parser<'_>
         self.expect(Kw::Import)?;
         self.expect_stop()?;
         let mut fns = Vec::new();
-        while !self.at(Kw::ToAddRel) && !self.at_eof()
+        let mut inherits = false;
+        while !self.at(Kw::ToAddRel) && !self.at_eof() && !inherits
         {
-            fns.push(self.parse_block_fn()?);
+            inherits = self.at_inherit();
+            do_if!(inherits, self.parse_inherit(&bound)?);
+            do_if!(!inherits, fns.push(self.parse_block_fn()?));
         }
         self.expect(Kw::ToAddRel)?;
         self.expect(Kw::Functions)?;
@@ -253,8 +269,52 @@ impl Parser<'_>
         let fn_names = fns.iter().map(|f| f.name.clone()).collect();
         #[rustfmt::skip]
         let node = TraitBlock::builder().kind(kind).bound(bound).fns(fns).fn_names(fn_names)
-            .span(span).build();
+            .inherits(inherits).span(span).build();
         Ok(Stmt::TraitBlock(node))
+    }
+
+    /// Whether the line that takes the defaults of a trait starts here: a
+    /// line that ends in `ဆက်ခံမည်` before its full stop.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_inherit(&self) -> bool
+    {
+        let line = self
+            .cur
+            .rest()
+            .iter()
+            .take_while(|t| t.kind != TokenKind::Punct(Punct::FullStop));
+        line.last().is_some_and(|t| t.kind == TokenKind::Kw(Kw::Inherit))
+    }
+
+    /// Parse the line that takes the defaults of a trait, the last of a trait
+    /// block: `<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း
+    /// ဆက်ခံမည်။`. A trait other than the one of the block is ZK0254.
+    ///
+    /// # Arguments
+    ///
+    /// * `bound` - The trait of the block.
+    ///
+    /// # Returns
+    ///
+    /// Nothing, or a diagnostic for a line of another form.
+    fn parse_inherit(&mut self, bound: &Kind) -> PResult<()>
+    {
+        let named = self.parse_trait_ref()?;
+        self.expect(Kw::Trait)?;
+        self.expect_punct(Punct::Ei)?;
+        self.expect(Kw::OtherFnsToo)?;
+        self.expect(Kw::AsOriginal)?;
+        self.expect(Kw::Inherit)?;
+        self.expect_stop()?;
+        let name = |k: &Kind| k.name.as_ref().map(|n| n.name);
+        ret_if!(name(&named) == name(bound), Ok(()));
+        let block = name(bound).map(|n| n.to_string()).unwrap_or_default();
+        let written = name(&named).map(|n| n.to_string()).unwrap_or_default();
+        self.diags.push(diag::inherit_other_trait(named.span, &written, &block));
+        Ok(())
     }
 
     /// Parse one function of a trait block.

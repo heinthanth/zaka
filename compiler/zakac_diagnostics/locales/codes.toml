@@ -722,8 +722,10 @@ en = "trait function left out"
 en = "this trait block lacks \"%{f}\", a function of \"%{t}\""
 [codes.ZK0345.help]
 en = "add the function to the block, with the parameter and result kinds the trait gives it"
+[codes.ZK0345.inherit]
+en = "add the function to the block, or end the block with \"%{t} ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\" to take its default"
 [codes.ZK0345.explain]
-en = """A trait block gives its kind each function of its trait. Each function the trait names must be in the block, with the kind of the block in place of the first kind parameter."""
+en = """A trait block gives its kind each function of its trait. Each function the trait names must be in the block, with the kind of the block in place of the first kind parameter, unless the trait gives the function a default and the block ends with the line that takes the defaults: \"<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\"."""
 
 [codes.ZK0346.title]
 en = "function that is not the trait's"
@@ -769,6 +771,15 @@ en = "\"%{n}\" has the kinds and the prepositions of the prelude's \"%{n}\", so 
 en = "give the function other kinds or prepositions to add an overload, or another name"
 [codes.ZK0350.explain]
 en = """A file can declare a function named after a verb or a count the compiler gives, such as \"ပြသ\", to add an overload: when it takes the operands of a sentence, the sentence calls it. A function with the same kinds and prepositions as the prelude's own takes each such sentence, so the built-in meaning is lost in that file."""
+
+[codes.ZK0351.title]
+en = "no default to take"
+[codes.ZK0351.message]
+en = "this trait block takes the defaults of \"%{t}\", but no function it leaves out has one"
+[codes.ZK0351.help]
+en = "remove the line that takes the defaults"
+[codes.ZK0351.explain]
+en = """The line \"<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\" gives the kind of a trait block the default of each function of the trait that the block leaves out. When the trait has no defaults, or the block gives each function that has one, the line takes nothing."""
 
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
@@ -1552,11 +1563,9 @@ en = "bad written-as hint"
 [codes.ZK0252.message]
 en = "the written-as hint of \"%{n}\" %{r}"
 [codes.ZK0252.help]
-en = "a hint holds words and kind parameters: each parameter once, a word between two parameters, and the name last"
+en = "a hint holds words and kind parameters: each parameter at least once, a word between two parameters, and the name last"
 [codes.ZK0252.missing]
 en = "leaves out the kind parameter \"%{p}\""
-[codes.ZK0252.twice]
-en = "names the kind parameter \"%{p}\" twice"
 [codes.ZK0252.first]
 en = "names \"%{p}\", the kind that has the trait, which the sentence names before the hint"
 [codes.ZK0252.last]
@@ -1566,7 +1575,25 @@ en = "puts the kind parameters \"%{p}\" and \"%{q}\" side to side, with no word 
 [codes.ZK0252.sign]
 en = "holds \"%{w}\", which is no word"
 [codes.ZK0252.explain]
-en = """A generic kind or trait can tell how it is written, with \"ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်\" at the end of its declaration (\"ရေးသားနိုင်ပြီး\" in the head of a trait). Each word of the hint that is a kind parameter of the declaration is a slot, where a use writes a kind; the other words stand as written. Each kind parameter stands in the hint once, in the order the hint chooses; a trait leaves out its first parameter, the kind that has the trait. The hint ends in the name of the kind or trait, which stands nowhere else in it. Two slots need a word between them, so a use has one reading: a kind in a slot can be a written-as kind itself. A sign or a name in braces cannot be a word of a hint."""
+en = """A generic kind or trait can tell how it is written, with \"ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်\" at the end of its declaration (\"ရေးသားနိုင်ပြီး\" in the head of a trait). Each word of the hint that is a kind parameter of the declaration is a slot, where a use writes a kind; the other words stand as written. Each kind parameter stands in the hint at least once, in the order the hint chooses, and one that stands twice takes one kind, which a use writes in each place; a trait leaves out its first parameter, the kind that has the trait. The hint ends in the name of the kind or trait, which stands nowhere else in it. Two slots need a word between them, so a use has one reading: a kind in a slot can be a written-as kind itself. A sign or a name in braces cannot be a word of a hint."""
+
+[codes.ZK0253.title]
+en = "two kinds for one hint slot"
+[codes.ZK0253.message]
+en = "the written-as hint of \"%{n}\" names \"%{p}\" twice, and this use writes another kind in its second place"
+[codes.ZK0253.help]
+en = "write the same kind in each place of \"%{p}\""
+[codes.ZK0253.explain]
+en = """A kind parameter can stand twice in a written-as hint, as in \"ရေးသားရာတွင် T နှင့် T အတွဲဟု ရေးသားနိုင်သည်\". It is still one kind parameter, so a use writes one kind in both places: \"ကိန်းပြည့် နှင့် ကိန်းပြည့် အတွဲ\" names \"အတွဲ<ကိန်းပြည့်>\", and \"ကိန်းပြည့် နှင့် စာသား အတွဲ\" is this error."""
+
+[codes.ZK0254.title]
+en = "defaults of another trait"
+[codes.ZK0254.message]
+en = "this line takes the defaults of \"%{w}\", but its trait block gives \"%{b}\""
+[codes.ZK0254.help]
+en = "name \"%{b}\", the trait of the block"
+[codes.ZK0254.explain]
+en = """A trait block can end with \"<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\", which gives its kind the default of each function of the trait that the block leaves out. The line names the trait of its block, as the block's own head does."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

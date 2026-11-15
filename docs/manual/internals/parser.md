@@ -567,7 +567,12 @@ arguments a `>>` token reads as two closers (`half_close`).
 A trait (`at_trait_decl`: a name, then `ဂုဏ်သတ္တိ`) and a trait block (`at_trait_block`:
 `ရှိစေရန်` in the statement) parse in `zakac_parser/src/traits.rs`. The functions of a
 trait block come out of it into the statement list of the file (`parse_program`), each
-a plain function; the block keeps their names. A notes block after the head of a
+a plain function; the block keeps their names, and `inherits` for its last line that
+takes the defaults (`at_inherit`, `parse_inherit`; another trait there is ZK0254). A
+function of a trait with a block (`parse_trait_fn_head`, then `parse_fn_block`) is a
+default: `hoist_defaults` moves its block out after the trait as a generic function of
+the trait's kind parameters, the first of them needing the trait, and the trait keeps
+the head with `has_default`. A notes block after the head of a
 function or a trait gives the kind parameters their traits (`give_bounds`), and its
 local kinds become kind names for the rest of the function, then their kinds stand in
 their place (`expand_local_kinds`), marked in `Kind.alias` to count with `ခု`.
@@ -579,7 +584,8 @@ on the hints of the exported structs and traits a file imports (`exported_hints`
 `imported_hints`). Each hint is a list of parts, a slot (the index of the kind argument
 it gives) or a fixed word. The declaration then parses its own hint
 (`parse_hint_decl`), keeps the words on the declaration's `hint`, and reports a rule it
-breaks (ZK0252, `hint_fault`).
+breaks (ZK0252, `hint_fault`). A kind parameter can stand twice: at a use, its second
+place must hold the kind of the first (`fill_slot`, through `Kind::same_as`; ZK0253).
 
 At a use, a hint that starts with a slot is a level after a kind (`Suffix::Hint`, from
 `hint_level_at`), so it nests with the pointer and list levels; one that starts with a

@@ -105,6 +105,27 @@ pub(crate) fn traits(program: &Program) -> Traits
     found
 }
 
+/// The kind and the trait of each trait block that takes the defaults of its
+/// trait.
+///
+/// # Arguments
+///
+/// * `program` - The program.
+///
+/// # Returns
+///
+/// The pairs.
+pub(crate) fn inheriting(program: &Program) -> Vec<(Kind, Name)>
+{
+    let blocks = program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::TraitBlock(b) if b.inherits => Some(b),
+        _ => None,
+    });
+    let pair = |b: &TraitBlock| Some((b.kind.clone(), b.bound.name.as_ref()?.name));
+    blocks.filter_map(pair).collect()
+}
+
 /// Whether a kind has a built-in trait.
 ///
 /// # Arguments
@@ -317,9 +338,12 @@ impl Checker
     ) -> bool
     {
         let found = self.fitting(want, self.places(kind, trait_name));
+        let default =
+            found == 0 && self.takes_default(kind, trait_name, &want.name.name);
         match found
         {
             1 => true,
+            0 if default => true,
             0 =>
             {
                 let name = &want.name.name;
@@ -332,6 +356,31 @@ impl Checker
                 false
             }
         }
+    }
+
+    /// Whether a kind takes the default of a function of a trait: the trait
+    /// gives the function a default, and a trait block of the kind takes the
+    /// defaults of the trait.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    /// * `trait_name` - The trait.
+    /// * `name` - The function.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    fn takes_default(&self, kind: DataKind, trait_name: &str, name: &Name) -> bool
+    {
+        let decl = self.traits.get(&Name::from(trait_name)).map(|(_, d)| d);
+        let has = decl.is_some_and(|d| {
+            d.fns.iter().any(|f| f.has_default && f.name.name == *name)
+        });
+        let block = |(k, t): &(Kind, Name)| {
+            t.as_str() == trait_name && DataKind::from_ast(k, &self.structs) == kind
+        };
+        has && self.inheriting.iter().any(block)
     }
 
     /// The count of functions, each once, in some files that have the name,
@@ -454,8 +503,22 @@ impl Checker
                 && s.as_ref().is_some_and(|s| s.params == w.params && s.ret == w.ret)
         };
         let missing = wanted.iter().filter(|w| !given.iter().any(|g| fits(w, g)));
-        let missing: Vec<String> = missing.map(|w| w.name.name.to_string()).collect();
-        do_for!(f in missing, self.report(rd::trait_fn_missing(ident.span, &ident.name, &f)));
+        let missing: Vec<Name> = missing.map(|w| w.name.name).collect();
+        let has_default =
+            |f: &Name| decl.fns.iter().any(|d| d.has_default && d.name.name == *f);
+        let report = |f: &Name| match has_default(f)
+        {
+            true => rd::trait_fn_missing_default(ident.span, &ident.name, f),
+            false => rd::trait_fn_missing(ident.span, &ident.name, f),
+        };
+        let unmet = missing.iter().filter(|f| !(n.inherits && has_default(f)));
+        let unmet: Vec<_> = unmet.map(report).collect();
+        do_for!(d in unmet, self.report(d));
+        let taken = missing.iter().any(has_default);
+        do_if!(
+            n.inherits && !taken,
+            self.report(rd::inherits_nothing(n.span, &ident.name))
+        );
         let foreign = given.iter().filter(|g| !wanted.iter().any(|w| fits(w, g)));
         let foreign: Vec<Ident> = foreign.map(|(f, _)| f.clone()).collect();
         do_for!(f in foreign, self.report(rd::trait_fn_foreign(f.span, &ident.name, &f.name)));

@@ -242,6 +242,9 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::WritingOpen
         | Kw::CanWrite
         | Kw::CanWriteAnd
+        | Kw::OtherFnsToo
+        | Kw::AsOriginal
+        | Kw::Inherit
         | Kw::KindWord
         | Kw::Among
         | Kw::Other

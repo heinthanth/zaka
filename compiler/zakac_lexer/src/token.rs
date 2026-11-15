@@ -725,6 +725,13 @@ pub enum Kw
     /// `ရေးသားနိုင်ပြီး`, "can be written, and": ends the written-as hint in
     /// the head of a trait
     CanWriteAnd,
+    /// `အခြားလုပ်ဆောင်ချက်များကိုလည်း`, "the other functions too": in the line
+    /// that ends a trait block and takes the defaults of its trait
+    OtherFnsToo,
+    /// `မူရင်းအတိုင်း`, "as in the original"
+    AsOriginal,
+    /// `ဆက်ခံမည်`, "will inherit": ends that line
+    Inherit,
     /// `ဖြစ်သည်`
     Is,
     /// `တို့ ပါဝင်သည်`
