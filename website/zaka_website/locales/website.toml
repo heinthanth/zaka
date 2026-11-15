@@ -43,7 +43,7 @@ en = "Learn Zaka"
 [website.hero.docs]
 en = "Read the Docs"
 [website.hero.lede]
-en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for the Zaka VM."
+en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences compile to instructions for the Zaka VM, or through C to a native program."
 
 # ---------------------------------------------------------------- traits
 
@@ -52,21 +52,58 @@ en = "Zaka in three words"
 [website.traits.natural]
 en = "Natural"
 [website.traits.natural_text]
-en = "Programs read as Burmese sentences: the verb comes last and particles mark each word. A check warns when the wording reads unnatural."
+en = "Programs read as Burmese sentences: the verb comes last, particles mark each role and each kind takes its measure word. A check warns when the wording reads unnatural."
 [website.traits.natural_link]
 en = "Natural wording"
 [website.traits.safe]
 en = "Safe"
 [website.traits.safe_text]
-en = "Values and shared objects free themselves, with no pointer in safe code; pointers wait behind a marker, and the VM checks each read and write while it runs."
+en = "No null and no exceptions: a missing value is an optional, a failure is a value, and control never jumps to a hidden handler."
 [website.traits.safe_link]
-en = "Values and objects"
+en = "Errors and results"
 [website.traits.portable]
 en = "Portable"
 [website.traits.portable_text]
-en = "Programs compile to instructions for the Zaka VM, which runs in the terminal and in the browser. C, LLVM and JavaScript targets are planned."
+en = "Programs run in the Zaka VM, in the terminal and in the browser, or build through C into a native executable that calls C libraries."
 [website.traits.portable_link]
-en = "The Zaka VM"
+en = "Native programs"
+
+# ---------------------------------------------------------------- features
+
+[website.features.head]
+en = "What Zaka has"
+[website.features.structs]
+en = "Structs and shared objects"
+[website.features.structs_text]
+en = "Structs group named fields. A struct is a value, or a shared object that each name reaches."
+[website.features.tables]
+en = "Lists and tables"
+[website.features.tables_text]
+en = "Lists grow and shrink; a table maps each index to its row, as a hash map does."
+[website.features.results]
+en = "Results and optionals"
+[website.features.results_text]
+en = "A function gives back a value or a failure, and a value that can be missing is marked in its kind."
+[website.features.generics]
+en = "Generics and traits"
+[website.features.generics_text]
+en = "One function serves each kind; a trait names the functions a kind must have."
+[website.features.closures]
+en = "Closures"
+[website.features.closures_text]
+en = "Functions are values: pass them, keep them, and let them capture the variables around them."
+[website.features.stdlib]
+en = "Modules and the stdlib"
+[website.features.stdlib_text]
+en = "Split a program into files and import names; the stdlib, written in Zaka, adds text, path, list and file helpers."
+[website.features.c]
+en = "Calling C"
+[website.features.c_text]
+en = "Declare a C function with the lib it comes from, and call it from the VM or from a native build."
+[website.features.editors]
+en = "Editors"
+[website.features.editors_text]
+en = "zakac lsp gives errors, hovers, completion, renames and an outline in VS Code, Zed and other editors."
 
 # ---------------------------------------------------------------- name
 
@@ -87,18 +124,6 @@ en = "Frangipani flowers, cream with a gold heart."
 
 [website.glance.head]
 en = "Zaka at a glance"
-[website.glance.start]
-en = "The program starts here, in its start block."
-[website.glance.variable]
-en = "ကိန်းရှင် makes a variable: a name, a kind and a first value."
-[website.glance.count]
-en = "Count from ၁ to ၁၀ and add each number to the total."
-[website.glance.verb]
-en = "The verb comes last. ဟု quotes a sentence, so the compiler warns: a plain value takes ကို."
-[website.glance.particles]
-en = "Particles mark each role: သည် the subject, ထက် what it is compared with."
-[website.glance.stop]
-en = "Otherwise. Each statement ends at ။, not at the end of the line."
 [website.glance.warning]
 en = "Warning"
 [website.glance.about]
@@ -111,7 +136,7 @@ en = "Behind it, a careful compiler checks each line, catches mistakes before th
 [website.close.head]
 en = "Explore the Zaka language."
 [website.close.text]
-en = "The explorer lets users explore Zaka in the browser and shows each compiler and interpreter stage."
+en = "The explorer runs Zaka in the browser: it shows each stage from the words to the VM, steps through a run, and shows the C that the C target writes."
 
 # ---------------------------------------------------------------- footer
 

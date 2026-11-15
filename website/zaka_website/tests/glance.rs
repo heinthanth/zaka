@@ -9,5 +9,5 @@ fn the_glance_program_warns_once_and_prints_its_total()
 {
     let (codes, printed) = run_to_end(&source(), &FenceOptions::default(), "");
     assert_eq!(codes, ["ZK0506"]);
-    assert_eq!(printed, "၅၅\nများသည်\n");
+    assert_eq!(printed, "၁၃၀၀\nဈေးကြီးသည်\n");
 }

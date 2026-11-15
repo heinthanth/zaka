@@ -7,9 +7,6 @@
 html:root
   --ui-font: "Space Mono", "Myanmar Sabae", system-ui, sans-serif
   --mono-font: "Myanmar Sabae (Burmese)", "Sauce Code Pro (HTMM's Custom)", ui-monospace, monospace
-  // The hand of the notes on the program of the landing page: a smaller cut
-  // of the Burmese face draws the Burmese, Caveat the rest.
-  --hand-font: "Myanmar Sabae (Hand)", "Caveat", cursive
 
 
 html
@@ -53,6 +50,14 @@ html:not([data-theme])
   html:not([data-theme])
     --gold: var(--accent)
     --on-gold: var(--on-accent)
+
+// The selection of the theme blends into a gold field, so there it turns
+// over: gold text on the ink of the field.
+[data-field="gold"]::selection,
+[data-field="gold"] ::selection,
+[data-chapter="gold"] ::selection
+  color: var(--gold)
+  background: var(--on-gold)
 
 body
   margin: 0

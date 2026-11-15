@@ -7,8 +7,6 @@ pub mod book;
 pub mod components;
 #[cfg(feature = "client")]
 mod motion;
-#[cfg(feature = "client")]
-mod notes;
 
 zakac_i18n::init!();
 
@@ -37,6 +35,5 @@ pub fn hydrate()
 {
     console_error_panic_hook::set_once();
     leptos::mount::hydrate_islands();
-    notes::start();
     motion::start();
 }

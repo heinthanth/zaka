@@ -1,6 +1,7 @@
 pub mod close;
 pub mod contents;
 pub mod explorer;
+pub mod features;
 pub mod footer;
 pub mod glance;
 pub mod header;

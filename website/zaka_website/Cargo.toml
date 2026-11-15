@@ -51,11 +51,11 @@ zakac_span = { workspace = true }
 [dependencies.web-sys]
 workspace = true
 features = [
-    "Document", "DomRect", "DomRectList", "DomTokenList",
+    "Document", "DomTokenList",
     "Element", "Event", "EventTarget",
     "FontFaceSet", "KeyboardEvent",
     "MediaQueryList", "MouseEvent", "NodeList", "PointerEvent",
-    "ResizeObserver", "Window"]
+    "Window"]
 
 [dev-dependencies]
 toml = { workspace = true }

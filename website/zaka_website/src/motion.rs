@@ -12,6 +12,7 @@ use web_sys::MouseEvent;
 use zakac_rust_sugars::ret_if;
 
 use crate::components::close::ClassName as Close;
+use crate::components::features::ClassName as Features;
 use crate::components::glance::ClassName as Glance;
 use crate::components::header::ClassName as Header;
 use crate::components::hero::ClassName as Hero;
@@ -68,6 +69,7 @@ pub fn start()
     follow_links(lenis);
     hero();
     traits();
+    features();
     name();
     glance();
     close();
@@ -256,6 +258,21 @@ fn traits()
         &format!(".{}", Traits::TRAIT),
         &format!(".{}", Traits::TRAITS_LIST),
         &[("stagger", 0.1.into())],
+    );
+}
+
+/// The features: the head rises, then the cards, one after the other.
+fn features()
+{
+    rise(
+        &format!(".{}", Features::FEATURES_HEAD),
+        &format!(".{}", Features::FEATURES),
+        &[],
+    );
+    rise(
+        &format!(".{}", Features::FEATURE),
+        &format!(".{}", Features::FEATURES_LIST),
+        &[("stagger", 0.06.into())],
     );
 }
 
