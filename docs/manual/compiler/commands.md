@@ -143,6 +143,11 @@ These belong to `irgen` and the stages after it, and to `run`:
 | --- | --- | --- |
 | `--fold <LIST>` | `all` | the foldings to run: `all`, `none`, or a comma list of `exprs`, `consts` and `branches` |
 | `--no-unsafe` | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
+| `--comptime-allow-read[=<PATHS>]` | none | let the runs of [comptime calls](../language/compile-time.md#what-a-run-can-do) read files: each one, or those under the paths of a comma list; a path of the program starts from its folder |
+| `--comptime-allow-write[=<PATHS>]` | none | let them write, remove, move files and make folders |
+| `--comptime-allow-env[=<NAMES>]` | none | let them read variables of the environment: each one, or those named |
+| `--comptime-allow-ffi` | off | let them call C functions |
+| `--comptime-allow-all` | off | grant each of the four |
 
 `--fold` changes the IR, not what the program does. `exprs` replaces an operation on
 constants with its value, `consts` replaces a read of a `ကိန်းသေ` that was set to a
@@ -336,6 +341,7 @@ differs from the VM.
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
+| `--allow-read[=<PATHS>]`, `--allow-write[=<PATHS>]`, `--allow-env[=<NAMES>]`, `--allow-ffi`, `-A`, `--no-permission-prompt` | none | the rights the executable holds, written into it, as `zakac run` grants them to a run; the executable asks for a right it lacks on a terminal, as the VM does; see [Permissions](../vm/running.md#permissions) |
 
 Each run-time check is one kind of stop. A level sets each check: `none` turns all of
 them off (as C, the fastest), `default` turns on the checks of the language, and `mem`
@@ -393,6 +399,12 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--max-stack <OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
+| `--allow-read[=<PATHS>]` | none | let the program read files, list folders and tell what a path holds: each path, or those under the paths of a comma list; see [Permissions](../vm/running.md#permissions) |
+| `--allow-write[=<PATHS>]` | none | let it write, add to, remove and move files and make folders |
+| `--allow-env[=<NAMES>]` | none | let it read variables of the environment, and give the start block the environment: each variable, or those named |
+| `--allow-ffi` | off | let it call C functions |
+| `-A`, `--allow-all` | off | grant each of the four |
+| `--no-permission-prompt` | off | ask nothing on a terminal: an effect with no right is denied at once |
 
 A program that passes a limit stops with a message from the VM, listed in [When a
 program stops](../vm/traps.md). `--frames` is explained in [Checked and packed

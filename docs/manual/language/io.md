@@ -27,6 +27,7 @@ the VM does its work, and each one can fail with a member of the enumeration
 | `<path> ၌ရှိသော ဖိုင်ကိုဖတ်` | the whole file as text |
 | `<text> ကို <path> သို့ ရေး` | write the text as the whole of the file |
 | `<text> ကို <stream> သို့ ရေး` | write the text to the stream, with no line break |
+| `<name> ဟူသည့် ပတ်ဝန်းကျင်ကိန်းရှင် ကို ဖတ်` | the variable of the environment of that name: text, or `မတွေ့ခြင်း` when it is not set |
 
 The calls are [preposition calls](functions.md#prepositions), and `ရေး` is
 [two functions of one name](functions.md#one-name-several-functions): the kind of the
@@ -119,7 +120,14 @@ the `stdin` fence under a program of these pages holds what it reads:
 and a path names a file on disk, relative to the folder the command runs in. The Learn
 and Docs pages give a world in storage: the input their `stdin` fence holds, and files
 that last as long as the run. The explorer asks for each line on its output panel, as a
-terminal does (see [Running a program](../vm/running.md#input-files-and-the-standard-streams)). See [Running a program](../vm/running.md#input-files-and-the-standard-streams).
+terminal does (see [Running a program](../vm/running.md#input-files-and-the-standard-streams)).
+
+`zakac run` grants a program no right to the files or the environment unless its flags
+do: `--allow-read`, `--allow-write` and `--allow-env`, each with an optional list of paths
+or names ([Permissions](../vm/running.md#permissions)). A call with no right asks on a
+terminal, then fails with `ခွင့်ပြုချက်မရှိခြင်း` when the right is not given, as a file the
+OS refuses does. Reading input and writing the standard streams need no right. The pages
+and the explorer run in storage and hold each right.
 
 ## Files and folders
 

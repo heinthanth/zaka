@@ -14,11 +14,13 @@
 //! it, a [`World`] method when it needs a new effect (written for both
 //! worlds), and its declaration in the stdlib.
 
+mod grants;
 mod kinds;
 mod table;
 mod value;
 mod world;
 
+pub use grants::*;
 pub use kinds::*;
 pub use table::HOST_FNS;
 pub use table::HostDef;

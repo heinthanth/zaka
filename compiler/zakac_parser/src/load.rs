@@ -50,6 +50,9 @@ use zakac_span::span::Span;
 
 use crate::alias::AliasRefs;
 use crate::alias::expand_aliases;
+use crate::comptime::CondPlace;
+use crate::comptime::Resolved;
+use crate::comptime::Spot;
 use crate::comptime::settle;
 use crate::hint::Hint;
 use crate::hint::exported_hints;
@@ -73,6 +76,11 @@ pub struct Loaded
     /// Each kind alias name, beside its declaration, for the editors.
     #[builder(default)]
     pub alias_refs: AliasRefs,
+    /// Each condition of a compile-time conditional that calls a comptime
+    /// function and waits for its value, with its place; its conditional
+    /// remains in place, unsettled.
+    #[builder(default)]
+    pub open_conds: Vec<(Span, CondPlace)>,
 }
 
 /// The start of the import path of a module of the stdlib.
@@ -190,21 +198,46 @@ impl Loaded
         source: &SourceFile, options: &LexerOptions, target: &Target,
     ) -> Self
     {
+        Loaded::single_resolved(source, options, target, &Resolved::new())
+    }
+
+    /// [`Loaded::single_for`] with the conditions that call comptime
+    /// functions worked out so far.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The file.
+    /// * `options` - The lexer options.
+    /// * `target` - The target.
+    /// * `resolved` - The truth of each condition worked out so far.
+    ///
+    /// # Returns
+    ///
+    /// The program of the file.
+    pub fn single_resolved(
+        source: &SourceFile, options: &LexerOptions, target: &Target,
+        resolved: &Resolved,
+    ) -> Self
+    {
         let lexed = lex(source, options);
         let parsed = parse(source, &lexed);
         let mut imports = parsed.program.stmts.iter().filter_map(as_import);
         let std = imports.any(is_std) || uses_prelude(source, &lexed);
-        ret_if!(std, Loaded::with_std(source, options, target));
+        ret_if!(std, Loaded::with_std(source, options, target, resolved));
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
         let text_of = |span: Span| snippet(source, span);
-        let (stmts, settled, met) = settle(program.stmts, target, &text_of);
+        #[rustfmt::skip]
+        let spot = Spot { file: source.name.to_string(), base: source.start_pos.as_u32(),
+            resolved };
+        let (stmts, settled, met, open) =
+            settle(program.stmts, target, &text_of, &spot);
         program.stmts = stmts;
         diagnostics.extend(settled);
         diagnostics.extend(refuse_imports(&program));
         let fixed = Fixed { target, next_id: parsed.next_id, used: met };
-        loaded(program, Vec::new(), diagnostics, &fixed)
+        Loaded { open_conds: open, ..loaded(program, Vec::new(), diagnostics, &fixed) }
     }
 
     /// Read one file with the prelude and the stdlib modules it imports, in a
@@ -219,22 +252,26 @@ impl Loaded
     /// # Returns
     ///
     /// The program, imported modules first.
-    fn with_std(source: &SourceFile, options: &LexerOptions, target: &Target) -> Self
+    fn with_std(
+        source: &SourceFile, options: &LexerOptions, target: &Target,
+        resolved: &Resolved,
+    ) -> Self
     {
         let root = Arc::new(source.clone());
         let mut source_map = SourceMap::new();
         source_map.add_file(root.clone());
         #[rustfmt::skip]
         let mut loader = Loader::builder().source_map(&mut source_map).options(options)
-            .folder(PathBuf::new()).disk(false).target(*target).build();
+            .folder(PathBuf::new()).disk(false).target(*target).resolved(resolved.clone())
+            .build();
         let path = PathBuf::from(source.name.to_string());
         let read = loader.visit(root, path);
         read.expect("a file read from storage reads no file from disk");
         let fixed = Fixed { target, next_id: loader.next_id, used: loader.target_used };
-        let Loader { stmts, units, imports, diagnostics, .. } = loader;
+        let Loader { stmts, units, imports, diagnostics, open, .. } = loader;
         let span = zakac_span::span::Span::new(source.start_pos, source.end_pos());
         let program = Program::builder().stmts(stmts).units(units).span(span).build();
-        loaded(program, imports, diagnostics, &fixed)
+        Loaded { open_conds: open, ..loaded(program, imports, diagnostics, &fixed) }
     }
 }
 
@@ -344,23 +381,50 @@ pub fn load_for(
     target: &Target,
 ) -> zakac_host_errors::Result<Loaded>
 {
+    load_resolved(root, source_map, options, target, &Resolved::new())
+}
+
+/// [`load_for`] with the conditions that call comptime functions worked out
+/// so far.
+///
+/// # Arguments
+///
+/// * `root` - The file that is run.
+/// * `source_map` - The source map, which gets each file read.
+/// * `options` - The lexer options.
+/// * `target` - The target.
+/// * `resolved` - The truth of each condition worked out so far.
+///
+/// # Returns
+///
+/// The program, or the error of a file that could not be read.
+pub fn load_resolved(
+    root: &Arc<SourceFile>, source_map: &mut SourceMap, options: &LexerOptions,
+    target: &Target, resolved: &Resolved,
+) -> zakac_host_errors::Result<Loaded>
+{
     let FileName::Real(real) = &root.name
     else
     {
-        return Ok(Loaded::single_for(root, options, target));
+        return Ok(Loaded::single_resolved(root, options, target, resolved));
     };
     let path = normalize(&real.local_path);
     let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
     let path = std_module_at(&path).map_or(path, PathBuf::from);
     #[rustfmt::skip]
     let mut loader = Loader::builder().source_map(source_map).options(options)
-        .folder(folder).target(*target).build();
+        .folder(folder).target(*target).resolved(resolved.clone()).build();
     loader.visit(root.clone(), path)?;
     let fixed = Fixed { target, next_id: loader.next_id, used: loader.target_used };
-    let Loader { stmts, units, imports, diagnostics, .. } = loader;
+    let Loader { stmts, units, imports, diagnostics, open, .. } = loader;
     let span = zakac_span::span::Span::new(root.start_pos, root.end_pos());
-    let program = Program::builder().stmts(stmts).units(units).span(span).build();
-    Ok(loaded(program, imports, diagnostics, &fixed))
+    let program = Program::builder()
+        .stmts(stmts)
+        .units(units)
+        .span(span)
+        .maybe_folder(real.local_path.parent().map(Path::to_path_buf))
+        .build();
+    Ok(Loaded { open_conds: open, ..loaded(program, imports, diagnostics, &fixed) })
 }
 
 /// The state of [`load`].
@@ -422,6 +486,13 @@ struct Loader<'a>
     /// fact of the target.
     #[builder(default)]
     target_used: bool,
+    /// The truth of each condition that calls a comptime function, worked
+    /// out in a read before.
+    #[builder(default)]
+    resolved: Resolved,
+    /// Each condition still open, with its place.
+    #[builder(default)]
+    open: Vec<(Span, CondPlace)>,
 }
 
 impl Loader<'_>
@@ -452,7 +523,12 @@ impl Loader<'_>
         // A compile-time conditional can hold imports: the arm it keeps gives
         // them, in both parses alike.
         let text_of = |span: Span| snippet(&file, span);
-        let (first_stmts, _, _) = settle(first.program.stmts, &self.target, &text_of);
+        let resolved = self.resolved.clone();
+        #[rustfmt::skip]
+        let spot = Spot { file: self.shown(&path), base: file.start_pos.as_u32(),
+            resolved: &resolved };
+        let (first_stmts, ..) =
+            settle(first.program.stmts, &self.target, &text_of, &spot);
         let imports: Vec<ImportStmt> =
             first_stmts.iter().filter_map(as_import).cloned().collect();
         self.chain.push(path.clone());
@@ -475,9 +551,11 @@ impl Loader<'_>
         self.diagnostics.extend(lexed.diagnostics.iter().cloned());
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
-        let (stmts, settled, met) = settle(program.stmts, &self.target, &text_of);
+        let (stmts, settled, met, open) =
+            settle(program.stmts, &self.target, &text_of, &spot);
         program.stmts = stmts;
         self.diagnostics.extend(settled);
+        self.open.extend(open);
         set_targets(&mut program, &imports, &targets);
         let facts = named_facts(&file, &lexed);
         self.target_used |= met || !facts.is_empty();

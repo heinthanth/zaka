@@ -163,6 +163,13 @@ static uint32_t zk_handle(const unsigned char *at, const zk_kind *k)
 static FILE *zk_open(const unsigned char *path, const char *mode)
 {
     char *name = zk_text_cstr(path);
+    int right = mode[0] == 'r' ? ZK_RIGHT_READ : ZK_RIGHT_WRITE;
+    if (!zk_allowed(right, name))
+    {
+        zk_text_cstr_free(name);
+        errno = EACCES;
+        return NULL;
+    }
 #ifdef _WIN32
     wchar_t wide[4096], wmode[8];
     int ok = MultiByteToWideChar(CP_UTF8, 0, name, -1, wide, 4096) > 0;
@@ -173,6 +180,25 @@ static FILE *zk_open(const unsigned char *path, const char *mode)
 #endif
     zk_text_cstr_free(name);
     return f;
+}
+
+/**
+ * Write the failure of an effect the program holds no right for, when it
+ * holds none.
+ *
+ * @param slot The result.
+ * @param ret Its kind.
+ * @param right The right the effect needs.
+ * @param name The path or name.
+ * @return 1 when the effect is refused and the failure written.
+ */
+static int zk_refused(
+    unsigned char *slot, const zk_kind *ret, int right, const char *name
+)
+{
+    RET_IF(zk_allowed(right, name), 0);
+    zk_fault(slot, ret, ZK_IO_NO_PERMISSION);
+    return 1;
 }
 
 /**
@@ -364,6 +390,7 @@ void zk_host_append_file(
 void zk_host_remove(unsigned char *slot, const zk_kind *ret, const unsigned char *path)
 {
     char *name = zk_text_cstr(path);
+    DONE_IF(zk_refused(slot, ret, ZK_RIGHT_WRITE, name), zk_text_cstr_free(name));
 #ifdef _WIN32
     wchar_t wide[4096];
     int ok = zk_wide(name, wide);
@@ -401,6 +428,7 @@ void zk_host_make_folder(
 )
 {
     char *name = zk_text_cstr(path);
+    DONE_IF(zk_refused(slot, ret, ZK_RIGHT_WRITE, name), zk_text_cstr_free(name));
     size_t len = strlen(name);
     int member = -1;
     for (size_t i = 1; i <= len && member < 0; i++)
@@ -500,6 +528,7 @@ void zk_host_list_folder(
 )
 {
     char *name = zk_text_cstr(path);
+    DONE_IF(zk_refused(slot, ret, ZK_RIGHT_READ, name), zk_text_cstr_free(name));
     char **names = NULL;
     int count = 0;
     int member = zk_read_folder(name, &names, &count);
@@ -535,6 +564,7 @@ void zk_host_path_kind(
         ZK_IS_OTHER
     };
     char *name = zk_text_cstr(path);
+    DONE_IF(zk_refused(slot, ret, ZK_RIGHT_READ, name), zk_text_cstr_free(name));
 #ifdef _WIN32
     wchar_t wide[4096];
     DWORD at = zk_wide(name, wide) ? GetFileAttributesW(wide) : INVALID_FILE_ATTRIBUTES;
@@ -560,6 +590,14 @@ void zk_host_rename(
 {
     char *old_name = zk_text_cstr(from);
     char *new_name = zk_text_cstr(to);
+    int refused = zk_refused(slot, ret, ZK_RIGHT_WRITE, old_name) ||
+                  zk_refused(slot, ret, ZK_RIGHT_WRITE, new_name);
+    if (refused)
+    {
+        zk_text_cstr_free(old_name);
+        zk_text_cstr_free(new_name);
+        return;
+    }
 #ifdef _WIN32
     wchar_t old_wide[4096], new_wide[4096];
     int ok = zk_wide(old_name, old_wide) && zk_wide(new_name, new_wide);
@@ -573,4 +611,16 @@ void zk_host_rename(
     zk_text_cstr_free(new_name);
     DONE_IF(!done, zk_fault(slot, ret, member));
     zk_good(slot, ret, NULL, 0);
+}
+
+void zk_host_read_env(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *name
+)
+{
+    char *key = zk_text_cstr(name);
+    DONE_IF(zk_refused(slot, ret, ZK_RIGHT_ENV, key), zk_text_cstr_free(key));
+    const char *value = getenv(key);
+    zk_text_cstr_free(key);
+    DONE_IF(!value, zk_fault(slot, ret, ZK_IO_NOT_FOUND));
+    zk_good(slot, ret, value, strlen(value));
 }

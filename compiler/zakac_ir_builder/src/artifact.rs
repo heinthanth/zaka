@@ -78,7 +78,11 @@ pub fn run_phases(
     folding: &FoldOptions,
 ) -> Lowered
 {
-    run_loaded(Loaded::single(source, lexer), options, folding)
+    run_loaded(
+        zakac_semcheck::open_chains::single(source, lexer, options),
+        options,
+        folding,
+    )
 }
 
 /// Check, lower and fold a program read with its imports. Lowering is left

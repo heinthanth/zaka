@@ -79,6 +79,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("functions", "procedures"),
     sample!("functions", "results"),
     sample!("functions", "recursion"),
+    sample!("functions", "comptime"),
     sample!("functions", "mixed_kinds"),
     sample!("functions", "list_results"),
     sample!("functions", "callback"),

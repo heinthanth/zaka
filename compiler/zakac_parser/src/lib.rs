@@ -2,7 +2,7 @@ pub mod alias;
 pub mod artifact;
 mod clause;
 pub mod cli;
-pub(crate) mod comptime;
+pub mod comptime;
 mod cursor;
 mod decl_head;
 pub mod describe;

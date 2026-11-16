@@ -23,10 +23,12 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::grants::Granted;
+use zakac_cli_common::grants::attach_grant_args;
+use zakac_cli_common::grants::grants_from;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -78,6 +80,7 @@ fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
         .help(t!("semcheck.strict_particles"))
         .action(ArgAction::SetTrue);
     let cmd = attach_common_io_args(cmd).arg(platform_bits).arg(strict);
+    let cmd = attach_grant_args(cmd, Granted::Comptime);
     attach_target_os_args(cmd).about(t!("semcheck.about"))
 }
 
@@ -144,6 +147,8 @@ fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
     let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
     let strict = matches.get_flag(STRICT_PARTICLES_ARG);
+    // The comptime runs of the command take the rights its flags grant.
+    crate::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));
     SemcheckOptions::builder().platform_bits(bits).strict_particles(strict).build()
 }
 
@@ -287,11 +292,12 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load_for(
+    let loaded = crate::open_chains::load_settled(
         &source,
         &mut source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::Vm),
+        &semcheck_options(matches),
     );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();

@@ -68,6 +68,10 @@ called.
   the same name, parameter kinds and prepositions is ZK0304. Nested functions of one scope have
   no overloads: a second one of a name is ZK0304.
 - A call to a name that no function has is ZK0303.
+- `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` in front of `လုပ်ဆောင်ချက်` marks a function
+  with statements at the top level as a *comptime function*: a call of it in a constant,
+  a list count or another spot that needs a value before the program runs runs while
+  the compiler runs. See [Compile time](compile-time.md#comptime-functions).
 
 ```zaka-error ZK0214
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

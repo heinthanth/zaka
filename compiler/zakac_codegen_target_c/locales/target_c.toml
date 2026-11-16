@@ -152,3 +152,24 @@ en = "the cells at %{addr} overlap their source; \"ပြောင်းထည�
 
 [target_c.trap.too_deep]
 en = "more than %{depth} nested calls"
+
+[target_c.trap.permission_denied]
+en = "%{what} needs %{flag}"
+
+[target_c.permission.read]
+en = "reading \"%{s}\""
+
+[target_c.permission.write]
+en = "writing \"%{s}\""
+
+[target_c.permission.env]
+en = "reading the variable %{s} of the environment"
+
+[target_c.permission.env_all]
+en = "the environment of the start block"
+
+[target_c.permission.ffi]
+en = "calling the C function %{s}"
+
+[target_c.permission.ask]
+en = "%{what}: allow it? [Y = from now on, O = once, N = no, A = each of this kind] "

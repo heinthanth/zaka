@@ -197,6 +197,7 @@ program:
           hi: 1110
       exported: false
       unchecked: false
+      comptime: false
       start: false
       builtin: false
       external: false
@@ -956,6 +957,7 @@ program:
           hi: 4753
       exported: false
       unchecked: false
+      comptime: false
       start: true
       builtin: false
       external: false

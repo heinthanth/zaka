@@ -499,8 +499,9 @@ is the same in both cases.
 A `ကိန်းသေ` of kind `စာသား` (or a list or struct that holds text) is static text in
 each build, as a constant plain list is static data ([Lists](lists.md#static-data)): its
 value must fold at compile time, whatever `--fold` holds. Its value can
-use literals, other constants, template slots of these and `+`. A value that needs the program
-to run, such as a variable in a template slot, a call, a cell or a field, is ZK0606, reported at
+use literals, other constants, template slots of these, `+` and calls of
+[comptime functions](compile-time.md#comptime-functions). A value that needs the program
+to run, such as a variable in a template slot, a call of another function, a cell or a field, is ZK0606, reported at
 the first part that does not fold. `--fold` changes how the IR shows the reads of the
 constant, never whether it is valid.
 

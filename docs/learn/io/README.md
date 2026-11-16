@@ -60,6 +60,27 @@ failure, here `မတွေ့ခြင်း` ("not found"):
 အမှားအယွင်း(အချက်အလက်အဝင်အထွက်အမှားအယွင်းများထဲမှ မတွေ့ခြင်း)
 ```
 
+`zakac run` lets a program read and write files when it is granted the right, as Deno
+does: `zakac run --allow-read --allow-write notes.zaka`. With no grant, it asks on a
+terminal, and a read it is not allowed to make fails with `ခွင့်ပြုချက်မရှိခြင်း` ("no permission").
+The pages here run in storage and hold each right.
+
+A variable of the environment reads in the same form, with `--allow-env`:
+
+```zaka
+"စံကား/အဝင်အထွက်" မှ ဖတ် ကို ထည့်သွင်းမည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"HOME" ဟူသည့် ပတ်ဝန်းကျင်ကိန်းရှင် ကို ဖတ်သည့်ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အမှားအယွင်း(အချက်အလက်အဝင်အထွက်အမှားအယွင်းများထဲမှ မတွေ့ခြင်း)
+```
+
+The page has no environment, so the variable is not set here.
+
 ## Writing to the screen
 
 `စံပြုအထွက်` ("standard output") is the screen. `ရေး` to it writes with no line break, so

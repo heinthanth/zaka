@@ -59,8 +59,38 @@ enum zk_trap
     ZK_TRAP_OUT_OF_MEM,
     ZK_TRAP_OVERLAP,
     ZK_TRAP_TOO_DEEP,
+    ZK_TRAP_PERMISSION,
     ZK_TRAP_COUNT
 };
+
+/** The rights a program can hold: the build writes what it holds. */
+enum zk_right
+{
+    ZK_RIGHT_READ,
+    ZK_RIGHT_WRITE,
+    ZK_RIGHT_ENV,
+    ZK_RIGHT_FFI,
+    ZK_RIGHT_COUNT
+};
+
+/** What a program holds of one right: each path or name, or a list. */
+typedef struct
+{
+    int all;
+    int count;
+    const char *const *items;
+} zk_grant;
+
+/** The rights the build granted, from zaka_kinds.c. */
+extern const zk_grant zk_grants[ZK_RIGHT_COUNT];
+/** Whether the program can ask for a right it lacks, on a terminal. */
+extern const int zk_grant_prompt;
+/** What each right covers, with an %{s} slot, then the whole environment. */
+extern const char *const zk_permission_text[ZK_RIGHT_COUNT + 1];
+/** The flag that grants each right. */
+extern const char *const zk_flag_text[ZK_RIGHT_COUNT];
+/** The question for a right, with a %{what} slot. */
+extern const char zk_ask_text[];
 
 /** The template of each trap, with %{name} slots. */
 extern const char *const zk_trap_text[ZK_TRAP_COUNT];
@@ -645,6 +675,16 @@ void zk_host_rename(
 );
 /** Fill a list of text with C strings: the arguments or the environment. */
 void zk_text_list(unsigned char *at, int count, char **items);
+/** Read one variable of the environment into a result. */
+void zk_host_read_env(
+    unsigned char *slot, const zk_kind *ret, const unsigned char *name
+);
+/** Whether the program holds a right for a path or a name, asking for it. */
+int zk_allowed(int right, const char *subject);
+/** Stop the run unless the program holds the right to call a C function. */
+void zk_need_ffi(const char *name);
+/** The environment the start block gets, after the env right. */
+char **zk_allowed_env(char **envp, int *count);
 
 /**
  * The test whether a product overflows, one function for each kind:

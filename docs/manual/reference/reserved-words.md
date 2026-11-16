@@ -111,7 +111,9 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 | `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး` | "the tasks are done" (four spellings) | [Blocks and scope](../../learn/variables/scope.md) |
 | `ပရိုဂရမ် ပြီးဆုံးပါပြီး` | "the program is done": closes the start block (four spellings) | [Hello, world](../../learn/hello/README.md#where-the-program-starts) |
 | `အကယ်၍` | "if" | [If and else](../../learn/control-flow/if-else.md) |
-| `ကွန်ပိုင်းလုပ်ချိန်တွင်` | "at compile time": after `အကယ်၍`, a conditional the compiler settles for the target | [Compile-time conditionals](../language/compile-time.md) |
+| `ကွန်ပိုင်းလုပ်ချိန်တွင်` | "at compile time": after `အကယ်၍`, a conditional the compiler settles for the target | [Compile time](../language/compile-time.md) |
+| `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` | "that can run at compile time": in front of `လုပ်ဆောင်ချက်`, marks a comptime function | [Compile time](../language/compile-time.md#comptime-functions) |
+| `လုပ်ဆောင်နိုင်သော` | "that can run": the second word of the comptime mark | [Compile time](../language/compile-time.md#comptime-functions) |
 | `လျှင်`, `ဖြစ်လျှင်` | "then" | [If and else](../../learn/control-flow/if-else.md) |
 | `ထိုသို့မဟုတ်ဘဲ` | "if not so, but" (else if) | [If and else](../../learn/control-flow/if-else.md) |
 | `သို့မဟုတ်ပါက` | "otherwise" (else) | [If and else](../../learn/control-flow/if-else.md) |

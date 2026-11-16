@@ -9,6 +9,10 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::grants::Denial;
+use crate::grants::Gate;
+use crate::grants::OnDenial;
+use crate::grants::Right;
 use crate::kinds::IS_FILE;
 use crate::kinds::IS_FOLDER;
 use crate::kinds::IS_OTHER;
@@ -120,6 +124,17 @@ pub trait World: Debug + Send + Sync
     /// `Ok`, or the error.
     fn rename(&mut self, from: &str, to: &str) -> io::Result<()>;
 
+    /// Read one variable of the environment.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the variable.
+    ///
+    /// # Returns
+    ///
+    /// Its value, `None` when it is not set, or the error.
+    fn read_env(&mut self, name: &str) -> io::Result<Option<String>>;
+
     /// Give standard input more text, as a terminal does when a line is
     /// entered. A world that cannot take more does nothing.
     ///
@@ -161,10 +176,35 @@ pub struct Effects<'a>
     /// Whether a read found no input so far in a world that waits for more: the
     /// VM then runs the call again once input comes.
     pub blocked: bool,
+    /// The rights of the run.
+    pub gate: &'a mut Gate,
+    /// The effect the gate denied, when the run stops for a denial.
+    pub denied: Option<Denial>,
 }
 
 impl Effects<'_>
 {
+    /// Check an effect against the rights of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `right` - The right it needs.
+    /// * `subject` - Its path or variable.
+    ///
+    /// # Returns
+    ///
+    /// The path or variable to hand the world, or the error of a denied
+    /// effect, which [`OnDenial::Stop`] also records in [`Effects::denied`].
+    pub fn allow(&mut self, right: Right, subject: &str) -> io::Result<String>
+    {
+        let checked = self.gate.check(right, subject);
+        let stop = self.gate.grants.on_denial == OnDenial::Stop;
+        checked.map_err(|denial| {
+            do_if!(stop, self.denied = Some(denial));
+            io::ErrorKind::PermissionDenied.into()
+        })
+    }
+
     /// Read one line of an input stream.
     ///
     /// # Arguments
@@ -194,7 +234,8 @@ impl Effects<'_>
     /// The text, or the error.
     pub fn read_file(&mut self, path: &str) -> io::Result<String>
     {
-        self.world.read_file(path)
+        let path = self.allow(Right::Read, path)?;
+        self.world.read_file(&path)
     }
 
     /// Write text as the whole of a file.
@@ -209,7 +250,8 @@ impl Effects<'_>
     /// `Ok`, or the error.
     pub fn write_file(&mut self, path: &str, data: &str) -> io::Result<()>
     {
-        self.world.write_file(path, data)
+        let path = self.allow(Right::Write, path)?;
+        self.world.write_file(&path, data)
     }
 
     /// Write text to an output stream, with no line break.
@@ -272,6 +314,9 @@ pub struct MemWorld
     /// is there through the path of the file.
     #[builder(default)]
     pub folders: BTreeSet<String>,
+    /// The environment, on the name of each variable.
+    #[builder(default)]
+    pub env: BTreeMap<String, String>,
 }
 
 // shortcut: MemWorld stores paths as written, with no `.`, `..` or `\` handled;
@@ -443,6 +488,11 @@ impl World for MemWorld
 
     fn close_input(&mut self) { self.open = false; }
 
+    fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
+    {
+        Ok(self.env.get(name).cloned())
+    }
+
     fn boxed(&self) -> Box<dyn World> { Box::new(self.clone()) }
 }
 
@@ -515,6 +565,11 @@ impl World for TermWorld
     fn rename(&mut self, from: &str, to: &str) -> io::Result<()>
     {
         std::fs::rename(from, to)
+    }
+
+    fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
+    {
+        Ok(std::env::var(name).ok())
     }
 
     fn boxed(&self) -> Box<dyn World> { Box::new(*self) }

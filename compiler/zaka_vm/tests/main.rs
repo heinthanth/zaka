@@ -3,10 +3,12 @@
 mod callbacks;
 mod cli;
 mod common;
+mod comptime_fns;
 mod heap;
 mod host;
 mod machine;
 mod mem;
+mod permissions;
 mod print;
 mod samples;
 mod stepping;

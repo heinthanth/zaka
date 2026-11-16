@@ -58,6 +58,8 @@ const CONST: &str = "ကိန်းသေ";
 const FUNCTION: &str = "လုပ်ဆောင်ချက်";
 /// The word of an unsafe function.
 const UNSAFE: &str = "စိတ်မချရသော";
+/// The mark of a comptime function.
+const COMPTIME: &str = "ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော";
 /// The mark of a shared struct.
 const SHARED: &str = "မျှဝေနိုင်သော";
 /// The mark of a parameter the function can change.
@@ -352,7 +354,8 @@ impl CardMaker<'_>
         let params: Vec<String> = n.params.iter().map(param).collect();
         let ret = n.ret.as_ref().map(|k| format!(": {}", text(k)));
         let name = shown_name(&n.name);
-        let mark = tern!(n.unchecked, format!("{UNSAFE} "), String::new());
+        let comptime = tern!(n.comptime, format!("{COMPTIME} "), String::new());
+        let mark = comptime + &tern!(n.unchecked, format!("{UNSAFE} "), String::new());
         let params = params.join("၊ ");
         format!("{mark}{FUNCTION} {name}({params}){}", ret.unwrap_or_default())
     }
@@ -513,7 +516,8 @@ impl Visitor for CardMaker<'_>
             let lib = n.lib.as_ref().map(|l| l.lit.value.clone());
             let c_fn = lib.map(|lib| t!("lsp.hover_c_fn", lib = lib).to_string());
             let marked = n.unchecked.then(|| t!("lsp.hover_unsafe").to_string());
-            self.keep(head.clone(), vec![c_fn, marked], Some(n.span));
+            let comptime = n.comptime.then(|| t!("lsp.hover_comptime").to_string());
+            self.keep(head.clone(), vec![c_fn, marked, comptime], Some(n.span));
         }
         self.kind_param_card(&n.name, &n.kind_params);
         let param = n.params.iter().find(|p| self.is_target(&p.name));

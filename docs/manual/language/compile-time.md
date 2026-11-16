@@ -1,9 +1,13 @@
 ---
-title: Compile-time conditionals
-description: The conditional the compiler settles for the target a program is built for - the four facts of the target, the arm it keeps, the code it never checks - and the error ZK0255.
+title: Compile time
+description: What the compiler works out before the program runs - the conditional it settles for the target, with the four facts and calls of comptime functions; comptime functions, the spots where their calls run, what a run can do - and their errors.
 ---
 
-# Compile-time conditionals
+# Compile time
+
+The compiler works some things out before the program runs: the arm of a *compile-time
+conditional* it keeps for the target, and the value of each call of a *comptime
+function* that stands where a value is needed at compile time.
 
 A C lib is not named and laid out the same on each OS: the UCRT of Windows calls
 `strdup` `_strdup`, and has no `snprintf`. The program names the lib to read and the
@@ -44,9 +48,10 @@ declares as constants:
 | `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"` or `"c"` |
 
 A condition holds the facts, text and digits, `==` and `!=` (and `<`, `<=`, `>`, `>=` on
-the bit count), `ဖြစ်၍` (`&&`), `သို့မဟုတ်` (`||`), `မဟုတ်` and parentheses. Each
-condition of a chain is settled, and each other part of one is ZK0255, as is a value a
-fact never holds: `"window"` would be a branch that never runs.
+the bit count), `ဖြစ်၍` (`&&`), `သို့မဟုတ်` (`||`), `မဟုတ်`, parentheses, and calls of
+[comptime functions](#conditions-that-call-comptime-functions). Each condition of a chain
+is settled, and each other part of one is ZK0255, as is a value a fact never holds:
+`"window"` would be a branch that never runs.
 
 The facts are constants all through the program as well: `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် ကို
 ပြသမည်။` prints the OS, and a plain conditional can test one when the program runs.
@@ -119,8 +124,171 @@ The target is the host the compiler runs on: its OS, its CPU, the bit count of
   the C files (`--emit c`), to build there.
 - The explorer settles a program for Linux on x86-64.
 
+## Comptime functions
+
+```text
+[အများသုံး] ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော [စိတ်မချရသော] လုပ်ဆောင်ချက် <name> သည် ...
+```
+
+- `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` ("that can run at compile time") stands in
+  front of `လုပ်ဆောင်ချက်`, after `အများသုံး` when both stand. The rest of the head and
+  the block are those of each [function](functions.md).
+- It marks a function declared at the top level of a file, with a block. The start
+  block, a C function, a function of the host, a function the compiler gives and a
+  function declared inside another take no mark: ZK0256.
+- The result is a value a constant can hold: a number, a character, true or false, a
+  member of an enumeration, text, a plain or counted list, or a struct of these. A
+  function with no result, or with a pointer, a table, a function value, an optional or
+  a result kind, is ZK0489.
+- A comptime function is a function too: a call of it elsewhere runs with the program.
+
+```zaka
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+n ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+n * n ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ကိန်းသေ အကွက်ရေ သည် နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဂ သည် အကွက် အကွက်ရေ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ဂ ကို ပြသမည်။
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို ၉ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၀၊ ၀၊ ၀၊ ၀]
+၈၁
+```
+
+```zaka-error ZK0489
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် ဇ သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား တစ်ခု ကို ပြန်ပေးမည်။
+ဇယားအလွတ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## Where a call runs at compile time
+
+A call of a comptime function runs while the compiler runs when it stands in a spot that
+needs its value before the program runs:
+
+- the value of a constant, `ကိန်းသေ`, alone or inside an expression;
+- the count of a counted list;
+- the starting value of a variable or a constant of an imported file;
+- the value of a member of an enumeration, and a case of a switch;
+- the condition of a compile-time conditional.
+
+Each argument must be known at compile time: literals, constants, operators on them and
+other comptime calls; a variable is ZK0608. The compiler puts the value in place of the
+call, so the later stages, the VM and the C target see a literal.
+
+```zaka-error ZK0608
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+n ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+n * n ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် v သည် ၃ ဖြစ်ပါစေ။
+ကိန်းသေ က သည် နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်ကို v ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+က ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+The compiler runs a call once each value its function reads is known: a constant the
+function reads that holds another comptime call runs first. A call whose function reads
+a value that waits on the call itself has no order that works: ZK0609.
+
+## What a run can do
+
+The compiler runs a call on the [VM](../vm/README.md), in a small program made of the
+function, the declarations of the program that do not wait on another comptime call,
+and the arguments.
+
+- The function can call each function of the program, comptime or not, and use
+  pointers, the heap, tables, closures, operators on structs and generics.
+- It holds the rights of the `--comptime-allow-*` flags of the command, none unless one
+  is given ([Commands](../compiler/commands.md)): `--comptime-allow-read[=<paths>]`,
+  `--comptime-allow-write[=<paths>]`, `--comptime-allow-env[=<names>]`,
+  `--comptime-allow-ffi` and `--comptime-allow-all`, as the
+  [rights of a run](../vm/running.md#permissions) are granted. A path of the program
+  starts from its folder. Nothing is asked: an effect with no right stops the run.
+- Reading input stops the run.
+- The language server and the explorer run a call with reads under the folder of the
+  program at most, and no write or C call, whatever the flags hold.
+- A run has a cap on its ops (50 000 000; 1 000 000 in the language server and the
+  explorer), its heap and its depth of calls.
+- What the run prints is a note at the call, ZK0612.
+
+A run that stops, through a trap, a cap or an effect with no right, stops the build: ZK0611 names the
+call and the reason, and its help lists the calls that led there. A small program that
+does not compile reports its first error as ZK0611 too.
+
+```zaka-error ZK0611
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် ခွဲ သည်
+n ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၁၀ / n ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ကိန်းသေ အပိုင်း သည် ခွဲ ဟူသော လုပ်ဆောင်ချက်ကို ၀ ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အပိုင်း ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## Conditions that call comptime functions
+
+A condition can call a comptime function, alone or beside the facts:
+`<call> ဖြစ်၍ အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ် == ၆၄`. The compiler reads the program in
+passes:
+
+1. A chain whose condition calls a function remains open: its arms are parsed, and their
+   imports are not read.
+2. The compiler checks a duplicate of the program, with each open condition as a constant in
+   place of its chain, which runs the calls.
+3. It reads the program again, and each chain keeps the arm the values pick. An arm
+   kept can hold a chain of its own, which the next pass settles.
+
+A condition that calls a function an arm of another open chain declares waits for the
+pass that keeps that arm. A function declared in an arm of the chain whose condition
+calls it is ZK0609.
+
+```zaka-error ZK0609
+အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် ကိုယ်တိုင် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် ကိုယ်တိုင် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
+မှန် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
 ## Errors
 
 | Code | When |
 | --- | --- |
 | ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact with a value it never holds |
+| ZK0256 | the comptime mark on something other than a function with a block at the top level |
+| ZK0489 | a comptime function whose result is no value a constant can hold |
+| ZK0608 | an argument of a comptime call, in a spot that needs it at compile time, that is not known then |
+| ZK0609 | a comptime call that needs a value waiting on the call itself |
+| ZK0610 | a comptime call in a tool that has no VM to run it |
+| ZK0611 | a comptime call whose run stopped: a trap, a cap, an effect with no right, or code that does not compile |
+| ZK0612 | a note: what a comptime call printed |
+
+```zaka-error ZK0256
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် အတွင်း သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၁ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```

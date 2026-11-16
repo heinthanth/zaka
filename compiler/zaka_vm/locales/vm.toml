@@ -96,6 +96,27 @@ en = "C called a function of the program from a thread other than the one that r
 [vm.trap.foreign_call]
 en = "the C function %{name} runs in \"zakac run\" and in native builds, not in this VM"
 
+[vm.trap.permission_denied]
+en = "%{what} needs %{flag}"
+
+[vm.permission.read]
+en = "reading \"%{s}\""
+
+[vm.permission.write]
+en = "writing \"%{s}\""
+
+[vm.permission.env]
+en = "reading the variable %{s} of the environment"
+
+[vm.permission.env_all]
+en = "the environment of the start block"
+
+[vm.permission.ffi]
+en = "calling the C function %{s}"
+
+[vm.permission.ask]
+en = "%{what}: allow it? [Y = from now on, O = once, N = no, A = each of this kind] "
+
 [vm.trap.foreign_link]
 en = "the C functions of the program cannot be reached: %{reason}"
 

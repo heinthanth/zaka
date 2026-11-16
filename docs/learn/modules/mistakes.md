@@ -152,7 +152,7 @@ Move the statement to the file that is run.
 ## A starting value that needs a call
 
 The variables and constants of an imported file start with a value known at compile
-time. A function call is not known then:
+time. A call of a plain function is not known then:
 
 ```zaka-file
 // clock.zaka
@@ -174,10 +174,12 @@ time. A function call is not known then:
 
 ```text
 error[ZK0604]: the starting value of "တစ်နာရီ" must be known at compile time, since its file is imported
-  = help: literals, constants and operators on them are known; a function call is not, for now
+  = help: literals, constants, operators on them and calls of comptime functions are known; another call is not
 ```
 
-Write the value out, as `၆၀ * ၆၀`.
+Write the value out, as `၆၀ * ၆၀`, or mark `စက္ကန့်` as a
+[comptime function](../functions/compile-time.md), whose call runs while the compiler
+runs.
 
 ## A variable of a module with no value
 

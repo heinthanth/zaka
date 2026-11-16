@@ -36,3 +36,15 @@ en = "Output file, or `-` for stdout (default: stdout)"
 
 [cli.output_format]
 en = "Artifact output format (default: inferred from path)"
+
+[cli.grant]
+en = "Grants the right to %{right}: each one, or those listed after =, with commas between them."
+
+[cli.grant_ffi]
+en = "Grants the right to call C functions."
+
+[cli.grant_all]
+en = "Grants each right: read, write, env and ffi."
+
+[cli.no_prompt]
+en = "Asks nothing for a right the run lacks: the effect is denied at once."

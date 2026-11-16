@@ -146,6 +146,10 @@ impl ToSexpr for Expr
                 "fn_addr",
                 [n.name.name.to_string() + &kind_args_text(&n.kind_args)],
             ),
+            Expr::Comptime(n) =>
+            {
+                list("comptime", [n.callee.name.to_string(), tree_sexpr(&n.value)])
+            }
         }
     }
 }
@@ -183,6 +187,7 @@ impl ToSexpr for Stmt
             {
                 let decl =
                     tern!(s.unchecked, list("unsafe", [fn_sexpr(s)]), fn_sexpr(s));
+                let decl = tern!(s.comptime, list("comptime", [decl.clone()]), decl);
                 exported(s.exported, decl)
             }
             Stmt::Return(s) =>
@@ -805,4 +810,28 @@ fn kind_params_text(params: &[KindParam]) -> String
     };
     let parts: Vec<String> = params.iter().map(one).collect();
     format!("<{}>", parts.join(" "))
+}
+
+/// The s-expression of a value known at compile time: a number as its raw
+/// bits, text in quotes, items in brackets.
+///
+/// # Arguments
+///
+/// * `tree` - The value.
+///
+/// # Returns
+///
+/// The text.
+fn tree_sexpr(tree: &crate::expr::ConstTree) -> String
+{
+    match tree
+    {
+        crate::expr::ConstTree::Scalar(raw) => raw.to_string(),
+        crate::expr::ConstTree::Text(t) => format!("{t:?}"),
+        crate::expr::ConstTree::Items(items) =>
+        {
+            let parts: Vec<String> = items.iter().map(tree_sexpr).collect();
+            format!("[{}]", parts.join(" "))
+        }
+    }
 }

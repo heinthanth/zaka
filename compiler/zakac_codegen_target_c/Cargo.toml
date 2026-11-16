@@ -9,6 +9,7 @@ name = "zakac_codegen_target_c"
 path = "src/main.rs"
 
 [dependencies]
+zaka_host = { workspace = true }
 bon = { workspace = true }
 etcetera = { workspace = true }
 rust-i18n = { workspace = true }

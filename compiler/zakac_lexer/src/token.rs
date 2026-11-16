@@ -444,6 +444,13 @@ pub enum Kw
     /// `ကွန်ပိုင်းလုပ်ချိန်တွင်`, "at compile time": after `အကယ်၍`, it makes the
     /// conditional one the compiler settles for the target it builds for
     AtCompileTime,
+    /// `လုပ်ဆောင်နိုင်သော`, "that can run": after `ကွန်ပိုင်းလုပ်ချိန်တွင်`, in the
+    /// mark of a comptime function
+    CanRun,
+    /// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`, "that can run at compile time": in
+    /// front of `လုပ်ဆောင်ချက်`, it marks a function the compiler can run while it
+    /// compiles
+    Comptime,
     /// `လျှင်`
     Then,
     /// `ဖြစ်လျှင်`

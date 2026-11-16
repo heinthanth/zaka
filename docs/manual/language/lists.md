@@ -62,8 +62,10 @@ A written count comes first, then the kind of each cell, then `စာရင်�
   overflow (ZK0601) as it would in the program, a division with zero is ZK0602, a shift
   too far ZK0407 and a cell outside a constant list ZK0603. A constant list is read when
   each of its cells is known. A constant counts when it is declared before the count in
-  its block, at the top of its file (above or below the count), or imported. A count
-  cannot come from a variable's value, a call, or the count of text, because the size of a
+  its block, at the top of its file (above or below the count), or imported. A call of a
+  [comptime function](compile-time.md#comptime-functions) counts too: it runs while the
+  compiler runs. A count cannot come from a variable's value, a call of another function,
+  or the count of text, because the size of a
   counted list is known before the program runs; a variable or a parameter of the same
   name hides a constant. A count that waits on itself, such as a struct whose count is its
   own size, is ZK0227.
@@ -719,7 +721,9 @@ m ကို ပြသမည်။
 
 A `ကိန်းသေ` that holds a plain list (or text, or a list or struct with either inside) is
 static data in each build: its value must fold at compile time, whatever `--fold` holds,
-else ZK0606, reported at the first cell that does not fold. With constant propagation on,
+else ZK0606, reported at the first cell that does not fold. A call of a
+[comptime function](compile-time.md#comptime-functions) folds: it runs while the compiler
+runs. With constant propagation on,
 a cell read of such a constant at a constant number, a field of a struct in it, and its
 count become constants, and a constant number outside it is ZK0603.
 

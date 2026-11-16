@@ -59,6 +59,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::That, Kw::GoodResult], Kw::UsedGoodResult),
     // လုပ်ဆောင်ချက် <fn> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်(၍|သည်) ...
     (&[Kw::Outside, Kw::From, Kw::Coming], Kw::External),
+    // ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် <fn> သည် ...
+    (&[Kw::AtCompileTime, Kw::CanRun], Kw::Comptime),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်ကောင်း
     (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
     // <parameters> လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား

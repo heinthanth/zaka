@@ -52,9 +52,16 @@ impl Machine
         let args = Args(read.collect::<Result<_, _>>()?);
         let world = &mut *self.world;
         #[rustfmt::skip]
-        let mut effects = Effects { world, out: &mut self.out, err: &mut self.err, blocked: false };
+        let mut effects = Effects { world, out: &mut self.out, err: &mut self.err, blocked: false,
+            gate: &mut self.gate, denied: None };
         let result = func.serve(&args, &mut effects);
         ret_if!(effects.blocked, self.wait_for_input(slot, &addrs));
+        // A run that stops on a denial, as a comptime run, traps here.
+        if let Some(denial) = effects.denied
+        {
+            let zaka_host::Denial { right, subject } = denial;
+            return Err(TrapKind::PermissionDenied { right, subject });
+        }
         self.put_host_value(slot, ret, result)?;
         self.push(Value::Ptr(slot))
     }

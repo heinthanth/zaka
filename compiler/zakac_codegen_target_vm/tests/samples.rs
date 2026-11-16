@@ -12,8 +12,8 @@ use zakac_codegen_target_vm::listing::listing;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::PhaseArtifact;
@@ -144,10 +144,14 @@ fn repo_samples_are_well_formed()
         // The files a sample imports sit in a folder below.
         for file in files.filter(|f| f.path().extension().is_some_and(|e| e == "zaka"))
         {
+            zaka_vm::comptime::install();
             let mut sm = SourceMap::new();
             let source = sm.load_file(&file.path()).unwrap();
-            let loaded = load(&source, &mut sm, &LexerOptions::default()).unwrap();
             let options = SemcheckOptions::default();
+            let (lexer, host) =
+                (LexerOptions::default(), zakac_ast::target::Target::host());
+            let loaded =
+                load_settled(&source, &mut sm, &lexer, &host, &options).unwrap();
             let folding = FoldOptions::default();
             let mistake = group.file_name() == "mistakes";
             let check = tern!(mistake, MemCheck::Off, MemCheck::Error);

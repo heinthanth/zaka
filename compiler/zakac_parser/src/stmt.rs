@@ -201,6 +201,7 @@ impl Parser<'_>
             Kw::DataKindOpen => self.parse_alias_decl(),
             Kw::Export => self.parse_exported(),
             Kw::Unsafe => self.parse_unchecked(),
+            Kw::Comptime => self.parse_comptime(),
             Kw::BlockOpen | Kw::UnsafeBlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
@@ -345,6 +346,31 @@ impl Parser<'_>
         };
         ret_if!(n.start, Err(diag::expected_token(mark, "လုပ်ဆောင်ချက်", "စိတ်မချရသော")));
         n.unchecked = true;
+        n.span = mark.to(&n.span);
+        Ok(stmt)
+    }
+
+    /// Parse a comptime function, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`: a call
+    /// of it in a spot that needs a value at compile time runs while the
+    /// compiler runs. The mark stands on a function with a block, declared at
+    /// the top level.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `ZK0256` for the mark on something else.
+    fn parse_comptime(&mut self) -> PResult<Stmt>
+    {
+        let mark = self.bump().span;
+        let top = !self.nested();
+        let mut stmt = self.parse_stmt()?;
+        let Stmt::Fn(n) = &mut stmt
+        else
+        {
+            return Err(diag::comptime_mark_misplaced(mark));
+        };
+        let runnable = !n.start && !n.external && !n.builtin && n.lib.is_none();
+        ret_if!(!runnable || !top, Err(diag::comptime_mark_misplaced(mark)));
+        n.comptime = true;
         n.span = mark.to(&n.span);
         Ok(stmt)
     }

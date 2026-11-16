@@ -17,10 +17,12 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::grants::Granted;
+use zakac_cli_common::grants::attach_grant_args;
+use zakac_cli_common::grants::grants_from;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -103,6 +105,7 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .long("no-unsafe")
         .help(t!("ir.no_unsafe"))
         .action(ArgAction::SetTrue);
+    let cmd = attach_grant_args(cmd, Granted::Comptime);
     attach_target_os_args(cmd.arg(platform_bits).arg(strict).arg(fold).arg(no_unsafe))
 }
 
@@ -121,6 +124,8 @@ pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
     let strict = matches.get_flag(STRICT_PARTICLES_ARG);
     let no_unsafe = matches.get_flag(NO_UNSAFE_ARG);
+    // The comptime runs of the command take the rights its flags grant.
+    zakac_semcheck::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));
     SemcheckOptions::builder()
         .platform_bits(bits)
         .strict_particles(strict)
@@ -295,11 +300,12 @@ fn command_main(
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load_for(
+    let loaded = zakac_semcheck::open_chains::load_settled(
         &source,
         &mut source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::Vm),
+        &semcheck_options(matches),
     );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();

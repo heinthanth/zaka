@@ -1,26 +1,59 @@
 //! Compile-time conditionals, `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …`: the loader keeps
 //! the arm whose condition holds for the target, spliced into the statements
 //! around it, and drops the others before names and kinds are checked. A
-//! condition reads the facts of the target, text, digits, comparisons and
-//! the logic words alone.
+//! condition reads the facts of the target, text, digits, comparisons, the
+//! logic words and calls of comptime functions. A condition that calls one
+//! waits for the check, which runs the call: its chain remains open, and a
+//! later read of the program settles it with the truth the run gave.
 
+use std::collections::HashMap;
+
+use zakac_ast::expr::ConstTree;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::InfixExpr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::LogicOp;
+use zakac_ast::kind::BaseKind;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::target::FactValue;
 use zakac_ast::target::Target;
 use zakac_ast::visit::Node;
+use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
+use zakac_ast::visit::walk_expr;
 use zakac_ast::visit::walk_stmt_mut;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser::TestFault;
 use zakac_diagnostics::parser::bad_compile_time_test;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
+
+/// Where a condition of a compile-time conditional stands, the same in
+/// each read of the program: the name of its file and its offset there.
+pub type CondPlace = (String, u32);
+
+/// The truth of each condition that calls a comptime function, as an
+/// earlier read of the program worked it out.
+pub type Resolved = HashMap<CondPlace, bool>;
+
+/// The file a settle reads: its name, where it starts, and the conditions
+/// worked out so far.
+pub(crate) struct Spot<'a>
+{
+    /// The name of the file.
+    pub file: String,
+    /// The position of the start of the file.
+    pub base: u32,
+    /// The truth of each condition worked out so far.
+    pub resolved: &'a Resolved,
+}
+
+/// What a settle gives: the statements, the faults of the conditions,
+/// whether a conditional was met, and each condition still open.
+pub(crate) type Settled = (Vec<Stmt>, Vec<Diagnostic>, bool, Vec<(Span, CondPlace)>);
 
 /// Settle each compile-time conditional among some statements, at each
 /// depth.
@@ -30,19 +63,73 @@ use zakac_span::span::Span;
 /// * `stmts` - The statements.
 /// * `target` - The target.
 /// * `text_of` - The source text of a region, for reports.
+/// * `spot` - The file, and the conditions worked out so far.
 ///
 /// # Returns
 ///
 /// The statements with each conditional replaced with the statements of the
-/// arm it keeps, the diagnostics of the conditions, and whether a
-/// conditional was met.
+/// arm it keeps, or left in place while a condition that calls a comptime
+/// function is open; the diagnostics of the conditions; whether a
+/// conditional was met; and each open condition with its place.
 pub(crate) fn settle(
-    stmts: Vec<Stmt>, target: &Target, text_of: &dyn Fn(Span) -> String,
-) -> (Vec<Stmt>, Vec<Diagnostic>, bool)
+    stmts: Vec<Stmt>, target: &Target, text_of: &dyn Fn(Span) -> String, spot: &Spot,
+) -> Settled
 {
-    let mut settler = Settler { target, text_of, diags: Vec::new(), met: false };
+    #[rustfmt::skip]
+    let mut settler = Settler { target, text_of, spot, diags: Vec::new(), met: false,
+        open: Vec::new() };
     let stmts = settler.flatten(stmts);
-    (stmts, settler.diags, settler.met)
+    (stmts, settler.diags, settler.met, settler.open)
+}
+
+/// Whether a condition holds, with the calls of comptime functions in it
+/// worked out to values.
+///
+/// # Arguments
+///
+/// * `cond` - The condition.
+/// * `target` - The target.
+/// * `text_of` - The source text of a region, for reports.
+///
+/// # Returns
+///
+/// The truth, or `ZK0255`.
+pub fn truth(
+    cond: &Expr, target: &Target, text_of: &dyn Fn(Span) -> String,
+) -> Result<bool, Diagnostic>
+{
+    let resolved = Resolved::new();
+    let spot = Spot { file: String::new(), base: 0, resolved: &resolved };
+    #[rustfmt::skip]
+    let settler = Settler { target, text_of, spot: &spot, diags: Vec::new(), met: false,
+        open: Vec::new() };
+    settler.truth(cond).map_err(|(span, f)| bad_compile_time_test(span, &f))
+}
+
+/// Whether a condition calls a function.
+///
+/// # Arguments
+///
+/// * `cond` - The condition.
+///
+/// # Returns
+///
+/// `true` when it holds a call.
+pub fn has_call(cond: &Expr) -> bool
+{
+    /// The walker that finds a call.
+    struct Calls(bool);
+    impl Visitor for Calls
+    {
+        fn visit_expr(&mut self, n: &Expr)
+        {
+            self.0 |= matches!(n, Expr::Call(_));
+            walk_expr(self, n);
+        }
+    }
+    let mut calls = Calls(false);
+    calls.visit_expr(cond);
+    calls.0
 }
 
 /// The walker that settles compile-time conditionals.
@@ -52,10 +139,14 @@ struct Settler<'t>
     target: &'t Target,
     /// The source text of a region.
     text_of: &'t dyn Fn(Span) -> String,
+    /// The file, and the conditions worked out so far.
+    spot: &'t Spot<'t>,
     /// The faults of the conditions.
     diags: Vec<Diagnostic>,
     /// Whether a compile-time conditional was met.
     met: bool,
+    /// Each condition still open, with its place.
+    open: Vec<(Span, CondPlace)>,
 }
 
 /// A value of a compile-time condition.
@@ -106,15 +197,20 @@ impl Settler<'_>
                 continue;
             }
             self.met = true;
-            let kept = self.choose(n);
-            out.extend(self.flatten(kept));
+            match self.choose(n)
+            {
+                Ok(kept) => out.extend(self.flatten(kept)),
+                Err(open) => out.push(Stmt::If(open)),
+            }
         }
         out
     }
 
     /// The statements of the arm a compile-time conditional keeps: the first
     /// arm whose condition holds, else the else block. Each condition is
-    /// settled, so each fault is reported.
+    /// settled, so each fault is reported. A condition that calls a function
+    /// takes the truth an earlier read worked out; while it has none and no
+    /// arm before it holds, the conditional remains open.
     ///
     /// # Arguments
     ///
@@ -122,13 +218,72 @@ impl Settler<'_>
     ///
     /// # Returns
     ///
-    /// The statements; none when no arm holds and no else block is written.
-    fn choose(&mut self, n: IfStmt) -> Vec<Stmt>
+    /// The statements, none when no arm holds and no else block is written;
+    /// or the conditional, while it is open.
+    fn choose(&mut self, n: IfStmt) -> Result<Vec<Stmt>, IfStmt>
     {
-        let holds: Vec<bool> = n.arms.iter().map(|a| self.holds(&a.cond)).collect();
-        let arms = n.arms.into_iter().zip(holds);
-        let kept = arms.filter(|(_, h)| *h).map(|(a, _)| a.block.stmts).next();
-        kept.or_else(|| n.else_block.map(|b| b.stmts)).unwrap_or_default()
+        let mut kept = None;
+        let mut open = false;
+        for (i, arm) in n.arms.iter().enumerate()
+        {
+            let decided = kept.is_some() || open;
+            let holds = match self.called(&arm.cond)
+            {
+                Some(Some(truth)) => truth,
+                Some(None) =>
+                {
+                    do_if!(!decided, self.open_cond(&arm.cond));
+                    open |= !decided;
+                    false
+                }
+                None => self.holds(&arm.cond),
+            };
+            do_if!(holds && !decided, kept = Some(i));
+        }
+        ret_if!(open, Err(n));
+        let arm = kept.and_then(|i| n.arms.into_iter().nth(i)).map(|a| a.block.stmts);
+        Ok(arm.or_else(|| n.else_block.map(|b| b.stmts)).unwrap_or_default())
+    }
+
+    /// The truth of a condition that calls a function, as an earlier read
+    /// worked it out.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The condition.
+    ///
+    /// # Returns
+    ///
+    /// `None` for a condition with no call; `Some(None)` while it is open.
+    fn called(&self, cond: &Expr) -> Option<Option<bool>>
+    {
+        ret_if!(!has_call(cond), None);
+        Some(self.spot.resolved.get(&self.place(cond)).copied())
+    }
+
+    /// Record a condition that remains open.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The condition.
+    fn open_cond(&mut self, cond: &Expr)
+    {
+        self.open.push((cond.span(), self.place(cond)))
+    }
+
+    /// The place of a condition, the same in each read of the program.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The condition.
+    ///
+    /// # Returns
+    ///
+    /// The place.
+    fn place(&self, cond: &Expr) -> CondPlace
+    {
+        let offset = cond.span().lo.as_u32().saturating_sub(self.spot.base);
+        (self.spot.file.clone(), offset)
     }
 
     /// Whether a condition holds for the target; a fault is reported, and the
@@ -184,6 +339,13 @@ impl Settler<'_>
                 Ok(Val::Bool(logic(n.op, lhs, rhs)))
             }
             Expr::Infix(n) if n.op.is_cmp() => self.compare(n),
+            Expr::Comptime(n) => match (&n.value, n.kind.base)
+            {
+                (ConstTree::Scalar(raw), BaseKind::Bool) => Ok(Val::Bool(*raw != 0)),
+                (ConstTree::Scalar(raw), BaseKind::Int) => Ok(Val::Num(*raw)),
+                (ConstTree::Text(t), _) => Ok(Val::Text(t.clone(), None)),
+                _ => Err(form()),
+            },
             _ => Err(form()),
         }
     }

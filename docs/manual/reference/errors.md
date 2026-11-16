@@ -135,7 +135,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0252 | a written-as hint that breaks a rule of its form | [Generics and traits](../language/generics.md#written-as-hints) |
 | ZK0253 | a use of a written-as hint that writes two kinds for one kind parameter the hint names twice | [Generics and traits](../language/generics.md#written-as-hints) |
 | ZK0254 | the line that takes the defaults of a trait, naming another trait than its trait block | [Generics and traits](../language/generics.md#trait-blocks) |
-| ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact of the target with a value it never holds | [Compile-time conditionals](../language/compile-time.md) |
+| ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact of the target with a value it never holds | [Compile time](../language/compile-time.md) |
+| ZK0256 | the comptime mark `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on something other than a function with a block at the top level | [Compile time](../language/compile-time.md#comptime-functions) |
 
 ### ZK03: names
 
@@ -274,6 +275,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
 | ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0488 | `ကို ဖျက်မည်` after a value that is no row of a ဇယား | [Tables](../language/tables.md#setting-and-removing-rows) |
+| ZK0489 | a comptime function whose result is no value a constant can hold | [Compile time](../language/compile-time.md#comptime-functions) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -299,10 +301,15 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0601 | a sum of constants that does not fit its kind | [Arithmetic](../../learn/operators/arithmetic.md) |
 | ZK0602 | a constant zero as the divisor | [Arithmetic](../../learn/operators/arithmetic.md#dividing-integers) |
 | ZK0603 | a constant cell number outside its list | [Static data and counted lists](../../learn/forms/counted-lists.md#a-cell-number-past-a-counted-list) |
-| ZK0604 | a variable of an imported file whose starting value is not known at compile time | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
+| ZK0604 | a variable of an imported file whose starting value is not known at compile time, as a call of a function that is not comptime | [Module mistakes](../../learn/modules/mistakes.md#a-starting-value-that-needs-a-call) |
 | ZK0605 | a constant range past the end of its list | [Ranges](../language/lists.md#ranges) |
 | ZK0606 | a constant that holds text or a plain list, whose value needs the program to run | [Static data and counted lists](../../learn/forms/counted-lists.md#constants-of-text-and-lists) |
 | ZK0607 | a range of known text that cuts a character | [Text](../language/text.md) |
+| ZK0608 | an argument of a comptime call in a compile-time spot that is not known at compile time | [Compile time](../language/compile-time.md#where-a-call-runs-at-compile-time) |
+| ZK0609 | a comptime call that needs a value waiting on the call itself, or a condition that calls a function its own chain declares | [Compile time](../language/compile-time.md#conditions-that-call-comptime-functions) |
+| ZK0610 | a comptime call in a tool with no VM to run it | [Compile time](../language/compile-time.md#what-a-run-can-do) |
+| ZK0611 | a comptime call whose run stopped: a trap, a cap, an effect with no right, or code that does not compile | [Compile time](../language/compile-time.md#what-a-run-can-do) |
+| ZK0612 | a note: what a comptime call printed while the compiler ran it | [Compile time](../language/compile-time.md#what-a-run-can-do) |
 
 ### ZK07: flow checks and the lint
 

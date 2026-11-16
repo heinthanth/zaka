@@ -164,6 +164,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
     {
         Kw::If
         | Kw::AtCompileTime
+        | Kw::CanRun
+        | Kw::Comptime
         | Kw::Then
         | Kw::ThenIs
         | Kw::ElseIf

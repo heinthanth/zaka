@@ -21,7 +21,7 @@
   - [Enumerations](language/enums.md)
   - [Kind aliases](language/aliases.md)
   - [Generics and traits](language/generics.md)
-  - [Compile-time conditionals](language/compile-time.md)
+  - [Compile time](language/compile-time.md)
   - [The prelude](language/prelude.md)
   - [Modules](language/modules.md)
   - [Input and output](language/io.md)

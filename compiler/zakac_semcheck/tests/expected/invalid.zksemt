@@ -272,6 +272,7 @@ program:
           hi: 1110
       exported: false
       unchecked: false
+      comptime: false
       start: true
       builtin: false
       external: false

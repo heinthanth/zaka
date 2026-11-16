@@ -26,7 +26,6 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -318,11 +317,12 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &cmd_info, error));
     let source = source.unwrap();
-    let loaded = load_for(
+    let loaded = zakac_semcheck::open_chains::load_settled(
         &source,
         &mut source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::Vm),
+        &semcheck_options(matches),
     );
     ret_if!(let Err(error) = loaded, report_command_error(io, &cmd_info, error));
     let loaded = loaded.unwrap();

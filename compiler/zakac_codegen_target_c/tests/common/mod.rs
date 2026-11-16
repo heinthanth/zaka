@@ -18,7 +18,7 @@ use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::source_map::SourceMap;
 
@@ -89,13 +89,44 @@ pub fn c_files_with(
     path: &Path, overflow: OverflowMode, target: TargetCOptions,
 ) -> Result<Vec<CFile>, Error>
 {
+    c_files_granted(path, overflow, target, &zaka_host::Grants::all())
+}
+
+/// The C files of a source file with each choice of the C target and the
+/// rights the executable holds.
+///
+/// # Arguments
+///
+/// * `path` - The source file.
+/// * `overflow` - The overflow mode.
+/// * `target` - The choices of the C target.
+/// * `grants` - The rights.
+///
+/// # Returns
+///
+/// The files, or the construct the C target cannot build.
+pub fn c_files_granted(
+    path: &Path, overflow: OverflowMode, target: TargetCOptions,
+    grants: &zaka_host::Grants,
+) -> Result<Vec<CFile>, Error>
+{
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file = sm.load_file(path).unwrap();
-    let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
-    let mem = BorrowCheckOptions::builder().overflow(overflow).build();
     let options = SemcheckOptions::default();
-    let out =
-        translate(loaded, sm.files(), &options, &FoldOptions::default(), &mem, target);
+    let host = zakac_ast::target::Target::host();
+    let lexer = LexerOptions::default();
+    let loaded = load_settled(&file, &mut sm, &lexer, &host, &options).unwrap();
+    let mem = BorrowCheckOptions::builder().overflow(overflow).build();
+    let out = translate(
+        loaded,
+        sm.files(),
+        &options,
+        &FoldOptions::default(),
+        &mem,
+        target,
+        grants,
+    );
     let msgs: Vec<&str> =
         out.diagnostics().iter().map(|d| d.message.as_str()).collect();
     assert!(!has_errors(out.diagnostics()), "{}: {msgs:?}", path.display());

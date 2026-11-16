@@ -19,6 +19,9 @@ use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::comptime_calls::SITE_GLOBAL;
+use zakac_semcheck::comptime_calls::part_kinds;
+use zakac_semcheck::comptime_calls::scalar_value;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::fn_kind::FnKind;
@@ -764,7 +767,10 @@ impl Lowerer<'_>
     fn global_drops(&self, span: Span) -> Vec<Stmt>
     {
         let globals = self.globals.iter().enumerate().rev();
-        let held = globals.filter(|(_, s)| s.kind.holds_text() && s.name != "%new");
+        // The global of a comptime call is read once the run ends, so it
+        // remains.
+        let kept = |s: &Slot| s.name == "%new" || s.name.starts_with(SITE_GLOBAL);
+        let held = globals.filter(|(_, s)| s.kind.holds_text() && !kept(s));
         held.map(|(i, s)| drop_stmt(Dest::Slot(Place::Global(i as u32)), s.kind, span))
             .collect()
     }
@@ -3468,6 +3474,10 @@ impl Lowerer<'_>
             ast::Expr::BlankList(_) => ExprNode::BlankList,
             ast::Expr::Table(n) => self.table_lit(n, kind),
             ast::Expr::Str(n) => self.str_node(n),
+            ast::Expr::Comptime(n) =>
+            {
+                return tree_expr(&n.value, kind, n.span, self.platform);
+            }
             ast::Expr::Member(n) =>
             {
                 let owner = self.shown_kind(e).as_enum();
@@ -4953,6 +4963,51 @@ pub(crate) fn member_expr(v: &MemberValue, kind: DataKind, span: Span) -> Expr
         MemberValue::Items(items) => return items_expr(items, kind, span),
     };
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The value of a comptime call: a constant, text, or the cells of a list or
+/// the fields of a struct, each of its kind; a plain list is built as a
+/// counted list and converted, as a list literal is.
+///
+/// # Arguments
+///
+/// * `tree` - The value.
+/// * `kind` - Its kind.
+/// * `span` - The source region of the call.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The expression.
+pub(crate) fn tree_expr(
+    tree: &ast::ConstTree, kind: DataKind, span: Span, platform: u16,
+) -> Expr
+{
+    let kind = kind.repr();
+    let build =
+        |k: DataKind, node| Expr::builder().kind(k).node(node).span(span).build();
+    let items = match tree
+    {
+        ast::ConstTree::Scalar(raw) =>
+        {
+            let v =
+                scalar_value(kind, *raw, platform).unwrap_or(Value::default_of(kind));
+            return build(kind, ExprNode::Const(v));
+        }
+        ast::ConstTree::Text(t) => return build(kind, ExprNode::Text(t.clone())),
+        ast::ConstTree::Items(items) => items,
+    };
+    let kinds = part_kinds(kind, items.len()).unwrap_or_default();
+    let parts = items.iter().zip(kinds).map(|(t, k)| tree_expr(t, k, span, platform));
+    let cells = ExprNode::List(parts.collect());
+    let cell = kind.cell_kind().filter(|_| kind.is_seq());
+    let Some(cell) = cell
+    else
+    {
+        return build(kind, cells);
+    };
+    let counted = build(DataKind::list_of(cell, items.len() as u32), cells);
+    build(kind, ExprNode::Convert { operand: Box::new(counted), implicit: true })
 }
 
 /// The cells or fields of a list or a struct member value.

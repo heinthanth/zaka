@@ -5,6 +5,7 @@ use serde::Serialize;
 use strum::EnumIter;
 use strum::IntoStaticStr;
 
+use crate::grants::Right;
 use crate::kinds::BAD_TEXT;
 use crate::kinds::END_OF_INPUT;
 use crate::kinds::INPUT_STREAM;
@@ -34,6 +35,8 @@ pub struct HostDef
     /// The kind name of the good result; `None` for a good result that holds
     /// no value. Each host function can fail with [`IO_ERROR`].
     pub ok: Option<&'static str>,
+    /// The right a call needs, `None` for one each run holds.
+    pub needs: Option<Right>,
     /// The work: the result for the arguments.
     pub run: fn(&Args, &mut Effects<'_>) -> HostValue,
 }
@@ -41,7 +44,7 @@ pub struct HostDef
 /// Make [`HostFn`], one variant for each row, and [`HOST_FNS`], the rows in
 /// the same order.
 macro_rules! host_fns {
-    ($( $(#[$doc:meta])* $id:ident = $name:literal ($($param:expr),*) -> $ok:expr, $run:expr; )*) => {
+    ($( $(#[$doc:meta])* $id:ident = $name:literal ($($param:expr),*) -> $ok:expr, $needs:expr, $run:expr; )*) => {
         /// A function the host serves.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         #[derive(EnumIter, IntoStaticStr)]
@@ -54,35 +57,38 @@ macro_rules! host_fns {
 
         /// Each host function, in the order of [`HostFn`].
         pub static HOST_FNS: &[HostDef] = &[
-            $( HostDef { func: HostFn::$id, name: $name, params: &[$($param),*], ok: $ok, run: $run }, )*
+            $( HostDef { func: HostFn::$id, name: $name, params: &[$($param),*], ok: $ok, needs: $needs, run: $run }, )*
         ];
     };
 }
 
 host_fns! {
     /// Read one line of an input stream, without its line break.
-    ReadLine = "စာကြောင်းတစ်ကြောင်းဖတ်"(INPUT_STREAM) -> Some(TEXT), read_line;
+    ReadLine = "စာကြောင်းတစ်ကြောင်းဖတ်"(INPUT_STREAM) -> Some(TEXT), None, read_line;
     /// Read a whole file as text.
-    ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), read_file;
+    ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), Some(Right::Read), read_file;
     /// Write text as the whole of a file: the text, then the path.
-    WriteFile = "ရေး"(TEXT, TEXT) -> None, write_file;
+    WriteFile = "ရေး"(TEXT, TEXT) -> None, Some(Right::Write), write_file;
     /// Write text to an output stream, with no line break: the text, then the
     /// stream.
-    WriteStream = "ရေး"(TEXT, OUTPUT_STREAM) -> None, write_stream;
+    WriteStream = "ရေး"(TEXT, OUTPUT_STREAM) -> None, None, write_stream;
     /// Add text at the end of a file, making the file when it is not there:
     /// the text, then the path.
-    AppendFile = "နောက်ဆုံးမှဆက်ရေး"(TEXT, TEXT) -> None, append_file;
+    AppendFile = "နောက်ဆုံးမှဆက်ရေး"(TEXT, TEXT) -> None, Some(Right::Write), append_file;
     /// Remove a file, or a folder that holds nothing.
-    Remove = "ဖျက်"(TEXT) -> None, remove;
+    Remove = "ဖျက်"(TEXT) -> None, Some(Right::Write), remove;
     /// Make a folder and each folder above it that is not there.
-    MakeFolder = "ဖိုင်တွဲတစ်ခုပြုလုပ်"(TEXT) -> None, make_folder;
+    MakeFolder = "ဖိုင်တွဲတစ်ခုပြုလုပ်"(TEXT) -> None, Some(Right::Write), make_folder;
     /// The names a folder holds, sorted.
-    ListFolder = "စု"(TEXT) -> Some(TEXT_LIST), list_folder;
+    ListFolder = "စု"(TEXT) -> Some(TEXT_LIST), Some(Right::Read), list_folder;
     /// What a path holds: a file, a folder or another thing.
-    PathKind = "အမျိုးအစားခွဲ"(TEXT) -> Some(PATH_KIND), path_kind;
+    PathKind = "အမျိုးအစားခွဲ"(TEXT) -> Some(PATH_KIND), Some(Right::Read), path_kind;
     /// Move a file or a folder, replacing what the target holds: the old
     /// path, then the new one.
-    Rename = "ရွှေ့"(TEXT, TEXT) -> None, rename;
+    Rename = "ရွှေ့"(TEXT, TEXT) -> None, Some(Right::Write), rename;
+    /// Read one variable of the environment; one that is not set fails as a
+    /// file that is not there does.
+    ReadEnv = "ဖတ်"(TEXT) -> Some(TEXT), Some(Right::Env), read_env;
 }
 
 /// Run [`HostFn::ReadLine`].
@@ -115,39 +121,55 @@ fn write_stream(args: &Args, e: &mut Effects<'_>) -> HostValue
 /// Run [`HostFn::AppendFile`].
 fn append_file(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    nothing_or_fault(e.world.append_file(args.text(1), args.text(0)))
+    let path = e.allow(Right::Write, args.text(1));
+    nothing_or_fault(path.and_then(|p| e.world.append_file(&p, args.text(0))))
 }
 
 /// Run [`HostFn::Remove`].
 fn remove(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    nothing_or_fault(e.world.remove(args.text(0)))
+    let path = e.allow(Right::Write, args.text(0));
+    nothing_or_fault(path.and_then(|p| e.world.remove(&p)))
 }
 
 /// Run [`HostFn::MakeFolder`].
 fn make_folder(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    nothing_or_fault(e.world.make_folder(args.text(0)))
+    let path = e.allow(Right::Write, args.text(0));
+    nothing_or_fault(path.and_then(|p| e.world.make_folder(&p)))
 }
 
 /// Run [`HostFn::ListFolder`].
 fn list_folder(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    let names = e.world.list_folder(args.text(0));
+    let path = e.allow(Right::Read, args.text(0));
+    let names = path.and_then(|p| e.world.list_folder(&p));
     names.map_or_else(fault, |n| HostValue::Good(Some(Box::new(HostValue::Texts(n)))))
 }
 
 /// Run [`HostFn::PathKind`].
 fn path_kind(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    let kind = e.world.path_kind(args.text(0));
+    let path = e.allow(Right::Read, args.text(0));
+    let kind = path.and_then(|p| e.world.path_kind(&p));
     kind.map_or_else(fault, |k| HostValue::Good(Some(Box::new(HostValue::Member(k)))))
 }
 
 /// Run [`HostFn::Rename`].
 fn rename(args: &Args, e: &mut Effects<'_>) -> HostValue
 {
-    nothing_or_fault(e.world.rename(args.text(0), args.text(1)))
+    let from = e.allow(Right::Write, args.text(0));
+    let to = from.and_then(|f| e.allow(Right::Write, args.text(1)).map(|t| (f, t)));
+    nothing_or_fault(to.and_then(|(f, t)| e.world.rename(&f, &t)))
+}
+
+/// Run [`HostFn::ReadEnv`].
+fn read_env(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    let name = e.allow(Right::Env, args.text(0));
+    let value = name.and_then(|n| e.world.read_env(&n));
+    let value = value.and_then(|v| v.ok_or_else(|| io::ErrorKind::NotFound.into()));
+    text_or_fault(value)
 }
 
 impl HostFn
@@ -267,6 +289,8 @@ fn fault(e: io::Error) -> HostValue
 mod tests
 {
     use super::*;
+    use crate::grants::Gate;
+    use crate::grants::Grants;
     use crate::kinds::IS_FILE;
     use crate::kinds::IS_FOLDER;
     use crate::kinds::STDIN;
@@ -279,10 +303,51 @@ mod tests
         func: HostFn, args: Vec<HostValue>, world: &mut MemWorld,
     ) -> (HostValue, String)
     {
+        run_with(func, args, world, &mut Gate::new(Grants::all()))
+    }
+
+    /// Run a host function in a world with the rights of a gate.
+    fn run_with(
+        func: HostFn, args: Vec<HostValue>, world: &mut MemWorld, gate: &mut Gate,
+    ) -> (HostValue, String)
+    {
         let (mut out, mut err) = (String::new(), String::new());
-        let mut effects =
-            Effects { world, out: &mut out, err: &mut err, blocked: false };
+        #[rustfmt::skip]
+        let mut effects = Effects { world, out: &mut out, err: &mut err, blocked: false,
+            gate, denied: None };
         (func.serve(&Args(args), &mut effects), out)
+    }
+
+    #[test]
+    fn an_effect_with_no_right_fails_with_no_permission()
+    {
+        let text = |t: &str| HostValue::Text(t.to_string());
+        let refused = HostValue::Fault(Box::new(HostValue::Member(NO_PERMISSION)));
+        let mut world = MemWorld::default();
+        let mut gate = Gate::new(Grants::default());
+        let write = vec![text("x"), text("a.txt")];
+        assert_eq!(
+            run_with(HostFn::WriteFile, write, &mut world, &mut gate).0,
+            refused
+        );
+        assert!(world.files.is_empty());
+        let env = vec![text("HOME")];
+        assert_eq!(run_with(HostFn::ReadEnv, env, &mut world, &mut gate).0, refused);
+    }
+
+    #[test]
+    fn the_environment_reads_one_variable()
+    {
+        let text = |t: &str| HostValue::Text(t.to_string());
+        let mut world = MemWorld::default();
+        world.env.insert("HOME".into(), "/h".into());
+        let read = |n: &str, w: &mut MemWorld| run(HostFn::ReadEnv, vec![text(n)], w).0;
+        assert_eq!(
+            read("HOME", &mut world),
+            HostValue::Good(Some(Box::new(text("/h"))))
+        );
+        let unset = HostValue::Fault(Box::new(HostValue::Member(NOT_FOUND)));
+        assert_eq!(read("NONE", &mut world), unset);
     }
 
     #[test]

@@ -113,6 +113,42 @@ pub enum Expr
     /// `<name> ဟူသော လုပ်ဆောင်ချက်`: the address of a function, a value of a
     /// function kind.
     FnAddr(FnAddrExpr),
+    /// The value a call of a comptime function gave when the compiler ran
+    /// it, in place of the call.
+    Comptime(ComptimeExpr),
+}
+
+/// The value of a comptime call, worked out while the compiler ran: it
+/// stands where the call stood.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct ComptimeExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The function the call ran, as written.
+    pub callee: Ident,
+    /// The value, read with [`ComptimeExpr::kind`].
+    pub value: ConstTree,
+    /// The kind of the value: the result kind the function declares.
+    pub kind: Kind,
+    /// Source region of the call.
+    pub span: Span,
+}
+
+/// A value known at compile time, laid out after its kind: a number, a
+/// character or true or false as its raw bits, text as its characters, and
+/// the cells of a list or the fields of a struct in order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConstTree
+{
+    /// The raw bits of a number, the code of a character, or 1 and 0 for
+    /// true and false.
+    Scalar(u128),
+    /// Text.
+    Text(String),
+    /// The cells of a list or the fields of a struct, in order.
+    Items(Vec<ConstTree>),
 }
 
 /// Integer literal; the digits are converted with the base.
@@ -843,6 +879,7 @@ impl Expr
             Expr::Str(n) => n.id,
             Expr::Member(n) => n.id,
             Expr::FnAddr(n) => n.id,
+            Expr::Comptime(n) => n.id,
         }
     }
 
@@ -879,6 +916,7 @@ impl Expr
             Expr::Str(n) => &mut n.id,
             Expr::Member(n) => &mut n.id,
             Expr::FnAddr(n) => &mut n.id,
+            Expr::Comptime(n) => &mut n.id,
         }
     }
 

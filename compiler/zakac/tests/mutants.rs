@@ -246,6 +246,7 @@ fn each_phase(text: String)
         &fold,
         &mem,
         TargetCOptions::default(),
+        &zaka_host::Grants::all(),
     );
 }
 

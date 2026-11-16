@@ -332,6 +332,7 @@ program:
           hi: 2191
       exported: false
       unchecked: false
+      comptime: false
       start: true
       builtin: false
       external: false

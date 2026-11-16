@@ -628,6 +628,45 @@ the prelude. The compiler mark outside the prelude is ZK0349.
   (`name_foreign`). A generic function imported beside plain functions of its name takes a
   call that no plain one fits (`plain_or_generic`).
 
+## Comptime calls
+
+A call of a comptime function (`FnDecl.comptime`, `FnSig.comptime`) in a spot that needs
+its value at compile time runs on the VM while the check runs (`src/comptime_calls.rs`).
+
+- `check_call` notes the comptime function each call picks (`Checker::comptime_sigs`, on
+  the span of the call). The evaluator of constants (`folded`, `work_out` in
+  `consts.rs`) meets the call in a constant, a count, the starting value of a variable of
+  an imported file (`visit_decl`), a member value or a case; it folds each argument to a
+  `ConstTree`, records a `Site` and gives `Stop::Pending`, as an open count does. An
+  argument that does not fold is ZK0608.
+- After each run of the check, `SiteState::run` splits the sites. `Reach` holds the uses
+  between the top-level statements (from the `RefTable`); `Reach::kept` drops each
+  statement that holds an open site, each global the functions do not reach (its starting
+  value would run), the start block, and each statement that reaches one of these, and
+  keeps the rest, so an operator on a struct or a trait default finds its function with
+  no name recorded. A site runs once its function is kept. The sites of one file go to
+  the installed `ComptimeRunner` as one `SmallProgram`: the files up to the file of the
+  function, as the file that is run, the statements kept, and a global `%ctN` for each
+  site, set to the call with its arguments as values.
+- `write_values` puts an `Expr::Comptime` (the value as a `ConstTree`, the result kind
+  written back from the kind the call gave, `written_kind`, so an instance of a generic
+  writes its own) in place of each call that ran, keeping its node number, and the check runs
+  again. Later stages read the node as a literal (`tree_expr` in the IR builder).
+- The runner gives back a `Ran` for each site: its value or its ZK0611, and a ZK0612 note
+  of what it printed. The rights of comptime runs live beside the runner
+  (`set_grants`, from the `--comptime-allow-*` flags). A call whose arguments still wait
+  after the last run is ZK0609 (`blocked`).
+- The last run reports each site that stopped (ZK0611, from the runner), each still
+  waiting (ZK0609) and each with no runner installed (ZK0610). ZK0489, from
+  `collect_fns`, checks the result kind of each comptime function.
+- `open_chains::settled` reads a program in passes until no compile-time conditional is
+  open: each pass puts each open condition in a constant `%condN` of a duplicate of the
+  program, checks the duplicate, settles the condition with `zakac_parser::comptime::truth`,
+  and reads the program again with the truths. A condition whose faults are unknown names
+  waits while another chain is open; a function its own chain declares is ZK0609.
+  `load_settled`, `single` and `single_for` wrap it for the commands and the
+  `run_phases` of each stage.
+
 ## Codes
 
 | Range | Stage |

@@ -57,6 +57,8 @@ void zk_text_cstr_free(char *dup);
 void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
 /** libc's free, for a string C hands over. */
 void free(void *p);
+/** The run stops unless it holds the right to call C, from the runtime. */
+void zk_need_ffi(const char *name);
 /** The code of a function, cast to one kind, from the runtime. */
 typedef void (*zk_code)(void);
 /** A function value, the address of its record, from the runtime. */
@@ -434,6 +436,7 @@ impl Names<'_>
     fn wrapper(&self, def: &ForeignFn, call: &FfiCall, n: u32) -> String
     {
         let mut out = format!("\n{}\n{{\n", wrapper_proto(def, call, n, self.platform));
+        let _ = writeln!(out, "    zk_need_ffi({});", crate::emit::c_string(&def.name));
         let kinds: Vec<DataKind> =
             def.params.iter().chain(&call.extra).copied().collect();
         let each = kinds.iter().enumerate();

@@ -310,6 +310,10 @@ pub(crate) struct FnSig
     /// unsafe code.
     #[builder(default)]
     pub unchecked: bool,
+    /// `true` for a comptime function, whose calls in a constant or a count
+    /// run while the compiler runs.
+    #[builder(default)]
+    pub comptime: bool,
     /// `true` for a C function that takes more arguments than it names,
     /// `နှင့် အခြားတန်ဖိုးများ`.
     #[builder(default)]

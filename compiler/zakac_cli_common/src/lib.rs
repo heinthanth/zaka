@@ -3,6 +3,7 @@ pub mod clap_error_handler;
 pub mod clap_utils;
 pub mod command;
 pub mod config;
+pub mod grants;
 
 pub use clap;
 pub use termcolor;

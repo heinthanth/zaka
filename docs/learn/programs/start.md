@@ -85,7 +85,9 @@ each:
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-The Run buttons of these pages give a blank environment.
+The Run buttons of these pages give a blank environment. `zakac run` gives the
+environment to a program granted it, with `--allow-env`; with no grant, the program stops
+before its first statement and names the flag.
 
 ## The top level beside a start block
 

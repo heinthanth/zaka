@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use bon::Builder;
 use strum::IntoEnumIterator;
+use zaka_host::Grant;
+use zaka_host::Grants;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
@@ -100,11 +102,12 @@ pub struct CFile
 /// The files, or the construct the C target cannot build at present.
 pub fn emit(
     module: &Module, files: &[Arc<SourceFile>], options: TargetCOptions,
+    grants: &Grants,
 ) -> Result<Vec<CFile>, Error>
 {
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
-        .build();
+        .grants(grants.clone()).build();
     let mut units = vec![String::new(); files.len().max(1)];
     let unit_of = |lo| files.iter().rposition(|f| f.start_pos <= lo).unwrap_or(0);
     for (n, g) in module.globals.iter().enumerate()
@@ -293,6 +296,8 @@ pub(crate) struct Shared<'m>
     pub(crate) module: &'m Module,
     /// The choices of the C target.
     pub(crate) options: TargetCOptions,
+    /// The rights the build grants the program.
+    pub(crate) grants: Grants,
     /// The first construct the C target cannot build at present.
     pub(crate) missing: Option<String>,
 
@@ -672,6 +677,7 @@ impl Shared<'_>
         out.push_str("    {NULL, NULL}\n};\n");
         let count = self.module.funcs.len();
         let _ = writeln!(out, "const size_t zk_fn_count = {count};\n");
+        out.push_str(&grants_source(&self.grants));
         out.push_str(&self.descr.definitions(self.platform()));
         out
     }
@@ -729,6 +735,7 @@ fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_OUT_OF_MEM", t!("target_c.trap.out_of_mem")),
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),
         ("ZK_TRAP_TOO_DEEP", t!("target_c.trap.too_deep")),
+        ("ZK_TRAP_PERMISSION", t!("target_c.trap.permission_denied")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }
@@ -976,8 +983,8 @@ impl<'s, 'm> FnGen<'s, 'm>
         });
         do_if!(let Some(g) = module.host.env, {
             self.line("int zk_envc = 0;");
-            self.line("while (envp && envp[zk_envc]) zk_envc++;");
-            self.line(&format!("zk_text_list({}, zk_envc, envp);", global_name(g)));
+            self.line("char **zk_env = zk_allowed_env(envp, &zk_envc);");
+            self.line(&format!("zk_text_list({}, zk_envc, zk_env);", global_name(g)));
         });
         self.block(&module.main);
         let status = module.host.exit.map_or_else(
@@ -1030,4 +1037,85 @@ impl<'s, 'm> FnGen<'s, 'm>
         self.last_site = site;
         self.line(&format!("ZK_AT({});", site.unwrap_or(0)));
     }
+}
+
+/// The rights the build grants, as C: the grant of each right, whether the
+/// program can ask, and the words of its questions and its trap.
+///
+/// # Arguments
+///
+/// * `grants` - The rights.
+///
+/// # Returns
+///
+/// The C text.
+fn grants_source(grants: &Grants) -> String
+{
+    let rights = [&grants.read, &grants.write, &grants.env];
+    let mut out = String::new();
+    let mut entries = Vec::new();
+    for (n, grant) in rights.iter().enumerate()
+    {
+        let (all, items) = match grant
+        {
+            Grant::None => (false, Vec::new()),
+            Grant::All => (true, Vec::new()),
+            Grant::Some(list) =>
+            {
+                (false, list.iter().map(|p| c_path(p, n < 2)).collect())
+            }
+        };
+        let name = format!("zk_grant_items_{n}");
+        let list = items.iter().map(|i| c_string(i)).collect::<Vec<_>>().join(", ");
+        do_if!(
+            !items.is_empty(),
+            _ = writeln!(out, "static const char *const {name}[] = {{{list}}};")
+        );
+        let at = tern!(items.is_empty(), "NULL".to_string(), name);
+        entries.push(format!("{{{}, {}, {at}}}", u8::from(all), items.len()));
+    }
+    entries.push(format!("{{{}, 0, NULL}}", u8::from(grants.ffi)));
+    let _ = writeln!(
+        out,
+        "const zk_grant zk_grants[ZK_RIGHT_COUNT] = {{{}}};",
+        entries.join(", ")
+    );
+    let _ = writeln!(out, "const int zk_grant_prompt = {};", u8::from(grants.prompt));
+    let texts = ["read", "write", "env", "ffi", "env_all"].map(|k| {
+        let key = format!("target_c.permission.{k}");
+        c_string(&t!(&key))
+    });
+    let _ = writeln!(
+        out,
+        "const char *const zk_permission_text[ZK_RIGHT_COUNT + 1] = {{{}}};",
+        texts.join(", ")
+    );
+    let flags =
+        ["read", "write", "env", "ffi"].map(|k| c_string(&format!("--allow-{k}")));
+    let _ = writeln!(
+        out,
+        "const char *const zk_flag_text[ZK_RIGHT_COUNT] = {{{}}};",
+        flags.join(", ")
+    );
+    let ask = c_string(&t!("target_c.permission.ask"));
+    let _ = writeln!(out, "const char zk_ask_text[] = {ask};");
+    out
+}
+
+/// A granted path as the runtime compares it: with `/` between its parts
+/// and a `/` in front; a name as it is.
+///
+/// # Arguments
+///
+/// * `item` - The path or name.
+/// * `path` - Whether it is a path.
+///
+/// # Returns
+///
+/// The text.
+fn c_path(item: &str, path: bool) -> String
+{
+    ret_if!(!path, item.to_string());
+    let slashed = item.replace('\\', "/");
+    tern!(slashed.starts_with('/'), slashed.clone(), format!("/{slashed}"))
 }

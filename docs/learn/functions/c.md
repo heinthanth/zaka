@@ -365,4 +365,4 @@ of Learn.
 - Declare `labs` from `"libc"` over 64-bit integers and call it with a negative number.
 - Declare `sqrt` from `"libm"` over decimal numbers and print the square root of 2.0.
 
-Next: [Text](../text/README.md).
+Next: [Compile time](compile-time.md).

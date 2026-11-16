@@ -199,6 +199,7 @@ program:
           hi: 1079
       exported: false
       unchecked: true
+      comptime: false
       start: false
       builtin: false
       external: false

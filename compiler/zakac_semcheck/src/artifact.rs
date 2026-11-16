@@ -107,7 +107,7 @@ pub fn run_phases(
     source: &SourceFile, lexer: &LexerOptions, options: &SemcheckOptions,
 ) -> Checked
 {
-    check_loaded(Loaded::single(source, lexer), options)
+    check_loaded(crate::open_chains::single(source, lexer, options), options)
 }
 
 /// Check a program read with its imports. The check is left out when the
@@ -124,7 +124,15 @@ pub fn run_phases(
 /// included.
 pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
 {
-    let Loaded { mut program, imports, mut diagnostics, alias_refs } = loaded;
+    let Loaded { mut program, imports, mut diagnostics, alias_refs, open_conds } =
+        loaded;
+    // A read that skipped the passes of [`crate::open_chains::settled`]
+    // leaves its open conditions unsettled.
+    let open = open_conds.iter().map(|(span, _)| {
+        let form = zakac_diagnostics::parser::TestFault::Form(String::new());
+        zakac_diagnostics::parser::bad_compile_time_test(*span, &form)
+    });
+    diagnostics.extend(open);
     let failed = has_errors(&diagnostics);
     let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
     let idiom = tern!(failed, Vec::new(), zakac_naturalness::check(&program, &idiom));

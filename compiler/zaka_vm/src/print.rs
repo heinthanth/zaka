@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use zakac_ast::expr::ConstTree;
 pub use zakac_ir_builder::value::FALSE_TEXT;
 pub use zakac_ir_builder::value::NULL_TEXT;
 pub use zakac_ir_builder::value::TRUE_TEXT;
@@ -9,6 +10,7 @@ pub use zakac_ir_builder::value::value_text as text;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::comptime_calls::scalar_raw;
 use zakac_semcheck::enums::EnumKind;
 use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::kind::DataKind;
@@ -477,4 +479,43 @@ fn table_tasks(
     }
     tasks.push(Task::Piece("[".to_string()));
     Ok(())
+}
+
+/// The value at an address laid out as a tree, as a comptime call gives it
+/// back: a number, a character or true or false as its raw bits, text as its
+/// characters, and the cells of a list or the fields of a struct in order.
+///
+/// # Arguments
+///
+/// * `mem` - The address space.
+/// * `addr` - The address of the value.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The tree, or the trap a read hits.
+pub fn read_tree(mem: &Mem, addr: u64, kind: DataKind) -> Result<ConstTree, TrapKind>
+{
+    let kind = kind.repr();
+    let platform = mem.platform();
+    ret_if!(kind.is_text(), text_at(mem, addr).map(ConstTree::Text));
+    if let Some(s) = kind.as_struct()
+    {
+        let field = |(at, (_, k)): (usize, &(String, DataKind))| {
+            read_tree(mem, addr + u64::from(s.offset(at, platform)), *k)
+        };
+        let fields = s.fields().iter().enumerate().map(field);
+        return fields.collect::<Result<_, _>>().map(ConstTree::Items);
+    }
+    if let Some(cell) = kind.cell_kind()
+    {
+        let counted = (addr, u64::from(kind.as_list().map_or(0, |l| l.len)));
+        let (base, count) = tern!(kind.is_seq(), slice_parts(mem, addr)?, counted);
+        let stride = u64::from(cell.size(platform));
+        let cells = (0..count).map(|i| read_tree(mem, base + i * stride, cell));
+        return cells.collect::<Result<_, _>>().map(ConstTree::Items);
+    }
+    let v = mem.load(addr, kind)?;
+    let reason = "a comptime value is no address".to_string();
+    scalar_raw(v).map(ConstTree::Scalar).ok_or(TrapKind::Malformed { reason })
 }

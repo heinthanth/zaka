@@ -910,3 +910,19 @@ pub fn bad_compile_time_test(span: Span, fault: &TestFault) -> Diagnostic
     Diagnostic::new(Code::BadCompileTimeTest, msg, span)
         .with_help(t!("codes.ZK0255.help"))
 }
+
+/// The comptime mark stands before something other than a function with a
+/// block at the top level.
+///
+/// # Arguments
+///
+/// * `span` - The mark.
+///
+/// # Returns
+///
+/// The `ZK0256` diagnostic.
+pub fn comptime_mark_misplaced(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::ComptimeMarkMisplaced, t!("codes.ZK0256.message"), span)
+        .with_help(t!("codes.ZK0256.help"))
+}

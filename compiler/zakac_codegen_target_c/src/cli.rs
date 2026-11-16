@@ -23,6 +23,9 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::grants::Granted;
+use zakac_cli_common::grants::attach_grant_args;
+use zakac_cli_common::grants::grants_from;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
@@ -30,7 +33,6 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load_for;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -186,6 +188,12 @@ pub const TARGET_ARGS: &[&str] = &[
     CC_FLAG_ARG,
     LD_FLAG_ARG,
     NO_DEFAULT_FLAGS_ARG,
+    "allow-read",
+    "allow-write",
+    "allow-env",
+    "allow-ffi",
+    "allow-all",
+    "no-permission-prompt",
 ];
 
 /// Add the flags of the C target: the cache, the checks and the toolchain.
@@ -200,6 +208,8 @@ pub const TARGET_ARGS: &[&str] = &[
 /// The command with the flags.
 pub fn attach_target_args(cmd: clap::Command) -> clap::Command
 {
+    // The rights the executable holds: the build writes them into it.
+    let cmd = attach_grant_args(cmd, Granted::Run);
     let cache =
         Arg::new(CACHE_ARG).long("cache").value_name("DIR").help(t!("target_c.cache"));
     let checks = Arg::new(CHECKS_ARG)
@@ -371,11 +381,12 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &info, error));
     let source = source.unwrap();
-    let loaded = load_for(
+    let loaded = zakac_semcheck::open_chains::load_settled(
         &source,
         &mut source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::C),
+        &semcheck_options(matches),
     );
     ret_if!(let Err(error) = loaded, report_command_error(io, &info, error));
 
@@ -387,6 +398,7 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         &fold_options(matches),
         &borrow_check_options(matches),
         target,
+        &grants_from(matches, Granted::Run),
     );
     let _ = write_diagnostics(io.stderr, &source_map, translated.diagnostics());
     ret_if!(has_errors(translated.diagnostics()), ExitCode::Failure);

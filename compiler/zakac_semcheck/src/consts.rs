@@ -5,6 +5,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::FloatLit;
 use zakac_ast::expr::InfixOp as AstInfix;
@@ -35,6 +36,9 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::comptime_calls::Site;
+use crate::comptime_calls::folded_of;
+use crate::comptime_calls::tree_of;
 use crate::const_op::CmpOp;
 use crate::const_op::InfixOp;
 use crate::const_op::LogicOp;
@@ -258,7 +262,7 @@ impl Checker
     /// # Returns
     ///
     /// The value, or the reason it has none.
-    fn item(&self, e: &Expr, want: DataKind) -> Result<Folded, Stop>
+    pub(crate) fn item(&self, e: &Expr, want: DataKind) -> Result<Folded, Stop>
     {
         ret_if!(want.is_aggregate(), self.folded(e));
         self.coerced(e, want).map(Folded::Value)
@@ -317,6 +321,8 @@ impl Checker
                 self.joined(n.args.iter())
             }
             Expr::Group(n) => self.folded(&n.inner),
+            Expr::Call(n) => self.comptime_call(n),
+            Expr::Comptime(n) => folded_of(&n.value, kind, self.platform).ok_or(NONE),
             Expr::Name(n) => self.named_folded(n.name),
             Expr::Index(n) =>
             {
@@ -342,6 +348,54 @@ impl Checker
             }
             _ => self.work_out(e).map(Folded::Value),
         }
+    }
+
+    /// The value of a call of a comptime function in a spot that needs it at
+    /// compile time: none so far, as the call waits for the runner, which
+    /// runs it once each argument is known. A call of another function has
+    /// no value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The reason it has no value: it waits, or it has none.
+    fn comptime_call(&self, n: &CallExpr) -> Result<Folded, Stop>
+    {
+        let sig = self.comptime_sigs.get(&n.span).ok_or(NONE)?;
+        let ret = sig.ret.ok_or(NONE)?;
+        let mut args = Vec::with_capacity(n.args.len());
+        for (arg, kind) in n.args.iter().zip(&sig.params)
+        {
+            let tree = match self.item(arg, *kind)
+            {
+                Ok(folded) => tree_of(&folded),
+                Err(Stop::Pending) =>
+                {
+                    self.blocked.borrow_mut().push((n.span, n.callee.name));
+                    return Err(Stop::Pending);
+                }
+                Err(Stop::Not(Some(d))) => return Err(Stop::Not(Some(d))),
+                Err(Stop::Not(None)) => None,
+            };
+            let Some(tree) = tree
+            else
+            {
+                let name = n.callee.name.as_str();
+                self.site_diags
+                    .borrow_mut()
+                    .push(fd::comptime_arg_not_known(arg.span(), name));
+                return Err(NONE);
+            };
+            args.push(tree);
+        }
+        #[rustfmt::skip]
+        let site = Site::builder().id(n.id).span(n.span).callee(n.callee.clone()).inner(sig.inner)
+            .decl(sig.decl).args(args).ret(ret).build();
+        self.sites.borrow_mut().push(site);
+        Err(Stop::Pending)
     }
 
     /// The folded text of a string literal: its text, with each template
@@ -490,11 +544,14 @@ impl Checker
                 let v = kind.as_enum().and_then(|en| en.member(&n.member.name));
                 v.and_then(MemberValue::scalar).ok_or(NONE)
             }
-            Expr::Index(_) | Expr::Field(_) => match self.folded(e)?
+            Expr::Index(_) | Expr::Field(_) | Expr::Call(_) | Expr::Comptime(_) =>
             {
-                Folded::Value(v) => Ok(v),
-                _ => Err(NONE),
-            },
+                match self.folded(e)?
+                {
+                    Folded::Value(v) => Ok(v),
+                    _ => Err(NONE),
+                }
+            }
             _ => Err(NONE),
         }
     }

@@ -176,6 +176,15 @@ pub enum TrapKind
         /// The C name.
         name: String,
     },
+    /// The run holds no right for an effect that has no error result to
+    /// hold a denial: a C call, or the environment of the start block.
+    PermissionDenied
+    {
+        /// The right.
+        right: zaka_host::Right,
+        /// The C name, or blank for the environment.
+        subject: String,
+    },
     /// The C functions of the program could not be reached: a lib that does
     /// not open, a C name a lib does not hold, or a platform size that is not
     /// the host's.
@@ -332,6 +341,12 @@ impl fmt::Display for TrapKind
             TrapKind::NullFromC => t!("vm.trap.null_from_c"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
+            TrapKind::PermissionDenied { right, subject } =>
+            {
+                let what = denied_what(*right, subject);
+                let flag = format!("--allow-{}", <&str>::from(*right));
+                t!("vm.trap.permission_denied", what = what, flag = flag)
+            }
             TrapKind::ForeignLink { reason } =>
             {
                 t!("vm.trap.foreign_link", reason = reason)
@@ -411,6 +426,7 @@ impl TrapKind
             | TrapKind::NullFromC
             | TrapKind::ClosureEscape
             | TrapKind::ForeignCall { .. }
+            | TrapKind::PermissionDenied { .. }
             | TrapKind::ForeignLink { .. }
             | TrapKind::NoCellToRemove
             | TrapKind::NoCharToRemove
@@ -668,5 +684,30 @@ impl fmt::Display for Trap
         let text = t!("vm.trap.at", what = what, func = self.func, pc = self.pc);
         f.write_str(&text)?;
         self.block.as_ref().map_or(Ok(()), |b| write!(f, "; {b}"))
+    }
+}
+
+/// What a denied effect did, as a message names it.
+///
+/// # Arguments
+///
+/// * `right` - The right it needed.
+/// * `subject` - Its path, variable or C name; blank for the environment.
+///
+/// # Returns
+///
+/// The words.
+pub fn denied_what(right: zaka_host::Right, subject: &str) -> String
+{
+    match right
+    {
+        zaka_host::Right::Read => t!("vm.permission.read", s = subject).to_string(),
+        zaka_host::Right::Write => t!("vm.permission.write", s = subject).to_string(),
+        zaka_host::Right::Env if subject.is_empty() =>
+        {
+            t!("vm.permission.env_all").to_string()
+        }
+        zaka_host::Right::Env => t!("vm.permission.env", s = subject).to_string(),
+        zaka_host::Right::Ffi => t!("vm.permission.ffi", s = subject).to_string(),
     }
 }

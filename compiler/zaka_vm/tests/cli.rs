@@ -239,7 +239,8 @@ const START: &str = "ပရိုဂရမ်သည်
 #[test]
 fn the_start_block_gets_the_arguments_and_the_environment()
 {
-    let (code, stdout, stderr) = run_vm(&["-", "--", "က", "-x", ""], START);
+    let (code, stdout, stderr) =
+        run_vm(&["--allow-env", "-", "--", "က", "-x", ""], START);
     assert_eq!(u8::from(code), 7, "{stderr}");
     assert_eq!(stdout, "[\"-\"၊ \"က\"၊ \"-x\"၊ \"\"]\nမှန်\n");
 }
@@ -248,7 +249,7 @@ fn the_start_block_gets_the_arguments_and_the_environment()
 fn a_negative_exit_code_keeps_its_lowest_8_bits()
 {
     let text = START.replace("၇ ကို", "-၁ ကို");
-    let (code, _, stderr) = run_vm(&[], &text);
+    let (code, _, stderr) = run_vm(&["--allow-env"], &text);
     assert_eq!(u8::from(code), 255, "{stderr}");
 }
 
@@ -294,4 +295,17 @@ fn a_release_build_names_the_op()
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.contains("(in စား, op "), "{stderr}");
     assert!(stderr.contains("  စား, op "), "{stderr}");
+}
+
+/// A start block that takes the environment, run with no right to it,
+/// stops and names the flag; a list of names keeps those variables alone.
+#[test]
+fn the_environment_needs_the_env_right()
+{
+    let (code, _, stderr) = run_vm(&["--no-permission-prompt"], START);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.contains("--allow-env"), "{stderr}");
+    let (code, stdout, stderr) = run_vm(&["--allow-env=ZAKA_NO_SUCH_NAME"], START);
+    assert_eq!(u8::from(code), 7, "{stderr}");
+    assert!(stdout.ends_with("မမှန်\n"), "{stdout}");
 }

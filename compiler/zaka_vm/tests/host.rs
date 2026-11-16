@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use zaka_host::Gate;
+use zaka_host::Grants;
 use zaka_host::HOST_FNS;
 use zaka_host::HostFn;
 use zaka_host::MemWorld;
@@ -49,8 +51,14 @@ fn host_functions_serve_a_program_from_a_world_in_storage()
     let module = compile_checked(&format!("{IMPORT}\n{WORK}"));
     let world = Box::new(MemWorld::builder().input("Hein\n").build());
     let mut out = Vec::new();
-    let (_, result) =
-        run_in(&module, &mut out, &RunOptions::default(), &HostData::default(), world);
+    let (_, result) = run_in(
+        &module,
+        &mut out,
+        &RunOptions::default(),
+        &HostData::default(),
+        world,
+        Gate::new(Grants::all()),
+    );
     result.expect("the run ends");
     let want = "\
 နာမည်: မင်္ဂလာပါ Hein

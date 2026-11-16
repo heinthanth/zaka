@@ -113,8 +113,10 @@ sets it, the others read the new value.
   compile time. Known values are literals, `ကနဦးတန်ဖိုး`, `အလွတ်`, the null address,
   constants of known value, the size of a
   kind, a [function named as a value](function-values.md#a-function-as-a-value),
-  operators on known values, and list and struct literals of known values. Each other
-  starting value is ZK0604; a function call is the usual case, and so is the value of a
+  operators on known values, list and struct literals of known values, and calls of
+  comptime functions with known arguments. Each other
+  starting value is ZK0604; a call of a function that is not
+  [comptime](compile-time.md#comptime-functions) is the usual case, and so is the value of a
   `ကိန်းရှင်`, since a variable can change.
 - The check works out the values with each folding on, so the `--fold` option of a build
   does not change which programs compile.

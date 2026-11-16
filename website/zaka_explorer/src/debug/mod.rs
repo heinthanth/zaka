@@ -733,6 +733,8 @@ fn machine_for(ops: &bc::Module, max_heap: u64, frames: FrameMode) -> Machine
     let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap)
         .frames(frames).build();
     let mut machine = Machine::new(ops.clone(), options);
+    // The explorer runs in storage: no file or variable of the host is near.
+    machine.set_gate(zaka_host::Gate::new(zaka_host::Grants::all()));
     machine.set_host(&HostData::program(FILE_NAME));
     // Standard input remains open: a read with no line waits for one entered on
     // the output panel.

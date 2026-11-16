@@ -183,6 +183,9 @@ InheritOtherTrait = ("ZK0254", Level::Error),
 /// The condition of a compile-time conditional holds what the compiler
 /// cannot settle from the target.
 BadCompileTimeTest = ("ZK0255", Level::Error),
+/// The comptime mark stands before something other than a function with a
+/// block at the top level.
+ComptimeMarkMisplaced = ("ZK0256", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -466,6 +469,8 @@ TableNeedsKind = ("ZK0486", Level::Error),
 DecimalIndex = ("ZK0487", Level::Warning),
 /// `ကို ဖျက်မည်` after a value that is no row of a ဇယား.
 RemoveNeedsRow = ("ZK0488", Level::Error),
+/// A comptime function gives a kind that a constant cannot hold.
+ComptimeResultKind = ("ZK0489", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -502,6 +507,16 @@ RangeOutOfList = ("ZK0605", Level::Error),
 ConstNotKnown = ("ZK0606", Level::Error),
 /// A range of known text starts or ends inside a character.
 RangeCutsChar = ("ZK0607", Level::Error),
+/// An argument of a comptime call in a compile-time spot does not fold.
+ComptimeArgNotKnown = ("ZK0608", Level::Error),
+/// A comptime call needs a value that waits on the call itself.
+ComptimeWaitsOnItself = ("ZK0609", Level::Error),
+/// No runner is installed to run comptime calls.
+ComptimeNoRunner = ("ZK0610", Level::Error),
+/// A comptime call stopped while the compiler ran it.
+ComptimeRunStopped = ("ZK0611", Level::Error),
+/// What a comptime call printed while the compiler ran it.
+ComptimePrinted = ("ZK0612", Level::Note),
 // ownership: ZK07xx
 /// A name is used after its block moved to another owner.
 MovedOut = ("ZK0701", Level::Error),

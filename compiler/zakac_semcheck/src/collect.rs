@@ -2,11 +2,13 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve::duplicate_function;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::comptime_calls::holds_as_constant;
 use crate::kind::DataKind;
 use crate::scope::FnSig;
 use crate::scope::FnSigs;
@@ -49,7 +51,37 @@ pub(crate) fn collect_fns(
         tern!(plain, Some((program.unit_of(i) as usize, decl)), None)
     });
     do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags, Some(unit as u32)));
+    let comptime = program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Fn(d) if d.comptime && d.kind_params.is_empty() => Some(d),
+        _ => None,
+    });
+    diags.extend(comptime.filter_map(|d| result_kind_fault(d, structs)));
     fns
+}
+
+/// The fault of a comptime function whose result is no value a constant
+/// can hold, or that gives none.
+///
+/// # Arguments
+///
+/// * `decl` - The function.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// `ZK0489`, or `None` for a result a constant can hold.
+fn result_kind_fault(decl: &FnDecl, structs: &StructTable) -> Option<Diagnostic>
+{
+    let name = decl.name.name.as_str();
+    let Some(written) = &decl.ret
+    else
+    {
+        return Some(kd::comptime_result_kind(decl.name.span, name, "nothing"));
+    };
+    let kind = DataKind::from_ast(written, structs);
+    ret_if!(holds_as_constant(kind), None);
+    Some(kd::comptime_result_kind(written.span, name, &kind.name()))
 }
 
 /// Record one function.
@@ -101,5 +133,5 @@ pub(crate) fn sig_of(
         decl.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name)).collect();
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).maybe_ret(ret).exported(decl.exported)
-        .external(decl.external).unchecked(decl.unchecked).variadic(decl.variadic).maybe_prepositions(prepositions).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
+        .external(decl.external).unchecked(decl.unchecked).comptime(decl.comptime).variadic(decl.variadic).maybe_prepositions(prepositions).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
 }

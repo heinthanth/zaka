@@ -1385,3 +1385,21 @@ pub fn remove_needs_row(span: Span) -> Diagnostic
     let msg = t!("codes.ZK0488.message");
     Diagnostic::new(Code::RemoveNeedsRow, msg, span).with_help(t!("codes.ZK0488.help"))
 }
+
+/// A comptime function gives a kind that a constant cannot hold.
+///
+/// # Arguments
+///
+/// * `span` - The result kind.
+/// * `name` - The function.
+/// * `kind` - The kind, as text.
+///
+/// # Returns
+///
+/// The `ZK0489` diagnostic.
+pub fn comptime_result_kind(span: Span, name: &str, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0489.message", n = name, k = kind);
+    Diagnostic::new(Code::ComptimeResultKind, msg, span)
+        .with_help(t!("codes.ZK0489.help"))
+}

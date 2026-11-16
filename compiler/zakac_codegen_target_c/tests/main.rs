@@ -3,6 +3,7 @@
 mod common;
 mod ffi_lib;
 mod floats;
+mod permissions;
 mod samples;
 mod text;
 mod traps;

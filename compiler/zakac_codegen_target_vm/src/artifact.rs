@@ -87,7 +87,13 @@ pub fn run_phases(
     emit_options: impl Into<EmitOptions>,
 ) -> Emitted
 {
-    run_loaded(Loaded::single(source, lexer), options, folding, mem, emit_options)
+    run_loaded(
+        zakac_semcheck::open_chains::single(source, lexer, options),
+        options,
+        folding,
+        mem,
+        emit_options,
+    )
 }
 
 /// Run each phase from the check to code generation on a program read with

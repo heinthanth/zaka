@@ -44,7 +44,9 @@ $ zakac run greet.zaka -- ကက ခခ
 ```
 
 The Run buttons of these pages pass the name `main.zaka` and the Explorer `explorer.zaka`,
-with no arguments and a blank environment.
+with no arguments and a blank environment. With `zakac run`, a start block that takes the
+environment needs the env right ([Permissions](#permissions)): `--allow-env` hands it each
+variable, `--allow-env=HOME,LANG` those alone.
 
 To keep the instructions and run them later:
 
@@ -100,6 +102,48 @@ input"), and the output panel asks for the line where the output ends, as a term
 does. Enter gives the program the line, which the panel keeps in the output, and Ctrl+D
 ends the input, so the read fails with the end of the input. A write to `စံပြုအထွက်` joins
 what the program prints, in order, in each world.
+
+## Permissions
+
+A run holds no right unless its command grants it, as Deno does. Each effect that reaches
+the host needs one:
+
+| Right | Effects | Flag |
+| --- | --- | --- |
+| read | read a file, list a folder, tell what a path holds | `--allow-read[=<paths>]` |
+| write | write or add to a file, remove, move, make a folder | `--allow-write[=<paths>]` |
+| env | read a variable, the environment of the start block | `--allow-env[=<names>]` |
+| ffi | call a C function | `--allow-ffi` |
+
+- A flag with no list grants the right on each path or variable; a list, with commas
+  between its items, grants it on those alone: a path covers the files and folders under it, and a
+  path is read from the folder the command runs in, with `.` and `..` worked out.
+  `-A` (`--allow-all`) grants each right.
+- Reading a line of standard input and writing to the standard streams need no right.
+- On a terminal, an effect with no right asks first, as Deno does:
+  `reading "data.txt": allow it? [Y = from now on, O = once, N = no, A = each of this kind]`.
+  The first letter of the answer counts, in either case:
+
+  | Answer | Effect |
+  | --- | --- |
+  | `Y` | allows this path, variable or C function for the rest of the run |
+  | `O` | allows this one effect; the next one asks again |
+  | `N` | denies this path, variable or C function for the rest of the run, with no second question |
+  | `A` | allows the right on each path or variable for the rest of the run |
+
+  Each other answer is `N`.
+  `--no-permission-prompt` asks nothing, and a run with no terminal never asks.
+- A denied read or write of a file, and a denied variable, fail with the error
+  `ခွင့်ပြုချက်မရှိခြင်း`, which the program can handle as each failure of the
+  [io module](../language/io.md). A denied C call, and a start block that takes the
+  environment with no env right, have no result to fail with: the run stops with the
+  `permission_denied` [trap](traps.md), which names the flag.
+- The books and the explorer run in storage, with no file or variable of the host near,
+  so their runs hold each right.
+
+```console
+$ zakac run --allow-read=data --allow-write=out report.zaka
+```
 
 ## The options
 
@@ -274,6 +318,28 @@ leak: block at 0x101020, 16 octets
 The compiler finds most lost blocks on its own ([ZK0708](../reference/errors.md)), and
 warns about them. The list of `--leaks` holds the ones it cannot see, such as a block held
 in a top-level variable at the end, or one a C function gave.
+
+## Runs at compile time
+
+The check runs each call of a comptime function in a constant, a count or another spot
+that needs a value before the program runs, on this VM (`zaka_vm::comptime`, which each
+command, the language server and the explorer install). The small program of the calls
+is built to ops as a module with no start block, and runs from its main function with:
+
+- a cap of 50 000 000 ops and 64 MiB of heap;
+- the rights of the `--comptime-allow-*` flags (none unless granted), with the paths of
+  the program read from its folder, nothing asked, and each denial a trap (ZK0611);
+- the language server and the explorer: 1 000 000 ops, reads under the folder of the
+  program at most, no write and no C call;
+- what it prints kept, as a ZK0612 note at the call.
+
+The runner keeps what each small program gave, on its text, its arguments and its rights,
+so a check that meets the same calls again (the language server, on each edit) runs
+nothing.
+
+Once the run ends, the global of each call is read back from its block after its kind
+(`read_tree`); the globals of the calls take no drop at the end of main. A trap is
+reported as ZK0611 at the call whose global was being set.
 
 ## Limits
 

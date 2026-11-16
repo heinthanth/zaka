@@ -6,6 +6,7 @@ use crate::expr::BlankListLit;
 use crate::expr::BoolLit;
 use crate::expr::CallExpr;
 use crate::expr::CharLit;
+use crate::expr::ComptimeExpr;
 use crate::expr::Expr;
 use crate::expr::FieldExpr;
 use crate::expr::FloatLit;
@@ -175,6 +176,7 @@ TableLit => "table", visit_table;
 StrExpr => "str_lit", visit_str_expr;
 MemberExpr => "member", visit_member;
 FnAddrExpr => "fn_addr", visit_fn_addr;
+ComptimeExpr => "comptime", visit_comptime;
 Ident => "ident", visit_ident;
 Kind => "kind", visit_kind; }
 
@@ -262,6 +264,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Str(e) => e,
         Expr::Member(e) => e,
         Expr::FnAddr(e) => e,
+        Expr::Comptime(e) => e,
     }
 }
 
@@ -430,6 +433,8 @@ pub trait Visitor
     fn visit_member(&mut self, n: &MemberExpr) { walk_member(self, n) }
     /// Visit the address of a function.
     fn visit_fn_addr(&mut self, n: &FnAddrExpr) { walk_fn_addr(self, n) }
+    /// Visit the value of a comptime call.
+    fn visit_comptime(&mut self, n: &ComptimeExpr) { walk_comptime(self, n) }
     /// Visit a name in a declaration, parameter, loop header or call.
     fn visit_ident(&mut self, n: &Ident) { walk_ident(self, n) }
     /// Visit a kind.
@@ -858,6 +863,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Str(e) => v.visit_str_expr(e),
         Expr::Member(e) => v.visit_member(e),
         Expr::FnAddr(e) => v.visit_fn_addr(e),
+        Expr::Comptime(e) => v.visit_comptime(e),
     }
 }
 
@@ -906,6 +912,15 @@ pub fn walk_fn_addr<V: Visitor + ?Sized>(v: &mut V, n: &FnAddrExpr)
     v.enter(n);
     v.visit_ident(&n.name);
     do_for!(k in &n.kind_args, v.visit_kind(k));
+    v.leave(n);
+}
+
+/// Visit the kind of the value of a comptime call. The call ran, so its
+/// name and arguments are no longer read.
+pub fn walk_comptime<V: Visitor + ?Sized>(v: &mut V, n: &ComptimeExpr)
+{
+    v.enter(n);
+    v.visit_kind(&n.kind);
     v.leave(n);
 }
 
@@ -1554,6 +1569,12 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
             v.visit_span_mut(&mut e.span);
             v.visit_ident_mut(&mut e.name);
             do_for!(k in &mut e.kind_args, v.visit_kind_mut(k));
+        }
+        Expr::Comptime(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            v.visit_ident_mut(&mut e.callee);
+            v.visit_kind_mut(&mut e.kind);
         }
     }
 }

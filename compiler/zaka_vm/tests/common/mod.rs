@@ -16,7 +16,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_span::filename::FileName;
@@ -46,10 +46,13 @@ pub fn compile_checked(text: &str) -> Module
 /// on, which must report nothing at all, and code generation choices.
 pub fn compile_file(path: &Path, emit_options: impl Into<EmitOptions>) -> Module
 {
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file = sm.load_file(path).unwrap();
-    let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
     let options = SemcheckOptions::default();
+    let host = zakac_ast::target::Target::host();
+    let lexer = LexerOptions::default();
+    let loaded = load_settled(&file, &mut sm, &lexer, &host, &options).unwrap();
     let mem = BorrowCheckOptions::default();
     let emitted =
         run_loaded(loaded, &options, &FoldOptions::default(), &mem, emit_options);
@@ -89,6 +92,7 @@ fn compile_with(
     results: ResultMode,
 ) -> (Module, Vec<Diagnostic>)
 {
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file =
         sm.new_source_file(FileName::Custom("t.zaka".into()), in_unsafe_code(text));
@@ -108,6 +112,7 @@ pub fn compile_text(
     text: &str, folding: &FoldOptions, emit_options: impl Into<EmitOptions>,
 ) -> Module
 {
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file =
         sm.new_source_file(FileName::Custom("t.zaka".into()), in_unsafe_code(text));

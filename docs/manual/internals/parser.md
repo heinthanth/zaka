@@ -691,6 +691,16 @@ condition outside the facts. `load_for` and `Loaded::single_for` take the target
 into each marked constant of the prelude (`DeclStmt.builtin`), and `Program.target`
 records the target when a file holds a conditional or names a fact.
 
+A condition that holds a call waits for the check. `settle` takes a `Resolved` table, the
+truth of each such condition on its `CondPlace` (the file name and the offset of the
+condition in its file, the same in each read); a condition found there is settled with
+its truth, and one missing leaves its chain in place, unsettled, with its arms parsed and
+their imports not read. `Loaded.open_conds` lists each open condition with its place.
+`load_resolved` and `Loaded::single_resolved` take the table; `load_for` and
+`Loaded::single_for` pass a blank one. The passes that fill the table live in the check
+(`zakac_semcheck::open_chains`). `pub fn truth` settles a condition whose calls the
+check has put values in place of (`Expr::Comptime`).
+
 Once the files are read, `expand_aliases` (`src/alias.rs`) puts the kind of each alias in
 place of each use of its name: in a kind, where the levels written after the alias go
 around the levels of its kind, as the name of a struct literal, and before `ထဲမှ` in a
@@ -709,7 +719,8 @@ A root whose name is not a real file, such as standard input or the text of the
 explorer, is parsed once with `Loaded::single`, and `refuse_imports` reports each import
 in it (ZK0232). `Loaded::single` is also what the `run_phases` function of each later
 stage uses, so a test that compiles a bare string needs no file at all; the stage
-commands and `zakac run` call `load` and then `check_loaded` or `run_loaded`.
+commands and `zakac run` call `load_settled` (the passes of `zakac_semcheck::open_chains`
+over `load_resolved`) and then `check_loaded` or `run_loaded`.
 
 A list count in digits is `Cells::Fixed`; each other count is `Cells::Expr`, a full
 expression (`parse_count`, through `parse_expr`), which the check works out. The lookahead

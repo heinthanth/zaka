@@ -1470,6 +1470,15 @@ en = "a list loses its last cell through \"<list> ၏ နောက်ဆုံ�
 [codes.ZK0488.explain]
 en = """\"<ဇယား> ထဲမှ အညွှန်း <index> ကို ဖျက်မည်\" removes the row with that index, and does nothing when no row has it. A list and text lose their last cell or character through \"နောက်ဆုံးအကွက်ကို ဖျက်မည်\" and \"နောက်ဆုံးစာလုံးကို ဖျက်မည်\"."""
 
+[codes.ZK0489.title]
+en = "comptime result kind"
+[codes.ZK0489.message]
+en = "\"%{n}\" gives %{k}, which a constant cannot hold, so the compiler cannot keep what a run of it gives"
+[codes.ZK0489.help]
+en = "a comptime function gives a number, a character, true or false, a member of an enumeration, text, a list or a struct of these"
+[codes.ZK0489.explain]
+en = """A call of a comptime function in a constant or a list count runs while the compiler runs, and the value it gives becomes a literal of the program. A number, a character, true or false, a member of an enumeration, text, plain and counted lists and structs of these can be written out so. A pointer, a table, a function value or an optional cannot, so a comptime function that gives one is this error."""
+
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
 [codes.ZK0725.message]
@@ -1600,7 +1609,7 @@ en = "bad compile-time condition"
 [codes.ZK0255.message]
 en = "this compile-time condition %{r}"
 [codes.ZK0255.help]
-en = "a compile-time condition reads the facts of the target (အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်, အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ, အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်, ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား), text, digits, == and != (and < <= > >= on the bits), ဖြစ်၍ (&&), သို့မဟုတ် (||), မဟုတ် and parentheses"
+en = "a compile-time condition reads the facts of the target (အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်, အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ, အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်, ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား), text, digits, == and != (and < <= > >= on the bits), ဖြစ်၍ (&&), သို့မဟုတ် (||), မဟုတ်, parentheses and calls of comptime functions"
 [codes.ZK0255.form]
 en = "holds \"%{w}\", which the compiler cannot settle before the program runs"
 [codes.ZK0255.name]
@@ -1610,7 +1619,16 @@ en = "compares \"%{f}\" with \"%{v}\", a value it never holds; it holds one of %
 [codes.ZK0255.mixed]
 en = "compares text with a number, or orders text"
 [codes.ZK0255.explain]
-en = """A conditional written `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` is settled when the program is built: the compiler keeps the branch whose condition holds for the target and drops the others before it checks names and kinds. Its conditions read the four facts of the target, which the prelude declares as constants: the OS, the CPU architecture, the platform bit count and the code the compiler gives out. Each condition of the chain is settled, so a value that a fact never holds, such as \"window\", is this error and not a branch that never runs."""
+en = """A conditional written `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` is settled when the program is built: the compiler keeps the branch whose condition holds for the target and drops the others before it checks names and kinds. Its conditions read the four facts of the target, which the prelude declares as constants: the OS, the CPU architecture, the platform bit count and the code the compiler gives out; and calls of comptime functions, which the compiler runs first. Each condition of the chain is settled, so a value that a fact never holds, such as \"window\", is this error and not a branch that never runs."""
+
+[codes.ZK0256.title]
+en = "misplaced comptime mark"
+[codes.ZK0256.message]
+en = "\"ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော\" marks a function with a block, declared at the top level"
+[codes.ZK0256.help]
+en = "remove the mark, or move the function to the top level of its file"
+[codes.ZK0256.explain]
+en = """\"ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော\" stands in front of \"လုပ်ဆောင်ချက်\" on a function declared at the top level of a file, with a block of statements: the compiler can run such a function while it compiles. The start block, a C function, a function of the host, a function the compiler gives and a function declared inside another take no such mark."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"
@@ -1740,9 +1758,9 @@ en = "imported value not known at compile time"
 [codes.ZK0604.message]
 en = "the starting value of \"%{n}\" must be known at compile time, since its file is imported"
 [codes.ZK0604.help]
-en = "literals, constants and operators on them are known; a function call is not, for now"
+en = "literals, constants, operators on them and calls of comptime functions are known; another call is not"
 [codes.ZK0604.explain]
-en = """The variables and constants of an imported file get their starting value before the program runs, so the value must come from literals, constants and operators on them. A function call cannot give that value for now. Give the variable no value and set it from the file that is run, or write the value out."""
+en = """The variables and constants of an imported file get their starting value before the program runs, so the value must come from literals, constants, operators on them and calls of comptime functions. A call of another function cannot give that value. Give the variable no value and set it from the file that is run, or write the value out."""
 
 [codes.ZK0605.title]
 en = "range outside its list"
@@ -1758,7 +1776,7 @@ en = "a constant that holds text or a plain list must be known at compile time"
 [codes.ZK0606.help]
 en = "declare it with \"ကိန်းရှင်\" to build the value when the program runs"
 [codes.ZK0606.explain]
-en = """A \"ကိန်းသေ\" that holds text or a plain list, alone or inside a list or a struct, is static data, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, joins of these with \"+\", and list literals of such values. A variable, a call, a cell or a field needs the program to run. Declare such a value with \"ကိန်းရှင်\"."""
+en = """A \"ကိန်းသေ\" that holds text or a plain list, alone or inside a list or a struct, is static data, the same for each run: each read shares it, and nothing frees it. Its value must fold at compile time: literals, other constants, template slots that hold constants, joins of these with \"+\", and list literals of such values. A variable, a call of a function that is not comptime, a cell or a field needs the program to run. Declare such a value with \"ကိန်းရှင်\"."""
 
 [codes.ZK0607.title]
 en = "range cuts a character"
@@ -1766,6 +1784,53 @@ en = "range cuts a character"
 en = "%{len} u8s from u8 %{s} start or end inside a character of the text"
 [codes.ZK0607.explain]
 en = """Text holds whole characters of UTF-8, and a Burmese character takes three u8s. A range \"<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်\" counts u8s, so its start and its end must each fall between two characters. The text, the start and the length here are known, so the compiler can tell that an edge falls inside a character. Move the edge; \"၏ စာလုံးအရေအတွက်\" and \"၏ စာလုံး\" count characters instead."""
+
+[codes.ZK0608.title]
+en = "argument not known at compile time"
+[codes.ZK0608.message]
+en = "this argument of \"%{n}\" must be known at compile time, since the call runs while the compiler runs"
+[codes.ZK0608.help]
+en = "give literals, constants, operators on them or other comptime calls"
+[codes.ZK0608.explain]
+en = """A call of a comptime function in a constant, a list count, the starting value of an imported file, a member of an enumeration, a case of a switch or a compile-time condition runs while the compiler runs. Each argument must then be known before the program runs: literals, constants, operators on them and other comptime calls. A variable or a call of another function needs the program to run."""
+
+[codes.ZK0609.title]
+en = "comptime call waits on itself"
+[codes.ZK0609.message]
+en = "the call of \"%{n}\" needs a value that waits on this call"
+[codes.ZK0609.help]
+en = "one value of the circle must come from literals or constants, or the function must stand outside the arms its own condition picks"
+[codes.ZK0609.explain]
+en = """The compiler runs a comptime call once each value its function reads is known. When the function reads a constant or a list count that holds this call, or stands in an arm of the compile-time conditional whose condition calls it, no order of the runs works. Write one of the values out, or move the function out of the arm."""
+
+[codes.ZK0610.title]
+en = "comptime calls cannot run"
+[codes.ZK0610.message]
+en = "this build of the compiler cannot run \"%{n}\" at compile time"
+[codes.ZK0610.help]
+en = "zakac, the language server and the explorer run comptime calls on the VM"
+[codes.ZK0610.explain]
+en = """A comptime call runs on the VM while the compiler runs. A tool that checks a program without the VM cannot run it, so the value stands open. Check the program with zakac, the language server or the explorer."""
+
+[codes.ZK0611.title]
+en = "comptime call stopped"
+[codes.ZK0611.message]
+en = "the call of \"%{n}\" stopped while the compiler ran it: %{r}"
+[codes.ZK0611.help]
+en = "the calls that led there: %{c}"
+[codes.ZK0611.foreign]
+en = "it calls the C function %{n}, which a comptime run cannot call"
+[codes.ZK0611.compile]
+en = "its code does not compile: %{m}"
+[codes.ZK0611.explain]
+en = """The compiler runs a comptime call on the VM, with a cap on its steps, its heap and its depth of calls, and the rights the --comptime-allow-* flags grant: none unless one is given. A trap, a cap, reading input, or an effect with no right stops the run, and the build with it; nothing is asked."""
+
+[codes.ZK0612.title]
+en = "printed at compile time"
+[codes.ZK0612.message]
+en = "\"%{n}\" printed while the compiler ran it:\n%{t}"
+[codes.ZK0612.explain]
+en = """What a comptime call prints while the compiler runs it is no part of the program: the build shows it as a note at the call, so a comptime function can show what it works out."""
 
 [codes.ZK0701.title]
 en = "use after a hand-over"

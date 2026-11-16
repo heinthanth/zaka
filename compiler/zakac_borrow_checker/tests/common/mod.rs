@@ -16,8 +16,8 @@ use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Stmt;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_semcheck::unsafe_code::in_unsafe_code_lines;
@@ -82,10 +82,12 @@ pub fn codes_with(text: &str, options: &BorrowCheckOptions) -> Vec<Code>
 /// default options.
 pub fn file_codes(path: &Path) -> Vec<Code>
 {
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file = sm.load_file(path).unwrap();
-    let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
     let options = SemcheckOptions::default();
+    let (lexer, host) = (LexerOptions::default(), zakac_ast::target::Target::host());
+    let loaded = load_settled(&file, &mut sm, &lexer, &host, &options).unwrap();
     let mem = BorrowCheckOptions::default();
     let out = run_loaded(loaded, &options, &FoldOptions::default(), &mem);
     out.diagnostics.iter().map(|d| d.code).collect()

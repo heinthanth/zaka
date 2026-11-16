@@ -73,6 +73,7 @@ impl Translated
 pub fn translate(
     loaded: Loaded, sources: &[Arc<SourceFile>], options: &SemcheckOptions,
     folding: &FoldOptions, mem: &BorrowCheckOptions, target: TargetCOptions,
+    grants: &zaka_host::Grants,
 ) -> Translated
 {
     let checked =
@@ -81,7 +82,7 @@ pub fn translate(
     let platform_bits = options.platform_bits;
     let target = TargetCOptions { overflow: mem.overflow, platform_bits, ..target };
     let folded = checked.lowered.folded.as_ref().filter(|_| clean);
-    let files = folded.map(|m| emit(m, sources, target));
+    let files = folded.map(|m| emit(m, sources, target, grants));
     Translated::builder().borrowchecked(checked).maybe_files(files).build()
 }
 

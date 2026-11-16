@@ -822,6 +822,7 @@ program:
           hi: 3716
       exported: false
       unchecked: false
+      comptime: false
       start: false
       builtin: false
       external: false

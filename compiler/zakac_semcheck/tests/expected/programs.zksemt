@@ -674,6 +674,7 @@ program:
           hi: 2947
       exported: false
       unchecked: false
+      comptime: false
       start: true
       builtin: false
       external: false

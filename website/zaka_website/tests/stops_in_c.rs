@@ -98,8 +98,15 @@ fn native_output(cc: &Tool, sample: &Sample) -> Option<String>
     let mem = BorrowCheckOptions::builder().check(fence.check).strict(fence.strict)
         .overflow(fence.overflow).build();
     let fold = FoldOptions::default();
-    let out =
-        translate(loaded, sm.files(), &options, &fold, &mem, TargetCOptions::default());
+    let out = translate(
+        loaded,
+        sm.files(),
+        &options,
+        &fold,
+        &mem,
+        TargetCOptions::default(),
+        &zaka_host::Grants::all(),
+    );
     let files = out.files.as_ref()?.as_ref().ok()?;
     let folded = out.borrowchecked.lowered.folded.as_ref();
     let libs = folded.map(|m| link_libs(&m.foreign)).unwrap_or_default();

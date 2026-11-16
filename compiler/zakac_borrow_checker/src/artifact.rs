@@ -82,7 +82,12 @@ pub fn run_phases(
     folding: &FoldOptions, mem: &BorrowCheckOptions,
 ) -> Borrowchecked
 {
-    run_loaded(Loaded::single(source, lexer), options, folding, mem)
+    run_loaded(
+        zakac_semcheck::open_chains::single(source, lexer, options),
+        options,
+        folding,
+        mem,
+    )
 }
 
 /// Check, lower, fold and borrow check a program read with its imports. The

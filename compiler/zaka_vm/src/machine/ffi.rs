@@ -1483,3 +1483,22 @@ mod with_ffi
         libloading::os::windows::Library::this().ok().map(Into::into)
     }
 }
+
+impl Machine
+{
+    /// The C name of a C call.
+    ///
+    /// # Arguments
+    ///
+    /// * `call` - The index of the C call.
+    ///
+    /// # Returns
+    ///
+    /// The name, blank for a call the module does not hold.
+    pub(super) fn foreign_name(&self, call: u32) -> String
+    {
+        let call = self.module.foreign_calls.get(call as usize);
+        let def = call.and_then(|c| self.module.foreign.get(c.func as usize));
+        def.map(|d| d.name.clone()).unwrap_or_default()
+    }
+}

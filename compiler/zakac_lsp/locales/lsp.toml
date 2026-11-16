@@ -30,6 +30,9 @@ en = "အပိုင်အနေဖြင့်:"
 [lsp.hover_unsafe]
 en = "unsafe: a call of it needs unsafe code"
 
+[lsp.hover_comptime]
+en = "comptime: a call of it in a constant or a count runs while the compiler runs"
+
 [lsp.hover_shared]
 en = "shared: a duplicate of the value names the one object"
 

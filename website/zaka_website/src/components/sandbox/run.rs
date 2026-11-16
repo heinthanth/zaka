@@ -215,6 +215,7 @@ pub struct Compiled
 /// The diagnostics and the machine.
 pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
 {
+    zaka_vm::comptime::install();
     let mut sm = SourceMap::new();
     let file =
         sm.new_source_file(FileName::Custom(FILE_NAME.into()), source.to_string());
@@ -236,6 +237,8 @@ pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
     let options = RunOptions::builder().max_steps(STEP_CAP).build();
     let machine = emitted.module.map(|m| {
         let mut machine = Machine::new(m, options);
+        // The page runs in storage: no file or variable of the host is near.
+        machine.set_gate(zaka_host::Gate::new(zaka_host::Grants::all()));
         machine.set_host(&HostData::program(FILE_NAME));
         machine.set_world(Box::new(MemWorld::builder().input(input).build()));
         machine

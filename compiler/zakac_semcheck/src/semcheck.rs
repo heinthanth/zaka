@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -50,6 +51,7 @@ use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_stmt;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::fold as fd;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
 use zakac_lexer::reserved::CHAR_NAME;
@@ -64,6 +66,8 @@ use zakac_span::span::Span;
 use crate::captures::Captured;
 use crate::captures::write_captures;
 use crate::collect::collect_fns;
+use crate::comptime_calls;
+use crate::comptime_calls::Site;
 use crate::consts::ConstVal;
 use crate::consts::CountTable;
 use crate::consts::Folded;
@@ -231,13 +235,28 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
     let mut depth = 0;
     // The instances of generic functions and structs, from each run so far.
     let mut instances = Instances::default();
+    let mut comptime = SiteState::default();
     loop
     {
-        let (mut out, counts, found, found_enums, chosen, captured, asked, op_calls) =
-            check_once(program, options, known.clone(), &enums, &templates, &instances);
+        let (
+            mut out,
+            counts,
+            found,
+            found_enums,
+            chosen,
+            captured,
+            asked,
+            op_calls,
+            sites,
+        ) = check_once(program, options, known.clone(), &enums, &templates, &instances);
         refs.extend(std::mem::take(&mut out.refs));
         let written = write_counts(program, &counts);
-        let settled = counts.is_empty() || (written == 0 && found == known);
+        refs.sort_by_key(|(at, decl)| (at.lo, at.hi, decl.lo, decl.hi));
+        let (sites, blocked) = sites;
+        comptime.blocked = blocked;
+        let ran = comptime.run(program, &refs, sites, options);
+        let settled =
+            ran == 0 && (counts.is_empty() || (written == 0 && found == known));
         let enums_settled = found_enums == enums;
         enums = found_enums;
         // The next run checks each new instance, and the instances it calls.
@@ -267,6 +286,7 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
         depth += u32::from(added);
         if settled && enums_settled && !added && !named
         {
+            out.diagnostics.extend(comptime.leftovers());
             out.diagnostics.extend(leftovers(program, &templates, &out.structs));
             out.diagnostics.extend(templates.diags.iter().cloned());
             out.diagnostics
@@ -292,6 +312,112 @@ pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOut
             return SemcheckOutput { refs, ..out };
         }
         known = found;
+    }
+}
+
+/// The calls of comptime functions a run of the check met that can run, and
+/// those whose arguments wait, with the name of each function.
+type MetSites = (Vec<Site>, Vec<(Span, Name)>);
+
+/// The calls of comptime functions across the runs of the check: the ones
+/// that stopped, and the ones still waiting after the last run.
+#[derive(Default)]
+struct SiteState
+{
+    /// The diagnostic of each call whose run stopped, on its node number.
+    failed: HashMap<NodeId, Diagnostic>,
+    /// The calls the last run met that did not run.
+    waiting: Vec<Site>,
+    /// Whether no runner is installed.
+    no_runner: bool,
+    /// The notes of what the calls printed.
+    notes: Vec<Diagnostic>,
+    /// The calls the last run met whose arguments wait for a value.
+    blocked: Vec<(Span, Name)>,
+}
+
+impl SiteState
+{
+    /// Run each call a run of the check met that can run, and write its
+    /// value in place of the call.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - The program.
+    /// * `refs` - Each use of a name with its declaration, in order.
+    /// * `sites` - The calls the run met.
+    /// * `options` - The check options.
+    ///
+    /// # Returns
+    ///
+    /// The count of values written.
+    fn run(
+        &mut self, program: &mut Program, refs: &RefTable, mut sites: Vec<Site>,
+        options: &SemcheckOptions,
+    ) -> usize
+    {
+        let mut seen = HashSet::new();
+        sites.retain(|s| !self.failed.contains_key(&s.id) && seen.insert(s.id));
+        let Some(runner) = comptime_calls::runner()
+        else
+        {
+            self.no_runner = true;
+            self.waiting = sites;
+            return 0;
+        };
+        let (now, wait) = comptime_calls::runnable(program, refs, &sites);
+        let (smalls, lost) =
+            comptime_calls::small_programs(program, refs, &now, &sites);
+        self.waiting = wait.into_iter().chain(lost).collect();
+        let mut values = HashMap::new();
+        for small in smalls
+        {
+            let results = runner.run(&small, options);
+            for (site, ran) in small.sites.iter().zip(results)
+            {
+                self.notes.extend(ran.note);
+                let ret = comptime_calls::declared_ret(site);
+                match (ran.value, ret)
+                {
+                    (Ok(tree), Some(kind)) => _ = values.insert(site.id, (tree, kind)),
+                    (Err(d), _) => _ = self.failed.insert(site.id, d),
+                    (Ok(_), None) => self.waiting.push(site.clone()),
+                }
+            }
+        }
+        comptime_calls::write_values(program, &values)
+    }
+
+    /// The diagnostics of the calls that stopped, and of each call still
+    /// waiting: `ZK0610` with no runner, else `ZK0609` when no call stopped
+    /// (one that stopped can hold the others back).
+    ///
+    /// # Returns
+    ///
+    /// The diagnostics.
+    fn leftovers(&mut self) -> Vec<Diagnostic>
+    {
+        let mut out: Vec<Diagnostic> = self.failed.drain().map(|(_, d)| d).collect();
+        let notes = std::mem::take(&mut self.notes);
+        let report = self.no_runner || out.is_empty();
+        let waiting = std::mem::take(&mut self.waiting).into_iter().filter(|_| report);
+        out.extend(waiting.map(|s| {
+            let name = s.callee.name.as_str();
+            tern!(
+                self.no_runner,
+                fd::comptime_no_runner(s.span, name),
+                fd::comptime_waits_on_itself(s.span, name)
+            )
+        }));
+        // A call whose arguments still wait once the runs end waits on
+        // itself, through the constants it reads.
+        let blocked = std::mem::take(&mut self.blocked).into_iter().filter(|_| report);
+        out.extend(
+            blocked
+                .map(|(span, name)| fd::comptime_waits_on_itself(span, name.as_str())),
+        );
+        out.extend(notes);
+        out
     }
 }
 
@@ -337,6 +463,7 @@ fn check_once(
     Captured,
     Instances,
     OpCalls,
+    MetSites,
 )
 {
     let mut diags = Vec::new();
@@ -356,12 +483,14 @@ fn check_once(
         .as_module(options.as_module)
         .known(known).open_structs(open_structs(program)).decls(decls)
         .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
-        .uses(instances.uses.clone())
+        .uses(instances.uses.clone()).root_unit(program.units.len().saturating_sub(1) as u32)
         .maybe_prelude_unit((0..program.units.len() as u32).find(|u| generic::in_prelude(program, *u)))
         .traits(traits(program)).inheriting(inheriting(program)).build();
     checker.scopes.push();
     checker.check_struct_bounds();
     checker.visit_program(program);
+    let site_diags = checker.site_diags.take();
+    checker.diags.extend(site_diags);
     let own = checker.decls.own();
     checker.refs.extend(own);
     checker.refs.extend(kind_refs(program, &checker.decls));
@@ -375,7 +504,7 @@ fn check_once(
     #[rustfmt::skip]
     let asked = Instances { fns: checker.wanted, structs: checker.struct_wanted, uses: checker.uses };
     #[rustfmt::skip]
-    return (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured, asked, checker.op_calls);
+    return (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured, asked, checker.op_calls, (checker.sites.take(), checker.blocked.take()));
 }
 
 /// The function whose block is being checked.
@@ -541,6 +670,24 @@ pub(crate) struct Checker
     /// The enumeration values this run works out.
     #[builder(default)]
     pub found_enums: KnownEnums,
+    /// The comptime function each call of one picked, on the span of the
+    /// call.
+    #[builder(default)]
+    pub comptime_sigs: HashMap<Span, FnSig>,
+    /// The calls of comptime functions this run met in spots that need
+    /// their values, each argument known.
+    #[builder(default)]
+    pub sites: RefCell<Vec<Site>>,
+    /// The diagnostics of those calls, reported once the run ends.
+    #[builder(default)]
+    pub site_diags: RefCell<Vec<Diagnostic>>,
+    /// The calls of comptime functions this run met whose arguments wait
+    /// for a value, with the name of the function.
+    #[builder(default)]
+    pub blocked: RefCell<Vec<(Span, Name)>>,
+    /// The file that is run.
+    #[builder(default)]
+    pub root_unit: u32,
 }
 
 impl Checker
@@ -794,6 +941,8 @@ impl Checker
         };
         self.name_foreign(&sig, callee.span, &sigs);
         self.refer(&callee.name, callee.span, sig.decl);
+        let comptime = sig.comptime && place.is_none();
+        do_if!(comptime, _ = self.comptime_sigs.insert(span, sig.clone()));
         let call = format!("a call of \"{}\", an unsafe function,", callee.name);
         do_if!(sig.unchecked, self.need_unchecked(span, &call));
         let (want, got) = (sig.params.len(), args.len());
@@ -1832,6 +1981,12 @@ impl Visitor for Checker
         let init = n.init.as_ref().filter(|_| n.is_const);
         let value = init.map_or(ConstVal::Unknown, |e| self.const_value(e, kind));
         self.scopes.set_value(&n.name.name, value);
+        // The starting value of a variable of an imported file is needed at
+        // compile time, so its comptime calls run then.
+        let imported =
+            !n.is_const && self.scopes.depth() == 1 && self.unit != self.root_unit;
+        let start = n.init.as_ref().zip(kind).filter(|_| imported);
+        do_if!(let Some((e, k)) = start, _ = self.item(e, k));
         let top = self.scopes.depth() == 1 && n.is_const;
         do_if!(
             top,

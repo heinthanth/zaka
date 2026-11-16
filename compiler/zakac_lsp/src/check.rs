@@ -15,6 +15,7 @@ use gen_lsp_types::Location;
 use gen_lsp_types::Message;
 use gen_lsp_types::Uri;
 use zakac_ast::stmt::Program;
+use zakac_ast::target::Target;
 use zakac_borrow_checker::artifact::Borrowchecked;
 use zakac_borrow_checker::artifact::run_loaded;
 use zakac_borrow_checker::options::BorrowCheckOptions;
@@ -28,9 +29,9 @@ use zakac_lexer::lexer::lex;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
 use zakac_lexer::token::TokenKind;
-use zakac_parser::load::load;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_semcheck::semcheck::semcheck;
 use zakac_span::file_loader::FileLoader;
@@ -125,11 +126,10 @@ pub fn check_file(uri: &Uri, path: &Path, text: &str, buffers: Buffers) -> FileC
     let lexer = LexerOptions::default();
     let lexed = lex(&root, &lexer);
     let lines = LineIndex::new(text);
+    let options = SemcheckOptions::builder().as_module(is_module(&lexed)).build();
     let run = || {
-        load(&root, &mut sm, &lexer).map(|loaded| {
+        load_settled(&root, &mut sm, &lexer, &Target::host(), &options).map(|loaded| {
             let folding = FoldOptions::builder().build();
-            let options =
-                SemcheckOptions::builder().as_module(is_module(&lexed)).build();
             let parsed =
                 has_errors(&loaded.diagnostics).then(|| loaded.program.clone());
             let mut checked =

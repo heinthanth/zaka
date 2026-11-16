@@ -48,7 +48,6 @@ use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_naturalness::NaturalnessOptions;
 use zakac_naturalness::check;
-use zakac_parser::load::Loaded;
 use zakac_reporter::render::Piece;
 use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::width::Carets;
@@ -732,6 +731,7 @@ fn explorer_target(options: &Options) -> zakac_ast::target::Target
 /// The rows and trees of all views.
 pub fn compile(source: &str, options: &Options) -> Compiled
 {
+    zaka_vm::comptime::install_with(zaka_vm::comptime::EDITOR_STEPS, true);
     let mut sm = SourceMap::new();
     let name = FileName::Custom(FILE_NAME.to_string());
     let file = sm.new_source_file(name, source.to_string());
@@ -744,8 +744,17 @@ pub fn compile(source: &str, options: &Options) -> Compiled
     // The explorer holds one file, so it has no folder to import from: an
     // import from the stdlib reads the module the compiler carries, and each
     // other import is reported.
+    // A compile-time conditional that calls a comptime function is settled
+    // in passes, each running the calls on the VM.
     let (loaded, parse_time) = timed(|| {
-        Loaded::single_for(&file, &LexerOptions::default(), &explorer_target(options))
+        let lexer = LexerOptions::default();
+        let target = explorer_target(options);
+        zakac_semcheck::open_chains::single_for(
+            &file,
+            &lexer,
+            &target,
+            &check_options(options),
+        )
     });
     // The imported modules join the map in reading order, as the loader placed
     // them, so their spans resolve and the C target gives each its own file.
@@ -780,8 +789,12 @@ pub fn compile(source: &str, options: &Options) -> Compiled
         None => (None, None),
         Some(m) if options.target == Target::C =>
         {
-            let c =
-                zakac_codegen_target_c::emit::emit(m, sm.files(), c_options(options));
+            let c = zakac_codegen_target_c::emit::emit(
+                m,
+                sm.files(),
+                c_options(options),
+                &zaka_host::Grants::all(),
+            );
             (None, Some(c))
         }
         Some(m) =>
@@ -905,12 +918,25 @@ fn check_program(
     program: &mut zakac_ast::stmt::Program, options: &Options,
 ) -> (Vec<Diagnostic>, SemcheckOutput)
 {
-    let check_options = SemcheckOptions::builder()
+    let idiom = check(program, &NaturalnessOptions::default());
+    (idiom, semcheck(program, &check_options(options)))
+}
+
+/// The check options of the explorer's settings.
+///
+/// # Arguments
+///
+/// * `options` - The settings.
+///
+/// # Returns
+///
+/// The check options.
+fn check_options(options: &Options) -> SemcheckOptions
+{
+    SemcheckOptions::builder()
         .platform_bits(options.platform_bits)
         .no_unsafe(options.no_unsafe)
-        .build();
-    let idiom = check(program, &NaturalnessOptions::default());
-    (idiom, semcheck(program, &check_options))
+        .build()
 }
 
 /// The op budget of a run in the explorer, so a loop that never ends does

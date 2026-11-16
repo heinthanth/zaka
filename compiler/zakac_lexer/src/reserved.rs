@@ -158,6 +158,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     // control
     ("အကယ်၍", Kw::If),
     ("ကွန်ပိုင်းလုပ်ချိန်တွင်", Kw::AtCompileTime),
+    ("လုပ်ဆောင်နိုင်သော", Kw::CanRun),
     ("လျှင်", Kw::Then),
     ("ဖြစ်လျှင်", Kw::ThenIs),
     ("ထိုသို့မဟုတ်ဘဲ", Kw::ElseIf),

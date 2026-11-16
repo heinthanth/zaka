@@ -917,6 +917,7 @@ impl FnGen<'_, '_>
             {
                 format!("zk_host_rename({slot}, {r}, {}, {})", v[0], v[1])
             }
+            HostFn::ReadEnv => format!("zk_host_read_env({slot}, {r}, {})", v[0]),
         };
         self.line(&format!("{call};"));
     }

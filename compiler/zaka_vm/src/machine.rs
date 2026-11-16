@@ -39,7 +39,10 @@ use zakac_semcheck::kind::Width;
 mod ffi;
 mod host;
 
+use zaka_host::Gate;
+use zaka_host::Grant;
 use zaka_host::MemWorld;
+use zaka_host::Right;
 use zaka_host::World;
 
 use crate::mem::Mem;
@@ -190,7 +193,10 @@ pub fn run_and_keep(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
 ) -> (Machine, Result<(), Box<Trap>>)
 {
-    run_in(module, out, options, host, Box::new(MemWorld::default()))
+    // A run in storage touches no file or variable of the host, so it holds
+    // each right.
+    let gate = Gate::new(zaka_host::Grants::all());
+    run_in(module, out, options, host, Box::new(MemWorld::default()), gate)
 }
 
 /// Run a module like [`run_and_keep`], with the host functions reaching a
@@ -210,10 +216,11 @@ pub fn run_and_keep(
 /// returned or the trap that stopped it.
 pub fn run_in(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
-    world: Box<dyn World>,
+    world: Box<dyn World>, gate: Gate,
 ) -> (Machine, Result<(), Box<Trap>>)
 {
     let mut machine = Machine::new(module.clone(), *options);
+    machine.set_gate(gate);
     machine.set_host(host);
     machine.set_world(world);
     let result = drive(&mut machine, out);
@@ -475,6 +482,9 @@ pub struct Machine
     /// given another, such as the terminal.
     #[builder(default = Box::new(MemWorld::default()))]
     world: Box<dyn World>,
+    /// The rights of the run: none unless the run is given them.
+    #[builder(default)]
+    gate: Gate,
     /// The C functions of the program, linked on the first call of one; a
     /// build that cannot call C never links them.
     #[builder(skip)]
@@ -901,7 +911,14 @@ impl Machine
     pub fn set_host(&mut self, host: &HostData)
     {
         let links = self.module.host;
-        let lists = [(links.args, &host.args), (links.env, &host.env)];
+        let env = links.env.map(|_| self.allowed_env(&host.env));
+        let env = match env
+        {
+            Some(Err(kind)) => return self.state = State::Trapped(self.trap(kind)),
+            Some(Ok(env)) => env,
+            None => Vec::new(),
+        };
+        let lists = [(links.args, &host.args), (links.env, &env)];
         let mut lists = lists.into_iter().filter_map(|(g, texts)| Some((g?, texts)));
         let placed = lists.try_for_each(|(g, t)| self.place_texts_in(g, t));
         do_if!(let Err(kind) = placed, self.state = State::Trapped(self.trap(kind)));
@@ -1007,6 +1024,63 @@ impl Machine
     ///
     /// * `world` - The world.
     pub fn set_world(&mut self, world: Box<dyn World>) { self.world = world; }
+
+    /// Give the run its rights, before [`Machine::set_host`].
+    ///
+    /// # Arguments
+    ///
+    /// * `gate` - The rights, the asker and the folder of relative paths.
+    pub fn set_gate(&mut self, gate: Gate) { self.gate = gate; }
+
+    /// The rights of the run.
+    ///
+    /// # Returns
+    ///
+    /// The gate.
+    pub fn gate(&self) -> &Gate { &self.gate }
+
+    /// The environment the start block gets: each variable with the env
+    /// right, the variables it names with a list of them, else asked for.
+    ///
+    /// # Arguments
+    ///
+    /// * `env` - Each variable, `NAME=VALUE`.
+    ///
+    /// # Returns
+    ///
+    /// The variables, or the trap of a denied environment.
+    fn allowed_env(&mut self, env: &[String]) -> Result<Vec<String>, TrapKind>
+    {
+        if let Grant::Some(names) = &self.gate.grants.env
+        {
+            let named = |v: &&String| {
+                v.split('=').next().is_some_and(|n| names.iter().any(|x| x == n))
+            };
+            return Ok(env.iter().filter(named).cloned().collect());
+        }
+        let denied =
+            TrapKind::PermissionDenied { right: Right::Env, subject: String::new() };
+        self.gate.check(Right::Env, "").map_err(|_| denied)?;
+        Ok(env.to_vec())
+    }
+
+    /// Run a C call the run holds the right for.
+    ///
+    /// # Arguments
+    ///
+    /// * `call` - The index of the C call.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap of the call or of a denial.
+    fn allowed_foreign(&mut self, call: u32) -> Step
+    {
+        let name = self.foreign_name(call);
+        let denied =
+            TrapKind::PermissionDenied { right: Right::Ffi, subject: name.clone() };
+        self.gate.check(Right::Ffi, &name).map_err(|_| denied)?;
+        self.foreign(call)
+    }
 
     /// Give standard input a line, as a terminal does when it is entered, and
     /// go on with a run that waits for one.
@@ -1287,7 +1361,7 @@ impl Machine
             Op::LocalRef(n) => self.local_ref(n),
             Op::ResultAddr => self.result_addr(),
             Op::Host(func) => self.host(func),
-            Op::Foreign(func) => self.foreign(func),
+            Op::Foreign(func) => self.allowed_foreign(func),
             Op::GlobalAddr(n) => self.global_addr(n),
             Op::Prefix(op) => self.prefix(op),
             Op::Infix(op) => self.infix(op),

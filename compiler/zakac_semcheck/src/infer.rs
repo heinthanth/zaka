@@ -126,6 +126,7 @@ impl Checker
             Expr::Str(n) => self.infer_str(n),
             Expr::Member(n) => self.infer_member(n),
             Expr::FnAddr(n) => self.infer_fn_addr(n, expect),
+            Expr::Comptime(n) => Some(self.written_kind(&n.kind, KindUse::Other)),
         }
     }
 

@@ -1,5 +1,10 @@
 /* The runtime of a Zaka program that the Zaka Compiler C target builds. */
 
+/* getcwd and isatty stand behind this macro under strict C11. */
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "zaka_rt.h"
 
 #include <stdio.h>
@@ -9,8 +14,11 @@
 #include "zaka_c_sugars.h"
 
 #ifdef _WIN32
+#include <direct.h>
 #include <fcntl.h>
 #include <io.h>
+#else
+#include <unistd.h>
 #endif
 
 /**
@@ -629,4 +637,300 @@ uint32_t zk_char_of(int negative, zk_umax v)
     RET_IF(negative || v > 0x10ffff, 0xfffd);
     RET_IF(v >= 0xd800 && v <= 0xdfff, 0xfffd);
     return (uint32_t)v;
+}
+
+/* ---- rights ---- */
+
+/** The rights answered "each of this kind" while the program runs. */
+static int zk_granted_now[ZK_RIGHT_COUNT];
+
+/** The answers to a question for a right, as Deno reads them. */
+enum
+{
+    ZK_ANSWER_NO,
+    ZK_ANSWER_THIS,
+    ZK_ANSWER_ONCE,
+    ZK_ANSWER_ALL
+};
+
+/** A list of the paths or names of one right that an answer covers. */
+typedef struct
+{
+    char **items;
+    size_t count;
+    size_t room;
+} zk_answered;
+
+/** The paths or names answered Y, and those answered N, for each right. */
+static zk_answered zk_answers[ZK_RIGHT_COUNT][2];
+
+/**
+ * Whether a list of answered paths or names holds one.
+ *
+ * @param list The list.
+ * @param s The path or name.
+ * @return 1 when it does.
+ */
+static int zk_answered_has(const zk_answered *list, const char *s)
+{
+    DO_FOR(i, list->count) RET_IF(strcmp(list->items[i], s) == 0, 1);
+    return 0;
+}
+
+/**
+ * Add a path or a name to a list of answered ones, for the rest of the run.
+ *
+ * @param list The list.
+ * @param s The path or name.
+ */
+static void zk_answered_add(zk_answered *list, const char *s)
+{
+    if (list->count == list->room)
+    {
+        list->room = list->room ? 2 * list->room : 8;
+        list->items = realloc(list->items, list->room * sizeof *list->items);
+        DO_IF(!list->items, zk_out_of_mem((zk_umax)(list->room * sizeof *list->items)));
+    }
+    size_t n = strlen(s) + 1;
+    char *held = malloc(n);
+    DO_IF(!held, zk_out_of_mem((zk_umax)n));
+    memcpy(held, s, n);
+    list->items[list->count++] = held;
+}
+
+/**
+ * A path as an absolute normal path with / between its parts: joined to the
+ * working folder when it is relative, with . and .. parts worked out. A
+ * drive, as C:, is the first part.
+ *
+ * @param path The path.
+ * @param out Where the path goes.
+ * @param room The octets out holds.
+ */
+static void zk_norm_path(const char *path, char *out, size_t room)
+{
+    char joined[4096] = "";
+    int absolute = path[0] == '/' || path[0] == '\\' || (path[0] && path[1] == ':');
+    if (!absolute)
+    {
+#ifdef _WIN32
+        DO_IF(!_getcwd(joined, (int)sizeof joined), joined[0] = '\0');
+#else
+        DO_IF(!getcwd(joined, sizeof joined), joined[0] = '\0');
+#endif
+        strncat(joined, "/", sizeof joined - strlen(joined) - 1);
+    }
+    strncat(joined, path, sizeof joined - strlen(joined) - 1);
+    size_t len = 0;
+    const char *p = joined;
+    while (*p)
+    {
+        while (*p == '/' || *p == '\\') p++;
+        const char *start = p;
+        while (*p && *p != '/' && *p != '\\') p++;
+        size_t n = (size_t)(p - start);
+        NEXT_IF(n == 0 || (n == 1 && start[0] == '.'));
+        if (n == 2 && start[0] == '.' && start[1] == '.')
+        {
+            while (len > 0 && out[len - 1] != '/') len--;
+            DO_IF(len > 0, len--);
+            continue;
+        }
+        NEXT_IF(len + n + 2 >= room);
+        out[len++] = '/';
+        memcpy(out + len, start, n);
+        len += n;
+    }
+    DO_IF(len == 0, out[len++] = '/');
+    out[len] = '\0';
+}
+
+/**
+ * Whether a path or a name is on the list of a grant: a name as it is, a
+ * path when it is a listed path or lies under one.
+ *
+ * @param right The right.
+ * @param subject The normal path, or the name.
+ * @param len The octets of the subject to compare.
+ * @return 1 when it is.
+ */
+static int zk_listed(int right, const char *subject, size_t len)
+{
+    const zk_grant *g = &zk_grants[right];
+    int paths = right == ZK_RIGHT_READ || right == ZK_RIGHT_WRITE;
+    DO_FOR(i, g->count)
+    {
+        const char *item = g->items[i];
+        size_t n = strlen(item);
+        int same = n == len && strncmp(item, subject, n) == 0;
+        RET_IF(same, 1);
+        int under = paths && n < len && strncmp(item, subject, n) == 0;
+        RET_IF(under && (subject[n] == '/' || item[n - 1] == '/'), 1);
+    }
+    return 0;
+}
+
+/**
+ * Write a template with one slot filled into a buffer.
+ *
+ * @param tmpl The template.
+ * @param name The name of the slot.
+ * @param value Its value.
+ * @param out The buffer.
+ * @param room The octets it holds.
+ */
+static void zk_render(
+    const char *tmpl, const char *name, const char *value, char *out, size_t room
+)
+{
+    char slot[32] = "%{";
+    strncat(slot, name, sizeof slot - 4);
+    strcat(slot, "}");
+    const char *at = strstr(tmpl, slot);
+    size_t before = at ? (size_t)(at - tmpl) : strlen(tmpl);
+    out[0] = '\0';
+    strncat(out, tmpl, before < room ? before : room - 1);
+    RET_IF(!at);
+    strncat(out, value, room - strlen(out) - 1);
+    strncat(out, at + strlen(slot), room - strlen(out) - 1);
+}
+
+/**
+ * What an effect of a right does, as a message names it.
+ *
+ * @param right The right.
+ * @param subject The path, the name, or blank for the whole environment.
+ * @param out The buffer.
+ * @param room The octets it holds.
+ */
+static void zk_what(int right, const char *subject, char *out, size_t room)
+{
+    int whole = right == ZK_RIGHT_ENV && subject[0] == '\0';
+    const char *tmpl = zk_permission_text[whole ? ZK_RIGHT_COUNT : right];
+    zk_render(tmpl, "s", subject, out, room);
+}
+
+/**
+ * Ask the person at the terminal for a right, when the build lets the
+ * program ask and standard input and standard error are a terminal.
+ *
+ * @param right The right.
+ * @param subject The path or name, as the program gave it.
+ * @return The answer: no, this path or name from now on, this effect
+ * alone, or each effect of the right.
+ */
+static int zk_ask(int right, const char *subject)
+{
+    RET_IF(!zk_grant_prompt, ZK_ANSWER_NO);
+#ifdef _WIN32
+    int terminal = _isatty(0) && _isatty(2);
+#else
+    int terminal = isatty(0) && isatty(2);
+#endif
+    RET_IF(!terminal, ZK_ANSWER_NO);
+    char what[4200], question[4400];
+    zk_what(right, subject, what, sizeof what);
+    zk_render(zk_ask_text, "what", what, question, sizeof question);
+    fflush(stdout);
+    fputs(question, stderr);
+    fflush(stderr);
+    char line[16];
+    RET_IF(!fgets(line, sizeof line, stdin), ZK_ANSWER_NO);
+    /* The first letter, in either case. */
+    char c = line[0] >= 'a' && line[0] <= 'z' ? (char)(line[0] - 'a' + 'A') : line[0];
+    RET_IF(c == 'Y', ZK_ANSWER_THIS);
+    RET_IF(c == 'O', ZK_ANSWER_ONCE);
+    RET_IF(c == 'A', ZK_ANSWER_ALL);
+    return ZK_ANSWER_NO;
+}
+
+/**
+ * Whether the program holds a right for a path or a name: the grants of
+ * the build, the answers "each of this kind" so far, else the answer of
+ * the person at the terminal.
+ *
+ * @param right The right, an `enum zk_right`.
+ * @param subject The path or name, as the program gave it; blank for C calls.
+ * @return 1 when it does.
+ */
+int zk_allowed(int right, const char *subject)
+{
+    RET_IF(zk_grants[right].all || zk_granted_now[right], 1);
+    char full[4096];
+    int paths = right == ZK_RIGHT_READ || right == ZK_RIGHT_WRITE;
+    DO_IF(paths, zk_norm_path(subject, full, sizeof full));
+    const char *s = paths ? full : subject;
+    RET_IF(s[0] && zk_listed(right, s, strlen(s)), 1);
+    RET_IF(zk_answered_has(&zk_answers[right][ZK_ANSWER_THIS], s), 1);
+    RET_IF(zk_answered_has(&zk_answers[right][ZK_ANSWER_NO], s), 0);
+    int answer = zk_ask(right, subject);
+    DO_IF(answer == ZK_ANSWER_ALL, zk_granted_now[right] = 1);
+    DO_IF(
+        answer == ZK_ANSWER_THIS || answer == ZK_ANSWER_NO,
+        zk_answered_add(&zk_answers[right][answer], s)
+    );
+    return answer != ZK_ANSWER_NO;
+}
+
+/**
+ * Stop the run for a right it lacks, naming the flag that grants it.
+ *
+ * @param right The right.
+ * @param subject The C name, or blank for the environment.
+ */
+static _Noreturn void zk_permission_trap(int right, const char *subject)
+{
+    char what[4200];
+    zk_what(right, subject, what, sizeof what);
+    const char *names[] = {"what", "flag"};
+    const char *values[] = {what, zk_flag_text[right]};
+    zk_stop(ZK_TRAP_PERMISSION, 2, names, values);
+}
+
+/**
+ * Stop the run unless the program holds the right to call a C function;
+ * each C wrapper calls this first.
+ *
+ * @param name The C name.
+ */
+void zk_need_ffi(const char *name)
+{
+    RET_IF(zk_allowed(ZK_RIGHT_FFI, name));
+    zk_permission_trap(ZK_RIGHT_FFI, name);
+}
+
+/**
+ * The environment the start block gets: each variable with the env right,
+ * the variables a list names, else the whole environment once the person at
+ * the terminal allows it; the run stops when the answer is no.
+ *
+ * @param envp The environment `main` was given.
+ * @param count Where the count of variables goes.
+ * @return The variables.
+ */
+char **zk_allowed_env(char **envp, int *count)
+{
+    int n = 0;
+    while (envp && envp[n]) n++;
+    *count = n;
+    const zk_grant *g = &zk_grants[ZK_RIGHT_ENV];
+    RET_IF(g->all, envp);
+    if (g->count == 0)
+    {
+        DO_IF(!zk_allowed(ZK_RIGHT_ENV, ""), zk_permission_trap(ZK_RIGHT_ENV, ""));
+        return envp;
+    }
+    char **kept = malloc((size_t)(n + 1) * sizeof *kept);
+    DO_IF(!kept, zk_out_of_mem((zk_umax)(n + 1) * sizeof *kept));
+    int k = 0;
+    DO_FOR(i, n)
+    {
+        const char *eq = strchr(envp[i], '=');
+        size_t len = eq ? (size_t)(eq - envp[i]) : strlen(envp[i]);
+        NEXT_IF(!zk_listed(ZK_RIGHT_ENV, envp[i], len));
+        kept[k++] = envp[i];
+    }
+    kept[k] = NULL;
+    *count = k;
+    return kept;
 }

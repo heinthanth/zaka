@@ -32,6 +32,10 @@ pub struct Program
     pub target: Option<Target>,
     /// Source region of the file that is run.
     pub span: Span,
+    /// The folder of the file that is run, when it was read from disk: a
+    /// comptime call reads the files under it. An artifact leaves it out.
+    #[serde(skip)]
+    pub folder: Option<std::path::PathBuf>,
 }
 
 /// One file of a program read with its imports.
@@ -490,6 +494,12 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub unchecked: bool,
+    /// `true` for a comptime function, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`:
+    /// a call of it in a constant, a list count or another spot that needs a
+    /// value at compile time runs while the compiler runs.
+    #[builder(default)]
+    #[serde(default)]
+    pub comptime: bool,
     /// `true` for the start block, where the program starts; no call can
     /// name it.
     #[builder(default)]

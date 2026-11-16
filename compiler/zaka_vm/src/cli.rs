@@ -1,6 +1,7 @@
 use std::ffi::OsString;
 use std::sync::Arc;
 
+use zaka_host::Gate;
 use zaka_host::TermWorld;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::host_arch;
@@ -20,6 +21,9 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::grants::Granted;
+use zakac_cli_common::grants::attach_grant_args;
+use zakac_cli_common::grants::grants_from;
 use zakac_codegen_target_vm::artifact::CodegenArtifact;
 use zakac_codegen_target_vm::artifact::TEXT_HEADER;
 use zakac_codegen_target_vm::artifact::decode_artifact;
@@ -36,13 +40,13 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
-use zakac_parser::load::load_for as load_program;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::cli::target_from;
+use zakac_semcheck::open_chains::load_settled;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 use zakac_session::artifact::load_artifact;
@@ -50,6 +54,7 @@ use zakac_session::config::Input;
 use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 
+use crate::asker::TermAsker;
 use crate::machine::HostData;
 use crate::machine::RunOptions;
 use crate::machine::run_in;
@@ -133,6 +138,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
     let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
     let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
+    let cmd = attach_grant_args(cmd, Granted::Run);
     cmd.arg(leaks).arg(args).about(t!("vm.about"))
 }
 
@@ -274,7 +280,14 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let env = std::env::vars_os().map(pair).collect();
     let host = HostData::builder().args(args.collect()).env(env).build();
     let world = Box::new(TermWorld);
-    let (machine, result) = run_in(&module, &mut *io.stdout, &options, &host, world);
+    let gate = Gate::new(grants_from(matches, Granted::Run));
+    let gate = match TermAsker::on_terminal()
+    {
+        Some(asker) => gate.with_asker(asker),
+        None => gate,
+    };
+    let (machine, result) =
+        run_in(&module, &mut *io.stdout, &options, &host, world, gate);
     let Err(trap) = result
     else
     {
@@ -448,11 +461,12 @@ fn compiled(
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let program = load_program(
+    let program = load_settled(
         source,
         source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::Vm),
+        &options,
     )?;
     let emitted = run_loaded(program, &options, &folding, &mem, emit_options(matches));
     let diagnostics = emitted.diagnostics().to_vec();

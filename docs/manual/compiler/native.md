@@ -102,6 +102,21 @@ divide: the program stopped: integer division or remainder with zero as divisor 
 A `--release` build keeps no table of places: a stop names the function alone, and each
 backtrace line is a function name with no place.
 
+## Permissions
+
+An executable holds the rights its build granted, with the flags `zakac run` takes:
+`--allow-read[=<paths>]`, `--allow-write[=<paths>]`, `--allow-env[=<names>]`,
+`--allow-ffi` and `-A` ([Permissions](../vm/running.md#permissions)). The build writes them
+into the executable, which checks each file effect, the environment of the start block,
+each variable it reads and each C call against them, as the VM does: on a terminal it
+asks for a right it lacks (unless the build gave `--no-permission-prompt`), a denied file
+or variable fails with `ခွင့်ပြုချက်မရှိခြင်း`, and a denied C call or environment stops the
+program with `permission_denied`. Paths are read from the folder the executable runs in.
+
+```console
+$ zakac build --target c --allow-read=data report.zaka -o report
+```
+
 ## Where the output differs from the VM
 
 - **Addresses.** An address prints as the address in the native program, not the one in

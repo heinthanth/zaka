@@ -33,6 +33,7 @@ zakac_span = { workspace = true }
 [dev-dependencies]
 postcard = { workspace = true }
 tempfile = { workspace = true }
+zaka_vm = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }

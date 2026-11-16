@@ -82,6 +82,7 @@ would refuse numerous programs of this page.
 | no row | a statement writes inside the value of a row of a [ဇယား](../language/tables.md#writing-inside-a-row) that no row holds | `no row of the ဇယား has this index` |
 | write | the output cannot be written | `cannot write the output: E` |
 | C function not run | a C function is called in a VM built with no `ffi`, such as the explorer's | `the C function N runs in "zakac run" and in native builds, not in this VM` |
+| permission denied | a C call with no ffi right, or a start block that takes the environment with no env right ([Permissions](running.md#permissions)) | `calling the C function N needs --allow-ffi`, `the environment of the start block needs --allow-env` |
 | C link | the first call of a C function finds a lib that does not open, a C name that no lib holds, or addresses of a size the host does not have | `the C functions of the program cannot be reached: R` |
 
 Addresses are written `0x` and lowercase hex digits. Integer arithmetic that does not fit

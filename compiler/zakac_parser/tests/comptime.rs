@@ -170,3 +170,43 @@ fn an_import_in_the_kept_arm_is_read()
     let units = |os| load(text, &on(os)).program.units.len();
     assert!(units(TargetOs::Linux) > units(TargetOs::Windows));
 }
+
+/// The comptime mark sets the flag of a function at the top level, after
+/// the export mark too.
+#[test]
+fn the_comptime_mark_marks_a_function()
+{
+    let text = "အများသုံး ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် တစ် သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ \
+                ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\n၁ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
+    let loaded = load(text, &on(TargetOs::Linux));
+    assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
+    let marked = loaded
+        .program
+        .stmts
+        .iter()
+        .any(|s| matches!(s, Stmt::Fn(f) if f.comptime && f.exported));
+    assert!(marked);
+}
+
+/// The comptime mark on the start block, on a C function or inside a
+/// function is ZK0256.
+#[test]
+fn the_comptime_mark_elsewhere_is_zk0256()
+{
+    let mark = "ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော";
+    let start = format!("{mark} ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n");
+    let c_fn = format!(
+        "{mark} လုပ်ဆောင်ချက် abs သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍\nn ဟူသော ၃၂ ဘစ် ကိန်းပြည့် \
+         တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\n"
+    );
+    let nested = format!(
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{mark} လုပ်ဆောင်ချက် အတွင်း သည်\nအောက်ပါတို့ကို လုပ်ဆောင်ကာ \
+         ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\n၁ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် \
+         ပြီးဆုံးပါပြီး။\n"
+    );
+    for text in [start, c_fn, nested]
+    {
+        let codes = codes(&text, &on(TargetOs::Linux));
+        assert!(codes.contains(&Code::ComptimeMarkMisplaced), "{codes:?}: {text}");
+    }
+}

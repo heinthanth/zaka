@@ -36,6 +36,7 @@
   - [Results](functions/results.md)
   - [Recursion](functions/recursion.md)
   - [Calling C](functions/c.md)
+  - [Compile time](functions/compile-time.md)
 - [Text](text/README.md)
   - [Cells and characters](text/characters.md)
   - [Changing text](text/changing.md)
