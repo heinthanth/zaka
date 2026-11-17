@@ -489,6 +489,12 @@ RedundantGroup = ("ZK0507", Level::Warning),
 PaInValue = ("ZK0508", Level::Warning),
 /// A count word uses a classifier other than the kind's own.
 ClassifierMismatch = ("ZK0509", Level::Warning),
+/// A word in its spoken spelling, such as `ထားမယ်` for `ထားမည်`; an error
+/// until `--lint-allow spoken` lets a program use them.
+SpokenForm = ("ZK0510", Level::Error),
+/// A file that writes some words in their spoken spelling and others in
+/// their written one.
+MixedForms = ("ZK0511", Level::Warning),
 
 // constant folding: ZK06xx
 /// An operation on constants gives a value outside its kind.
@@ -555,6 +561,10 @@ GlobalUnsetAtCall = ("ZK0724", Level::Error),
 /// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
 FillUnsetAtReturn = ("ZK0725", Level::Error) }
 
+/// Each code with the address of the page that teaches it, which the build
+/// script reads from the error page of the manual.
+const PAGES: &[(&str, &str)] = include!(concat!(env!("OUT_DIR"), "/pages.rs"));
+
 impl Code
 {
     /// Find a code from its id.
@@ -584,6 +594,30 @@ impl Code
     ///
     /// The explanation.
     pub fn explain(self) -> String { self.catalogue_text("explain") }
+
+    /// The address of the page that teaches this code, from the See column of
+    /// the error page of the manual: `/learn/...` or `/docs/...`.
+    ///
+    /// # Returns
+    ///
+    /// The address, or `None` when the row links to no page.
+    pub fn page(self) -> Option<&'static str>
+    {
+        PAGES.iter().find(|(id, _)| *id == self.id()).map(|(_, path)| *path)
+    }
+
+    /// The full link to the page that teaches this code: the site origin the
+    /// build was given (`ZAKA_SITE_ORIGIN`) before [`Code::page`], or the
+    /// address alone when the build was given none.
+    ///
+    /// # Returns
+    ///
+    /// The link, or `None` when the code has no page.
+    pub fn page_url(self) -> Option<String>
+    {
+        let origin = option_env!("ZAKA_SITE_ORIGIN").unwrap_or("");
+        self.page().map(|path| format!("{}{path}", origin.trim_end_matches('/')))
+    }
 
     /// Look up a catalogue text for this code.
     ///

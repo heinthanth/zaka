@@ -67,12 +67,12 @@ forms](../variables/scope.md#four-closing-forms).
    ```sh
    zakac run --jit hello.zaka
    ```
-4. Or build it into a program of its own. `--target native` makes the machine code with
-   Cranelift, inside the compiler; `--target c` writes C and compiles it. Both link with a
+4. Or build it into a program of its own. `--backend native` makes the machine code with
+   Cranelift, inside the compiler; `--backend c` writes C and compiles it. Both link with a
    C compiler on the PATH, such as GCC, Clang or `zig cc`:
 
    ```sh
-   zakac build --target native hello.zaka
+   zakac build --backend native hello.zaka
    ./hello
    ```
 
@@ -116,6 +116,24 @@ it expected:
 ```text
 error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
 ```
+
+When the compiler knows the change that fixes a message, it shows the line as the
+change leaves it, with `~` under the new text:
+
+```console
+$ zakac run hello.zaka
+error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
+ --> hello.zaka:3:1
+  |
+3 | ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+  | ^^^^^^^^^^^^^^^^
+  = help: insert "။"
+  |
+2 | "မင်္ဂလာပါ" ဟု ပြသမည်။
+  |                  ~
+```
+
+The compiler never makes the change itself; the edit is left to the programmer.
 
 Each message has a code such as `ZK0201`. The [error messages](../../manual/reference/errors.md)
 page lists the common ones.

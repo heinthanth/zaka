@@ -5,6 +5,7 @@ use strum::IntoEnumIterator;
 use zakac_ast::target::BuildTarget;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
+use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
 use zakac_cli_common::artifact_output::ResolvedArtifactOutput;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
@@ -332,7 +333,9 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let mem = borrow_check_options(matches);
     let emitted = run_loaded(loaded, &options, &folding, &mem, emit_options(matches));
     let failed = has_errors(emitted.diagnostics());
-    let _ = write_diagnostics(io.stderr, &source_map, emitted.diagnostics());
+    let target = target_from(matches, BuildTarget::Vm);
+    let shown = checked_fixes(matches, &source, target, emitted.diagnostics());
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
 
     let asm = emit == Some(Emit::Asm);
     let result = tern!(

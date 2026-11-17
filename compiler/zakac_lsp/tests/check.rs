@@ -3,7 +3,12 @@ use std::path::PathBuf;
 use gen_lsp_types::Code;
 use gen_lsp_types::Contents;
 use gen_lsp_types::Position;
+use gen_lsp_types::Range;
 use gen_lsp_types::Uri;
+use zakac_diagnostics::Edit;
+use zakac_diagnostics::Fix;
+use zakac_diagnostics::FixOrigin;
+use zakac_lsp::actions::quick_fixes;
 use zakac_lsp::check::Buffers;
 use zakac_lsp::check::FileCheck;
 use zakac_lsp::check::check_file;
@@ -74,6 +79,20 @@ fn an_import_reads_the_unsaved_text()
     buffers.open.insert(folder().join("lib").join("unsaved.zaka"), lib.into());
     let found = check("main.zaka", text, buffers);
     assert!(found.diagnostics.is_empty(), "{:?}", found.diagnostics);
+}
+
+#[test]
+fn a_code_links_to_the_page_that_teaches_it()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမရှိသောအမည် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let file = check("linked.zaka", text, Buffers::default());
+    let link =
+        file.diagnostics[0].code_description.as_ref().map(|d| d.href.to_string());
+    let code = zakac_diagnostics::Code::UndeclaredName;
+    // The build names a site origin through `ZAKA_SITE_ORIGIN`; without one the
+    // page has no full address and the editor gets no link.
+    let full = code.page_url().filter(|u| u.contains("://"));
+    assert_eq!(link, full);
 }
 
 #[test]
@@ -384,4 +403,66 @@ fn a_stdlib_function_goes_to_a_replica_of_its_module()
     let opened = check_file(&uri, &path, &replica, Buffers::default());
     let codes: Vec<_> = opened.diagnostics.iter().map(|d| d.code.clone()).collect();
     assert!(codes.is_empty(), "{codes:?}");
+}
+
+#[test]
+fn each_fix_of_a_diagnostic_becomes_a_quick_fix()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nမရှိသောအမည် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let mut file = check("fixes.zaka", text, Buffers::default());
+    let checked = file.checked.as_mut().unwrap();
+    let found = checked.diagnostics.remove(0);
+    let span = found.span;
+    let mut found = found.with_fix("write က", span, "က");
+    let edit = Edit::builder().span(span).text("ခ").build();
+    let second = Fix::builder().message("write ခ").edits(vec![edit]);
+    found.fixes.push(second.origin(FixOrigin::Rule).build());
+    checked.diagnostics.insert(0, found);
+    let range = file.diagnostics[0].range;
+    let actions = quick_fixes(&file, range);
+    assert_eq!(actions.len(), 2);
+    assert_eq!(actions[0].title, "write က");
+    assert_eq!(actions[0].is_preferred, Some(true));
+    assert_eq!(actions[1].title, "write ခ");
+    assert_eq!(actions[1].is_preferred, Some(false));
+    let changes = actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap();
+    let edits = changes.get(&file.uri).unwrap();
+    assert_eq!(edits[0].range, range);
+    assert_eq!(edits[0].new_text, "က");
+    let first_line = Range {
+        start: Position { line: 0, character: 0 },
+        end: Position { line: 0, character: 1 },
+    };
+    assert!(quick_fixes(&file, first_line).is_empty());
+}
+
+#[test]
+fn a_misspelled_name_gets_the_closest_name_as_a_quick_fix()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ \
+                ဖြစ်ပါစေ။\nအရေအတက် ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let file = check("misspelled.zaka", text, Buffers::default());
+    let shown = file.diagnostics.iter().find(|d| d.range.start.line == 2).unwrap();
+    let actions = quick_fixes(&file, shown.range);
+    let edit = actions[0].edit.as_ref().unwrap().changes.as_ref().unwrap();
+    assert_eq!(edit.get(&file.uri).unwrap()[0].new_text, "အရေအတွက်");
+}
+
+#[test]
+fn a_project_that_allows_the_spoken_spellings_checks_them_clean()
+{
+    use zakac_diagnostics::lint::LintLevel;
+    use zakac_diagnostics::lint::LintLevels;
+
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မယ်။\n\"က\" ဟု ပြသမယ်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    let spoken = |file: &FileCheck| {
+        file.diagnostics
+            .iter()
+            .filter(|d| d.code == Some(Code::String("ZK0510".into())))
+            .count()
+    };
+    assert_eq!(spoken(&check("spoken.zaka", text, Buffers::default())), 2);
+    let lint = LintLevels::default().with("spoken", LintLevel::Off).unwrap();
+    let allowed = check("spoken.zaka", text, Buffers { lint, ..Buffers::default() });
+    assert_eq!(spoken(&allowed), 0);
 }

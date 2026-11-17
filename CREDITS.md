@@ -57,11 +57,18 @@ thanks to all of these projects.
 | [base64](https://github.com/marshallpierce/rust-base64) | 0.23.1 | MIT OR Apache-2.0 |
 | [bon](https://github.com/elastio/bon) | 3.10.1 | MIT OR Apache-2.0 |
 | [cargo-build](https://github.com/IoaNNUwU/cargo-build) | 1.0.0 | MIT |
+| [cbindgen](https://github.com/mozilla/cbindgen) | 0.29.4 | MPL-2.0 |
 | [chrono](https://github.com/chronotope/chrono) | 0.4.45 | MIT OR Apache-2.0 |
 | [clap](https://github.com/clap-rs/clap) | 4.6.7 | MIT OR Apache-2.0 |
 | [codee](https://github.com/Synphonyte/codee) | 0.3.5 | MIT OR Apache-2.0 |
 | [console_error_panic_hook](https://github.com/rustwasm/console_error_panic_hook) | 0.1.7 | Apache-2.0/MIT |
 | [const_for](https://github.com/JENebel/const_for) | 0.1.6 | MIT |
+| [cranelift-codegen](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
+| [cranelift-frontend](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
+| [cranelift-jit](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
+| [cranelift-module](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
+| [cranelift-native](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
+| [cranelift-object](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
 | [etcetera](https://github.com/lunacookies/etcetera) | 0.11.0 | MIT OR Apache-2.0 |
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
@@ -100,6 +107,7 @@ thanks to all of these projects.
 | [serde_json](https://github.com/serde-rs/json) | 1.0.154 | MIT OR Apache-2.0 |
 | [sha2](https://github.com/RustCrypto/hashes) | 0.11.0 | MIT OR Apache-2.0 |
 | [shadow-rs](https://github.com/baoyachi/shadow-rs) | 2.0.0 | MIT AND Apache-2.0 |
+| [strsim](https://github.com/rapidfuzz/strsim-rs) | 0.11.1 | MIT |
 | [strum](https://github.com/Peternator7/strum) | 0.28.0 | MIT |
 | [sys-locale](https://github.com/1Password/sys-locale) | 0.3.2 | MIT OR Apache-2.0 |
 | [tempfile](https://github.com/Stebalien/tempfile) | 3.27.0 | MIT OR Apache-2.0 |

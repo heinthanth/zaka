@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use gen_lsp_types::Code;
+use gen_lsp_types::CodeDescription;
 use gen_lsp_types::DiagnosticRelatedInformation;
 use gen_lsp_types::DiagnosticSeverity;
 use gen_lsp_types::Location;
@@ -18,10 +19,12 @@ use zakac_ast::stmt::Program;
 use zakac_ast::target::Target;
 use zakac_borrow_checker::artifact::Borrowchecked;
 use zakac_borrow_checker::artifact::run_loaded;
+use zakac_borrow_checker::fixes::Recompile;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
@@ -53,6 +56,9 @@ pub struct Buffers
 {
     /// The text of each open file, on its path.
     pub open: HashMap<PathBuf, String>,
+    /// The level of each lint code the project of the file sets, as its
+    /// `zakac.toml` does on the command line.
+    pub lint: LintLevels,
 }
 
 impl FileLoader for Buffers
@@ -121,15 +127,18 @@ struct Imported
 /// What the check found.
 pub fn check_file(uri: &Uri, path: &Path, text: &str, buffers: Buffers) -> FileCheck
 {
-    let mut sm = SourceMap::with_loader(Arc::new(buffers));
+    let lint = buffers.lint;
+    let loader: Arc<dyn FileLoader> = Arc::new(buffers);
+    let mut sm = SourceMap::with_loader(loader.clone());
     let root = sm.new_source_file(FileName::real(path.to_path_buf()), text.to_string());
     let lexer = LexerOptions::default();
     let lexed = lex(&root, &lexer);
     let lines = LineIndex::new(text);
-    let options = SemcheckOptions::builder().as_module(is_module(&lexed)).build();
+    let options =
+        SemcheckOptions::builder().as_module(is_module(&lexed)).lint(lint).build();
+    let folding = FoldOptions::builder().build();
     let run = || {
         load_settled(&root, &mut sm, &lexer, &Target::host(), &options).map(|loaded| {
-            let folding = FoldOptions::builder().build();
             let parsed =
                 has_errors(&loaded.diagnostics).then(|| loaded.program.clone());
             let mut checked =
@@ -140,9 +149,22 @@ pub fn check_file(uri: &Uri, path: &Path, text: &str, buffers: Buffers) -> FileC
     };
     // A compiler panic on half-written text must not end the server: it becomes
     // one diagnostic, and the colors from the lexer remain.
+    let fixes = Recompile::builder()
+        .root(root.clone())
+        .loader(loader)
+        .target(Target::host())
+        .options(options.clone())
+        .folding(folding.clone())
+        .mem(BorrowCheckOptions::default())
+        .build();
+    let with_fixes = |mut checked: Borrowchecked| {
+        let diagnostics = std::mem::take(&mut checked.diagnostics);
+        checked.diagnostics = fixes.attach(diagnostics);
+        checked
+    };
     let (checked, stopped) = match catch_unwind(AssertUnwindSafe(run))
     {
-        Ok(Ok(checked)) => (Some(checked), None),
+        Ok(Ok(checked)) => (Some(with_fixes(checked)), None),
         Ok(Err(unread)) => (None, Some(at_start(unread.to_string()))),
         Err(panic) => (None, Some(at_start(panicked(panic.as_ref())))),
     };
@@ -409,9 +431,11 @@ impl FileCheck
     /// # Returns
     ///
     /// The diagnostic for the editor.
-    fn convert(&self, d: &Diagnostic) -> gen_lsp_types::Diagnostic
+    pub(crate) fn convert(&self, d: &Diagnostic) -> gen_lsp_types::Diagnostic
     {
-        let help = d.help.as_ref().map(|h| format!("\n{h}")).unwrap_or_default();
+        // A help text that became a fix still reads under the message.
+        let hint = d.help.as_ref().or(d.fixes.first().map(|f| &f.message));
+        let help = hint.map(|h| format!("\n{h}")).unwrap_or_default();
         let message = format!("{}{help}", d.message);
         let label = |span: &Span, text: &str| {
             let location = self.place(span)?;
@@ -426,6 +450,7 @@ impl FileCheck
             range: range.unwrap_or_default(),
             severity: Some(lsp_level(d.level)),
             code: Some(Code::String(d.code.to_string())),
+            code_description: code_description(d.code),
             source: Some(SOURCE.to_string()),
             message: Message::String(message),
             related_information: (!related.is_empty()).then_some(related),
@@ -477,4 +502,21 @@ fn lsp_level(level: Level) -> DiagnosticSeverity
         Level::Warning => DiagnosticSeverity::Warning,
         Level::Note => DiagnosticSeverity::Information,
     }
+}
+
+/// The link of a code to the page that teaches it, which an editor shows on
+/// the code.
+///
+/// # Arguments
+///
+/// * `code` - The code.
+///
+/// # Returns
+///
+/// The link, or `None` when the code has no page or the build was given no
+/// site origin, so the link is no full address.
+fn code_description(code: zakac_diagnostics::Code) -> Option<CodeDescription>
+{
+    let href = code.page_url()?.parse::<Uri>().ok()?;
+    Some(CodeDescription { href })
 }

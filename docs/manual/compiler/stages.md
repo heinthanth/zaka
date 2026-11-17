@@ -53,7 +53,7 @@ A stage runs when the stages before it found no *error*. A warning never stops t
 | A stage reports an error | Left out |
 | --- | --- |
 | the lexer or the parser | naturalness, names, kinds, and all the stages after |
-| names and kinds (and a warning under `--strict-particles`) | the IR builder and all after |
+| names and kinds (and a warning, an error under `--lint-error naturalness`) | the IR builder and all after |
 | constant folding | the checker and all after |
 | the checker | the code generator and the VM |
 
@@ -153,7 +153,7 @@ the import sentence and the export mark, ZK0229 to ZK0232, belong to this stage;
 
 When the lexer and the parser found no error, the naturalness check reads the tree for
 wording that is valid but unlike Burmese: `ကြီးသည်လျှင်` where `ကြီးလျှင်` reads better.
-It reports **ZK05** warnings. With `--strict-particles` these are errors. The sentence
+It reports **ZK05** warnings. With `--lint-error naturalness` these are errors. The sentence
 above has none. See [Natural wording](../language/naturalness.md).
 
 ### Names and kinds
@@ -209,7 +209,7 @@ flow checker](../internals/borrow-checker.md).
 ### Code generation
 
 `zakac build` turns the IR into the ops of the VM, with a table that maps
-each op back to a range of the source. With `--target c` or `--target native` it turns
+each op back to a range of the source. With `--backend c` or `--backend native` it turns
 the same IR into a native program instead ([Native programs](native.md)):
 
 ```text

@@ -65,7 +65,7 @@ impl Parser<'_>
     {
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
         let next = 1 + self.angle_len(1).unwrap_or(0);
-        named && kw_of(&self.peek_n(next)) == Some(Kw::CalledRel)
+        named && self.reads_as(&self.peek_n(next), Kw::CalledRel)
     }
 
     /// Whether a trait block starts here: `ရှိစေရန်` stands in the statement
@@ -96,7 +96,7 @@ impl Parser<'_>
         let start = self.peek().span;
         let name = self.parse_ident()?;
         let mut params = self.parse_notation_params()?;
-        self.expect(Kw::CalledRel)?;
+        self.expect_reading(Kw::CalledRel)?;
         // `အများသုံး` stands right before `ဂုဏ်သတ္တိ`, after the compiler mark.
         let builtin = self.eat_builtin_mark()?;
         let exported = self.eat(Kw::Export);

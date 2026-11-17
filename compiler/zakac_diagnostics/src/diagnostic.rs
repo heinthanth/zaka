@@ -51,6 +51,43 @@ pub struct Label
     pub text: String,
 }
 
+/// Where a fix comes from: a rule of the compiler.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(AsRefStr, IntoStaticStr)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum FixOrigin
+{
+    /// A rule of the compiler.
+    Rule,
+}
+
+/// One change of a fix: the text that takes the place of a source region. A
+/// blank region inserts the text; a blank text removes the region.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct Edit
+{
+    /// Source region the text replaces.
+    pub span: Span,
+    /// The new text.
+    #[builder(into)]
+    pub text: String,
+}
+
+/// One fix for a diagnostic. The compiler never applies it: the reader
+/// does, through the editor or with a hand edit.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct Fix
+{
+    /// Localized text that tells what the fix does.
+    #[builder(into)]
+    pub message: String,
+    /// The changes, in source order; no two overlap.
+    pub edits: Vec<Edit>,
+    /// Where the fix comes from.
+    pub origin: FixOrigin,
+}
+
 /// A message about a region of source code, produced in a compiler phase.
 ///
 /// `message` and `help` are localized where the diagnostic is created, from the
@@ -74,19 +111,25 @@ pub struct Diagnostic
     #[builder(default)]
     #[serde(default)]
     pub labels: Vec<Label>,
+    /// Fixes for the problem; the first is the likeliest.
+    #[builder(default)]
+    #[serde(default)]
+    pub fixes: Vec<Fix>,
 }
 
 impl Serialize for Diagnostic
 {
-    /// Write each field. The text artifacts leave out `labels` when it holds
-    /// no label, so older goldens are unchanged. The raw artifacts are not
-    /// self-describing: all fields are written.
+    /// Write each field. The text artifacts leave out `labels` and `fixes`
+    /// when nothing is in them, so older goldens are unchanged. The raw
+    /// artifacts are not self-describing: all fields are written.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error>
     {
-        /// The number of fields, `labels` included.
-        const FIELDS: usize = 6;
-        let skip_labels = serializer.is_human_readable() && self.labels.is_empty();
-        let n = FIELDS - usize::from(skip_labels);
+        /// The number of fields, `labels` and `fixes` included.
+        const FIELDS: usize = 7;
+        let text = serializer.is_human_readable();
+        let skip_labels = text && self.labels.is_empty();
+        let skip_fixes = text && self.fixes.is_empty();
+        let n = FIELDS - usize::from(skip_labels) - usize::from(skip_fixes);
         let mut state = serializer.serialize_struct("Diagnostic", n)?;
         state.serialize_field("code", &self.code)?;
         state.serialize_field("level", &self.level)?;
@@ -97,6 +140,11 @@ impl Serialize for Diagnostic
             skip_labels,
             state.skip_field("labels")?,
             state.serialize_field("labels", &self.labels)?
+        );
+        tern!(
+            skip_fixes,
+            state.skip_field("fixes")?,
+            state.serialize_field("fixes", &self.fixes)?
         );
         state.end()
     }
@@ -171,8 +219,47 @@ impl Diagnostic
         self
     }
 
-    /// Move the main span and the span of each label, as when spans are
-    /// made relative to a file or absolute again.
+    /// Attach a rule fix that puts `text` in place of one region.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The localized text that tells what the fix does.
+    /// * `span` - The region to replace; a blank region inserts.
+    /// * `text` - The new text; a blank text removes the region.
+    ///
+    /// # Returns
+    ///
+    /// The diagnostic with the fix added after the existing ones.
+    pub fn with_fix(
+        mut self, message: impl Into<String>, span: Span, text: impl Into<String>,
+    ) -> Self
+    {
+        let edit = Edit::builder().span(span).text(text).build();
+        let fix = Fix::builder().message(message).edits(vec![edit]);
+        self.fixes.push(fix.origin(FixOrigin::Rule).build());
+        self
+    }
+
+    /// Turn the help text into a rule fix that puts `text` in place of one
+    /// region. The help tells what the fix does, so it becomes the message of
+    /// the fix and is not shown twice.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The region to replace; a blank region inserts.
+    /// * `text` - The new text; a blank text removes the region.
+    ///
+    /// # Returns
+    ///
+    /// The diagnostic with no help text and the fix added.
+    pub fn help_as_fix(mut self, span: Span, text: impl Into<String>) -> Self
+    {
+        let message = self.help.take().unwrap_or_default();
+        self.with_fix(message, span, text)
+    }
+
+    /// Move the main span and the span of each label and fix edit, as when
+    /// spans are made relative to a file or absolute again.
     ///
     /// # Arguments
     ///
@@ -181,6 +268,8 @@ impl Diagnostic
     {
         self.span = f(self.span);
         self.labels.iter_mut().for_each(|label| label.span = f(label.span));
+        let edits = self.fixes.iter_mut().flat_map(|fix| fix.edits.iter_mut());
+        edits.for_each(|edit| edit.span = f(edit.span));
     }
 
     /// Clone the diagnostic with a new span.

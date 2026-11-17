@@ -29,6 +29,7 @@ mod checks;
 pub mod cli;
 mod closures;
 pub mod digest;
+pub mod fixes;
 mod flow;
 mod init;
 mod interval;

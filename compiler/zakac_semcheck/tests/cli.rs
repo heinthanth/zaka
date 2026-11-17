@@ -89,9 +89,26 @@ fn particle_warnings_do_not_fail()
 fn strict_particles_fail()
 {
     let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသမည်။";
-    let (code, _stdout, stderr) = run_cli(&["--strict-particles"], text);
+    let (code, _stdout, stderr) = run_cli(&["--lint-error", "naturalness"], text);
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.starts_with("error[ZK0505]"), "{stderr}");
+}
+
+#[test]
+fn lint_names_set_the_level_of_a_naturalness_rule()
+{
+    let text = "ကိန်းရှင် က သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ က သည် ၁ နှင့် ညီသည် ကို ပြသမည်။";
+    let (code, _stdout, stderr) = run_cli(&["--lint-allow", "naturalness"], text);
+    assert_eq!(code, ExitCode::Success);
+    assert!(stderr.is_empty(), "{stderr}");
+    let (code, _stdout, stderr) = run_cli(&["--lint-error", "ZK0505"], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stderr.starts_with("error[ZK0505]"), "{stderr}");
+    // A level named for one code wins over the strict default of its group.
+    let (code, _stdout, stderr) =
+        run_cli(&["--lint-error", "naturalness", "--lint-warn", "ZK0505"], text);
+    assert_eq!(code, ExitCode::Success);
+    assert!(stderr.starts_with("warning[ZK0505]"), "{stderr}");
 }
 
 #[test]
@@ -108,7 +125,7 @@ fn platform_bits_change_widening()
 {
     let (code, _, stderr) = run_cli(&[], PLATFORM_WIDENING);
     assert_eq!(code, ExitCode::Success, "{stderr}");
-    let (code, _, stderr) = run_cli(&["--platform-bits", "32"], PLATFORM_WIDENING);
+    let (code, _, stderr) = run_cli(&["--target-bits", "32"], PLATFORM_WIDENING);
     assert_eq!(code, ExitCode::Failure);
     assert!(stderr.starts_with("error[ZK0401]"), "{stderr}");
 }
@@ -116,7 +133,7 @@ fn platform_bits_change_widening()
 #[test]
 fn platform_bits_must_be_a_kind_width()
 {
-    let (code, _, _) = run_cli(&["--platform-bits", "7"], PLATFORM_WIDENING);
+    let (code, _, _) = run_cli(&["--target-bits", "7"], PLATFORM_WIDENING);
     assert_ne!(code, ExitCode::Success);
 }
 

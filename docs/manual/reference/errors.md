@@ -279,7 +279,7 @@ explains how a message is set out and when a message stops the compiler.
 
 ### ZK05: natural Zaka (warnings)
 
-These are warnings: the program runs. With `--strict-particles` each one is an error.
+These are warnings: the program runs. With `--lint-error naturalness` each one is an error.
 See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../language/naturalness.md).
 
 | Code | Problem | See |
@@ -293,6 +293,8 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0507 | parentheses that change nothing | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0508 | a sentence used as a value that ends in `ပါ` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 | ZK0509 | a warning: a kind, a heap size or a struct literal counted with a word that is not the classifier of its kind | [Measure words](../language/kinds.md#measure-words), [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
+| ZK0510 | a word in its spoken spelling, such as `ထားမယ်` for `ထားမည်`, in a program that does not allow them | [Spoken Burmese](../language/spoken.md) |
+| ZK0511 | a warning: a file that allows the spoken spellings writes some words spoken and others written | [Spoken Burmese](../language/spoken.md#mixing-the-two) |
 
 ### ZK06: working out constants
 
@@ -314,14 +316,14 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 ### ZK07: flow checks and the lint
 
 The [checks](../compiler/checks.md) that follow pointers, the null address, cell numbers,
-integer ranges and unset values through the program. Under `--mem-check warn`, the default, ZK0702 to ZK0704,
+integer ranges and unset values through the program. Under `--lint-warn mem`, the default, ZK0702 to ZK0704,
 ZK0706 to ZK0708, ZK0712 and ZK0721 are warnings and the program runs; under
-`--mem-check error` the compiler reports them as errors, and under `--mem-check off` the compiler leaves them
+`--lint-error mem` the compiler reports them as errors, and under `--lint-allow mem` the compiler leaves them
 out. ZK0709 to ZK0711 follow the same mode inside unsafe code, and in safe code ZK0710, which a
 list gives, keeps its own level. ZK0701, ZK0722 and ZK0724 are errors in each mode, and
-ZK0723 is a warning in each mode: no `--mem-check` level changes the check of set before
-read. `--allow`, `--warn` and `--error` set the level of one group or code of these over
-`--mem-check`, ZK0719 and ZK0723 among them, but never that of ZK0701, ZK0722 or ZK0724
+ZK0723 is a warning in each mode: no level of the `mem` lint changes the check of set before
+read. `--lint-allow`, `--lint-warn` and `--lint-error` set the level of one group or code of these,
+ZK0719 and ZK0723 among them, but never that of ZK0701, ZK0722 or ZK0724
 (see [Commands](../compiler/commands.md#options-of-the-compile-stages)). See [Unsafe
 Zaka](../language/unsafe.md).
 
@@ -336,7 +338,7 @@ Zaka](../language/unsafe.md).
 | ZK0708 | a block made in unsafe code that is not given back, handed over, returned as an owned result, or stored | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0709 | reading or writing through a pointer that is the null address on each path | [The null address](../language/unsafe.md#the-null-address) |
 | ZK0710 | a box or cell number past the end of its block | [Compiler checks](../compiler/checks.md) |
-| ZK0711 | a warning, with `--mem-strict` alone: a read or a write through a pointer that can be the null address | [Compiler checks](../compiler/checks.md) |
+| ZK0711 | a warning, with `--lint-warn doubts` alone: a read or a write through a pointer that can be the null address | [Compiler checks](../compiler/checks.md) |
 | ZK0712 | subtracting pointers into different blocks | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0719 | an operation that overflows for each value of its operands; a warning, not given with `--overflow wrap` | [Expressions](../language/expressions.md) |
 | ZK0721 | the two ranges of `ကူးယူမည်` overlap, both in one known block at known offsets | [Writing and filling cells](../language/unsafe.md#writing-and-filling-cells) |

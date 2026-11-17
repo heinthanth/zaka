@@ -145,7 +145,9 @@ pub fn builtin_count(name: &str) -> Option<Kw>
 /// `true` for a glued verb.
 fn is_builtin_verb_word(text: &str) -> bool
 {
-    text.strip_suffix("မည်").and_then(builtin_verb).is_some()
+    ["မည်", "မယ်"]
+        .iter()
+        .any(|end| text.strip_suffix(*end).and_then(builtin_verb).is_some())
 }
 
 /// The role of a reserved word in a sentence: control word, statement verb,

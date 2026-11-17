@@ -3,21 +3,6 @@ _version = 2
 [borrow_check.about]
 en = "Check the flow facts of a folded program, and the pointer work of its unsafe code."
 
-[borrow_check.mem_check]
-en = "How the check reports what it finds about pointers in unsafe code: error, warn or off."
-
-[borrow_check.mem_strict]
-en = "Also report the accesses that the check cannot prove safe."
-
-[borrow_check.allow]
-en = "Leaves out each finding of a lint group or code, such as leaks or ZK0708; a code wins over a group."
-
-[borrow_check.warn]
-en = "Reports each finding of a lint group or code as a warning; a code wins over a group."
-
-[borrow_check.error]
-en = "Reports each finding of a lint group or code as an error; a code wins over a group."
-
 [borrow_check.artifact.source_changed]
 en = "source text changed after re-ingest"
 

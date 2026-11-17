@@ -25,7 +25,7 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
 | `borrowck` | the checker: the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
-| `build` | the code generator of a target | the ops of the VM (`--target vm`), an executable through C (`--target c`), or one through Cranelift (`--target native`) | `.zkc` / `.zkct` |
+| `build` | the code generator of a target | the ops of the VM (`--backend vm`), an executable through C (`--backend c`), or one through Cranelift (`--backend native`) | `.zkc` / `.zkct` |
 | `run` | the VM | nothing: the program runs | |
 | `lsp` | the checker, for each file an editor holds open | errors, colors and hovers, to the editor | |
 
@@ -132,10 +132,10 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--platform-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
+| `--target-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
 | `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos` or `linux` |
 | `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
-| `--strict-particles` | off | report the [natural wording](../language/naturalness.md) warnings (ZK05) as errors |
+| `--lint-allow <NAME>`, `--lint-warn <NAME>`, `--lint-error <NAME>` | | set the level of a lint group or code, as below; the front end reads the groups `naturalness` and `spoken` |
 
 These belong to `irgen` and the stages after it, and to `run`:
 
@@ -169,43 +169,41 @@ in [Compiler checks](checks.md).
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--mem-check <MODE>` | `warn` | how the pointer lint of unsafe code is reported: `error`, `warn` or `off` |
-| `--mem-strict` | off | also report the accesses that the checker cannot prove safe (ZK0711) |
 | `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
-| `--allow <NAME>` | | leave out each finding of a lint group or code; give it again, or a comma list, for more |
-| `--warn <NAME>` | | report each finding of a lint group or code as a warning |
-| `--error <NAME>` | | report each finding of a lint group or code as an error |
+| `--lint-allow <NAME>` | | leave out each finding of a lint group or code; give it again, or a comma list, for more |
+| `--lint-warn <NAME>` | | report each finding of a lint group or code as a warning |
+| `--lint-error <NAME>` | | report each finding of a lint group or code as an error |
 
 A lint name is a group or a code:
 
 | Group | Codes |
 | --- | --- |
-| `mem` | the pointer lint that `--mem-check` sets: ZK0702 to ZK0704, ZK0706 to ZK0712, ZK0721 |
+| `mem` | the pointer lint of unsafe code, warnings when no name sets it: ZK0702 to ZK0704, ZK0706 to ZK0712, ZK0721 |
 | `leaks` | ZK0708 |
 | `frees` | ZK0702, ZK0707 |
 | `borrows` | ZK0703, ZK0704, ZK0706 |
 | `nulls` | ZK0709, ZK0711 |
 | `pointers` | ZK0710, ZK0712, ZK0721 |
-| `doubts` | ZK0711, ZK0723 |
+| `doubts` | ZK0711, ZK0723: the findings the checker cannot prove, off until a name sets them |
 | `overflow` | ZK0719 |
+| `naturalness` | the [natural wording](../language/naturalness.md) rules, ZK0501 to ZK0511 |
+| `spoken` | ZK0510, a word in its [spoken spelling](../language/spoken.md); `--lint-allow spoken` lets a program use them |
 
-`--mem-check` sets the level of the whole pointer lint. A group named in `--allow`,
-`--warn` or `--error` wins over it, and a code wins over a group. Between two names of one
-tier, the later flag wins, and a flag on the command line wins over a [config
-file](configuration.md). ZK0709, ZK0710 and ZK0711 take the level inside unsafe code alone;
-outside it, the three remain errors. The doubtful findings (ZK0711, and the leaks the
-checker cannot prove) show under `--mem-strict` alone: a name sets their level, but does
-not turn them on. A code outside the table, such as ZK0701 or ZK0722, keeps its level:
-those findings keep safe code safe.
+A code wins over a group. Between two names of one tier, the later flag wins, and a flag
+on the command line wins over a [config file](configuration.md). ZK0709, ZK0710 and
+ZK0711 take the level inside unsafe code alone; outside it, the three remain errors. The
+doubtful findings (ZK0711, and the leaks the checker cannot prove) show once a name sets
+the group `doubts`, as `--lint-warn doubts`. A code outside the table, such as ZK0701 or
+ZK0722, keeps its level: those findings keep safe code safe.
 
 ```console
-$ zakac run --error leaks leak.zaka
+$ zakac run --lint-error leaks leak.zaka
 error[ZK0708]: the block that "ပ" holds is never given back or handed over on this path
-$ zakac run --error mem --allow ZK0708 leak.zaka
+$ zakac run --lint-error mem --lint-allow ZK0708 leak.zaka
 ၇
 ```
 
-These belong to `build --target vm` and to `run`:
+These belong to `build --backend vm` and to `run`:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -223,7 +221,7 @@ as results](../language/functions.md#lists-and-structs-as-results).
 | --- | --- | --- |
 | `--release` | off | build for release: leave out the source region of each op, the embedded source, the imported files and the diagnostics of the artifact, so a stop names the function and the index of the op, not the line; see [Release builds](../vm/running.md#how-a-run-ends) |
 
-`zakac build --target c --release` writes no table of places and no marks for them, so a stop
+`zakac build --backend c --release` writes no table of places and no marks for them, so a stop
 names the function alone (`(in addfee)`) and each backtrace line is a function name; it does not
 change the flags of the C compiler (`-O2`, no `-g`, with or with no `--release`). The native
 target and `zakac run --jit` leave out the same table under `--release`. A `.zkc` or `.zkct` built with no `--release` keeps its
@@ -269,7 +267,7 @@ holds them under `imports` ([Modules](../language/modules.md)). `segment` and
 ## build
 
 ```console
-$ zakac build [--target vm|c|native] [--emit WHAT] [options] [INPUT]
+$ zakac build [--backend vm|c|native] [--emit WHAT] [options] [INPUT]
 ```
 
 `build` runs each stage, then the code generator of a target:
@@ -303,7 +301,7 @@ standard output, or to the file in `-o`. Here is the listing of a program with a
 ```
 
 ```console
-$ zakac build --platform-bits 32 --emit asm age.zaka
+$ zakac build --target-bits 32 --emit asm age.zaka
 ; zakac asm listing v1, platform 32 bits
 
 fn f0 ပရိုဂရမ် (params 0)
@@ -326,7 +324,7 @@ The ops are listed in [Instructions](../vm/instructions.md).
 
 ### The C target
 
-`--target c` writes a C file for each module of the program, then compiles and links
+`--backend c` writes a C file for each module of the program, then compiles and links
 them with a C compiler; `--emit c` stops after the C files. The C is plain C11, so GCC,
 Clang, MinGW and `zig cc` each build it, on Windows too, with no Visual Studio.
 [Native programs](native.md) tells what the executable checks, and where its output
@@ -364,9 +362,9 @@ turns on all of them.
 The list starts from `default` and takes each item in turn, so a level in it starts over:
 
 ```console
-$ zakac build --target c --checks mem,-sanitizers,-depth age.zaka
-$ zakac build --target c --checks none,+bounds age.zaka
-$ zakac build --target c --checks=+null age.zaka
+$ zakac build --backend c --checks mem,-sanitizers,-depth age.zaka
+$ zakac build --backend c --checks none,+bounds age.zaka
+$ zakac build --backend c --checks=+null age.zaka
 ```
 
 Integer overflow is not one of these: `--overflow` picks it.
@@ -377,15 +375,15 @@ flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 
 ```console
-$ zakac build --target c age.zaka
+$ zakac build --backend c age.zaka
 $ ./age
 ၂၀
-$ CFLAGS=-O3 zakac build --target c --linker 'clang -fuse-ld=lld' age.zaka
+$ CFLAGS=-O3 zakac build --backend c --linker 'clang -fuse-ld=lld' age.zaka
 ```
 
 ### The native target
 
-`--target native` lowers the program with [Cranelift](https://cranelift.dev) to an object
+`--backend native` lowers the program with [Cranelift](https://cranelift.dev) to an object
 file for the target, then links it with the runtime lib through the C compiler, as the C
 target links. It runs the same checks as the C target and takes the same options, and
 it gives the same output; `--cc-flag`, `--no-default-flags` and `CFLAGS` change nothing, as
@@ -400,10 +398,10 @@ there is no C to compile.
 - The `sanitizers` check has no effect: Cranelift code holds no marks for them.
 
 ```console
-$ zakac build --target native age.zaka
+$ zakac build --backend native age.zaka
 $ ./age
 ၂၀
-$ zakac build --target native --emit obj --target-os linux --target-arch x86_64 age.zaka
+$ zakac build --backend native --emit obj --target-os linux --target-arch x86_64 age.zaka
 ```
 
 ## run
@@ -468,7 +466,7 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
-`--jit` lowers the program as `build --target native` does, with the output fact
+`--jit` lowers the program as `build --backend native` does, with the output fact
 `"native"`, and runs it in the `zakac` process. It runs as a native executable runs, with
 the checks of the `default` level: `--max-depth` and `--max-heap` set its limits (no heap
 cap when `--max-heap` is left out), the rights come from the flags above, and the
@@ -486,21 +484,23 @@ $ zakac run --jit age.zaka
 Each option can also be set in a TOML config file: `zakac.toml` beside the sources, a file
 of the user, `/etc/zakac/config.toml`, or the file `--config <FILE>` names. An option on the
 command line wins over each file. [Configuration](configuration.md) tells where the files
-are, which one wins, and how each option is named in them.
+are, which one wins, and how each option is named in them; `zakac.example.toml` at the
+root of the repo lists each setting with its default.
 
 ## Environment
 
 | Name | Meaning |
 | --- | --- |
 | `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
+| `ZAKAC_LEARN` | `true`, `1` or `on` turns on learner mode: each message also explains its code, once a run, and links to the page that teaches it (see [Learner mode](diagnostics.md#learner-mode)) |
 | `NO_COLOR` | when it is set, color is off |
 | `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` each call, `0` none; when unset or another value, a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
-| `CC` | the C compiler of `build --target c` and `--target native` when `--cc` is left out |
-| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --target c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them; `--target native` reads `LDFLAGS` |
-| `XDG_CACHE_HOME` | the cache folder of the user, where `build --target c` and `--target native` keep their files when `--cache` is left out |
+| `CC` | the C compiler of `build --backend c` and `--backend native` when `--cc` is left out |
+| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --backend c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them; `--backend native` reads `LDFLAGS` |
+| `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when `--cache` is left out |
 | `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
 
-A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKA_BACKTRACE`, `NO_COLOR`,
+A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKAC_LEARN`, `ZAKA_BACKTRACE`, `NO_COLOR`,
 `CFLAGS` and `LDFLAGS` too; a variable that is set wins over the file.
 
 Terminals do not agree on the cells a Burmese sign takes, so a `^^^^` row can drift from

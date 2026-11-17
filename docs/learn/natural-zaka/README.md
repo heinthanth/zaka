@@ -103,10 +103,10 @@ The same program, in its natural form:
 ## Strict mode
 
 To treat these warnings as errors, so that a program with one or more of them does not
-run, pass `--strict-particles`:
+run, pass `--lint-error naturalness`:
 
 ```sh
-zakac run --strict-particles program.zaka
+zakac run --lint-error naturalness program.zaka
 ```
 
 This is useful once the rules feel familiar and each new program should sound natural.

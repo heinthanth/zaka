@@ -43,7 +43,7 @@ shell = "bun exec"
 description = "Format the C code with clang-format"
 
 [tasks."c:mock-headers"]
-run = "cargo run -q -p zakac -- build --target c --emit c --cache target/c-headers samples/basics/hello.zaka"
+run = "cargo run -q -p zakac -- build --backend c --emit c --cache target/c-headers samples/basics/hello.zaka"
 description = "Write the C headers of a build into target/c-headers, which .clangd of the C runtime reads"
 
 # Test

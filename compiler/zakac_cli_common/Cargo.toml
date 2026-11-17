@@ -14,6 +14,7 @@ termcolor = { workspace = true }
 toml = { workspace = true }
 zaka_host = { workspace = true }
 zakac_consts = { workspace = true }
+zakac_diagnostics = { workspace = true }
 zakac_host_errors = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_reporter = { workspace = true }

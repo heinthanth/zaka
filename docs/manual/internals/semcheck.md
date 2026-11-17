@@ -58,9 +58,11 @@ a count still open is ZK0227 (a count that waits on itself among them). A progra
 count expression is checked once.
 
 `SemcheckArtifact` is the reloadable form (text header `# zakac-semcheck-artifact v1`,
-files `.zksemt` and `.zksem`). The command takes `--platform-bits` (8 to 64, default 64),
-`--strict-particles` and `--no-unsafe`; these become `SemcheckOptions { platform_bits,
-strict_particles, no_unsafe }`, and the later stages receive the same options. One more
+files `.zksemt` and `.zksem`). The command takes `--target-bits` (8 to 64, default 64),
+`--no-unsafe` and the lint options; these become `SemcheckOptions { platform_bits,
+no_unsafe, lint }`, and the later stages receive the same options. `SemcheckOptions::levels`
+gives the lint levels, which `settled` uses as the program is read and `check_loaded` after
+the check, so an allowed code stops no pass. One more
 option, `as_module`, has no flag: the language server sets it for an open module, and the
 check then asks for no start block (ZK0327).
 
@@ -87,8 +89,8 @@ check also resolved the struct or enumeration it stands for.
 
 A visitor over the tree. The parser accepts each particle on a verb, and either `ကို` or
 `ဟု` after a printed operand; this pass names which wording is natural, and reports the
-rest as warnings. A warning never fails a build, and `--strict-particles` raises them to
-errors. The pass reads just the tree: the `particle` and `next` fields the parser kept on
+rest as warnings. A warning never fails a build, and `--lint-error naturalness` raises them
+to errors. The pass reads just the tree: the `particle` and `next` fields the parser kept on
 verbs, boolean words and `မဟုတ်`, and the `slot` of a print.
 
 `site.rs` turns a node into a `Site` (a clause-final word, a group in parentheses, a
@@ -524,7 +526,7 @@ that is no pointer is ZK0470 (`owned_not_ptr`; a C function's parameter that is 
 meaning, text that C hands over, and each other result there is ZK0467. `place_of` finds the
 place that a target or an address operand names, for `၏ လိပ်စာ`, `၏ တန်ဖိုး` and list cells.
 
-These codes are errors in each mode of `--mem-check`: the walk decides them here, from kinds and
+These codes are errors in each level of the `mem` lint: the walk decides them here, from kinds and
 the words alone. The rules that need a flow through the program belong to [the flow
 checker](borrow-checker.md). `unsafe_code.rs` (`in_unsafe_code`) is a tool for programs written
 before unsafe code was stated in words: it puts the pointer work of such a program into unsafe code, as tests and

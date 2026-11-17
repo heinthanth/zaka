@@ -2,16 +2,15 @@ use std::sync::Arc;
 
 use strum::IntoEnumIterator;
 use zakac_ast::target::BuildTarget;
+use zakac_ast::target::Target;
 use zakac_cli_common::artifact_output::PhaseArtifactOutput;
 use zakac_cli_common::artifact_output::output_format_from_matches;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
-use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::builder::PossibleValuesParser;
 use zakac_cli_common::clap::crate_name;
-use zakac_cli_common::clap::parser::ValueSource;
 use zakac_cli_common::clap_utils::CommandInfo;
 use zakac_cli_common::clap_utils::attach_common_io_args;
 use zakac_cli_common::clap_utils::report_command_error;
@@ -20,8 +19,10 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::lints::lint_levels;
+use zakac_diagnostics::Code;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::has_errors;
-use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
@@ -40,24 +41,15 @@ use zakac_span::source_map::SourceMap;
 
 use crate::artifact::BorrowCheckArtifact;
 use crate::artifact::run_loaded;
-use crate::options::BadLintName;
+use crate::fixes::Recompile;
 use crate::options::BorrowCheckOptions;
-use crate::options::LintGroup;
-use crate::options::LintLevels;
 use crate::options::MemCheck;
 use crate::options::OverflowMode;
-use crate::options::lint_codes;
 
 /// Extension of a raw artifact.
 pub const BORROW_CHECK_RAW_EXTENSION: &str = ".zkbck";
 /// Extension of a text artifact.
 pub const BORROW_CHECK_TEXT_EXTENSION: &str = ".zkbckt";
-const MEM_CHECK_ARG: &str = "mem_check";
-const MEM_STRICT_ARG: &str = "mem_strict";
-/// The flags that set the level of a lint group or code, each with its
-/// level.
-const LINT_ARGS: [(&str, MemCheck); 3] =
-    [("allow", MemCheck::Off), ("warn", MemCheck::Warn), ("error", MemCheck::Error)];
 /// The flag that picks what integer arithmetic does on overflow.
 const OVERFLOW_ARG: &str = "overflow";
 
@@ -96,17 +88,6 @@ fn configure_borrow_check_command(cmd: clap::Command) -> clap::Command
 /// The command with the flags.
 pub fn attach_borrow_check_args(cmd: clap::Command) -> clap::Command
 {
-    let words: Vec<&'static str> = MemCheck::iter().map(Into::into).collect();
-    let check = Arg::new(MEM_CHECK_ARG)
-        .long("mem-check")
-        .value_name("MODE")
-        .help(t!("borrow_check.mem_check"))
-        .value_parser(PossibleValuesParser::new(words))
-        .default_value(<&'static str>::from(MemCheck::default()));
-    let strict = Arg::new(MEM_STRICT_ARG)
-        .long("mem-strict")
-        .help(t!("borrow_check.mem_strict"))
-        .action(ArgAction::SetTrue);
     let words: Vec<&'static str> = OverflowMode::iter().map(Into::into).collect();
     let overflow = Arg::new(OVERFLOW_ARG)
         .long("overflow")
@@ -114,74 +95,40 @@ pub fn attach_borrow_check_args(cmd: clap::Command) -> clap::Command
         .help(t!("borrow_check.overflow"))
         .value_parser(PossibleValuesParser::new(words))
         .default_value(<&'static str>::from(OverflowMode::default()));
-    let lint = |(id, _): (&'static str, MemCheck), help| {
-        Arg::new(id)
-            .long(id)
-            .value_name("NAME")
-            .help(help)
-            .action(ArgAction::Append)
-            .value_delimiter(',')
-            .value_parser(lint_name)
-    };
-    let [allow, warn, error] = LINT_ARGS;
-    #[rustfmt::skip]
-    return cmd.arg(check).arg(strict).arg(overflow)
-        .arg(lint(allow, t!("borrow_check.allow"))).arg(lint(warn, t!("borrow_check.warn")))
-        .arg(lint(error, t!("borrow_check.error")));
+    cmd.arg(overflow)
 }
 
-/// Check one name of `--allow`, `--warn` or `--error`.
-///
-/// # Arguments
-///
-/// * `name` - A group, or a code such as `ZK0708`.
-///
-/// # Returns
-///
-/// The name, or the error that tells what is wrong with it.
-fn lint_name(name: &str) -> Result<String, String>
-{
-    let error = |bad| match bad
-    {
-        BadLintName::Unknown => Error::UnknownLintName { name: name.into() },
-        BadLintName::NotALint => Error::NotALint { code: name.into() },
-    };
-    lint_codes(name).map(|_| name.to_string()).map_err(|bad| error(bad).to_string())
-}
-
-/// The levels `--allow`, `--warn` and `--error` set: the groups first, then
-/// the codes, so a code wins over a group; within each, a flag on the
-/// command line wins over a config file, and the later flag wins.
+/// The diagnostics of a compile of a source file, each with the fixes that
+/// hold when the file is compiled again with the options of the command line.
 ///
 /// # Arguments
 ///
 /// * `matches` - The matches of the CLI arguments.
+/// * `root` - The file the program starts from.
+/// * `target` - The target of the compile.
+/// * `diags` - The diagnostics of the compile.
 ///
 /// # Returns
 ///
-/// The levels.
-fn lint_levels(matches: &ArgMatches) -> LintLevels
+/// The diagnostics with their fixes.
+pub fn checked_fixes(
+    matches: &ArgMatches, root: &Arc<SourceFile>, target: Target, diags: &[Diagnostic],
+) -> Vec<Diagnostic>
 {
-    let given = |(id, level): (&'static str, MemCheck)| {
-        // A value from a config file is a default, which clap places after
-        // the command line, so it gets no place: it comes first.
-        let on_line = matches.value_source(id) == Some(ValueSource::CommandLine);
-        let at = matches.indices_of(id).filter(|_| on_line);
-        let at: Vec<usize> = at.map(Iterator::collect).unwrap_or_default();
-        let names = matches.get_many::<String>(id).into_iter().flatten();
-        let placed =
-            names.enumerate().map(move |(i, n)| (at.get(i).copied(), level, n));
-        placed.collect::<Vec<_>>()
-    };
-    let mut all: Vec<_> = LINT_ARGS.into_iter().flat_map(given).collect();
-    all.sort_by_key(|(at, _, name)| (name.parse::<LintGroup>().is_err(), *at));
-    let set = |levels: LintLevels, (_, level, name): &(_, MemCheck, &String)| {
-        levels.with(name, *level).unwrap_or(levels)
-    };
-    all.iter().fold(LintLevels::default(), set)
+    let recompile = Recompile::builder()
+        .root(root.clone())
+        .target(target)
+        .options(semcheck_options(matches))
+        .folding(fold_options(matches))
+        .mem(borrow_check_options(matches))
+        .build();
+    recompile.attach(diags.to_vec())
 }
 
-/// The checker options from the command line.
+/// The checker options from the command line. The pointer lint takes its
+/// level from the lint names (`--lint-error mem`), over its default of a
+/// warning; a level named for the group `doubts` turns on the findings the
+/// checker cannot prove.
 ///
 /// # Arguments
 ///
@@ -192,14 +139,14 @@ fn lint_levels(matches: &ArgMatches) -> LintLevels
 /// The options.
 pub fn borrow_check_options(matches: &ArgMatches) -> BorrowCheckOptions
 {
-    let word = matches.get_one::<String>(MEM_CHECK_ARG);
-    let check = word.and_then(|w| w.parse().ok()).unwrap_or_default();
-    let strict = matches.get_flag(MEM_STRICT_ARG);
+    let lint = lint_levels(matches);
+    let doubt = lint.get(Code::NullDerefPossible);
+    let strict = matches!(doubt, Some(MemCheck::Warn | MemCheck::Error));
     let word = matches.get_one::<String>(OVERFLOW_ARG);
     let overflow = word.and_then(|w| w.parse().ok()).unwrap_or_default();
     #[rustfmt::skip]
-    return BorrowCheckOptions::builder().check(check).strict(strict).overflow(overflow)
-        .lint(lint_levels(matches)).build();
+    return BorrowCheckOptions::builder().strict(strict).overflow(overflow).lint(lint)
+        .build();
 }
 
 impl Command for ZakacBorrowChecker
@@ -358,7 +305,9 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let mem = borrow_check_options(matches);
     let output = run_loaded(loaded, &options, &folding, &mem);
     let failed = has_errors(&output.diagnostics);
-    let _ = write_diagnostics(io.stderr, &source_map, &output.diagnostics);
+    let target = target_from(matches, BuildTarget::Vm);
+    let shown = checked_fixes(matches, &source, target, &output.diagnostics);
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
     let artifact = BorrowCheckArtifact::from_borrowchecked(&source, output);
 
     let mut output = resolved.output;

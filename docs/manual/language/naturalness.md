@@ -231,13 +231,18 @@ nothing:
 
 ## Strict mode
 
-`--strict-particles` turns each of these warnings into an error, so a program that has
-one does not run. This is useful once the rules feel familiar and each new program should
+`--lint-error naturalness` turns each of these warnings into an error, so a program that
+has one does not run. This is useful once the rules feel familiar and each new program should
 read as Burmese.
 
 ```sh
-zakac run --strict-particles program.zaka
+zakac run --lint-error naturalness program.zaka
 ```
+
+`--lint-allow`, `--lint-warn` and `--lint-error` set one rule or the group `naturalness`,
+and a rule named wins over its group: `--lint-error naturalness --lint-warn ZK0505` keeps
+ZK0505 a warning. [Spoken Burmese](spoken.md) has the two codes of the spoken spellings, ZK0510
+and ZK0511.
 
 The flag changes how the findings are reported and nothing more. For how the
 compiler collects and shows diagnostics, see [Diagnostics](../compiler/diagnostics.md).

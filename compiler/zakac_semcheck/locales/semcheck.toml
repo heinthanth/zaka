@@ -12,9 +12,6 @@ en = "The OS the program is built for; the host's when not given."
 [semcheck.target_arch]
 en = "The CPU architecture the program is built for; the host's when not given."
 
-[semcheck.strict_particles]
-en = "Report particle idiom warnings as errors."
-
 [semcheck.instance_use]
 en = "in the instance \"%{n}\", which this use asks for"
 

@@ -258,3 +258,18 @@ fn ownership_constructors_render_messages()
     assert!(!possible.is_error());
     assert_eq!(o::mixed_blocks(span).code, Code::MixedBlocks);
 }
+
+#[test]
+fn codes_link_to_the_page_the_error_page_names()
+{
+    assert_eq!(Code::InvalidNumber.page(), Some("/learn/values/integers/"));
+    assert_eq!(Code::NegativeBeforeOr.page(), Some("/learn/natural-zaka/#the-rules"));
+    assert_eq!(Code::InvalidCharacter.page(), None);
+    let page = |c: &Code| {
+        c.page().is_some_and(|p| p.starts_with("/learn/") || p.starts_with("/docs/"))
+    };
+    let linked = Code::ALL.iter().filter(|c| page(c)).count();
+    assert!(linked + 2 >= Code::ALL.len(), "{linked} codes link to a page, too few");
+    let url = Code::InvalidNumber.page_url().unwrap();
+    assert!(url.ends_with("/learn/values/integers/"), "{url}");
+}

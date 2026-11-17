@@ -147,8 +147,8 @@ $ zakac run --allow-read=data --allow-write=out report.zaka
 
 ## The options
 
-`zakac run` takes the [compile options](../compiler/commands.md) (`--platform-bits`,
-`--fold`, `--strict-particles`, `--mem-check`, `--mem-strict`, `--allow`, `--warn`, `--error`,
+`zakac run` takes the [compile options](../compiler/commands.md) (`--target-bits`,
+`--fold`, `--lint-allow`, `--lint-warn`, `--lint-error`,
 `--no-unsafe`, `--overflow`, `--results`, `--scratch`, `--release`) and these
 options of the VM:
 
@@ -361,7 +361,7 @@ Each limit ends a run that would otherwise go on, with a trap that names which o
 | instructions run | `--max-steps` | the next instruction traps: `stopped after N ops` |
 | live heap octets | `--max-heap` | an allocate statement leaves the null pointer in its place; a resize traps |
 | stack region | `--max-stack` | a call whose locals do not fit traps |
-| address space | `--platform-bits` | a global or a block with no room traps or fails |
+| address space | `--target-bits` | a global or a block with no room traps or fails |
 
 The stack region holds at most `--max-stack` octets, and at most half of the room that
 the globals leave, so the heap keeps the other half.
@@ -399,7 +399,7 @@ An 8-bit platform has 256 addresses, and each variable takes at least 32 of them
 block is aligned to 16, with a gap of 16 after it. Nine globals do not fit:
 
 ```console
-$ zakac run --platform-bits 8 nine-globals.zaka
+$ zakac run --target-bits 8 nine-globals.zaka
 zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, at nine-globals.zaka:1:1)
 ```
 

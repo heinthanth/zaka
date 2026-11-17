@@ -127,3 +127,22 @@ fn a_name_joined_to_a_particle_gets_a_hint()
     let help = out.diagnostics[0].help.clone().unwrap_or_default();
     assert!(help.contains("အသက် ကို"), "{help}");
 }
+
+#[test]
+fn with_stands_for_through_where_it_can_mean_nothing_else()
+{
+    let base = "အခြေ ၁၆ နှင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။";
+    assert_eq!(stmt(base), "(print 255u8)");
+    let call = "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၁ နှင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+    assert_eq!(stmt(call), "(print (call နှစ်ဆ 1))");
+    let two = "ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၁ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။";
+    assert_eq!(stmt(two), "(print (call ပေါင်း 1 2))");
+}
+
+#[test]
+fn a_glued_spoken_call_end_is_reported()
+{
+    let out = common::parse_text("\"က\" ဟု ပြသမယ်။");
+    let codes: Vec<Code> = out.diagnostics.iter().map(|d| d.code).collect();
+    assert_eq!(codes, [Code::SpokenForm]);
+}

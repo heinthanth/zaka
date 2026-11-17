@@ -9,7 +9,7 @@ and hosts a compiler explorer that runs in the browser.
 | Path | What it holds |
 | --- | --- |
 | `compiler/zakac` | the `zakac` command; each stage adds a subcommand through its own `cli` module |
-| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`, `codegen_target_native`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
+| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`, `codegen_target_native`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) and `diagnostics_fixes` (the checked fixes of a message) |
 | `compiler/zaka_vm` | the VM and its checked mem |
 | `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
 | `compiler/zaka_runtime` | the runtime of native programs, in Rust: a static lib that `zakac` carries and the C and native targets link |
@@ -28,7 +28,7 @@ and hosts a compiler explorer that runs in the browser.
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
 (semcheck) → lower to IR → fold constants → checker (flow facts, and the lint of marked
 code) → codegen → VM. `zakac build
---target vm|c|native` picks the codegen: ops for the VM (`.zkc` / `.zkct`), C and a native
+--backend vm|c|native` picks the codegen: ops for the VM (`.zkc` / `.zkct`), C and a native
 executable, or Cranelift and a native executable; `zakac run --jit` runs the Cranelift
 code at once.
 
@@ -66,8 +66,9 @@ and one set of tests serve both books.
     reads from standard input; the page shows it under the program.
   - `zaka-file` shows one file of a program in several files: painted, never run, and
     it must lex with no error. Start it with a `// <file>.zaka` line.
-  - Options can follow the fence word: `mem-check=error|warn|off`, `mem-strict=on`, `no-unsafe=on`,
-    `overflow=stop`.
+  - Options can follow the fence word, as the flags of the same names:
+    `lint-error=mem`, `lint-warn=mem`, `lint-allow=mem`, `lint-warn=doubts`,
+    `lint-allow=spoken`, `no-unsafe=on`, `overflow=stop`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
 - Learn shows; Docs states the rules in full. When the code and a note disagree, the

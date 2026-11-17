@@ -45,7 +45,7 @@ An integer kind is made of up to three parts, in this order:
 
 Leave out the sign and the integer is signed. Leave out the size and it uses the
 *platform size*, which is 64 bits unless the program runs with a different
-`--platform-bits` setting.
+`--target-bits` setting.
 
 | Kind | Smallest | Largest |
 | --- | --- | --- |

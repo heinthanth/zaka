@@ -1,0 +1,21 @@
+[package]
+name = "zakac_diagnostics_fixes"
+version = "0.1.0"
+edition.workspace = true
+autotests = false
+
+[dependencies]
+bon = { workspace = true }
+rust-i18n = { workspace = true }
+strsim = { workspace = true }
+zakac_diagnostics = { workspace = true }
+zakac_i18n = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_span = { workspace = true }
+
+[build-dependencies]
+cargo-build = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

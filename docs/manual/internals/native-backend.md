@@ -8,7 +8,7 @@ description: How zakac_codegen_target_native lowers the IR to Cranelift IR, runs
 `zakac_codegen_target_native` is the third backend. It reads the IR that the flow checker
 leaves, as the C target does, and lowers it to Cranelift IR (CLIF). From there one path
 runs the code at once in the `zakac` process (`zakac run --jit`), and the other writes an
-object file and links it into an executable (`zakac build --target native`). [Native
+object file and links it into an executable (`zakac build --backend native`). [Native
 programs](../compiler/native.md#cranelift) tells what a user sees; this page tells how it
 is built.
 
@@ -29,7 +29,7 @@ leaves to its own runtime header (`zaka_target_c_runtime.h`) and the C compiler,
 
 | File | Job |
 | --- | --- |
-| `cli.rs` | `run_jit`, which `zakac run --jit` calls through `zaka_vm::cli::JIT_RUNNER`; `build_main`, which `zakac build --target native` calls; `--emit bin`, `obj` and `clif` |
+| `cli.rs` | `run_jit`, which `zakac run --jit` calls through `zaka_vm::cli::JIT_RUNNER`; `build_main`, which `zakac build --backend native` calls; `--emit bin`, `obj` and `clif` |
 | `emit.rs` | `emit`: declares the globals, the records of the functions and the descriptors, defines each function, then the main function, the bridges and the program table; `Shared`, the state the functions share (the module, the caches of texts, descriptors, runtime functions, C kinds and call shapes) |
 | `func.rs` | `FnGen`, the generator of one function: a stack slot for each local, the blocks, the helpers (`rt`, `rt_stop`, `load`, `store`, `null_check`), the frames of the depth check and the backtrace, and the main function |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as CLIF |

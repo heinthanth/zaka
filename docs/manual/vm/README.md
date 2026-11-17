@@ -74,13 +74,13 @@ back. [Addresses and blocks](blocks.md) tells how.
 
 ## The platform
 
-`--platform-bits` picks the width of `ကိန်းပြည့်`, `လက္ခဏာမဲ့ ကိန်းပြည့်` and each address:
+`--target-bits` picks the width of `ကိန်းပြည့်`, `လက္ခဏာမဲ့ ကိန်းပြည့်` and each address:
 8, 16, 32 or 64 (the default). The storage holds `2^bits` addresses, to at most
 `2^64`. On a 16-bit platform, the plain integer holds 16 bits, so a result past 32767
 stops the program:
 
 ```console
-$ zakac run --platform-bits 16 program.zaka
+$ zakac run --target-bits 16 program.zaka
 ```
 
 ## C functions
@@ -88,7 +88,7 @@ $ zakac run --platform-bits 16 program.zaka
 A program can declare [C functions](../language/functions.md#c-functions). The VM calls
 one through the op `foreign`, which opens the libs of the program at the first call
 (`libloading`) and makes the call with libffi. It needs the platform to be the
-host's (`--platform-bits 64` on a 64-bit host). An address that lies in a block reaches C
+host's (`--target-bits 64` on a 64-bit host). An address that lies in a block reaches C
 as the native address of that octet, so C reads and writes the block in place. A text
 parameter reaches C as a duplicate of its u8s with a zero octet at the end, freed when the
 call returns, and a C function that takes other values (`printf`) gets them as C

@@ -13,7 +13,8 @@ program never differ in version.
 ## What it shows
 
 - **Errors and warnings** of each stage up to the checker, with their codes, as
-  the text changes. A message in a file that the open file imports shows at the start of
+  the text changes. Each code links to the page that teaches it, as in
+  [learner mode](diagnostics.md#learner-mode). A message in a file that the open file imports shows at the start of
   the open file, named after that file, with a link to its place.
 - **Colors** for each word, from the lexer: control words, verbs, operators, particles,
   kind nouns, truth values, names, numbers, characters, strings and comments. A pattern
@@ -37,6 +38,9 @@ program never differ in version.
 - **Find the uses** of a name, in the checks of all open files, and **rename** it at
   each of them. A new name must lex as one name: a reserved word, several words or a
   number is refused.
+- **Quick fixes**: each fix a message holds is offered on that message. The server
+  applies none on its own; the reader picks one. The first fix is the preferred one,
+  which the quick fix shortcut applies.
 - **The outline** of the file: its functions with their parameters, the start block,
   its structs with their fields, its enumerations with their members, its kind aliases,
   and its global variables and constants.
@@ -150,7 +154,8 @@ An editor with an LSP client runs `zakac lsp` with no arguments for files that e
 UTF-16 columns, and answers `textDocument/hover`, `textDocument/semanticTokens/full` (a
 `range` request gets the tokens of the whole file), `textDocument/definition`,
 `textDocument/references`, `textDocument/prepareRename`, `textDocument/rename`,
-`textDocument/documentSymbol` and `textDocument/completion`. It names its token kinds
+`textDocument/documentSymbol`, `textDocument/completion` and `textDocument/codeAction`
+(quick fixes alone). It names its token kinds
 with the standard LSP names (`keyword`, `function`, `operator`, `modifier`, `type`,
 `enumMember`, `variable`, `number`, `string`, `comment`), so a theme colors them with no
 extra rules.

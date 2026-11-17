@@ -1,4 +1,5 @@
 use zakac_i18n::t;
+use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
 use crate::code::Code;
@@ -51,6 +52,34 @@ pub fn expected_token(span: Span, expected: &str, found: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0201.message", e = expected, f = found);
     Diagnostic::new(Code::ExpectedToken, msg, span)
+}
+
+/// Attach the fixes that write a missing word: the word the grammar expects,
+/// when it is one word in quotes, after the last token read. It goes joined
+/// to that token first, then after a space, since a name joined to a particle
+/// reads as one longer name.
+///
+/// # Arguments
+///
+/// * `diag` - The diagnostic of the token found.
+/// * `expected` - What the grammar allows here.
+/// * `after` - The end of the last token read.
+///
+/// # Returns
+///
+/// The diagnostic with the fixes; unchanged when `expected` is not one
+/// word in quotes.
+pub fn with_missing_word(diag: Diagnostic, expected: &str, after: Pos) -> Diagnostic
+{
+    let word = expected.strip_prefix('"').and_then(|w| w.strip_suffix('"'));
+    let Some(word) = word.filter(|w| !w.is_empty() && !w.contains('"'))
+    else
+    {
+        return diag;
+    };
+    let at = Span::new(after, after);
+    let message = t!("codes.ZK0201.fix", t = word);
+    diag.with_fix(message.clone(), at, word).with_fix(message, at, format!(" {word}"))
 }
 
 /// An operand is missing.

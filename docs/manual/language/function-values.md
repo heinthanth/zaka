@@ -381,7 +381,7 @@ gives the function, and the function it gives can fail too.
 A function value holds a function at each point: no NULL stands in for one, and a call
 through a function value has a function to run each time. A variable of a function kind declared with
 no value is unset, and a call through it before each path gives it a function is ZK0722,
-at each `--mem-check` level ([Set before read](statements.md#set-before-read)). A
+at each level of the `mem` lint ([Set before read](statements.md#set-before-read)). A
 function kind has no [initial value](kinds.md#initial-values): no function is a fair pick
 for the program, so `ကနဦးတန်ဖိုး` for a function kind, or for a struct or a list that holds
 one, is ZK0479.

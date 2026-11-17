@@ -334,11 +334,11 @@ static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
 static LONGEST: LazyLock<usize> = LazyLock::new(|| {
     let words =
         RESERVED.iter().map(|(text, _)| *text).chain(KIND_NAMES.iter().copied());
-    words.map(str::len).max().unwrap_or(0)
+    words.map(str::len).max().unwrap_or(0).max(crate::spoken::longest())
 });
 
 /// Look up a whole word in the reserved table, with `ဒေတာ` read as
-/// `အချက်အလက်`.
+/// `အချက်အလက်` and a spoken spelling read as its written word.
 ///
 /// # Arguments
 ///
@@ -349,7 +349,9 @@ static LONGEST: LazyLock<usize> = LazyLock::new(|| {
 /// The reserved word, or `None`.
 pub fn lookup(text: &str) -> Option<Kw>
 {
-    LOOKUP.get(canonical(text).as_ref()).copied()
+    let text = canonical(text);
+    let found = LOOKUP.get(text.as_ref()).copied();
+    found.or_else(|| crate::spoken::spoken(&text).map(|s| s.kw))
 }
 
 /// A split of a word prefix into reserved words and kind names: each piece

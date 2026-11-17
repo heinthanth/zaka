@@ -1,5 +1,6 @@
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::FixOrigin;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
 use zakac_span::pos::Pos;
@@ -95,4 +96,34 @@ fn map_spans_moves_the_span_and_each_label()
     let moved = Span::new(Pos::new(13), Pos::new(15));
     assert_eq!(diag.span, moved);
     assert!(diag.labels.iter().all(|l| l.span == moved));
+}
+
+#[test]
+fn with_fix_adds_a_rule_fix_that_round_trips()
+{
+    let at = Span::new(Pos::new(3), Pos::new(5));
+    let plain = Diagnostic::new(Code::InvalidNumber, "m", at);
+    let text = serde_saphyr::to_string(&plain).unwrap();
+    assert!(!text.contains("fixes"), "a blank fix list is left out of the text form");
+    let fixed = plain.with_fix("write x", at, "x");
+    assert_eq!(fixed.fixes.len(), 1);
+    assert_eq!(fixed.fixes[0].origin, FixOrigin::Rule);
+    assert_eq!(fixed.fixes[0].edits[0].span, at);
+    assert_eq!(fixed.fixes[0].edits[0].text, "x");
+    let text = serde_saphyr::to_string(&fixed).unwrap();
+    assert!(text.contains("origin: rule"));
+    let back: Diagnostic = serde_saphyr::from_str(&text).unwrap();
+    assert_eq!(back, fixed);
+    let raw = postcard::to_allocvec(&fixed).unwrap();
+    let back: Diagnostic = postcard::from_bytes(&raw).unwrap();
+    assert_eq!(back, fixed);
+}
+
+#[test]
+fn map_spans_moves_the_edits_of_each_fix()
+{
+    let at = Span::new(Pos::new(3), Pos::new(5));
+    let mut diag = Diagnostic::new(Code::InvalidNumber, "m", at).with_fix("f", at, "x");
+    diag.map_spans(&|s: Span| Span::new(s.lo + 10, s.hi + 10));
+    assert_eq!(diag.fixes[0].edits[0].span, Span::new(Pos::new(13), Pos::new(15)));
 }

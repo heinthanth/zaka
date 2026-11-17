@@ -3,11 +3,18 @@ crate	age	0.12.1	MIT OR Apache-2.0	https://github.com/str4d/rage
 crate	base64	0.23.1	MIT OR Apache-2.0	https://github.com/marshallpierce/rust-base64
 crate	bon	3.10.1	MIT OR Apache-2.0	https://github.com/elastio/bon
 crate	cargo-build	1.0.0	MIT	https://github.com/IoaNNUwU/cargo-build
+crate	cbindgen	0.29.4	MPL-2.0	https://github.com/mozilla/cbindgen
 crate	chrono	0.4.45	MIT OR Apache-2.0	https://github.com/chronotope/chrono
 crate	clap	4.6.7	MIT OR Apache-2.0	https://github.com/clap-rs/clap
 crate	codee	0.3.5	MIT OR Apache-2.0	https://github.com/Synphonyte/codee
 crate	console_error_panic_hook	0.1.7	Apache-2.0/MIT	https://github.com/rustwasm/console_error_panic_hook
 crate	const_for	0.1.6	MIT	https://github.com/JENebel/const_for
+crate	cranelift-codegen	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
+crate	cranelift-frontend	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
+crate	cranelift-jit	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
+crate	cranelift-module	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
+crate	cranelift-native	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
+crate	cranelift-object	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
 crate	etcetera	0.11.0	MIT OR Apache-2.0	https://github.com/lunacookies/etcetera
 crate	fontdb	0.24.0	MIT	https://github.com/RazrFalcon/fontdb
 crate	gen-lsp-types	0.11.0	MIT	https://github.com/ribru17/gen-lsp-types
@@ -46,6 +53,7 @@ crate	serde-wasm-bindgen	0.6.5	MIT	https://github.com/RReverser/serde-wasm-bindg
 crate	serde_json	1.0.154	MIT OR Apache-2.0	https://github.com/serde-rs/json
 crate	sha2	0.11.0	MIT OR Apache-2.0	https://github.com/RustCrypto/hashes
 crate	shadow-rs	2.0.0	MIT AND Apache-2.0	https://github.com/baoyachi/shadow-rs
+crate	strsim	0.11.1	MIT	https://github.com/rapidfuzz/strsim-rs
 crate	strum	0.28.0	MIT	https://github.com/Peternator7/strum
 crate	sys-locale	0.3.2	MIT OR Apache-2.0	https://github.com/1Password/sys-locale
 crate	tempfile	3.27.0	MIT OR Apache-2.0	https://github.com/Stebalien/tempfile

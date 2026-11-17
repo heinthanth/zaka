@@ -251,6 +251,24 @@ gives the `မည်` spelling, and pushes the `Kw` of the new spelling, so the 
 sentence as if it were written right and reports nothing more. The declaration verb
 `ဖြစ်ပါစေ` and the closers keep their `ပါ`, and so do the particles a comparison takes.
 
+### Spoken spellings
+
+`spoken.rs` gives each reserved word its spoken spelling: `SPOKEN_PARTS` maps a written
+vanna to its spoken form (`မည်` → `မယ်`, `တွင်` → `မှာ`, ...), and `SPOKEN` swaps them in
+each word of `RESERVED`, one whole vanna at a time, so the `မှ` of `မှတ်` remains. A
+spelling two written words share (in `သော` and `သည့်`) reads as the word in `သော`, and
+`Spoken::also` names the other; the parser takes it for that word where its grammar asks
+(`Parser::expect_reading`), and ZK0510 gives a fix for each. `lookup` reads a
+spoken spelling as its written `Kw`, and `split_reserved` splits with them, so `ညီတယ်` is
+`ညီ` with the particle `သည်` folded in. The word `ရဲ့` is the `၏` token.
+
+After it pushes a reserved word or `၏`, the lexer notes its form (`note_form`): a spoken
+spelling is ZK0510, with a fix to the written spelling, and a written one that has a spoken
+spelling is counted. A `သည်` that stands as a token of its own marks a topic and is not
+counted. At the end, a file with both forms gets ZK0511 at the first word of the form it
+uses less. The lint levels of the check decide whether either shows. The expected table is
+`tests/expected/spoken.tsv`.
+
 ### Token kinds
 
 | `TokenKind` | Meaning |

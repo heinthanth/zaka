@@ -17,6 +17,7 @@ use zakac_lexer::lexer::lex_at;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::spelling::canonical;
 use zakac_lexer::spelling::spellings;
+use zakac_lexer::spoken::spoken;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
 use zakac_lexer::token::Punct;
@@ -38,6 +39,7 @@ use crate::describe::one_of;
 use crate::describe::quote;
 use crate::generics::angle_len_with;
 use crate::glued::clash_warnings;
+use crate::glued::glued_spoken;
 use crate::glued::split_glued;
 use crate::hint::Hint;
 use crate::hint::declared_hints;
@@ -115,6 +117,7 @@ pub fn parse_with(
     parser.next_id = first_id;
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
+    parser.diags.extend(glued_spoken(text, base, lexed, &known));
     parser.set_functions(known);
     let own = declared_hints(text, base, &lexed.tokens);
     parser.set_hints(hints.iter().cloned().chain(own));
@@ -259,6 +262,7 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
     let split = split_glued(text, base, lexed, &known);
     let mut parser = Parser::new(text, base, &split);
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
+    parser.diags.extend(glued_spoken(text, base, lexed, &known));
     parser.set_functions(known);
     parser.set_hints(declared_hints(text, base, &lexed.tokens));
     finish(parser, span)
@@ -761,6 +765,38 @@ impl<'t> Parser<'t>
         self.expect_one_of(&[kw])
     }
 
+    /// Whether a token is `kw`, or a spoken spelling that also stands for it,
+    /// such as `ရှိတဲ့` for `ရှိသည့်`.
+    ///
+    /// # Arguments
+    ///
+    /// * `tok` - The token.
+    /// * `kw` - The reserved word the grammar asks for.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it is.
+    pub(crate) fn reads_as(&self, tok: &Token, kw: Kw) -> bool
+    {
+        let also = spoken(self.text_of(tok.span)).and_then(|s| s.also);
+        kw_of(tok) == Some(kw) || also.is_some_and(|(other, _)| other == kw)
+    }
+
+    /// Move past `kw`, or a spoken spelling that also stands for it.
+    ///
+    /// # Arguments
+    ///
+    /// * `kw` - The reserved word the grammar asks for.
+    ///
+    /// # Returns
+    ///
+    /// The token, or an `expected-token` diagnostic.
+    pub(crate) fn expect_reading(&mut self, kw: Kw) -> PResult<Token>
+    {
+        ret_if!(self.reads_as(&self.peek(), kw), Ok(self.bump()));
+        self.expect(kw)
+    }
+
     /// Whether the token `n` places ahead is the identifier `word`: a kind
     /// name the compiler gives that the grammar also reads as a noun, as
     /// `စာလုံး` in `စာ ၏ ၂ လုံးမြောက် စာလုံး`.
@@ -884,7 +920,8 @@ impl<'t> Parser<'t>
     /// The diagnostic.
     pub(crate) fn err_expected(&self, expected: &str) -> Diagnostic
     {
-        diag::expected_token(self.peek().span, expected, &self.found())
+        let found = diag::expected_token(self.peek().span, expected, &self.found());
+        diag::with_missing_word(found, expected, self.prev_span().hi)
     }
 
     /// Number for a new expression node.

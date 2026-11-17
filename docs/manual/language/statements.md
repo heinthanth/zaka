@@ -261,7 +261,7 @@ The rules:
   a write at a computed position, is the warning ZK0723,
   and the program runs. Such a cell holds zero octets until the program writes it
   ([Lists](lists.md#list-kinds)).
-- The check runs at each `--mem-check` level, and the level never changes it: these are
+- The check runs at each level of the `mem` lint, and the level never changes it: these are
   errors of safe code, not findings about unsafe code.
 - `ကနဦးတန်ဖိုး` is the value to write when the program wants a kind's
   [initial value](kinds.md#initial-values) and has no other.

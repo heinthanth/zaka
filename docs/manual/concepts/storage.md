@@ -118,7 +118,7 @@ Unsafe code gives up the promise of the safe tier, not the checks:
   free, a double free or an access out of bounds. Unsafe never means undefined in the VM.
 - The compiler follows the pointers of unsafe code and warns about each mistake it can
   prove: a leak, a use after free, a double free, a local's address that escapes.
-  `--mem-check` turns the warnings into errors or off.
+  `--lint-error mem` turns the warnings into errors, and `--lint-allow mem` turns them off.
 - A search for `စိတ်မချရ` finds each unchecked place, calls included, and `--no-unsafe`
   refuses unsafe code for a lesson or a project that keeps to the safe tier.
 

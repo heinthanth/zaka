@@ -45,7 +45,7 @@ An integer kind is built from three parts in a fixed order:
 ### The platform size
 
 `isize` and `usize` take their width from the platform: 64 bits unless set otherwise.
-`zakac run --platform-bits N` (and `semcheck`) picks 8, 16, 32 or 64 instead. Plain
+`zakac run --target-bits N` (and `semcheck`) picks 8, 16, 32 or 64 instead. Plain
 `ကိန်းပြည့်` is the right choice when no size matters, and it is the kind that an
 integer literal gets when its place asks for nothing else.
 
@@ -65,7 +65,7 @@ error[ZK0404]: cannot combine i64 and isize without a conversion
 ```
 
 ```sh
-zakac run --platform-bits 32 program.zaka
+zakac run --target-bits 32 program.zaka
 ```
 
 ## Decimal number kinds

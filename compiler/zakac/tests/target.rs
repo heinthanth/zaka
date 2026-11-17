@@ -71,7 +71,7 @@ fn another_os_is_refused_on_this_host()
     let exe = file.with_extension("");
     let build = zakac(&[
         "build",
-        "--target",
+        "--backend",
         "c",
         "--target-os",
         other_os(),

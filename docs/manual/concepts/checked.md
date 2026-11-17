@@ -10,8 +10,8 @@ runs; in the VM, while it runs; or in neither, when the program runs as native c
 with no checks, as a C program does. This page sorts each mistake into those places and
 tells the reason for the split.
 
-Native code comes from two targets. `zakac build --target c` writes a program as C and
-compiles it; `zakac build --target native` lowers it to machine code with Cranelift, and
+Native code comes from two targets. `zakac build --backend c` writes a program as C and
+compiles it; `zakac build --backend native` lowers it to machine code with Cranelift, and
 `zakac run --jit` runs that code at once. The `--checks` option of a build picks how much of
 the VM's watch a native program keeps, from none to the null checks and, on the C target,
 the sanitizers of the C compiler; [Native programs](../compiler/native.md) has the details.
@@ -31,7 +31,7 @@ the sanitizers of the C compiler; [Native programs](../compiler/native.md) has t
    ┌─────────────┐   checks each read, write and free on the path
    │   the VM    │   that this run takes; stops with a trap
    └──────┬──────┘
-          │ the same program as native code  (--target c, --target native, run --jit)
+          │ the same program as native code  (--backend c, --backend native, run --jit)
           ▼
    ┌─────────────┐   no checks of its own: what the compiler
    │ native code  │   proved still holds; the rest behaves as in C
@@ -50,7 +50,7 @@ a shared object and a function value hold a value at each point, and the compile
 variable, field and cell is set before a read, as an error in each mode (ZK0722; see
 [Statements](../language/statements.md#set-before-read)). Each row is a mistake of
 [unsafe code](../language/unsafe.md), where the compiler's findings are warnings, and
-errors under `--mem-check error`.
+errors under `--lint-error mem`.
 
 | Mistake | Before the run | In the VM | In native code (`--checks default`) |
 | --- | --- | --- | --- |
@@ -61,7 +61,7 @@ errors under `--mem-check error`.
 | a read after an owned hand-over, on each path | error ZK0701 | `null address` | kept: an error in each mode |
 | a leak of a block this function asked for | ZK0708 | `--leaks` lists it | as in C |
 | a null access on each path | ZK0709 | `null address` | a crash, as in C; `null address` with `--checks mem` |
-| a null access on some path | ZK0711, with `--mem-strict` | `null address` | a crash; `null address` with `--checks mem` |
+| a null access on some path | ZK0711, with `--lint-warn doubts` | `null address` | a crash; `null address` with `--checks mem` |
 | a box number past the end, known before the run | ZK0710 | `out of bounds` | not checked; the sanitizer of the C target with `--checks mem` |
 | a box number past the end, known just in the run | nothing | `out of bounds` | not checked; the sanitizer of the C target with `--checks mem` |
 | pointers into two blocks subtracted | ZK0712, when provable | `mixed blocks` | not checked |
@@ -69,7 +69,7 @@ errors under `--mem-check error`.
 | the heap running out | nothing | allocate leaves the null pointer; resize: `out of mem` | allocate leaves the null pointer; a resize stops the program |
 
 "As in C" means the native program does what a C program with the same mistake does,
-unless `--mem-check error` kept the program from compiling. "Kept" means the compiler
+unless `--lint-error mem` kept the program from compiling. "Kept" means the compiler
 refuses the mistake in each mode, so the program that remains has none of it, however it
 is run. The other rows depend on a check that the VM alone makes.
 
@@ -168,13 +168,13 @@ point at it.
 
 | Option | What changes |
 | --- | --- |
-| `--mem-check warn` | a proved mistake in unsafe code is a warning; the program runs, and the VM stops it; the default |
-| `--mem-check error` | the compiler refuses programs with a proved mistake in unsafe code |
-| `--mem-check off` | the compiler reports none of them |
-| `--mem-strict` | also warn about a pointer that can point at nothing, which the compiler cannot prove safe |
+| `--lint-warn mem` | a proved mistake in unsafe code is a warning; the program runs, and the VM stops it; the default |
+| `--lint-error mem` | the compiler refuses programs with a proved mistake in unsafe code |
+| `--lint-allow mem` | the compiler reports none of them |
+| `--lint-warn doubts` | also warn about a pointer that can point at nothing, which the compiler cannot prove safe |
 | `--no-unsafe` | refuse unsafe code |
 | `--frames packed` | the VM places variables next to each other, as C does |
-| `--checks none`, `default`, `mem` | for `zakac build --target c` and `--target native`: no check past what C has, the checks of the language, or those and the mem checks; `zakac run --jit` keeps `default` |
+| `--checks none`, `default`, `mem` | for `zakac build --backend c` and `--backend native`: no check past what C has, the checks of the language, or those and the mem checks; `zakac run --jit` keeps `default` |
 
 The Explorer has the same settings. Use `warn` to watch the VM catch what the compiler
 saw, and `packed` to see what a mistake does when nothing watches. The compile-time side

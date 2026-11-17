@@ -12,11 +12,11 @@ warns about each one it can prove from the text of the program. The Zaka VM chec
 read and write through a pointer while the program runs, stops the program at the first
 mistake, and tells what went wrong.
 
-Each program below runs with the default `--mem-check warn`: the compiler prints its
-warning, the program runs, and the VM stops it. With `--mem-check error`, or **Error** in
+Each program below runs with the default `--lint-warn mem`: the compiler prints its
+warning, the program runs, and the VM stops it. With `--lint-error mem`, or **Error** in
 the Explorer, the same warnings are errors and nothing runs:
 
-```zaka-error ZK0709 mem-check=error
+```zaka-error ZK0709 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // the null address
@@ -271,7 +271,7 @@ Text, lists, shared objects and closures never show here: the compiler frees the
 ## Mistakes the compiler catches
 
 The ZK04 codes are about kinds and unsafe code, and are errors in each mode. The ZK07 codes come
-from the pointer check: in unsafe code each follows `--mem-check`, and in safe code each
+from the pointer check: in unsafe code each follows the level of the `mem` lint, and in safe code each
 is an error.
 
 | Code | Mistake |
@@ -298,7 +298,7 @@ is an error.
 | ZK0708 | losing a block: its pointer is overwritten, or its function ends, while it holds the block |
 | ZK0709 | reading or writing through a pointer that holds the null address on each path to the read |
 | ZK0710 | a box or cell number past the end of its block |
-| ZK0711 | a warning, with `--mem-strict` alone: using a pointer that can hold the null address |
+| ZK0711 | a warning, with `--lint-warn doubts` alone: using a pointer that can hold the null address |
 | ZK0712 | subtracting pointers into different blocks |
 | ZK0721 | a `ကူးယူမည်` whose source and destination share cells |
 

@@ -11,6 +11,7 @@ use zakac_lexer::token::Kw;
 use zakac_lexer::token::NumberShape;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -201,7 +202,9 @@ impl Parser<'_>
         let text = self.text_of(tok.span);
         let base = decimal_value(text).filter(|b| (2..=36).contains(b));
         let base = base.ok_or_else(|| diag::invalid_base(tok.span, text))?;
-        self.expect(Kw::Hpjint)?;
+        // Spoken Burmese puts `နှင့်` for `ဖြင့်`; after the digits of a base
+        // it can mean nothing else.
+        do_if!(!self.eat(Kw::Hnint), _ = self.expect(Kw::Hpjint)?);
         Ok(Some(base as u32))
     }
 

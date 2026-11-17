@@ -12,7 +12,6 @@ use zakac_cli_common::artifact_output::output_format_from_matches;
 use zakac_cli_common::artifact_output::resolve_artifact_output;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
-use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap_utils::CommandInfo;
@@ -26,6 +25,8 @@ use zakac_cli_common::command::ExitCode;
 use zakac_cli_common::grants::Granted;
 use zakac_cli_common::grants::attach_grant_args;
 use zakac_cli_common::grants::grants_from;
+use zakac_cli_common::lints::attach_lint_args;
+use zakac_cli_common::lints::lint_levels;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
@@ -45,8 +46,7 @@ use crate::semcheck::SemcheckOptions;
 
 const SEMCHECK_RAW_EXTENSION: &str = ".zksem";
 const SEMCHECK_TEXT_EXTENSION: &str = ".zksemt";
-const PLATFORM_BITS_ARG: &str = "platform_bits";
-const STRICT_PARTICLES_ARG: &str = "strict_particles";
+const TARGET_BITS_ARG: &str = "target_bits";
 /// Bit counts the platform-sized integer kinds can have.
 const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64"];
 const TARGET_OS_ARG: &str = "target_os";
@@ -69,17 +69,13 @@ pub struct ZakacSemcheck
 /// The configured command.
 fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
 {
-    let platform_bits = Arg::new(PLATFORM_BITS_ARG)
-        .long("platform-bits")
+    let target_bits = Arg::new(TARGET_BITS_ARG)
+        .long("target-bits")
         .value_name("BITS")
         .help(t!("semcheck.platform_bits"))
         .value_parser(PLATFORM_WIDTHS.to_vec())
         .default_value("64");
-    let strict = Arg::new(STRICT_PARTICLES_ARG)
-        .long("strict-particles")
-        .help(t!("semcheck.strict_particles"))
-        .action(ArgAction::SetTrue);
-    let cmd = attach_common_io_args(cmd).arg(platform_bits).arg(strict);
+    let cmd = attach_lint_args(attach_common_io_args(cmd).arg(target_bits));
     let cmd = attach_grant_args(cmd, Granted::Comptime);
     attach_target_os_args(cmd).about(t!("semcheck.about"))
 }
@@ -127,7 +123,7 @@ pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
     let word = |id: &str| matches.try_get_one::<String>(id).ok().flatten();
     let os = word(TARGET_OS_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_os);
     let arch = word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok());
-    let bits = word(PLATFORM_BITS_ARG).and_then(|b| b.parse().ok()).unwrap_or(64);
+    let bits = word(TARGET_BITS_ARG).and_then(|b| b.parse().ok()).unwrap_or(64);
     #[rustfmt::skip]
     return Target::builder().os(os).arch(arch.unwrap_or_else(host_arch)).bits(bits)
         .output(output).build();
@@ -144,12 +140,13 @@ pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
 /// The options.
 fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
-    let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
+    let bits = matches.get_one::<String>(TARGET_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
-    let strict = matches.get_flag(STRICT_PARTICLES_ARG);
     // The comptime runs of the command take the rights its flags grant.
     crate::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));
-    SemcheckOptions::builder().platform_bits(bits).strict_particles(strict).build()
+    #[rustfmt::skip]
+    return SemcheckOptions::builder().platform_bits(bits).lint(lint_levels(matches))
+        .build();
 }
 
 impl Command for ZakacSemcheck

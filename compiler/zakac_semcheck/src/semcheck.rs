@@ -50,9 +50,12 @@ use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_stmt;
+use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::fold as fd;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::lint::LintLevel;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_diagnostics::resolve as rd;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_rust_sugars::do_for;
@@ -160,9 +163,9 @@ pub struct SemcheckOptions
     /// Bit count of the platform-sized integer kinds.
     #[builder(default = 64)]
     pub platform_bits: u16,
-    /// Report particle idiom warnings as errors.
+    /// The level of each lint code set through a name, over its own level.
     #[builder(default)]
-    pub strict_particles: bool,
+    pub lint: LintLevels,
     /// Refuse each unsafe function and each unsafe block.
     #[builder(default)]
     pub no_unsafe: bool,
@@ -170,6 +173,22 @@ pub struct SemcheckOptions
     /// does for an open module: it needs no start block.
     #[builder(default)]
     pub as_module: bool,
+}
+
+impl SemcheckOptions
+{
+    /// The levels of the lint codes: those the names set, and no ZK0511 for
+    /// mixed spellings unless the spoken spellings are allowed.
+    ///
+    /// # Returns
+    ///
+    /// The levels.
+    pub fn levels(&self) -> LintLevels
+    {
+        let lint = self.lint;
+        let spoken = lint.get(Code::SpokenForm) == Some(LintLevel::Off);
+        tern!(spoken, lint, lint.with_default(&[Code::MixedForms], LintLevel::Off))
+    }
 }
 
 impl Default for SemcheckOptions
@@ -1159,7 +1178,8 @@ impl Checker
         let short = args.len() < sig.params.len();
         ret_false!(tern!(sig.variadic, short, sig.params.len() != args.len()));
         let named = |want: &Vec<Name>| {
-            prepositions.iter().map(|m| m.name).eq(want.iter().copied())
+            let fits = |(m, w): (&Ident, &Name)| preposition_fits(m.name, *w, want);
+            prepositions.len() == want.len() && prepositions.iter().zip(want).all(fits)
         };
         ret_false!(
             !prepositions.is_empty() && !sig.prepositions.as_ref().is_some_and(named)
@@ -1201,7 +1221,7 @@ impl Checker
             .iter()
             .zip(want)
             .enumerate()
-            .filter(|(_, (m, w))| m.name != **w);
+            .filter(|(_, (m, w))| !preposition_fits(m.name, **w, want));
         let found: Vec<Diagnostic> = wrong
             .map(|(n, (m, w))| {
                 rd::wrong_preposition(m.span, &callee.name, n + 1, &m.name, w)
@@ -2465,4 +2485,23 @@ fn params_text(sig: &FnSig) -> String
         .enumerate()
         .map(|(n, k)| format!("{}{}", k.name(), preposition(n)));
     format!("({})", each.collect::<Vec<_>>().join(", "))
+}
+
+/// Whether a preposition written in a call fits the preposition of its
+/// parameter: the same words, or `နှင့်` for `ဖြင့်` in a function with no
+/// `နှင့်` of its own, as spoken Burmese puts "with" for both.
+///
+/// # Arguments
+///
+/// * `written` - The preposition of the call, in written spelling.
+/// * `want` - The preposition of the parameter.
+/// * `wants` - Each preposition of the function.
+///
+/// # Returns
+///
+/// `true` when it fits.
+fn preposition_fits(written: Name, want: Name, wants: &[Name]) -> bool
+{
+    let with = written == "နှင့်" && want == "ဖြင့်";
+    written == want || (with && !wants.iter().any(|w| *w == "နှင့်"))
 }

@@ -107,7 +107,8 @@ help: write "အသက် ကို" with a space: a name joined to a particle i
 A polite ending (`သည်`, `ပါ`, `ပါသည်`) written attached to a comparison verb, to
 `မှန်`, `မမှန်` or `မဟုတ်` is part of that word; the lexer keeps it as a note on the
 token. With a space, `သည်` is the subject marker instead. [Natural wording](naturalness.md)
-tells which ending reads well where.
+tells which ending reads well where. The spoken endings `တယ်` and `ပါတယ်` read as `သည်` and
+`ပါသည်` once a program allows them; see [Spoken Burmese](spoken.md).
 
 ## Comments
 

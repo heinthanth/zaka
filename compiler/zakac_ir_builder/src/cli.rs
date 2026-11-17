@@ -20,6 +20,8 @@ use zakac_cli_common::command::ExitCode;
 use zakac_cli_common::grants::Granted;
 use zakac_cli_common::grants::attach_grant_args;
 use zakac_cli_common::grants::grants_from;
+use zakac_cli_common::lints::attach_lint_args;
+use zakac_cli_common::lints::lint_levels;
 use zakac_diagnostics::has_errors;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
@@ -42,8 +44,7 @@ use crate::ir::FoldOptions;
 
 const IR_RAW_EXTENSION: &str = ".zkir";
 const IR_TEXT_EXTENSION: &str = ".zkirt";
-const PLATFORM_BITS_ARG: &str = "platform_bits";
-const STRICT_PARTICLES_ARG: &str = "strict_particles";
+const TARGET_BITS_ARG: &str = "target_bits";
 const FOLD_ARG: &str = "fold";
 const NO_UNSAFE_ARG: &str = "no-unsafe";
 /// Words the fold flag takes.
@@ -84,16 +85,12 @@ fn configure_ir_command(cmd: clap::Command) -> clap::Command
 /// The command with the flags.
 pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
 {
-    let platform_bits = Arg::new(PLATFORM_BITS_ARG)
-        .long("platform-bits")
+    let target_bits = Arg::new(TARGET_BITS_ARG)
+        .long("target-bits")
         .value_name("BITS")
         .help(t!("ir.platform_bits"))
         .value_parser(PLATFORM_WIDTHS.to_vec())
         .default_value("64");
-    let strict = Arg::new(STRICT_PARTICLES_ARG)
-        .long("strict-particles")
-        .help(t!("ir.strict_particles"))
-        .action(ArgAction::SetTrue);
     let fold = Arg::new(FOLD_ARG)
         .long("fold")
         .value_name("LIST")
@@ -105,8 +102,8 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .long("no-unsafe")
         .help(t!("ir.no_unsafe"))
         .action(ArgAction::SetTrue);
-    let cmd = attach_grant_args(cmd, Granted::Comptime);
-    attach_target_os_args(cmd.arg(platform_bits).arg(strict).arg(fold).arg(no_unsafe))
+    let cmd = attach_lint_args(attach_grant_args(cmd, Granted::Comptime));
+    attach_target_os_args(cmd.arg(target_bits).arg(fold).arg(no_unsafe))
 }
 
 /// The check options from the command line.
@@ -120,16 +117,15 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
 /// The options.
 pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
-    let bits = matches.get_one::<String>(PLATFORM_BITS_ARG);
+    let bits = matches.get_one::<String>(TARGET_BITS_ARG);
     let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
-    let strict = matches.get_flag(STRICT_PARTICLES_ARG);
     let no_unsafe = matches.get_flag(NO_UNSAFE_ARG);
     // The comptime runs of the command take the rights its flags grant.
     zakac_semcheck::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));
     SemcheckOptions::builder()
         .platform_bits(bits)
-        .strict_particles(strict)
         .no_unsafe(no_unsafe)
+        .lint(lint_levels(matches))
         .build()
 }
 

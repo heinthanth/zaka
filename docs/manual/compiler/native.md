@@ -5,17 +5,17 @@ description: How zakac build turns a program into an executable, through C or th
 
 # Native programs
 
-`zakac build --target c` writes a program as C, a file for each module, and compiles that
+`zakac build --backend c` writes a program as C, a file for each module, and compiles that
 C into an executable. The executable prints what the program prints in the VM, at the speed
 of C.
 
 ```console
-$ zakac build --target c hello.zaka
+$ zakac build --backend c hello.zaka
 $ ./hello
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-`zakac build --target native` makes the same executable with no C:
+`zakac build --backend native` makes the same executable with no C:
 [Cranelift](#cranelift) lowers the program to machine code, and `zakac run --jit` runs that
 code at once. [Commands](commands.md#build) lists each option of `build`. This page tells
 what a native program keeps from the VM, and what it does not.
@@ -97,7 +97,7 @@ ends](../vm/running.md#how-a-run-ends)): unset, a short backtrace; `full`, each 
 none. The C of `main` is left out of the list.
 
 ```console
-$ zakac build --target c --release divide.zaka
+$ zakac build --backend c --release divide.zaka
 $ ./divide
 စားမည်
 divide: the program stopped: integer division or remainder with zero as divisor (in ပရိုဂရမ်)
@@ -118,7 +118,7 @@ or variable fails with `ခွင့်ပြုချက်မရှိခြ�
 program with `permission_denied`. Paths are read from the folder the executable runs in.
 
 ```console
-$ zakac build --target c --allow-read=data report.zaka -o report
+$ zakac build --backend c --allow-read=data report.zaka -o report
 ```
 
 ## Where the output differs from the VM
@@ -188,7 +188,7 @@ The link gets `-lX` for each lib `libX` the program names, but libc and libm, af
 and before `LDFLAGS` and each `--ld-flag`. A program with `zaka_callback.c` adds `-lffi` as well. Give the folder of a lib with `--ld-flag`:
 
 ```console
-$ zakac build --target c --ld-flag -L/opt/gears/lib gears.zaka
+$ zakac build --backend c --ld-flag -L/opt/gears/lib gears.zaka
 ```
 
 A lib given as a path (a text that holds `/` or `\`, ends in `.so`, `.dylib` or `.dll`, or
@@ -258,7 +258,7 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 carries inside it. It lowers the IR of the program to machine code in two modes, from one
 lowering:
 
-| | `zakac build --target native` | `zakac run --jit` |
+| | `zakac build --backend native` | `zakac run --jit` |
 | --- | --- | --- |
 | makes | an object file, linked with the runtime lib into an executable | machine code in the mem of `zakac`, run at once |
 | needs | a C compiler or linker, to link | nothing more |
@@ -284,7 +284,7 @@ it, and the executable links it.
 ```console
 $ zakac run --jit hello.zaka
 မင်္ဂလာပါ ကမ္ဘာကြီး
-$ zakac build --target native hello.zaka
+$ zakac build --backend native hello.zaka
 $ ./hello
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
@@ -300,7 +300,7 @@ files are written, so a C compiler can build them at a later time, on the host t
 runtime lib was built for:
 
 ```console
-$ zakac build --target c --emit c --cache gen/ app.zaka
+$ zakac build --backend c --emit c --cache gen/ app.zaka
 $ cc -std=c11 -O2 gen/*.c gen/libzaka_runtime.a -lm -liconv -o app
 ```
 

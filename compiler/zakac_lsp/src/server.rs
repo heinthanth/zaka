@@ -5,6 +5,7 @@ use std::panic::AssertUnwindSafe;
 use std::panic::catch_unwind;
 use std::path::PathBuf;
 
+use gen_lsp_types::CodeActionParams;
 use gen_lsp_types::DidChangeTextDocumentParams;
 use gen_lsp_types::DidCloseTextDocumentParams;
 use gen_lsp_types::DidOpenTextDocumentParams;
@@ -26,8 +27,10 @@ use lsp_server::Response;
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::json;
+use zakac_cli_common::lints::project_lint_levels;
 use zakac_rust_sugars::ret_if;
 
+use crate::actions::quick_fixes;
 use crate::check::Buffers;
 use crate::check::FileCheck;
 use crate::check::check_file;
@@ -108,8 +111,8 @@ fn refresh_when_idle(
 }
 
 /// What the server can do: the whole text on each change, hover, call
-/// hints, colored tokens, the outline, completions, definitions, references
-/// and renames, with positions in UTF-16 columns.
+/// hints, colored tokens, the outline, completions, definitions, references,
+/// renames and quick fixes, with positions in UTF-16 columns.
 ///
 /// # Returns
 ///
@@ -126,6 +129,7 @@ fn capabilities() -> serde_json::Value
         "definitionProvider": true,
         "referencesProvider": true,
         "renameProvider": { "prepareProvider": true },
+        "codeActionProvider": { "codeActionKinds": ["quickfix"] },
         "semanticTokensProvider": {
             "legend": { "tokenTypes": TOKEN_KINDS, "tokenModifiers": [] },
             "full": true,
@@ -221,12 +225,14 @@ fn whole_text(change: TextDocumentContentChangeEvent) -> Option<String>
 /// `Ok`, or the error of a send.
 fn refresh(connection: &Connection, state: &mut State) -> Result<(), ServeError>
 {
-    let buffers = Buffers { open: open_paths(&state.docs) };
+    let open = open_paths(&state.docs);
     for uri in std::mem::take(&mut state.stale)
     {
         let file = state.docs.get(&uri).and_then(|text| {
             let path = uri.to_file_path().ok()?;
-            Some(check_file(&uri, &path, text, buffers.clone()))
+            let lint = path.parent().map(project_lint_levels).unwrap_or_default();
+            let buffers = Buffers { open: open.clone(), lint };
+            Some(check_file(&uri, &path, text, buffers))
         });
         let diagnostics = file.as_ref().map(|a| a.diagnostics.clone());
         let published = PublishDiagnosticsParams {
@@ -259,8 +265,8 @@ fn open_paths(docs: &HashMap<Uri, String>) -> HashMap<PathBuf, String>
 }
 
 /// Answer a request: colored tokens, a hover, call hints, the outline,
-/// completions, a definition, references or a rename; each other method is
-/// refused.
+/// completions, a definition, references, a rename or the quick fixes of a
+/// range; each other method is refused.
 ///
 /// # Arguments
 ///
@@ -311,6 +317,10 @@ fn answer(state: &State, req: Request) -> Response
             let found = state.checks.get(&at.text_document.uri);
             let all = state.checks.values();
             json!(found.map(|f| references(all, f, at.position, with_decl)))
+        }),
+        "textDocument/codeAction" => params::<CodeActionParams>(req_params).map(|p| {
+            let found = state.checks.get(&p.text_document.uri);
+            json!(found.map(|f| quick_fixes(f, p.range)).unwrap_or_default())
         }),
         "textDocument/prepareRename" => at.map(|p| {
             let found = state.checks.get(&p.text_document.uri);

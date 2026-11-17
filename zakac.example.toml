@@ -1,0 +1,131 @@
+# zakac.example.toml: each setting a config file of zakac can hold, with its
+# default value and the command-line flag it stands for.
+#
+# Save this file as `zakac.toml` beside the sources of a project, or as
+# `~/.config/zakac/config.toml` for each project of a user, then take the `#`
+# off each line to set. The rules are on the Configuration page of the Docs
+# (docs/manual/compiler/configuration.md).
+
+# ------------------------------------------------------------------ the terminal
+# Commands: each.
+
+# carets = "codepoint"     # variable ZAKAC_CARETS: the rows under a marked span:
+                           # off, codepoint, cluster or flow; left out, the
+                           # compiler picks one for the terminal
+# color = true             # variable NO_COLOR: false turns color off
+# learn = false            # variable ZAKAC_LEARN: true explains the code of each
+                           # message and links the page of Learn or Docs on it
+
+# ------------------------------------------------------------ the compile stages
+# Commands: irgen, borrowck, build, run.
+
+# fold = "all"             # --fold <LIST>: all, none, or a list of exprs, consts
+                           # and branches
+# no-unsafe = false        # --no-unsafe: refuse unsafe code (စိတ်မချရသော)
+
+# Commands: borrowck, build, run.
+
+# overflow = "stop"        # --overflow <MODE>: integer overflow stops the program
+                           # (and warns), or wraps
+
+# Commands: build, run.
+
+# results = "in-place"     # --results <MODE>: list and struct results: in-place
+                           # or duplicate
+# scratch = "apart"        # --scratch <MODE>: scratch values: apart or shared
+# release = false          # --release: leave out the source line of each op
+
+# -------------------------------------------------------------------- the target
+# Commands: semcheck, irgen, borrowck, build, run.
+# The platform a program is built for. Each name is --target-<name>.
+
+[target]
+# os = "linux"             # --target-os <OS>: the OS a compile-time conditional
+                           # reads: windows, macos or linux; left out, the host's
+# arch = "x86_64"          # --target-arch <ARCH>: the CPU it reads; left out,
+                           # the host's
+# bits = 64                # --target-bits <BITS>: bits of the platform-sized
+                           # integer kinds: 8, 16, 32 or 64
+
+# ------------------------------------------------------------- the comptime calls
+# Commands: semcheck, irgen, borrowck, build, run.
+# The rights of the comptime calls the compiler runs; [run] holds the rights of
+# the program itself. Each name is --comptime-<name>.
+
+[comptime]
+# allow-read = ["data"]    # --comptime-allow-read=data: read under these paths;
+                           # true for each path
+# allow-write = ["out"]    # --comptime-allow-write=out: write under these paths
+# allow-env = ["HOME"]     # --comptime-allow-env=HOME: read these variables
+# allow-ffi = false        # --comptime-allow-ffi: call C functions
+# allow-all = false        # --comptime-allow-all: each of the four
+
+# ---------------------------------------------------------------------- the lint
+# Commands: semcheck, irgen, borrowck, build, run; and the editor (zakac lsp),
+# which reads this section of the nearest zakac.toml.
+# A name is a group (mem, leaks, frees, borrows, nulls, pointers, doubts,
+# overflow, naturalness, spoken) or a code such as ZK0708; a code wins over a
+# group. Each name is --lint-<name>. Left out, each code keeps its own level:
+# the pointer lint of unsafe code (mem) and the natural wording rules
+# (naturalness) are warnings, the doubts are off, a spoken spelling (spoken)
+# is an error.
+
+[lint]
+# allow = ["spoken"]       # --lint-allow spoken: leave it out; here, write in
+                           # spoken Burmese: ထားမယ် for ထားမည်
+# warn = ["doubts"]        # --lint-warn doubts: report it as a warning; here,
+                           # also the accesses the check cannot prove safe
+# error = ["naturalness", "mem"]  # --lint-error naturalness: report it as an
+                                  # error; here, each natural wording rule and
+                                  # the pointer lint
+
+# --------------------------------------------------------------------- zakac run
+# Commands: run.
+
+[run]
+# max-depth = 4096         # --max-depth <CALLS>: the most nested calls before the
+                           # program stops
+# max-steps = 100000000    # --max-steps <OPS>: the most ops to run; left out,
+                           # no limit
+# max-heap = 268435456     # --max-heap <OCTETS>: the most live heap octets
+# max-stack = 1048576      # --max-stack <OCTETS>: the most octets of the stack
+# frames = "checked"       # --frames <MODE>: checked or packed
+# leaks = false            # --leaks: list the heap blocks left unfreed at the end
+# jit = false              # --jit: run as native code made with Cranelift
+# backtrace = "full"       # variable ZAKA_BACKTRACE: a stop lists each call (full)
+                           # or none (0); left out, a short backtrace
+
+# The rights of the program. build takes them too and writes them into a native
+# executable: set them in [build] for that, or at the top for both.
+# allow-read = ["data"]    # --allow-read=data: read under these paths; true for each
+# allow-write = ["out"]    # --allow-write=out: write under these paths
+# allow-env = ["HOME"]     # --allow-env=HOME: read these variables
+# allow-ffi = false        # --allow-ffi: call C functions
+# allow-all = false        # --allow-all (-A): each of the four
+# no-permission-prompt = false  # --no-permission-prompt: ask nothing, refuse at once
+
+# ------------------------------------------------------------------- zakac build
+# Commands: build.
+
+[build]
+# backend = "vm"           # --backend <BACKEND>: vm, c or native
+# emit = "zkc"             # --emit <WHAT>: vm: zkc, zkct or asm; c: bin or c;
+                           # native: bin, obj or clif
+# checks = "default"       # --checks <LIST>: run-time checks of an executable:
+                           # none, default or mem, then +name or -name, as
+                           # ["mem", "-sanitizers"]
+# max-depth = 4096         # --max-depth <N>: the most nested calls before the
+                           # executable stops
+# max-heap = 0             # --max-heap <OCTETS>: the most heap octets the
+                           # executable holds; 0 for no cap
+# cc = "clang"             # --cc <CMD>: the C compiler; left out, CC, then cc,
+                           # gcc, clang or zig cc
+# linker = "clang"         # --linker <CMD>: the linker; left out, the C compiler
+# cc-flag = ["-march=native"]  # --cc-flag <FLAG>: more flags for the C compiler,
+                               # after CFLAGS
+# ld-flag = ["-lm"]        # --ld-flag <FLAG>: more flags for the linker, after
+                           # LDFLAGS
+# no-default-flags = false # --no-default-flags: leave out -O2 -w -ffp-contract=off
+# cache = ".zakac_c_cache" # --cache <DIR>: the folder for the generated C
+# cflags = "-O3"           # variable CFLAGS: flags for the C compiler
+# ldflags = ["-L/opt/lib", "-lfoo"]  # variable LDFLAGS: flags for the linker

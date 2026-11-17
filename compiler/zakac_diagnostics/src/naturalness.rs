@@ -152,14 +152,16 @@ pub fn pa_in_value(span: Span, verb: &str, particle: &str) -> Diagnostic
 ///
 /// # Returns
 ///
-/// The `ZK0509` diagnostic, with the right count word as a hint.
+/// The `ZK0509` diagnostic, with a fix that writes the right classifier.
 pub fn classifier_mismatch(
     span: Span, kind: &str, want: &str, found: &str,
 ) -> Diagnostic
 {
     let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
     let help = t!("codes.ZK0509.help", w = want);
-    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+    Diagnostic::new(Code::ClassifierMismatch, msg, span)
+        .with_help(help)
+        .help_as_fix(span, want)
 }
 
 /// The count word of a declared kind uses a classifier other than the
@@ -174,14 +176,16 @@ pub fn classifier_mismatch(
 ///
 /// # Returns
 ///
-/// The `ZK0509` diagnostic, with the right count word as a hint.
+/// The `ZK0509` diagnostic, with a fix that writes the right classifier.
 pub fn decl_classifier_mismatch(
     span: Span, kind: &str, want: &str, found: &str,
 ) -> Diagnostic
 {
     let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
     let help = t!("codes.ZK0509.help_decl", w = want);
-    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+    Diagnostic::new(Code::ClassifierMismatch, msg, span)
+        .with_help(help)
+        .help_as_fix(span, want)
 }
 
 /// The `တစ်<classifier>လုံး` of a deep duplicate uses a classifier other than
@@ -196,14 +200,16 @@ pub fn decl_classifier_mismatch(
 ///
 /// # Returns
 ///
-/// The `ZK0509` diagnostic, with the right count word as a hint.
+/// The `ZK0509` diagnostic, with a fix that writes the right classifier.
 pub fn whole_classifier_mismatch(
     span: Span, kind: &str, want: &str, found: &str,
 ) -> Diagnostic
 {
     let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
     let help = t!("codes.ZK0509.help_whole", w = want);
-    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+    Diagnostic::new(Code::ClassifierMismatch, msg, span)
+        .with_help(help)
+        .help_as_fix(span, want)
 }
 
 /// The count of a struct literal uses a classifier other than the struct's
@@ -218,12 +224,68 @@ pub fn whole_classifier_mismatch(
 ///
 /// # Returns
 ///
-/// The `ZK0509` diagnostic, with the right count as a hint.
+/// The `ZK0509` diagnostic, with a fix that writes the right classifier.
 pub fn literal_classifier_mismatch(
     span: Span, kind: &str, want: &str, found: &str,
 ) -> Diagnostic
 {
     let msg = t!("codes.ZK0509.message", k = kind, w = want, f = found);
     let help = t!("codes.ZK0509.help_literal", k = kind, w = want);
-    Diagnostic::new(Code::ClassifierMismatch, msg, span).with_help(help)
+    Diagnostic::new(Code::ClassifierMismatch, msg, span)
+        .with_help(help)
+        .help_as_fix(span, want)
+}
+
+/// A word in its spoken spelling.
+///
+/// # Arguments
+///
+/// * `span` - The word.
+/// * `spoken` - The spoken spelling, as written.
+/// * `written` - The written spelling it stands for.
+/// * `other` - The other written spelling it can stand for, as `ရှိတဲ့` stands for
+///   `ရှိသော` and `ရှိသည့်`; the check of the fixes keeps the one that fits.
+///
+/// # Returns
+///
+/// The `ZK0510` diagnostic, with a fix that writes each written spelling.
+pub fn spoken_form(
+    span: Span, spoken: &str, written: &str, other: Option<&str>,
+) -> Diagnostic
+{
+    let help = t!("codes.ZK0510.help", w = written);
+    let Some(other) = other
+    else
+    {
+        let msg = t!("codes.ZK0510.message", s = spoken, w = written);
+        let d = Diagnostic::new(Code::SpokenForm, msg, span).with_help(help);
+        return d.help_as_fix(span, written);
+    };
+    let msg = t!("codes.ZK0510.message_either", s = spoken, w = written, o = other);
+    let d = Diagnostic::new(Code::SpokenForm, msg, span).with_help(help);
+    let d = d.help_as_fix(span, written);
+    d.with_fix(t!("codes.ZK0510.help", w = other), span, other)
+}
+
+/// A file that mixes the spoken and the written spellings.
+///
+/// # Arguments
+///
+/// * `span` - The first word of the form the file uses less.
+/// * `spoken` - The number of words in their spoken spelling.
+/// * `written` - The number in their written spelling.
+/// * `other` - The spelling of that first word in the form the file uses more.
+///
+/// # Returns
+///
+/// The `ZK0511` diagnostic, with a fix that writes the word in the other
+/// form.
+pub fn mixed_forms(span: Span, spoken: usize, written: usize, other: &str)
+-> Diagnostic
+{
+    let msg = t!("codes.ZK0511.message", n = spoken, m = written);
+    let help = t!("codes.ZK0511.help", w = other);
+    Diagnostic::new(Code::MixedForms, msg, span)
+        .with_help(help)
+        .help_as_fix(span, other)
 }

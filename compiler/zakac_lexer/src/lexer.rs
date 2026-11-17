@@ -5,7 +5,10 @@ use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::lexer as diag;
+use zakac_diagnostics::naturalness::mixed_forms;
+use zakac_diagnostics::naturalness::spoken_form;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
@@ -24,6 +27,9 @@ use crate::reserved::NOTE_MARKER;
 use crate::reserved::OLD_ENDINGS;
 use crate::reserved::lookup;
 use crate::reserved::split_reserved;
+use crate::spoken::SPOKEN_EI;
+use crate::spoken::spoken;
+use crate::spoken::spoken_twin;
 use crate::text::Scan;
 use crate::text::scan_char;
 use crate::text::scan_raw_ident;
@@ -107,6 +113,13 @@ struct Driver<'w, 's>
     /// Output built so far.
     #[builder(default)]
     out: LexOutput,
+    /// Each word in its spoken spelling so far, with its written spelling.
+    #[builder(default)]
+    spoken: Vec<(Span, &'static str)>,
+    /// Each word in a written spelling that has a spoken one, with that
+    /// spoken spelling.
+    #[builder(default)]
+    written: Vec<(Span, &'static str)>,
 }
 
 impl Driver<'_, '_>
@@ -128,6 +141,7 @@ impl Driver<'_, '_>
     {
         self.out.tokens = join_phrases(std::mem::take(&mut self.out.tokens));
         mark_classifiers(&mut self.out.tokens, self.text, self.base);
+        self.report_mix();
         let end = self.base + self.text.len();
         self.push(TokenKind::Eof, Span::new(end, end), false);
         self.out
@@ -154,6 +168,47 @@ impl Driver<'_, '_>
         ret_if!(let Some(next) = self.lex_digits(idx), next);
         ret_if!(let Some(next) = self.lex_ident(idx), next);
         self.invalid(idx)
+    }
+
+    /// Note the form of a reserved word or `၏`, after its token is pushed: a
+    /// spoken spelling is reported (ZK0510) and counted, a written one that
+    /// has a spoken spelling is counted.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The word.
+    fn note_form(&mut self, span: Span)
+    {
+        let text = &self.text[self.offset(span.lo)..self.offset(span.hi)];
+        let found = spoken(text);
+        let other = found.and_then(|s| s.also).map(|(_, w)| w);
+        let written = found.map(|s| s.written);
+        let written = written.or_else(|| (text == SPOKEN_EI).then_some("၏"));
+        if let Some(written) = written
+        {
+            self.out.diagnostics.push(spoken_form(span, text, written, other));
+            return self.spoken.push((span, written));
+        }
+        // A `သည်` that stands as its own token marks a topic, as in
+        // `ပရိုဂရမ်သည်`, which speech keeps as it is; one that ends a verb is
+        // folded into the verb.
+        let last = self.out.tokens.last();
+        let topic =
+            last.is_some_and(|t| t.kind == TokenKind::Kw(Kw::Thi) && t.span == span);
+        let twin = spoken_twin(text).filter(|_| !topic);
+        do_if!(let Some(twin) = twin, self.written.push((span, twin)));
+    }
+
+    /// Report a file that mixes the spoken and the written spellings
+    /// (ZK0511), at the first word of the form it uses less.
+    fn report_mix(&mut self)
+    {
+        let (n, m) = (self.spoken.len(), self.written.len());
+        ret_if!(n == 0 || m == 0);
+        let (span, other) = tern!(n <= m, self.spoken[0], self.written[0]);
+        let diag = mixed_forms(span, n, m, other);
+        let at = self.out.diagnostics.partition_point(|d| d.span.lo <= span.lo);
+        self.out.diagnostics.insert(at, diag);
     }
 
     /// Offset of an absolute position in the text.
@@ -483,6 +538,7 @@ impl Driver<'_, '_>
     {
         let span = self.words[idx].span.to(&self.words[end - 1].span);
         self.push(TokenKind::Punct(punct), span, self.words[idx].joined);
+        do_if!(punct == Punct::Ei, self.note_form(span));
         end
     }
 
@@ -515,8 +571,15 @@ impl Driver<'_, '_>
     fn lex_reserved(&mut self, idx: usize) -> Option<usize>
     {
         let word = self.words[idx];
+        let ei = word.text == SPOKEN_EI;
+        ret_if!(
+            ei,
+            self.push(TokenKind::Punct(Punct::Ei), word.span, word.joined),
+            self.note_form(word.span),
+            Some(idx + 1)
+        );
         ret_if!(let Some(kw) = self.old_ending(idx), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
-        ret_if!(let Some(kw) = lookup(word.text), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
+        ret_if!(let Some(kw) = lookup(word.text), self.push_kw(kw, word.span, word.joined), self.note_form(word.span), Some(idx + 1));
         let pieces = split_reserved(&word)?;
         #[rustfmt::skip]
         do_for!((n, (kind, span)) in pieces.into_iter().enumerate(), self.push_piece(kind, span, n > 0 || word.joined));
@@ -539,6 +602,7 @@ impl Driver<'_, '_>
             return self.push(kind, span, joined);
         };
         self.push_kw(kw, span, joined);
+        self.note_form(span);
     }
 
     /// Lex an identifier written in two scripts, such as `ဖြစ်ရပ်_၁`, `က_ခ` or

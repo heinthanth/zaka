@@ -9,6 +9,7 @@ use zakac_rust_sugars::tern;
 use crate::describe::kw_text;
 use crate::parser::PResult;
 use crate::parser::Parser;
+use crate::parser::kw_of;
 
 /// Whether a scan for the end of a list in words stops at a token: a
 /// particle, `၏` or the full stop, which no item holds. `နှင့်` joins the
@@ -99,7 +100,7 @@ impl Parser<'_>
         {
             items.push(item(self)?);
         }
-        let joined = self.at(Kw::Hnint);
+        let joined = self.at(Kw::Hnint) && !self.at_with_before_call();
         ret_if!(
             !joined && items.len() > 1,
             Err(diag::list_needs_and(self.peek().span))
@@ -238,6 +239,22 @@ impl Parser<'_>
         let out = f(self);
         self.in_word_list = outer;
         out
+    }
+
+    /// Whether `နှင့်` comes next, right before the word that closes a long
+    /// call: there it stands for `ဖြင့်`, as spoken Burmese uses it, and joins
+    /// no items.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_with_before_call(&self) -> bool
+    {
+        let call_word = matches!(
+            kw_of(&self.peek_n(1)),
+            Some(Kw::WillDo | Kw::CallResult | Kw::CallGoodResult)
+        );
+        self.at(Kw::Hnint) && call_word
     }
 
     /// Whether a later item of a list in words comes next: `၊` or `နှင့်`.

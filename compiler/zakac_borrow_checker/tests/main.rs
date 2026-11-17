@@ -7,6 +7,7 @@ mod cli;
 mod closures;
 mod common;
 mod escape;
+mod fixes;
 mod free_rules;
 mod last_use;
 mod leaks;

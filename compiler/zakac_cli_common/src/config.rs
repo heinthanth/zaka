@@ -31,6 +31,13 @@ pub const LOCAL_FILE: &str = "zakac.toml";
 /// The flag that names a config file.
 pub const CONFIG_FLAG: &str = "config";
 
+/// The groups of flags a config file writes as a section of their own:
+/// `[lint]` with `allow = [...]` sets `--lint-allow`, `[comptime]` with
+/// `allow-read = [...]` sets `--comptime-allow-read`, and `[target]` with
+/// `os = "linux"` sets `--target-os`, at the top of the file
+/// or inside the section of a command (`[run.lint]`, `[build.comptime]`).
+const FLAG_GROUPS: &[&str] = &["lint", "comptime", "target"];
+
 /// The flags each command shares, which a config file cannot set.
 const SHARED: &[&str] = &["help", "version", CONFIG_FLAG];
 
@@ -38,6 +45,7 @@ const SHARED: &[&str] = &["help", "version", CONFIG_FLAG];
 /// var that is set wins over the file.
 const ENV_NAMES: &[(&str, &str)] = &[
     ("carets", "ZAKAC_CARETS"),
+    ("learn", "ZAKAC_LEARN"),
     ("backtrace", "ZAKA_BACKTRACE"),
     ("cflags", "CFLAGS"),
     ("ldflags", "LDFLAGS"),
@@ -221,7 +229,34 @@ pub fn parse_text(text: &str, path: &str) -> zakac_host_errors::Result<Table>
     #[rustfmt::skip]
     let not_toml = |e: toml::de::Error| Error::ConfigNotToml {
         path: path.into(), msg: e.message().to_string() };
-    text.parse::<Table>().map_err(not_toml)
+    text.parse::<Table>().map(flatten_groups).map_err(not_toml)
+}
+
+/// A config table with each section of [`FLAG_GROUPS`] turned into the flags
+/// it names, `[lint] allow` into `lint-allow`, at each level of the table.
+///
+/// # Arguments
+///
+/// * `table` - The table as the TOML reads.
+///
+/// # Returns
+///
+/// The table with the groups written out.
+fn flatten_groups(table: Table) -> Table
+{
+    let item = |(name, value): (String, Value)| -> Vec<(String, Value)> {
+        let group = FLAG_GROUPS.contains(&name.as_str());
+        match value
+        {
+            Value::Table(inner) if group =>
+            {
+                inner.into_iter().map(|(k, v)| (format!("{name}-{k}"), v)).collect()
+            }
+            Value::Table(inner) => vec![(name, Value::Table(flatten_groups(inner)))],
+            other => vec![(name, other)],
+        }
+    };
+    table.into_iter().flat_map(item).collect()
 }
 
 /// Check each name of a config file. A section names a `zakac` subcommand.
@@ -396,7 +431,7 @@ fn own_longs(cmd: &clap::Command) -> impl Iterator<Item = &str>
 /// # Returns
 ///
 /// The words, or `None` for a value of another form.
-fn values(value: &Value) -> Option<Vec<String>>
+pub(crate) fn values(value: &Value) -> Option<Vec<String>>
 {
     match value
     {
@@ -534,6 +569,20 @@ mod tests
 {
     use super::*;
 
+    #[test]
+    fn a_section_of_a_flag_group_names_its_flags()
+    {
+        let text = "[lint]\nallow = [\"spoken\"]\n\n[comptime]\nallow-env = \
+                    [\"HOME\"]\n\n[run.lint]\nerror = \"leaks\"\n";
+        let table = parse_text(text, "t.toml").unwrap();
+        let allow = table.get("lint-allow").and_then(values);
+        assert_eq!(allow, Some(vec!["spoken".to_string()]));
+        let env = table.get("comptime-allow-env").and_then(values);
+        assert_eq!(env, Some(vec!["HOME".to_string()]));
+        let run = table.get("run").and_then(Value::as_table).unwrap();
+        assert_eq!(run.get("lint-error").and_then(Value::as_str), Some("leaks"));
+    }
+
     /// A small tree: `zakac` with `build` and `run`.
     fn tree() -> clap::Command
     {
@@ -543,7 +592,7 @@ mod tests
         let opt = |id: &'static str| clap::Arg::new(id).long(id);
         let list = |id: &'static str| opt(id).action(clap::ArgAction::Append);
         let build = clap::Command::new("build")
-            .arg(opt("target"))
+            .arg(opt("backend"))
             .arg(flag("release"))
             .arg(list("cc-flag"))
             .arg(opt("max-depth"));
@@ -572,10 +621,10 @@ mod tests
     #[test]
     fn a_file_value_is_the_default_and_the_command_line_wins()
     {
-        let m = parse("target = \"c\"", &["zakac", "build"]);
-        assert_eq!(one(sub(&m, "build"), "target").as_deref(), Some("c"));
-        let m = parse("target = \"c\"", &["zakac", "build", "--target", "vm"]);
-        assert_eq!(one(sub(&m, "build"), "target").as_deref(), Some("vm"));
+        let m = parse("backend = \"c\"", &["zakac", "build"]);
+        assert_eq!(one(sub(&m, "build"), "backend").as_deref(), Some("c"));
+        let m = parse("backend = \"c\"", &["zakac", "build", "--backend", "vm"]);
+        assert_eq!(one(sub(&m, "build"), "backend").as_deref(), Some("vm"));
     }
 
     #[test]
@@ -604,11 +653,11 @@ mod tests
     #[test]
     fn a_later_file_wins()
     {
-        let first = parse_text("target = \"c\"", "a.toml").unwrap();
-        let second = parse_text("target = \"vm\"", "b.toml").unwrap();
+        let first = parse_text("backend = \"c\"", "a.toml").unwrap();
+        let second = parse_text("backend = \"vm\"", "b.toml").unwrap();
         let cmd = set_defaults(set_defaults(tree(), &first, None), &second, None);
         let m = cmd.try_get_matches_from(["zakac", "build"]).unwrap();
-        assert_eq!(one(sub(&m, "build"), "target").as_deref(), Some("vm"));
+        assert_eq!(one(sub(&m, "build"), "backend").as_deref(), Some("vm"));
     }
 
     #[test]
@@ -619,20 +668,20 @@ mod tests
             check_file(&table, &tree(), None, "t.toml")
         };
         assert!(
-            check("target = \"c\"\ncarets = \"off\"\n[run]\nmax-depth = 3").is_ok()
+            check("backend = \"c\"\ncarets = \"off\"\n[run]\nmax-depth = 3").is_ok()
         );
         assert!(matches!(check("max-dept = 3"), Err(Error::ConfigUnknownName { .. })));
         assert!(matches!(check("[lex]\nx = 1"), Err(Error::ConfigUnknownName { .. })));
         assert!(matches!(
-            check("[run]\ntarget = \"c\""),
+            check("[run]\nbackend = \"c\""),
             Err(Error::ConfigUnknownName { .. })
         ));
         assert!(matches!(
-            check("target = { a = 1 }"),
+            check("backend = { a = 1 }"),
             Err(Error::ConfigBadValue { .. })
         ));
         assert!(matches!(
-            parse_text("target = ", "t"),
+            parse_text("backend = ", "t"),
             Err(Error::ConfigNotToml { .. })
         ));
     }
@@ -642,8 +691,9 @@ mod tests
     {
         let lexer =
             clap::Command::new("zakac_lexer").arg(clap::Arg::new("o").long("o"));
-        let table = parse_text("target = \"c\"\n[build]\nx = 1\n[lex]\no = \"f\"", "t")
-            .unwrap();
+        let table =
+            parse_text("backend = \"c\"\n[build]\nx = 1\n[lex]\no = \"f\"", "t")
+                .unwrap();
         assert!(check_file(&table, &lexer, Some("lex"), "t").is_ok());
         let table = parse_text("[lex]\nx = 1", "t").unwrap();
         assert!(check_file(&table, &lexer, Some("lex"), "t").is_err());

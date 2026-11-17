@@ -8,5 +8,6 @@ mod lexer;
 mod number;
 mod phrases;
 mod reserved;
+mod spoken;
 mod text;
 mod words;

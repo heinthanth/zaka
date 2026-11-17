@@ -88,3 +88,29 @@ fn a_parameter_of_a_kind_with_none_is_zk0332()
     let text = format!("{}\n{send}", program(&holds_write(false)));
     assert_eq!(codes(&text), [Code::NoOverloadFits]);
 }
+
+/// A function `ဆွဲ` whose parameters take `ကို`, then `with` and `through`
+/// in the words of `pair`.
+fn draw(pair: (&str, &str)) -> String
+{
+    let (a, b) = pair;
+    format!(
+        "လုပ်ဆောင်ချက် ဆွဲ သည်\nစာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း ခ ဟူသော စာသား \
+         တစ်ခု ကို ဝိဘတ် \"{a}\" ကို သုံး၍ လည်းကောင်း ဂ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"{b}\" ကို သုံး၍ \
+         လည်းကောင်း လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nစာ ကို ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n"
+    )
+}
+
+#[test]
+fn with_fills_through_in_a_function_with_no_with_of_its_own()
+{
+    let start = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n";
+    let end = "\nပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let through = draw(("သို့", "ဖြင့်"));
+    let call = "\"က\" ကို \"ခ\" သို့ \"ဂ\" နှင့် ဆွဲ မည်။";
+    ok(&format!("{through}{start}{call}{end}"));
+    // With a `နှင့်` of its own, the function needs `ဖြင့်` written.
+    let both = draw(("နှင့်", "ဖြင့်"));
+    let call = "\"က\" ကို \"ခ\" နှင့် \"ဂ\" နှင့် ဆွဲ မည်။";
+    assert!(!codes(&format!("{both}{start}{call}{end}")).is_empty());
+}

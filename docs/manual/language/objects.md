@@ -141,7 +141,7 @@ The rules:
 
 A variable, a field or a cell of an object kind holds an object at each point: no NULL stands in
 for one. A declaration with no value leaves the variable unset, and a read of it before
-each path gives it a value is ZK0722, at each `--mem-check` level ([Set before
+each path gives it a value is ZK0722, at each level of the `mem` lint ([Set before
 read](statements.md#set-before-read)). `ကနဦးတန်ဖိုး` gives a new object with each field at
 its own [initial value](kinds.md#initial-values).
 

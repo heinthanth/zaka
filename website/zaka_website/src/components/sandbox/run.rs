@@ -12,6 +12,8 @@ use zakac_codegen_target_vm::artifact::run_phases;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Level;
+use zakac_diagnostics::lint::LintLevel;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
@@ -21,6 +23,7 @@ use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::width::Carets;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -49,7 +52,8 @@ pub enum Fence
 }
 
 /// What a fence of a Learn page asks of the compiler besides its promise:
-/// `mem-check=error`, `mem-strict=on`, `no-unsafe=on`, `overflow=wrap`.
+/// `lint-error=mem`, `lint-warn=doubts`, `no-unsafe=on`, `overflow=wrap`,
+/// `lint-allow=spoken`, as the flags of the same names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
@@ -66,11 +70,15 @@ pub struct FenceOptions
     #[builder(default)]
     #[serde(default)]
     pub overflow: OverflowMode,
+    /// Whether the spoken spellings are allowed, as `--lint-allow spoken` does.
+    #[builder(default)]
+    #[serde(default)]
+    pub spoken: bool,
 }
 
 impl FenceOptions
 {
-    /// Take one word of a fence, such as `mem-check=warn`.
+    /// Take one word of a fence, such as `lint-error=mem`.
     ///
     /// # Arguments
     ///
@@ -85,10 +93,13 @@ impl FenceOptions
         let (name, value) = word.split_once('=')?;
         match (name, value)
         {
-            ("mem-check", _) => self.check = value.parse().ok()?,
-            ("mem-strict", "on") => self.strict = true,
+            ("lint-allow", "mem") => self.check = MemCheck::Off,
+            ("lint-warn", "mem") => self.check = MemCheck::Warn,
+            ("lint-error", "mem") => self.check = MemCheck::Error,
+            ("lint-warn", "doubts") => self.strict = true,
             ("no-unsafe", "on") => self.no_unsafe = true,
             ("overflow", _) => self.overflow = value.parse().ok()?,
+            ("lint-allow", "spoken") => self.spoken = true,
             _ => return None,
         }
         Some(self)
@@ -222,7 +233,10 @@ pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
     let emitted = run_phases(
         &file,
         &LexerOptions::default(),
-        &SemcheckOptions::builder().no_unsafe(options.no_unsafe).build(),
+        &SemcheckOptions::builder()
+            .no_unsafe(options.no_unsafe)
+            .lint(lint(*options))
+            .build(),
         &FoldOptions::default(),
         &BorrowCheckOptions::builder()
             .check(options.check)
@@ -338,4 +352,20 @@ fn level_tone(level: Level) -> Tone
         Level::Warning => Tone::Warning,
         Level::Note => Tone::Note,
     }
+}
+
+/// The lint levels a fence asks for: the spoken spellings allowed under
+/// `lint-allow=spoken`.
+///
+/// # Arguments
+///
+/// * `options` - The options of the fence.
+///
+/// # Returns
+///
+/// The levels.
+fn lint(options: FenceOptions) -> LintLevels
+{
+    let allowed = LintLevels::default().with("spoken", LintLevel::Off);
+    tern!(options.spoken, allowed.unwrap_or_default(), LintLevels::default())
 }

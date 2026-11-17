@@ -271,7 +271,7 @@ fn the_error_page_lists_each_code()
 #[test]
 fn fence_words_with_an_equals_sign_are_options()
 {
-    let (fence, options) = Fence::parse("zaka-stop mem-check=warn").expect("a fence");
+    let (fence, options) = Fence::parse("zaka-stop lint-warn=mem").expect("a fence");
     assert_eq!(fence, Fence::Stop);
     assert_eq!(options, FenceOptions::builder().check(MemCheck::Warn).build());
 
@@ -281,25 +281,30 @@ fn fence_words_with_an_equals_sign_are_options()
     assert!(options.no_unsafe);
     assert_eq!(options.check, MemCheck::Warn);
 
-    let (_, options) = Fence::parse("zaka mem-strict=on").expect("a fence");
+    let (_, options) = Fence::parse("zaka lint-warn=doubts").expect("a fence");
     assert!(options.strict);
 
     let (_, plain) = Fence::parse("zaka").expect("a fence");
     assert_eq!(plain, FenceOptions::default());
 
-    assert_eq!(Fence::parse("zaka-error mem-check=loud"), None);
+    assert_eq!(Fence::parse("zaka-error lint-error=loud"), None);
+    let (_, options) = Fence::parse("zaka-stop lint-allow=mem").expect("a fence");
+    assert_eq!(options.check, MemCheck::Off);
     assert_eq!(Fence::parse("zaka no-unsafe=off"), None);
     let (_, options) = Fence::parse("zaka-stop overflow=stop").expect("a fence");
     assert_eq!(options.overflow, zakac_borrow_checker::options::OverflowMode::Stop);
     let (_, options) = Fence::parse("zaka overflow=wrap").expect("a fence");
     assert_eq!(options.overflow, zakac_borrow_checker::options::OverflowMode::Wrap);
     assert_eq!(Fence::parse("zaka overflow=trap"), None);
+    let (_, options) = Fence::parse("zaka lint-allow=spoken").expect("a fence");
+    assert!(options.spoken);
+    assert_eq!(Fence::parse("zaka lint-allow=naturalness"), None);
     assert_eq!(Fence::parse("zaka mem-lint=on"), None);
-    assert_eq!(Fence::parse("zaka-stop mem-check"), None);
-    assert_eq!(Fence::parse("zaka-stop mem-check:off"), None);
+    assert_eq!(Fence::parse("zaka-stop mem-check=off"), None);
+    assert_eq!(Fence::parse("zaka-stop lint-allow"), None);
     assert_eq!(Fence::parse("zaka-error ZK07"), None);
     assert_eq!(Fence::parse("zaka-error zk0709"), None);
-    assert_eq!(Fence::parse("text mem-check=warn"), None);
+    assert_eq!(Fence::parse("text lint-warn=mem"), None);
 }
 
 #[test]

@@ -233,7 +233,7 @@ warning[ZK0704]: the block of "ပ" is freed here, but "q" still points into it 
   | - "q" is used here
 ```
 
-The finding is a warning, as `--mem-check warn` is the default, so the program runs, and
+The finding is a warning, as `--lint-warn mem` is the default, so the program runs, and
 the VM stops it at the read of `q`. Swap the last two statements and the program is
 correct: `q` is no longer live at the free.
 
@@ -512,8 +512,8 @@ each other one is, so a place that can be unset there is ZK0722. The function th
 C function holds one statement, the call into C (`calls_c`); the check cannot see what C
 writes, so it trusts the mark and follows none of the filled parameters there.
 
-The diagnostics of this check join the others before `downgrade`, but `--mem-check` never
-changes them, as none of them is in the lint: the kinds promise there is no NULL and no hidden default, and that promise
+The diagnostics of this check join the others before `downgrade`, but no level of the
+`mem` lint changes them, as none of them is in the lint: the kinds promise there is no NULL and no hidden default, and that promise
 holds at each level. A pointer read before it is set also holds the zero octets of its
 declaration, the null address, so the flow can report ZK0709 or ZK0711 at the same read;
 `borrow_check` drops those, and the report of the unset read stands for both.
@@ -528,11 +528,15 @@ a write inside a row reaches it through the rows, as a cell write does.
 ## Options
 
 `BorrowCheckOptions { check: MemCheck, strict: bool, overflow, lint: LintLevels }`, chosen
-with `--mem-check`, `--mem-strict`, `--overflow`, and `--allow`, `--warn` and `--error`
-on `borrowck`, `codegen` and `run`. `LintLevels` holds an `Option<MemCheck>` for each code of
-`LINT_CODES`: the lint, ZK0719 and ZK0723. `borrow_check_options` fills it from the three
+with `--overflow` and `--lint-allow`, `--lint-warn` and `--lint-error` on `borrowck`,
+`build` and `run`. `LintLevels` (in `zakac_diagnostics::lint`) holds an
+`Option<LintLevel>` for each code of `LINT_CODES`: the lint, ZK0719, ZK0723 and the
+naturalness codes. `lint_levels` (in `zakac_cli_common::lints`) fills it from the three
 flags, the groups (`LintGroup`) first and the codes after them, each in the order of the
 command line; a value from a config file comes before each one on the command line.
+`check` keeps its default, `Warn`, as the level of the lint that no name sets; a name for
+the group `mem` wins over it. `strict` is on when a name sets the group `doubts` to `warn`
+or `error`.
 
 | Option | Effect |
 | --- | --- |
@@ -543,7 +547,7 @@ command line; a value from a config file comes before each one on the command li
 
 `downgrade` sorts each finding into the lint or not:
 
-| Set | Codes | Under `--mem-check` |
+| Set | Codes | Under the level of `mem` |
 | --- | --- | --- |
 | `LINT` | ZK0702, ZK0703, ZK0704, ZK0706, ZK0707, ZK0708, ZK0712, ZK0721 | follow the mode wherever the check finds them; pointers, which unsafe code alone works with, give them |
 | `UNSAFE_LINT` | ZK0709, ZK0710, ZK0711 | follow the mode inside a region of `Module.unsafe_spans`, and remain errors in safe code, where a cell number past the end of a list gives ZK0710 |
@@ -554,7 +558,7 @@ A level set through a name wins over the mode. It reaches a `UNSAFE_LINT` code i
 code alone, and ZK0719 and ZK0723 wherever the check finds them; `NotALint` refuses each
 other code at the command line.
 
-```zaka-error ZK0704 mem-check=error
+```zaka-error ZK0704 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။

@@ -16,22 +16,23 @@ two sets of findings:
   past the end; and an operation that overflows for each value it can see. These are
   errors, save ZK0723 and the overflow, which are warnings.
 - **The pointer lint**, on unsafe code: the mistakes that pointers alone can make, such
-  as a use after a give-back, a leak, or the address of a local that escapes. These follow
-  `--mem-check`, and are warnings unless the setting asks for errors.
+  as a use after a give-back, a leak, or the address of a local that escapes. These are
+  the lint group `mem`: warnings unless `--lint-error mem` asks for errors.
 
 [Unsafe Zaka](../language/unsafe.md) gives the rules the lint follows, and the list of
 its findings.
 
 | Setting | Command line | In the Explorer | Default |
 | --- | --- | --- | --- |
-| how the lint is reported | `--mem-check error`, `warn` or `off` | **Ownership check** | `warn` |
-| report what cannot be proved | `--mem-strict` | **Strict ownership check** | off |
-| the level of one group or code | `--allow`, `--warn`, `--error` | | none |
+| how the lint is reported | `--lint-warn mem`, `--lint-error mem` or `--lint-allow mem` | **Ownership check** | warnings |
+| report what cannot be proved | `--lint-warn doubts` | **Strict ownership check** | off |
+| the level of one group or code | `--lint-allow`, `--lint-warn`, `--lint-error` | | none |
 | refuse unsafe code | `--no-unsafe` | **Forbid unsafe code** | off |
 | what overflow does | `--overflow stop` or `wrap` | **Stop on overflow** | `stop` |
 
-`--mem-check`, `--mem-strict`, `--overflow`, `--allow`, `--warn` and `--error` work on
-`borrowck`, `build` and `run`, and `--no-unsafe` on `irgen` too. See
+`--overflow` works on `borrowck`, `build` and `run`; `--lint-allow`, `--lint-warn`,
+`--lint-error` and `--no-unsafe` on `irgen` too, and the lint options on `semcheck` as
+well. See
 [Commands](commands.md). A [config file](configuration.md) can set each of them.
 
 ## What each setting changes
@@ -42,11 +43,11 @@ them. The settings change what the *compiler* does with the same finding.
 
 | Setting | Effect |
 | --- | --- |
-| `--mem-check warn` | each finding of the lint is a warning: the program runs, and the VM stops it if it reaches the bad access |
-| `--mem-check error` | each finding of the lint is an error: nothing runs |
-| `--mem-check off` | the lint reports nothing: the VM is the one check left |
-| `--mem-strict` | adds the warnings for what the compiler cannot prove safe (ZK0711) |
-| `--allow`, `--warn`, `--error` | set the level of one group of the lint, or of one code, over `--mem-check`: `--error leaks` makes each leak an error while the rest remain warnings |
+| `--lint-warn mem` | each finding of the lint is a warning: the program runs, and the VM stops it if it reaches the bad access |
+| `--lint-error mem` | each finding of the lint is an error: nothing runs |
+| `--lint-allow mem` | the lint reports nothing: the VM is the one check left |
+| `--lint-warn doubts` | adds the warnings for what the compiler cannot prove safe (ZK0711) |
+| `--lint-allow`, `--lint-warn`, `--lint-error` | set the level of one group of the lint, or of one code, over the level of `mem`: `--lint-error leaks` makes each leak an error while the rest remain warnings |
 | `--no-unsafe` | each use of `စိတ်မချရသော` is an error (ZK0471) |
 
 The lint holds ZK0702 to ZK0708, ZK0712 and ZK0721 wherever the compiler finds them, and
@@ -73,7 +74,7 @@ A block of four integers has cells 0 to 3, and the program reads cell 4:
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-With the default, `--mem-check warn`, the finding is a warning, the program starts, and
+With the default, `--lint-warn mem`, the finding is a warning, the program starts, and
 the VM stops it at the bad read. Cell 3 is printed first, since it was fine. A new block
 holds zeros:
 
@@ -105,9 +106,9 @@ warning[ZK0710]: offset 4 is past the end of a block of 4 elements
 zaka_vm: the program stopped: access of 8 octets at 0x101020 lands outside each live block (in ပရိုဂရမ်, at past.zaka:6:1); block at 0x101000, 32 octets, heap
 ```
 
-With `--mem-check error` the compiler refuses the program and nothing runs:
+With `--lint-error mem` the compiler refuses the program and nothing runs:
 
-```zaka-error ZK0710 mem-check=error
+```zaka-error ZK0710 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -120,7 +121,7 @@ With `--mem-check error` the compiler refuses the program and nothing runs:
 ```
 
 ```console
-$ zakac run --mem-check error past.zaka
+$ zakac run --lint-error mem past.zaka
 error[ZK0710]: offset 4 is past the end of a block of 4 elements
  --> past.zaka:6:1
   |
@@ -128,10 +129,10 @@ error[ZK0710]: offset 4 is past the end of a block of 4 elements
   | ^^^^^
 ```
 
-With `--mem-check off` the compiler is silent, and the VM stops the program at the same
+With `--lint-allow mem` the compiler is silent, and the VM stops the program at the same
 read:
 
-```zaka-stop mem-check=off
+```zaka-stop lint-allow=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -165,11 +166,11 @@ reach, and the VM's check alone can catch it.
 
 ## Safe code keeps its errors
 
-Outside unsafe code, a finding of the flow checks does not move with `--mem-check`. A
+Outside unsafe code, a finding of the flow checks does not move with the level of the `mem` lint. A
 function value is never null, so a variable of a function kind that a path reaches with no
-function given is a read of an unset value, ZK0722, even under `--mem-check off`:
+function given is a read of an unset value, ZK0722, even under `--lint-allow mem`:
 
-```zaka-error ZK0722 mem-check=off
+```zaka-error ZK0722 lint-allow=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဖ သည် (လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။
 ဖ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
@@ -177,7 +178,7 @@ function given is a read of an unset value, ZK0722, even under `--mem-check off`
 ```
 
 ```console
-$ zakac run --mem-check off call.zaka
+$ zakac run --lint-allow mem call.zaka
 error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
 ```
 
@@ -190,7 +191,7 @@ and the VM frees it.
 
 The compiler is quiet about a pointer when it cannot tell whether the pointer holds the
 null pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`. A new block can fail to come, since the heap
-can run out, so a pointer that has just been filled can point at nothing. `--mem-strict`
+can run out, so a pointer that has just been filled can point at nothing. `--lint-warn doubts`
 asks for a warning at each read or write through such a pointer that was never compared
 with the null pointer:
 
@@ -210,10 +211,10 @@ with the null pointer:
 ၁
 ```
 
-Without `--mem-strict` the program above compiles with no message. With it, the compiler
+Without `--lint-warn doubts` the program above compiles with no message. With it, the compiler
 adds a warning (ZK0711); the program still runs:
 
-```zaka-warning ZK0711 mem-strict=on
+```zaka-warning ZK0711 lint-warn=doubts
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -226,7 +227,7 @@ adds a warning (ZK0711); the program still runs:
 ```
 
 ```console
-$ zakac run --mem-strict nul.zaka
+$ zakac run --lint-warn doubts nul.zaka
 warning[ZK0711]: "ပ" can point at nothing here; compare it with "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" first
  --> nul.zaka:5:1
   |
@@ -235,7 +236,7 @@ warning[ZK0711]: "ပ" can point at nothing here; compare it with "မည်သ�
 ```
 
 The warning goes when the program compares the pointer with the null pointer first. ZK0711 is a
-warning in the modes `error` and `warn`, and `--mem-check off` drops it with the rest of
+warning in the modes `error` and `warn`, and `--lint-allow mem` drops it with the rest of
 the lint. Strict adds warnings alone; it never turns a program that compiles into one
 that does not.
 
@@ -270,7 +271,7 @@ error[ZK0471]: this program keeps to safe Zaka, so it cannot hold unsafe code ("
  --> unsafe.zaka:2:1
 ```
 
-The refusal is an error in each `--mem-check` mode, because it is a rule of the language,
+The refusal is an error in each level of the `mem` lint, because it is a rule of the language,
 read with names and kinds. Each use is spelled with `စိတ်မချရ`, so a search for that
 word finds each place the compiler does not vouch for.
 
@@ -296,8 +297,7 @@ See [Addresses and blocks](../vm/blocks.md).
 | Setting | Read in | Result |
 | --- | --- | --- |
 | `--no-unsafe` | names and kinds | ZK0471, an error |
-| `--mem-check`, `--mem-strict` | the checker | the level of the lint, and ZK0711; never ZK0722 to ZK0724 |
-| `--allow`, `--warn`, `--error` | the checker | the level of the codes of the lint, ZK0719 and ZK0723; never ZK0701, ZK0722 or ZK0724 |
+| `--lint-allow`, `--lint-warn`, `--lint-error` | the checker | the level of the codes of the lint, ZK0719 and ZK0723; never ZK0701, ZK0722 or ZK0724 |
 | `--overflow` | the checker and the code generators | what an overflow does, and ZK0719 |
 | `--frames` | the VM | where the variables sit |
 

@@ -65,6 +65,8 @@ serde_json = "1.0.154"
 serde-saphyr = "1.2.0"
 serde-wasm-bindgen = "0.6.5"
 shadow-rs = { version = "2.0.0", default-features = false }
+sha2 = "0.11.0"
+strsim = "0.11.1"
 strum = { version = "0.28.0", features = ["derive"] }
 sys-locale = "0.3.2"
 tempfile = "3.27.0"
@@ -96,6 +98,7 @@ zakac_codegen_target_c = { path = "compiler/zakac_codegen_target_c" }
 zakac_codegen_target_native = { path = "compiler/zakac_codegen_target_native", default-features = false }
 zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
+zakac_diagnostics_fixes = { path = "compiler/zakac_diagnostics_fixes" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }
 zakac_i18n = { path = "compiler/zakac_i18n" }
 zakac_ir_builder = { path = "compiler/zakac_ir_builder" }

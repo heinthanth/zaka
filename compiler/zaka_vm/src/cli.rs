@@ -8,6 +8,7 @@ use zakac_ast::target::host_arch;
 use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
+use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgAction;
@@ -504,15 +505,11 @@ fn compiled(
     let options = semcheck_options(matches);
     let folding = fold_options(matches);
     let mem = borrow_check_options(matches);
-    let program = load_settled(
-        source,
-        source_map,
-        &LexerOptions::default(),
-        &target_from(matches, BuildTarget::Vm),
-        &options,
-    )?;
+    let target = target_from(matches, BuildTarget::Vm);
+    let program =
+        load_settled(source, source_map, &LexerOptions::default(), &target, &options)?;
     let emitted = run_loaded(program, &options, &folding, &mem, emit_options(matches));
-    let diagnostics = emitted.diagnostics().to_vec();
+    let diagnostics = checked_fixes(matches, source, target, emitted.diagnostics());
     let mut module = emitted.module;
     do_if!(release(matches), module.iter_mut().for_each(Module::strip_debug));
     Ok(Loaded { module, diagnostics })

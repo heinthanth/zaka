@@ -269,9 +269,9 @@ too, so the output reads as the source does:
 
 A pointer that holds an address prints as `0x` and the address in hexadecimal. Reading or
 writing through the null address stops the program. When the compiler can prove that a
-pointer is null on each path to a read, it reports ZK0709, and under `--mem-strict` it
+pointer is null on each path to a read, it reports ZK0709, and under `--lint-warn doubts` it
 warns (ZK0711) about a pointer that *can* be null, such as a new block that was never
-compared with the phrase. In unsafe code both follow `--mem-check`; see [The checks on unsafe
+compared with the phrase. In unsafe code both follow the level of the `mem` lint; see [The checks on unsafe
 code](#the-checks-on-unsafe-code).
 
 ## Taking an address
@@ -864,23 +864,23 @@ can prove wrong. These findings are the *pointer lint*:
 | ZK0708 | a block this function asked for that is never given back, handed to an owned parameter, returned as an owned result, or stored in a heap block, a global or a field |
 | ZK0709 | a read or a write through a pointer that is the null address on each path |
 | ZK0710 | an offset past the end of a block |
-| ZK0711 | a read or a write through a pointer that can be the null address (with `--mem-strict`) |
+| ZK0711 | a read or a write through a pointer that can be the null address (with `--lint-warn doubts`) |
 | ZK0712 | two pointers into different blocks subtracted |
 | ZK0721 | the two ranges of `ကူးယူမည်` overlap for certain |
 
-`--mem-check` sets the level of the lint:
+The lint group `mem` takes its level from these options:
 
 | Setting | The lint |
 | --- | --- |
-| `--mem-check warn` (the default) | warnings: the program runs, and the VM stops it if it reaches the bad access |
-| `--mem-check error` | errors: nothing runs |
-| `--mem-check off` | nothing: the VM is the one check left |
+| `--lint-warn mem` (the default) | warnings: the program runs, and the VM stops it if it reaches the bad access |
+| `--lint-error mem` | errors: nothing runs |
+| `--lint-allow mem` | nothing: the VM is the one check left |
 
 ZK0711 is a warning in the modes `error` and `warn`. ZK0702 to ZK0708, ZK0712 and ZK0721
 come from pointers alone, so the setting moves them wherever the compiler finds them. ZK0709, ZK0710
 and ZK0711 can also come from safe code, from a function value or a list: outside unsafe code these keep
-their own level whatever the setting, and the setting moves them inside unsafe code alone. `--allow`, `--warn` and `--error` set
-one group or code of the lint on its own, over `--mem-check`; see
+their own level whatever the setting, and the setting moves them inside unsafe code alone. `--lint-allow`, `--lint-warn` and `--lint-error` set
+one group or code of the lint on its own, over the level of `mem`; see
 [Commands](../compiler/commands.md#options-of-the-compile-stages).
 ZK0701 is an error in each mode.
 
@@ -905,9 +905,9 @@ warning[ZK0704]: the block of "ပ" is freed here, but "မ" still points into i
 the program stopped: access at 0x101000 inside a freed block
 ```
 
-Under `--mem-check error` the same program does not compile:
+Under `--lint-error mem` the same program does not compile:
 
-```zaka-error ZK0704 mem-check=error
+```zaka-error ZK0704 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။

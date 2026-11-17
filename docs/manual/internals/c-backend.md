@@ -6,7 +6,7 @@ description: How zakac_codegen_target_c turns the IR into C, the Rust runtime it
 # The C target
 
 `zakac_codegen_target_c` is the second backend. It reads the IR that the flow checker
-leaves, the one `zakac_codegen_target_vm` reads, and writes C11. `zakac build --target c`
+leaves, the one `zakac_codegen_target_vm` reads, and writes C11. `zakac build --backend c`
 runs it, then the C compiler. [Native programs](../compiler/native.md) tells what a user
 sees; this page tells how it is built.
 
@@ -21,7 +21,7 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 
 | File | Job |
 | --- | --- |
-| `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--target c` |
+| `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--backend c` |
 | `driver.rs` | the phases, then `emit`; the cache folder; the two runtime headers, embedded with `include_str!`, and the runtime lib, `RUNTIME_LIB`, embedded with `include_bytes!`; `native_libs`, the OS libs the lib needs; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
 | `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c`, and the program table `zk_the_program` in `zaka_kinds.c` |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |

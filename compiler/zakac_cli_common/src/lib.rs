@@ -4,6 +4,7 @@ pub mod clap_utils;
 pub mod command;
 pub mod config;
 pub mod grants;
+pub mod lints;
 
 pub use clap;
 pub use termcolor;

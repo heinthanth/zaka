@@ -142,21 +142,21 @@ warning[ZK0708]: the block that "အဖြေ" holds is never given back or hand
 
 In unsafe code, the compiler reports the pointer mistakes it can prove as warnings, and
 the program runs; the VM then stops it at the bad access. In safe code, such as a read of a
-variable before the program sets it, each finding remains an error. The option `--mem-check` sets the
+variable before the program sets it, each finding remains an error. The lint group `mem` takes a
 level for unsafe code:
 
 | Option | In the Explorer's settings | Effect in unsafe code |
 | --- | --- | --- |
-| `--mem-check warn` | **Ownership check**: **Warn** | the default: each mistake is a warning, and the program runs |
-| `--mem-check error` | **Ownership check**: **Error** | each mistake is an error, and nothing runs |
-| `--mem-check off` | **Ownership check**: **Off** | the compiler reports none of those mistakes |
-| `--mem-strict` | **Strict ownership check** | also warns about a pointer that can hold the null address |
+| `--lint-warn mem` | **Ownership check**: **Warn** | the default: each mistake is a warning, and the program runs |
+| `--lint-error mem` | **Ownership check**: **Error** | each mistake is an error, and nothing runs |
+| `--lint-allow mem` | **Ownership check**: **Off** | the compiler reports none of those mistakes |
+| `--lint-warn doubts` | **Strict ownership check** | also warns about a pointer that can hold the null address |
 
 A read after a hand-over (ZK0701) is an error in each mode. The strict check warns where a
 pointer can hold the null address, such as a new block never compared with it, since the
 heap can run out:
 
-```zaka-warning ZK0711 mem-strict=on
+```zaka-warning ZK0711 lint-warn=doubts
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။

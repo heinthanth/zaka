@@ -48,3 +48,12 @@ en = "Grants each right: read, write, env and ffi."
 
 [cli.no_prompt]
 en = "Asks nothing for a right the run lacks: the effect is denied at once."
+
+[cli.allow]
+en = "Leaves out each finding of a lint group or code, such as leaks, naturalness or ZK0708; a code wins over a group."
+
+[cli.warn]
+en = "Reports each finding of a lint group or code as a warning; a code wins over a group."
+
+[cli.error]
+en = "Reports each finding of a lint group or code as an error; a code wins over a group."

@@ -25,7 +25,7 @@ use zakac_ir_builder::cli::attach_compile_args;
 use zakac_rust_sugars::ret_if;
 
 /// The flag that picks the target.
-const TARGET_ARG: &str = "target";
+const TARGET_ARG: &str = "backend";
 /// The flag that picks what a build writes; each target has its own words.
 const EMIT_ARG: &str = "emit";
 
@@ -72,8 +72,8 @@ fn configure_build(cmd: clap::Command) -> clap::Command
         .help(t!("build.output"));
     let targets: Vec<&'static str> = Target::iter().map(Into::into).collect();
     let target = Arg::new(TARGET_ARG)
-        .long("target")
-        .value_name("TARGET")
+        .long("backend")
+        .value_name("BACKEND")
         .help(t!("build.target"))
         .value_parser(PossibleValuesParser::new(targets))
         .default_value(<&'static str>::from(Target::default()));

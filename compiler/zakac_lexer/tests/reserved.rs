@@ -130,7 +130,7 @@ fn spec_compounds_split()
 }
 
 #[test]
-fn spoken_endings_are_not_reserved()
+fn spoken_endings_read_as_their_written_words()
 {
     let triples = [
         ("လုပ်ဆောင်မည်", "လုပ်ဆောင်မယ်", Kw::WillDo),
@@ -144,7 +144,7 @@ fn spoken_endings_are_not_reserved()
     ];
     do_for!((written, spoken, kw) in triples, {
         assert_eq!(lookup(written), Some(kw), "{written}");
-        assert_eq!(lookup(spoken), None, "{spoken}");
+        assert_eq!(lookup(spoken), Some(kw), "{spoken}");
     });
     assert_eq!(lookup("မင်မိုရီ"), Some(Kw::Mem));
     assert_eq!(lookup("မှတ်ဉာဏ်"), Some(Kw::Mem));

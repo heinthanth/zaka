@@ -34,14 +34,14 @@ zakac_ir_builder            IR, folding        ZK06     codegen.md
 zakac_borrow_checker        flow and lint      ZK07     borrow-checker.md
    ▼
 zakac_codegen_target_vm     ops                         codegen.md
-   ▼                        (build --target vm)
+   ▼                        (build --backend vm)
 zaka_vm                     runs the ops       (traps)
 
 zakac_codegen_target_c      C for each module, then an executable
-                            (build --target c; after the flow check)
+                            (build --backend c; after the flow check)
 
 zakac_codegen_target_native CLIF, run at once or linked into an executable
-                            (run --jit, build --target native)
+                            (run --jit, build --backend native)
 ```
 
 ## The workspace
@@ -63,16 +63,17 @@ workspace: Zed builds it on its own, with the target folder inside it.
 | `zakac_naturalness` | warnings about wording that is allowed but not natural (ZK05) |
 | `zakac_semcheck` | name resolution, scopes, kinds, literal fitting, captures, unsafe code and the pointer kind |
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
-| `zakac_borrow_checker` | the flow check over the IR, and the lint on unsafe code (ZK07); the crate keeps its old name |
+| `zakac_borrow_checker` | the flow check over the IR, and the lint on unsafe code (ZK07); the crate keeps its old name; `fixes::Recompile` runs the stages again on a patched text for the check of fixes |
 | `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
 | `zakac_codegen_target_c` | the C of each module, the runtime headers (`runtime/`) and the runtime lib built into it, and the build of an executable with a C compiler |
-| `zakac_codegen_target_native` | the IR lowered to Cranelift IR: run at once in `zakac` (`run --jit`), or written as an object file and linked (`build --target native`) |
+| `zakac_codegen_target_native` | the IR lowered to Cranelift IR: run at once in `zakac` (`run --jit`), or written as an object file and linked (`build --backend native`) |
 | `zaka_runtime` | the runtime of native programs, in Rust: a static lib that the C and native targets link, and that `zakac` links for the JIT |
-| `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames and the outline; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
+| `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames, the outline and quick fixes; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
-| `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml` |
-| `zakac_reporter` | draws a diagnostic with its source line, the span marked in it, and the caret rows when asked for |
+| `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor per message, texts in `locales/codes.toml`; its build script reads the page of each code from the See column of the page of error messages |
+| `zakac_diagnostics_fixes` | the fixes of a message: the rules that read the source text, and the check that compiles each fix again before it is shown ([Fixes](fixes.md)) |
+| `zakac_reporter` | draws a diagnostic with its source line, the span marked in it, and the caret rows when asked for; in learner mode, the explanation of its code and the link to its page |
 | `zakac_burmese_alignment` | finds the terminal and how it draws Burmese text; places a caret row where a terminal that flows Burmese text draws the line |
 | `zakac_session` | the artifact envelope (text and raw forms), command input and output |
 | `zakac_host_errors` | errors of the driver (a missing file, a bad artifact); no code is attached |

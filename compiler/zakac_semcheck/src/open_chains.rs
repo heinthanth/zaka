@@ -59,6 +59,10 @@ pub fn settled<E>(
     loop
     {
         let mut loaded = load(&resolved)?;
+        // The levels hold as the program is read: a lint code allowed through a
+        // name stops no pass.
+        loaded.diagnostics =
+            options.levels().relevel(std::mem::take(&mut loaded.diagnostics));
         ret_if!(
             loaded.open_conds.is_empty() || has_errors(&loaded.diagnostics),
             Ok(loaded)

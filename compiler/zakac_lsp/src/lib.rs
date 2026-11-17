@@ -1,3 +1,4 @@
+pub mod actions;
 pub mod check;
 #[cfg(feature = "server")]
 pub mod cli;

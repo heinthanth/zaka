@@ -9,9 +9,6 @@ en = "source text changed after re-ingest"
 [ir.platform_bits]
 en = "Bit width of the platform-sized integer kinds."
 
-[ir.strict_particles]
-en = "Report particle idiom warnings as errors."
-
 [ir.fold]
 en = "Foldings to run: all, none, or a comma list of exprs, consts and branches. Errors in constant operations are reported whatever this holds."
 

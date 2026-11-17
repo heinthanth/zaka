@@ -10,3 +10,4 @@ pub mod span;
 pub mod text_range;
 
 pub use burmese_normalizer::continues_cluster;
+pub use normalizer::NormalizedSource;

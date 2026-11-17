@@ -1,12 +1,16 @@
 use termcolor::Buffer;
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::Edit;
+use zakac_diagnostics::Fix;
+use zakac_diagnostics::FixOrigin;
 use zakac_diagnostics::Level;
 use zakac_reporter::render::Paint;
 use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::render::format_diagnostic;
 use zakac_reporter::render::write_diagnostic;
 use zakac_reporter::render::write_diagnostics;
+use zakac_reporter::render::write_diagnostics_with;
 use zakac_reporter::render::write_pieces;
 use zakac_reporter::width::Carets;
 use zakac_reporter::width::carets_setting;
@@ -334,4 +338,80 @@ fn help_comes_after_the_labels()
     let (sm, diag) = setup_labelled("free p\nuse q\n", "free p", "use q", "here");
     let rendered = format_diagnostic(&sm, &diag.with_help("h"));
     assert!(rendered.ends_with("----- here\n  = help: h\n"), "{rendered}");
+}
+
+#[test]
+fn a_rule_fix_shows_the_line_as_it_leaves_it()
+{
+    let (sm, diag) = setup("let a = 1\nlet b = ?\n", "?");
+    let span = diag.span;
+    let diag = diag.with_fix("write 2", span, "2");
+    let expected = "\
+error[ZK0101]: it is wrong
+ --> t.zaka:2:9
+  |
+2 | let b = ?
+  |         ^
+  = help: write 2
+  |
+2 | let b = 2
+  |         ~
+";
+    assert_eq!(format_diagnostic(&sm, &diag), expected);
+}
+
+#[test]
+fn a_fix_across_lines_shows_its_text_alone()
+{
+    let (sm, diag) = setup("ab\ncd\n", "b");
+    let across = Span::new(diag.span.lo, diag.span.hi + 2);
+    let edit = Edit::builder().span(across).text("x").build();
+    let fix = Fix::builder().message("join them").edits(vec![edit]);
+    let mut diag = diag;
+    diag.fixes.push(fix.origin(FixOrigin::Rule).build());
+    let rendered = format_diagnostic(&sm, &diag);
+    assert!(rendered.ends_with("  = help: join them\n"), "{rendered}");
+}
+
+#[test]
+fn a_fix_paints_its_new_text_as_a_note()
+{
+    let (sm, diag) = setup("let b = ?\n", "?");
+    let span = diag.span;
+    let diag = diag.with_fix("write 2", span, "2");
+    let pieces = diagnostic_pieces(&sm, &diag, Carets::Codepoint);
+    let new_text = pieces.iter().find(|p| p.text == "2").unwrap();
+    assert_eq!(new_text.paint, Paint::Marked(Level::Note));
+    let tildes = pieces.iter().find(|p| p.text == "~").unwrap();
+    assert_eq!(tildes.paint, Paint::Carets(Level::Note));
+}
+
+/// The text learner mode writes for `diags`, or the text with it off.
+fn learning(sm: &SourceMap, diags: &[Diagnostic], learn: bool) -> String
+{
+    let mut out = Buffer::no_color();
+    write_diagnostics_with(&mut out, sm, diags, learn).unwrap();
+    String::from_utf8(out.into_inner()).unwrap()
+}
+
+#[test]
+fn learner_mode_explains_a_code_once_and_links_each_time()
+{
+    let (sm, first) = setup("let b = ?\n", "?");
+    let diag = Diagnostic::new(Code::InvalidNumber, "it is wrong", first.span);
+    let text = learning(&sm, &[diag.clone(), diag], true);
+    assert_eq!(text.matches("= explain: ").count(), 1, "{text}");
+    assert_eq!(text.matches("= see: ").count(), 2, "{text}");
+    assert!(text.contains(&Code::InvalidNumber.explain()));
+    assert!(text.contains("/learn/values/integers/\n"), "{text}");
+}
+
+#[test]
+fn learner_mode_off_adds_nothing_and_a_code_with_no_page_gets_no_link()
+{
+    let (sm, diag) = setup("let b = ?\n", "?");
+    let off = learning(&sm, std::slice::from_ref(&diag), false);
+    assert!(!off.contains("= explain: ") && !off.contains("= see: "), "{off}");
+    let on = learning(&sm, &[diag], true);
+    assert!(on.contains("= explain: ") && !on.contains("= see: "), "{on}");
 }

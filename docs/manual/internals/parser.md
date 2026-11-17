@@ -625,10 +625,16 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   or imports to the preposition list of each of its functions; the parser derives the words of
   the prepositions and the first words from it. A preposition call starts at a first word, or at a `၏`
   with a function that declares prepositions and a call end after it (`preposition_end`), and `parse_preposition` reads
-  the longest preposition of the callee that the next words spell.
+  the longest preposition of the callee that the next words spell. Each word of a
+  preposition is kept in its written spelling (`written_form`), so `နဲ့` in a call is the
+  preposition `နှင့်`; the check lets `နှင့်` fill a `ဖြင့်` of a function with no `နှင့်` of its
+  own. `နှင့်` right before the word that closes a long call is its `ဖြင့်`
+  (`at_with_before_call`), as is a `နှင့်` after the digits of a base.
 - `glued.rs` splits a name token that is a function the file sees with a call end glued
   to it (`ပေါင်းသည့်ရလဒ်`) before the parse, never a declared name, and warns of names that
-  can clash (ZK0250, ZK0251). A name in braces never splits.
+  can clash (ZK0250, ZK0251). A name in braces never splits. The call ends hold the
+  spoken ones too (`ပြသမယ်`), and `glued_spoken` reports each as ZK0510, since the lexer saw
+  a name.
 - Each file sees the functions of the prelude (`with_prelude`); the operator functions come
   without prepositions, since the clause engine reads them: `operator_at` takes
   `<operator> <value end>` as a verb whose slots are the prepositions of the trait function

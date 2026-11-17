@@ -8,6 +8,7 @@
 
 use std::collections::HashSet;
 
+use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::lexer::LexerOptions;
@@ -24,15 +25,22 @@ use zakac_span::span::Span;
 use crate::using::Functions;
 
 /// The call ends that can be glued to a function name, longest first, so
-/// the longest end that fits wins.
+/// the longest end that fits wins; each end in its written and its spoken
+/// spelling.
 const ENDS: &[&str] = &[
     "မည့်ရလဒ်ကောင်း",
+    "မယ့်ရလဒ်ကောင်း",
     "သည့်ရလဒ်ကောင်း",
+    "တဲ့ရလဒ်ကောင်း",
     "သောရလဒ်ကောင်း",
     "မည့်ရလဒ်",
+    "မယ့်ရလဒ်",
     "သည့်ရလဒ်",
+    "တဲ့ရလဒ်",
     "သောရလဒ်",
+    "မယ်",
     "မည်",
+    "တယ်",
     "သည်",
     "ပါ",
 ];
@@ -199,4 +207,36 @@ pub(crate) fn clash_warnings(
         }
     }
     found
+}
+
+/// The ZK0510 of each spoken call end glued to the name of a visible
+/// function, such as the `မယ်` of `ပြသမယ်`, which the lexer read as a part of
+/// the name.
+///
+/// shortcut: the ZK0511 count of the lexer leaves these ends out; count them
+/// when files that glue spoken ends report a wrong mix.
+///
+/// # Arguments
+///
+/// * `text` - The normalized source text.
+/// * `base` - Absolute position of `text`.
+/// * `lexed` - The lexer output for `text`.
+/// * `functions` - The functions the file sees.
+///
+/// # Returns
+///
+/// The diagnostics.
+pub(crate) fn glued_spoken(
+    text: &str, base: Pos, lexed: &LexOutput, functions: &Functions,
+) -> Vec<Diagnostic>
+{
+    let tokens = &lexed.tokens;
+    let end_diags = |at: usize| {
+        let tok = &tokens[at];
+        let (stem, end) = glued_parts(text, base, tok, functions)?;
+        Some(lex_at(end, tok.span.lo + stem, &LexerOptions::default()).diagnostics)
+    };
+    let open = (0..tokens.len()).filter(|&at| !declared_at(tokens, at));
+    let found = open.filter_map(end_diags).flatten();
+    found.filter(|d| d.code == Code::SpokenForm).collect()
 }

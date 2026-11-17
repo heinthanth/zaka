@@ -44,7 +44,7 @@ declares as constants:
 | --- | --- |
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်` | the OS: `"windows"`, `"macos"` or `"linux"` |
 | `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ` | the CPU: `"x86_64"`, `"aarch64"`, `"x86"`, `"arm"`, `"riscv64"` or `"wasm32"` |
-| `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--platform-bits`: 8, 16, 32 or 64 |
+| `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--target-bits`: 8, 16, 32 or 64 |
 | `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"`, `"c"` or `"native"` |
 
 A condition holds the facts, text and digits, `==` and `!=` (and `<`, `<=`, `>`, `>=` on
@@ -113,8 +113,8 @@ links its own `snprintf`.
 ## The target of a build
 
 The target is the host the compiler runs on: its OS, its CPU, the bit count of
-`--platform-bits`, and the code of the command (`"c"` for `zakac build --target c`,
-`"native"` for `zakac build --target native` and `zakac run --jit`, `"vm"` for the rest). `--target-os` and `--target-arch` name another
+`--target-bits`, and the code of the command (`"c"` for `zakac build --backend c`,
+`"native"` for `zakac build --backend native` and `zakac run --jit`, `"vm"` for the rest). `--target-os` and `--target-arch` name another
 ([Commands](../compiler/commands.md#options-of-the-compile-stages)).
 
 - A program that holds a compile-time conditional or names a fact is settled for its

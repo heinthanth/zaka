@@ -85,6 +85,17 @@ pub fn compile_on(text: &str, platform_bits: u16) -> Module
     compile_with(text, &options, &mem_off(), ResultMode::default()).0
 }
 
+/// The output of a source text compiled with check options, and the
+/// diagnostics of its compile; it must have no error and not trap.
+pub fn output_with(text: &str, options: &SemcheckOptions) -> (String, Vec<Diagnostic>)
+{
+    let (module, diags) =
+        compile_with(text, options, &mem_off(), ResultMode::default());
+    let (out, result) = run_module(&module, &RunOptions::default());
+    assert_eq!(result, Ok(()), "{text}\n{out}");
+    (out, diags)
+}
+
 /// Compile a source text that must have no error, with checker, ownership
 /// and result options.
 fn compile_with(

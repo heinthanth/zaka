@@ -19,6 +19,7 @@ termcolor = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_cli_common = { workspace = true }
 zakac_diagnostics = { workspace = true }
+zakac_diagnostics_fixes = { workspace = true }
 zakac_host_errors = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }

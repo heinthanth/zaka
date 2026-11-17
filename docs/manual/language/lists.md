@@ -884,7 +884,7 @@ through the pointer never reaches the copied list.
 A pin does not hold the cells in place. An add can move them to a larger block, and a
 write into the whole list replaces them, so a pointer taken before the edit is left
 pointing at freed cells. The checker reports such a use as ZK0704, a warning in unsafe code
-unless `--mem-check` sets another level ([Compiler checks](../compiler/checks.md)), and the VM stops the program at the
+unless `--lint-allow mem` or `--lint-error mem` sets another level ([Compiler checks](../compiler/checks.md)), and the VM stops the program at the
 access. The cells of a counted list never move.
 
 ```zaka-stop
@@ -908,7 +908,7 @@ access. The cells of a counted list never move.
 the program stopped: access at 0x101030 inside a freed block
 ```
 
-```zaka-error ZK0704 mem-check=error
+```zaka-error ZK0704 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
@@ -969,7 +969,7 @@ error[ZK0603]: cell 3 is outside the list, whose cells run from 0 to 2
 checks each of its cells, constant numbers too. For a counted list, when the number comes
 from input, or from a value the compiler cannot follow, the VM checks each access alike.
 It stops the program with the range the list allows. This is what a plain list does with
-the program above, and what `--mem-check warn` shows for the counted one:
+the program above, and what `--lint-warn mem` shows for the counted one:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

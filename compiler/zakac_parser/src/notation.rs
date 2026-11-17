@@ -1020,6 +1020,8 @@ impl Parser<'_>
         let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
         ret_if!(ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
         let args = self.parse_word_list(Self::parse_expr)?;
+        let with = args.len() == 1 && self.at_with_before_call();
+        ret_if!(with, self.advance(), Ok(args));
         self.expect_list_word(args.len(), Kw::Hpjint, Kw::ListWith)?;
         Ok(args)
     }

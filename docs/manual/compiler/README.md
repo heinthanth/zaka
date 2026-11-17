@@ -6,8 +6,8 @@ description: An overview of zakac, the compiler that turns Zaka sentences into o
 # The compiler
 
 `zakac` reads a Zaka program, checks it, and turns it into the ops that the Zaka VM
-runs, or into machine code: through Cranelift (`zakac build --target native`, or
-`zakac run --jit`, which runs it at once) or through C (`zakac build --target c`). It is
+runs, or into machine code: through Cranelift (`zakac build --backend native`, or
+`zakac run --jit`, which runs it at once) or through C (`zakac build --backend c`). It is
 built as a chain of small stages. Each stage takes what the one before it
 made, adds its own checks, and passes the result on; a stage that finds an error ends the
 chain, and the program does not run.

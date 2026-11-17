@@ -3,6 +3,7 @@ pub mod diagnostic;
 pub mod fold;
 pub mod kinds;
 pub mod lexer;
+pub mod lint;
 pub mod naturalness;
 pub mod ownership;
 pub mod parser;
@@ -10,6 +11,9 @@ pub mod resolve;
 
 pub use code::Code;
 pub use diagnostic::Diagnostic;
+pub use diagnostic::Edit;
+pub use diagnostic::Fix;
+pub use diagnostic::FixOrigin;
 pub use diagnostic::Label;
 pub use diagnostic::Level;
 pub use diagnostic::has_errors;

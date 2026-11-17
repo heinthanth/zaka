@@ -6714,6 +6714,7 @@ dependencies = [
  "zakac_cli_common",
  "zakac_codegen_target_vm",
  "zakac_diagnostics",
+ "zakac_diagnostics_fixes",
  "zakac_host_errors",
  "zakac_i18n",
  "zakac_ir_builder",
@@ -6775,6 +6776,7 @@ dependencies = [
  "toml 1.1.6+spec-1.1.0",
  "zaka_host",
  "zakac_consts",
+ "zakac_diagnostics",
  "zakac_host_errors",
  "zakac_i18n",
  "zakac_reporter",
@@ -6893,6 +6895,20 @@ dependencies = [
  "serde",
  "serde-saphyr",
  "strum",
+ "zakac_i18n",
+ "zakac_rust_sugars",
+ "zakac_span",
+]
+
+[[package]]
+name = "zakac_diagnostics_fixes"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "rust-i18n",
+ "strsim",
+ "zakac_diagnostics",
  "zakac_i18n",
  "zakac_rust_sugars",
  "zakac_span",

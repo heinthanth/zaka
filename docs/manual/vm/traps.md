@@ -33,8 +33,8 @@ Numerous traps have a twin in the compiler. The [compiler checks](../compiler/ch
 report a mistake that can be proved from the text; the VM reports the same mistake when
 it happens in a run, which covers the paths and the numbers the compiler cannot see. The
 pointer work on this page sits in unsafe code ([Unsafe Zaka](../language/unsafe.md)),
-where the findings of the checker are warnings under the default `--mem-check warn`, so
-each program runs and the VM's own check shows. With `--mem-check error` the compiler
+where the findings of the checker are warnings under the default `--lint-warn mem`, so
+each program runs and the VM's own check shows. With `--lint-error mem` the compiler
 would refuse numerous programs of this page.
 
 ## All the traps
@@ -489,7 +489,7 @@ A `ကူးယူမည်` writes cells like the `memcpy` of C, so its source 
 must not share an octet. When the ranges do, the VM stops the program before it writes, and
 names the block of the destination. When both addresses point into one block at offsets
 the compiler knows, and the count is known, the checker reports the overlap first
-(ZK0721, a warning in unsafe code under the default `--mem-check warn`). `ပြောင်းထည့်မည်` allows the overlap: it reads the
+(ZK0721, a warning in unsafe code under the default `--lint-warn mem`). `ပြောင်းထည့်မည်` allows the overlap: it reads the
 source in full before it writes. The other checks of these statements stop the program as
 an access does (out of bounds, use after free, a null address, a write into static text),
 a count of 0 is checked for nothing, and a count whose product with the size of a cell
@@ -624,7 +624,7 @@ zaka_vm: the program stopped: stopped after 50 ops (in ပရိုဂရမ်,
 fill the space before `main` starts. The message reads `global` for a static text too:
 
 ```console
-$ zakac run --platform-bits 8 nine-globals.zaka
+$ zakac run --target-bits 8 nine-globals.zaka
 zaka_vm: the program stopped: no room in the address space for a global of 1 octets (in main, at nine-globals.zaka:1:1)
 ```
 
@@ -752,7 +752,7 @@ the program stopped: the C function frexp runs in "zakac run" and in native buil
 **C link.** The first call in a run opens each lib the program names and looks each C
 name up in its lib, then in the process, which holds libc. The run stops when a lib does
 not open, when no lib holds a C name, or when the program is built for addresses of a size
-other than the host's (`--platform-bits`). The reason follows the colon:
+other than the host's (`--target-bits`). The reason follows the colon:
 
 | Reason | Message |
 | --- | --- |
@@ -819,4 +819,4 @@ The message tells what went wrong and where. A good order of work:
    each function with their index and the name of the variable each touches. See
    [Instructions](instructions.md).
 3. Check the compile-time diagnostics: the warnings of the checker on unsafe code point
-   at numerous traps of this page, and `--mem-check error` turns them into errors. The codes are in [Error messages](../reference/errors.md).
+   at numerous traps of this page, and `--lint-error mem` turns them into errors. The codes are in [Error messages](../reference/errors.md).

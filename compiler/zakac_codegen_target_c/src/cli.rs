@@ -8,6 +8,7 @@ use zakac_ast::target::host_arch;
 use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
+use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgAction;
@@ -400,7 +401,9 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         target,
         &grants_from(matches, Granted::Run),
     );
-    let _ = write_diagnostics(io.stderr, &source_map, translated.diagnostics());
+    let built_for = target_from(matches, BuildTarget::C);
+    let shown = checked_fixes(matches, &source, built_for, translated.diagnostics());
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
     ret_if!(has_errors(translated.diagnostics()), ExitCode::Failure);
     let Some(files) = translated.files
     else

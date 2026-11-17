@@ -133,12 +133,16 @@ pub fn check_loaded(loaded: Loaded, options: &SemcheckOptions) -> Checked
         zakac_diagnostics::parser::bad_compile_time_test(*span, &form)
     });
     diagnostics.extend(open);
+    let levels = options.levels();
+    // The levels hold before the test for errors: a lint code allowed through a
+    // name stops nothing.
+    let mut diagnostics = levels.relevel(diagnostics);
     let failed = has_errors(&diagnostics);
-    let idiom = NaturalnessOptions::builder().strict(options.strict_particles).build();
+    let idiom = NaturalnessOptions::default();
     let idiom = tern!(failed, Vec::new(), zakac_naturalness::check(&program, &idiom));
-    diagnostics.extend(idiom);
+    diagnostics.extend(levels.relevel(idiom));
     let out = tern!(failed, SemcheckOutput::default(), semcheck(&mut program, options));
-    diagnostics.extend(out.diagnostics);
+    diagnostics.extend(levels.relevel(out.diagnostics));
     #[rustfmt::skip]
     return Checked::builder().program(program).kinds(out.kinds).structs(out.structs)
         .diagnostics(diagnostics).imports(imports).refs(with_aliases(out.refs, alias_refs))

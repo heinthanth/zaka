@@ -1372,7 +1372,7 @@ impl Parser<'_>
             true =>
             {
                 let value = self.parse_expr()?;
-                self.expect(Kw::HavingRel)?;
+                self.expect_reading(Kw::HavingRel)?;
                 Some(value)
             }
             false => None,

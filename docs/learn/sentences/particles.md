@@ -71,6 +71,25 @@ Notice the print particle. A sentence with an ending (`ကြီးသည်`) i
 bare verb (`ကြီး`) is shown with `ကို`. Which ending sounds natural depends on what comes
 next. [Natural Zaka](../natural-zaka/README.md) gives the rules.
 
+## Spoken endings
+
+Speech ends a sentence with `တယ်` where writing has `သည်`, and puts `မယ်` for `မည်`. Zaka
+reads the spoken words too, once a program allows them with `zakac run --lint-allow spoken`.
+This program is run so:
+
+```zaka lint-allow=spoken
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မယ်။
+၅ သည် ၂ ထက် ကြီးတယ် လို့ ပြသမယ်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+```
+
+Without `--lint-allow spoken`, each spoken word is an error that names its written spelling.
+[Spoken Burmese](../../manual/language/spoken.md) lists each spoken word.
+
 ## Hands on
 
 - Print whether 7 is less than 9, using `အောက်` and `ငယ်သည်`.

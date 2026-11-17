@@ -19,6 +19,7 @@ serde-saphyr = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+zakac_rust_sugars = { workspace = true }
 
 [[test]]
 name = "tests"

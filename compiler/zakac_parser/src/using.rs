@@ -26,6 +26,7 @@ use zakac_ast::visit::Node;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex_at;
+use zakac_lexer::spoken::written_form;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -174,7 +175,7 @@ pub(crate) fn preposition_words(text: &str) -> Option<Vec<String>>
     ret_if!(toks.last().is_some_and(|t| closes(&t)), None);
     let word = |t: &&Token| {
         let (lo, hi) = (t.span.lo - Pos::default(), t.span.hi - Pos::default());
-        text[lo as usize..hi as usize].to_string()
+        written_form(&text[lo as usize..hi as usize]).to_string()
     };
     Some(toks.iter().map(word).collect())
 }
@@ -537,7 +538,8 @@ impl Parser<'_>
         self.finish_using(parts, long, mode)
     }
 
-    /// Read a preposition: the longest of the known prepositions that the next
+    /// Read a preposition, each word in its written spelling: the longest of
+    /// the known prepositions that the next
     /// words spell, or else one word a preposition can hold, so a call with
     /// another preposition still reads and the check reports the
     /// preposition.
@@ -561,7 +563,8 @@ impl Parser<'_>
         );
         let toks: Vec<Token> = (0..len).map(|n| self.peek_n(n)).collect();
         (0..len).for_each(|_| _ = self.bump());
-        let words: Vec<&str> = toks.iter().map(|t| self.text_of(t.span)).collect();
+        let words: Vec<&str> =
+            toks.iter().map(|t| written_form(self.text_of(t.span))).collect();
         let span = first.span.to(&toks[len - 1].span);
         Ok(Ident::builder().name(words.join(" ")).span(span).build())
     }
@@ -578,7 +581,9 @@ impl Parser<'_>
     fn spells_preposition(&self, preposition: &str) -> Option<usize>
     {
         let words: Vec<&str> = preposition.split(' ').collect();
-        let at = |(n, w): (usize, &&str)| self.text_of(self.peek_n(n).span) == *w;
+        let at = |(n, w): (usize, &&str)| {
+            written_form(self.text_of(self.peek_n(n).span)) == *w
+        };
         words.iter().enumerate().all(at).then_some(words.len())
     }
 

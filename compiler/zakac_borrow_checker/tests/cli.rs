@@ -11,6 +11,8 @@ use zakac_cli_common::clap;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::lints::attach_lint_args;
+use zakac_diagnostics::Code;
 use zakac_semcheck::unsafe_code::in_unsafe_code;
 use zakac_session::artifact::RAW_ARTIFACT_MAGIC;
 
@@ -41,7 +43,7 @@ fn run_cli(args: &[&str], stdin: &str) -> (ExitCode, String, String)
 /// Parse a command line with just the checker flags.
 fn parse(args: &[&str]) -> Result<BorrowCheckOptions, clap::Error>
 {
-    let cmd = attach_borrow_check_args(clap::Command::new("t"));
+    let cmd = attach_lint_args(attach_borrow_check_args(clap::Command::new("t")));
     let argv = std::iter::once("t").chain(args.iter().copied());
     cmd.try_get_matches_from(argv).map(|m| borrow_check_options(&m))
 }
@@ -67,17 +69,19 @@ fn borrow_check_input_file()
 }
 
 #[test]
-fn mem_check_words_are_parsed()
+fn lint_names_set_the_pointer_lint_and_the_doubts()
 {
-    let options = parse(&["--mem-check", "warn", "--mem-strict"]).unwrap();
+    let options = parse(&["--lint-warn", "doubts"]).unwrap();
     assert_eq!(options.check, MemCheck::Warn);
     assert!(options.strict);
-    assert_eq!(parse(&["--mem-check", "off"]).unwrap().check, MemCheck::Off);
-    assert_eq!(parse(&["--mem-check", "error"]).unwrap().check, MemCheck::Error);
+    let off = parse(&["--lint-allow", "mem"]).unwrap();
+    assert_eq!(off.lint.get(Code::BlockLeaked), Some(MemCheck::Off));
+    let error = parse(&["--lint-error", "mem"]).unwrap();
+    assert_eq!(error.lint.get(Code::BlockLeaked), Some(MemCheck::Error));
 }
 
 #[test]
-fn mem_check_defaults_to_warn_and_not_strict()
+fn the_pointer_lint_defaults_to_warn_and_not_strict()
 {
     let options = parse(&[]).unwrap();
     assert_eq!(options, BorrowCheckOptions::default());
@@ -86,10 +90,11 @@ fn mem_check_defaults_to_warn_and_not_strict()
 }
 
 #[test]
-fn mem_check_rejects_other_words()
+fn the_old_pointer_lint_flags_are_gone()
 {
-    assert!(parse(&["--mem-check", "loud"]).is_err());
-    let (code, _, _) = run_cli(&["--mem-check", "loud"], "၁ ကို ပြသမည်။");
+    assert!(parse(&["--mem-check", "error"]).is_err());
+    assert!(parse(&["--mem-strict"]).is_err());
+    let (code, _, _) = run_cli(&["--lint-error", "loud"], "၁ ကို ပြသမည်။");
     assert_ne!(code, ExitCode::Success);
 }
 

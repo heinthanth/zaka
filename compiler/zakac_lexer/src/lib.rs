@@ -8,6 +8,7 @@ pub mod phrases;
 pub mod reserved;
 pub mod role;
 pub mod spelling;
+pub mod spoken;
 pub mod text;
 pub mod token;
 pub mod words;

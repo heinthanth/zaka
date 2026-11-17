@@ -58,7 +58,7 @@ en = "the C target cannot build %{what} at present"
 en = "the native target cannot build %{what} at present"
 
 [errors.arch_not_for_native]
-en = "the native target builds for x86_64, aarch64 and riscv64, not for %{arch}: give --target c, or --target vm"
+en = "the native target builds for x86_64, aarch64 and riscv64, not for %{arch}: give --backend c, or --backend vm"
 
 [errors.native_for_other_host]
 en = "the native target links for this host, %{host}, not for %{target}: give --emit obj to write the object file and link it there"
@@ -73,7 +73,7 @@ en = "the config file %{p} sets %{name}, which no command here takes"
 en = "the config file %{p} gives %{name} a value of the wrong form: use text, a number, true or false, or a list of these"
 
 [errors.unknown_lint_name]
-en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow) or a code such as ZK0708"
+en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow, naturalness, spoken) or a code such as ZK0708"
 
 [errors.not_a_lint]
 en = "%{code} is not a lint: its level cannot change"

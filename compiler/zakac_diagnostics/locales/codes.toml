@@ -91,6 +91,8 @@ en = "put the clause before \"%{op}\" in parentheses: a value read with a verb t
 en = "unexpected token"
 [codes.ZK0201.message]
 en = "expected %{e}, found %{f}"
+[codes.ZK0201.fix]
+en = "insert \"%{t}\""
 [codes.ZK0201.explain]
 en = """The parser reached a token that does not fit the statement at this point; the message names what the grammar allows here. A common cause is a name written attached to a particle, such as \"အသက်ကို\": a word that is not made of reserved words alone is one identifier, so write a space between the name and the particle."""
 
@@ -1650,7 +1652,7 @@ en = "\"%{v}သည်\" before \"သို့မဟုတ်\" reads better as \
 [codes.ZK0501.help]
 en = "write \"%{v}ပါ သို့မဟုတ် ...\""
 [codes.ZK0501.explain]
-en = """A negative verb (\"မညီ\", \"မကြီး\", \"မငယ်\", \"မမှန်\", \"မဟုတ်\") that is followed with \"သို့မဟုတ်\" carries the particle \"ပါ\" in natural Burmese, not \"သည်\". The program still runs; this is a matter of idiom. The strict-particles flag turns it into an error."""
+en = """A negative verb (\"မညီ\", \"မကြီး\", \"မငယ်\", \"မမှန်\", \"မဟုတ်\") that is followed with \"သို့မဟုတ်\" carries the particle \"ပါ\" in natural Burmese, not \"သည်\". The program still runs; this is a matter of idiom. \"--lint-error naturalness\" turns it into an error."""
 
 [codes.ZK0502.title]
 en = "particle before an attached \"လျှင်\" or \"နေသရွေ့\""
@@ -1729,6 +1731,26 @@ en = "write \"တစ်%{w}လုံး\""
 en = "write \"တစ်%{w}\""
 [codes.ZK0509.explain]
 en = """Burmese counts things with a classifier that fits them: people with \"ယောက်\", most other things with \"ခု\". A struct or an enumeration names its classifier with \"... တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\", and an alias with \"... ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။\"; an alias with no word of its own counts with the word of its kind, \"စာလုံး\" counts with \"လုံး\", and each other kind with \"ခု\". The word follows \"တစ်\" after each kind written in a declaration, a parameter, a field, a result, a conversion, a size and a literal, and at the end of a struct literal; \"<word>စာ\" counts the cells of a heap block. The size and the value are the same whichever word is written, so the program still compiles."""
+
+[codes.ZK0510.title]
+en = "spoken spelling"
+[codes.ZK0510.message]
+en = "\"%{s}\" is the spoken spelling of \"%{w}\""
+[codes.ZK0510.message_either]
+en = "\"%{s}\" is the spoken spelling of \"%{w}\" or \"%{o}\""
+[codes.ZK0510.help]
+en = "write \"%{w}\""
+[codes.ZK0510.explain]
+en = """Zaka is written in written Burmese: \"ထားမည်\", \"ဖြစ်သည်\", \"ထဲတွင်\". Each reserved word also reads in its spoken spelling, \"ထားမယ်\", \"ဖြစ်တယ်\", \"ထဲမှာ\", but a program uses those when it allows them alone: with \"--lint-allow spoken\" on the command line, or \"allow = [\"spoken\"]\" in the [lint] section of a config file. Until then each spoken spelling is an error, with a fix that writes the word in its written spelling."""
+
+[codes.ZK0511.title]
+en = "spoken and written spellings mixed"
+[codes.ZK0511.message]
+en = "this file writes %{n} words in their spoken spelling and %{m} in their written one"
+[codes.ZK0511.help]
+en = "write \"%{w}\", as most of the file does"
+[codes.ZK0511.explain]
+en = """A file that allows the spoken spellings can still mix them with the written ones, as in \"ထားမယ်\" on one line and \"ထားမည်\" on the next. The program means the same in both forms, but it reads better in one. The message points at the first word of the form the file uses less. It comes when the spoken spellings are allowed; \"--lint-allow ZK0511\" turns it off."""
 
 # -------------------------------------------------------------- folding ZK06xx
 
@@ -1889,7 +1911,7 @@ en = "block not freed"
 [codes.ZK0708.message]
 en = "the block that \"%{name}\" holds is never given back or handed over on this path"
 [codes.ZK0708.explain]
-en = """A block made in unsafe code must be accounted for before the variable it was made in goes out of scope: given back with \"ပြန်လည်စွန့်လွှတ်မည်\", handed to a parameter marked \"အပိုင်အနေဖြင့်\", returned through a result marked \"အပိုင်အနေဖြင့်\", or stored in a heap block, a global or a field. Otherwise the block is leaked. A duplicate of its address into another variable counts as stored, since either can give it back. The finding is a warning; \"--mem-check error\" makes it an error."""
+en = """A block made in unsafe code must be accounted for before the variable it was made in goes out of scope: given back with \"ပြန်လည်စွန့်လွှတ်မည်\", handed to a parameter marked \"အပိုင်အနေဖြင့်\", returned through a result marked \"အပိုင်အနေဖြင့်\", or stored in a heap block, a global or a field. Otherwise the block is leaked. A duplicate of its address into another variable counts as stored, since either can give it back. The finding is a warning; \"--lint-error mem\" makes it an error."""
 [codes.ZK0708.help_result]
 en = "the caller takes this block: mark the result \"<kind> တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်\""
 

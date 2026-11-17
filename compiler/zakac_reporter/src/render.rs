@@ -7,9 +7,11 @@ use zakac_burmese_alignment::flow::Part;
 use zakac_burmese_alignment::terminal::Drawing;
 use zakac_burmese_alignment::terminal::detect;
 use zakac_diagnostics::Diagnostic;
+use zakac_diagnostics::Fix;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::source_map::SourceMap;
@@ -47,13 +49,30 @@ pub enum Paint
     {
         /// The diagnostic level, for the color of the marks.
         level: Level,
-        /// The mark: `^` under the main span, `-` under a label.
+        /// The mark: `^` under the main span, `-` under a label, `~` under
+        /// the new text of a fix.
         mark: char,
     },
 }
 
 /// Name of the setting that picks the caret rows of terminal output.
 pub const CARETS_ENV: &str = "ZAKAC_CARETS";
+
+/// Name of the setting that turns on learner mode: each diagnostic also shows
+/// the explanation of its code and the page that teaches it.
+pub const LEARN_ENV: &str = "ZAKAC_LEARN";
+
+/// How much of the learner lines a diagnostic shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Learn
+{
+    /// No learner lines.
+    Off,
+    /// The link to the page alone, for a code whose explanation was shown.
+    Link,
+    /// The explanation of the code, then the link.
+    Full,
+}
 
 /// A piece of rendered text with its paint.
 #[derive(Debug, Clone, PartialEq, Eq, Builder)]
@@ -97,7 +116,7 @@ struct Excerpt
 /// The rendered diagnostic, ending in a line break.
 pub fn format_diagnostic(sm: &SourceMap, diag: &Diagnostic) -> String
 {
-    let pieces = pieces(sm, diag, Carets::Codepoint);
+    let pieces = pieces(sm, diag, Carets::Codepoint, Learn::Off);
     pieces.into_iter().map(|piece| piece.text).collect()
 }
 
@@ -118,7 +137,7 @@ pub fn diagnostic_pieces(
     sm: &SourceMap, diag: &Diagnostic, carets: Carets,
 ) -> Vec<Piece>
 {
-    pieces(sm, diag, carets)
+    pieces(sm, diag, carets, Learn::Off)
 }
 
 /// Write a diagnostic, with color when the writer supports it.
@@ -141,9 +160,31 @@ pub fn write_diagnostic<W>(
 where
     W: WriteColor + ?Sized,
 {
+    let learn = tern!(terminal_learn(), Learn::Full, Learn::Off);
+    write_learning(writer, sm, diag, learn)
+}
+
+/// Write a diagnostic with the learner lines `learn` asks for.
+///
+/// # Arguments
+///
+/// * `writer` - The writer to write to.
+/// * `sm` - The source map the span belongs to.
+/// * `diag` - The diagnostic to write.
+/// * `learn` - The learner lines.
+///
+/// # Returns
+///
+/// The result of the write operation.
+fn write_learning<W>(
+    writer: &mut W, sm: &SourceMap, diag: &Diagnostic, learn: Learn,
+) -> std::io::Result<()>
+where
+    W: WriteColor + ?Sized,
+{
     let color = writer.supports_color();
     let carets = tern!(color, terminal_carets(), Carets::Codepoint);
-    write_pieces(writer, &pieces(sm, diag, carets))
+    write_pieces(writer, &pieces(sm, diag, carets, learn))
 }
 
 /// Write the pieces of a diagnostic, painted when the writer supports color.
@@ -184,6 +225,17 @@ pub fn terminal_carets() -> Carets
     setting.map_or_else(detected_carets, |text| carets_setting(Some(&text)))
 }
 
+/// Whether learner mode is on: [`LEARN_ENV`] is set to `true`, `1` or `on`.
+///
+/// # Returns
+///
+/// `true` when it is on.
+pub fn terminal_learn() -> bool
+{
+    let setting = std::env::var(LEARN_ENV).unwrap_or_default();
+    matches!(setting.trim(), "true" | "1" | "on")
+}
+
 /// The caret setting that fits the terminal standard error goes to.
 ///
 /// # Returns
@@ -222,10 +274,37 @@ pub fn write_diagnostics<W>(
 where
     W: WriteColor + ?Sized,
 {
+    write_diagnostics_with(writer, sm, diags, terminal_learn())
+}
+
+/// Write diagnostics with a blank line between two of them, with the learner
+/// lines when `learn` is on: the explanation of a code once, the first time
+/// the code comes, and the link to its page each time.
+///
+/// # Arguments
+///
+/// * `writer` - The writer to write to.
+/// * `sm` - The source map the spans belong to.
+/// * `diags` - The diagnostics to write.
+/// * `learn` - Whether learner mode is on.
+///
+/// # Returns
+///
+/// The result of the write operation.
+pub fn write_diagnostics_with<W>(
+    writer: &mut W, sm: &SourceMap, diags: &[Diagnostic], learn: bool,
+) -> std::io::Result<()>
+where
+    W: WriteColor + ?Sized,
+{
+    let mut told = Vec::new();
     for (idx, diag) in diags.iter().enumerate()
     {
         write_gap(writer, idx)?;
-        write_diagnostic(writer, sm, diag)?;
+        let first = !told.contains(&diag.code);
+        do_if!(first, told.push(diag.code));
+        let level = tern!(first, Learn::Full, Learn::Link);
+        write_learning(writer, sm, diag, tern!(learn, level, Learn::Off))?;
     }
     Ok(())
 }
@@ -368,7 +447,8 @@ fn piece(paint: Paint, text: impl Into<String>) -> Piece
 /// # Returns
 ///
 /// The pieces in output order.
-fn pieces(sm: &SourceMap, diag: &Diagnostic, carets: Carets) -> Vec<Piece>
+fn pieces(sm: &SourceMap, diag: &Diagnostic, carets: Carets, learn: Learn)
+-> Vec<Piece>
 {
     let mut out = header_pieces(diag);
     if diag.span.is_placeholder()
@@ -376,6 +456,8 @@ fn pieces(sm: &SourceMap, diag: &Diagnostic, carets: Carets) -> Vec<Piece>
         out.push(piece(Paint::Gutter, " --> "));
         out.push(piece(Paint::Plain, "<PLACEHOLDER>\n"));
         out.extend(help_pieces(diag, ""));
+        do_for!(fix in &diag.fixes, out.extend(fix_pieces(fix, None, "", carets)));
+        out.extend(learn_pieces(diag, "", learn));
         return out;
     }
 
@@ -386,9 +468,13 @@ fn pieces(sm: &SourceMap, diag: &Diagnostic, carets: Carets) -> Vec<Piece>
         .filter(|label| !label.span.is_placeholder())
         .map(|label| (label, self::excerpt(sm, &label.span)))
         .collect();
+    let fixed: Vec<(&Fix, Option<Excerpt>)> =
+        diag.fixes.iter().map(|fix| (fix, fixed_excerpt(sm, fix))).collect();
+    let fix_lines = fixed.iter().filter_map(|(_, each)| each.as_ref().map(|e| e.line));
     let width = labelled
         .iter()
         .map(|(_, each)| each.line)
+        .chain(fix_lines)
         .chain([excerpt.line])
         .map(|line| line.to_string().len())
         .max()
@@ -396,12 +482,17 @@ fn pieces(sm: &SourceMap, diag: &Diagnostic, carets: Carets) -> Vec<Piece>
     let pad = " ".repeat(width);
     out.extend(location_pieces(&excerpt, &pad));
     out.extend(source_pieces(&excerpt, &pad, diag.level));
-    out.extend(caret_pieces(&excerpt, &pad, diag.level, carets));
+    out.extend(caret_pieces(&excerpt, &pad, diag.level, '^', carets));
     do_for!(
         (label, each) in &labelled,
         out.extend(label_pieces(each, &pad, &label.text, carets))
     );
     out.extend(help_pieces(diag, &pad));
+    do_for!(
+        (fix, each) in &fixed,
+        out.extend(fix_pieces(fix, each.as_ref(), &pad, carets))
+    );
+    out.extend(learn_pieces(diag, &pad, learn));
     out
 }
 
@@ -464,7 +555,8 @@ fn source_pieces(excerpt: &Excerpt, pad: &str, level: Level) -> Vec<Piece>
     ]
 }
 
-/// Pieces of the caret row under the span.
+/// Pieces of a row of marks under the span: the carets, or the `~` row
+/// under the new text of a fix.
 ///
 /// The caret column and length come from [`reach`].
 ///
@@ -479,12 +571,12 @@ fn source_pieces(excerpt: &Excerpt, pad: &str, level: Level) -> Vec<Piece>
 ///
 /// The caret row pieces, or none.
 fn caret_pieces(
-    excerpt: &Excerpt, pad: &str, level: Level, carets: Carets,
+    excerpt: &Excerpt, pad: &str, level: Level, mark: char, carets: Carets,
 ) -> Vec<Piece>
 {
     ret_if!(carets == Carets::Off, Vec::new());
     let mut out = vec![piece(Paint::Gutter, format!("{pad} | "))];
-    out.extend(mark_pieces(excerpt, pad, level, '^', carets));
+    out.extend(mark_pieces(excerpt, pad, level, mark, carets));
     out.push(piece(Paint::Plain, "\n"));
     out
 }
@@ -633,6 +725,96 @@ fn help_pieces(diag: &Diagnostic, pad: &str) -> Vec<Piece>
         piece(Paint::Gutter, format!("{pad} = ")),
         piece(Paint::Plain, format!("help: {help}\n")),
     ]
+}
+
+/// Pieces of the learner lines: `= explain: ...` with the explanation of the
+/// code, then `= see: ...` with the link to the page that teaches it.
+///
+/// # Arguments
+///
+/// * `diag` - The diagnostic.
+/// * `pad` - Spaces as wide as the line numbers.
+/// * `learn` - The lines to show.
+///
+/// # Returns
+///
+/// The learner pieces, or none.
+fn learn_pieces(diag: &Diagnostic, pad: &str, learn: Learn) -> Vec<Piece>
+{
+    ret_if!(learn == Learn::Off, Vec::new());
+    let line = |name: &str, text: String| {
+        [
+            piece(Paint::Gutter, format!("{pad} = ")),
+            piece(Paint::Plain, format!("{name}: {text}\n")),
+        ]
+    };
+    let mut out = Vec::new();
+    do_if!(learn == Learn::Full, out.extend(line("explain", diag.code.explain())));
+    do_if!(let Some(url) = diag.code.page_url(), out.extend(line("see", url)));
+    out
+}
+
+/// Pieces of one fix: the `= help: ...` line, marked `(AI)` for a fix of the
+/// model, then the line as the fix leaves it, with a `~` row under the new
+/// text. The new text is green, the paint of a note.
+///
+/// # Arguments
+///
+/// * `fix` - The fix.
+/// * `excerpt` - The line as the fix leaves it; `None` writes the help line
+///   alone.
+/// * `pad` - Spaces as wide as the widest line number.
+/// * `carets` - How to count cells.
+///
+/// # Returns
+///
+/// The fix pieces.
+fn fix_pieces(
+    fix: &Fix, excerpt: Option<&Excerpt>, pad: &str, carets: Carets,
+) -> Vec<Piece>
+{
+    let mut out = vec![
+        piece(Paint::Gutter, format!("{pad} = ")),
+        piece(Paint::Plain, format!("help: {}\n", fix.message)),
+    ];
+    let Some(excerpt) = excerpt
+    else
+    {
+        return out;
+    };
+    out.push(piece(Paint::Gutter, format!("{pad} |\n")));
+    out.extend(source_pieces(excerpt, pad, Level::Note));
+    out.extend(caret_pieces(excerpt, pad, Level::Note, '~', carets));
+    out
+}
+
+/// The line of a fix as the fix leaves it, cut around the new text.
+///
+/// shortcut: a fix of one edit inside one line alone gets a line; show each
+/// line a fix touches when fixes span lines.
+///
+/// # Arguments
+///
+/// * `sm` - The source map the edit belongs to.
+/// * `fix` - The fix.
+///
+/// # Returns
+///
+/// The excerpt, or `None` for a fix of several edits, an edit across lines
+/// or a placeholder span.
+fn fixed_excerpt(sm: &SourceMap, fix: &Fix) -> Option<Excerpt>
+{
+    let [edit] = fix.edits.as_slice()
+    else
+    {
+        return None;
+    };
+    ret_if!(edit.span.is_placeholder(), None);
+    let one_line = sm.lookup_char_pos(&edit.span.lo).line
+        == sm.lookup_char_pos(&edit.span.hi).line;
+    ret_if!(!one_line, None);
+    let old = excerpt(sm, &edit.span);
+    Some(Excerpt { marked: expand_tabs(&edit.text), ..old })
 }
 
 /// Cut the source line that holds the start of `span` into three parts.

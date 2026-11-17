@@ -11,6 +11,7 @@ use zakac_ast::target::TargetArch;
 use zakac_ast::target::host_arch;
 use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::borrow_check_options;
+use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::clap::ArgMatches;
 #[cfg(feature = "jit")]
 use zakac_cli_common::clap::parser::ValueSource;
@@ -87,8 +88,9 @@ pub fn run_jit(
     ret_if!(let Some(error) = arch_error(&target), report_command_error(io, &info, error));
     ret_if!(let Some(error) = other_host(&target), report_command_error(io, &info, error));
     let semcheck = semcheck_options(matches);
+    let source = source.unwrap();
     let loaded = zakac_semcheck::open_chains::load_settled(
-        &source.unwrap(),
+        &source,
         &mut source_map,
         &LexerOptions::default(),
         &target,
@@ -102,7 +104,8 @@ pub fn run_jit(
         &fold_options(matches),
         &mem,
     );
-    let _ = write_diagnostics(io.stderr, &source_map, &checked.diagnostics);
+    let shown = checked_fixes(matches, &source, target.clone(), &checked.diagnostics);
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
     ret_if!(has_errors(&checked.diagnostics), ExitCode::Failure);
     let Some(program) = checked.lowered.folded.as_ref()
     else
@@ -221,8 +224,9 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let cross = native_other_host(&target).filter(|_| emit == Emit::Bin);
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
     let semcheck = semcheck_options(matches);
+    let source = source.unwrap();
     let loaded = zakac_semcheck::open_chains::load_settled(
-        &source.unwrap(),
+        &source,
         &mut source_map,
         &LexerOptions::default(),
         &target,
@@ -236,7 +240,8 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         &fold_options(matches),
         &mem,
     );
-    let _ = write_diagnostics(io.stderr, &source_map, &checked.diagnostics);
+    let shown = checked_fixes(matches, &source, target.clone(), &checked.diagnostics);
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
     ret_if!(has_errors(&checked.diagnostics), ExitCode::Failure);
     let Some(program) = checked.lowered.folded.as_ref()
     else
