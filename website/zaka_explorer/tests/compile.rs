@@ -505,7 +505,8 @@ fn c_checks_pick_the_level_of_the_header()
     let text = find_sample("programs/gcd").unwrap().text;
     for c_checks in [Checks::None, Checks::Default, Checks::Mem]
     {
-        let options = Options::builder().target(Target::C).c_checks(c_checks).build();
+        let options =
+            Options::builder().target(Target::C).c_checks(c_checks.into()).build();
         let out = compile(text, &options);
         let header = out.c_files.iter().find(|f| f.name == "zaka_checks.h").unwrap();
         let checks = RunChecks::from(c_checks);

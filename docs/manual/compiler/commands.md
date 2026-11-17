@@ -499,6 +499,7 @@ root of the repo lists each setting with its default.
 | `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --backend c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them; `--backend native` reads `LDFLAGS` |
 | `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when `--cache` is left out |
 | `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
+| `ZAKAC_NO_CONFIG` | when it is set, the commands read no config file but the one `--config` names (see [Where the files are](configuration.md#where-the-files-are)) |
 
 A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKAC_LEARN`, `ZAKA_BACKTRACE`, `NO_COLOR`,
 `CFLAGS` and `LDFLAGS` too; a variable that is set wins over the file.
@@ -544,8 +545,8 @@ what it shows and how to set it up.
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
 | 1 | an error in the program, or the VM stopped the program |
-| 2 | the command line holds a mistake, or a config file gives an option a wrong value |
-| 3 | a file could not be read or written, or a config file holds a mistake |
+| 2 | the command line holds a mistake |
+| 3 | a file could not be read or written, or a config file holds a mistake, a wrong value among them |
 | other | for `run`, the result of the start block, its lowest 8 bits |
 
 Messages go to standard error and the artifact or the program output to standard output,

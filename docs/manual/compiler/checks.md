@@ -26,7 +26,7 @@ its findings.
 | --- | --- | --- | --- |
 | how the lint is reported | `--lint-warn mem`, `--lint-error mem` or `--lint-allow mem` | **Ownership check** | warnings |
 | report what cannot be proved | `--lint-warn doubts` | **Strict ownership check** | off |
-| the level of one group or code | `--lint-allow`, `--lint-warn`, `--lint-error` | | none |
+| the level of one group or code | `--lint-allow`, `--lint-warn`, `--lint-error` | **Lints**, a page of its own: a level for each group, then for each code with its title | none |
 | refuse unsafe code | `--no-unsafe` | **Forbid unsafe code** | off |
 | what overflow does | `--overflow stop` or `wrap` | **Stop on overflow** | `stop` |
 

@@ -52,8 +52,9 @@ pub enum Fence
 }
 
 /// What a fence of a Learn page asks of the compiler besides its promise:
-/// `lint-error=mem`, `lint-warn=doubts`, `no-unsafe=on`, `overflow=wrap`,
-/// `lint-allow=spoken`, as the flags of the same names.
+/// `lint-error=mem`, `lint-warn=doubts`, `no-unsafe=on`, `overflow=wrap`, and
+/// `lint-allow=`, `lint-warn=` or `lint-error=` with each other lint group or
+/// code, as the flags of the same names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
@@ -70,10 +71,11 @@ pub struct FenceOptions
     #[builder(default)]
     #[serde(default)]
     pub overflow: OverflowMode,
-    /// Whether the spoken spellings are allowed, as `--lint-allow spoken` does.
+    /// The level of each lint group or code the fence names, past `mem` and
+    /// `doubts`, such as `lint-allow=spoken`.
     #[builder(default)]
     #[serde(default)]
-    pub spoken: bool,
+    pub lint: LintLevels,
 }
 
 impl FenceOptions
@@ -99,7 +101,18 @@ impl FenceOptions
             ("lint-warn", "doubts") => self.strict = true,
             ("no-unsafe", "on") => self.no_unsafe = true,
             ("overflow", _) => self.overflow = value.parse().ok()?,
-            ("lint-allow", "spoken") => self.spoken = true,
+            ("lint-allow", _) =>
+            {
+                self.lint = self.lint.with(value, LintLevel::Off).ok()?
+            }
+            ("lint-warn", _) =>
+            {
+                self.lint = self.lint.with(value, LintLevel::Warn).ok()?
+            }
+            ("lint-error", _) =>
+            {
+                self.lint = self.lint.with(value, LintLevel::Error).ok()?
+            }
             _ => return None,
         }
         Some(self)
@@ -235,13 +248,14 @@ pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
         &LexerOptions::default(),
         &SemcheckOptions::builder()
             .no_unsafe(options.no_unsafe)
-            .lint(lint(*options))
+            .lint(options.lint)
             .build(),
         &FoldOptions::default(),
         &BorrowCheckOptions::builder()
             .check(options.check)
             .strict(options.strict)
             .overflow(options.overflow)
+            .lint(options.lint)
             .build(),
         ResultMode::default(),
     );
@@ -352,20 +366,4 @@ fn level_tone(level: Level) -> Tone
         Level::Warning => Tone::Warning,
         Level::Note => Tone::Note,
     }
-}
-
-/// The lint levels a fence asks for: the spoken spellings allowed under
-/// `lint-allow=spoken`.
-///
-/// # Arguments
-///
-/// * `options` - The options of the fence.
-///
-/// # Returns
-///
-/// The levels.
-fn lint(options: FenceOptions) -> LintLevels
-{
-    let allowed = LintLevels::default().with("spoken", LintLevel::Off);
-    tern!(options.spoken, allowed.unwrap_or_default(), LintLevels::default())
 }

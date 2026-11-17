@@ -7,28 +7,31 @@ use crate::common::codes_as_is;
 const DECLS: &str = "\
 စုံ ဟူသော ဒေတာအစုအဝေးတွင် a ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် b ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 ဘူး ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
-လုပ်ဆောင်ချက် with_text သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် with_text သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် \
                      အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် with_plain သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် with_plain သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (စာသား တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို \
                      လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် with_pair သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် with_pair သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (စုံ တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး \
                      ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် with_box သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် with_box သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (ဘူး ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် \
                      အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် box_close သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် box_close သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 b ဟူသော ဘူး တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
-လုပ်ဆောင်ချက် box_open သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ဘူး တစ်ခု ကို ပြန်ပေးမည်။
+စိတ်မချရသော လုပ်ဆောင်ချက် box_open သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ဘူး တစ်ခု ကို ပြန်ပေးမည်။
 ";
 
 /// A program: `DECLS`, the functions `fns`, then a start block with the
-/// statements `stmts`.
+/// statements `stmts` in an unsafe block, as calls of C functions need.
 fn program(fns: &str, stmts: &str) -> String
 {
-    format!("{DECLS}{fns}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{stmts}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။")
+    format!(
+        "{DECLS}{fns}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nအောက်ပါတို့ကို စိတ်မချရသော်လည်း \
+         လုပ်ဆောင်မည်။\n{stmts}\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+    )
 }
 
 /// A function of one parameter of `kind` that gives back 1.
@@ -60,7 +63,7 @@ with_box(ဃ ဟူသော လုပ်ဆောင်ချက်) ကို 
 #[test]
 fn a_callback_of_a_list_is_zk0465()
 {
-    let decl = "လုပ်ဆောင်ချက် with_list သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+    let decl = "စိတ်မချရသော လုပ်ဆောင်ချက် with_list သည် \"libcb\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု \
                 ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\n";
     assert_eq!(codes_as_is(&program(decl, "")), [Code::KindNotAcrossC]);
@@ -76,15 +79,20 @@ fn closer(close: &str) -> String
     )
 }
 
+/// A call of a C function needs unsafe code, one that closes a handle
+/// parameter as each other.
 #[test]
 fn closing_a_handle_parameter_needs_marked_code()
 {
     let call = "box_close ဟူသော လုပ်ဆောင်ချက်ကို b ဖြင့် လုပ်ဆောင်မည်။";
-    assert_eq!(codes_as_is(&program(&closer(call), "")), [Code::UnsafeOutside]);
+    // Twice: the call of a C function, and the close of a handle it lent.
+    let twice = [Code::UnsafeOutside, Code::UnsafeOutside];
+    assert_eq!(codes_as_is(&program(&closer(call), "")), twice);
     let marked =
         format!("အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\n{call}\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။");
     assert_eq!(codes_as_is(&program(&closer(&marked), "")), []);
-    // A handle the program made itself closes in safe code.
+    // A handle the program made itself closes in the unsafe block of the
+    // start block.
     let own =
         "ကိန်းရှင် ဘ သည် box_open() ဖြစ်ပါစေ။\nbox_close ဟူသော လုပ်ဆောင်ချက်ကို ဘ ဖြင့် လုပ်ဆောင်မည်။";
     assert_eq!(codes_as_is(&program("", own)), []);

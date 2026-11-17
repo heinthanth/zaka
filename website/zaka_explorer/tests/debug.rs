@@ -755,3 +755,27 @@ fn a_shared_list_shows_two_holders()
     }
     assert!(shared(&s), "{:?}", heap_blocks(&s));
 }
+
+#[test]
+fn the_rows_block_of_a_table_lists_its_rows_in_use()
+{
+    let out = compile(
+        include_str!("../../../samples/tables/words.zaka"),
+        &Options::default(),
+    );
+    assert!(out.ops.is_some(), "words does not compile: {:?}", out.diagnostics);
+    let mut s = Session::new(out.ops.as_ref());
+    // The program frees the table as it ends, so keep the last rows seen.
+    let mut last = Vec::new();
+    for _ in 0..100_000
+    {
+        s.step();
+        let rows = s.heap().blocks.into_iter().find(|b| !b.entries.is_empty());
+        do_if!(let Some(b) = rows, last = b.entries);
+        do_if!(s.status() == RunStatus::Finished, break);
+    }
+    let want = [("နေ", "၃"), ("လ", "၂"), ("ကြယ်", "၁")];
+    let got: Vec<(&str, &str)> =
+        last.iter().map(|(i, v)| (i.as_str(), v.as_str())).collect();
+    assert_eq!(got, want);
+}

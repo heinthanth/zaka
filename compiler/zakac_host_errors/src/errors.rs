@@ -125,6 +125,13 @@ pub enum Error
     {
         path: String, name: String
     },
+    #[error("{}", t!("errors.config_refused_value", p = path, name = name, msg = msg))]
+    ConfigRefusedValue
+    {
+        path: String,
+        name: String,
+        msg: String,
+    },
     #[error("{}", t!("errors.unknown_lint_name", name = name))]
     UnknownLintName
     {

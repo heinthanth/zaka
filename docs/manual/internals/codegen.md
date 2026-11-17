@@ -92,7 +92,8 @@ address of each parameter, written `(host read_file (addr l0))`; the IR builder 
 borrow mark the flow checker reads), `Take` (a value moved out, the place left at its
 default), `Dup` (a duplicate; `deep` for a deep one), `Own` (a plain list made to own its
 block before a write, written `(own ...)`; `pin` pins the block too),
-`PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `BlankList`, `CellAddr`, `FieldAddr`,
+`PtrAdd`, `PtrSub`, `SizeOf`, the list forms `List`, `Repeat { cell, count }` (a counted list
+whose cells each hold one value, written `(repeat 100 ...)`), `BlankList`, `CellAddr`, `FieldAddr`,
 and `MakeSlice` (the inner view a range reads its cells through), and the text forms `Text(String)` (static text, written `"..."` in the
 s-expression form) and `Format(Vec<FmtPiece>)` (text built when the program runs, written
 `(format "a" g0)`), whose pieces are `FmtPiece::Text(String)` or `FmtPiece::Value(Expr)`,
@@ -202,14 +203,17 @@ rules out). Its rules:
   (`shown`), and codegen reads it as the value kind (`stored`) for `print_enum`.
 - `ကနဦးတန်ဖိုး` lowers through `initial_value` to the
   [initial value](../language/kinds.md#initial-values) of its kind: the blank optional, the
-  marked member of an enumeration, a new box for a shared object, and a `List` of the
-  initial value of each field or cell for a struct or a counted list. A kind whose initial
+  marked member of an enumeration, a new box for a shared object, a `List` of the
+  initial value of each field for a struct, and a `Repeat` of the initial value of its cell
+  for a counted list, so a long list costs one cell in the IR. Each backend spells a
+  `Repeat` out as a `List` before it writes code (`spans::spell_repeats`), so the backends
+  see the cells. A kind whose initial
   value is zero octets (`zero_initial`: numbers, characters, true/false, pointers, text,
   plain lists, and structs and counted lists of these alone) is one constant, a `BlankList`
   for an aggregate.
 - A declaration with no value still lowers to a `Set` of a filler (`default_constant`):
   zero octets, the first member for an enumeration, built one field at a time for a kind with
-  an enumeration inside (`defaults_of_parts`). The slot notes the span of that `Set` in
+  an enumeration inside (`defaults_of_parts`; a `Repeat` of one cell for a counted list). The slot notes the span of that `Set` in
   `Slot.unset`, and [the flow checker](borrow-checker.md#set-before-read) makes sure no
   path reads the filler, so it is never a value the program sees.
 - `ကိန်းသေ` becomes a slot with `access: const`; the folder uses the flag.

@@ -1635,13 +1635,11 @@ en = """\"ကွန်ပိုင်းလုပ်ချိန်တွင် 
 [codes.ZK0472.title]
 en = "C function must be unsafe"
 [codes.ZK0472.message]
-en = "\"%{n}\" %{w}, so its declaration must be unsafe, with \"စိတ်မချရသော\""
+en = "\"%{n}\" is a C function, so its declaration must be unsafe, with \"စိတ်မချရသော\""
 [codes.ZK0472.help]
 en = "write \"စိတ်မချရသော\" before \"လုပ်ဆောင်ချက်\", and call it from unsafe code"
-[codes.ZK0472.pointer]
-en = "passes a pointer"
 [codes.ZK0472.explain]
-en = """Safe code can call a C function whose parameters are numbers, true or false, text, lists of numbers, plain structs or function values, and whose result is nothing, a number, a plain struct, or an optional of text or of a handle, where NULL is the optional with no data. A C function that takes or gives a pointer can reach mem that Zaka does not check, so its declaration carries \"စိတ်မချရသော\", and a call of it needs unsafe code."""
+en = """C code runs outside the checks of Zaka: the compiler cannot see what it reads, writes or gives back. So each C function is unsafe: its declaration carries \"စိတ်မချရသော\", and a call of it needs unsafe code, an unsafe function or a block opened with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်\". The kinds that cross to C are those of before: numbers, true or false, text, lists of numbers, plain structs, function values, and, for the result, an optional of text or of a handle, where NULL is the optional with no data."""
 
 # ---------------------------------------------------------- naturalness ZK05xx
 

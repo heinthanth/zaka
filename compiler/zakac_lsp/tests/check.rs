@@ -124,6 +124,53 @@ fn hover_gives_the_kind_of_a_variable()
     assert!(content.value.contains("size = 8, align = 8"), "{}", content.value);
 }
 
+/// The markdown of the hover at the first `needle` of line `line`.
+fn hover_text(file: &FileCheck, text: &str, line: usize, needle: &str) -> String
+{
+    let found = hover(file, at(text, line, needle)).expect("a hover");
+    let Contents::MarkupContent(content) = found.contents
+    else
+    {
+        panic!("a hover holds markup")
+    };
+    content.value
+}
+
+#[test]
+fn hover_on_a_kind_name_gives_the_kind_and_its_doc()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let file = check("kinds.zaka", text, Buffers::default());
+    let int = hover_text(&file, text, 1, "ကိန်းပြည့်");
+    assert!(int.starts_with("```zaka\ni32\n```"), "{int}");
+    assert!(int.contains("an integer"), "{int}");
+    let list = hover_text(&file, text, 2, "စာရင်း");
+    assert!(list.contains("a list"), "{list}");
+}
+
+#[test]
+fn hover_on_a_preposition_names_the_parameter_it_marks()
+{
+    let text = "လုပ်ဆောင်ချက် ရေး သည်
+စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ \
+                လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+\"{နေရာ}: {စာ}\" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+\"က\" ကို \"ခ\" သို့ ရေး မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let file = check("prepositions.zaka", text, Buffers::default());
+    let to = hover_text(&file, text, 6, "သို့");
+    assert!(to.contains("the preposition of the parameter နေရာ"), "{to}");
+    assert!(to.contains("ရေး"), "{to}");
+}
+
 #[test]
 fn a_module_needs_no_start_block()
 {

@@ -42,6 +42,23 @@ fn nesting_past_the_limit_is_an_error()
     });
 }
 
+/// Template slots nested past the limit get ZK0244: each slot counts as a
+/// level of the expression around it.
+#[test]
+fn nested_template_slots_count_toward_the_limit()
+{
+    /// Text whose slot holds text, `levels` times over.
+    fn slots(levels: usize) -> String
+    {
+        let inner = (0..levels).fold("၁".to_string(), |s, _| format!("\"{{{s}}}\""));
+        format!("{inner} ကို ပြသမည်။")
+    }
+    with_stack(|| {
+        assert!(codes(&slots(200)).contains(&Code::NestingTooDeep));
+        assert!(!codes(&slots(20)).contains(&Code::NestingTooDeep));
+    });
+}
+
 /// An operator after a value read with a verb gets the hint to put the
 /// clause in parentheses.
 #[test]

@@ -30,7 +30,11 @@ fn program_file(name: &str) -> PathBuf
 /// Run `zakac` with some arguments.
 fn zakac(args: &[&str]) -> Output
 {
-    Command::new(env!("CARGO_BIN_EXE_zakac")).args(args).output().unwrap()
+    Command::new(env!("CARGO_BIN_EXE_zakac"))
+        .env("ZAKAC_NO_CONFIG", "1")
+        .args(args)
+        .output()
+        .unwrap()
 }
 
 /// An OS that is not the host's.

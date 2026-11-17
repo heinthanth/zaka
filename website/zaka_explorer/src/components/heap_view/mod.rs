@@ -54,6 +54,10 @@ const BLOCK_COLUMNS: [Column; 5] = [
     ("explorer.heap.state", "", ""),
 ];
 
+/// Columns of the rows of a ဇယား.
+const ROW_COLUMNS: [Column; 2] =
+    [("explorer.heap.row_index", "", ""), ("explorer.heap.row_value", "", "")];
+
 /// Local storage name of whether the gaps show in the map and the list.
 const GAPS_STORE: &str = "zaka-explorer-heap-gaps";
 
@@ -677,7 +681,29 @@ fn dump_view(b: BlockRow, digits: usize) -> impl IntoView
     let lines: Vec<_> = b.data.chunks(DUMP_WIDTH).enumerate().map(line).collect();
     let note = dump_note(&b).map(|n| p().class(ClassName::DUMP_NOTE).child(n));
     let text = (!lines.is_empty()).then(|| pre().class(ClassName::DUMP).child(lines));
-    (text, note)
+    (entries_view(&b.entries), text, note)
+}
+
+/// The rows in use of a ဇယား block as a table of index and value.
+///
+/// # Arguments
+///
+/// * `entries` - The (index, value) text of each row.
+///
+/// # Returns
+///
+/// The view, or `None` for a block with no rows in use.
+fn entries_view(entries: &[(String, String)]) -> Option<impl IntoView + use<>>
+{
+    ret_if!(entries.is_empty(), None);
+    let row = |(i, v): &(String, String)| {
+        tr().child((td().child(i.clone()), td().child(v.clone())))
+    };
+    let trs: Vec<_> = entries.iter().map(row).collect();
+    let rows = table()
+        .class(format!("{} {}", Table::PHASE_TABLE, ClassName::ENTRIES))
+        .child((table_head("heap-rows", &ROW_COLUMNS), tbody().child(trs)));
+    Some(div().class(Table::TABLE_SCROLL).child(rows))
 }
 
 /// One octet of a dump. In a list, each cell of a primitive kind is a box of

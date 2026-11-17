@@ -938,6 +938,16 @@ pub enum ExprNode
     /// A list or a struct written out one cell or field at a time, in order;
     /// each one has its cell or field kind in the expression kind.
     List(Vec<Expr>),
+    /// A counted list of the expression kind whose `count` cells each hold
+    /// the value of `cell`: the initial value of a long list, held as one
+    /// cell. The backends see it spelled out (`spans::spell_repeats`).
+    Repeat
+    {
+        /// The value of each cell.
+        cell: Box<Expr>,
+        /// The number of cells.
+        count: u32,
+    },
     /// A list or a struct of the expression kind with each cell or field at
     /// its default.
     BlankList,

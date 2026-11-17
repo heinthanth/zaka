@@ -65,8 +65,8 @@ fn run<C: Command>() -> std::process::ExitCode
     let mut io = CommandIO { stdin: &mut sin, stdout: &mut sout, stderr: &mut serr };
     let args: Vec<String> = std::env::args().collect();
     // The config files are read here, in an executable alone, so a test that
-    // runs a command in its own process never sees the config of the one
-    // who runs it.
+    // calls a command in its own process never sees the config of the one
+    // who runs it; a test that runs the executable sets `ZAKAC_NO_CONFIG`.
     let cmd =
         match config::configure(command.clap_command(), C::config_section(), &args)
         {

@@ -192,4 +192,4 @@ column next to each variable gives the address of its block.
 - Declare a pointer to a pointer, `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ`, that points at a
   `ကိန်းပြည့် လိပ်စာ` variable, and print `၏ တန်ဖိုး ၏ တန်ဖိုး` through it.
 
-Next: [The heap](heap.md).
+Next: [Calling C](../functions/c.md).

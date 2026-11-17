@@ -2,7 +2,6 @@
 //! name, and C takes each parameter and gives the result as a whole value.
 
 pub use zakac_ast::stmt::is_lib_path;
-use zakac_rust_sugars::ret_if;
 
 use crate::kind::DataKind;
 
@@ -228,23 +227,6 @@ pub fn is_failing_pointer(kind: DataKind) -> bool
 pub fn is_c_text_result(kind: DataKind) -> bool
 {
     kind.optional_data().is_some_and(DataKind::is_text)
-}
-
-/// Whether a value of the kind passes a pointer to or from C: a pointer, or
-/// a struct with one in a field or a cell of a counted list.
-///
-/// # Arguments
-///
-/// * `kind` - The kind.
-///
-/// # Returns
-///
-/// `true` if it holds one.
-pub fn holds_ptr(kind: DataKind) -> bool
-{
-    ret_if!(let Some(l) = kind.as_list(), holds_ptr(l.cell));
-    ret_if!(let Some(s) = kind.as_struct(), s.fields().iter().any(|(_, k)| holds_ptr(*k)));
-    kind.is_ptr()
 }
 
 /// Whether a field of the kind can sit in a struct that crosses to C: a kind

@@ -195,7 +195,8 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Own { value: operand, .. }
         | ExprNode::Closure { record: operand, .. }
         | ExprNode::CField { base: operand, .. }
-        | ExprNode::FieldAddr { base: operand, .. } => expr_places(operand, out),
+        | ExprNode::FieldAddr { base: operand, .. }
+        | ExprNode::Repeat { cell: operand, .. } => expr_places(operand, out),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

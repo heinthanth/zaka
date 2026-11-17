@@ -821,11 +821,9 @@ lists it.
 ## C functions
 
 A C function is declared with `"<lib>" မှလာသော လုပ်ဆောင်ချက်` (see [C
-functions](functions.md#c-functions)). The declaration is the point of trust. A
-declaration whose parameters or result hold a pointer must hold the word `စိတ်မချရသော`
-(ZK0472), and each call of it then needs unsafe code. Other C functions, on numbers, text,
-lists of numbers, plain structs and handles, with a result that can be an optional of text or
-of a handle (C gives NULL for it), are called from safe code.
+functions](functions.md#c-functions)). The declaration is the point of trust. C runs
+outside the checks of Zaka, so each C declaration must hold the word `စိတ်မချရသော`
+(ZK0472), whatever its kinds, and each call of it then needs unsafe code.
 
 ```zaka-error ZK0472
 လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -837,7 +835,7 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 ```text
-error[ZK0472]: "frexp" passes a pointer, so its declaration must be unsafe, with "စိတ်မချရသော"
+error[ZK0472]: "frexp" is a C function, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
 In the VM, a pointer that lies in a freed block, passed to a C function, stops the run with
@@ -1002,7 +1000,7 @@ frees each block, and no read goes through an address the program made.
 | ZK0469 | an unsafe function taken as a function value |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a kind that is no pointer |
 | ZK0471 | unsafe code under `--no-unsafe` |
-| ZK0472 | a C declaration with a pointer, not declared unsafe |
+| ZK0472 | a C declaration not declared unsafe |
 | ZK0701 | a read of a place after it handed its block to an owned parameter |
 | ZK0702 to ZK0712, ZK0721 | the pointer lint, [above](#the-checks-on-unsafe-code) |
 

@@ -84,8 +84,14 @@ pub fn configure(
     Ok(configured)
 }
 
+/// The var that turns off the search, so the file `--config` names is the one
+/// read: tests that run `zakac` set it, to stand clear of the config of the
+/// one who runs them.
+pub const NO_CONFIG_VAR: &str = "ZAKAC_NO_CONFIG";
+
 /// The config files to read, the lowest first: each file of the search that
-/// is there, then the file `--config` names, which must be there.
+/// is there, unless [`NO_CONFIG_VAR`] is set, then the file `--config` names,
+/// which must be there.
 ///
 /// # Arguments
 ///
@@ -96,8 +102,9 @@ pub fn configure(
 /// The paths, or the error when the file `--config` names is missing.
 fn files(args: &[String]) -> zakac_host_errors::Result<Vec<PathBuf>>
 {
+    let searched = std::env::var_os(NO_CONFIG_VAR).is_none().then(search_paths);
     let mut paths: Vec<PathBuf> =
-        search_paths().into_iter().filter(|p| p.is_file()).collect();
+        searched.into_iter().flatten().filter(|p| p.is_file()).collect();
     let Some(given) = given_path(args)
     else
     {
@@ -287,13 +294,31 @@ pub fn check_file(
             // not a section.
             ret_if!(
                 found.is_none() && takes(cmd, name),
-                check_value(name, value, path)
+                check_value(name, value, path, &args_named(cmd, name))
             );
             check_section(name, inner, found, whole, path)
         }
         _ if whole && !takes(cmd, name) => Err(unknown(path, name)),
-        _ => check_value(name, value, path),
+        _ => check_value(name, value, path, &args_named(cmd, name)),
     })
+}
+
+/// Each flag of a command and its subcommands with a long name.
+///
+/// # Arguments
+///
+/// * `cmd` - The command.
+/// * `name` - The long name.
+///
+/// # Returns
+///
+/// The flags.
+fn args_named<'a>(cmd: &'a clap::Command, name: &str) -> Vec<&'a clap::Arg>
+{
+    let own = cmd.get_arguments().filter(|a| a.get_long() == Some(name));
+    let mut found: Vec<_> = own.collect();
+    found.extend(cmd.get_subcommands().flat_map(|sub| args_named(sub, name)));
+    found
 }
 
 /// The command a section names: the root command when the section is its
@@ -341,26 +366,76 @@ fn check_section(
     inner.iter().try_for_each(|(flag, value)| {
         let known = is_env_name(flag) || own_longs(sub).any(|l| l == flag);
         ret_if!(!known, Err(unknown(path, &format!("{name}.{flag}"))));
-        check_value(flag, value, path)
+        let own = sub.get_arguments().filter(|a| a.get_long() == Some(flag.as_str()));
+        let args: Vec<_> = own.collect();
+        check_value(flag, value, path, &args)
     })
 }
 
-/// Check that a value is text, a number, a truth value or a list of these.
+/// Check that a value is text, a number, a truth value or a list of these,
+/// and that each flag of its name takes each of its words.
 ///
 /// # Arguments
 ///
 /// * `name` - The name the value is set to.
 /// * `value` - The value.
 /// * `path` - The file, as an error shows it.
+/// * `args` - The flags of the name; none for an env setting.
 ///
 /// # Returns
 ///
-/// Nothing, or the error of a value of the wrong form.
-fn check_value(name: &str, value: &Value, path: &str) -> zakac_host_errors::Result<()>
+/// Nothing, or the error of a value of the wrong form or one a flag refuses.
+fn check_value(
+    name: &str, value: &Value, path: &str, args: &[&clap::Arg],
+) -> zakac_host_errors::Result<()>
 {
     #[rustfmt::skip]
     let bad = || Error::ConfigBadValue { path: path.into(), name: name.into() };
-    values(value).map(drop).ok_or_else(bad)
+    let words = values(value).ok_or_else(bad)?;
+    let refused = |e: clap::Error| Error::ConfigRefusedValue {
+        path: path.into(),
+        name: name.into(),
+        msg: clap_reason(&e),
+    };
+    args.iter().try_for_each(|arg| takes_words(arg, &words).map_err(refused))
+}
+
+/// Parse words as the defaults of a flag, as a run does: the flag alone, in a
+/// command of its own, with no command line.
+///
+/// # Arguments
+///
+/// * `arg` - The flag.
+/// * `words` - The words.
+///
+/// # Returns
+///
+/// Nothing, or the error clap gives.
+fn takes_words(arg: &clap::Arg, words: &[String]) -> Result<(), clap::Error>
+{
+    let lone = arg.clone().required(false).default_values(words);
+    let cmd = clap::Command::new("zakac").no_binary_name(true).disable_help_flag(true);
+    let cmd = cmd.disable_version_flag(true).arg(lone);
+    cmd.try_get_matches_from(std::iter::empty::<&str>()).map(drop)
+}
+
+/// The reason of a clap error, with no `error:` word and no hint to run
+/// `--help`.
+///
+/// # Arguments
+///
+/// * `e` - The error.
+///
+/// # Returns
+///
+/// The reason, on one line.
+fn clap_reason(e: &clap::Error) -> String
+{
+    let text = e.to_string();
+    let lines = text.lines().map(str::trim).filter(|l| !l.is_empty());
+    let lines = lines.filter(|l| !l.starts_with("For more information"));
+    let lines: Vec<&str> = lines.map(|l| l.trim_start_matches("error: ")).collect();
+    lines.join(" ")
 }
 
 /// The error of a name no command takes.
@@ -680,6 +755,10 @@ mod tests
             check("backend = { a = 1 }"),
             Err(Error::ConfigBadValue { .. })
         ));
+        let refused = check("[build]\nrelease = \"loud\"");
+        assert!(matches!(refused, Err(Error::ConfigRefusedValue { .. })));
+        let text = refused.unwrap_err().to_string();
+        assert!(text.contains("t.toml") && text.contains("loud"), "{text}");
         assert!(matches!(
             parse_text("backend = ", "t"),
             Err(Error::ConfigNotToml { .. })

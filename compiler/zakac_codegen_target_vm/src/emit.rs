@@ -19,6 +19,7 @@ use zakac_ir_builder::ir::SliceFrom;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::ir::fn_shape;
 use zakac_ir_builder::ir::fresh_text;
+use zakac_ir_builder::spans::spell_repeats;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
 use zakac_ir_builder::value::convert;
@@ -71,6 +72,9 @@ const SCRATCH: &[&str] = &["%list", "%slice", "%ret", "%at", "%text", "%cell"];
 /// comes last.
 pub fn emit(module: &ir::Module, platform_bits: u16, options: EmitOptions) -> Module
 {
+    // The backends write each cell, so a repeated cell is spelled out first.
+    let spelled = spell_repeats(module);
+    let module = &spelled;
     let rets = module.funcs.iter().map(|f| f.ret).collect();
     let globals = module.globals.iter().map(slot).collect();
     #[rustfmt::skip]
@@ -1747,6 +1751,10 @@ impl<'s> FuncGen<'s>
             ExprNode::SizeOf(kind) => self.size_of(*kind),
             ExprNode::List(cells) => self.spill_list(e.kind, Some(cells)),
             ExprNode::BlankList => self.spill_list(e.kind, None),
+            ExprNode::Repeat { .. } =>
+            {
+                unreachable!("`emit` spells each repeated cell out")
+            }
             ExprNode::CellAddr { list, index, len: None, first: 0, checked: true } =>
             {
                 // A cell proved in range steps from the first cell of the

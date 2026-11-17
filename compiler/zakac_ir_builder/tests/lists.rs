@@ -65,3 +65,15 @@ fn whole_lists_compare_with_a_comparison()
     let forms = plain(&format!("{LIST}(l == l) ကို ပြသမည်။"));
     assert_eq!(forms[1], "(print (== g0 g0))");
 }
+
+/// A long list of an enumeration set to `ကနဦးတန်ဖိုး` holds its initial cell
+/// once, not once for each cell.
+#[test]
+fn a_long_initial_list_holds_one_cell()
+{
+    let text = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
+ကိန်းရှင် ရောင်များ သည် အကွက် ၁၀၀၀၀၀ ခုရှိသော အရောင် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။";
+    let forms = plain(text).concat();
+    assert!(forms.contains("(repeat 100000 "), "{forms}");
+    assert!(forms.len() < 400, "{forms}");
+}

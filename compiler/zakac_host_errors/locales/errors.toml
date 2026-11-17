@@ -72,6 +72,9 @@ en = "the config file %{p} sets %{name}, which no command here takes"
 [errors.config_bad_value]
 en = "the config file %{p} gives %{name} a value of the wrong form: use text, a number, true or false, or a list of these"
 
+[errors.config_refused_value]
+en = "the config file %{p} gives %{name} a value the flag refuses: %{msg}"
+
 [errors.unknown_lint_name]
 en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow, naturalness, spoken) or a code such as ZK0708"
 

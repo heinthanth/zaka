@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
+use leptos::ev;
+use leptos::html::button;
 use leptos::prelude::*;
 use strum::IntoEnumIterator;
+use strum::VariantNames;
 use zaka_vm::machine::FrameMode;
 use zaka_web_ui_common::controls::ClassName as Controls;
 use zaka_web_ui_common::controls::dropdown::Choice;
@@ -16,11 +19,22 @@ use zaka_web_ui_common::controls::settings::section;
 use zaka_web_ui_common::controls::settings::settings_modal as shared_modal;
 use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
+use zaka_web_ui_common::icon::chevron;
+use zaka_web_ui_common::icon::sliders;
+use zakac_ast::target::TargetArch;
+use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::options::Checks;
+use zakac_codegen_target_c::options::RunCheck;
+use zakac_codegen_target_c::options::RunChecks;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
+use zakac_diagnostics::Code;
+use zakac_diagnostics::lint::LINT_CODES;
+use zakac_diagnostics::lint::LintGroup;
+use zakac_diagnostics::lint::LintLevel;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::tern;
@@ -76,9 +90,10 @@ pub fn settings_modal(open: RwSignal<bool>, on_site: bool) -> impl IntoView
 }
 
 /// The compiler options: the target and, for C, its run-time checks, the
-/// platform bits, the foldings of the IR, the heap limit and the frames of a
-/// run, and the checkers. The checks are not stored on the device; the
-/// link carries them.
+/// target OS and CPU, the platform bits, the foldings of the IR, the heap
+/// limit and the frames of a run, and the checkers. The lint levels open on a
+/// second page in place of the rows. The checks are not stored on the device;
+/// the link carries them.
 ///
 /// # Arguments
 ///
@@ -89,45 +104,93 @@ pub fn settings_modal(open: RwSignal<bool>, on_site: bool) -> impl IntoView
 /// The view.
 fn compiler_section(state: AppState) -> impl IntoView
 {
-    section(
-        t!("explorer.settings.compiler"),
-        (
-            row(
-                t!("explorer.settings.target"),
-                t!("explorer.settings.target_note"),
-                target_picker(state),
-            ),
-            move || {
-                state.c_mode.get().then(|| {
+    let lints_open = RwSignal::new(false);
+    let rows = move || {
+        tern!(
+            lints_open.get(),
+            lint_page(state, lints_open).into_any(),
+            compiler_rows(state, lints_open).into_any()
+        )
+    };
+    section(t!("explorer.settings.compiler"), rows)
+}
+
+/// The rows of the compiler options.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `lints_open` - Whether the lint page shows.
+///
+/// # Returns
+///
+/// The view.
+fn compiler_rows(state: AppState, lints_open: RwSignal<bool>) -> impl IntoView
+{
+    let c_mode = move || state.c_mode.get();
+    let native = move || state.options.get().target == Target::Native;
+    (
+        row(
+            t!("explorer.settings.target"),
+            t!("explorer.settings.target_note"),
+            target_picker(state),
+        ),
+        move || {
+            c_mode().then(|| {
+                (
                     row(
                         t!("explorer.settings.c_checks"),
                         t!("explorer.settings.c_checks_note"),
                         c_checks_picker(state),
-                    )
-                })
-            },
-            row(
-                t!("explorer.settings.platform_bits"),
-                t!("explorer.settings.platform_bits_note"),
-                platform_picker(state),
-            ),
-            fold_row(state, Fold::Exprs),
-            fold_row(state, Fold::Consts),
-            fold_row(state, Fold::Branches),
-            row(
-                t!("explorer.settings.heap_cap"),
-                t!("explorer.settings.heap_cap_note"),
-                heap_picker(state),
-            ),
-            row(
-                t!("explorer.settings.frames"),
-                t!("explorer.settings.frames_note"),
-                frames_picker(state),
-            ),
+                    ),
+                    RunCheck::iter().map(|c| c_check_row(state, c)).collect_view(),
+                )
+            })
+        },
+        row(
+            t!("explorer.settings.target_os"),
+            t!("explorer.settings.target_os_note"),
+            os_picker(state),
+        ),
+        move || {
+            (!native()).then(|| {
+                row(
+                    t!("explorer.settings.target_arch"),
+                    t!("explorer.settings.target_arch_note"),
+                    arch_picker(state),
+                )
+            })
+        },
+        row(
+            t!("explorer.settings.platform_bits"),
+            t!("explorer.settings.platform_bits_note"),
+            platform_picker(state),
+        ),
+        fold_row(state, Fold::Exprs),
+        fold_row(state, Fold::Consts),
+        fold_row(state, Fold::Branches),
+        row(
+            t!("explorer.settings.heap_cap"),
+            t!("explorer.settings.heap_cap_note"),
+            heap_picker(state),
+        ),
+        row(
+            t!("explorer.settings.frames"),
+            t!("explorer.settings.frames_note"),
+            frames_picker(state),
+        ),
+        (
             row(
                 t!("explorer.settings.mem_check"),
                 t!("explorer.settings.mem_check_note"),
                 mem_check_picker(state),
+            ),
+            row(
+                t!("explorer.settings.lints"),
+                t!("explorer.settings.lints_note"),
+                page_button(t!("explorer.settings.lints_open"), sliders(), move || {
+                    lints_open.set(true)
+                }),
             ),
             option_row(
                 state,
@@ -168,6 +231,304 @@ fn compiler_section(state: AppState) -> impl IntoView
             ),
         ),
     )
+}
+
+/// A square button with an icon that opens or leaves a page of the settings.
+///
+/// # Arguments
+///
+/// * `name` - Its accessible name and its tooltip.
+/// * `icon` - The icon.
+/// * `on_click` - What a click does.
+///
+/// # Returns
+///
+/// The view.
+fn page_button(
+    name: Cow<'static, str>, icon: impl IntoView + 'static,
+    on_click: impl Fn() + 'static,
+) -> impl IntoView
+{
+    button()
+        .class(Controls::ICON_BUTTON)
+        .attr("aria-label", name.to_string())
+        .title(name.to_string())
+        .on(ev::click, move |_| on_click())
+        .child(icon)
+}
+
+/// The lint page: a level for each group of lint codes, then for each code,
+/// with the short title of the code. A level set here holds over the level
+/// of the code, as `--lint-allow`, `--lint-warn` and `--lint-error` do.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `lints_open` - Whether the lint page shows.
+///
+/// # Returns
+///
+/// The view.
+fn lint_page(state: AppState, lints_open: RwSignal<bool>) -> impl IntoView
+{
+    let back = row(
+        t!("explorer.settings.lints"),
+        t!("explorer.settings.lints_page_note"),
+        page_button(t!("explorer.settings.lints_back"), chevron(), move || {
+            lints_open.set(false)
+        }),
+    );
+    let groups = LintGroup::iter().map(|g| group_row(state, g)).collect_view();
+    let codes = LINT_CODES.iter().map(|c| code_row(state, *c)).collect_view();
+    (back, groups, codes)
+}
+
+/// The word of a lint level in the lint pickers; `default` for none.
+///
+/// # Arguments
+///
+/// * `level` - The level, or `None` for the level of the code.
+///
+/// # Returns
+///
+/// The word.
+fn level_word(level: Option<LintLevel>) -> String
+{
+    level.map_or_else(|| DEFAULT_LEVEL.to_string(), |l| l.to_string())
+}
+
+/// The word of the level of the code itself in the lint pickers.
+const DEFAULT_LEVEL: &str = "default";
+
+/// The choices of a lint picker: the level of the code, then off, warn and
+/// error.
+///
+/// # Returns
+///
+/// The choices.
+fn level_choices() -> Vec<Choice>
+{
+    let label = |l: Option<LintLevel>| match l
+    {
+        None => t!("explorer.settings.lint_default"),
+        Some(LintLevel::Off) => t!("explorer.settings.lint_off"),
+        Some(LintLevel::Warn) => t!("explorer.settings.lint_warn"),
+        Some(LintLevel::Error) => t!("explorer.settings.lint_error"),
+    };
+    let levels = std::iter::once(None).chain(LintLevel::iter().map(Some));
+    let choice = |l| Choice::builder().value(level_word(l)).label(label(l)).build();
+    levels.map(choice).collect()
+}
+
+/// The row of a group of lint codes: one level for each code of the group.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `group` - The group.
+///
+/// # Returns
+///
+/// The view.
+fn group_row(state: AppState, group: LintGroup) -> impl IntoView
+{
+    let name: &'static str = group.into();
+    // The group shows a level when each of its codes holds it, and none else.
+    let current = Signal::derive(move || {
+        let lint = state.options.get().lint;
+        let mut levels = group.codes().iter().map(|c| lint.get(*c));
+        let first = levels.next().flatten();
+        let same = levels.all(|l| l == first);
+        tern!(same, level_word(first), String::new())
+    });
+    let on_pick = move |v: String| {
+        let level = v.parse::<LintLevel>().ok();
+        let set =
+            |lint: LintLevels| group.codes().iter().fold(lint, |l, c| l.set(*c, level));
+        state.options.update(|o| o.lint = set(o.lint));
+    };
+    let note = group_note(group);
+    row(name, note, dropdown(picker(name, level_choices(), current, on_pick)))
+}
+
+/// The row of one lint code: its id, its short title and its level.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `code` - The code.
+///
+/// # Returns
+///
+/// The view.
+fn code_row(state: AppState, code: Code) -> impl IntoView
+{
+    let current =
+        Signal::derive(move || level_word(state.options.get().lint.get(code)));
+    let on_pick = move |v: String| {
+        let level = v.parse::<LintLevel>().ok();
+        state.options.update(|o| o.lint = o.lint.set(code, level));
+    };
+    let picker = picker(code.id(), level_choices(), current, on_pick);
+    row(code.id(), code.title(), dropdown(picker))
+}
+
+/// The row of one run-time check of the C files, with a switch.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+/// * `check` - The check.
+///
+/// # Returns
+///
+/// The view.
+fn c_check_row(state: AppState, check: RunCheck) -> impl IntoView
+{
+    let name: &'static str = check.into();
+    let on = Signal::derive(move || state.options.get().c_checks.has(check));
+    let set = SignalSetter::map(move |b| {
+        state.options.update(|o| o.c_checks = o.c_checks.with(check, b))
+    });
+    let note = check_note(check);
+    switch_row(format!("+{name}"), note, switch(on, Signal::stored(false), set))
+}
+
+/// The note of a lint group.
+///
+/// # Arguments
+///
+/// * `group` - The group.
+///
+/// # Returns
+///
+/// The note.
+fn group_note(group: LintGroup) -> Cow<'static, str>
+{
+    match group
+    {
+        LintGroup::Mem => t!("explorer.lint_group.mem"),
+        LintGroup::Leaks => t!("explorer.lint_group.leaks"),
+        LintGroup::Frees => t!("explorer.lint_group.frees"),
+        LintGroup::Borrows => t!("explorer.lint_group.borrows"),
+        LintGroup::Nulls => t!("explorer.lint_group.nulls"),
+        LintGroup::Pointers => t!("explorer.lint_group.pointers"),
+        LintGroup::Doubts => t!("explorer.lint_group.doubts"),
+        LintGroup::Overflow => t!("explorer.lint_group.overflow"),
+        LintGroup::Naturalness => t!("explorer.lint_group.naturalness"),
+        LintGroup::Spoken => t!("explorer.lint_group.spoken"),
+    }
+}
+
+/// The note of a run-time check of the C files.
+///
+/// # Arguments
+///
+/// * `check` - The check.
+///
+/// # Returns
+///
+/// The note.
+fn check_note(check: RunCheck) -> Cow<'static, str>
+{
+    match check
+    {
+        RunCheck::Divide => t!("explorer.c_check.divide"),
+        RunCheck::Shift => t!("explorer.c_check.shift"),
+        RunCheck::Bounds => t!("explorer.c_check.bounds"),
+        RunCheck::Text => t!("explorer.c_check.text"),
+        RunCheck::Step => t!("explorer.c_check.step"),
+        RunCheck::Depth => t!("explorer.c_check.depth"),
+        RunCheck::Null => t!("explorer.c_check.null"),
+        RunCheck::Overlap => t!("explorer.c_check.overlap"),
+        RunCheck::Sanitizers => t!("explorer.c_check.sanitizers"),
+    }
+}
+
+/// The name of an OS as the picker shows it.
+///
+/// # Arguments
+///
+/// * `os` - The OS.
+///
+/// # Returns
+///
+/// The name.
+fn os_label(os: TargetOs) -> Cow<'static, str>
+{
+    match os
+    {
+        TargetOs::Windows => t!("explorer.settings.os_windows"),
+        TargetOs::Macos => t!("explorer.settings.os_macos"),
+        TargetOs::Linux => t!("explorer.settings.os_linux"),
+    }
+}
+
+/// Picker of the OS the compile-time conditionals see.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn os_picker(state: AppState) -> impl IntoView
+{
+    let choice = |os: TargetOs| {
+        let name: &'static str = os.into();
+        Choice::builder().value(name).label(os_label(os)).build()
+    };
+    let current = Signal::derive(move || {
+        <&'static str>::from(state.options.get().os).to_string()
+    });
+    let on_pick = move |v: String| {
+        let Ok(os) = v.parse::<TargetOs>()
+        else
+        {
+            return;
+        };
+        state.options.update(|o| o.os = os);
+    };
+    dropdown(picker(
+        t!("explorer.settings.target_os"),
+        TargetOs::VARIANTS.iter().filter_map(|v| v.parse().ok()).map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of the CPU the compile-time conditionals see.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn arch_picker(state: AppState) -> impl IntoView
+{
+    let choice = |name: &&'static str| {
+        Choice::builder().value(name.to_string()).label(name.to_string()).build()
+    };
+    let current = Signal::derive(move || {
+        <&'static str>::from(state.options.get().arch).to_string()
+    });
+    let on_pick = move |v: String| {
+        let Ok(arch) = v.parse::<TargetArch>()
+        else
+        {
+            return;
+        };
+        state.options.update(|o| o.arch = arch);
+    };
+    dropdown(picker(
+        t!("explorer.settings.target_arch"),
+        TargetArch::VARIANTS.iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
 }
 
 /// The row of a compile option with a switch.
@@ -490,10 +851,15 @@ fn c_checks_picker(state: AppState) -> impl IntoView
     };
     let choice =
         move |c: Checks| Choice::builder().value(c.to_string()).label(label(c)).build();
-    let current = Signal::derive(move || state.options.get().c_checks.to_string());
+    // The level shows when the checks are those of a level, and none else.
+    let current = Signal::derive(move || {
+        let checks = state.options.get().c_checks;
+        let level = Checks::iter().find(|l| RunChecks::from(*l) == checks);
+        level.map(|l| l.to_string()).unwrap_or_default()
+    });
     let on_pick = move |v: String| {
-        let c_checks = v.parse().unwrap_or_default();
-        state.options.update(|o| o.c_checks = c_checks);
+        let level = v.parse::<Checks>().unwrap_or_default();
+        state.options.update(|o| o.c_checks = level.into());
     };
     dropdown(picker(
         t!("explorer.settings.c_checks"),

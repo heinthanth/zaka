@@ -68,7 +68,8 @@ and one set of tests serve both books.
     it must lex with no error. Start it with a `// <file>.zaka` line.
   - Options can follow the fence word, as the flags of the same names:
     `lint-error=mem`, `lint-warn=mem`, `lint-allow=mem`, `lint-warn=doubts`,
-    `lint-allow=spoken`, `no-unsafe=on`, `overflow=stop`.
+    `lint-allow=`, `lint-warn=` or `lint-error=` with each other lint group or code
+    (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
 - Learn shows; Docs states the rules in full. When the code and a note disagree, the

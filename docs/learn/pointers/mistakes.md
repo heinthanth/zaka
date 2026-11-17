@@ -288,7 +288,7 @@ is an error.
 | ZK0469 | an unsafe function as a function value |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a kind that is not a pointer |
 | ZK0471 | unsafe code under `--no-unsafe` |
-| ZK0472 | a C function with a pointer, not declared unsafe |
+| ZK0472 | a C function not declared unsafe |
 | ZK0701 | reading a variable after it handed its block to an `အပိုင်အနေဖြင့်` parameter: an error in each mode |
 | ZK0702 | giving back or resizing the address of a variable |
 | ZK0703 | keeping the address of a variable in a heap block, behind a pointer, or in a top-level variable from a function |

@@ -1301,7 +1301,7 @@ pub enum HandleUse
 /// The `ZK0472` diagnostic.
 pub fn foreign_needs_mark(span: Span, name: &str) -> Diagnostic
 {
-    let message = t!("codes.ZK0472.message", n = name, w = t!("codes.ZK0472.pointer"));
+    let message = t!("codes.ZK0472.message", n = name);
     Diagnostic::new(Code::ForeignNeedsUnsafe, message, span)
         .with_help(t!("codes.ZK0472.help"))
 }

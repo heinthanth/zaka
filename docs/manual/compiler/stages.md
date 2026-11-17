@@ -162,7 +162,7 @@ above has none. See [Natural wording](../language/naturalness.md).
 expression, and checks that the kinds fit. It owns **ZK03** (names and scopes) and
 **ZK04** (kinds), the rules of unsafe code among them: pointer work outside unsafe code
 (ZK0468), an unsafe function as a value (ZK0469), an owned marker on no pointer (ZK0470),
-unsafe code under `--no-unsafe` (ZK0471) and a C declaration that passes or gives a pointer, not declared unsafe (ZK0472). The
+unsafe code under `--no-unsafe` (ZK0471) and a C declaration not declared unsafe (ZK0472). The
 artifact keeps the tree and adds a table from each expression to its kind:
 
 ```text

@@ -67,6 +67,9 @@ impl Parser<'_>
         let lexed = split_glued(text, span.lo, &lexed, &self.functions);
         let mut inner = Parser::new(text, span.lo, &lexed);
         inner.next_id = self.next_id;
+        // A slot nests inside the expression and the blocks around it.
+        inner.nest = self.nest + 1;
+        inner.depth = self.depth;
         inner.structs.extend(self.structs.iter().cloned());
         inner.set_functions(self.functions.clone());
         let expr = inner.parse_expr();

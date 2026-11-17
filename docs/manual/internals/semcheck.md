@@ -154,12 +154,9 @@ parameter and `crosses_back` for the result (ZK0465; the kinds C takes are integ
 enumeration is left out, since Zaka holds it as an `isize` and a C enum is an `int`), and the `ဒေတာ ပြောင်းလဲရန်` marker
 on a parameter that is no list of numbers and no struct that crosses (ZK0466;
 `edit_crosses`, with `number_cells`, which finds the integer of up to 64 bits, `f32` or
-`f64` cells of a plain or counted list). A declaration whose parameters
-or result hold a pointer (`holds_ptr`: a pointer, or a struct or counted list with one
-inside), must be declared `စိတ်မချရသော` (ZK0472), and calls to it then need unsafe code, as
-calls to each unsafe function do. A text or handle result holds no pointer for the program, so it
-needs no `စိတ်မချရသော`: a text result is an optional, which NULL leaves blank, and a handle result
-is a handle or an optional of one. `Checker::c_names` maps each C name to its parameter and result
+`f64` cells of a plain or counted list). Each C function
+must be declared `စိတ်မချရသော` (ZK0472), since C runs outside the checks, and calls to it then
+need unsafe code, as calls to each unsafe function do. `Checker::c_names` maps each C name to its parameter and result
 kinds, so a second declaration of the name, in another file or among overloads, with
 other kinds is ZK0338. Its address is refused as for each external function (ZK0464).
 

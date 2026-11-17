@@ -46,7 +46,7 @@ pub fn run_jit(file: &Path, flags: &[&str]) -> Run
     let dir = tempfile::tempdir().unwrap();
     let exe = env!("CARGO_BIN_EXE_zakac_codegen_target_native");
     let mut cmd = std::process::Command::new(exe);
-    cmd.arg("--jit").args(flags).arg(file);
+    cmd.env("ZAKAC_NO_CONFIG", "1").arg("--jit").args(flags).arg(file);
     // A sample that writes a file writes it in the temp folder.
     let ran = cmd.current_dir(dir.path()).stdin(Stdio::null()).output().unwrap();
     let text = |raw: &[u8]| String::from_utf8_lossy(raw).into_owned();

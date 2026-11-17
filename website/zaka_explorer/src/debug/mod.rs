@@ -20,6 +20,7 @@ use zaka_vm::mem::Mem;
 use zaka_vm::mem::Origin;
 use zaka_vm::mem::RED_ZONE;
 use zaka_vm::print::list_text;
+use zaka_vm::print::shown_text;
 use zaka_vm::print::text;
 use zakac_codegen_target_vm::bc;
 use zakac_i18n::t;
@@ -28,6 +29,8 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
+use zakac_semcheck::kind::ROW;
+use zakac_semcheck::kind::ROW_FIELDS;
 
 use crate::compile::FILE_NAME;
 use crate::compile::RUN_STEPS;
@@ -48,6 +51,9 @@ const GIB: u64 = 1 << 30;
 
 /// The most octets of a block the heap panel keeps for its dump.
 pub const DUMP_CAP: usize = 256;
+
+/// The most rows of a ဇယား the heap panel keeps for its rows table.
+pub const ROWS_CAP: usize = 64;
 
 /// The most blocks the heap panel lists; the rest are counted.
 pub const MAX_BLOCKS: usize = 500;
@@ -275,6 +281,10 @@ pub struct BlockRow
     /// object or a closure record; 0 for a block that is not counted.
     #[builder(default)]
     pub holders: u32,
+    /// The rows in use of a ဇယား rows block as (index, value) text, at most
+    /// [`ROWS_CAP`]; none for a block of another kind.
+    #[builder(default)]
+    pub entries: Vec<(String, String)>,
 }
 
 /// A variable of a packed block, as the map shows it.
@@ -822,7 +832,61 @@ fn block_row(m: &Machine, b: &Block, finished: bool) -> BlockRow
         .data(data)
         .cells(m.held_kind(b.start).map_or_else(Vec::new, |k| cell_sizes(k, platform)))
         .holders(tern!(b.live, b.rc, 0))
+        .entries(table_entries(m, b))
         .build()
+}
+
+/// The rows in use of a rows block of a ဇယား: its kind is the row struct,
+/// and a row that is spare or removed holds zero octets, so its flag is off.
+///
+/// # Arguments
+///
+/// * `m` - The machine.
+/// * `b` - The block.
+///
+/// # Returns
+///
+/// The (index, value) text of each row in use, at most [`ROWS_CAP`]; none
+/// for a block that is no rows block.
+fn table_entries(m: &Machine, b: &Block) -> Vec<(String, String)>
+{
+    let row = b.kind.filter(|_| b.live);
+    let Some(s) = row.and_then(DataKind::as_struct).filter(|s| s.name == ROW)
+    else
+    {
+        return Vec::new();
+    };
+    let platform = m.module().platform_bits;
+    let stride = row.map_or(0, |k| u64::from(k.size(platform)));
+    ret_if!(stride == 0 || s.fields().len() < ROW_FIELDS.len(), Vec::new());
+    let field =
+        |at: u64, i: usize| (at + u64::from(s.offset(i, platform)), s.fields()[i].1);
+    let in_use = |at: &u64| {
+        let (addr, kind) = field(*at, 1);
+        m.mem().load(addr, kind) == Ok(Value::Bool(true))
+    };
+    let text = |(addr, kind): (u64, DataKind)| field_text(m.mem(), addr, kind);
+    let at = (0..b.len / stride).map(|i| b.start + i * stride).filter(in_use);
+    at.take(ROWS_CAP).map(|at| (text(field(at, 2)), text(field(at, 3)))).collect()
+}
+
+/// The text of a field of a row.
+///
+/// # Arguments
+///
+/// * `mem` - The address space.
+/// * `addr` - The address of the field.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The text a print writes, or `?` for a value that cannot be read.
+fn field_text(mem: &Mem, addr: u64, kind: DataKind) -> String
+{
+    let stored =
+        tern!(kind.repr().is_aggregate(), Ok(Value::Ptr(addr)), mem.load(addr, kind));
+    let shown = stored.and_then(|v| shown_text(mem, v, kind));
+    shown.unwrap_or_else(|_| "?".to_string())
 }
 
 /// What a block holds, as the heap panel names it.

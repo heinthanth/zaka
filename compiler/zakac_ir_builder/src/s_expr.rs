@@ -230,6 +230,10 @@ impl ToSexpr for Expr
             }
             ExprNode::SizeOf(kind) => list("sizeof", [kind.name()]),
             ExprNode::List(cells) => list("list", cells.iter().map(ToSexpr::to_sexpr)),
+            ExprNode::Repeat { cell, count } =>
+            {
+                list("repeat", [count.to_string(), cell.to_sexpr()])
+            }
             ExprNode::BlankList => "blank_list".to_string(),
             ExprNode::CellAddr { list: base, index, len, first, checked } =>
             {

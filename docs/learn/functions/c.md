@@ -9,14 +9,23 @@ Each lib on a computer holds functions written in C: `libc` has `abs`, `libm` ha
 math functions. Zaka can call them. The header of the function names the lib in place of
 `ပြင်ပ` ("outside"), and the rest is a header like the ones before.
 
+Zaka cannot see what C code does: C can read and write each part of the program's
+storage, and Zaka checks none of it. So each C function is unsafe, as
+[Unsafe Zaka](../pointers/README.md) put it: its header starts with `စိတ်မချရသော` ("not to
+be trusted"), and each call of it stands in an unsafe block. The words mark the places
+where the program trusts C, and the rest of the program remains safe code. This page needs
+no pointer; [C functions and addresses](../pointers/c.md) adds them.
+
 ```zaka
-// "Function abs, coming from the lib libc, accepting a 32-bit integer n,
-//  will return a 32-bit integer result."
-လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+// "Function abs, not to be trusted, coming from the lib libc, accepting a
+//  32-bit integer n, will return a 32-bit integer result."
+စိတ်မချရသော လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -30,6 +39,7 @@ the lib. Each C function names its lib, `libc` too. A call is a call like each o
 
 | Part | Reads as |
 | --- | --- |
+| `စိတ်မချရသော` | "not to be trusted": the function is unsafe |
 | `abs` | the name in C |
 | `"libc" မှလာသော` | "coming from the lib libc" |
 | `n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` | "accepting a 32-bit integer called n" |
@@ -37,7 +47,7 @@ the lib. Each C function names its lib, `libc` too. A call is a call like each o
 
 ## Kinds C knows
 
-C has integers, floats and addresses. Safe code can pass integers of 8 to 64 bits,
+C has integers, floats and addresses. A call can pass integers of 8 to 64 bits,
 decimal numbers, true and false, structs made of these, text, lists of numbers and
 function values. A result is nothing, one of those numbers, or a struct of them.
 
@@ -46,11 +56,13 @@ duplicate of the text with a zero octet at its end, and drops the duplicate once
 `strlen` counts the u8s of the text, and a Burmese letter takes three of them:
 
 ```zaka
-လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strlen ဟူသော လုပ်ဆောင်ချက်ကို "မောင်" ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -62,7 +74,7 @@ Text cannot come back with this form, since C can give NULL for it. A bare `စ�
 is refused:
 
 ```zaka-error ZK0465
-လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -75,16 +87,18 @@ error[ZK0465]: a C function cannot take or give back a value of the kind "text"
 ```
 
 The form the help line names is an [optional](../optionals/README.md): the text, or `အလွတ်`
-when C gives NULL. Come back to this part after [Optional values](../optionals/README.md). It needs no unsafe code, since Zaka copies the text and the program never
+when C gives NULL. Zaka copies the text, so the program never
 holds the address. A test reads it as for each optional:
 
 ```zaka
-လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 name ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ရှာတွေ့ချက် သည် getenv ဟူသော လုပ်ဆောင်ချက်ကို "ZAKA_NO_SUCH_NAME" ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 အကယ်၍ ရှာတွေ့ချက် ထဲတွင် ဒေတာ မရှိလျှင် "မရှိပါ" ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -97,7 +111,6 @@ name ဟူသော စာသား တစ်ခု ကို လက်ခံ�
 
 ## Lists of numbers
 
-Come back to this section after [Lists](../lists/README.md).
 
 A list whose cells are integers of up to 64 bits or decimal numbers goes to C as the
 address of its first cell, as C passes the cells of a list. A list of other cells, such as a list of
@@ -105,12 +118,14 @@ text, is refused (ZK0465):
 
 ```zaka
 // strlen reads u8s up to a zero, so a list of u8s that ends in 0 will do
-လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅၊ ၀] ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -120,7 +135,6 @@ strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ �
 
 ## C writes into a list
 
-Come back to this section after [Lists](../lists/README.md).
 
 C writes a list parameter marked
 [`ဒေတာ ပြောင်းလဲရန်`](parameters.md#changing-the-callers-variable) in place, as a C function writes
@@ -129,13 +143,15 @@ of its own first, so a duplicate of it never sees the writes. `memset` sets a ru
 its header has no result, so it ends in `လက်ခံမည်` ("will accept"):
 
 ```zaka
-လုပ်ဆောင်ချက် memset သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် memset သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 b ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း c ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း n ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် မိတ္တူ သည် စာ ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 memset ဟူသော လုပ်ဆောင်ချက်ကို စာ၊ ၇ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 စာ ကို ပြသမည်။
 မိတ္တူ ကို ပြသမည်။                 // stands as it was
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -153,12 +169,14 @@ list is marked [`ဒေတာ ထည့်ပေးရန်`](parameters.md#fil
 caller declares it with no value; the mark promises that C writes it.
 
 ```zaka
-လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်းကောင်း e ဟူသော အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း လက်ခံပြီး ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ထပ်ကိန်း သည် အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ နှင့် ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ထပ်ကိန်း ၏ အကွက် ၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -181,11 +199,13 @@ then the values:
 
 ```zaka-file
 // hello.zaka
-လုပ်ဆောင်ချက် printf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် printf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 printf ဟူသော လုပ်ဆောင်ချက်ကို "%s is %lld\n"၊ "x" နှင့် ၄၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -201,14 +221,13 @@ A C function that takes other values can still mark a list `ဒေတာ ပြ�
 
 ```zaka-file
 // buffer.zaka
-လုပ်ဆောင်ချက် snprintf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် snprintf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 buf ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း size ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ```
 
 ## A function C keeps
 
-Come back to this section after [Closures](../function-values/closures.md).
 
 A function of the program that has captures, a [closure](../function-values/closures.md),
 goes to a C function as a function value too. Some C functions keep the function and call
@@ -218,9 +237,9 @@ statement below reads "allow C to call it", and the last reads "take back the le
 C":
 
 ```zaka
-လုပ်ဆောင်ချက် signal သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် signal သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း handler ဟူသော (၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လည်းကောင်း လက်ခံမည်။
-လုပ်ဆောင်ချက် raise သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံမည်။
+စိတ်မချရသော လုပ်ဆောင်ချက် raise သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဖမ်းကြိမ် သည် ၀ ဖြစ်ပါစေ။
@@ -228,8 +247,10 @@ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ
 ဖမ်းကြိမ် ကို ဖမ်းကြိမ် + ၁ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 signal ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ နှင့် ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
 raise ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ဖမ်းကြိမ် ကို ပြသမည်။
 ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -254,7 +275,6 @@ code. The [Docs](../../manual/language/functions.md#c-functions) list each kind.
 
 ## A struct C keeps
 
-Come back to this section after [Structs](../structs/README.md).
 
 Some libs keep a struct of their own and give the program a pointer to it: a counter, a
 database connection. Zaka names such a struct with a kind that comes from outside, and a
@@ -266,19 +286,21 @@ the C fields the program wants to read, from the start of the C struct:
 ရေတွက်စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင်
 count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် label ဟူသော စာသား တစ်ခု တို့ပါဝင်သည်။
 
-လုပ်ဆောင်ချက် counter_open သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_open သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ရေတွက်စက် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် counter_next သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_next သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 c ဟူသော ရေတွက်စက် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် counter_close သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_close သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
 counter_next ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
 "{စက် ၏ count} {စက် ၏ step}" ဟု ပြသမည်။
 စက် ၏ label ကို ပြသမည်။
 counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -286,12 +308,12 @@ The program opens a counter, steps it once, reads two fields and its label, and 
 
 - `counter_open` gives a handle, or `အလွတ်` when C gives NULL: its result is an
   optional of the handle. A plain `ရေတွက်စက်` result would promise that C never gives
-  NULL, so a NULL would stop the run. These C functions need no `စိတ်မချရသော`, since the
-  program never holds the address.
+  NULL, so a NULL would stop the run. The program never holds the address inside the
+  handle.
 - `စက် ၏ count` reads the field from C's storage each time, so it shows what C holds now.
 - `စက် ၏ label` is an optional of text, since a `char *` can be NULL.
-- A field cannot be written. A write such as `စက် ၏ count ကို ၀ ဟု ထားမည်` is refused (ZK0474);
-  a C function changes the struct.
+- Safe code cannot write a field. A write such as `စက် ၏ count ကို ၀ ဟု ထားမည်` is refused
+  there (ZK0474); a C function changes the struct.
 - A program cannot make a handle, duplicate the struct behind it or print it (ZK0473).
 
 Closing is the program's work. `counter_close` marks its parameter `အပိုင်အနေဖြင့်` ("as
@@ -319,19 +341,23 @@ the prelude declares, as `အလုပ်လုပ်မည့်ကွန်ပ
 
 ```zaka
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်ချက် ကူး သည်
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 _strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်ချက် ကူး သည်
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
@@ -344,14 +370,17 @@ strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြ
 ဒေတာ("စံကား")
 ```
 
+`ကူး` is a *safe wrapper*: a plain function whose unsafe block holds the C call. The
+start block calls `ကူး` from safe code, so the unsafe block stands in one place, wherever
+the program copies text.
+
 The arm the target drops is never checked, so it can name a C function this host lacks.
 [Compile-time conditionals](../../manual/language/compile-time.md) has the full rules.
 
 ## Addresses
 
-A C function whose parameters or result hold an address is declared unsafe, and its calls go in
-unsafe code. [C functions and addresses](../pointers/c.md) teaches them in the last part
-of Learn.
+A C function can also take or give an address, a pointer into the program's storage.
+[C functions and addresses](../pointers/c.md) teaches them in the last part of Learn.
 
 ## Where the call runs
 
@@ -367,4 +396,4 @@ of Learn.
 - Declare `labs` from `"libc"` over 64-bit integers and call it with a negative number.
 - Declare `sqrt` from `"libm"` over decimal numbers and print the square root of 2.0.
 
-Next: [Compile time](compile-time.md).
+Next: [The heap](../pointers/heap.md).

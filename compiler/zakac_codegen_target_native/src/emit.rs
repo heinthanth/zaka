@@ -27,6 +27,7 @@ use zakac_host_errors::Error;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module as IrModule;
 use zakac_ir_builder::ir::shown_name;
+use zakac_ir_builder::spans::spell_repeats;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -397,6 +398,9 @@ pub fn emit<M: Module>(
     grants: &Grants, main_name: &str, want_clif: bool,
 ) -> Result<Lowered, Error>
 {
+    // The backends write each cell, so a repeated cell is spelled out first.
+    let spelled = spell_repeats(module);
+    let module = &spelled;
     let ptr = m.target_config().pointer_type();
     #[rustfmt::skip]
     let mut s = Shared { m, module, options, files: files.to_vec(), ptr,

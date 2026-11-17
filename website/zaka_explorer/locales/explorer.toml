@@ -186,6 +186,76 @@ en = "None"
 en = "Default"
 [explorer.settings.c_checks_mem]
 en = "Mem"
+[explorer.settings.target_os]
+en = "Target OS"
+[explorer.settings.target_os_note]
+en = "The OS the compile-time conditionals read, as zakac --target-os sets it. The explorer runs no code of an OS, so pick one to see the branch it keeps."
+[explorer.settings.target_arch]
+en = "Target CPU"
+[explorer.settings.target_arch_note]
+en = "The CPU the compile-time conditionals read, as zakac --target-arch sets it. The native target writes x86-64 code, so this setting hides there."
+[explorer.settings.os_windows]
+en = "Windows"
+[explorer.settings.os_macos]
+en = "macOS"
+[explorer.settings.os_linux]
+en = "Linux"
+[explorer.settings.lints]
+en = "Lints"
+[explorer.settings.lints_note]
+en = "The level of each lint group and code, as zakac --lint-allow, --lint-warn and --lint-error set them."
+[explorer.settings.lints_open]
+en = "Open the lint levels"
+[explorer.settings.lints_back]
+en = "Back to the compiler options"
+[explorer.settings.lints_page_note]
+en = "A group sets each of its codes; a code set on its own holds until a group sets it again. Default keeps the level the code has."
+[explorer.settings.lint_default]
+en = "Default"
+[explorer.settings.lint_off]
+en = "Allow"
+[explorer.settings.lint_warn]
+en = "Warn"
+[explorer.settings.lint_error]
+en = "Error"
+[explorer.lint_group.mem]
+en = "The pointer lint of unsafe code, which Mem check also sets."
+[explorer.lint_group.leaks]
+en = "A block that is never given back."
+[explorer.lint_group.frees]
+en = "A free through the wrong pointer, or of a block another argument reaches."
+[explorer.lint_group.borrows]
+en = "A borrow that is stored, outlived or returned."
+[explorer.lint_group.nulls]
+en = "A read through an address that is or can be null."
+[explorer.lint_group.pointers]
+en = "Pointer arithmetic and block copies."
+[explorer.lint_group.doubts]
+en = "The findings the checker cannot prove, which Strict mem check shows."
+[explorer.lint_group.overflow]
+en = "An integer operation that overflows for each value it can see."
+[explorer.lint_group.naturalness]
+en = "The naturalness rules: particles, classifiers, parentheses and the spoken spellings."
+[explorer.lint_group.spoken]
+en = "The spoken spellings of the reserved words."
+[explorer.c_check.divide]
+en = "A zero divisor stops the program."
+[explorer.c_check.shift]
+en = "A shift as wide as its kind or wider stops the program."
+[explorer.c_check.bounds]
+en = "A cell, a place, a slice or a range outside its list or text stops the program."
+[explorer.c_check.text]
+en = "A range of text that cuts a character, or u8s that hold no UTF-8, stop the program."
+[explorer.c_check.step]
+en = "A loop step that is not positive stops the program."
+[explorer.c_check.depth]
+en = "More nested calls than the limit stop the program."
+[explorer.c_check.null]
+en = "An access through the null address stops the program."
+[explorer.c_check.overlap]
+en = "A block copied onto a block it overlaps stops the program."
+[explorer.c_check.sanitizers]
+en = "The sanitizers of the C compiler, for the rest of the mem checks of the VM."
 [explorer.settings.heap_auto]
 en = "Auto (%{size})"
 [explorer.settings.platform_bits]
@@ -589,6 +659,10 @@ en = "Where the access or free that stopped the program landed"
 en = "Show the block it points into"
 [explorer.heap.dump_freed]
 en = "Freed: the contents are gone."
+[explorer.heap.row_index]
+en = "Index"
+[explorer.heap.row_value]
+en = "Value"
 [explorer.heap.dump_zero]
 en = "A block of zero octets."
 [explorer.heap.dump_cut]

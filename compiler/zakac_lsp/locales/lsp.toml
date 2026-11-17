@@ -51,6 +51,9 @@ en = "value %{value}"
 [lsp.hover_param]
 en = "parameter of %{name}"
 
+[lsp.hover_preposition]
+en = "the preposition of the parameter %{param}"
+
 [lsp.hover_loop]
 en = "loop variable"
 

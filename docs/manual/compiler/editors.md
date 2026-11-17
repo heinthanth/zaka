@@ -25,7 +25,10 @@ program never differ in version.
   rule: what the name is (a parameter, a field and its offset, a member and its value, a
   kind alias, a loop variable) and the size and alignment of its kind. A struct or an
   enumeration lists its fields or members. The `///` lines right above a declaration
-  show under its code block, at each use of the name. On another expression the hover
+  show under its code block, at each use of the name. On a kind phrase, such as
+  `၃၂ ဘစ် ကိန်းပြည့်` or `ကိန်းပြည့် စာရင်း`, the hover shows the kind, its size and the doc of
+  the built-in kind of its last word. On the preposition of a call argument it shows the
+  function and the parameter the preposition marks. On another expression the hover
   shows its kind, in the short form the messages use, such as `i32`, `usize` or `text`.
 - **Go to the declaration** of a variable, a parameter, a constant (also one used in a
   list count above its declaration), a function, a struct, a field, an enumeration, a
@@ -150,8 +153,8 @@ holds one file, so these reach that file and the stdlib modules it imports.
 ## Other editors
 
 An editor with an LSP client runs `zakac lsp` with no arguments for files that end in
-`.zaka` or `.zk`. The server takes the whole text on each change, reports positions in
-UTF-16 columns, and answers `textDocument/hover`, `textDocument/semanticTokens/full` (a
+`.zaka` or `.zk`. The server takes each change as a range of the text and its new
+words (incremental changes; a whole new text works too), reports positions in UTF-16 columns, and answers `textDocument/hover`, `textDocument/semanticTokens/full` (a
 `range` request gets the tokens of the whole file), `textDocument/definition`,
 `textDocument/references`, `textDocument/prepareRename`, `textDocument/rename`,
 `textDocument/documentSymbol`, `textDocument/completion` and `textDocument/codeAction`

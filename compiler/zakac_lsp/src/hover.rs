@@ -4,12 +4,14 @@ use gen_lsp_types::Hover;
 use gen_lsp_types::MarkupContent;
 use gen_lsp_types::MarkupKind;
 use gen_lsp_types::Position;
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
 use zakac_ast::kind::Kind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AliasDecl;
+use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::EachStmt;
@@ -17,11 +19,14 @@ use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::KindParam;
+use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::TraitDecl;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alias;
+use zakac_ast::visit::walk_call_expr;
+use zakac_ast::visit::walk_call_stmt;
 use zakac_ast::visit::walk_counted;
 use zakac_ast::visit::walk_decl;
 use zakac_ast::visit::walk_each;
@@ -29,12 +34,14 @@ use zakac_ast::visit::walk_enum;
 use zakac_ast::visit::walk_expr;
 use zakac_ast::visit::walk_fn;
 use zakac_ast::visit::walk_generic;
+use zakac_ast::visit::walk_kind;
 use zakac_ast::visit::walk_struct;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::token::Comment;
 use zakac_lexer::token::CommentKind;
+use zakac_parser::load::STD_MODULES;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::artifact::Checked;
@@ -132,7 +139,10 @@ pub fn hover(file: &FileCheck, pos: Position) -> Option<Hover>
 {
     let checked = &file.checked.as_ref()?.lowered.checked;
     let at = file.lines.offset(pos);
-    let card = name_card(file, checked, at).or_else(|| expr_card(file, checked, at))?;
+    let card = name_card(file, checked, at)
+        .or_else(|| preposition_card(file, checked, at))
+        .or_else(|| kind_card(file, checked, at))
+        .or_else(|| expr_card(file, checked, at))?;
     let value = card.markdown();
     let contents = MarkupContent { kind: MarkupKind::Markdown, value };
     let range = Some(file.lines.range(card.range));
@@ -207,6 +217,89 @@ fn unmarked(line: &str) -> String
     let text = line.strip_prefix("///").unwrap_or(line);
     text.strip_prefix(' ').unwrap_or(text).to_string()
 }
+
+/// The card of the preposition of a call argument under the cursor: the
+/// card of the function the call runs, with the parameter the preposition
+/// marks.
+///
+/// # Arguments
+///
+/// * `file` - The check of the open file.
+/// * `checked` - The check.
+/// * `at` - The cursor offset.
+///
+/// # Returns
+///
+/// The card, or `None` when the cursor is on no preposition of a call to a
+/// declared function.
+fn preposition_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card>
+{
+    let mut finder = PrepositionFinder { file, at, found: None };
+    finder.visit_program(&checked.program);
+    let (range, callee, nth) = finder.found?;
+    let callee_at = file.root_range(&callee).lo;
+    let card = name_card(file, checked, callee_at)?;
+    let (_, decl) = checked.refs.iter().find(|(used, _)| *used == callee)?;
+    let mut params = ParamNames { decl: *decl, names: Vec::new() };
+    params.visit_program(&checked.program);
+    let param = params.names.get(nth)?;
+    let note = t!("lsp.hover_preposition", param = param).to_string();
+    let mut notes = vec![note];
+    notes.extend(card.notes);
+    Some(Card { range, notes, ..card })
+}
+
+/// The card of the innermost kind phrase under the cursor: the kind, its
+/// size, and the doc of the built-in kind its last word names, such as
+/// `ကိန်းပြည့်` or `စာရင်း`.
+///
+/// # Arguments
+///
+/// * `file` - The check of the open file.
+/// * `checked` - The check.
+/// * `at` - The cursor offset.
+///
+/// # Returns
+///
+/// The card, or `None` when no kind phrase holds the cursor.
+fn kind_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card>
+{
+    let mut finder = KindFinder { file, at, best: None };
+    finder.visit_program(&checked.program);
+    let (range, kind) = finder.best?;
+    let data = DataKind::from_ast(&kind, &checked.structs);
+    let text = file.sm.span_to_snippet(&kind.span).unwrap_or_default();
+    let doc = text.split_whitespace().last().and_then(prelude_doc);
+    let card = Card::builder().range(range).code(data.name()).maybe_doc(doc);
+    Some(card.notes(size_note(data).into_iter().collect()).build())
+}
+
+/// The `///` lines above the declaration of a built-in kind in the prelude,
+/// which the compiler carries.
+///
+/// # Arguments
+///
+/// * `name` - The name of the kind, such as `ကိန်းပြည့်`.
+///
+/// # Returns
+///
+/// The lines, or `None` for a name the prelude declares no kind of.
+fn prelude_doc(name: &str) -> Option<String>
+{
+    let (.., source) = STD_MODULES.iter().find(|(module, ..)| *module == PRELUDE)?;
+    let lines: Vec<&str> = source.lines().collect();
+    let head = format!("{name} သည် ");
+    let at =
+        lines.iter().position(|l| l.starts_with(&head) && l.contains(BUILTIN_HEAD))?;
+    let above = lines[..at].iter().rev().take_while(|l| l.starts_with("///"));
+    let mut doc: Vec<String> = above.map(|l| unmarked(l)).collect();
+    doc.reverse();
+    Some(doc.join("\n")).filter(|d| !d.is_empty())
+}
+
+/// The words of the declaration of a built-in kind, after its name and its
+/// kind parameters.
+const BUILTIN_HEAD: &str = "ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော";
 
 /// The card of the innermost expression under the cursor: its kind.
 ///
@@ -630,6 +723,101 @@ impl CardMaker<'_>
         let code = format!("{}: {kind_text}", shown_name(var));
         let note = Some(t!("lsp.hover_loop").to_string());
         self.keep(code, vec![note, kind.and_then(size_note)], None);
+    }
+}
+
+/// Finds the preposition of a call argument that holds an offset: its
+/// range, the name of the callee and the number of the argument.
+struct PrepositionFinder<'a>
+{
+    /// The check of the open file.
+    file: &'a FileCheck,
+    /// The offset, in the text the editor holds.
+    at: u32,
+    /// The preposition, once found.
+    found: Option<(Range, Span, usize)>,
+}
+
+impl PrepositionFinder<'_>
+{
+    /// Note the preposition of a call that holds the offset.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The name of the function the call runs.
+    /// * `prepositions` - The preposition after each argument.
+    fn look(&mut self, callee: &Ident, prepositions: &[Ident])
+    {
+        let holds = |p: &Ident| {
+            let r = self.file.root_range(&p.span);
+            self.file.in_root(&p.span) && r.lo <= self.at && self.at <= r.hi
+        };
+        let nth = prepositions.iter().position(holds);
+        let found =
+            nth.map(|n| (self.file.root_range(&prepositions[n].span), callee.span, n));
+        do_if!(found.is_some(), self.found = found);
+    }
+}
+
+impl Visitor for PrepositionFinder<'_>
+{
+    fn visit_call_expr(&mut self, n: &CallExpr)
+    {
+        self.look(&n.callee, &n.prepositions);
+        walk_call_expr(self, n);
+    }
+
+    fn visit_call_stmt(&mut self, n: &CallStmt)
+    {
+        self.look(&n.callee, &n.prepositions);
+        walk_call_stmt(self, n);
+    }
+}
+
+/// The names of the parameters of the function declared at one name span.
+struct ParamNames
+{
+    /// The name span of the declaration.
+    decl: Span,
+    /// The names, once found.
+    names: Vec<String>,
+}
+
+impl Visitor for ParamNames
+{
+    fn visit_fn(&mut self, n: &FnDecl)
+    {
+        if n.name.span == self.decl
+        {
+            self.names = n.params.iter().map(|p| shown_name(&p.name)).collect();
+        }
+        walk_fn(self, n);
+    }
+}
+
+/// Finds the shortest kind phrase of the open file that holds an offset.
+struct KindFinder<'a>
+{
+    /// The check of the open file.
+    file: &'a FileCheck,
+    /// The offset, in the text the editor holds.
+    at: u32,
+    /// The best kind so far: its range and itself.
+    best: Option<(Range, Kind)>,
+}
+
+impl Visitor for KindFinder<'_>
+{
+    fn visit_kind(&mut self, n: &Kind)
+    {
+        let range = self.file.root_range(&n.span);
+        let inside = range.lo <= self.at && self.at <= range.hi;
+        let holds = self.file.in_root(&n.span) && !n.span.is_placeholder() && inside;
+        let shorter =
+            |(best, _): &(Range, Kind)| range.hi - range.lo < best.hi - best.lo;
+        let better = holds && self.best.as_ref().is_none_or(shorter);
+        do_if!(better, self.best = Some((range, n.clone())));
+        walk_kind(self, n);
     }
 }
 

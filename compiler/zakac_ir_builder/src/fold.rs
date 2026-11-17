@@ -110,6 +110,7 @@ pub fn is_known(e: &Expr) -> bool
         | ExprNode::BlankList
         | ExprNode::Text(_) => true,
         ExprNode::List(items) => items.iter().all(is_known),
+        ExprNode::Repeat { cell, .. } => is_known(cell),
         ExprNode::Convert { operand, .. } => static_list(e, operand),
         _ => false,
     }
@@ -559,6 +560,11 @@ impl Folder
             ExprNode::List(cells) =>
             {
                 do_for!(c in cells.iter_mut(), self.drop_value(c));
+                (None, None)
+            }
+            ExprNode::Repeat { cell, .. } =>
+            {
+                self.drop_value(cell);
                 (None, None)
             }
             ExprNode::BlankList | ExprNode::Text(_) => (None, None),

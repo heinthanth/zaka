@@ -525,6 +525,10 @@ impl IrTree<'_>
                 ("list", String::new(), cells.iter().map(|c| self.expr(c)).collect())
             }
             ExprNode::BlankList => ("blank_list", String::new(), Vec::new()),
+            ExprNode::Repeat { cell, count } =>
+            {
+                ("repeat", count.to_string(), vec![self.expr(cell)])
+            }
             ExprNode::CellAddr { list, index, len, first, .. } =>
             {
                 let label = tern!(*first == 0, "cell@", "cell1@");

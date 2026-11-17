@@ -164,7 +164,7 @@ pub enum BadLintName
 }
 
 /// The level each lint code is set to through its name or group.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct LintLevels([Option<LintLevel>; LINT_CODES.len()]);
 
 impl LintLevels
@@ -181,6 +181,24 @@ impl LintLevels
     pub fn get(&self, code: Code) -> Option<LintLevel>
     {
         LINT_CODES.iter().position(|c| *c == code).and_then(|at| self.0[at])
+    }
+
+    /// The levels with one lint code set to a level, or back to the level of
+    /// its own with `None`; a code outside the lint changes nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `code` - The code.
+    /// * `level` - The level, or `None`.
+    ///
+    /// # Returns
+    ///
+    /// The levels.
+    pub fn set(mut self, code: Code, level: Option<LintLevel>) -> Self
+    {
+        let at = LINT_CODES.iter().position(|c| *c == code);
+        at.into_iter().for_each(|at| self.0[at] = level);
+        self
     }
 
     /// The levels with one group or code set.

@@ -13,7 +13,6 @@ use gen_lsp_types::PublishDiagnosticsParams;
 use gen_lsp_types::ReferenceParams;
 use gen_lsp_types::RenameParams;
 use gen_lsp_types::SemanticTokens;
-use gen_lsp_types::TextDocumentContentChangeEvent;
 use gen_lsp_types::TextDocumentIdentifier;
 use gen_lsp_types::TextDocumentPositionParams;
 use gen_lsp_types::Uri;
@@ -28,6 +27,7 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use zakac_cli_common::lints::project_lint_levels;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 
 use crate::actions::quick_fixes;
@@ -37,6 +37,7 @@ use crate::check::check_file;
 use crate::complete::completions;
 use crate::hints::call_hints;
 use crate::hover::hover;
+use crate::lines::change_text;
 use crate::names::definition;
 use crate::names::references;
 use crate::names::rename;
@@ -121,7 +122,7 @@ fn capabilities() -> serde_json::Value
 {
     json!({
         "positionEncoding": "utf-16",
-        "textDocumentSync": 1,
+        "textDocumentSync": 2,
         "hoverProvider": true,
         "inlayHintProvider": true,
         "documentSymbolProvider": true,
@@ -166,13 +167,10 @@ fn take_note(state: &mut State, note: Notification)
                 return;
             };
             let uri = p.text_document.text_document_identifier.uri;
-            let last = p.content_changes.into_iter().last();
-            let Some(text) = last.and_then(whole_text)
-            else
-            {
-                return;
-            };
-            state.docs.insert(uri, text);
+            // The changes of one message apply in order, each to the text the
+            // one before it left.
+            let doc = state.docs.entry(uri).or_default();
+            do_for!(c in p.content_changes, change_text(doc, c));
         }
         "textDocument/didClose" =>
         {
@@ -188,28 +186,6 @@ fn take_note(state: &mut State, note: Notification)
         _ => return,
     }
     state.stale.extend(state.docs.keys().cloned());
-}
-
-/// The whole text of a change; the server asks for the whole text, so a
-/// partial change does not come.
-///
-/// # Arguments
-///
-/// * `change` - The change.
-///
-/// # Returns
-///
-/// The text, or `None` for a partial change.
-fn whole_text(change: TextDocumentContentChangeEvent) -> Option<String>
-{
-    match change
-    {
-        TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(c) =>
-        {
-            Some(c.text)
-        }
-        TextDocumentContentChangeEvent::TextDocumentContentChangePartial(_) => None,
-    }
 }
 
 /// Check each stale file and send its diagnostics; a closed file gets an

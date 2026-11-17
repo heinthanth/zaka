@@ -1061,10 +1061,8 @@ impl Checker
                 false => kd::kind_not_across_c(n.name.span, &k.name()),
             });
         do_if!(let Some(d) = bad_ret, self.report(d));
-        let pointer = params.iter().chain(&ret).any(|k| foreign::holds_ptr(*k));
-        // NULL from C is an optional the kind declares, so it needs no mark.
-        let mark = kd::foreign_needs_mark(n.name.span, &name);
-        do_if!(pointer && !n.unchecked, self.report(mark));
+        // C runs outside the checks of Zaka, so each C function is unsafe.
+        do_if!(!n.unchecked, self.report(kd::foreign_needs_mark(n.name.span, &name)));
         let shape = (params, ret);
         let first = self.c_names.entry(name.clone()).or_insert_with(|| shape.clone());
         do_if!(*first != shape, self.report(rd::c_name_twice(n.name.span, &name)));
@@ -2383,6 +2381,10 @@ impl Visitor for Checker
     fn visit_struct(&mut self, n: &StructDecl)
     {
         do_for!(f in &n.fields, self.work_out_counts(&f.kind));
+        // A kind parameter has no index kind to check until an instance names
+        // it.
+        ret_if!(!n.kind_params.is_empty());
+        do_for!(f in &n.fields, self.check_table_kinds(&f.kind));
     }
 }
 

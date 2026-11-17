@@ -104,3 +104,15 @@ fn struct_mistakes_have_their_codes()
                   တစ်ခု ဖြစ်ပါစေ။\nပ ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     ok(&lines(&[STRUCTS, result]));
 }
+
+/// A ဇယား kind in a field gets the index check that a declared ဇယား gets.
+#[test]
+fn a_table_field_checks_its_index_kind()
+{
+    let bad =
+        "စာအုပ်စင် ဟူသော ဒေတာအစုအဝေးတွင် ဇ ဟူသော ဒဿမကိန်း ဖြင့် ညွှန်းသော စာသား ဇယား တစ်ခု ပါဝင်သည်။";
+    assert_eq!(codes(bad), vec![Code::DecimalIndex]);
+    let good =
+        "စာအုပ်စင် ဟူသော ဒေတာအစုအဝေးတွင် ဇ ဟူသော ကိန်းပြည့် ဖြင့် ညွှန်းသော စာသား ဇယား တစ်ခု ပါဝင်သည်။";
+    ok(good);
+}

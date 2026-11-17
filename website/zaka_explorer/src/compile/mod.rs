@@ -21,7 +21,7 @@ use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
 use zakac_codegen_target_c::emit::CFile;
-use zakac_codegen_target_c::options::Checks;
+use zakac_codegen_target_c::options::RunChecks;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_codegen_target_vm::bc;
 use zakac_codegen_target_vm::emit::emit;
@@ -33,6 +33,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::Level;
 use zakac_diagnostics::has_errors;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_i18n::t;
 use zakac_ir_builder::fold::fold;
 use zakac_ir_builder::ir::FoldOptions;
@@ -123,7 +124,16 @@ pub struct Options
     pub target: Target,
     /// The run-time checks the C files keep, when the target is C.
     #[builder(default)]
-    pub c_checks: Checks,
+    pub c_checks: RunChecks,
+    /// The level of each lint code, over its own level.
+    #[builder(default)]
+    pub lint: LintLevels,
+    /// The OS the compile-time conditionals see.
+    #[builder(default = TargetOs::Linux)]
+    pub os: TargetOs,
+    /// The CPU the compile-time conditionals see.
+    #[builder(default = TargetArch::X86_64)]
+    pub arch: TargetArch,
 }
 
 /// What code generation writes; its static name is the word links and the
@@ -714,8 +724,6 @@ impl Unit<'_>
 /// The target.
 fn explorer_target(options: &Options) -> zakac_ast::target::Target
 {
-    // shortcut: a fixed OS and CPU; add a picker to the settings when a
-    // reader wants to see another branch of a compile-time conditional.
     let output = match options.target
     {
         Target::Vm => BuildTarget::Vm,
@@ -723,8 +731,8 @@ fn explorer_target(options: &Options) -> zakac_ast::target::Target
         Target::Native => BuildTarget::Native,
     };
     #[rustfmt::skip]
-    return zakac_ast::target::Target::builder().os(TargetOs::Linux)
-        .arch(TargetArch::X86_64).bits(options.platform_bits).output(output).build();
+    return zakac_ast::target::Target::builder().os(options.os)
+        .arch(options.arch).bits(options.platform_bits).output(output).build();
 }
 
 /// Run all phases over `source`.
@@ -941,8 +949,14 @@ fn check_program(
     program: &mut zakac_ast::stmt::Program, options: &Options,
 ) -> (Vec<Diagnostic>, SemcheckOutput)
 {
-    let idiom = check(program, &NaturalnessOptions::default());
-    (idiom, semcheck(program, &check_options(options)))
+    // The lint levels hold as on the command line: a code a name allows is
+    // left out, and the others take the level their names set.
+    let checks = check_options(options);
+    let levels = checks.levels();
+    let idiom = levels.relevel(check(program, &NaturalnessOptions::default()));
+    let mut out = semcheck(program, &checks);
+    out.diagnostics = levels.relevel(std::mem::take(&mut out.diagnostics));
+    (idiom, out)
 }
 
 /// The check options of the explorer's settings.
@@ -959,6 +973,7 @@ fn check_options(options: &Options) -> SemcheckOptions
     SemcheckOptions::builder()
         .platform_bits(options.platform_bits)
         .no_unsafe(options.no_unsafe)
+        .lint(options.lint)
         .build()
 }
 
@@ -1024,7 +1039,7 @@ fn check_owners(
 {
     #[rustfmt::skip]
     let mem = BorrowCheckOptions::builder().check(options.check).strict(options.strict)
-        .overflow(options.overflow);
+        .overflow(options.overflow).lint(options.lint);
     let out = borrow_check(module, &mem.build(), options.platform_bits);
     (out.diagnostics, out.digests.iter().map(ToString::to_string).collect())
 }

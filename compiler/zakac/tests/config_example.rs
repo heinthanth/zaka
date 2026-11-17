@@ -46,6 +46,7 @@ fn each_setting_of_the_example_reads_and_a_run_takes_its_own()
     let file = dir.join("hello.zaka");
     std::fs::write(&file, HELLO).unwrap();
     let out = Command::new(env!("CARGO_BIN_EXE_zakac"))
+        .env("ZAKAC_NO_CONFIG", "1")
         .arg("--config")
         .arg(&config)
         .arg("run")

@@ -1,16 +1,15 @@
 ---
 title: C functions and addresses
-description: Declare a C function that takes or gives an address unsafe, call it from unsafe code, and read the text that C gives back.
+description: Pass an address to a C function, read the text that C gives back, and lend C a closure for a call.
 ---
 
 # C functions and addresses
 
-[Calling C](../functions/c.md) declares C functions that safe code can call: their
-parameters are numbers, structs of numbers, text, lists of numbers and function
-values, and their results are numbers or plain structs. A C function outside that is
-declared `စိတ်မချရသော`, and its calls go in unsafe code: a parameter or a result that holds a
-pointer. Text that C gives back needs no such word, since Zaka copies it
-([below](#text-that-c-gives-back)).
+[Calling C](../functions/c.md) declares C functions on numbers, structs of numbers,
+text, lists of numbers and function values. Each C function is declared `စိတ်မချရသော`,
+and its calls go in unsafe code, since Zaka cannot check what C does. This page adds the
+C functions that take or give an address, a pointer into the program's storage, and the
+text that C gives back ([below](#text-that-c-gives-back)).
 
 ## Writing through an address
 
@@ -38,8 +37,9 @@ frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ �
 ```
 
 8.0 is 0.5 times 2 to the power 4, so the call gives `၀.၅` and `ထပ်ကိန်း` holds `၄` after
-it. [Calling C](../functions/c.md#c-writes-into-a-list) does the same in safe code, through
-a `ဒေတာ ထည့်ပေးရန်` list of one cell. A declaration with a pointer that is not declared unsafe is an error:
+it. [Calling C](../functions/c.md#c-writes-into-a-list) does the same with no address in
+the program, through a `ဒေတာ ထည့်ပေးရန်` list of one cell. A C declaration without the word
+is an error:
 
 ```zaka-error ZK0472
 လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -50,24 +50,25 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 ```text
-error[ZK0472]: "frexp" passes a pointer, so its declaration must be unsafe, with "စိတ်မချရသော"
+error[ZK0472]: "frexp" is a C function, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
 ## Text that C gives back
 
 Text comes back as an [optional](../optionals/README.md): C gives NULL when it has no
 text, and that is the blank optional `အလွတ်`. Zaka copies the text into a new one of its
-own, and C keeps what it gave. The declaration needs no `စိတ်မချရသော`, and neither does its call,
-since the program never holds the address. `strstr` finds a part in a text and gives the
+own, and C keeps what it gave, so the program never holds the address. `strstr` finds a part in a text and gives the
 rest, or NULL when the part is absent:
 
 ```zaka
-လုပ်ဆောင်ချက် strstr သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strstr သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လည်းကောင်း part ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strstr ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာပါ ကမ္ဘာ" နှင့် "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 strstr ဟူသော လုပ်ဆောင်ချက်ကို "abc" နှင့် "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -83,20 +84,24 @@ the string with C's `free` once it holds the text:
 ```zaka
 // Windows names it _strdup
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်ချက် strdup သည်
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 _strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံကား" ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -105,9 +110,9 @@ strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံ�
 ```
 
 Leave the word out for a string C hands over, and the string is never freed; write it for
-a string C keeps, and the program frees what is not its own. A function that also takes a
-pointer is unsafe, and a safe wrapper, a plain function with the unsafe call inside, gives
-the rest of the program the result in safe code, as on
+a string C keeps, and the program frees what is not its own. A safe wrapper, a plain
+function with the unsafe call inside, gives the rest of the program the result in safe
+code, as on
 [Owned pointers](ownership.md#a-safe-wrapper).
 
 ## A closure for a call
@@ -118,7 +123,7 @@ and the call needs no more: the closure is lent to it. This one counts its calls
 variable around it:
 
 ```zaka
-လုပ်ဆောင်ချက် qsort သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် qsort သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 base ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း count ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း
 size ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း
 compare ဟူသော (ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လည်းကောင်း လက်ခံမည်။
@@ -135,7 +140,9 @@ compare ဟူသော (ကိန်းပြည့် လိပ်စာ တ�
 ၀ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကိန်းရှင် ကိန်းများ သည် [၅၊ ၃၊ ၉၊ ၁] ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 qsort ဟူသော လုပ်ဆောင်ချက်ကို ကိန်းများ၊ ၄၊ ၈ နှင့် နှိုင်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ကိန်းများ ကို ပြသမည်။
 နှိုင်းကြိမ် > ၀ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

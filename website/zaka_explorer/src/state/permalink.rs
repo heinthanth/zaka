@@ -4,8 +4,13 @@ use bon::Builder;
 use zakac_borrow_checker::options::MemCheck;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::options::Checks;
+use zakac_codegen_target_c::options::RunChecks;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
+use zakac_diagnostics::Code;
+use zakac_diagnostics::lint::LINT_CODES;
+use zakac_diagnostics::lint::LintLevel;
+use zakac_diagnostics::lint::LintLevels;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -18,7 +23,10 @@ use crate::state::settings::AstMode;
 use crate::state::settings::LowerMode;
 
 /// Version of the link format.
-const FORMAT: &str = "8";
+const FORMAT: &str = "9";
+
+/// Version of the format before each C check, the OS, the CPU and the lint.
+const FORMAT_8: &str = "8";
 
 /// Version of the format before the code generation target.
 const FORMAT_7: &str = "7";
@@ -60,14 +68,19 @@ pub struct Link
 
 /// Encode a link for the URL hash.
 ///
-/// The format is `8.<platform bits>.<foldings>.<checker>.<mem
-/// flags>.<result mode>.<scratch mode>.<target>.<C checks>.<stage>.<AST
-/// view>.<lowering view>.<base64url of the UTF-8 source>`, with the check, the
-/// modes, the target, the C checks, the stage and the views in lowercase, as in
-/// `8.64.7.error.0.in-place.apart.vm.default.lower.tree.folded.…`. The foldings
-/// are a digit from 0 to 7: 1 for expressions, 2 for constants, 4 for branches.
-/// The mem flags are a digit from 0 to 7: 1 for the strict check, 2 to forbid
-/// unsafe code, 4 to stop on overflow; formats before 7 hold 0 to 3.
+/// The format is `9.<platform bits>.<foldings>.<checker>.<mem
+/// flags>.<result mode>.<scratch mode>.<target>.<C checks>.<OS>.<CPU>.<lint>.
+/// <stage>.<AST view>.<lowering view>.<base64url of the UTF-8 source>`, with
+/// the check, the modes, the target, the OS, the CPU, the stage and the views
+/// in lowercase, as in
+/// `9.64.7.error.0.in-place.apart.vm.63.linux.x86_64.000….lower.tree.folded.…`.
+/// The foldings are a digit from 0 to 7: 1 for expressions, 2 for constants, 4
+/// for branches. The mem flags are a digit from 0 to 7: 1 for the strict
+/// check, 2 to forbid unsafe code, 4 to stop on overflow; formats before 7 hold
+/// 0 to 3. The C checks are the number of their bits (`RunChecks::bits`); the
+/// lint is a digit for each lint code in the order of `LINT_CODES`: 0 for its
+/// own level, then 1 off, 2 warn, 3 error. Format 8 held a level of the C
+/// checks in their place and no OS, CPU or lint.
 ///
 /// # Arguments
 ///
@@ -88,9 +101,59 @@ pub fn encode(link: &Link) -> String
     let results: &'static str = link.options.results.into();
     let scratch: &'static str = link.options.scratch.into();
     let target: &'static str = link.options.target.into();
-    let c_checks: &'static str = link.options.c_checks.into();
-    let modes = format!("{results}.{scratch}.{target}.{c_checks}");
+    let c_checks = link.options.c_checks.bits();
+    let os: &'static str = link.options.os.into();
+    let arch: &'static str = link.options.arch.into();
+    let lint = lint_digits(link.options.lint);
+    let modes = format!("{results}.{scratch}.{target}.{c_checks}.{os}.{arch}.{lint}");
     format!("{FORMAT}.{bits}.{fold}.{check}.{mem}.{modes}.{stage}.{views}.{text}")
+}
+
+/// The digits of the lint levels, one for each lint code.
+///
+/// # Arguments
+///
+/// * `lint` - The levels.
+///
+/// # Returns
+///
+/// The digits.
+fn lint_digits(lint: LintLevels) -> String
+{
+    let digit = |code: &Code| match lint.get(*code)
+    {
+        None => '0',
+        Some(LintLevel::Off) => '1',
+        Some(LintLevel::Warn) => '2',
+        Some(LintLevel::Error) => '3',
+    };
+    LINT_CODES.iter().map(digit).collect()
+}
+
+/// The lint levels of digits made with [`lint_digits`].
+///
+/// # Arguments
+///
+/// * `digits` - The digits.
+///
+/// # Returns
+///
+/// The levels, or `None` for other text.
+fn read_lint(digits: &str) -> Option<LintLevels>
+{
+    ret_if!(digits.chars().count() != LINT_CODES.len(), None);
+    let level = |c: char| match c
+    {
+        '0' => Some(None),
+        '1' => Some(Some(LintLevel::Off)),
+        '2' => Some(Some(LintLevel::Warn)),
+        '3' => Some(Some(LintLevel::Error)),
+        _ => None,
+    };
+    let mut pairs = LINT_CODES.iter().zip(digits.chars());
+    pairs.try_fold(LintLevels::default(), |lint, (code, c)| {
+        Some(lint.set(*code, level(c)?))
+    })
 }
 
 /// The digit of the flags of the checker.
@@ -154,7 +217,8 @@ pub fn decode(hash: &str) -> Option<Link>
     let (format, rest) = hash.trim_start_matches('#').split_once('.')?;
     match format
     {
-        FORMAT => decode_8(rest),
+        FORMAT => decode_9(rest),
+        FORMAT_8 => decode_8(rest),
         FORMAT_7 => decode_7(rest),
         FORMAT_6 => decode_6(rest),
         FORMAT_5 => decode_5(rest),
@@ -206,6 +270,32 @@ fn salvage(hash: &str) -> Option<Link>
 }
 
 /// Decode the part of a link after the format: bits, foldings, ownership
+/// check, mem flags, result mode, scratch mode, target, C checks, OS, CPU,
+/// lint, stage, AST view, lowering view, source.
+///
+/// # Arguments
+///
+/// * `rest` - The part.
+///
+/// # Returns
+///
+/// The link, or `None` when a part is not well formed.
+fn decode_9(rest: &str) -> Option<Link>
+{
+    let mut parts = rest.splitn(12, '.');
+    let mut next = || parts.next();
+    let head: Vec<&str> = (0..7).map(|_| next()).collect::<Option<_>>()?;
+    let (c_checks, os, arch, lint, rest) =
+        (next()?, next()?, next()?, next()?, next()?);
+    let mut link = decode_8(&format!("{}.default.{rest}", head.join(".")))?;
+    link.options.c_checks = RunChecks::from_bits(c_checks.parse().ok()?)?;
+    link.options.os = os.parse().ok()?;
+    link.options.arch = arch.parse().ok()?;
+    link.options.lint = read_lint(lint)?;
+    Some(link)
+}
+
+/// Decode the part of a link after the format: bits, foldings, ownership
 /// check, mem flags, result mode, scratch mode, target, C checks, stage, AST
 /// view, lowering view, source.
 ///
@@ -227,7 +317,7 @@ fn decode_8(rest: &str) -> Option<Link>
     let head = format!("{bits}.{fold}.{check}.{mem}.{results}.{scratch}");
     let mut link = decode_7(&format!("{head}.{rest}"))?;
     link.options.target = target.parse::<Target>().ok()?;
-    link.options.c_checks = c_checks.parse::<Checks>().ok()?;
+    link.options.c_checks = c_checks.parse::<Checks>().ok()?.into();
     Some(link)
 }
 

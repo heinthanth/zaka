@@ -65,7 +65,8 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Own { value: operand, .. }
         | ExprNode::Closure { record: operand, .. }
         | ExprNode::CField { base: operand, .. }
-        | ExprNode::FieldAddr { base: operand, .. } => raw_expr(operand),
+        | ExprNode::FieldAddr { base: operand, .. }
+        | ExprNode::Repeat { cell: operand, .. } => raw_expr(operand),
         ExprNode::Infix { lhs, rhs, .. }
         | ExprNode::Compare { lhs, rhs, .. }
         | ExprNode::Logic { lhs, rhs, .. }

@@ -1224,19 +1224,22 @@ impl Lowerer<'_>
         // A blank of zero octets needs no value for each part, and a long list
         // would make one for each of its cells.
         ret_if!(zero_initial(kind), default_constant(kind, span));
-        let parts: Option<Vec<DataKind>> = match (kind.as_struct(), kind.as_list())
+        if let Some(l) = kind.as_list()
         {
-            (Some(s), _) => Some(s.fields().iter().map(|(_, k)| *k).collect()),
-            (_, Some(l)) => Some(vec![l.cell; l.len as usize]),
-            _ => None,
-        };
-        let Some(parts) = parts
+            let cell = Box::new(self.initial_value(l.cell, span));
+            return node_expr(
+                kind.repr(),
+                ExprNode::Repeat { cell, count: l.len },
+                span,
+            );
+        }
+        let Some(s) = kind.as_struct()
         else
         {
             return default_constant(kind, span);
         };
-        let cells = parts.into_iter().map(|k| self.initial_value(k, span)).collect();
-        node_expr(kind.repr(), ExprNode::List(cells), span)
+        let fields = s.fields().iter().map(|(_, k)| self.initial_value(*k, span));
+        node_expr(kind.repr(), ExprNode::List(fields.collect()), span)
     }
 
     /// Lower an assignment: a store to a slot, or a store at an address
@@ -4935,7 +4938,12 @@ fn defaults_of_parts(kind: DataKind, span: Span) -> Expr
         {
             s.fields().iter().map(|(_, k)| default_constant(*k, span)).collect()
         }
-        (_, Some(l)) => (0..l.len).map(|_| default_constant(l.cell, span)).collect(),
+        (_, Some(l)) =>
+        {
+            let cell = Box::new(default_constant(l.cell, span));
+            let node = ExprNode::Repeat { cell, count: l.len };
+            return Expr::builder().kind(kind).node(node).span(span).build();
+        }
         _ => Vec::new(),
     };
     Expr::builder().kind(kind).node(ExprNode::List(parts)).span(span).build()

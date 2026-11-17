@@ -15,6 +15,7 @@ use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::ir::fn_shape;
 use zakac_ir_builder::ir::shown_name;
+use zakac_ir_builder::spans::spell_repeats;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -191,6 +192,9 @@ pub fn emit(
     grants: &Grants,
 ) -> Result<Vec<CFile>, Error>
 {
+    // The backends write each cell, so a repeated cell is spelled out first.
+    let spelled = spell_repeats(module);
+    let module = &spelled;
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
         .grants(grants.clone()).build();

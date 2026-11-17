@@ -24,6 +24,7 @@ fn stderr_with(value: Option<&str>) -> String
     let file = dir.join(format!("deep-{}.zaka", value.unwrap_or("unset")));
     std::fs::write(&file, DEEP).unwrap();
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
+    cmd.env("ZAKAC_NO_CONFIG", "1");
     cmd.arg("run").arg(&file).env_remove("ZAKA_BACKTRACE");
     if let Some(v) = value
     {

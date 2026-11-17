@@ -43,6 +43,9 @@ Each command reads these files, the lowest first:
 | 5 | the file `--config <FILE>` names | each |
 
 A file that is not there is passed over, but the file `--config` names must be there.
+When the variable `ZAKAC_NO_CONFIG` is set, the commands read the file `--config` names
+alone, and none of the search: the tests of `zakac` set it, so the files of the one who
+runs them change nothing.
 Each command takes `--config`, the stage commands and `run` as well as `build`:
 
 ```console
@@ -165,12 +168,12 @@ zakac: the config file team.toml sets max-dept, which no command here takes
 ```
 
 The same holds for a file that is not TOML, and for a `--config` file that is not there.
-A value the option does not take, such as `overflow = "loud"`, gives the error of the
-option, with exit code 2, as the command line does:
+A value the option does not take, such as `overflow = "loud"`, names the file too, with
+the reason the option gives:
 
 ```console
-$ zakac run age.zaka
-run: Invalid value "loud" for argument "--overflow <MODE>". Should be one of: wrap, stop
+$ zakac run --config team.toml age.zaka
+zakac: the config file team.toml gives overflow a value the flag refuses: invalid value 'loud' for '--overflow <MODE>' [possible values: wrap, stop]
 ```
 
 `zakac` checks each name in the file. The executable of one stage checks its own section

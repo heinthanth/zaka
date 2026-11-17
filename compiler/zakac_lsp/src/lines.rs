@@ -1,4 +1,5 @@
 use gen_lsp_types::Position;
+use gen_lsp_types::TextDocumentContentChangeEvent;
 use zakac_span::text_range::OffsetTable;
 use zakac_span::text_range::Range;
 
@@ -89,4 +90,70 @@ impl LineIndex
     ///
     /// The starts, the first one 0.
     pub fn starts(&self) -> &[u32] { &self.starts }
+}
+
+/// Make one change of a file to its text: a whole new text, or a range of
+/// it replaced, in UTF-16 positions of the text before the change.
+///
+/// # Arguments
+///
+/// * `doc` - The text, changed in place.
+/// * `change` - The change.
+pub fn change_text(doc: &mut String, change: TextDocumentContentChangeEvent)
+{
+    let part = match change
+    {
+        TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(c) =>
+        {
+            *doc = c.text;
+            return;
+        }
+        TextDocumentContentChangeEvent::TextDocumentContentChangePartial(c) => c,
+    };
+    let lines = LineIndex::new(doc);
+    let lo = lines.offset(part.range.start) as usize;
+    let hi = (lines.offset(part.range.end) as usize).max(lo);
+    doc.replace_range(lo..hi, &part.text);
+}
+
+#[cfg(test)]
+mod tests
+{
+    use gen_lsp_types::Range as LspRange;
+    use gen_lsp_types::TextDocumentContentChangePartial;
+
+    use super::*;
+
+    /// A change of the range from `(l0, c0)` to `(l1, c1)` to `text`.
+    fn part(
+        l0: u32, c0: u32, l1: u32, c1: u32, text: &str,
+    ) -> TextDocumentContentChangeEvent
+    {
+        let at = |line, character| Position { line, character };
+        let range = LspRange { start: at(l0, c0), end: at(l1, c1) };
+        TextDocumentContentChangePartial::new(range, None, text.into()).into()
+    }
+
+    #[test]
+    fn changes_land_in_order_in_utf16_columns()
+    {
+        // `က` is one UTF-16 unit and three UTF-8 octets.
+        let mut doc = "ကခ\nဂ\n".to_string();
+        change_text(&mut doc, part(0, 1, 0, 2, "x"));
+        assert_eq!(doc, "ကx\nဂ\n");
+        // The second change reads the text the first one left.
+        change_text(&mut doc, part(1, 1, 1, 1, "z"));
+        change_text(&mut doc, part(0, 0, 1, 0, ""));
+        assert_eq!(doc, "ဂz\n");
+    }
+
+    #[test]
+    fn an_insert_at_the_end_of_a_line_keeps_the_break()
+    {
+        let mut doc = "ab\r\ncd".to_string();
+        change_text(&mut doc, part(0, 2, 0, 2, "!"));
+        assert_eq!(doc, "ab!\r\ncd");
+        change_text(&mut doc, part(1, 2, 1, 2, "?"));
+        assert_eq!(doc, "ab!\r\ncd?");
+    }
 }

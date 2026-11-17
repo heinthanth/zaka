@@ -75,7 +75,7 @@ called.
 
 ```zaka-error ZK0214
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -810,14 +810,18 @@ A text with the name of a shared lib in place of `ပြင်ပ` makes a C fun
 `"libm" မှလာသော`. The function is the C function of its name in that lib, so its name is a
 C name: ASCII letters, digits and `_`, not starting with a digit (ZK0337). Each C function
 names its lib, libc too (`"libc"`). The header has the forms of the table above, the
-prepositions of its parameters included, and a call is a call like each other.
+prepositions of its parameters included, and starts with `စိတ်မချရသော`: each C function is
+unsafe (below), so a call of it, a call like each other otherwise,
+stands in unsafe code.
 
 ```zaka
-လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် abs သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -828,33 +832,29 @@ abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ ဖ
 C takes each parameter and gives its result as a whole value, laid out as in C, so the
 kinds that cross are those C has:
 
-| Kind | In C | `စိတ်မချရသော` |
-| --- | --- | --- |
-| integers of 8 to 64 bits, `ကိန်းပြည့်` | `int8_t` to `int64_t`, `uint8_t` to `uint64_t` | not needed |
-| `၃၂ ဘစ် ဒဿမကိန်း`, `ဒဿမကိန်း` | `float`, `double` | not needed |
-| `မှန်မှားတန်ဖိုး` | `_Bool` | not needed |
-| a struct whose fields are these kinds, structs or counted lists of them | a struct, passed whole | not needed |
-| `စာသား`, as a parameter | `const char *` | not needed |
-| a plain or counted list of numbers, as a parameter | the address of its first cell | not needed |
-| a function kind whose parameters and result cross, as a parameter | a pointer to a function | not needed |
-| a kind from outside the program, as a parameter or a result (see [Kinds from outside the program](#c-functions)) | a pointer to a struct C keeps | not needed |
-| `<kind from outside> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, as a result | a pointer to a struct C keeps, NULL for the optional with no data | not needed |
-| a pointer, `<kind> လိပ်စာ`, or a struct that holds one | a pointer | needed |
-| `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, as a result | `const char *`, NULL for the optional with no data | not needed |
+| Kind | In C |
+| --- | --- |
+| integers of 8 to 64 bits, `ကိန်းပြည့်` | `int8_t` to `int64_t`, `uint8_t` to `uint64_t` |
+| `၃၂ ဘစ် ဒဿမကိန်း`, `ဒဿမကိန်း` | `float`, `double` |
+| `မှန်မှားတန်ဖိုး` | `_Bool` |
+| a struct whose fields are these kinds, structs or counted lists of them | a struct, passed whole |
+| `စာသား`, as a parameter | `const char *` |
+| a plain or counted list of numbers, as a parameter | the address of its first cell |
+| a function kind whose parameters and result cross, as a parameter | a pointer to a function |
+| a kind from outside the program, as a parameter or a result (see [Kinds from outside the program](#c-functions)) | a pointer to a struct C keeps |
+| `<kind from outside> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, as a result | a pointer to a struct C keeps, NULL for the optional with no data |
+| a pointer, `<kind> လိပ်စာ`, or a struct that holds one | a pointer |
+| `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, as a result | `const char *`, NULL for the optional with no data |
 
 ### Unsafe C functions
 
-A C function that takes or gives a pointer can reach
-storage that Zaka does not check, so it is declared unsafe with `စိတ်မချရသော`, as a
-function of the program can be ([Unsafe Zaka](unsafe.md)). Without the word it is ZK0472.
-Each call of an unsafe C function then needs unsafe code: an unsafe function, or an unsafe
-block opened with `စိတ်မချရသော်လည်း` (ZK0468 elsewhere).
-
-A C function with none of these kinds is not declared unsafe, and safe code calls it: its
-parameters are numbers, true or false, text, lists of numbers, plain structs, function
-values or handles of a kind from outside the program, and its result is nothing, a
-number, a plain struct, such a handle, or an optional of text or of such a handle (C gives
-NULL for the optional with no data, and Zaka holds no address).
+C code runs outside the checks of Zaka: it can read and write storage that Zaka does not
+see. So each C function is declared unsafe with `စိတ်မချရသော`, as a function of the program
+can be ([Unsafe Zaka](unsafe.md)), whatever its kinds: one on numbers alone too. Without
+the word it is ZK0472. Each call of a C function then needs unsafe code: an unsafe
+function, or an unsafe block opened with `စိတ်မချရသော်လည်း` (ZK0468 elsewhere). A safe function
+can wrap the call in an unsafe block, so the rest of the program calls the wrapper from
+safe code.
 
 ```zaka-error ZK0472
 လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -865,7 +865,7 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 ```
 
 ```text
-error[ZK0472]: "frexp" passes a pointer, so its declaration must be unsafe, with "စိတ်မချရသော"
+error[ZK0472]: "frexp" is a C function, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
 ```zaka-error ZK0468
@@ -890,11 +890,13 @@ lives until the call ends: C reads it but cannot change the text, and a zero oct
 inside the text ends the string there for C.
 
 ```zaka
-လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strlen ဟူသော လုပ်ဆောင်ချက်ကို "မောင်" ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -908,7 +910,7 @@ result, since C can give back NULL for it, and its handle likewise (see
 [Text as a result](#c-functions)); and another result that can fail.
 
 ```zaka-error ZK0465
-လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် getenv သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -945,22 +947,26 @@ it with no value, and it counts as set after the call. The compiler cannot see i
 so the mark is the author's promise that C writes the whole place.
 
 ```zaka
-လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strlen သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် memset သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် memset သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 b ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း c ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း n ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံမည်။
-လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်းကောင်း e ဟူသော အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း လက်ခံပြီး ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၄၊ ၁၀၅၊ ၀] ဖြစ်ပါစေ။
 ကိန်းရှင် ပွား သည် စာ ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 memset ဟူသော လုပ်ဆောင်ချက်ကို စာ၊ ၇ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 // ပွား keeps the cells it had
 "{စာ} {ပွား}" ဟု ပြသမည်။
 ကိန်းရှင် ထပ်ကိန်း သည် အကွက် ၁ ခုရှိသော ၃၂ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ နှင့် ထပ်ကိန်း တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ထပ်ကိန်း ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -973,7 +979,7 @@ frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ �
 ```
 
 ```zaka-error ZK0466
-လုပ်ဆောင်ချက် puts သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် puts သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -1011,27 +1017,31 @@ Zaka takes the text before it frees the duplicates of the text arguments, so a r
 that points into an argument, as `strstr` gives, is copied while it is still there.
 
 ```zaka
-လုပ်ဆောင်ချက် strstr သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strstr သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လည်းကောင်း part ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 // strdup hands its string over
 // Windows names it _strdup
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် _strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်ချက် strdup သည်
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 _strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် strdup သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 s ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 strstr ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာပါ ကမ္ဘာ" နှင့် "ကမ္ဘာ" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 strstr ဟူသော လုပ်ဆောင်ချက်ကို "abc" နှင့် "x" တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံကား" ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1113,9 +1123,9 @@ code.
 ```zaka-file
 // callbacks.zaka
 ဘူး ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
-လုပ်ဆောင်ချက် each_name သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် each_name သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံမည်။
-လုပ်ဆောင်ချက် each_box သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် each_box သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (ဘူး တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံမည်။
 
 လုပ်ဆောင်ချက် အမည်ပြ သည် အမည် ဟူသော စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -1200,12 +1210,12 @@ buffer from safe code:
 ```zaka
 // The UCRT that the VM opens on Windows has no snprintf; msvcrt has _snprintf
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်၍ ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား == "vm" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် _snprintf သည် "msvcrt" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် _snprintf သည် "msvcrt" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 buf ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း size ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 သို့မဟုတ်ပါက အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လုပ်ဆောင်ချက် snprintf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် snprintf သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 buf ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လည်းကောင်း size ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -1215,6 +1225,7 @@ fmt ဟူသော စာသား တစ်ခု ကို လည်းကေ
 ၁ မှ ၃၂ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ဘောင် ထဲသို့ ၀ ကို ထည့်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်၍ ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား == "vm" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရေ သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် _snprintf ဟူသော လုပ်ဆောင်ချက်ကို ဘောင်၊ ၃၂၊ "%s=%lld"၊ "x" နှင့် ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -1222,6 +1233,7 @@ fmt ဟူသော စာသား တစ်ခု ကို လည်းကေ
 ကိန်းရှင် ရေ သည် ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် snprintf ဟူသော လုပ်ဆောင်ချက်ကို ဘောင်၊ ၃၂၊ "%s=%lld"၊ "x" နှင့် ၄၂ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 (ဘောင် ၏ အကွက် ၀ မှစ၍ ရေ ကွက်) ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1313,19 +1325,21 @@ cannot run in the book, which has no such lib, so it is shown as a file:
 ရေတွက်စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင်
 count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် label ဟူသော စာသား တစ်ခု တို့ပါဝင်သည်။
 
-လုပ်ဆောင်ချက် counter_open သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_open သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ရေတွက်စက် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် counter_next သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_next သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 c ဟူသော ရေတွက်စက် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-လုပ်ဆောင်ချက် counter_close သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+စိတ်မချရသော လုပ်ဆောင်ချက် counter_close သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
 counter_next ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
 "{စက် ၏ count} {စက် ၏ step}" ဟု ပြသမည်။
 စက် ၏ label ကို ပြသမည်။
 counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -1945,7 +1959,7 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0467 | `အပိုင်အနေဖြင့်` on a result that is no text from a C function |
 | ZK0468 | a call of an unsafe function, a C one included, outside unsafe code |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a parameter or a result that holds no pointer |
-| ZK0472 | a C function with a pointer in its kinds, not declared `စိတ်မချရသော` |
+| ZK0472 | a C function not declared `စိတ်မချရသော` |
 | ZK0473 | a value of a kind from outside the program that the program makes, duplicates or prints |
 | ZK0474 | a write to a field of a kind from outside the program, outside unsafe code or of a text or a handle field |
 | ZK0722 | an argument of a changed parameter that can be unset, or a filled parameter read before the function sets it |

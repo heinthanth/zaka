@@ -101,6 +101,21 @@ impl RunChecks
     /// The bits.
     pub const fn bits(self) -> u16 { self.0 }
 
+    /// The checks of bits made with [`RunChecks::bits`].
+    ///
+    /// # Arguments
+    ///
+    /// * `bits` - The bits.
+    ///
+    /// # Returns
+    ///
+    /// The checks, or `None` when a bit names no check.
+    pub fn from_bits(bits: u16) -> Option<Self>
+    {
+        let all = RunCheck::iter().fold(0, |b, c| b | c.bit());
+        (bits & !all == 0).then_some(Self(bits))
+    }
+
     /// Whether a check is on.
     ///
     /// # Arguments

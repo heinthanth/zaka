@@ -258,7 +258,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0469 | an unsafe function (`စိတ်မချရသော`) named as a function value | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a parameter or result that is no pointer (a handle parameter of a C function is allowed) | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0471 | `စိတ်မချရသော`, on a function or a block, under `--no-unsafe` | [Unsafe Zaka](../language/unsafe.md) |
-| ZK0472 | a C function whose kinds hold a pointer, declared without `စိတ်မချရသော` | [Functions](../language/functions.md), [Unsafe Zaka](../language/unsafe.md) |
+| ZK0472 | a C function declared without `စိတ်မချရသော` | [Functions](../language/functions.md), [Unsafe Zaka](../language/unsafe.md) |
 | ZK0473 | a value of a kind from outside the program, `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`, that the program makes, duplicates or prints | [Functions](../language/functions.md#c-functions) |
 | ZK0474 | a write to a field of a kind from outside the program outside unsafe code, or to a text or a handle field: the struct belongs to C | [Functions](../language/functions.md#c-functions) |
 | ZK0475 | a test word that does not fit the kind: `ဒေတာ` on a result, or `ရလဒ်ကောင်း` or `အမှားအယွင်း` on an optional | [Optionals](../language/optionals.md) |
