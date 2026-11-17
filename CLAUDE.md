@@ -39,7 +39,8 @@ code at once.
 | Run a program | `cargo run -q -p zakac -- run program.zaka` |
 | Test it all | `mise run test` (`cargo nextest run --workspace`) |
 | Test the compiler and the VM, not the web crates | `mise run test:compiler` |
-| Test the Learn and Docs pages | `cargo test -p zaka_website --test tests books::` |
+| Test the Learn and Docs pages | `mise run test:books` (`cargo nextest run -p zaka_website books::`) |
+| Test the web crates: the site, the books and the explorer | `mise run test:web` |
 | Headers for the editor of the C runtime | `mise run c:mock-headers` (a build of hello in `target/c-headers`, which `runtime/.clangd` reads; again after a change to `zaka_runtime`) |
 | Format | `mise run format` (rustfmt, then clang-format on the C runtime headers; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |

@@ -23,7 +23,6 @@ use zakac_reporter::render::diagnostic_pieces;
 use zakac_reporter::width::Carets;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;

@@ -131,13 +131,13 @@ the same IR.
 cargo build -p zakac                       # the compiler
 cargo run -q -p zakac -- run hello.zaka    # compile and run a file
 cargo run -q -p zakac -- lex hello.zaka    # stop after one stage and dump it
-cargo test --workspace                     # all tests (default-members is zakac alone)
-cargo test -p zakac_parser                 # tests of one crate
+cargo nextest run --workspace              # all tests (default-members is zakac alone)
+cargo nextest run -p zakac_parser          # tests of one crate
 cargo +nightly fmt                         # format
 ```
 
-`mise run test` runs the workspace with `cargo nextest`, and `mise run format` is the
-formatter. The tasks that serve the explorer and the site with live reload
+`mise run test` runs the workspace with `cargo nextest`; `test:compiler`, `test:books`
+and `test:web` run a part of it. `mise run format` is the formatter. The tasks that serve the explorer and the site with live reload
 (`explorer:dev`, `website:dev`) are Bun Shell scripts in `.mise-tasks/`.
 
 CI (`.github/workflows/test.yml`) runs the workspace on Linux (x86-64), macOS and Windows,
@@ -159,7 +159,7 @@ Four kinds of test sit in the repo:
   fail on purpose and are skipped there. The flow checker has an oracle test: each
   sample that passes the check without raw addresses must run with no use after free,
   double free or bad free.
-- **The book tests.** `cargo test -p zaka_website --test tests books::` runs each fenced
+- **The book tests.** `mise run test:books` (`cargo nextest run -p zaka_website books::`) runs each fenced
   `zaka` block of the Learn pages and of this manual and compares the result with what
   the page promises (output, a code, a stop). A link to a page that is not in a
   `CONTENTS.md` fails the test too. One more test of `zaka_website` uses the same

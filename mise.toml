@@ -56,6 +56,14 @@ description = "Run the tests"
 run = "cargo nextest run -p 'zakac*' -p zaka_vm -p zaka_host"
 description = "Run the tests of the compiler and the VM, not the web crates"
 
+[tasks."test:books"]
+run = "cargo nextest run -p zaka_website books::"
+description = "Run the tests of the Learn and Docs pages: each code fence, link and error row"
+
+[tasks."test:web"]
+run = "cargo nextest run -p 'zaka_web*' -p zaka_explorer"
+description = "Run the tests of the web crates: the site, the books and the explorer"
+
 [tasks."test:benches"]
 run = "cargo nextest run --workspace --benches"
 description = "Run the benchmark code as tests"
