@@ -306,7 +306,7 @@ An owned hand-over into a call is a `Take` of the argument's place, so the check
 it as it follows each other statement:
 
 ```zaka-error ZK0701
-စိတ်မချရသော လုပ်ဆောင်ချက် ရှင်းပစ် သည်
+ရှင်းပစ် ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။

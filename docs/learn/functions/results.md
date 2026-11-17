@@ -12,7 +12,7 @@ numbers. The value handed back is the function's *result*.
 ```zaka
 // "Function square, accepting an integer k, doing the following,
 //  will return an integer result."
-လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။      // return k × k as the result
@@ -46,14 +46,14 @@ reaches its end, so it ends with a return, or each branch before it returns.
 
 ```zaka
 // area: give back the product, which ends the function
-လုပ်ဆောင်ချက် ဧရိယာ သည်
+ဧရိယာ ဟူသော လုပ်ဆောင်ချက် သည်
 အလျား ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း အနံ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အလျား * အနံ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // larger: give back as soon as the answer is known
-လုပ်ဆောင်ချက် ပိုကြီး သည်
+ပိုကြီး ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ က သည် ခ ထက် ကြီးလျှင် က ကို ပြန်ပေးမည်။
@@ -77,7 +77,7 @@ A call with `လုပ်ဆောင်သော ရလဒ်` is a value. Use 
 it, pass it to another function, or use it in a sum:
 
 ```zaka
-လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -115,7 +115,7 @@ the same call in fewer: the name, then the arguments in parentheses, with `၊` 
 them. It is the same call, as `+` is the same sum as the word form.
 
 ```zaka
-လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -144,7 +144,7 @@ The arguments-first call of [Parameters](parameters.md#arguments-first) gives ba
 result when it ends with `သည့် ရလဒ်` ("the result that ...") in place of `မည်`:
 
 ```zaka
-လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -171,7 +171,7 @@ false:
 
 ```zaka
 // divides: does d divide n with nothing left over?
-လုပ်ဆောင်ချက် ပြတ်သလား သည်
+ပြတ်သလား ဟူသော လုပ်ဆောင်ချက် သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဆခွဲ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 န % ဆခွဲ သည် ၀ နှင့် ညီသည် ကို ပြန်ပေးမည်။
@@ -191,7 +191,7 @@ false:
 A function without a result has nothing to use as a value:
 
 ```zaka-error ZK0315
-လုပ်ဆောင်ချက် ပြ သည်
+ပြ ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -208,7 +208,7 @@ error[ZK0315]: function "ပြ" returns nothing and cannot be used as a value
 A function with a result must give a value back whenever it returns:
 
 ```zaka-error ZK0313
-လုပ်ဆောင်ချက် တစ် သည်
+တစ် ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -225,7 +225,7 @@ A function with a result whose block can reach its end with no return is an erro
 since the caller would be left with no value:
 
 ```zaka-error ZK0339
-လုပ်ဆောင်ချက် ဆယ်ကျော် သည်
+ဆယ်ကျော် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ က သည် ၁၀ ထက် ကြီးလျှင် က ကို ပြန်ပေးမည်။

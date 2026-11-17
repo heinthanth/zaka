@@ -955,3 +955,18 @@ pub fn comptime_mark_misplaced(span: Span) -> Diagnostic
     Diagnostic::new(Code::ComptimeMarkMisplaced, t!("codes.ZK0256.message"), span)
         .with_help(t!("codes.ZK0256.help"))
 }
+
+/// The unsafe mark stands before the start block, which cannot be unsafe.
+///
+/// # Arguments
+///
+/// * `span` - The mark.
+///
+/// # Returns
+///
+/// The `ZK0257` diagnostic.
+pub fn unsafe_start(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::UnsafeStart, t!("codes.ZK0257.message"), span)
+        .with_help(t!("codes.ZK0257.help"))
+}

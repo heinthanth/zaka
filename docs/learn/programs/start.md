@@ -11,7 +11,7 @@ the program first, and its result tells the shell how the run went.
 
 ```zaka
 /// Greet one person.
-လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက် သည်
 အမည် ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ {အမည်}" ဟု ပြသမည်။
@@ -44,7 +44,7 @@ $ zakac run greet.zaka -- မောင်မောင် အေးအေး
 ## The parts of a start block
 
 The start block reads like a function with no name. In place of
-`လုပ်ဆောင်ချက် <name> သည်`, it opens with `ပရိုဂရမ်သည်`, "the program":
+`<name> ဟူသော လုပ်ဆောင်ချက် သည်`, it opens with `ပရိုဂရမ်သည်`, "the program":
 
 - `အမည်များ ဟူသော စာသား စာရင်း တစ်ခု ကို လက်ခံပြီး` names the list of arguments, one text for each
   word. The name is `အမည်များ` here, but each name works.

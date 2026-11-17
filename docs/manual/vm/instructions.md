@@ -20,7 +20,7 @@ rules of the language do not depend on it: what a program means is set in
 function that doubles its parameter, and a start block that calls it:
 
 ```zaka
-လုပ်ဆောင်ချက် နှစ်ဆ သည်
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 န * ၂ ကို ပြန်ပေးမည်။

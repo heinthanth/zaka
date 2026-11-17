@@ -41,7 +41,7 @@ unsafe code a pointer's value), `WORD` the classifier of the kind, and `BODY` a 
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` |
 | call | `NAME ဟူသော လုပ်ဆောင်ချက်ကို [ARGS တို့ဖြင့်] လုပ်ဆောင်မည်။` |
 | return | `VALUE ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။` |
-| function | `လုပ်ဆောင်ချက် NAME သည် ...` (see [Functions](functions.md)) |
+| function | `NAME ဟူသော လုပ်ဆောင်ချက် သည် ...` (see [Functions](functions.md)) |
 | start block | `ပရိုဂရမ်သည် ...`, at most one (see [Functions](functions.md#the-start-block)) |
 | add a cell | `PLACE ထဲသို့ VALUE ကို ထည့်မည်။` (see [Lists](lists.md#adding-and-removing-cells)) |
 | add to text | `TEXT ထဲသို့ VALUE ကို ထည့်မည်။` (see [Text](text.md#changing-text)) |
@@ -297,7 +297,7 @@ a call made while the global can be unset is ZK0724.
 
 ```zaka-error ZK0724
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ပြ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စုစုပေါင်း ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
@@ -322,7 +322,7 @@ it stands after the call.
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
-လုပ်ဆောင်ချက် ချဲ့ သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ချဲ့ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 စာ ထဲသို့ ၅၀ ကို ထည့်မည်။                 // the list gains a cell
 ၇ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။

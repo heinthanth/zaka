@@ -100,12 +100,13 @@ var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်"
 decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်" clause ]
              | clause ;                           (* the kind comes from the value *)
 
-fn-decl      = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name [ sign-params ] "သည်"
+fn-decl      = name [ sign-params ] "ဟူသော" fn-marks "လုပ်ဆောင်ချက်" "သည်"
                [ word-params "သည်" ]
                [ params "လက်ခံပြီး" ] fn-open "။"
                [ notes ]
                { stmt }
                block-close "။" ;
+fn-marks     = { "အများသုံး" | "စိတ်မချရသော" | "ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော" } ;
 
 sign-params  = "<" kind-param { "၊" kind-param } ">" ;     (* no space before "<" *)
 kind-param   = name [ ":" trait-ref { "နှင့်" trait-ref } ] ;
@@ -123,9 +124,9 @@ trait-decl   = name [ sign-params ] "ဟူသည့်" [ "အများသ�
                [ notes ]
                { fn-head }
                "ဂုဏ်သတ္တိ" "တွင်" "ပါသော" "လုပ်ဆောင်ချက်များ" done "။" ;
-fn-head      = "လုပ်ဆောင်ချက်" name "သည်"
+fn-head      = name "ဟူသော" "လုပ်ဆောင်ချက်" "သည်"
                ( params ( "လက်ခံမည်" | "လက်ခံပြီး" result ) | result ) "။"
-             | "လုပ်ဆောင်ချက်" name "သည်" params "လက်ခံပြီး" fn-open "။"   (* a default *)
+             | name "ဟူသော" "လုပ်ဆောင်ချက်" "သည်" params "လက်ခံပြီး" fn-open "။"   (* a default *)
                { stmt } block-close "။" ;
 compiler-mark = "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;   (* the prelude alone, ZK0349 *)
 trait-block  = kind "တွင်" trait-ref "ဂုဏ်သတ္တိ" "ရှိစေရန်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ"
@@ -145,7 +146,7 @@ param        = name "ဟူသော" listed-kind "ကို" markers ;
 markers      = [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
 preposition  = "ဝိဘတ်" string-lit "ကို" "သုံး၍" ;   (* the string holds names and particles *)
 
-external-fn  = [ "အများသုံး" ] [ "စိတ်မချရသော" ] "လုပ်ဆောင်ချက်" name "သည်"
+external-fn  = name "ဟူသော" fn-marks "လုပ်ဆောင်ချက်" "သည်"
                origin "လုပ်ဆောင်ချက်" [ "တစ်ခု" ]
                ( "ဖြစ်သည်" | "ဖြစ်၍" ext-tail ) "။" ;
 origin       = "ပြင်ပမှလာသော"                     (* a host function *)
@@ -178,8 +179,9 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
 ```
 
 - With two or more parameters, each ends in `လည်းကောင်း`; either each parameter has a
-  preposition or none has. The two words before `လုပ်ဆောင်ချက်`, `အများသုံး` and `စိတ်မချရသော`, can come in either order; the
-  start block takes neither.
+  preposition or none has. A function head names its function first, as a struct head does, and
+  its marks (`fn-marks`) stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in whatever order; the
+  start block takes none. The comptime mark goes on a function with statements alone.
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
   another function.

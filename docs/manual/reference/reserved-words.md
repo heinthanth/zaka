@@ -112,7 +112,7 @@ in its help line, and reads on as if the `မည်` spelling stood there.
 | `ပရိုဂရမ် ပြီးဆုံးပါပြီး` | "the program is done": closes the start block (four spellings) | [Hello, world](../../learn/hello/README.md#where-the-program-starts) |
 | `အကယ်၍` | "if" | [If and else](../../learn/control-flow/if-else.md) |
 | `ကွန်ပိုင်းလုပ်ချိန်တွင်` | "at compile time": after `အကယ်၍`, a conditional the compiler settles for the target | [Compile time](../language/compile-time.md) |
-| `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` | "that can run at compile time": in front of `လုပ်ဆောင်ချက်`, marks a comptime function | [Compile time](../language/compile-time.md#comptime-functions) |
+| `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` | "that can run at compile time": between `ဟူသော` and `လုပ်ဆောင်ချက်`, marks a comptime function | [Compile time](../language/compile-time.md#comptime-functions) |
 | `လုပ်ဆောင်နိုင်သော` | "that can run": the second word of the comptime mark | [Compile time](../language/compile-time.md#comptime-functions) |
 | `လျှင်`, `ဖြစ်လျှင်` | "then" | [If and else](../../learn/control-flow/if-else.md) |
 | `ထိုသို့မဟုတ်ဘဲ` | "if not so, but" (else if) | [If and else](../../learn/control-flow/if-else.md) |
@@ -172,7 +172,7 @@ The words of this section belong to unsafe code; see [Unsafe Zaka](../language/u
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `စိတ်မချရသော` | "that cannot be trusted": in front of `လုပ်ဆောင်ချက်`, makes a function or a C function declaration unsafe | [Unsafe Zaka](../language/unsafe.md) |
+| `စိတ်မချရသော` | "that cannot be trusted": between `ဟူသော` and `လုပ်ဆောင်ချက်`, makes a function or a C function declaration unsafe | [Unsafe Zaka](../language/unsafe.md) |
 | `စိတ်မချရသော်လည်း` | "though it cannot be trusted": in `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`, opens an unsafe block | [Unsafe Zaka](../language/unsafe.md) |
 | `လိပ်စာ` | "address": after `<kind>` it makes the pointer kind (`<kind> လိပ်စာ`, then `၏ လိပ်စာ` for each further level); on its own it is the opaque pointer kind; after a name (`x ၏ လိပ်စာ`, or `&x`) it takes the address | [Unsafe Zaka](../language/unsafe.md) |
 | `တန်ဖိုး` | "value": reads or writes through a pointer, as in `p ၏ တန်ဖိုး` (or `*p`); also `တန်ဖိုးသည်` in a declaration | [Unsafe Zaka](../language/unsafe.md), [Variables](../../learn/variables/README.md) |

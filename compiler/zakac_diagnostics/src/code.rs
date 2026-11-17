@@ -186,6 +186,8 @@ BadCompileTimeTest = ("ZK0255", Level::Error),
 /// The comptime mark stands before something other than a function with a
 /// block at the top level.
 ComptimeMarkMisplaced = ("ZK0256", Level::Error),
+/// The unsafe mark stands before the start block, which cannot be unsafe.
+UnsafeStart = ("ZK0257", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

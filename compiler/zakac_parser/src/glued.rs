@@ -145,8 +145,7 @@ fn declared_at(tokens: &[Token], at: usize) -> bool
     };
     let before = kw(at.checked_sub(1).and_then(|b| tokens.get(b)));
     let after = kw(tokens.get(at + 1));
-    matches!(before, Some(Kw::Var | Kw::Const | Kw::Function))
-        || after == Some(Kw::Called)
+    matches!(before, Some(Kw::Var | Kw::Const)) || after == Some(Kw::Called)
 }
 
 /// The warnings for each declared name that can clash: a word of a visible

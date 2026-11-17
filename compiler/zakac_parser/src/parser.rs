@@ -44,6 +44,7 @@ use crate::glued::split_glued;
 use crate::hint::Hint;
 use crate::hint::declared_hints;
 use crate::load::STD_MODULES;
+use crate::stmt::FN_MARKS;
 use crate::using::Functions;
 use crate::using::preposition_words;
 
@@ -164,17 +165,14 @@ pub(crate) fn prelude_builtins() -> &'static HashSet<String>
             src[(t.span.lo - Pos::ZERO) as usize..(t.span.hi - Pos::ZERO) as usize]
                 .to_string()
         };
-        let heads = tokens
-            .iter()
-            .enumerate()
-            .filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
-        let marked = heads.filter_map(|(at, _)| {
+        let heads = (0..tokens.len()).filter(|&at| fn_head_at(&tokens[at..]).is_some());
+        let marked = heads.filter_map(|at| {
             let header = tokens[at..]
                 .iter()
                 .take_while(|t| t.kind != TokenKind::Punct(Punct::FullStop));
             let builtin =
                 header.clone().any(|t| t.kind == TokenKind::Kw(Kw::InCompiler));
-            let name = tokens.get(at + 1).filter(|t| t.kind == TokenKind::Ident);
+            let name = Some(&tokens[at]).filter(|t| t.kind == TokenKind::Ident);
             name.filter(|_| builtin).map(word)
         });
         marked.collect()
@@ -211,9 +209,8 @@ fn prelude_functions() -> &'static Functions
 fn declared_functions(text: &str, base: Pos, lexed: &LexOutput) -> Functions
 {
     let parser = Parser::new(text, base, lexed);
-    let heads = lexed.tokens.iter().enumerate();
-    let heads = heads.filter(|(_, t)| t.kind == TokenKind::Kw(Kw::Function));
-    let heads = heads.filter_map(|(at, _)| parser.fn_header(&lexed.tokens, at));
+    let heads =
+        (0..lexed.tokens.len()).filter_map(|at| parser.fn_header(&lexed.tokens, at));
     let mut found = Functions::new();
     for (name, prepositions) in heads
     {
@@ -308,6 +305,30 @@ pub fn parse_lone_expr(
 fn blank_output(span: Span) -> ParseOutput
 {
     ParseOutput::builder().program(Program::builder().span(span).build()).build()
+}
+
+/// Whether the head of a function declaration starts at the first token:
+/// `<name> [<…>] ဟူသော [<marks>] လုပ်ဆောင်ချက် သည်`, with the marks of
+/// [`FN_MARKS`].
+///
+/// # Arguments
+///
+/// * `tokens` - The tokens from the first one on.
+///
+/// # Returns
+///
+/// The index of `လုပ်ဆောင်ချက်` in `tokens`, or `None` for no head.
+pub(crate) fn fn_head_at(tokens: &[Token]) -> Option<usize>
+{
+    let kind_at = |n: usize| tokens.get(n).map_or(TokenKind::Eof, |t| t.kind);
+    ret_if!(!matches!(kind_at(0), TokenKind::Ident | TokenKind::RawIdent), None);
+    let called = 1 + angle_len_with(1, kind_at).unwrap_or(0);
+    ret_if!(kind_at(called) != TokenKind::Kw(Kw::Called), None);
+    let is_mark = |n: &usize| FN_MARKS.iter().any(|m| kind_at(*n) == TokenKind::Kw(*m));
+    let noun = (called + 1..).find(|n| !is_mark(n))?;
+    let head = kind_at(noun) == TokenKind::Kw(Kw::Function)
+        && kind_at(noun + 1) == TokenKind::Kw(Kw::Thi);
+    tern!(head, Some(noun), None)
 }
 
 /// The reserved word of a token.
@@ -512,13 +533,13 @@ impl<'t> Parser<'t>
     }
 
     /// The name and the prepositions of the function declaration whose
-    /// `လုပ်ဆောင်ချက်` sits at token `at`: the string after each `ဝိဘတ်`
-    /// before the full stop of the header, read as its words.
+    /// name sits at token `at`: the string after each `ဝိဘတ်` before the full
+    /// stop of the header, read as its words.
     ///
     /// # Arguments
     ///
     /// * `tokens` - The tokens of the file.
-    /// * `at` - The index of `လုပ်ဆောင်ချက်` in them.
+    /// * `at` - The index of the name in them.
     ///
     /// # Returns
     ///
@@ -529,10 +550,9 @@ impl<'t> Parser<'t>
     ) -> Option<(String, Vec<String>)>
     {
         let tokens = tokens.get(at..)?;
-        let name = tokens.get(1)?;
+        fn_head_at(tokens)?;
+        let name = &tokens[0];
         let raw = name.kind == TokenKind::RawIdent;
-        ret_if!(name.kind != TokenKind::Ident && !raw, None);
-        ret_if!(tokens.get(2)?.kind != TokenKind::Kw(Kw::Thi), None);
         let stop = TokenKind::Punct(Punct::FullStop);
         let header: Vec<&Token> =
             tokens.iter().take_while(|t| t.kind != stop).collect();

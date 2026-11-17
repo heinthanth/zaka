@@ -13,7 +13,7 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Following, Kw::ListKo, Kw::WillDo], Kw::BlockOpen),
     // အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။ — opens an unsafe block
     (&[Kw::Following, Kw::ListKo, Kw::UnsafeThough, Kw::WillDo], Kw::UnsafeBlockOpen),
-    // လုပ်ဆောင်ချက် ... သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... တစ်ခု ကို ပြန်ပေးမည်။
+    // ... ဟူသော လုပ်ဆောင်ချက် သည် ... အောက်ပါတို့ကို လုပ်ဆောင်ကာ ... တစ်ခု ကို ပြန်ပေးမည်။
     (&[Kw::Following, Kw::ListKo, Kw::DoAnd], Kw::FnOpenRet),
     // ... လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။
     (&[Kw::OnFail, Kw::Fault, Kw::Ko, Kw::WillReturn], Kw::PassFault),
@@ -57,9 +57,9 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::That, Kw::Result], Kw::UsedResult),
     (&[Kw::Named, Kw::GoodResult], Kw::UsedGoodResult),
     (&[Kw::That, Kw::GoodResult], Kw::UsedGoodResult),
-    // လုပ်ဆောင်ချက် <fn> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်(၍|သည်) ...
+    // <fn> ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်(၍|သည်) ...
     (&[Kw::Outside, Kw::From, Kw::Coming], Kw::External),
-    // ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် <fn> သည် ...
+    // <fn> ဟူသော ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် သည် ...
     (&[Kw::AtCompileTime, Kw::CanRun], Kw::Comptime),
     // ... ကို သုံး၍ <fn> သည့် ရလဒ်ကောင်း
     (&[Kw::Which, Kw::GoodResult], Kw::UsedGoodResult),
@@ -151,9 +151,11 @@ fn next_token(tokens: &[Token]) -> (Token, usize)
 fn phrase_at(tokens: &[Token]) -> Option<(usize, Kw)>
 {
     // `<name> ဟူသော လုပ်ဆောင်ချက် အမျိုးအစား` keeps `ဟူသော` apart, so the function
-    // kind after it joins on its own.
+    // kind after it joins on its own; `<name> ဟူသော လုပ်ဆောင်ချက် သည်` keeps it apart
+    // too, as the head of a function declaration.
     let kind_after = spells(tokens, &[Kw::Called, Kw::Function, Kw::KindWord]);
-    ret_if!(kind_after, None);
+    let head = spells(tokens, &[Kw::Called, Kw::Function, Kw::Thi]);
+    ret_if!(kind_after || head, None);
     PHRASES
         .iter()
         .find(|(pieces, _)| spells(tokens, pieces))

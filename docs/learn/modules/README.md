@@ -14,7 +14,7 @@ them and run the second one with `zakac run`.
 
 ```zaka-file
 // math.zaka
-အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -43,8 +43,9 @@ $ zakac run main.zaka
 ## Sharing names
 
 A function, a struct, a variable or a constant at the top level of a file belongs to that
-file. `အများသုံး` before it shares it, and on a struct or an enumeration it goes after
-`ဟူသော`, as in `နေရာ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...`: other files can then import it. Each name without
+file. `အများသုံး` before it shares it, and on a function, a struct or an enumeration it goes
+after `ဟူသော`, as in `နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...` or
+`နေရာ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...`: other files can then import it. Each name without
 the mark remains private, so a file can keep helpers that no other file sees.
 
 ```zaka-file
@@ -52,7 +53,7 @@ the mark remains private, so a file can keep helpers that no other file sees.
 အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
 
 // shared: other files can import it
-အများသုံး လုပ်ဆောင်ချက် ကန့်သတ် သည်
+ကန့်သတ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ ကျော်လွန် ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်လျှင် အများဆုံး ကို ပြန်ပေးမည်။
@@ -60,7 +61,7 @@ the mark remains private, so a file can keep helpers that no other file sees.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // private: math.zaka alone can call it
-လုပ်ဆောင်ချက် ကျော်လွန် သည်
+ကျော်လွန် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 က သည် အများဆုံး ထက် ကြီးသည် ကို ပြန်ပေးမည်။
@@ -129,7 +130,7 @@ module](../../manual/language/modules.md#globals-of-a-module)).
 အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။
 အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 
-အများသုံး လုပ်ဆောင်ချက် တိုး သည်
+တိုး ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 အရေ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကယ်၍ အကြိမ် + အရေ သည် အများဆုံး ထက် ကြီးလျှင် ပြန်ပေးမည်။

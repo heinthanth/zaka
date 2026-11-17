@@ -278,9 +278,9 @@ en = """A struct declaration, \"<name> ဟူသော ဒေတာအစုအ�
 [codes.ZK0229.title]
 en = "misplaced export mark"
 [codes.ZK0229.message]
-en = "\"အများသုံး\" marks a top-level function, variable, constant or kind alias, and stands after \"ဟူသော\" in a struct or an enumeration"
+en = "\"အများသုံး\" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after \"ဟူသော\" in a function, a struct or an enumeration"
 [codes.ZK0229.explain]
-en = """The export mark \"အများသုံး\" stands right before \"လုပ်ဆောင်ချက်\", \"ဒေတာအမျိုးအစား\" (an alias), \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. A struct or an enumeration carries it after \"ဟူသော\": \"<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...\". It cannot mark a statement, a loop, or a declaration inside a block."""
+en = """The export mark \"အများသုံး\" stands right before \"ဒေတာအမျိုးအစား\" (an alias), \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. A function, a struct or an enumeration carries it after \"ဟူသော\": \"<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...\", \"<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...\". It cannot mark a statement, a loop, or a declaration inside a block."""
 
 [codes.ZK0230.title]
 en = "misplaced import"
@@ -396,7 +396,7 @@ en = "undeclared function"
 [codes.ZK0303.message]
 en = "function \"%{n}\" is not declared"
 [codes.ZK0303.explain]
-en = """A call names a function that no top-level \"လုပ်ဆောင်ချက် ... သည်\" declares. Functions can be called before their declaration in the file, but the declaration must exist somewhere at the top level. Check the spelling of the name."""
+en = """A call names a function that no top-level \"... ဟူသော လုပ်ဆောင်ချက် သည်\" declares. Functions can be called before their declaration in the file, but the declaration must exist somewhere at the top level. Check the spelling of the name."""
 
 [codes.ZK0304.title]
 en = "function declared twice"
@@ -635,7 +635,7 @@ en = "the VM serves no function \"%{n}\" with these parameter and result kinds"
 [codes.ZK0334.help]
 en = "the VM serves %{l}, each with a result that can fail with \"%{e}\""
 [codes.ZK0334.explain]
-en = """A function that comes from outside, \"လုပ်ဆောင်ချက် <name> သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", has no statements: the VM serves it while the program runs. The VM serves a fixed set of functions, so the name, the parameter kinds and the result kind must be those of one of them. The stdlib declares each of them; import them from there."""
+en = """A function that comes from outside, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", has no statements: the VM serves it while the program runs. The VM serves a fixed set of functions, so the name, the parameter kinds and the result kind must be those of one of them. The stdlib declares each of them; import them from there."""
 
 [codes.ZK0335.title]
 en = "function and function value of one name"
@@ -660,7 +660,7 @@ en = "\"%{n}\" comes from a C lib, so its name must be a C name"
 [codes.ZK0337.help]
 en = "write the name as the lib spells it: ASCII letters, digits and \"_\", not starting with a digit"
 [codes.ZK0337.explain]
-en = """A function that comes from a C lib, \"လုပ်ဆောင်ချက် <name> သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
+en = """A function that comes from a C lib, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
 
 [codes.ZK0339.title]
 en = "a function that can end with no result"
@@ -1628,9 +1628,18 @@ en = "misplaced comptime mark"
 [codes.ZK0256.message]
 en = "\"ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော\" marks a function with a block, declared at the top level"
 [codes.ZK0256.help]
-en = "remove the mark, or move the function to the top level of its file"
+en = "remove the mark: it goes on a function with a block at the top level of its file"
 [codes.ZK0256.explain]
-en = """\"ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော\" stands in front of \"လုပ်ဆောင်ချက်\" on a function declared at the top level of a file, with a block of statements: the compiler can run such a function while it compiles. The start block, a C function, a function of the host, a function the compiler gives and a function declared inside another take no such mark."""
+en = """\"ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော\" stands between \"ဟူသော\" and \"လုပ်ဆောင်ချက်\" on a function declared at the top level of a file, with a block of statements: the compiler can run such a function while it compiles. The start block, a C function, a function of the host, a function the compiler gives and a function declared inside another take no such mark."""
+
+[codes.ZK0257.title]
+en = "unsafe start block"
+[codes.ZK0257.message]
+en = "\"စိတ်မချရသော\" marks a function, and the start block cannot be unsafe"
+[codes.ZK0257.help]
+en = "remove the mark, and put the unsafe statements in a block that opens with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\" inside the start block"
+[codes.ZK0257.explain]
+en = """\"စိတ်မချရသော\" stands between \"ဟူသော\" and \"လုပ်ဆောင်ချက်\" and makes a whole function unsafe. The start block, \"ပရိုဂရမ်သည်\", is no function a call can reach, and its statements are safe code: the pointer work in it goes in an unsafe block, \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", inside it."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

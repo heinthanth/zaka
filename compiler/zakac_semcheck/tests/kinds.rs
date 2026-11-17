@@ -9,7 +9,7 @@ use crate::common::kind_at;
 use crate::common::ok;
 
 /// A function with one integer parameter and an integer result.
-const TWICE: &str = "လုပ်ဆောင်ချက် နှစ်ဆ သည်
+const TWICE: &str = "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * ၂ ကို ပြန်ပေးမည်။
@@ -206,7 +206,7 @@ fn calls_check_argument_and_return_kinds()
     let bad_arg = lines(&[TWICE, "နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို 'က' ဖြင့် လုပ်ဆောင်မည်။"]);
     assert_eq!(codes(&bad_arg), [Code::KindMismatch]);
     let bad_return = lines(&[
-        "လုပ်ဆောင်ချက် ဂဏန်း သည်",
+        "ဂဏန်း ဟူသော လုပ်ဆောင်ချက် သည်",
         "အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။",
         "၁.၅ ကို ပြန်ပေးမည်။",
         "လုပ်ဆောင်စရာများ ပြီးပါပြီ။",

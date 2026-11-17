@@ -195,7 +195,7 @@ impl Parser<'_>
     }
 
     /// Parse the head of a function of a trait:
-    /// `လုပ်ဆောင်ချက် <name> သည် <params> လက်ခံပြီး <kind> ကို ပြန်ပေးမည်။`, with
+    /// `<name> ဟူသော လုပ်ဆောင်ချက် သည် <params> လက်ခံပြီး <kind> ကို ပြန်ပေးမည်။`, with
     /// `လက်ခံမည်။` for no result, or the result alone. A head that goes on as a
     /// function does, `လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ …`, takes a block: the
     /// default of the function.
@@ -205,8 +205,10 @@ impl Parser<'_>
     /// The function, or a diagnostic.
     fn parse_trait_fn_head(&mut self) -> PResult<FnDecl>
     {
-        let start = self.expect(Kw::Function)?.span;
+        let start = self.peek().span;
         let name = self.parse_ident()?;
+        self.expect(Kw::Called)?;
+        self.expect(Kw::Function)?;
         self.expect(Kw::Thi)?;
         let (params, end, _) =
             self.parse_params(&[Kw::Accepting, Kw::WillAccept], false)?;
@@ -324,7 +326,7 @@ impl Parser<'_>
     /// The function, or a diagnostic when no function starts here.
     fn parse_block_fn(&mut self) -> PResult<FnDecl>
     {
-        ret_if!(!self.at(Kw::Function), Err(self.err_expected("လုပ်ဆောင်ချက်")));
+        ret_if!(!self.at_fn_decl(), Err(self.err_expected("ဟူသော လုပ်ဆောင်ချက်")));
         let Stmt::Fn(decl) = self.parse_fn_decl()?
         else
         {
@@ -334,7 +336,7 @@ impl Parser<'_>
     }
 
     /// Parse the rest of the head of a function the compiler gives, after
-    /// `လုပ်ဆောင်ချက် <name> သည်`, as an external function's:
+    /// `<name> ဟူသော လုပ်ဆောင်ချက် သည်`, as an external function's:
     /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်သည်။`, or `… ဖြစ်၍` then
     /// the parameters ending in `လက်ခံမည်` or `လက်ခံပြီး` and the result clause.
     /// No block follows: a sentence of the language stands for each call.

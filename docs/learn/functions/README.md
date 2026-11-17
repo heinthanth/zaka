@@ -12,7 +12,7 @@ lines do).
 
 ```zaka
 // Declare a function named နှုတ်ဆက် (greet)
-လုပ်ဆောင်ချက် နှုတ်ဆက် သည်
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသမည်။
 "နေကောင်းလား" ဟု ပြသမည်။
@@ -38,7 +38,7 @@ called, and not before.
 ## Declaring
 
 ```
-လုပ်ဆောင်ချက် <name> သည်
+<name> ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 <statements>
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -46,11 +46,15 @@ called, and not before.
 
 | Zaka | Reads as |
 | --- | --- |
-| `လုပ်ဆောင်ချက်` | "function" |
 | `နှုတ်ဆက်` | the chosen name |
+| `ဟူသော` | "called" |
+| `လုပ်ဆောင်ချက်` | "function" |
 | `သည်` | (subject) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "will do the following" |
 | `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | "the tasks are done" |
+
+The head reads "the function called နှုတ်ဆက်": the name comes first, as it does in the
+head of a [struct](../structs/README.md).
 
 The line breaks in the header are there to help the reader. The header can also sit on
 one line.
@@ -89,7 +93,7 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 
 // draw a line
-လုပ်ဆောင်ချက် မျဉ်းဆွဲ သည်
+မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "--------" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -111,7 +115,7 @@ reads and changes those variables themselves, not copies of them.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ၀ ဖြစ်ပါစေ။
 // a function inside the start block: it changes စုစုပေါင်း
-လုပ်ဆောင်ချက် ပေါင်းထည့် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+ပေါင်းထည့် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
@@ -136,7 +140,7 @@ block: see [Closures](../function-values/closures.md).
 where the function was called:
 
 ```zaka
-လုပ်ဆောင်ချက် စမ်း သည်
+စမ်း ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "ရောက်သည်" ဟု ပြသမည်။
 ပြန်ပေးမည်။

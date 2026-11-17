@@ -65,8 +65,8 @@ fn the_export_mark_sets_the_flag_of_a_declaration()
     assert!(stmt(var).starts_with("(export (var က"), "{}", stmt(var));
     let record = "လူ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
     assert!(stmt(record).starts_with("(export (struct လူ"), "{}", stmt(record));
-    let func =
-        "အများသုံး လုပ်ဆောင်ချက် ဖ သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၁ ကို ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
+    let func = "ဖ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၁ ကို \
+                ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert!(stmt(func).starts_with("(export (fn ဖ"), "{}", stmt(func));
     let plain = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert!(stmt(plain).starts_with("(var က"), "{}", stmt(plain));

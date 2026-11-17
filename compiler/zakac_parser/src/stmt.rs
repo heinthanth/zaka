@@ -39,6 +39,7 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
@@ -51,6 +52,7 @@ use crate::describe::quote;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
+use crate::parser::fn_head_at;
 use crate::parser::kw_of;
 use crate::traits::expand_local_kinds;
 use crate::using::CallParts;
@@ -180,6 +182,7 @@ impl Parser<'_>
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
+        ret_if!(self.at_fn_decl(), self.parse_fn_decl());
         ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
         ret_if!(self.at_trait_decl(), self.parse_trait_decl());
         ret_if!(self.at_trait_block(), self.parse_trait_block());
@@ -197,11 +200,13 @@ impl Parser<'_>
                 Err(diag::else_without_if(tok.span, self.text_of(tok.span)))
             }
             Kw::Var | Kw::Const => self.parse_decl_or_loop(),
-            Kw::Function | Kw::Program => self.parse_fn_decl(),
+            Kw::Program => self.parse_fn_decl(),
             Kw::DataKindOpen => self.parse_alias_decl(),
             Kw::Export => self.parse_exported(),
-            Kw::Unsafe => self.parse_unchecked(),
-            Kw::Comptime => self.parse_comptime(),
+            Kw::Unsafe | Kw::Comptime if self.at_marked_start() =>
+            {
+                self.parse_marked_start()
+            }
             Kw::BlockOpen | Kw::UnsafeBlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
             Kw::NextIteration => self.parse_continue(),
@@ -299,7 +304,7 @@ impl Parser<'_>
     }
 
     /// Parse a declaration after the export mark `အများသုံး` and mark it
-    /// exported: a function, a variable, a constant or a kind alias. A struct
+    /// exported: a variable, a constant or a kind alias. A function, a struct
     /// and an enumeration hold the mark after `ဟူသော`. The mark before another
     /// statement, or before a declaration inside a block, is reported.
     ///
@@ -312,7 +317,6 @@ impl Parser<'_>
         let mut stmt = self.parse_stmt()?;
         let flag = match &mut stmt
         {
-            Stmt::Fn(n) if !n.start => Some((&mut n.exported, &mut n.span)),
             Stmt::Alias(n) => Some((&mut n.exported, &mut n.span)),
             Stmt::Decl(n) => Some((&mut n.exported, &mut n.span)),
             _ => None,
@@ -328,50 +332,39 @@ impl Parser<'_>
         Ok(stmt)
     }
 
-    /// Parse an unsafe function, `စိတ်မချရသော`: its statements can work with
-    /// pointers, and a call of it needs unsafe code. The start block takes no
-    /// such word.
+    /// Whether the marks of a function head stand before the start block here:
+    /// `<marks> ပရိုဂရမ်သည်`, which reads well but marks no function.
     ///
     /// # Returns
     ///
-    /// The function, or a diagnostic when no function follows.
-    fn parse_unchecked(&mut self) -> PResult<Stmt>
+    /// `true` when the marks stand there.
+    fn at_marked_start(&self) -> bool
     {
-        let mark = self.bump().span;
-        let mut stmt = self.parse_stmt()?;
-        let Stmt::Fn(n) = &mut stmt
-        else
-        {
-            return Err(diag::expected_token(mark, "လုပ်ဆောင်ချက်", "စိတ်မချရသော"));
-        };
-        ret_if!(n.start, Err(diag::expected_token(mark, "လုပ်ဆောင်ချက်", "စိတ်မချရသော")));
-        n.unchecked = true;
-        n.span = mark.to(&n.span);
-        Ok(stmt)
+        let is_mark =
+            |n: &usize| kw_of(&self.peek_n(*n)).is_some_and(|k| FN_MARKS.contains(&k));
+        let after = (0..).find(|n| !is_mark(n)).unwrap_or(0);
+        kw_of(&self.peek_n(after)) == Some(Kw::Program)
     }
 
-    /// Parse a comptime function, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`: a call
-    /// of it in a spot that needs a value at compile time runs while the
-    /// compiler runs. The mark stands on a function with a block, declared at
-    /// the top level.
+    /// Parse the start block after the marks of a function head, and report
+    /// each mark: ZK0229 for `အများသုံး`, ZK0257 for `စိတ်မချရသော` and ZK0256 for
+    /// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`.
     ///
     /// # Returns
     ///
-    /// The function, or `ZK0256` for the mark on something else.
-    fn parse_comptime(&mut self) -> PResult<Stmt>
+    /// The start block, or a diagnostic.
+    fn parse_marked_start(&mut self) -> PResult<Stmt>
     {
-        let mark = self.bump().span;
-        let top = !self.nested();
-        let mut stmt = self.parse_stmt()?;
-        let Stmt::Fn(n) = &mut stmt
-        else
+        let mut marks = Vec::new();
+        do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
+        let stmt = self.parse_fn_decl()?;
+        let reports = marks.iter().map(|m| match kw_of(m)
         {
-            return Err(diag::comptime_mark_misplaced(mark));
-        };
-        let runnable = !n.start && !n.external && !n.builtin && n.lib.is_none();
-        ret_if!(!runnable || !top, Err(diag::comptime_mark_misplaced(mark)));
-        n.comptime = true;
-        n.span = mark.to(&n.span);
+            Some(Kw::Export) => diag::export_not_on_decl(m.span),
+            Some(Kw::Unsafe) => diag::unsafe_start(m.span),
+            _ => diag::comptime_mark_misplaced(m.span),
+        });
+        self.diags.extend(reports);
         Ok(stmt)
     }
 
@@ -892,9 +885,11 @@ impl Parser<'_>
     }
 
     /// Parse a function declaration:
-    /// `လုပ်ဆောင်ချက် f သည် <params>? အောက်ပါတို့ကို လုပ်ဆောင်မည်။`, or with a
-    /// result, `... အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။`.
-    /// The start block has the same parts after `ပရိုဂရမ်သည်`, with no name.
+    /// `f ဟူသော လုပ်ဆောင်ချက် သည် <params>? အောက်ပါတို့ကို လုပ်ဆောင်မည်။`, or with
+    /// a result, `... အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။`. The
+    /// marks `အများသုံး`, `စိတ်မချရသော` and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`
+    /// stand between `ဟူသော` and `လုပ်ဆောင်ချက်`, as on a struct. The start block
+    /// has the same parts after `ပရိုဂရမ်သည်`, with no name.
     ///
     /// # Returns
     ///
@@ -902,29 +897,60 @@ impl Parser<'_>
     /// parsed and reported.
     pub(crate) fn parse_fn_decl(&mut self) -> PResult<Stmt>
     {
-        let head = self.bump();
-        let start = head.span;
-        let is_start = head.kind == TokenKind::Kw(Kw::Program);
-        let start_name = || Ident::builder().name(START_NAME).span(start).build();
-        let name = tern!(is_start, start_name(), self.parse_ident()?);
+        let start = self.peek().span;
+        if self.eat(Kw::Program)
+        {
+            let name = Ident::builder().name(START_NAME).span(start).build();
+            self.expect(Kw::Thi)?;
+            return self.parse_fn_rest(start, name, true, Vec::new());
+        }
+        let top = !self.nested();
+        let name = self.parse_ident()?;
         let mut kind_params = self.parse_notation_params()?;
+        self.expect(Kw::Called)?;
+        let mut marks = Vec::new();
+        do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
+        self.expect(Kw::Function)?;
         self.expect(Kw::Thi)?;
         if kind_params.is_empty() && self.at(Kw::GenericKind)
         {
             kind_params = self.parse_word_params()?;
             self.expect(Kw::Thi)?;
         }
-        let external = self.at(Kw::External) || self.at_lib();
-        ret_if!(external && !is_start, self.parse_external(start, name));
-        if self.at(Kw::InCompiler) && !is_start
+        let mut stmt = self.parse_fn_kinds(start, name, kind_params)?;
+        let Stmt::Fn(node) = &mut stmt
+        else
         {
-            let added = self.add_kind_names(&kind_params);
-            let parsed = self.parse_builtin_fn(start, name, kind_params);
-            self.drop_kind_names(added);
-            return parsed;
-        }
+            return Ok(stmt);
+        };
+        marks.iter().try_for_each(|m| mark_fn(node, kw_of(m), m.span, top))?;
+        Ok(stmt)
+    }
+
+    /// Parse the rest of a function declaration after its head: an external
+    /// function, a function the compiler gives, or one with statements.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the declaration starts.
+    /// * `name` - The function name.
+    /// * `kind_params` - The kind parameters of a generic function.
+    ///
+    /// # Returns
+    ///
+    /// The declaration, or a diagnostic.
+    fn parse_fn_kinds(
+        &mut self, start: Span, name: Ident, kind_params: Vec<KindParam>,
+    ) -> PResult<Stmt>
+    {
+        let external = self.at(Kw::External) || self.at_lib();
+        ret_if!(external, self.parse_external(start, name));
         let added = self.add_kind_names(&kind_params);
-        let parsed = self.parse_fn_rest(start, name, is_start, kind_params);
+        let parsed = tern!(
+            self.at(Kw::InCompiler),
+            self.parse_builtin_fn(start, name, kind_params),
+            self.parse_fn_rest(start, name, false, kind_params)
+        );
         self.drop_kind_names(added);
         parsed
     }
@@ -1001,7 +1027,7 @@ impl Parser<'_>
     }
 
     /// Parse the rest of the header of an external function, after
-    /// `လုပ်ဆောင်ချက် <name> သည်`: `ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်သည်။` with
+    /// `<name> ဟူသော လုပ်ဆောင်ချက် သည်`: `ပြင်ပမှလာသော လုပ်ဆောင်ချက်(တစ်ခု)?ဖြစ်သည်။` with
     /// no parameters and no result, or `... ဖြစ်၍` then the parameters ending in
     /// `လက်ခံမည်` (no result) or `လက်ခံပြီး` and the result clause, or the
     /// result clause alone. The parameters can end in
@@ -1124,6 +1150,14 @@ impl Parser<'_>
             .maybe_classifier(classifier).span(span).build();
         Ok(Stmt::Alias(node))
     }
+
+    /// Whether a function declaration starts here:
+    /// `<name> ဟူသော [<marks>] လုပ်ဆောင်ချက် သည်`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_fn_decl(&self) -> bool { fn_head_at(self.cur.rest()).is_some() }
 
     /// Whether a struct or an enumeration declaration starts here:
     /// `<name> ဟူသော`, then the marks `အများသုံး`, `မျှဝေနိုင်သော` or
@@ -1867,4 +1901,41 @@ fn each_part(kw: Kw) -> Option<EachPart>
         Kw::EachRow => Some(EachPart::Row),
         _ => None,
     }
+}
+
+/// The reserved words that can stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in the
+/// head of a function: `အများသုံး`, `စိတ်မချရသော` and
+/// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`.
+pub(crate) const FN_MARKS: [Kw; 3] = [Kw::Export, Kw::Unsafe, Kw::Comptime];
+
+/// Set the flag of one mark of a function head on the function. `အများသုံး`
+/// stands on a function at the top level alone (ZK0229), and
+/// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on a function with statements at the
+/// top level alone (ZK0256).
+///
+/// # Arguments
+///
+/// * `node` - The function.
+/// * `mark` - The mark.
+/// * `span` - Where the mark stands.
+/// * `top` - Whether the function is declared at the top level.
+///
+/// # Returns
+///
+/// `Ok`, or the diagnostic of a misplaced mark.
+fn mark_fn(node: &mut FnDecl, mark: Option<Kw>, span: Span, top: bool) -> PResult<()>
+{
+    match mark
+    {
+        Some(Kw::Export) if top => node.exported = true,
+        Some(Kw::Export) => return Err(diag::export_not_on_decl(span)),
+        Some(Kw::Unsafe) => node.unchecked = true,
+        _ =>
+        {
+            let runnable = !node.external && !node.builtin && node.lib.is_none();
+            ret_if!(!runnable || !top, Err(diag::comptime_mark_misplaced(span)));
+            node.comptime = true;
+        }
+    }
+    Ok(())
 }

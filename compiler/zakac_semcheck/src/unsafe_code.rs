@@ -18,7 +18,6 @@ use zakac_parser::wrap::Wrapped;
 use zakac_parser::wrap::wrap_in_start;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
@@ -32,11 +31,16 @@ const ROUNDS: usize = 16;
 /// The word of an unsafe function.
 const UNSAFE_WORD: &str = "စိတ်မချရသော ";
 
-/// The word that opens a function header.
-const FUNCTION: &str = "လုပ်ဆောင်ချက် ";
+/// The word after the name in a function header, with the space after it; the
+/// marks of the function follow it.
+const CALLED: &str = "ဟူသော ";
 
-/// The export mark before a function header.
-const EXPORT: &str = "အများသုံး ";
+/// The noun of a function header.
+const FUNCTION: &str = "လုပ်ဆောင်ချက်";
+
+/// The words of the marks that stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in a
+/// function header.
+const MARK_WORDS: [&str; 4] = ["အများသုံး", "စိတ်မချရသော", "ကွန်ပိုင်းလုပ်ချိန်တွင်", "လုပ်ဆောင်နိုင်သော"];
 
 /// The word that opens a start block.
 const START: &str = "ပရိုဂရမ်သည်";
@@ -211,23 +215,12 @@ fn make_unsafe(text: &str, lines: &[usize]) -> String
         owners.into_iter().partition(|&at| out[at].starts_with(START));
     for at in fns
     {
-        let head = export_len(&out[at]);
-        out[at].insert_str(head, UNSAFE_WORD);
+        let marks = out[at].find(CALLED).map(|n| n + CALLED.len());
+        do_if!(let Some(n) = marks, out[at].insert_str(n, UNSAFE_WORD));
     }
     do_if!(!starts.is_empty(), wrap_start(&mut out));
     out.join("\n")
 }
-
-/// The length of the export mark a line starts with, 0 for none.
-///
-/// # Arguments
-///
-/// * `line` - The line.
-///
-/// # Returns
-///
-/// The length in octets.
-fn export_len(line: &str) -> usize { tern!(line.starts_with(EXPORT), EXPORT.len(), 0) }
 
 /// The line of the top-level function header or the start block a line
 /// stands in.
@@ -244,13 +237,14 @@ fn owner<S: AsRef<str>>(lines: &[S], n: usize) -> Option<usize>
 {
     (0..=n.min(lines.len().saturating_sub(1))).rev().find(|&i| {
         let line = lines[i].as_ref();
-        let rest = &line[export_len(line)..];
-        line.starts_with(START) || (rest.starts_with(FUNCTION) && is_header(rest))
+        line.starts_with(START) || is_header(line)
     })
 }
 
-/// Whether a line that starts with `လုပ်ဆောင်ချက်` declares a function:
-/// `လုပ်ဆောင်ချက် <name> သည်`, not a call.
+/// Whether a line declares a function that is not unsafe:
+/// `<name> ဟူသော [<marks>] လုပ်ဆောင်ချက် သည်`, not a call. An unsafe function
+/// holds no pointer work outside unsafe code, so a line the check reports after
+/// its header stands outside it.
 ///
 /// # Arguments
 ///
@@ -261,10 +255,14 @@ fn owner<S: AsRef<str>>(lines: &[S], n: usize) -> Option<usize>
 /// `true` for a header.
 fn is_header(line: &str) -> bool
 {
-    let mut words = line.split_whitespace();
-    words.next();
-    words.next();
-    words.next() == Some("သည်")
+    let mut words = line.split_whitespace().skip(1).peekable();
+    ret_if!(Some(CALLED.trim_end()) != words.next(), false);
+    let marks: Vec<&str> =
+        std::iter::from_fn(|| words.next_if(|w| MARK_WORDS.contains(w))).collect();
+    ret_if!(marks.contains(&UNSAFE_WORD.trim_end()), false);
+    let noun = words.next();
+    let glued = noun.and_then(|w| w.strip_prefix(FUNCTION)) == Some("သည်");
+    glued || (noun == Some(FUNCTION) && words.next() == Some("သည်"))
 }
 
 /// Put the statements of the start block in an unsafe block, once. The

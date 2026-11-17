@@ -1006,8 +1006,7 @@ fn undeclared_names(
 {
     let text = |t: &Token| snippet(file, t.span);
     let tokens = &lexed.tokens;
-    let opens =
-        |t: &Token| matches!(t.kind, TokenKind::Kw(Kw::Function | Kw::Var | Kw::Const));
+    let opens = |t: &Token| matches!(t.kind, TokenKind::Kw(Kw::Var | Kw::Const));
     let called = |t: &Token| t.kind == TokenKind::Kw(Kw::Called);
     let declared: HashSet<String> = tokens
         .windows(2)

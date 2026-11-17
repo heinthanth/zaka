@@ -82,8 +82,8 @@ fn reading_an_optional_a_test_proves_empty_is_zk0454()
 fn function(head: &str, stmts: &str) -> String
 {
     format!(
-        "လုပ်ဆောင်ချက် စစ် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး\n{head}\n{stmts}\nလုပ်ဆောင်စရာများ \
-         ပြီးဆုံးပါပြီး။\n{}",
+        "စစ် ဟူသော လုပ်ဆောင်ချက် သည်\nန ဟူသော ကိန်းပြည့် တစ်ခု ကို \
+         လက်ခံပြီး\n{head}\n{stmts}\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n{}",
         start("")
     )
 }

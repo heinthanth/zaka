@@ -12,7 +12,7 @@ shows the same rules with examples.
 
 ```zaka-file
 // math.zaka
-အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ် သည်
+နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -42,7 +42,7 @@ shows the same rules with examples.
 ## The export mark
 
 ```text
-အများသုံး လုပ်ဆောင်ချက် <name> သည် ...
+<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...
 <name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...
 <name> ဟူသော အများသုံး ဒေတာအမျိုးအစားကွဲတွင် ...
 အများသုံး ဒေတာအမျိုးအစား <alias> ကို <kind> ...
@@ -51,8 +51,9 @@ shows the same rules with examples.
 ```
 
 - `အများသုံး` exports a function, a struct, an enumeration, a [kind alias](aliases.md),
-  a variable or a constant at the top level of a file. On a struct or an enumeration it
-  stands after `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`; on the others it comes first. Other files can then import it. A declaration without the mark is private to
+  a variable or a constant at the top level of a file. On a function it stands after `ဟူသော`,
+  with the other marks of the function; on a struct or an enumeration it stands after
+  `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`; on the others it comes first. Other files can then import it. A declaration without the mark is private to
   its file.
 - The mark in another place is ZK0229: before a statement, before a generic loop
   that starts with `ကိန်းရှင်`, or before a declaration inside a block, a loop, a

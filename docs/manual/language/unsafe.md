@@ -20,11 +20,11 @@ small steps, starting from [the unsafe chapter](../../learn/pointers/README.md).
 
 ## Unsafe code
 
-There are two forms of it. `စိတ်မချရသော` ("not to be trusted") before `လုပ်ဆောင်ချက်` makes a
+There are two forms of it. `စိတ်မချရသော` ("not to be trusted") between `ဟူသော` and `လုပ်ဆောင်ချက်` makes a
 whole function unsafe:
 
 ```text
-စိတ်မချရသော လုပ်ဆောင်ချက် <name> သည် ... အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+<name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် ... အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ```
 
 A function declared inside an unsafe function is unsafe too. The block phrase
@@ -49,8 +49,18 @@ the block and nothing past its closer.
 ```
 
 The start block itself cannot be unsafe: `ပရိုဂရမ်သည်` takes the plain
-`အောက်ပါတို့ကို လုပ်ဆောင်မည်။` and nothing else (ZK0201). An unsafe block goes inside it,
-as above.
+`အောက်ပါတို့ကို လုပ်ဆောင်မည်။` and nothing else (ZK0201), and `စိတ်မချရသော` before it is
+ZK0257. An unsafe block goes inside it, as above.
+
+```zaka-error ZK0257
+စိတ်မချရသော ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"က" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0257]: "စိတ်မချရသော" marks a function, and the start block cannot be unsafe
+```
 
 ```zaka-error ZK0201
 ပရိုဂရမ်သည် အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
@@ -124,7 +134,7 @@ wrapper* does that: a function that is not unsafe, whose statements hold an unsa
 callers need no unsafe code at all.
 
 ```zaka
-စိတ်မချရသော လုပ်ဆောင်ချက် ဂဏန်း သည်
+ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို အဖြေ တွင် သိမ်းထားမည်။
@@ -132,14 +142,14 @@ callers need no unsafe code at all.
 အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-စိတ်မချရသော လုပ်ဆောင်ချက် ရှင်း သည်
+ရှင်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // a safe wrapper: the function is not unsafe, an unsafe block is inside
-လုပ်ဆောင်ချက် ငါး သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ငါး ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ဂဏန်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
@@ -161,7 +171,7 @@ callers need no unsafe code at all.
 The same call of `ဂဏန်း` from the start block, outside an unsafe block, is ZK0468:
 
 ```zaka-error ZK0468
-စိတ်မချရသော လုပ်ဆောင်ချက် ဂဏန်း သည်
+ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို အဖြေ တွင် သိမ်းထားမည်။
@@ -182,7 +192,7 @@ code can make, so an unsafe function cannot become a value (ZK0469). Take a safe
 that calls it inside an unsafe block, and make that the value.
 
 ```zaka-error ZK0469
-စိတ်မချရသော လုပ်ဆောင်ချက် ဂဏန်း သည်
+ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
 မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို အဖြေ တွင် သိမ်းထားမည်။
@@ -723,7 +733,7 @@ argument for an owned parameter must be a place, so that it can be cleared. A re
 cleared place after a hand-over on each path is ZK0701, an error in each mode:
 
 ```zaka-error ZK0701
-စိတ်မချရသော လုပ်ဆောင်ချက် ရှင်း သည်
+ရှင်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
 ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
@@ -765,7 +775,7 @@ parameter of a C function whose kind comes from outside the program, which the C
 closes ([Functions](functions.md#c-functions)).
 
 ```zaka-error ZK0470
-လုပ်ဆောင်ချက် ယူ သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ယူ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 က ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
@@ -826,7 +836,7 @@ outside the checks of Zaka, so each C declaration must hold the word `စိတ�
 (ZK0472), whatever its kinds, and each call of it then needs unsafe code.
 
 ```zaka-error ZK0472
-လုပ်ဆောင်ချက် frexp သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+frexp ဟူသော လုပ်ဆောင်ချက် သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်းကောင်း e ဟူသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -986,6 +996,7 @@ frees each block, and no read goes through an address the program made.
 | Code | Mistake |
 | --- | --- |
 | ZK0201 | an unsafe block as the start block |
+| ZK0257 | `စိတ်မချရသော` before the start block |
 | ZK0401 | a pointer of one kind where another kind is wanted |
 | ZK0410 | an assignment to something that is not a variable or a value through a pointer |
 | ZK0411 | the address of a value that has no place, such as `၅` |

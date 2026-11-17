@@ -137,6 +137,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0254 | the line that takes the defaults of a trait, naming another trait than its trait block | [Generics and traits](../language/generics.md#trait-blocks) |
 | ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact of the target with a value it never holds | [Compile time](../language/compile-time.md) |
 | ZK0256 | the comptime mark `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on something other than a function with a block at the top level | [Compile time](../language/compile-time.md#comptime-functions) |
+| ZK0257 | the unsafe mark `စိတ်မချရသော` on the start block | [Unsafe Zaka](../language/unsafe.md) |
 
 ### ZK03: names
 

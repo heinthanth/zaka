@@ -105,7 +105,7 @@ pub enum Stmt
     Break(BreakStmt),
     /// `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။`
     Continue(ContinueStmt),
-    /// `လုပ်ဆောင်ချက် f သည် ...`
+    /// `f ဟူသော လုပ်ဆောင်ချက် သည် ...`
     Fn(FnDecl),
     /// `v ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။`
     Return(ReturnStmt),

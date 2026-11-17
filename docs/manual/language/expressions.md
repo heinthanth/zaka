@@ -309,7 +309,7 @@ A logical expression used as a value to print needs parentheses, or the compiler
 tell where it ends (ZK0204).
 
 ```zaka
-လုပ်ဆောင်ချက် စစ် သည်
+စစ် ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
 "စစ်ပြီ" ဟု ပြသမည်။
 မှန် ကို ပြန်ပေးမည်။

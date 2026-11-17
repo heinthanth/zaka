@@ -59,7 +59,7 @@ list with no cells. A loop that changes the cells, or needs their numbers, check
 with no cells first and leaves the function:
 
 ```zaka
-လုပ်ဆောင်ချက် နှစ်ဆတိုး သည်
+နှစ်ဆတိုး ဟူသော လုပ်ဆောင်ချက် သည်
 ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကယ်၍ (ကိန်းများ ၏ အကွက်အရေအတွက်) == ၀ ဖြစ်လျှင် ပြန်ပေးမည်။
