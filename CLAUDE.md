@@ -9,9 +9,10 @@ and hosts a compiler explorer that runs in the browser.
 | Path | What it holds |
 | --- | --- |
 | `compiler/zakac` | the `zakac` command; each stage adds a subcommand through its own `cli` module |
-| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
+| `compiler/zakac_*` | one crate per stage (`burmese_segmenter`, `lexer`, `parser`, `naturalness`, `semcheck`, `ir_builder`, `borrow_checker`, `codegen_target_vm`, `codegen_target_c`, `codegen_target_native`), plus shared crates (`span`, `ast`, `diagnostics`, `reporter`, `session`, `i18n`, `cli_common`, `rust_sugars`, ...) |
 | `compiler/zaka_vm` | the VM and its checked mem |
 | `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
+| `compiler/zaka_runtime` | the runtime of native programs, in Rust: a static lib that `zakac` carries and the C and native targets link |
 | `compiler/zakac_lsp` | the language server (`zakac lsp`, feature `server`): errors, colors, hover, completion, definitions, uses, renames and the outline; the explorer runs the same code in the page |
 | `editors/vscode` | the VS Code extension: a Rust client built with wasm-pack; its manifest, comment rules and grammar are TOML that `build.rs` turns into JSON |
 | `editors/zed` | the Zed extension; outside the workspace, as Zed builds it on its own |
@@ -27,8 +28,9 @@ and hosts a compiler explorer that runs in the browser.
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
 (semcheck) → lower to IR → fold constants → checker (flow facts, and the lint of marked
 code) → codegen → VM. `zakac build
---target vm|c` picks the codegen: ops for the VM (`.zkc` / `.zkct`), or C and a native
-executable.
+--target vm|c|native` picks the codegen: ops for the VM (`.zkc` / `.zkct`), C and a native
+executable, or Cranelift and a native executable; `zakac run --jit` runs the Cranelift
+code at once.
 
 ## Commands
 
@@ -38,7 +40,8 @@ executable.
 | Test it all | `mise run test` (`cargo nextest run --workspace`) |
 | Test the compiler and the VM, not the web crates | `mise run test:compiler` |
 | Test the Learn and Docs pages | `cargo test -p zaka_website --test tests books::` |
-| Format | `mise run format` (rustfmt, then clang-format on the C runtime; run after each edit) |
+| Headers for the editor of the C runtime | `mise run c:mock-headers` (a build of hello in `target/c-headers`, which `runtime/.clangd` reads; again after a change to `zaka_runtime`) |
+| Format | `mise run format` (rustfmt, then clang-format on the C runtime headers; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |
 | Build the VS Code extension | `mise run vscode:build` (wasm-pack, bun, vsce) |
@@ -140,7 +143,8 @@ Doc comments use `# Arguments` and `# Returns` sections, as the surrounding code
 ### Flat code, shallow nesting
 
 Keep nesting to two levels where possible and never deeper than three. Do not let the
-main path drift to the right.
+main path drift to the right. The rules of this section and the next hold for all Rust:
+crates, build scripts, tests and macros.
 
 - Use guard clauses that return at the start instead of wrapping the main logic in
   `if` / `else`.
@@ -178,18 +182,25 @@ macro makes the code harder to read, plain Rust is fine.
 
 ## Writing C
 
-The runtime of the C target (`compiler/zakac_codegen_target_c/runtime/`) is
-hand-written C. It follows the rules above: flat code with guard clauses, no
-lowercase `y` (reserved C words, libc names and proper nouns are the exceptions), and
-comments that state the rule.
+The runtime is Rust (`compiler/zaka_runtime`). Its C header, `zaka_runtime.h`, is
+written from the Rust through cbindgen at build time (`zaka_runtime/cbindgen.toml`): the
+functions, the structs the generated code shares with the runtime, and the ids of traps,
+rights and kinds. Change those in the Rust, never in C. The hand-written headers of the C
+target (`compiler/zakac_codegen_target_c/runtime/`) hold the inline code of each
+operation; these follow the rules above: flat code with guard clauses, no lowercase `y`
+(reserved C words, libc names and proper nouns are the exceptions), and comments that
+state the rule.
 
-- The runtime and the C the compiler writes are strict C11 (`-std=c11
+- The headers and the C the compiler writes are strict C11 (`-std=c11
   -pedantic-errors` builds them): no statement expressions or other GNU forms.
   GCC and Clang builtins stand behind `__GNUC__`, each with a C11 path beside
   it.
 - Doc comments are Doxygen: `/** ... */` on each function and function-like
-  macro, with `@param` and `@return`. A header gives each declaration one line;
-  `zaka_rt.c` holds the full doc of each function.
+  macro, with `@param` and `@return`. `zaka_runtime.h` carries the first paragraph
+  of each Rust doc; the Rust holds the full doc.
+- A struct shared with the runtime has a row in `tests/forms.rs` of the C target,
+  which checks its C form against the Rust one; the C the compiler writes names each of
+  its fields.
 - Guards use the macros in `runtime/zaka_c_sugars.h` (`RET_IF`, `DONE_IF`, `DO_IF`,
   `NEXT_IF`, `LEAVE_IF`, `DO_FOR`), as Rust uses `zakac_rust_sugars`.
 - `.clang-format` matches `rustfmt.toml`. `mise run format` runs both formatters;

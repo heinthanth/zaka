@@ -75,6 +75,16 @@ const MAX_STACK_ARG: &str = "max_stack";
 const FRAMES_ARG: &str = "frames";
 /// The flag that lists the heap blocks left unfreed.
 const LEAKS_ARG: &str = "leaks";
+/// The id of the flag that runs the program as native code, with the JIT.
+const JIT_ARG: &str = "jit";
+
+/// What runs a program with the JIT: the matches of `zakac run`, the
+/// streams, the rights of the run, and the arguments of the start block.
+pub type JitRunner = fn(&ArgMatches, &mut CommandIO<'_>, Gate, Vec<String>) -> ExitCode;
+
+/// The JIT, which `zakac` installs; the VM crate holds no native code of its
+/// own.
+pub static JIT_RUNNER: std::sync::OnceLock<JitRunner> = std::sync::OnceLock::new();
 /// The arguments for the start block, after `--`.
 const ARGS_ARG: &str = "args";
 
@@ -130,6 +140,8 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .long("leaks")
         .help(t!("vm.leaks"))
         .action(ArgAction::SetTrue);
+    let jit =
+        Arg::new(JIT_ARG).long("jit").help(t!("vm.jit")).action(ArgAction::SetTrue);
     let args = Arg::new(ARGS_ARG)
         .value_name("ARGS")
         .help(t!("vm.args"))
@@ -139,7 +151,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
     let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
     let cmd = attach_grant_args(cmd, Granted::Run);
-    cmd.arg(leaks).arg(args).about(t!("vm.about"))
+    cmd.arg(leaks).arg(jit).arg(args).about(t!("vm.about"))
 }
 
 impl Command for ZakaVm
@@ -256,6 +268,8 @@ struct Loaded
 fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 {
     let cmd_info = CommandInfo::new(ZakaVm::name(), ZakaVm::version());
+    let jit = JIT_RUNNER.get().filter(|_| matches.get_flag(JIT_ARG));
+    ret_if!(let Some(run) = jit, run(matches, io, run_gate(matches), run_args(matches)));
     let input = Input::from(matches.get_one::<String>("input").map(|s| s.as_str()));
     let mut source_map = SourceMap::new();
     let loaded = load(matches, &input, io, &mut source_map);
@@ -271,21 +285,14 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ret_if!(let Some(error) = other_host(&module), report_command_error(io, &cmd_info, error));
 
     let options = run_options(matches);
-    let name = matches.get_one::<String>("input").map_or("-", String::as_str);
-    let rest = matches.get_many::<String>(ARGS_ARG).into_iter().flatten().cloned();
-    let args = std::iter::once(name.to_string()).chain(rest);
+    let args = run_args(matches);
     let pair = |(k, v): (OsString, OsString)| {
         format!("{}={}", k.to_string_lossy(), v.to_string_lossy())
     };
     let env = std::env::vars_os().map(pair).collect();
-    let host = HostData::builder().args(args.collect()).env(env).build();
+    let host = HostData::builder().args(args).env(env).build();
     let world = Box::new(TermWorld);
-    let gate = Gate::new(grants_from(matches, Granted::Run));
-    let gate = match TermAsker::on_terminal()
-    {
-        Some(asker) => gate.with_asker(asker),
-        None => gate,
-    };
+    let gate = run_gate(matches);
     let (machine, result) =
         run_in(&module, &mut *io.stdout, &options, &host, world, gate);
     let Err(trap) = result
@@ -300,6 +307,42 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         Error::RuntimeTrap { msg: trap.report(&source_map, backtrace()) },
     );
     ExitCode::Failure
+}
+
+/// The arguments of the start block: the name of the program, then each
+/// argument after `--`.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The arguments.
+fn run_args(matches: &ArgMatches) -> Vec<String>
+{
+    let name = matches.get_one::<String>("input").map_or("-", String::as_str);
+    let rest = matches.get_many::<String>(ARGS_ARG).into_iter().flatten().cloned();
+    std::iter::once(name.to_string()).chain(rest).collect()
+}
+
+/// The rights of the run, asking on a terminal for one the run lacks.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The gate.
+fn run_gate(matches: &ArgMatches) -> Gate
+{
+    let gate = Gate::new(grants_from(matches, Granted::Run));
+    match TermAsker::on_terminal()
+    {
+        Some(asker) => gate.with_asker(asker),
+        None => gate,
+    }
 }
 
 /// The error of a program settled for an OS or a CPU other than the

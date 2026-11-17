@@ -8,6 +8,12 @@ default-members = ["compiler/zakac"]
 edition = "2024"
 
 [workspace.dependencies]
+cranelift-codegen = { version = "0.137", default-features = false }
+cranelift-frontend = "0.137"
+cranelift-jit = "0.137"
+cranelift-module = "0.137"
+cranelift-native = "0.137"
+cranelift-object = "0.137"
 age = "0.12"
 axum = "0.8"
 base64 = "0.23.1"
@@ -44,6 +50,7 @@ leptos-use-storage = "0.20"
 leptos-use-window = "0.20"
 leptos-use-window-size = "0.20"
 libffi = "5.2"
+cbindgen = { version = "0.29.4", default-features = false }
 libloading = "0.9"
 lsp-server = "0.10.0"
 num_enum = "0.7.6"
@@ -78,6 +85,7 @@ web-sys = "0.3.105"
 web-time = "1.1.0"
 xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
 zaka_host = { path = "compiler/zaka_host" }
+zaka_runtime = { path = "compiler/zaka_runtime" }
 zakac_ast = { path = "compiler/zakac_ast" }
 zakac_borrow_checker = { path = "compiler/zakac_borrow_checker" }
 zakac_burmese_alignment = { path = "compiler/zakac_burmese_alignment" }
@@ -85,6 +93,7 @@ zakac_burmese_segmenter = { path = "compiler/zakac_burmese_segmenter" }
 zakac_cli_common = { path = "compiler/zakac_cli_common" }
 zakac_codegen_target_vm = { path = "compiler/zakac_codegen_target_vm" }
 zakac_codegen_target_c = { path = "compiler/zakac_codegen_target_c" }
+zakac_codegen_target_native = { path = "compiler/zakac_codegen_target_native", default-features = false }
 zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }
@@ -112,6 +121,11 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# The runtime lib that zakac embeds: a panic never unwinds into C.
+[profile.zaka-runtime]
+inherits = "release"
+panic = "abort"
 
 [profile.wasm-release]
 inherits = "release"

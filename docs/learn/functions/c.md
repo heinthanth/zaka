@@ -355,8 +355,10 @@ of Learn.
 
 ## Where the call runs
 
-- `zakac run` opens the lib when the program first calls a function from it.
-- `zakac build --target c` links the lib into the executable.
+- `zakac run` opens the lib when the program first calls a function from it, and
+  `zakac run --jit` opens it before the program starts.
+- `zakac build --target c` and `zakac build --target native` link the lib into the
+  executable.
 - The explorer in the browser cannot open a lib, so a program that calls C stops there
   with a message. Run it with `zakac run`.
 

@@ -1,6 +1,6 @@
 ---
 title: Native programs
-description: How zakac build --target c turns a program into an executable through C, the checks the executable keeps, and where it differs from the VM.
+description: How zakac build turns a program into an executable, through C or through Cranelift, how zakac run --jit runs it, the checks the executable keeps, and where it differs from the VM.
 ---
 
 # Native programs
@@ -15,19 +15,23 @@ $ ./hello
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-[Commands](commands.md#build) lists each option of `build`. This page tells what a native
-program keeps from the VM, and what it does not.
+`zakac build --target native` makes the same executable with no C:
+[Cranelift](#cranelift) lowers the program to machine code, and `zakac run --jit` runs that
+code at once. [Commands](commands.md#build) lists each option of `build`. This page tells
+what a native program keeps from the VM, and what it does not.
 
 ## What the build needs
 
-A C compiler on the PATH. The build takes the one `--cc` names, else `CC`, else the first
+A C compiler on the PATH; the native target uses it to link alone. The build takes the one `--cc` names, else `CC`, else the first
 of `cc`, `gcc`, `clang` and `zig cc`. The C it writes is plain C11, so GCC, Clang and `zig cc`
 each build it. On Windows, a MinGW toolchain such as llvm-mingw or w64devkit, or Zig, builds
 it with no Visual Studio.
 
-A program that gives closures to C also needs libffi, where the C compiler looks at first:
-the SDK on macOS, a dev package such as `libffi-dev` on Linux. A program with no such
-closure never links it.
+The runtime, `zaka_runtime`, is a Rust lib that `zakac` carries inside it, built for the
+host: the build writes it into the cache and links it, so no Rust toolchain is needed.
+Under the C target, a program that gives closures to C also needs the header of libffi,
+where the C compiler looks at first: the SDK on macOS, a dev package such as `libffi-dev`
+on Linux. The native target needs no libffi of the host: the runtime carries its own.
 
 Floats print as the VM prints them, digit for digit, on each host: the runtime works out
 the digits from the bits of the float, with no print from libc.
@@ -176,12 +180,12 @@ from native code with no VM between. The build writes one more file, `zaka_ffi.c
   that pointer to a function; a function value holds a function at each point, so C never gets
   NULL there. The functions of the program have the C
   signature of the kind that crosses, so C calls them as it calls a C function. A closure
-  crosses through `zaka_cb.c` (see [Function values in C](#function-values-and-closures)).
+  crosses through `zaka_callback.c` (see [Function values in C](#function-values-and-closures)).
   A trap in a callback is kept until C returns (see
   [When a program stops](../vm/traps.md#c-functions)).
 
 The link gets `-lX` for each lib `libX` the program names, but libc and libm, after `-lm`
-and before `LDFLAGS` and each `--ld-flag`. A program with `zaka_cb.c` adds `-lffi` as well. Give the folder of a lib with `--ld-flag`:
+and before `LDFLAGS` and each `--ld-flag`. A program with `zaka_callback.c` adds `-lffi` as well. Give the folder of a lib with `--ld-flag`:
 
 ```console
 $ zakac build --target c --ld-flag -L/opt/gears/lib gears.zaka
@@ -228,10 +232,10 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 - A call through a value reads `zk_fn_bound(f)`: for a closure it calls the thunk with the
   arguments and the record, for a plain function it calls the code with the arguments.
 - A program that makes a closure and gives function values to C, or holds a leave
-  statement, gets one more generated file, `zaka_cb.c`: the runtime `zaka_rt_cb.c`, then a
-  bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C. The
-  link then adds libffi: on macOS `-lffi` from the SDK; elsewhere the flags `pkg-config
-  --cflags --libs libffi` gives (the compile flags go to `zaka_cb.c`), or `-lffi` alone
+  statement, gets one more generated file, `zaka_callback.c`: a head that includes libffi and the runtime, then a
+  bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the
+  closures themselves live in the runtime. The link then adds libffi: on macOS `-lffi` from the SDK; elsewhere the flags `pkg-config
+  --cflags --libs libffi` gives (the compile flags go to `zaka_callback.c`), or `-lffi` alone
   when `pkg-config` or its record for libffi is missing. A program with no closure
   keeps the old path, with no libffi. The wrapper of a C function calls `zk_cb_code` for a
   parameter of a function kind, which gives the code address of a plain function and the
@@ -248,31 +252,70 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 - Printing a value looks its code up in a table of names, so a closure prints as the
   function its thunk calls.
 
+## Cranelift
+
+[Cranelift](https://cranelift.dev) is a code generator written in Rust, which `zakac`
+carries inside it. It lowers the IR of the program to machine code in two modes, from one
+lowering:
+
+| | `zakac build --target native` | `zakac run --jit` |
+| --- | --- | --- |
+| makes | an object file, linked with the runtime lib into an executable | machine code in the mem of `zakac`, run at once |
+| needs | a C compiler or linker, to link | nothing more |
+| rights | the flags of the build, written into the executable | the flags of the run, as the VM takes them |
+| argument 0 | the path of the executable | the input as written, as in the VM |
+| limits | `--checks`, `--max-depth`, `--max-heap` | the `default` checks, `--max-depth`, `--max-heap` |
+
+Both give the output fact `"native"` to a [compile-time
+conditional](../language/compile-time.md), and both link the runtime the C target links,
+so a program prints the same, stops with the same messages and calls C as the C target calls it. A
+C function comes from the lib its declaration names: the JIT opens the lib as the VM opens
+it, and the executable links it.
+
+- The CPU must be `x86_64`, `aarch64` or `riscv64`; Cranelift has no code for `x86`,
+  `arm` or `wasm32`.
+- The C compiler builds no part of the program, so `--cc-flag` and `CFLAGS` change
+  nothing, and the `sanitizers` check has no effect.
+- `--emit obj` and `--emit clif` take another OS or CPU; `--emit clif` writes the
+  Cranelift IR of each function, to read.
+- A stop under `--jit` ends `zakac` with the message and the exit status 1, as an
+  executable ends.
+
+```console
+$ zakac run --jit hello.zaka
+မင်္ဂလာပါ ကမ္ဘာကြီး
+$ zakac build --target native hello.zaka
+$ ./hello
+မင်္ဂလာပါ ကမ္ဘာကြီး
+```
+
 ## Where the C goes
 
 The build writes the C into a cache folder. With no `--cache`, it is
 `zakac/<folder>/<name>-<hash>` in the cache folder of the user (`XDG_CACHE_HOME`, or
 `~/.cache`; `%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that
-folder cannot be made. The build then compiles the C files at once and links them. The
-objects of the runtime remain in the cache, named after a hash of the compiler, the flags,
-the runtime and `zaka_checks.h`; a later build with the same compiler, flags and checks
-links them and does not compile the runtime again. `--emit c` stops after the C is
-written, so a C compiler can build the files at a later time:
+folder cannot be made. The build writes the runtime lib, `libzaka_runtime.a`, beside the
+C, then compiles the C files at once and links them with it. `--emit c` stops after the
+files are written, so a C compiler can build them at a later time, on the host the
+runtime lib was built for:
 
 ```console
 $ zakac build --target c --emit c --cache gen/ app.zaka
-$ cc -std=c11 -O2 gen/*.c -lm -o app
+$ cc -std=c11 -O2 gen/*.c gen/libzaka_runtime.a -lm -liconv -o app
 ```
 
-A program with a `zaka_cb.c` in `gen/` links `-lffi` as well.
+The OS libs after the runtime lib depend on the host: `-liconv` on macOS. A program with a
+`zaka_callback.c` in `gen/` links `-lffi` as well.
 
 | File | Holds |
 | --- | --- |
 | `m0.c`, `m1.c`, ... | the globals and functions of each module |
 | `main.c` | `main`: the arguments, the start block, the exit status |
-| `zaka_checks.h` | the run-time checks, one `ZK_CHECK_<NAME>` set to 1 or 0 for each (`ZK_CHECK_DIVIDE`, `ZK_CHECK_NULL`, ...), and `ZK_MAX_DEPTH`; each file of the runtime and of the program includes it |
+| `zaka_checks.h` | the run-time checks, one `ZK_CHECK_<NAME>` set to 1 or 0 for each (`ZK_CHECK_DIVIDE`, `ZK_CHECK_NULL`, ...), `ZK_MAX_DEPTH` and `ZK_DEBUG_INFO`; each file of the program includes it |
 | `zaka_kinds.h` | the declaration of each global, function and kind |
-| `zaka_kinds.c` | the description of each kind, and the texts of the messages |
+| `zaka_kinds.c` | the description of each kind, and `zk_the_program`: the table the runtime reads at start, with the checks, the limits, the rights, the texts of the messages and the places of the stops |
 | `zaka_ffi.c` | the wrappers of the C functions of the program; written when it has some |
-| `zaka_cb.c` | the runtime of the closures that go to C, with a bridge and a shape for each function kind; written when the program makes a closure and gives function values to C, or holds a leave statement |
-| `zaka_rt.h`, `zaka_rt*.c` | the runtime: checked arithmetic, text, lists, prints and the host |
+| `zaka_callback.c` | a bridge and a shape for each function kind of a closure that goes to C; written when the program makes a closure and gives function values to C, or holds a leave statement |
+| `zaka_runtime.h` | the functions of the runtime and the structs the program shares with it, written from the Rust of the runtime |
+| `zaka_target_c_runtime.h`, `zaka_c_sugars.h` | the inline code of each operation: checked arithmetic, loads and stores |
+| `libzaka_runtime.a` | the runtime: text, lists, tables, prints, the host, the rights, the stops and the closures that go to C |

@@ -10,10 +10,11 @@ runs; in the VM, while it runs; or in neither, when the program runs as native c
 with no checks, as a C program does. This page sorts each mistake into those places and
 tells the reason for the split.
 
-Native code comes from the C target: `zakac build --target c` writes a program as C and
-compiles it. Its `--checks` option picks how much of the VM's watch a native program keeps,
-from none to the sanitizers of the C compiler; [Native programs](../compiler/native.md) has
-the details. LLVM comes later.
+Native code comes from two targets. `zakac build --target c` writes a program as C and
+compiles it; `zakac build --target native` lowers it to machine code with Cranelift, and
+`zakac run --jit` runs that code at once. The `--checks` option of a build picks how much of
+the VM's watch a native program keeps, from none to the null checks and, on the C target,
+the sanitizers of the C compiler; [Native programs](../compiler/native.md) has the details.
 
 ## Three places to look
 
@@ -30,7 +31,7 @@ the details. LLVM comes later.
    ┌─────────────┐   checks each read, write and free on the path
    │   the VM    │   that this run takes; stops with a trap
    └──────┬──────┘
-          │ the same program, built as native code  (--target c)
+          │ the same program as native code  (--target c, --target native, run --jit)
           ▼
    ┌─────────────┐   no checks of its own: what the compiler
    │ native code  │   proved still holds; the rest behaves as in C
@@ -61,8 +62,8 @@ errors under `--mem-check error`.
 | a leak of a block this function asked for | ZK0708 | `--leaks` lists it | as in C |
 | a null access on each path | ZK0709 | `null address` | a crash, as in C; `null address` with `--checks mem` |
 | a null access on some path | ZK0711, with `--mem-strict` | `null address` | a crash; `null address` with `--checks mem` |
-| a box number past the end, known before the run | ZK0710 | `out of bounds` | not checked; the sanitizer with `--checks mem` |
-| a box number past the end, known just in the run | nothing | `out of bounds` | not checked; the sanitizer with `--checks mem` |
+| a box number past the end, known before the run | ZK0710 | `out of bounds` | not checked; the sanitizer of the C target with `--checks mem` |
+| a box number past the end, known just in the run | nothing | `out of bounds` | not checked; the sanitizer of the C target with `--checks mem` |
 | pointers into two blocks subtracted | ZK0712, when provable | `mixed blocks` | not checked |
 | a misaligned address, or octets that hold no value | nothing | `misaligned`, `bad value` | not checked |
 | the heap running out | nothing | allocate leaves the null pointer; resize: `out of mem` | allocate leaves the null pointer; a resize stops the program |
@@ -138,11 +139,12 @@ a leak, since it has no pointer to misuse and the VM frees each block it makes.
 
 ## Native code
 
-The VM remains as it is, and the C target adds a second means to run the same program:
+The VM remains as it is, and two targets add native means to run the same program: the C
+target, and the native target of Cranelift, which builds an executable or runs at once:
 
 - **The VM remains the reference.** It runs programs for the Explorer and for the
   tests, and it is the place where a mistake is shown rather than suffered.
-- **The C target reads what the VM's code generator reads.** Both start from the same
+- **The native targets read what the VM's code generator reads.** Each starts from the same
   intermediate form, so the arrangements agree: the size of each kind, the offset of each
   field, and the arithmetic on pointers are the same on each backend. A program that runs
   clean in the VM prints the same output as native code.
@@ -154,8 +156,8 @@ The VM remains as it is, and the C target adds a second means to run the same pr
   there: a pointer is a plain address, and an owned hand-over costs one store of the null pointer.
   Safe code counts its blocks, and frees them, as it does in the VM.
   All that the compiler proved still holds. A mistake that the VM alone would have caught
-  does what it does in C, unless `--checks mem` asks for the null checks and the sanitizers
-  of the C compiler.
+  does what it does in C, unless `--checks mem` asks for the null checks and, on the C
+  target, the sanitizers of the C compiler.
 
 For this reason the split matters. Safe code needs no check of storage at run time: the
 counts free each block, and no pointer reaches it. Unsafe code is the small part of a
@@ -172,7 +174,7 @@ point at it.
 | `--mem-strict` | also warn about a pointer that can point at nothing, which the compiler cannot prove safe |
 | `--no-unsafe` | refuse unsafe code |
 | `--frames packed` | the VM places variables next to each other, as C does |
-| `--checks none`, `default`, `mem` | for `zakac build --target c`: no check past what C has, the checks of the language, or those and the mem checks |
+| `--checks none`, `default`, `mem` | for `zakac build --target c` and `--target native`: no check past what C has, the checks of the language, or those and the mem checks; `zakac run --jit` keeps `default` |
 
 The Explorer has the same settings. Use `warn` to watch the VM catch what the compiler
 saw, and `packed` to see what a mistake does when nothing watches. The compile-time side

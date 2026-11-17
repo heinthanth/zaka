@@ -45,7 +45,7 @@ declares as constants:
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်` | the OS: `"windows"`, `"macos"` or `"linux"` |
 | `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ` | the CPU: `"x86_64"`, `"aarch64"`, `"x86"`, `"arm"`, `"riscv64"` or `"wasm32"` |
 | `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--platform-bits`: 8, 16, 32 or 64 |
-| `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"` or `"c"` |
+| `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"`, `"c"` or `"native"` |
 
 A condition holds the facts, text and digits, `==` and `!=` (and `<`, `<=`, `>`, `>=` on
 the bit count), `ဖြစ်၍` (`&&`), `သို့မဟုတ်` (`||`), `မဟုတ်`, parentheses, and calls of
@@ -114,7 +114,7 @@ links its own `snprintf`.
 
 The target is the host the compiler runs on: its OS, its CPU, the bit count of
 `--platform-bits`, and the code of the command (`"c"` for `zakac build --target c`,
-`"vm"` for the rest). `--target-os` and `--target-arch` name another
+`"native"` for `zakac build --target native` and `zakac run --jit`, `"vm"` for the rest). `--target-os` and `--target-arch` name another
 ([Commands](../compiler/commands.md#options-of-the-compile-stages)).
 
 - A program that holds a compile-time conditional or names a fact is settled for its
@@ -122,6 +122,8 @@ The target is the host the compiler runs on: its OS, its CPU, the bit count of
   or CPU, with a message that names both.
 - The C target builds an executable for the host alone: for another target it writes
   the C files (`--emit c`), to build there.
+- The native target, too, links an executable for the host alone: for another target it
+  writes the object file (`--emit obj`) or the Cranelift IR (`--emit clif`).
 - The explorer settles a program for Linux on x86-64.
 
 ## Comptime functions

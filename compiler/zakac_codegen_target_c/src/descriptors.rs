@@ -25,6 +25,36 @@ pub const FN_LEAD: &str = "";
 /// The text after the name of a function value.
 pub const FN_TAIL: &str = " ဟူသော လုပ်ဆောင်ချက်";
 
+/// One kind descriptor as the runtime reads it, `struct zk_kind`: each
+/// target writes it in its own form (C text, or data of an object).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KindRow
+{
+    /// The shape, a member of `enum zk_tag`.
+    pub tag: i32,
+    /// The size in octets.
+    pub size: u32,
+    /// The number of the descriptor of the cell, or of the value kind of an
+    /// enumeration.
+    pub cell: Option<usize>,
+    /// The cell count, the field count or the member count.
+    pub len: usize,
+    /// Each field: its name, its offset, and the number of its descriptor.
+    pub fields: Vec<(String, u32, usize)>,
+    /// Each member: its value as text, and the text a print writes.
+    pub members: Vec<(String, String)>,
+    /// The name of a struct.
+    pub name: Option<String>,
+    /// Whether a value holds text, a plain list or a closure on the heap.
+    pub holds_text: bool,
+    /// Whether a value holds a borrow.
+    pub holds_borrow: bool,
+    /// Whether the kind is an owner pointer, or holds one.
+    pub owns: bool,
+    /// Whether a plain list is a box.
+    pub boxed: bool,
+}
+
 /// The kind descriptors a program needs: one `zk_kind` in `zaka_kinds.c` for
 /// each data kind the runtime walks, named `zk_k<n>`.
 #[derive(Default)]
@@ -51,6 +81,90 @@ impl Descriptors
     pub fn of(&mut self, kind: DataKind) -> String
     {
         format!("&zk_k{}", self.number(kind))
+    }
+
+    /// The number of the descriptor of a kind, made on first use with the
+    /// descriptors of the kinds inside it.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// The number.
+    pub fn index_of(&mut self, kind: DataKind) -> usize { self.number(kind) }
+
+    /// The count of descriptors so far.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    pub fn count(&self) -> usize { self.kinds.len() }
+
+    /// Each descriptor, in the order of its number.
+    ///
+    /// # Arguments
+    ///
+    /// * `platform` - Bit count of the platform-sized kinds.
+    ///
+    /// # Returns
+    ///
+    /// The rows.
+    pub fn rows(&self, platform: u16) -> Vec<KindRow>
+    {
+        self.kinds.iter().map(|k| self.row(*k, platform)).collect()
+    }
+
+    /// The row of one descriptor.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - Its kind.
+    /// * `platform` - Bit count of the platform-sized kinds.
+    ///
+    /// # Returns
+    ///
+    /// The row.
+    fn row(&self, kind: DataKind, platform: u16) -> KindRow
+    {
+        let at = |k: DataKind| self.index[&k];
+        let mut row = KindRow {
+            tag: tag(kind),
+            size: kind.size(platform),
+            cell: None,
+            len: 0,
+            fields: Vec::new(),
+            members: Vec::new(),
+            name: None,
+            holds_text: kind.holds_text(),
+            holds_borrow: kind.holds_borrow(),
+            owns: kind.holds_owner_ptr(),
+            boxed: kind.is_box(),
+        };
+        if let Some(s) = kind.as_struct()
+        {
+            let each = s.fields().iter().enumerate();
+            row.fields = each
+                .map(|(i, (f, k))| (f.clone(), s.offset(i, platform), at(*k)))
+                .collect();
+            (row.len, row.name) = (s.fields().len(), Some(s.name.clone()));
+        }
+        if let Some(e) = kind.as_enum()
+        {
+            let each = e.members().iter().enumerate();
+            row.members = each
+                .map(|(i, (_, v))| (member_text(e.under(), v, false), e.text_at(i)))
+                .collect();
+            (row.cell, row.len) = (Some(at(e.under())), e.members().len());
+        }
+        let inner = kind.as_list().map(|l| (l.cell, l.len as usize));
+        let inner = inner.or_else(|| kind.cell_kind().map(|c| (c, 0)));
+        if let Some((c, count)) = inner.filter(|_| kind.as_enum().is_none())
+        {
+            (row.cell, row.len) = (Some(at(c)), count);
+        }
+        row
     }
 
     /// The number of the descriptor of a kind, made on first use.
@@ -119,61 +233,52 @@ impl Descriptors
     /// The C text.
     fn definition(&self, n: usize, kind: DataKind, platform: u16) -> String
     {
-        let at = |k: DataKind| format!("&zk_k{}", self.index[&k]);
+        let r = self.row(kind, platform);
+        let at = |i: Option<usize>| {
+            i.map_or_else(|| "NULL".to_string(), |i| format!("&zk_k{i}"))
+        };
         let mut out = String::new();
-        let (mut cell, mut len, mut fields, mut members, mut name) = (
-            "NULL".to_string(),
-            0,
-            "NULL".to_string(),
-            "NULL".to_string(),
-            "NULL".to_string(),
-        );
-        if let Some(s) = kind.as_struct()
+        let mut fields = "NULL".to_string();
+        if !r.fields.is_empty() || kind.as_struct().is_some()
         {
             let _ = writeln!(out, "static const zk_field zk_k{n}_f[] = {{");
-            for (i, (field, k)) in s.fields().iter().enumerate()
+            for (name, offset, k) in &r.fields
             {
-                let offset = s.offset(i, platform);
-                let _ =
-                    writeln!(out, "    {{{}, {offset}, {}}},", c_string(field), at(*k));
-            }
-            out.push_str("};\n");
-            (len, fields, name) =
-                (s.fields().len(), format!("zk_k{n}_f"), c_string(&s.name));
-        }
-        if let Some(e) = kind.as_enum()
-        {
-            let _ = writeln!(out, "static const zk_member zk_k{n}_m[] = {{");
-            for (i, (_, value)) in e.members().iter().enumerate()
-            {
-                let text = member_text(e.under(), value, false);
                 let _ = writeln!(
                     out,
-                    "    {{{}, {}}},",
-                    c_string(&text),
-                    c_string(&e.text_at(i))
+                    "    {{.name = {}, .offset = {offset}, .kind = &zk_k{k}}},",
+                    c_string(name)
                 );
             }
             out.push_str("};\n");
-            (cell, len, members) =
-                (at(e.under()), e.members().len(), format!("zk_k{n}_m"));
+            fields = format!("zk_k{n}_f");
         }
-        let inner = kind.as_list().map(|l| (l.cell, l.len as usize));
-        let inner = inner.or_else(|| kind.cell_kind().map(|c| (c, 0)));
-        if let Some((c, count)) = inner.filter(|_| kind.as_enum().is_none())
+        let mut members = "NULL".to_string();
+        if kind.as_enum().is_some()
         {
-            (cell, len) = (at(c), count);
+            let _ = writeln!(out, "static const zk_member zk_k{n}_m[] = {{");
+            for (value, shown) in &r.members
+            {
+                let _ = writeln!(
+                    out,
+                    "    {{.value = {}, .shown = {}}},",
+                    c_string(value),
+                    c_string(shown)
+                );
+            }
+            out.push_str("};\n");
+            members = format!("zk_k{n}_m");
         }
-        let tag = tag(kind);
-        let size = kind.size(platform);
-        let text = u8::from(kind.holds_text());
-        let borrow = u8::from(kind.holds_borrow());
-        let owns = u8::from(kind.holds_owner_ptr());
-        let boxed = u8::from(kind.is_box());
+        let name = r.name.as_deref().map_or_else(|| "NULL".to_string(), c_string);
+        let (tag, size, cell, len) = (TAGS[r.tag as usize], r.size, at(r.cell), r.len);
+        let flags = [r.holds_text, r.holds_borrow, r.owns, r.boxed].map(u8::from);
+        let [text, borrow, owns, boxed] = flags;
         let _ = writeln!(
             out,
-            "const zk_kind zk_k{n} = {{{tag}, {size}, {cell}, {len}, {fields}, \
-             {members}, {name}, {text}, {borrow}, {owns}, {boxed}}};"
+            "const zk_kind zk_k{n} = {{.tag = {tag}, .size = {size}, .cell = {cell}, \
+             .len = {len}, .fields = {fields}, .members = {members}, .name = {name}, \
+             .holds_text = {text}, .holds_borrow = {borrow}, .owns = {owns}, .boxed = \
+             {boxed}}};"
         );
         out
     }
@@ -200,7 +305,25 @@ fn inner_kinds(kind: DataKind) -> Vec<DataKind>
     out
 }
 
-/// The tag of a kind in the runtime, a member of `enum zk_tag`.
+/// The C names of the members of `enum zk_tag`, in their order.
+pub const TAGS: [&str; 13] = [
+    "ZK_TAG_SINT",
+    "ZK_TAG_UINT",
+    "ZK_TAG_FLOAT",
+    "ZK_TAG_CHAR",
+    "ZK_TAG_BOOL",
+    "ZK_TAG_PTR",
+    "ZK_TAG_FN",
+    "ZK_TAG_LIST",
+    "ZK_TAG_STRUCT",
+    "ZK_TAG_FALLIBLE",
+    "ZK_TAG_SEQ",
+    "ZK_TAG_TEXT",
+    "ZK_TAG_ENUM",
+];
+
+/// The tag of a kind in the runtime: the number of its member of
+/// `enum zk_tag`.
 ///
 /// # Arguments
 ///
@@ -208,24 +331,24 @@ fn inner_kinds(kind: DataKind) -> Vec<DataKind>
 ///
 /// # Returns
 ///
-/// The C name of the tag.
-fn tag(kind: DataKind) -> &'static str
+/// The number.
+fn tag(kind: DataKind) -> i32
 {
     match kind
     {
-        DataKind::Int(k) if k.signed => "ZK_K_SINT",
-        DataKind::Int(_) => "ZK_K_UINT",
-        DataKind::Float(_) => "ZK_K_FLOAT",
-        DataKind::Char => "ZK_K_CHAR",
-        DataKind::Bool => "ZK_K_BOOL",
-        DataKind::Ptr(_) | DataKind::Null => "ZK_K_PTR",
-        DataKind::Fn(_) => "ZK_K_FN",
-        DataKind::List(_) => "ZK_K_LIST",
-        DataKind::Struct(s) if s.name == FALLIBLE => "ZK_K_FALLIBLE",
-        DataKind::Struct(_) => "ZK_K_STRUCT",
-        DataKind::Seq(s) if s.text => "ZK_K_TEXT",
-        DataKind::Seq(_) => "ZK_K_SEQ",
-        DataKind::Enum(_) => "ZK_K_ENUM",
+        DataKind::Int(k) if k.signed => 0,
+        DataKind::Int(_) => 1,
+        DataKind::Float(_) => 2,
+        DataKind::Char => 3,
+        DataKind::Bool => 4,
+        DataKind::Ptr(_) | DataKind::Null => 5,
+        DataKind::Fn(_) => 6,
+        DataKind::List(_) => 7,
+        DataKind::Struct(s) if s.name == FALLIBLE => 9,
+        DataKind::Struct(_) => 8,
+        DataKind::Seq(s) if s.text => 11,
+        DataKind::Seq(_) => 10,
+        DataKind::Enum(_) => 12,
     }
 }
 

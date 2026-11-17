@@ -95,6 +95,21 @@ pub enum Error
     {
         what: String
     },
+    #[error("{}", t!("errors.not_for_native", what = what))]
+    NotForNative
+    {
+        what: String
+    },
+    #[error("{}", t!("errors.arch_not_for_native", arch = arch))]
+    ArchNotForNative
+    {
+        arch: String
+    },
+    #[error("{}", t!("errors.native_for_other_host", target = target, host = host))]
+    NativeForOtherHost
+    {
+        target: String, host: String
+    },
     #[error("{}", t!("errors.config_not_toml", p = path, e = msg))]
     ConfigNotToml
     {

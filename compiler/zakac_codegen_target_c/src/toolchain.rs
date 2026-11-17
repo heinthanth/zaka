@@ -4,11 +4,8 @@ use std::process::Child;
 use std::process::Command;
 use std::process::Output;
 use std::process::Stdio;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
 
 use bon::Builder;
-use xxhash_rust::xxh3::Xxh3;
 use zakac_host_errors::Error;
 use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
@@ -16,10 +13,9 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
-use crate::callbacks::CB_SOURCE;
+use crate::callbacks::CALLBACK_SOURCE;
 use crate::callbacks::ffi_flags;
-use crate::driver::RUNTIME;
-use crate::emit::CHECKS_HEADER;
+use crate::driver::native_libs;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
 
@@ -83,7 +79,7 @@ impl Tool
     /// # Returns
     ///
     /// The command.
-    fn command(&self) -> Command
+    pub fn command(&self) -> Command
     {
         let mut cmd = Command::new(&self.program);
         cmd.args(&self.lead);
@@ -228,39 +224,7 @@ pub struct BuildPlan<'a>
     /// The link flag of each lib the C functions of the program come from.
     #[builder(default)]
     pub libs: &'a [String],
-    /// The folder that keeps the objects of the runtime from one build to the
-    /// next, each named after a hash of the compiler, the flags, the runtime
-    /// and its checks header; `None` compiles the runtime in each build.
-    pub runtime_objects: Option<&'a Path>,
 }
-
-/// A C file of a build: where its object is written, and where the object
-/// is kept for later builds when it is a runtime file.
-#[derive(Builder)]
-struct Unit
-{
-    /// The C file.
-    source: PathBuf,
-    /// The object the compiler writes.
-    out: PathBuf,
-    /// The kept object, for a runtime file with a store.
-    kept: Option<PathBuf>,
-}
-
-impl Unit
-{
-    /// Whether an earlier build left the object, so the file needs no
-    /// compile.
-    ///
-    /// # Returns
-    ///
-    /// `true` when the kept object exists.
-    fn is_kept(&self) -> bool { self.kept.as_ref().is_some_and(|k| k.exists()) }
-}
-
-/// The number of objects this process has started to write into a store, so
-/// two builds at once never write the same temp file.
-static WRITES: AtomicUsize = AtomicUsize::new(0);
 
 /// What a build ran: the output of each step, and the tool of the step that
 /// failed.
@@ -275,8 +239,7 @@ pub struct Built
 }
 
 /// Build the generated C into an executable: compile the C files at once,
-/// each to an object beside it, then link the objects. A runtime file whose
-/// object the store keeps from an earlier build is not compiled again. The
+/// each to an object beside it, then link the objects and the runtime lib. The
 /// user flags come after the flags of the C target, so a flag the user gives
 /// wins where the compiler takes the last one.
 ///
@@ -289,24 +252,21 @@ pub struct Built
 /// What ran, or the error when a tool cannot start.
 pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 {
-    let units: Vec<Unit> = plan.sources.iter().map(|s| unit_of(plan, s)).collect();
+    let is_c = |s: &&PathBuf| s.extension().is_some_and(|e| e == "c");
+    let sources: Vec<&PathBuf> = plan.sources.iter().filter(is_c).collect();
+    // A lib among the sources, such as the runtime, links as it is.
+    let libs = plan.sources.iter().filter(|s| !is_c(s)).cloned();
     // shortcut: each compile starts at once, with no cap; cap them at the core
     // count if programs reach hundreds of files.
-    let started = units.iter().filter(|u| !u.is_kept()).map(|u| {
-        let cmd = compile_command(plan, &u.source, &u.out);
-        start(plan.cc, cmd)
-    });
+    let started = sources
+        .iter()
+        .map(|s| start(plan.cc, compile_command(plan, s, &s.with_extension("o"))));
     let started = started.collect::<zakac_host_errors::Result<Vec<Child>>>()?;
     let finished = started.into_iter().map(|child| finish(plan.cc, child));
     let mut outputs = finished.collect::<zakac_host_errors::Result<Vec<Output>>>()?;
-    if outputs.iter().any(|o| !o.status.success())
-    {
-        // A temp object in the store is never kept after a failed build.
-        let temps = units.iter().filter(|u| u.kept.is_some() && !u.is_kept());
-        temps.for_each(|u| _ = std::fs::remove_file(&u.out));
-        return Ok(failed(outputs, plan.cc));
-    }
-    let objects: Vec<PathBuf> = units.iter().map(settle).collect();
+    ret_if!(outputs.iter().any(|o| !o.status.success()), Ok(failed(outputs, plan.cc)));
+    let objects = sources.iter().map(|s| s.with_extension("o")).chain(libs);
+    let objects: Vec<PathBuf> = objects.collect();
     let linker = plan.linker.unwrap_or(plan.cc);
     let output = run(linker, link_command(plan, linker, &objects))?;
     let ok = output.status.success();
@@ -350,98 +310,10 @@ fn compile_flags(plan: &BuildPlan<'_>, source: &Path) -> Vec<String>
     do_if!(plan.defaults, flags.extend(words(DEFAULT_FLAGS)));
     let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
     do_if!(sanitized, flags.extend(words(SANITIZE_FLAGS)));
-    let callbacks = source.file_name() == Some(CB_SOURCE.as_ref());
+    let callbacks = source.file_name() == Some(CALLBACK_SOURCE.as_ref());
     do_if!(callbacks, flags.extend(ffi_flags().0.iter().cloned()));
     flags.extend(plan.cflags.iter().cloned());
     flags
-}
-
-/// A C file of the build, with the object it compiles to.
-///
-/// # Arguments
-///
-/// * `plan` - What to build.
-/// * `source` - The C file.
-///
-/// # Returns
-///
-/// The unit: a runtime file with a store compiles to a temp file in the
-/// store, and each other file to an object beside it.
-fn unit_of(plan: &BuildPlan<'_>, source: &Path) -> Unit
-{
-    let unit = Unit::builder().source(source.to_path_buf());
-    let Some(kept) = kept_object(plan, source)
-    else
-    {
-        return unit.out(source.with_extension("o")).build();
-    };
-    let n = WRITES.fetch_add(1, Ordering::Relaxed);
-    let temp = format!("{}.{}-{n}.part", kept.display(), std::process::id());
-    unit.out(PathBuf::from(temp)).kept(kept).build()
-}
-
-/// Where the store keeps the object of a runtime file: named after a hash of
-/// each input of the compile, so a change to the compiler, the flags, the
-/// runtime or the checks gives a new name.
-///
-/// # Arguments
-///
-/// * `plan` - What to build.
-/// * `source` - The C file.
-///
-/// # Returns
-///
-/// The path, or `None` for a file that is not a runtime file, for a plan
-/// with no store, or when the store or the checks header cannot be reached.
-fn kept_object(plan: &BuildPlan<'_>, source: &Path) -> Option<PathBuf>
-{
-    let store = plan.runtime_objects?;
-    let name = source.file_name()?.to_str()?;
-    let stem = name.strip_suffix(".c")?;
-    ret_if!(!RUNTIME.iter().any(|(n, _)| *n == name), None);
-    let checks = std::fs::read(source.with_file_name(CHECKS_HEADER)).ok()?;
-    std::fs::create_dir_all(store).ok()?;
-    let mut hash = Xxh3::new();
-    for word in std::iter::once(plan.cc.shown()).chain(compile_flags(plan, source))
-    {
-        hash.update(word.as_bytes());
-        hash.update(&[0]);
-    }
-    RUNTIME.iter().for_each(|(_, text)| hash.update(text.as_bytes()));
-    hash.update(&checks);
-    Some(store.join(format!("{stem}-{:032x}.o", hash.digest128())))
-}
-
-/// The object a unit links with: a fresh runtime object moves into the store
-/// for later builds.
-///
-/// # Arguments
-///
-/// * `unit` - The unit, compiled or kept.
-///
-/// # Returns
-///
-/// The object.
-fn settle(unit: &Unit) -> PathBuf
-{
-    let Some(kept) = &unit.kept
-    else
-    {
-        return unit.out.clone();
-    };
-    ret_if!(!unit.out.exists(), kept.clone());
-    match std::fs::rename(&unit.out, kept)
-    {
-        Ok(()) => kept.clone(),
-        // Another build stored the same object first; Windows will not
-        // rename over it.
-        Err(_) if kept.exists() =>
-        {
-            let _ = std::fs::remove_file(&unit.out);
-            kept.clone()
-        }
-        Err(_) => unit.out.clone(),
-    }
 }
 
 /// Start a compile, with its output piped.
@@ -493,15 +365,16 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     {
         cmd.args(SANITIZE_FLAGS);
     }
-    // libffi links when `zaka_cb.c` is built, with the flags `pkg-config`
+    // libffi links when `zaka_callback.c` is built, with the flags `pkg-config`
     // gives.
     let callbacks =
-        plan.sources.iter().any(|s| s.file_name() == Some(CB_SOURCE.as_ref()));
+        plan.sources.iter().any(|s| s.file_name() == Some(CALLBACK_SOURCE.as_ref()));
     let ffi: &[String] = tern!(callbacks, &ffi_flags().1, &[]);
     cmd.args(objects)
         .arg("-o")
         .arg(plan.out)
         .args(LINK_LIBS)
+        .args(native_libs())
         .args(plan.libs)
         .args(ffi)
         .args(plan.ldflags);

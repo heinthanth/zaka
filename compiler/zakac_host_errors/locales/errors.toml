@@ -54,6 +54,15 @@ en = "the build step of %{cc} failed"
 [errors.not_for_target_c]
 en = "the C target cannot build %{what} at present"
 
+[errors.not_for_native]
+en = "the native target cannot build %{what} at present"
+
+[errors.arch_not_for_native]
+en = "the native target builds for x86_64, aarch64 and riscv64, not for %{arch}: give --target c, or --target vm"
+
+[errors.native_for_other_host]
+en = "the native target links for this host, %{host}, not for %{target}: give --emit obj to write the object file and link it there"
+
 [errors.config_not_toml]
 en = "the config file %{p} is not valid TOML: %{e}"
 

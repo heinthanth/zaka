@@ -38,9 +38,13 @@ run = "cargo +nightly fmt"
 description = "Format the Rust code with rustfmt"
 
 [tasks."format:c"]
-run = "clang-format -i compiler/*/runtime/*.c compiler/*/runtime/*.h"
+run = "clang-format -i compiler/*/runtime/*.h"
 shell = "bun exec"
 description = "Format the C code with clang-format"
+
+[tasks."c:mock-headers"]
+run = "cargo run -q -p zakac -- build --target c --emit c --cache target/c-headers samples/basics/hello.zaka"
+description = "Write the C headers of a build into target/c-headers, which .clangd of the C runtime reads"
 
 # Test
 

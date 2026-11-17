@@ -14,7 +14,6 @@ bon = { workspace = true }
 etcetera = { workspace = true }
 rust-i18n = { workspace = true }
 strum = { workspace = true }
-xxhash-rust = { workspace = true }
 zakac_ast = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true }
@@ -32,11 +31,14 @@ zakac_span = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+zaka_runtime = { workspace = true }
 zaka_vm = { workspace = true, features = ["ffi"] }
 zakac_codegen_target_vm = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+cbindgen = { workspace = true }
+zakac_rust_sugars = { workspace = true }
 
 [[test]]
 name = "tests"

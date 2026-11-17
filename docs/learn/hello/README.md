@@ -62,11 +62,17 @@ forms](../variables/scope.md#four-closing-forms).
    ```sh
    zakac run hello.zaka
    ```
-3. Or build it into a program of its own, through C. This needs a C compiler on the
-   PATH, such as GCC, Clang or `zig cc`:
+3. Or run it as machine code of the computer it is on, with no VM:
 
    ```sh
-   zakac build --target c hello.zaka
+   zakac run --jit hello.zaka
+   ```
+4. Or build it into a program of its own. `--target native` makes the machine code with
+   Cranelift, inside the compiler; `--target c` writes C and compiles it. Both link with a
+   C compiler on the PATH, such as GCC, Clang or `zig cc`:
+
+   ```sh
+   zakac build --target native hello.zaka
    ./hello
    ```
 

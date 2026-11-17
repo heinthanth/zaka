@@ -56,6 +56,9 @@ pub enum BuildTarget
     Vm,
     /// C, built into a native executable.
     C,
+    /// Machine code from Cranelift: run at once in `zakac` (JIT), or linked
+    /// into a native executable (AOT).
+    Native,
 }
 
 /// The facts of the target a program is built for.

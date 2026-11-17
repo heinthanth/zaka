@@ -124,7 +124,7 @@ fn check_item(item: &str) -> Result<String, String>
 /// # Returns
 ///
 /// The choices; the overflow mode and the platform width come later.
-fn target_options(matches: &ArgMatches) -> TargetCOptions
+pub fn target_options(matches: &ArgMatches) -> TargetCOptions
 {
     let items = matches.get_many::<String>(CHECKS_ARG).into_iter().flatten();
     let checks = RunChecks::from_items(items.map(String::as_str)).unwrap_or_default();
@@ -460,7 +460,7 @@ fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
 /// # Returns
 ///
 /// The path.
-fn input_path(input: &Input) -> PathBuf
+pub fn input_path(input: &Input) -> PathBuf
 {
     match input
     {
@@ -478,7 +478,7 @@ fn input_path(input: &Input) -> PathBuf
 /// # Returns
 ///
 /// The path to write.
-fn with_exe(path: PathBuf) -> PathBuf
+pub fn with_exe(path: PathBuf) -> PathBuf
 {
     let bare =
         path.extension().is_none() && !std::env::consts::EXE_EXTENSION.is_empty();
@@ -522,6 +522,47 @@ fn build(
 {
     let sources = write_cache(job.cache, job.files)?;
     ret_if!(job.emit == Emit::C, Ok(ExitCode::Success));
+    #[rustfmt::skip]
+    let link = Link::builder().cache(job.cache).out(job.out).checks(job.checks).sources(&sources)
+        .libs(job.libs).build();
+    build_and_link(matches, io, info, link)
+}
+
+/// What a step of the C compiler builds: C files and objects into an
+/// executable.
+#[derive(bon::Builder)]
+pub struct Link<'a>
+{
+    /// The cache folder, for the probe of the sanitizers.
+    pub cache: &'a Path,
+    /// The executable.
+    pub out: &'a Path,
+    /// The run-time checks.
+    pub checks: RunChecks,
+    /// The C files to compile, then the objects and the libs to link.
+    pub sources: &'a [PathBuf],
+    /// The link flag of each lib the C functions of the program come from.
+    pub libs: &'a [String],
+}
+
+/// Compile C files and link them with objects and libs into an executable,
+/// with the compiler, the linker and the flags of the command line.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+/// * `io` - The standard streams.
+/// * `info` - The command, for warnings.
+/// * `job` - What to build.
+///
+/// # Returns
+///
+/// The exit code, or the error of the compiler.
+pub fn build_and_link(
+    matches: &ArgMatches, io: &mut CommandIO<'_>, info: &CommandInfo, job: Link<'_>,
+) -> zakac_host_errors::Result<ExitCode>
+{
+    let sources = job.sources;
     let arg = |name: &str| matches.get_one::<String>(name).map(String::as_str);
     // A `--cc` from a config file is a default, so `CC` wins over it.
     let on_line = matches.value_source(CC_ARG) == Some(ValueSource::CommandLine);
@@ -539,9 +580,9 @@ fn build(
     let ldflags = user_flags(matches, LDFLAGS, LD_FLAG_ARG);
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(&cc).maybe_linker(linker.as_ref())
-        .sources(&sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
+        .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
-        .ldflags(&ldflags).libs(job.libs).runtime_objects(job.cache).build();
+        .ldflags(&ldflags).libs(job.libs).build();
     let built = toolchain::build(&plan)?;
     for output in &built.outputs
     {

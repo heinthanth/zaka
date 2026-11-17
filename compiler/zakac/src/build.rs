@@ -17,6 +17,7 @@ use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
 use zakac_codegen_target_c::cli as target_c;
+use zakac_codegen_target_native::cli as target_native;
 use zakac_codegen_target_vm::cli as target_vm;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
@@ -39,6 +40,8 @@ enum Target
     Vm,
     /// A native executable, through C.
     C,
+    /// A native executable, through Cranelift.
+    Native,
 }
 
 /// The `zakac build` command: it checks the program, then hands it to the
@@ -76,6 +79,9 @@ fn configure_build(cmd: clap::Command) -> clap::Command
         .default_value(<&'static str>::from(Target::default()));
     let mut emits = target_vm::emit_words();
     emits.extend(target_c::emit_words());
+    emits.extend(target_native::emit_words());
+    emits.sort_unstable();
+    emits.dedup();
     let emit = Arg::new(EMIT_ARG)
         .long("emit")
         .value_name("WHAT")
@@ -104,6 +110,7 @@ fn misplaced_flag(matches: &ArgMatches, target: Target) -> Option<String>
     {
         Target::Vm => (target_c::TARGET_ARGS, target_vm::emit_words()),
         Target::C => (target_vm::TARGET_ARGS, target_c::emit_words()),
+        Target::Native => (target_vm::TARGET_ARGS, target_native::emit_words()),
     };
     let given = |id: &&&str| matches.value_source(id) == Some(ValueSource::CommandLine);
     let flag =
@@ -136,6 +143,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
         Target::Vm => target_vm::command_main(matches, io),
         Target::C => target_c::command_main(matches, io),
+        Target::Native => target_native::build_main(matches, io),
     }
 }
 

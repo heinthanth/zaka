@@ -43,7 +43,7 @@ en = "Learn Zaka"
 [website.hero.docs]
 en = "Read the Docs"
 [website.hero.lede]
-en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences compile to instructions for the Zaka VM, or through C to a native program."
+en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences compile to instructions for the Zaka VM, or to machine code through Cranelift or C."
 
 # ---------------------------------------------------------------- traits
 
@@ -64,7 +64,7 @@ en = "Errors and results"
 [website.traits.portable]
 en = "Portable"
 [website.traits.portable_text]
-en = "Programs run in the Zaka VM, in the terminal and in the browser, or build through C into a native executable that calls C libraries."
+en = "Programs run in the Zaka VM, in the terminal and in the browser, or as machine code: at once through the JIT, or built through Cranelift or C into a native executable that calls C libraries."
 [website.traits.portable_link]
 en = "Native programs"
 
@@ -136,7 +136,7 @@ en = "Behind it, a careful compiler checks each line, catches mistakes before th
 [website.close.head]
 en = "Explore the Zaka language."
 [website.close.text]
-en = "The explorer runs Zaka in the browser: it shows each stage from the words to the VM, steps through a run, and shows the C that the C target writes."
+en = "The explorer runs Zaka in the browser: it shows each stage from the words to the VM, steps through a run, and shows the C of the C target and the CLIF of the native target."
 
 # ---------------------------------------------------------------- footer
 

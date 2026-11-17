@@ -138,6 +138,9 @@ pub enum Target
     Vm,
     /// C files, which the explorer shows but cannot build.
     C,
+    /// The CLIF of the native target, for x86-64, which the explorer shows
+    /// but cannot run.
+    Native,
 }
 
 /// The C target choices of the compile options.
@@ -713,7 +716,12 @@ fn explorer_target(options: &Options) -> zakac_ast::target::Target
 {
     // shortcut: a fixed OS and CPU; add a picker to the settings when a
     // reader wants to see another branch of a compile-time conditional.
-    let output = tern!(options.target == Target::C, BuildTarget::C, BuildTarget::Vm);
+    let output = match options.target
+    {
+        Target::Vm => BuildTarget::Vm,
+        Target::C => BuildTarget::C,
+        Target::Native => BuildTarget::Native,
+    };
     #[rustfmt::skip]
     return zakac_ast::target::Target::builder().os(TargetOs::Linux)
         .arch(TargetArch::X86_64).bits(options.platform_bits).output(output).build();
@@ -796,6 +804,21 @@ pub fn compile(source: &str, options: &Options) -> Compiled
                 &zaka_host::Grants::all(),
             );
             (None, Some(c))
+        }
+        Some(m) if options.target == Target::Native =>
+        {
+            let target = explorer_target(options);
+            let made = zakac_codegen_target_native::aot::object(
+                m,
+                sm.files(),
+                c_options(options),
+                &zaka_host::Grants::all(),
+                &target,
+                true,
+            );
+            let file = made
+                .map(|o| vec![CFile::builder().name("main.clif").text(o.clif).build()]);
+            (None, Some(file))
         }
         Some(m) =>
         {

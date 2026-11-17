@@ -1,0 +1,51 @@
+# The C header of the runtime, `zaka_runtime.h`, which the build script of
+# `zakac_codegen_target_c` writes from this crate. `zaka_target_c_runtime.h` includes it and
+# adds the inline code the generated C runs for each operation.
+
+language = "C"
+include_guard = "ZAKA_RUNTIME_H"
+autogen_warning = "/* Written from the crate zaka_runtime through cbindgen: change the Rust, not this file. */"
+include_version = false
+no_includes = true
+sys_includes = ["stddef.h", "stdint.h"]
+after_includes = """
+/* GCC and Clang mark a function that never returns; other compilers go without. */
+#if defined(__GNUC__)
+#define ZK_NORETURN __attribute__((noreturn))
+#else
+#define ZK_NORETURN
+#endif"""
+documentation_style = "doxy"
+documentation_length = "full"
+style = "both"
+usize_is_size_t = true
+
+[fn]
+no_return = "ZK_NORETURN"
+
+[enum]
+rename_variants = "QualifiedScreamingSnakeCase"
+
+[export]
+include = ["ZkTrap", "ZkRight", "ZkTag", "ZkFnRec"]
+
+[export.rename]
+"ZkProgram" = "zk_program"
+"ZkGrant" = "zk_grant"
+"ZkSite" = "zk_site"
+"ZkFrame" = "zk_frame"
+"ZkFnName" = "zk_fn_name"
+"ZkFnRec" = "zk_fnrec"
+"ZkField" = "zk_field"
+"ZkMember" = "zk_member"
+"ZkKind" = "zk_kind"
+"ZkBuf" = "zk_buf"
+"ZkCbShape" = "zk_cb_shape"
+"ZkCbNativeShape" = "zk_cb_native_shape"
+"ZkCKind" = "zk_c_kind"
+"ZkFfiShape" = "zk_ffi_shape"
+"ZkCode" = "zk_code"
+"ZkFn" = "zk_fn"
+"ZkTrap" = "zk_trap"
+"ZkRight" = "zk_right"
+"ZkTag" = "zk_tag"

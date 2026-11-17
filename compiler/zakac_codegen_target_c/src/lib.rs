@@ -1,6 +1,6 @@
 pub mod callbacks;
 pub mod cli;
-mod descriptors;
+pub mod descriptors;
 pub mod driver;
 pub mod emit;
 mod exprs;

@@ -454,6 +454,7 @@ fn target_picker(state: AppState) -> impl IntoView
     {
         Target::Vm => t!("explorer.settings.target_vm"),
         Target::C => t!("explorer.settings.target_c"),
+        Target::Native => t!("explorer.settings.target_native"),
     };
     let choice =
         move |m: Target| Choice::builder().value(m.to_string()).label(label(m)).build();

@@ -21,6 +21,9 @@ en = "The most octets of the stack region, where the locals of each call live."
 [vm.leaks]
 en = "List the heap blocks left unfreed when the program ends."
 
+[vm.jit]
+en = "Run the program as native code, made with Cranelift in this process, in place of the VM."
+
 [vm.args]
 en = "The arguments for the start block of the program, after \"--\"."
 

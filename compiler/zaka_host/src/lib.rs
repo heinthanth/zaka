@@ -16,6 +16,7 @@
 
 mod grants;
 mod kinds;
+pub mod numbers;
 mod table;
 mod value;
 mod world;
@@ -25,6 +26,7 @@ pub use kinds::*;
 pub use table::HOST_FNS;
 pub use table::HostDef;
 pub use table::HostFn;
+pub use table::io_member;
 pub use table::listing;
 pub use value::Args;
 pub use value::HostValue;

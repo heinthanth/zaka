@@ -12,6 +12,7 @@ use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_parser::load::Loaded;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::hash::SourceFileHash;
@@ -25,13 +26,33 @@ use crate::options::TargetCOptions;
 /// The runtime files, written into the cache beside the generated ones.
 pub const RUNTIME: &[(&str, &str)] = &[
     ("zaka_c_sugars.h", include_str!("../runtime/zaka_c_sugars.h")),
-    ("zaka_rt.h", include_str!("../runtime/zaka_rt.h")),
-    ("zaka_rt.c", include_str!("../runtime/zaka_rt.c")),
-    ("zaka_rt_data.c", include_str!("../runtime/zaka_rt_data.c")),
-    ("zaka_rt_host.c", include_str!("../runtime/zaka_rt_host.c")),
-    ("zaka_rt_float.h", include_str!("../runtime/zaka_rt_float.h")),
-    ("zaka_rt_float.c", include_str!("../runtime/zaka_rt_float.c")),
+    ("zaka_target_c_runtime.h", include_str!("../runtime/zaka_target_c_runtime.h")),
+    ("zaka_runtime.h", include_str!(concat!(env!("OUT_DIR"), "/zaka_runtime.h"))),
 ];
+
+/// The runtime lib (`zaka_runtime`) built for the target of this compiler;
+/// blank in a build for the browser.
+pub const RUNTIME_LIB: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/libzaka_runtime.a"));
+
+/// The file name of the runtime lib in the cache.
+pub const RUNTIME_LIB_NAME: &str = "libzaka_runtime.a";
+
+/// The OS libs the runtime lib needs at link time, one flag a line.
+const NATIVE_LIBS: &str = include_str!(concat!(env!("OUT_DIR"), "/native-libs.txt"));
+
+/// The OS libs the runtime lib needs at link time, as `-l` flags.
+///
+/// # Returns
+///
+/// The flags.
+pub fn native_libs() -> impl Iterator<Item = &'static str>
+{
+    // The C compiler links libc (libSystem on macOS) on its own, and the link
+    // adds libm, so the list leaves them out.
+    const LINKED: &[&str] = &["-lc", "-lSystem", "-lm"];
+    NATIVE_LIBS.lines().filter(|l| !LINKED.contains(l))
+}
 
 /// The output of the phases up to the C text.
 #[derive(bon::Builder)]
@@ -153,7 +174,8 @@ fn user_cache(full: &Path) -> Option<PathBuf>
 ///
 /// # Returns
 ///
-/// The paths of the C files to compile, or the error of a write.
+/// The paths of the C files to compile, then the runtime lib to link, or the
+/// error of a write.
 pub fn write_cache(
     dir: &Path, files: &[CFile],
 ) -> zakac_host_errors::Result<Vec<PathBuf>>
@@ -174,5 +196,9 @@ pub fn write_cache(
             sources.push(path);
         }
     }
+    let lib = dir.join(RUNTIME_LIB_NAME);
+    let same = std::fs::read(&lib).is_ok_and(|old| old == RUNTIME_LIB);
+    do_if!(!same, std::fs::write(&lib, RUNTIME_LIB).map_err(fail(&lib))?);
+    sources.push(lib);
     Ok(sources)
 }

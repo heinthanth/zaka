@@ -126,13 +126,13 @@ fn probe() -> (String, String)
          << 13; *s ^= *s >> 7; *s ^= *s << 17; return *s; }}\nstatic uint64_t \
          zk_near(uint64_t r, int at, uint64_t mask, uint64_t bias) {{ uint64_t e = \
          bias - 70 + r % 130; return (r & ~(mask << at)) | (e << at); }}\nint \
-         main(int argc, char **argv)\n{{\n    zk_start(argc, argv);\n{lines}uint64_t \
-         s = UINT64_C({SEED:#x});\nfor (uint32_t i = 0; i < {F64_WIDE}; i++) {{ \
-         zk_put_fbits(64, zk_next(&s)); zk_put_line(); }}\nfor (uint32_t i = 0; i < \
-         {F64_NEAR}; i++) {{ zk_put_fbits(64, zk_near(zk_next(&s), 52, 0x7ff, 1023)); \
-         zk_put_line(); }}\nfor (uint32_t i = 0; i < {F32_STRIDED}; i++) {{ \
-         zk_put_fbits(32, (uint32_t)(i * 8191u) ^ 0x5a5a); zk_put_line(); }}\nreturn \
-         zk_finish(0);\n}}\n"
+         main(int argc, char **argv)\n{{\n    zk_start(argc, argv, \
+         &zk_the_program);\n{lines}uint64_t s = UINT64_C({SEED:#x});\nfor (uint32_t i \
+         = 0; i < {F64_WIDE}; i++) {{ zk_put_fbits(64, zk_next(&s)); zk_put_line(); \
+         }}\nfor (uint32_t i = 0; i < {F64_NEAR}; i++) {{ zk_put_fbits(64, \
+         zk_near(zk_next(&s), 52, 0x7ff, 1023)); zk_put_line(); }}\nfor (uint32_t i = \
+         0; i < {F32_STRIDED}; i++) {{ zk_put_fbits(32, (uint32_t)(i * 8191u) ^ \
+         0x5a5a); zk_put_line(); }}\nreturn zk_finish(0);\n}}\n"
     );
     (main, want)
 }

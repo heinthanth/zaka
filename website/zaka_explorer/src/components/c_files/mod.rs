@@ -22,6 +22,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::compile::Compiled;
+use crate::compile::Target;
 use crate::components::check_view::skipped;
 use crate::monaco::Viewer;
 use crate::state::AppState;
@@ -156,7 +157,8 @@ pub fn c_file_list() -> impl IntoView
         state.compiled.with(|c| c.c_files.iter().map(|f| f.name.clone()).collect())
     });
     let made = move || group(state, t!("explorer.c_files.program"), names.get());
-    let runtime = RUNTIME.iter().map(|(name, _)| name.to_string()).collect();
+    let runtime: Vec<String> =
+        RUNTIME.iter().map(|(name, _)| name.to_string()).collect();
     let view = aside()
         .class(ClassName::C_FILE_LIST)
         .attr("aria-label", t!("explorer.c_files.label"))
@@ -164,7 +166,11 @@ pub fn c_file_list() -> impl IntoView
             h3().class(ClassName::C_FILE_LIST_TITLE)
                 .child(t!("explorer.c_files.title")),
             made,
-            group(state, t!("explorer.c_files.runtime"), runtime),
+            // The runtime of native code is Rust, with no file to show.
+            move || {
+                let c = state.options.with(|o| o.target == Target::C);
+                c.then(|| group(state, t!("explorer.c_files.runtime"), runtime.clone()))
+            },
         ));
     (sheet(&SHEET), view)
 }

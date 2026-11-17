@@ -1,6 +1,6 @@
 ---
 title: The C target
-description: How zakac_codegen_target_c turns the IR into C, the runtime it writes beside the C, and the tests that hold it to the VM.
+description: How zakac_codegen_target_c turns the IR into C, the Rust runtime it links, and the tests that hold it to the VM.
 ---
 
 # The C target
@@ -11,10 +11,10 @@ runs it, then the C compiler. [Native programs](../compiler/native.md) tells wha
 sees; this page tells how it is built.
 
 ```text
-ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.{h,c}, zaka_ffi.c (with C functions), zaka_cb.c (with closures given to C)
-                         + zaka_rt.h, zaka_rt*.c, zaka_c_sugars.h
+ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.{h,c}, zaka_ffi.c (with C functions), zaka_callback.c (with closures given to C)
+                         + zaka_target_c_runtime.h, zaka_runtime.h, zaka_c_sugars.h, libzaka_runtime.a
                          │
-                         └──cc -c, then link──▶ executable
+                         └──cc -c, then link with the runtime lib──▶ executable
 ```
 
 ## The crate
@@ -22,15 +22,16 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 | File | Job |
 | --- | --- |
 | `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--target c` |
-| `driver.rs` | the phases, then `emit`; the cache folder; the runtime files, embedded with `include_str!`; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
-| `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c` |
+| `driver.rs` | the phases, then `emit`; the cache folder; the two runtime headers, embedded with `include_str!`, and the runtime lib, `RUNTIME_LIB`, embedded with `include_bytes!`; `native_libs`, the OS libs the lib needs; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
+| `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c`, and the program table `zk_the_program` in `zaka_kinds.c` |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
 | `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
-| `callbacks.rs` | `zaka_cb.c`: the runtime `zaka_rt_cb.c`, then a bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the `-lffi` flag |
-| `toolchain.rs` | finding the compiler, the flags, the compiles (started at once) and the link; the objects of the runtime kept in a store (`runtime_objects`), named after a hash of the compiler, the flags, the runtime and `zaka_checks.h` |
-| `runtime/` | the runtime: hand-written C11 |
+| `callbacks.rs` | `zaka_callback.c`: its head (`CALLBACK_HEAD`: the libffi header and `zaka_runtime.h`), then a bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the `-lffi` flag |
+| `toolchain.rs` | finding the compiler, the flags, the compiles of the `.c` files (started at once) and the link, which takes the other inputs, the runtime lib among them, unchanged |
+| `build.rs` | builds `zaka_runtime` as a static lib for the target of the build (see [The runtime](#the-runtime)) |
+| `runtime/` | the two hand-written C11 headers: `zaka_target_c_runtime.h` and `zaka_c_sugars.h` |
 
 A function or a global goes into the module file of the source file its span starts in.
 
@@ -48,12 +49,12 @@ the thunk into its first word and the descriptor of the record kind into its sec
 is never NULL, so `zk_fn_bound` tests it. A lent closure has the lowest bit of its address
 set, which `zk_fn_rec` clears. A call through a value is `zk_fn_bound(f) ? thunk(args…,
 zk_fn_rec(f)) : code(args…)`, the code read through `zk_fn_code`. The descriptor walk
-(`zk_each_block`) visits a `ZK_K_FN` value as it visits text: `zk_fn_dup` counts one more
+(`zk_each_block`) visits a `ZK_TAG_FN` value as it visits text: `zk_fn_dup` counts one more
 holder of a record, a drop lets go of one and the last holder frees the record with what
 its fields hold, and `zk_fn_lend` marks a loan, which a drop leaves alone. A C argument goes
 through `zk_cb_code` when the function kind has a shape (see [C functions](#c-functions)),
 and else through `zk_fn_c`, which stops a closure with `ZK_TRAP_CLOSURE_ESCAPE`, since
-C calls a bare code address. These functions live in `zaka_rt_data.c`, and the table of names holds code
+C calls a bare code address. These functions live in `heap.rs` of the runtime, and the table of names holds code
 pointers, so a print finds the name of a closure through its thunk.
 
 A list, a struct, a plain list and text are blocks of octets, laid out as the VM
@@ -101,30 +102,72 @@ right after the statement reads it. `ir::fresh_text` holds that rule for both ba
 
 ## The runtime
 
+The runtime is the Rust crate `zaka_runtime`, a static lib (`crate-type = ["staticlib",
+"rlib"]`) that both the C target and the [native target](native-backend.md) link. Each of
+its functions is `extern "C"`, `#[unsafe(no_mangle)]`, with the name the C calls; its build
+script scans `src/*.rs` for them and writes `exports()`, the table the JIT hands to
+Cranelift.
+
 | File | Holds |
 | --- | --- |
-| `zaka_rt.h` | the kinds, the descriptors, the trap ids, the checked integer operations of each kind (`zk_add_i32`, `zk_div_u64`, ...), the loads and stores |
-| `zaka_rt.c` | the start and the end of a run, the traps, the depth count, the print of numbers |
-| `zaka_rt_data.c` | the heap, counted blocks and the ring collector, plain lists, text edits, deep duplicates, `==`, the print of each kind |
-| `zaka_rt_host.c` | standard input, files and output streams, and the arguments and the environment |
+| `program.rs` | `ZkProgram`, the mirror of `zk_program`: the checks, the limits, the rights, the texts, the function names and the sites; `zk_prog`, `zk_depth`, `zk_frames` |
+| `start.rs` | `zk_start` and `zk_finish`: the start and the end of a run |
+| `traps.rs` | the traps, the stop message and the backtrace |
+| `out.rs` | the buffer of standard output, the sink of a format, the print of numbers |
+| `heap.rs` | counted blocks, raw blocks, function values and closures, the heap count |
+| `seqs.rs` | plain lists, text edits, drops, duplicates, loans, the ring collector |
+| `show.rs` | `==`, the print of each kind, results and optionals, ဇယား rows |
+| `host.rs` | the host functions of `zaka_host`: standard input, files and streams, the arguments and the environment |
+| `rights.rs` | the rights of the run, and the asker on a terminal |
+| `callbacks.rs` | the libffi closures of the closures that go to C |
+| `ffi.rs`, `native.rs` | the parts the native target calls: `zk_ffi_call`, `zk_cb_shape_of`, `zk_enter_call`, `zk_at_site`, `zk_fmod` |
+
+The C side reads the runtime through three headers:
+
+| File | Holds |
+| --- | --- |
+| `zaka_runtime.h` | written from the Rust through cbindgen at build time: a declaration of each runtime function, the structs the generated code shares with the runtime (`zk_program`, `zk_kind`, `zk_field`, `zk_site`, `zk_cb_shape`, ...), the ids of the traps, the rights and the kinds (`ZK_TRAP_*`, `ZK_RIGHT_*`, `ZK_TAG_*`), and `zk_depth`, `zk_frames`, `zk_prog` |
+| `zaka_target_c_runtime.h` | hand-written: the inline code the generated C runs for each operation, the checked integer operations of each kind (`zk_add_i32`, `zk_div_u64`, ...), the loads and stores and the marks of the calls in progress; it includes `zaka_runtime.h` |
 | `zaka_c_sugars.h` | `RET_IF`, `DONE_IF`, `DO_IF`, `NEXT_IF`, `LEAVE_IF`, `DO_FOR` |
+
+`zaka_target_c_runtime.h` includes two headers a build writes, so an editor reads it with the
+headers of a build beside it: `mise run c:mock-headers` writes a build of hello into
+`target/c-headers`, and `runtime/.clangd` points clangd there.
+
+`zaka_runtime/cbindgen.toml` sets out `zaka_runtime.h`: the C names of the Rust structs
+(`ZkProgram` is `zk_program`), the enum members with the name of their enum in front
+(`ZkTrap::ZeroDivisor` is `ZK_TRAP_ZERO_DIVISOR`), and `ZK_NORETURN` for a function that
+never returns, an attribute of GCC and Clang. The build script keeps the first paragraph of
+each doc comment, so the header carries the gist of each item and the Rust carries the
+rest. A function value is `zk_fn` (`ZkFn`, `const void *`) and its code `zk_code` (`ZkCode`,
+`void (*)(void)`), so the generated C needs no cast between an object and a function
+pointer. The C the compiler writes names each field of a shared struct
+(`.tag = ZK_TAG_SINT`), and puts each text of a table of traps or rights under its id
+(`[ZK_TRAP_OVERFLOW] = "..."`), so a field or a member that moves in the Rust moves in the C too.
+
+The `build.rs` of the crate runs a cargo of its own: `cargo rustc -p zaka_runtime --lib
+--crate-type staticlib --profile zaka-runtime --target <target>`, into a target folder in
+`OUT_DIR`, with `--print native-static-libs` for the OS libs the lib needs. The
+`zaka-runtime` profile builds for release with `panic = "abort"`. The lib is stripped
+(`strip -S`) and `include_bytes!` puts it into `zakac`; `driver::write_cache` writes it
+into the cache folder of each build, and the link puts it after the objects. A build for
+`wasm32` (the explorer) gets a blank lib.
 
 `zaka_checks.h` defines one `ZK_CHECK_<NAME>` as 1 or 0 for each run-time check
 (`RunCheck` in `options.rs`: `DIVIDE`, `SHIFT`, `BOUNDS`, `TEXT`, `STEP`, `DEPTH`, `NULL`,
-`OVERLAP`, `SANITIZERS`), `ZK_MAX_DEPTH`, `ZK_MAX_HEAP` (`--max-heap`, as `<n>u`, 0 for no cap) and `ZK_DEBUG_INFO` (1 in a debug build, 0 under `--release`); `zaka_rt.h` includes it, so each file of the
-runtime (`zaka_rt.c`, `zaka_rt_data.c`, `zaka_rt_host.c`) and of the program sees the same
-checks, the C of a program is the same under each set of checks, and a set is a few
-defines and a few flags. `RunChecks` holds the set as bits; `--checks` builds it from a
-level (`Checks`), then each `+name` or `-name`. `ZK_CHECK_SANITIZERS` changes no C: the
-build adds the sanitizer flags when it is on. The texts of the traps come from the locale of the compiler, into
-`zaka_kinds.c`.
+`OVERLAP`, `SANITIZERS`), `ZK_MAX_DEPTH` and `ZK_DEBUG_INFO` (1 in a debug build, 0 under
+`--release`), for the inline code of `zaka_target_c_runtime.h` and the program. The runtime reads the
+same values from the program table: `main` calls `zk_start(argc, argv, &zk_the_program)`,
+and `zk_the_program` in `zaka_kinds.c` holds the check bits (`RunChecks::bits`), the
+limits (`--max-depth`, `--max-heap`, 0 for no cap), the texts of the traps from the locale of
+the compiler, the rights of the build, the names of the functions and the sites. So the
+lib is the same for each program and each set of checks. `RunChecks` holds the set as bits;
+`--checks` builds it from a level (`Checks`), then each `+name` or `-name`.
+`ZK_CHECK_SANITIZERS` changes no C: the build adds the sanitizer flags when it is on.
 
-`zaka_rt_float.{h,c}` hold the print of each float kind. A float prints from its bits
-(`zk_put_fbits(bits, raw)`, where `raw` is the 32- or 64-bit pattern), with natural numbers of
-the runtime's own and no print from libc, so each host prints the same digits. `f32` and `f64`
-print the fewest digits that read back, as Rust's `{:?}` does: Dragon4 as Rust's `flt2dec`
-runs it, with the same gaps to the neighbours (half the gap below at a power of two) and a tie
-rounded up.
+A float prints from its bits (`zk_put_fbits(bits, raw)`, where `raw` is the 32- or 64-bit
+pattern), through the number text of `zaka_host::numbers`, which the VM prints with, so
+each host prints the same digits.
 
 An optional and a result are the same struct as in the VM (a tag, then `some`, or `ok` and
 `err`). `Stmt::Halt` becomes a call that stops the run: `zk_not_good(at, kind)`, which shows the error value, and
@@ -141,9 +184,9 @@ Frames are kept when the depth check is on or `ZK_DEBUG_INFO` is 1, so `--checks
 names the place in a debug build: the pair then pushes and pops a row of the frame table
 `zk_frames` (one row for each call in progress: the function number and the site). `ZK_AT(site)`
 comes before each statement whose site differs from the last one, and sets the site of the top
-row. The sites (file, line, column of the start of a statement) are the tables `zk_sites` and
-`zk_site_files` in `zaka_kinds.c`; a `--release` build writes neither the tables nor the
-marks. A stop writes the function and the place, then the backtrace from `zk_frames`, with the
+row. The sites (file, line, column of the start of a statement) are tables in
+`zaka_kinds.c` that the program table points at; a `--release` build writes neither the
+tables nor the marks. A stop writes the function and the place, then the backtrace from `zk_frames`, with the
 rules of the VM (`ZAKA_BACKTRACE`: unset folds a run of one call to `... the call above, N
 times more` and past 16 lines to `... N calls more`; `full` lists each call; `0` none; the C
 `main` is left out). With the checks of depth and debug info both off, the pair counts nothing.
@@ -158,12 +201,12 @@ C frees is never given back. An else-if chain of the IR is written flat as
 `else if`, not as nested blocks, so a chain of thousands of branches builds with each C
 compiler.
 
-The runtime is strict C11 and passes `-pedantic-errors`. The GCC and Clang builtin for an
+The headers are strict C11 and pass `-pedantic-errors`. The GCC and Clang builtin for an
 overflow test stands behind `__GNUC__`, with a C11 path beside it.
 
 ### ဇယား values
 
-`zk_row_find`, `zk_set_row` and `zk_remove_row` in `zaka_rt_data.c` hold the same table the VM
+`zk_row_find`, `zk_set_row` and `zk_remove_row` in `show.rs` hold the same table the VM
 holds: rows in add order, slots of `uint32_t` in a power of two, a rebuild when a third of the
 slots would no longer be free, FNV-1a over the parts of an index. A ဇယား keeps the struct tag
 in its kind, and `zk_is_table` knows it through its name, `%map`, so the walks that drop, duplicate
@@ -195,16 +238,16 @@ with `, ...`) has a wrapper for each shape of its calls, and the parameters of a
 are the named ones and then the other values. A struct goes in and out of a wrapper as the
 address of its octets, and a struct result goes to the address of the first parameter,
 `zk_out`. A text goes in as the address of its octets and its count; the wrapper makes
-a duplicate that ends in a zero octet with `zk_text_cstr` (`zaka_rt_data.c`, declared in
-`zaka_rt.h` and in the prelude of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
-after the call; `zk_open` of the host runtime uses the same function for a path. The module
+a duplicate that ends in a zero octet with `zk_text_cstr` (`seqs.rs`, declared in
+`zaka_target_c_runtime.h` and in the prelude of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
+after the call. The module
 files call the wrappers through `ExprNode::Foreign` and `Stmt::Foreign`. A list of numbers
 comes as the address of its first cell, which the IR built before the call, so the wrapper
 passes a pointer as for each other address.
 
 A result of the kind `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` (`is_c_text_result`)
 is held as `const char *` and given to `zk_text_from_c(out, size, ok_at, s)`
-(`zaka_rt_host.c`): NULL writes the optional with no data, else the string is copied into
+(`host.rs`): NULL writes the optional with no data, else the string is copied into
 new text of the program (`zk_text_of_c`), with `bad_utf8` for octets that are not UTF-8. The wrapper calls it before it
 frees the duplicates of the text arguments, since `strstr` and `strchr` point into them.
 `ffi_source` defines the structs of `FfiCall::extra` too, so a struct can be an other value.
@@ -214,10 +257,11 @@ cast to it; a function value holds a function at each point, so C never gets NUL
 matches the C one, so C can call it as it calls a C function. A trap in a callback is the trap of the run: the
 program stops where it happens.
 
-A closure goes to C through `zaka_cb.c`, which `emit` writes when the program makes a
+A closure goes to C through `zaka_callback.c`, which `emit` writes when the program makes a
 closure and gives function values to C or holds a leave statement (`Stmt::Leave`). The file
-holds the runtime `zaka_rt_cb.c` (`zk_cb_code`, `zk_cb_lent`, `zk_cb_end`, `zk_cb_leave`,
-`zk_cb_revoke`, with `zk_fn_size` and `zk_fn_release` in `zaka_rt_data.c`), and for each
+starts with the libffi header and `zaka_runtime.h` (the runtime keeps
+`zk_cb_code`, `zk_cb_lent`, `zk_cb_end`, `zk_cb_leave` and `zk_cb_revoke` in `callbacks.rs`,
+with `zk_fn_size` and `zk_fn_release` in `heap.rs`), and for each
 function kind that goes to C a bridge and a `zk_cb_shape` named `zk_cbs_<n>`. A wrapper
 passes `zk_cb_code(value, &zk_cbs_<n>)` for such a parameter, and wraps the C call in
 `zk_cb_lent()` and `zk_cb_end()`, so the closure is lent to the call; a leave statement is
@@ -236,10 +280,12 @@ block; text comes from `zk_text_of_c` (NULL is `ZK_TRAP_NULL_FROM_C`); an option
 `zk_text_from_c`; a handle from `zk_cb_handle`, a new box around the address (NULL gives a box
 holding 0); an optional of a handle from `zk_cb_opt_handle`. The function gets a lent
 duplicate (`zk_lend_seqs`, room 0), and the bridge drops the original with `zk_drop` once it
-returns. `zk_fn_c` remains the guard of a program with no `zaka_cb.c`. A leave of a kind the bridge has no shape for (a parameter `callback_param`
+returns. `zk_fn_c` remains the guard of a program with no `zaka_callback.c`. A leave of a kind the bridge has no shape for (a parameter `callback_param`
 refuses, or a result that is no number, boolean or address) is a construct the target
-cannot build. `link_command` adds `-lffi` when
-`zaka_cb.c` is written, so a program with no such closure never needs libffi.
+cannot build. The runtime lib carries libffi itself (the `libffi` crate builds it), but
+the bridges read the `ffi_type` kinds through the header of the host's libffi:
+`link_command` adds the flags of `pkg-config` for it when `zaka_callback.c` is written, so a
+program with no such closure never needs the host's libffi.
 
 `link_libs` gives `-lX` for each lib `libX` the program names, but libc and libm, in
 order of first use. `BuildPlan::libs` puts them after `-lm` and before the `LDFLAGS` and
@@ -254,8 +300,10 @@ name that is an absolute path or `@rpath/...`.
 | Test | Checks |
 | --- | --- |
 | `tests/samples.rs` | each repo sample prints, as an executable, the output the VM prints for it, at `--checks default` and `--checks none`, under `--overflow stop` and `wrap`; it passes with a note on a host with no C compiler, unless `ZAKA_REQUIRE_CC=1` makes that a failure, as on CI |
+| `tests/ffi_lib.rs` | C functions, structs as values, other values, handles and closures given to C, against a C lib the test builds |
 | `tests/text.rs` | the runtime writes thousands of floats and the ends of 64-bit integers as the VM writes them |
 | `tests/traps.rs` | a zero divisor and an overflow stop with the VM's message and status 1 |
+| `tests/forms.rs` | a C compiler sets out each struct of `zaka_runtime.h` as rustc does (each `sizeof` and `offsetof` against `size_of` and `offset_of!`), each struct and field of the header has a row in the test, and the trap texts, the tags and the rights the compiler lists follow the enums of the runtime |
 | `zaka_website/tests/stops_in_c.rs` | each `zaka-stop` program of the books, built with this target, prints the output and the stop reason of the VM (see [Build, test and format](README.md#build-test-and-format)); a stop here names no source line and no calls in progress, which the VM names |
 
 Each test builds and runs its program in a folder of its own, so a sample that writes a

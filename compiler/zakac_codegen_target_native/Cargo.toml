@@ -1,0 +1,56 @@
+[package]
+name = "zakac_codegen_target_native"
+description = "The native target of the Zaka compiler: machine code from Cranelift, run at once (JIT) or linked (AOT)"
+version = "0.1.0"
+edition.workspace = true
+autotests = false
+
+[[bin]]
+name = "zakac_codegen_target_native"
+path = "src/main.rs"
+required-features = ["jit"]
+
+[features]
+default = ["jit"]
+# Code run in the zakac process; off in the browser, which cannot map code.
+jit = [
+    "dep:cranelift-jit",
+    "dep:cranelift-native",
+    "dep:zaka_runtime",
+    "dep:libloading",
+    "dep:zaka_vm",
+    "cranelift-codegen/host-arch",
+]
+
+[dependencies]
+zaka_vm = { workspace = true, features = ["ffi"], optional = true }
+bon = { workspace = true }
+cranelift-codegen = { workspace = true, features = ["std", "unwind", "x86", "arm64", "riscv64"] }
+cranelift-frontend = { workspace = true }
+cranelift-jit = { workspace = true, optional = true }
+cranelift-module = { workspace = true }
+cranelift-native = { workspace = true, optional = true }
+cranelift-object = { workspace = true }
+libloading = { workspace = true, optional = true }
+zaka_host = { workspace = true }
+zaka_runtime = { workspace = true, optional = true }
+zakac_ast = { workspace = true }
+zakac_borrow_checker = { workspace = true }
+zakac_cli_common = { workspace = true }
+zakac_diagnostics = { workspace = true }
+zakac_lexer = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_session = { workspace = true }
+zakac_codegen_target_c = { workspace = true }
+zakac_host_errors = { workspace = true }
+zakac_ir_builder = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+zakac_semcheck = { workspace = true }
+zakac_span = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[[test]]
+name = "tests"
+path = "tests/main.rs"

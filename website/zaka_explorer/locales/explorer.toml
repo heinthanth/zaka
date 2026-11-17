@@ -169,11 +169,13 @@ en = "Shared"
 [explorer.settings.target]
 en = "Target"
 [explorer.settings.target_note]
-en = "VM writes the ops the explorer runs. C writes the files that zakac build --target c makes; the explorer shows them beside the program but cannot run them."
+en = "VM writes the ops the explorer runs. C writes the files that zakac build --target c makes; Native writes the CLIF that zakac build --target native makes for x86-64. The explorer shows C and CLIF beside the program but cannot run them."
 [explorer.settings.target_vm]
 en = "VM"
 [explorer.settings.target_c]
 en = "C"
+[explorer.settings.target_native]
+en = "Native"
 [explorer.settings.c_checks]
 en = "C checks"
 [explorer.settings.c_checks_note]

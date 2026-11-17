@@ -25,7 +25,7 @@ stage made, the *artifact*. The `run` command goes to the end and runs the progr
 | `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
 | `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
 | `borrowck` | the checker: the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
-| `build` | the code generator of a target | the ops of the VM (`--target vm`), or an executable through C (`--target c`) | `.zkc` / `.zkct` |
+| `build` | the code generator of a target | the ops of the VM (`--target vm`), an executable through C (`--target c`), or one through Cranelift (`--target native`) | `.zkc` / `.zkct` |
 | `run` | the VM | nothing: the program runs | |
 | `lsp` | the checker, for each file an editor holds open | errors, colors and hovers, to the editor | |
 
@@ -217,7 +217,7 @@ list or struct result. `shared` leaves fewer slots in a frame, and `apart` shows
 scratch value as a block of its own in the explorer's RAM view. See [Lists and structs
 as results](../language/functions.md#lists-and-structs-as-results).
 
-`--release` also belongs to `build --target vm`, to `build --target c` and to `run`:
+`--release` also belongs to each target of `build` and to `run`:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -225,7 +225,8 @@ as results](../language/functions.md#lists-and-structs-as-results).
 
 `zakac build --target c --release` writes no table of places and no marks for them, so a stop
 names the function alone (`(in addfee)`) and each backtrace line is a function name; it does not
-change the flags of the C compiler (`-O2`, no `-g`, with or with no `--release`). A `.zkc` or `.zkct` built with no `--release` keeps its
+change the flags of the C compiler (`-O2`, no `-g`, with or with no `--release`). The native
+target and `zakac run --jit` leave out the same table under `--release`. A `.zkc` or `.zkct` built with no `--release` keeps its
 lines, so `zakac run age.zkct` shows them.
 
 ## segment
@@ -268,7 +269,7 @@ holds them under `imports` ([Modules](../language/modules.md)). `segment` and
 ## build
 
 ```console
-$ zakac build [--target vm|c] [--emit WHAT] [options] [INPUT]
+$ zakac build [--target vm|c|native] [--emit WHAT] [options] [INPUT]
 ```
 
 `build` runs each stage, then the code generator of a target:
@@ -277,10 +278,11 @@ $ zakac build [--target vm|c] [--emit WHAT] [options] [INPUT]
 | --- | --- | --- | --- |
 | `vm` (the default) | the ops of the VM, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
 | `c` | an executable, through C and a C compiler | `bin` (default), `c` | `<name>` beside the source (`<name>.exe` on Windows) |
+| `native` | an executable, through Cranelift and the linker of a C compiler | `bin` (default), `obj`, `clif` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif` |
 
 A source read from standard input writes the ops to standard output. Each target
-takes all the compile options above, and the options of its own; an option of the other
-target, or an `--emit` word of the other target, stops the build with an error.
+takes all the compile options above, and the options of its own; an option of another
+target, or an `--emit` word of another target, stops the build with an error.
 
 ### The VM target
 
@@ -335,7 +337,7 @@ differs from the VM.
 | `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
 | `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
 | `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
-| `--cache <DIR>` | the cache of the user | the folder for the C files and the objects; the objects of the runtime remain there for later builds with the same compiler, flags and checks; when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
+| `--cache <DIR>` | the cache of the user | the folder for the C files, the objects and the runtime lib (`libzaka_runtime.a`, which `zakac` carries inside it and writes there); when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
 | `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
@@ -370,7 +372,7 @@ $ zakac build --target c --checks=+null age.zaka
 Integer overflow is not one of these: `--overflow` picks it.
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
-then each `--cc-flag`. The linker gets `-lm`, the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `-lffi` when the build writes `zaka_cb.c` (a program that gives closures to C), `LDFLAGS`, then each `--ld-flag`. A later
+then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), the flags of libffi from `pkg-config` when the build writes `zaka_callback.c` (a program that gives closures to C, whose bridges read the libffi header), `LDFLAGS`, then each `--ld-flag`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 
@@ -379,6 +381,29 @@ $ zakac build --target c age.zaka
 $ ./age
 ၂၀
 $ CFLAGS=-O3 zakac build --target c --linker 'clang -fuse-ld=lld' age.zaka
+```
+
+### The native target
+
+`--target native` lowers the program with [Cranelift](https://cranelift.dev) to an object
+file for the target, then links it with the runtime lib through the C compiler, as the C
+target links. It runs the same checks as the C target and takes the same options, and
+it gives the same output; `--cc-flag`, `--no-default-flags` and `CFLAGS` change nothing, as
+there is no C to compile.
+[Native programs](native.md#cranelift) tells where it differs.
+
+- `--emit obj` writes the object file alone, and `--emit clif` the Cranelift IR of each
+  function, for reading.
+- The CPU is `x86_64`, `aarch64` or `riscv64`; the others stop the build with an error.
+- An executable is linked for the host alone. `--emit obj` and `--emit clif` take another
+  `--target-os` or `--target-arch`, to link the object there.
+- The `sanitizers` check has no effect: Cranelift code holds no marks for them.
+
+```console
+$ zakac build --target native age.zaka
+$ ./age
+၂၀
+$ zakac build --target native --emit obj --target-os linux --target-arch x86_64 age.zaka
 ```
 
 ## run
@@ -399,6 +424,7 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--max-stack <OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
+| `--jit` | off | run the program through Cranelift, as code of the host, in place of the VM; see below |
 | `--allow-read[=<PATHS>]` | none | let the program read files, list folders and tell what a path holds: each path, or those under the paths of a comma list; see [Permissions](../vm/running.md#permissions) |
 | `--allow-write[=<PATHS>]` | none | let it write, add to, remove and move files and make folders |
 | `--allow-env[=<NAMES>]` | none | let it read variables of the environment, and give the start block the environment: each variable, or those named |
@@ -442,6 +468,19 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
+`--jit` lowers the program as `build --target native` does, with the output fact
+`"native"`, and runs it in the `zakac` process. It runs as a native executable runs, with
+the checks of the `default` level: `--max-depth` and `--max-heap` set its limits (no heap
+cap when `--max-heap` is left out), the rights come from the flags above, and the
+arguments from `--`. `--max-steps`, `--max-stack`, `--frames`, `--leaks`, `--results` and
+`--scratch` belong to the VM and change nothing under `--jit`. The CPU must be `x86_64`,
+`aarch64` or `riscv64`.
+
+```console
+$ zakac run --jit age.zaka
+၂၀
+```
+
 ## Config file
 
 Each option can also be set in a TOML config file: `zakac.toml` beside the sources, a file
@@ -456,9 +495,9 @@ are, which one wins, and how each option is named in them.
 | `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
 | `NO_COLOR` | when it is set, color is off |
 | `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` each call, `0` none; when unset or another value, a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
-| `CC` | the C compiler of `build --target c` when `--cc` is left out |
-| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --target c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them |
-| `XDG_CACHE_HOME` | the cache folder of the user, where `build --target c` keeps its C files when `--cache` is left out |
+| `CC` | the C compiler of `build --target c` and `--target native` when `--cc` is left out |
+| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --target c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them; `--target native` reads `LDFLAGS` |
+| `XDG_CACHE_HOME` | the cache folder of the user, where `build --target c` and `--target native` keep their files when `--cache` is left out |
 | `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
 
 A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKA_BACKTRACE`, `NO_COLOR`,

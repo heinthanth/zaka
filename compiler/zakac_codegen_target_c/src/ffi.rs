@@ -38,9 +38,12 @@ const LINKED: &[&str] = &["libc", "libm"];
 /// same to the ABI, so the warning about it is turned off.
 const PRELUDE: &str = "\
 /* The C functions of the program. This file includes no libc header, so a
-   declaration below cannot clash with the one a header holds. */
+   declaration below cannot clash with the one a header holds; the header of
+   the runtime declares no libc function. */
 #include <stddef.h>
 #include <stdint.h>
+
+#include \"zaka_runtime.h\"
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored \"-Wincompatible-library-redeclaration\"
@@ -48,26 +51,13 @@ const PRELUDE: &str = "\
 #pragma GCC diagnostic ignored \"-Wbuiltin-declaration-mismatch\"
 #endif
 
-/** A duplicate of text that ends in a zero octet, from the runtime. */
-char *zk_text_cstr(const unsigned char *at);
-/** Free a duplicate zk_text_cstr made, from the runtime. */
-void zk_text_cstr_free(char *dup);
-/** The text result of a C function, an optional with no data for NULL, from the \
-                       runtime. */
-void zk_text_from_c(unsigned char *out, size_t size, size_t ok_at, const char *s);
 /** libc's free, for a string C hands over. */
 void free(void *p);
-/** The run stops unless it holds the right to call C, from the runtime. */
-void zk_need_ffi(const char *name);
-/** The code of a function, cast to one kind, from the runtime. */
-typedef void (*zk_code)(void);
-/** A function value, the address of its record, from the runtime. */
-typedef const void *zk_fn;
-/** The code a function value runs, from the runtime. */
-zk_code zk_fn_code(zk_fn f);
-/** The run stops when a function value is a closure, from the runtime. */
-zk_fn zk_fn_c(zk_fn f);
+";
 
+/// The copy a wrapper makes of a struct or a result C passes as a value,
+/// written when a wrapper calls it: this file holds no `memcpy`.
+const FFI_PUT: &str = "
 /** Write `size` octets from `from` to `to`; the two do not overlap. */
 static void zk_ffi_put(void *to, const void *from, size_t size)
 {
@@ -201,43 +191,20 @@ pub fn ffi_source(
     let extra = calls.iter().flat_map(|c| c.extra.iter().copied());
     kinds.chain(extra).for_each(|k| collect_structs(k, &mut structs));
     let names = Names { structs: &structs, shapes, platform };
+    let wrapper =
+        |(n, c): (usize, &FfiCall)| names.wrapper(&fns[c.func as usize], c, n as u32);
+    let wrappers: String = calls.iter().enumerate().map(wrapper).collect();
     let mut out = PRELUDE.to_string();
-    do_if!(!shapes.is_empty(), out.push_str(&cb_prelude(shapes.len())));
+    do_if!(wrappers.contains("zk_ffi_put("), out.push_str(FFI_PUT));
+    shapes.iter().enumerate().for_each(|(n, _)| {
+        _ = writeln!(out, "extern const zk_cb_shape {};", shape_name(n));
+    });
     structs
         .iter()
         .enumerate()
         .for_each(|(i, s)| out.push_str(&names.struct_def(*s, i)));
     fns.iter().for_each(|f| out.push_str(&names.declaration(f)));
-    let each = calls.iter().enumerate();
-    each.for_each(|(n, c)| {
-        out.push_str(&names.wrapper(&fns[c.func as usize], c, n as u32))
-    });
-    out
-}
-
-/// The runtime functions a wrapper calls to hand C a closure, and the shape
-/// of each function kind, from `zaka_cb.c`.
-///
-/// # Arguments
-///
-/// * `count` - The count of shapes.
-///
-/// # Returns
-///
-/// The C text.
-fn cb_prelude(count: usize) -> String
-{
-    let mut out = "\n/** The bridge of a function kind C calls back, from the \
-                   runtime. */\ntypedef struct zk_cb_shape zk_cb_shape;\n/** The \
-                   address C calls for a function value, from the runtime. \
-                   */\nzk_code zk_cb_code(zk_fn f, const zk_cb_shape *shape);\n/** \
-                   The count of lends before a C call, from the runtime. */\nsize_t \
-                   zk_cb_lent(void);\n/** End the lends of a C call, from the \
-                   runtime. */\nvoid zk_cb_end(size_t from);\n"
-        .to_string();
-    (0..count)
-        .for_each(|n| _ = writeln!(out, "extern const zk_cb_shape {};", shape_name(n)));
-    out
+    out + &wrappers
 }
 
 /// Add each struct a kind holds to a list, the structs of its fields first,
@@ -507,8 +474,8 @@ impl Names<'_>
         if let Some(f) = kind.as_fn()
         {
             // C calls the code of a function, and a closure through the
-            // runtime of zaka_cb.c; with no such runtime a closure stops the
-            // run.
+            // runtime of zaka_callback.c; with no such runtime a closure stops
+            // the run.
             let decl = self.declarator(f, &format!("zk_v{i}"));
             let cast = self.declarator(f, "");
             let shape = self.shapes.iter().position(|k| *k == kind);
@@ -545,9 +512,18 @@ mod tests
         let abs = def("libc", "abs", vec![DataKind::ISIZE], Some(DataKind::ISIZE));
         let call = FfiCall::builder().func(0).build();
         let text = ffi_source(&[abs], &[call], &[], 64);
-        let includes: Vec<&str> =
-            text.lines().filter(|l| l.starts_with("#include")).collect();
-        assert_eq!(includes, ["#include <stddef.h>", "#include <stdint.h>"]);
+        /// The include lines of a C text.
+        fn includes(t: &str) -> Vec<&str>
+        {
+            t.lines().filter(|l| l.starts_with("#include")).collect()
+        }
+        let runtime = "#include \"zaka_runtime.h\"";
+        let std = ["#include <stddef.h>", "#include <stdint.h>"];
+        assert_eq!(includes(&text), [std[0], std[1], runtime]);
+        // The header of the runtime holds no libc header either.
+        let header =
+            crate::driver::RUNTIME.iter().find(|(n, _)| *n == "zaka_runtime.h");
+        assert_eq!(includes(header.expect("the runtime files hold it").1), std);
         assert!(text.contains("extern int64_t abs(int64_t);"));
         assert!(text.contains("int64_t zk_r = abs(zk_a0);"));
     }

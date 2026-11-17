@@ -1,5 +1,5 @@
-//! The closures C calls back in a native build: `zaka_cb.c`, the runtime of
-//! `zaka_rt_cb.c` with a bridge and the libffi kinds of each function kind
+//! The closures C calls back in a native build: `zaka_callback.c`, the runtime
+//! of `zaka_rt_cb.c` with a bridge and the libffi kinds of each function kind
 //! the program can hand C as a closure, or as a function whose parameters do
 //! not cross as C passes them: text, a struct C passes as a value, a handle, or
 //! an optional of text or of a handle. A program with no such kind gets no
@@ -23,14 +23,14 @@ use crate::kinds::c_kind;
 use crate::kinds::is_blob;
 
 /// The name of the file of the closures C calls back.
-pub const CB_SOURCE: &str = "zaka_cb.c";
+pub const CALLBACK_SOURCE: &str = "zaka_callback.c";
 
-/// The link flag of libffi, which `zaka_cb.c` calls.
+/// The link flag of libffi, which `zaka_callback.c` calls.
 pub const FFI_LIB: &str = "-lffi";
 
 /// The flags of libffi, asked of `pkg-config` once: the compile flags of
-/// `zaka_cb.c` and the link flags. macOS keeps libffi in the SDK, where the
-/// compiler finds it, so `-lffi` alone links there; so it does where
+/// `zaka_callback.c` and the link flags. macOS keeps libffi in the SDK, where
+/// the compiler finds it, so `-lffi` alone links there; so it does where
 /// `pkg-config` or its entry for libffi is missing.
 ///
 /// # Returns
@@ -55,8 +55,20 @@ pub fn ffi_flags() -> &'static (Vec<String>, Vec<String>)
     })
 }
 
-/// The runtime part of `zaka_cb.c`.
-const RUNTIME_CB: &str = include_str!("../runtime/zaka_rt_cb.c");
+/// The head of `zaka_callback.c`. The runtime keeps the closures themselves
+/// (`zk_cb_code` and the rest); the bridges read the libffi kinds of their
+/// shapes through the header of libffi, and the runtime links its own libffi.
+const CALLBACK_HEAD: &str = "\
+/* The bridges of the function kinds C calls back. */
+#if defined(__APPLE__)
+#include <ffi/ffi.h>
+#else
+#include <ffi.h>
+#endif
+#include <string.h>
+
+#include \"zaka_runtime.h\"
+";
 
 /// The name of the shape of a function kind C calls back.
 ///
@@ -72,7 +84,7 @@ pub fn shape_name(n: usize) -> String { format!("zk_cbs_{n}") }
 /// How a value C passes to a function of the program becomes a value of
 /// Zaka in the bridge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Crossing
+pub enum Crossing
 {
     /// A number, a character, a boolean or an address, as it is.
     AsIs,
@@ -101,7 +113,7 @@ enum Crossing
 ///
 /// The crossing, or `None` for a kind the bridge cannot make from what C
 /// passes.
-fn crossing(kind: DataKind, platform: u16) -> Option<Crossing>
+pub fn crossing(kind: DataKind, platform: u16) -> Option<Crossing>
 {
     ret_if!(kind.is_text(), Some(Crossing::Text));
     ret_if!(is_c_text_result(kind), Some(Crossing::OptText));
@@ -162,7 +174,7 @@ fn struct_fits(kind: DataKind, platform: u16) -> bool
 /// # Returns
 ///
 /// The cell kind and the count.
-fn cells(kind: DataKind) -> (DataKind, usize)
+pub fn cells(kind: DataKind) -> (DataKind, usize)
 {
     let Some(l) = kind.as_list()
     else
@@ -183,7 +195,7 @@ fn cells(kind: DataKind) -> (DataKind, usize)
 /// # Returns
 ///
 /// The list kind, or `None` for a kind that holds no handle.
-fn box_list(kind: DataKind) -> Option<DataKind>
+pub fn box_list(kind: DataKind) -> Option<DataKind>
 {
     let data = kind.fallible_parts().and_then(|(some, _)| some);
     let handle = kind.as_external().or_else(|| data?.as_external())?;
@@ -306,9 +318,9 @@ fn result_line(kind: DataKind) -> String
     }
 }
 
-/// The text of `zaka_cb.c`: the runtime, the descriptors the bridges name,
-/// the libffi kind of each struct C passes as a value, then the bridge and
-/// the shape of each function kind.
+/// The text of `zaka_callback.c`: the runtime, the descriptors the bridges
+/// name, the libffi kind of each struct C passes as a value, then the bridge
+/// and the shape of each function kind.
 ///
 /// # Arguments
 ///
@@ -335,7 +347,7 @@ pub(crate) fn cb_source(
     let mut names: Vec<String> = named.map(|k| descr.of(k)).collect();
     names.sort();
     names.dedup();
-    let mut out = RUNTIME_CB.to_string();
+    let mut out = CALLBACK_HEAD.to_string();
     out.push_str("\n/* ---- the function kinds of the program ---- */\n");
     names.iter().for_each(|d| {
         _ = writeln!(out, "extern const zk_kind {};", d.trim_start_matches('&'))
@@ -347,7 +359,7 @@ pub(crate) fn cb_source(
     out
 }
 
-/// What the bridges of `zaka_cb.c` share.
+/// What the bridges of `zaka_callback.c` share.
 struct Bridge<'a>
 {
     /// Bit count of the platform-sized kinds.
@@ -501,8 +513,8 @@ impl Bridge<'_>
         format!(
             "\n/* {name} */\nstatic void zk_cbb_{n}(void *zk_ret, void **zk_args, \
              unsigned char *zk_rec)\n{{\n{steps}}}\nstatic ffi_type *zk_cbt_{n}[] = \
-             {{{listed}}};\nconst zk_cb_shape {} = {{zk_cbb_{n}, &{ret_ffi}, (void \
-             *const *)zk_cbt_{n}, {}, {}}};\n",
+             {{{listed}}};\nconst zk_cb_shape {} = {{.bridge = zk_cbb_{n}, .ret = \
+             &{ret_ffi}, .args = (void **)zk_cbt_{n}, .nargs = {}, .as_is = {}}};\n",
             shape_name(n),
             params.len(),
             u8::from(as_is(f, self.platform))

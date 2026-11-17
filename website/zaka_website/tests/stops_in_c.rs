@@ -113,11 +113,9 @@ fn native_output(cc: &Tool, sample: &Sample) -> Option<String>
     let dir = tempfile::tempdir().unwrap();
     let sources = write_cache(dir.path(), files).unwrap();
     let exe = dir.path().join(format!("main{}", std::env::consts::EXE_SUFFIX));
-    let store =
-        std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("zaka_rt_objects");
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(cc).sources(&sources).out(&exe)
-        .checks(Checks::Default).sanitizers(false).libs(&libs).runtime_objects(&store)
+        .checks(Checks::Default).sanitizers(false).libs(&libs)
         .build();
     let built = toolchain::build(&plan).unwrap();
     assert!(built.failed.is_none(), "the C build failed for\n{}", sample.source);

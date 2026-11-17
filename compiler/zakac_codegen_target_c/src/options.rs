@@ -94,6 +94,13 @@ pub struct RunChecks(u16);
 
 impl RunChecks
 {
+    /// The checks as bits, one for each [`RunCheck`] in its order.
+    ///
+    /// # Returns
+    ///
+    /// The bits.
+    pub const fn bits(self) -> u16 { self.0 }
+
     /// Whether a check is on.
     ///
     /// # Arguments

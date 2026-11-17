@@ -274,15 +274,28 @@ fn nothing_or_fault(done: io::Result<()>) -> HostValue
 /// The failure.
 fn fault(e: io::Error) -> HostValue
 {
-    let member = match e.kind()
+    HostValue::Fault(Box::new(HostValue::Member(io_member(&e))))
+}
+
+/// The member of [`IO_ERROR`] that names the class of an error of an effect.
+///
+/// # Arguments
+///
+/// * `e` - The error.
+///
+/// # Returns
+///
+/// The member.
+pub fn io_member(e: &io::Error) -> u32
+{
+    match e.kind()
     {
         io::ErrorKind::NotFound => NOT_FOUND,
         io::ErrorKind::PermissionDenied => NO_PERMISSION,
         io::ErrorKind::UnexpectedEof => END_OF_INPUT,
         io::ErrorKind::InvalidData => BAD_TEXT,
         _ => OTHER,
-    };
-    HostValue::Fault(Box::new(HostValue::Member(member)))
+    }
 }
 
 #[cfg(test)]

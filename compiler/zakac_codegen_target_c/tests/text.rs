@@ -111,7 +111,7 @@ fn probe() -> (String, String)
         "#include \"zaka_kinds.h\"\nstatic double zk_d(uint64_t b) {{ double v; \
          memcpy(&v, &b, 8); return v; }}\nstatic float zk_f(uint32_t b) {{ float v; \
          memcpy(&v, &b, 4); return v; }}\nint main(int argc, char **argv)\n{{\n    \
-         zk_start(argc, argv);\n{lines}    return zk_finish(0);\n}}\n"
+         zk_start(argc, argv, &zk_the_program);\n{lines}    return zk_finish(0);\n}}\n"
     );
     (main, want)
 }

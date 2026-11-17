@@ -27,7 +27,7 @@ use zakac_semcheck::value::TRUE_TEXT;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
 
-use crate::callbacks::CB_SOURCE;
+use crate::callbacks::CALLBACK_SOURCE;
 use crate::callbacks::as_is;
 use crate::callbacks::bridge_kinds;
 use crate::callbacks::cb_source;
@@ -61,15 +61,101 @@ pub const KINDS_HEADER: &str = "zaka_kinds.h";
 /// The texts of the place of a stop and of its backtrace: the name in the
 /// runtime, then its name in the locale.
 const STOP_TEXTS: [(&str, &str); 8] = [
-    ("zk_where_text", "target_c.where"),
-    ("zk_in_text", "target_c.in"),
-    ("zk_backtrace_text", "target_c.backtrace"),
-    ("zk_call_at_text", "target_c.call_at"),
-    ("zk_call_text", "target_c.call"),
-    ("zk_call_again_text", "target_c.call_again"),
-    ("zk_calls_more_text", "target_c.calls_more"),
-    ("zk_full_hint_text", "target_c.full_hint"),
+    ("where_text", "target_c.where"),
+    ("in_text", "target_c.in"),
+    ("backtrace_text", "target_c.backtrace"),
+    ("call_at_text", "target_c.call_at"),
+    ("call_text", "target_c.call"),
+    ("call_again_text", "target_c.call_again"),
+    ("calls_more_text", "target_c.calls_more"),
+    ("full_hint_text", "target_c.full_hint"),
 ];
+
+/// The words a print writes, each with its field in the table of a program.
+const WORDS: [(&str, &str); 11] = [
+    ("true_text", TRUE_TEXT),
+    ("false_text", FALSE_TEXT),
+    ("null_text", NULL_TEXT),
+    ("good_text", GOOD_TEXT),
+    ("fault_text", FAULT_TEXT),
+    ("good_bare", GOOD_BARE),
+    ("fault_bare", FAULT_BARE),
+    ("data_text", DATA_TEXT),
+    ("no_data_text", NO_DATA_TEXT),
+    ("fn_lead", FN_LEAD),
+    ("fn_tail", FN_TAIL),
+];
+
+/// The texts of the table of a program, from the locale of the compiler:
+/// each target writes them in its own form.
+pub struct TableTexts
+{
+    /// The template of each trap, in the order of `enum zk_trap`.
+    pub trap: Vec<String>,
+    /// What each right covers, then the whole environment.
+    pub permission: Vec<String>,
+    /// The flag that grants each right.
+    pub flags: Vec<String>,
+    /// Each field of the table that holds one text, with its text.
+    pub single: Vec<(&'static str, String)>,
+}
+
+/// The C names of the members of `enum zk_right`, in their order: the order
+/// of the grants, the permission texts and the flags of the table, which the
+/// native target writes one after another.
+pub const RIGHTS: [&str; 4] =
+    ["ZK_RIGHT_READ", "ZK_RIGHT_WRITE", "ZK_RIGHT_ENV", "ZK_RIGHT_FFI"];
+
+/// The texts of the table of a program.
+///
+/// # Returns
+///
+/// The texts.
+pub fn table_texts() -> TableTexts
+{
+    let trap = trap_texts().into_iter().map(|(_, t)| t).collect();
+    let words = ["read", "write", "env", "ffi", "env_all"];
+    let permission = words.map(|k| {
+        let mark = format!("target_c.permission.{k}");
+        t!(&mark).to_string()
+    });
+    let flags = ["read", "write", "env", "ffi"].map(|k| format!("--allow-{k}"));
+    let mut single = vec![
+        ("ask_text", t!("target_c.permission.ask").to_string()),
+        ("stopped_text", t!("target_c.stopped").to_string()),
+    ];
+    single.extend(STOP_TEXTS.map(|(name, mark)| {
+        let mark = mark.to_string();
+        (name, t!(&mark).to_string())
+    }));
+    single.extend(WORDS.map(|(name, text)| (name, text.to_string())));
+    #[rustfmt::skip]
+    return TableTexts { trap, permission: permission.to_vec(), flags: flags.to_vec(), single };
+}
+
+/// The site of the start of a source region: its file, line and column, each
+/// counted as a stop names them.
+///
+/// # Arguments
+///
+/// * `files` - The source files, in source map order.
+/// * `span` - The region.
+///
+/// # Returns
+///
+/// The site, or `None` for a placeholder or a region outside each file.
+pub fn site_mark(files: &[Arc<SourceFile>], span: Span) -> Option<(u32, u32, u32)>
+{
+    ret_if!(span.is_placeholder(), None);
+    let lo = span.lo;
+    let inside = |f: &&Arc<SourceFile>| f.start_pos <= lo && lo <= f.end_pos();
+    let (n, file) = files.iter().enumerate().find(|(_, f)| inside(f))?;
+    let (line, col) = file.lookup_file_pos(&file.relative_position(&lo));
+    Some((n as u32, line as u32, col.as_u32() + 1))
+}
+
+/// The C name of the table of the program, which `main` hands to `zk_start`.
+pub const PROGRAM_TABLE: &str = "zk_the_program";
 
 /// The file of generated descriptors and texts.
 pub const KINDS_SOURCE: &str = "zaka_kinds.c";
@@ -158,7 +244,7 @@ pub fn emit(
     let cb = cb_source(&shared.cb_kinds, platform, &mut shared.descr);
     do_if!(
         !shared.cb_kinds.is_empty(),
-        out.push(CFile::builder().name(CB_SOURCE).text(cb).build())
+        out.push(CFile::builder().name(CALLBACK_SOURCE).text(cb).build())
     );
     Ok(out)
 }
@@ -183,10 +269,9 @@ fn checks_header(options: TargetCOptions) -> String
     format!(
         "/* The run-time checks of the program. */\n#ifndef ZAKA_CHECKS_H\n#define \
          ZAKA_CHECKS_H\n\n{checks}#define ZK_MAX_DEPTH {}\n#define ZK_DEBUG_INFO \
-         {}\n#define ZK_MAX_HEAP {}u\n\n#endif\n",
+         {}\n\n#endif\n",
         options.max_depth,
         u8::from(options.debug_info),
-        options.max_heap
     )
 }
 
@@ -342,16 +427,11 @@ impl Shared<'_>
     /// The index, or `None` for a placeholder or a region outside each file.
     pub(crate) fn site_of(&mut self, span: Span) -> Option<u32>
     {
-        ret_if!(span.is_placeholder(), None);
-        let lo = span.lo;
-        let inside = |f: &&Arc<SourceFile>| f.start_pos <= lo && lo <= f.end_pos();
-        let (n, file) = self.files.iter().enumerate().find(|(_, f)| inside(f))?;
-        let (line, col) = file.lookup_file_pos(&file.relative_position(&lo));
-        let key = (n as u32, line as u32, col.as_u32() + 1);
-        ret_if!(let Some(i) = self.site_index.get(&key), Some(*i));
+        let mark = site_mark(&self.files, span)?;
+        ret_if!(let Some(i) = self.site_index.get(&mark), Some(*i));
         let i = self.sites.len() as u32;
-        self.sites.push(key);
-        self.site_index.insert(key, i);
+        self.sites.push(mark);
+        self.site_index.insert(mark, i);
         Some(i)
     }
 
@@ -570,8 +650,8 @@ impl Shared<'_>
         let mut out = format!(
             "/* The kinds, globals and functions of the program. */\n#ifndef \
              ZAKA_KINDS_H\n#define ZAKA_KINDS_H\n\n#include \
-             \"zaka_rt.h\"\n\n_Static_assert(sizeof(void *) * 8 == {bits}, \
-             \"--platform-bits must equal the width of an address\");\n\n"
+             \"zaka_target_c_runtime.h\"\n\n_Static_assert(sizeof(void *) * 8 == \
+             {bits}, \"--platform-bits must equal the width of an address\");\n\n"
         );
         let module = self.module;
         for (n, g) in module.globals.iter().enumerate()
@@ -597,6 +677,7 @@ impl Shared<'_>
             );
         }
         out.push_str(&self.descr.declarations());
+        let _ = writeln!(out, "extern const zk_program {PROGRAM_TABLE};");
         let shapes = (0..self.cb_kinds.len()).map(shape_name);
         shapes.for_each(|s| _ = writeln!(out, "extern const zk_cb_shape {s};"));
         out.push_str("\n#endif\n");
@@ -611,14 +692,14 @@ impl Shared<'_>
     /// The C text.
     fn site_tables(&self) -> String
     {
-        let mut out = String::from("const char *const zk_site_files[] = {\n");
+        let mut out = String::from("static const char *const zk_t_site_files[] = {\n");
         do_for!(f in &self.files, {
             let name = f.name.virtual_path_string();
             let _ = writeln!(out, "    {},", c_string(&name));
         });
-        out.push_str("};\nconst zk_site zk_sites[] = {\n");
+        out.push_str("};\nstatic const zk_site zk_t_sites[] = {\n");
         do_for!((file, line, col) in &self.sites, {
-            let _ = writeln!(out, "    {{{file}, {line}, {col}}},");
+            let _ = writeln!(out, "    {{.file = {file}, .line = {line}, .col = {col}}},");
         });
         out.push_str("};\n");
         out
@@ -633,53 +714,71 @@ impl Shared<'_>
     fn kinds_source(&self) -> String
     {
         let mut out = format!("#include \"{KINDS_HEADER}\"\n\n");
-        out.push_str("const char *const zk_trap_text[ZK_TRAP_COUNT] = {\n");
-        do_for!((name, text) in trap_texts(), {
-            let _ = writeln!(out, "    [{name}] = {},", c_string(&text));
-        });
-        out.push_str("};\n");
-        let words = [
-            ("zk_true_text", TRUE_TEXT),
-            ("zk_false_text", FALSE_TEXT),
-            ("zk_null_text", NULL_TEXT),
-            ("zk_good_text", GOOD_TEXT),
-            ("zk_fault_text", FAULT_TEXT),
-            ("zk_good_bare", GOOD_BARE),
-            ("zk_fault_bare", FAULT_BARE),
-            ("zk_data_text", DATA_TEXT),
-            ("zk_no_data_text", NO_DATA_TEXT),
-            ("zk_fn_lead", FN_LEAD),
-            ("zk_fn_tail", FN_TAIL),
-        ];
-        let stopped = c_string(&t!("target_c.stopped"));
-        let _ = writeln!(out, "const char *const zk_stopped_text = {stopped};");
-        for (name, key) in STOP_TEXTS
-        {
-            let key = key.to_string();
-            let _ = writeln!(out, "const char {name}[] = {};", c_string(&t!(&key)));
-        }
-        do_if!(self.options.debug_info, out.push_str(&self.site_tables()));
-        do_for!((name, text) in words, {
-            let _ = writeln!(out, "const char {name}[] = {};", c_string(text));
+        let mut fields = self.config_fields();
+        let texts = table_texts();
+        // Each text names its trap, so the order of the enum never matters.
+        let traps = trap_texts()
+            .into_iter()
+            .map(|(name, t)| format!("[{name}] = {}", c_string(&t)));
+        let _ = writeln!(
+            out,
+            "static const char *const zk_t_trap[ZK_TRAP_COUNT] = {{{}}};",
+            traps.collect::<Vec<_>>().join(", ")
+        );
+        fields.push(("trap_text", "zk_t_trap".into()));
+        do_for!((name, text) in &texts.single, fields.push((name, c_string(text))));
+        do_if!(self.options.debug_info, {
+            out.push_str(&self.site_tables());
+            fields.push(("sites", "zk_t_sites".into()));
+            fields.push(("site_files", "zk_t_site_files".into()));
         });
         for n in 0..self.module.funcs.len() as u32
         {
             let (record, func) = (record_name(n), func_name(n));
-            let _ =
-                writeln!(out, "const zk_fnrec {record} = {{(zk_code){func}, NULL}};");
+            let _ = writeln!(
+                out,
+                "const zk_fnrec {record} = {{.code = (zk_code){func}, .none = NULL}};"
+            );
         }
-        out.push_str("const zk_fn_name zk_fn_names[] = {\n");
+        out.push_str("static const zk_fn_name zk_t_fn_names[] = {\n");
         for (n, f) in self.module.funcs.iter().enumerate()
         {
             let name = c_string(shown_name(&f.name));
-            let _ = writeln!(out, "    {{(zk_code){}, {name}}},", func_name(n as u32));
+            let code = func_name(n as u32);
+            let _ = writeln!(out, "    {{.code = (zk_code){code}, .name = {name}}},");
         }
-        out.push_str("    {NULL, NULL}\n};\n");
-        let count = self.module.funcs.len();
-        let _ = writeln!(out, "const size_t zk_fn_count = {count};\n");
-        out.push_str(&grants_source(&self.grants));
+        out.push_str("    {.code = NULL, .name = NULL}\n};\n");
+        fields.push(("fn_names", "zk_t_fn_names".into()));
+        fields.push(("fn_count", self.module.funcs.len().to_string()));
+        out.push_str(&grants_source(&self.grants, &mut fields));
         out.push_str(&self.descr.definitions(self.platform()));
+        let inits: Vec<String> = fields
+            .iter()
+            .map(|(name, value)| format!("    .{name} = {value},"))
+            .collect();
+        let _ = writeln!(
+            out,
+            "\nconst zk_program {PROGRAM_TABLE} = {{\n{}\n}};",
+            inits.join("\n")
+        );
         out
+    }
+
+    /// The settings of the build that the runtime reads from the table of
+    /// the program.
+    ///
+    /// # Returns
+    ///
+    /// The fields of the table, each with its C value.
+    fn config_fields(&self) -> Vec<(&'static str, String)>
+    {
+        let options = self.options;
+        vec![
+            ("max_depth", format!("{}u", options.max_depth)),
+            ("debug_info", u8::from(options.debug_info).to_string()),
+            ("max_heap", format!("{}u", options.max_heap)),
+            ("checks", format!("{}u", options.checks.bits())),
+        ]
     }
 }
 
@@ -705,7 +804,7 @@ fn copied_param(f: &Func, i: usize) -> bool
 /// # Returns
 ///
 /// The member names and the templates.
-fn trap_texts() -> Vec<(&'static str, String)>
+pub fn trap_texts() -> Vec<(&'static str, String)>
 {
     let pairs = [
         ("ZK_TRAP_ZERO_DIVISOR", t!("target_c.trap.zero_divisor")),
@@ -977,7 +1076,7 @@ impl<'s, 'm> FnGen<'s, 'm>
     fn main(mut self) -> String
     {
         let module = self.shared.module;
-        self.line("zk_start(argc, argv);");
+        self.line(&format!("zk_start(argc, argv, &{PROGRAM_TABLE});"));
         do_if!(let Some(g) = module.host.args, {
             self.line(&format!("zk_text_list({}, argc, argv);", global_name(g)));
         });
@@ -1049,7 +1148,7 @@ impl<'s, 'm> FnGen<'s, 'm>
 /// # Returns
 ///
 /// The C text.
-fn grants_source(grants: &Grants) -> String
+fn grants_source(grants: &Grants, fields: &mut Vec<(&'static str, String)>) -> String
 {
     let rights = [&grants.read, &grants.write, &grants.env];
     let mut out = String::new();
@@ -1060,10 +1159,7 @@ fn grants_source(grants: &Grants) -> String
         {
             Grant::None => (false, Vec::new()),
             Grant::All => (true, Vec::new()),
-            Grant::Some(list) =>
-            {
-                (false, list.iter().map(|p| c_path(p, n < 2)).collect())
-            }
+            Grant::Some(list) => (false, list.clone()),
         };
         let name = format!("zk_grant_items_{n}");
         let list = items.iter().map(|i| c_string(i)).collect::<Vec<_>>().join(", ");
@@ -1072,50 +1168,42 @@ fn grants_source(grants: &Grants) -> String
             _ = writeln!(out, "static const char *const {name}[] = {{{list}}};")
         );
         let at = tern!(items.is_empty(), "NULL".to_string(), name);
-        entries.push(format!("{{{}, {}, {at}}}", u8::from(all), items.len()));
+        let right = RIGHTS[n];
+        #[rustfmt::skip]
+        entries.push(format!("[{right}] = {{.all = {}, .count = {}, .items = {at}}}", u8::from(all), items.len()));
     }
-    entries.push(format!("{{{}, 0, NULL}}", u8::from(grants.ffi)));
+    let (ffi, right) = (u8::from(grants.ffi), RIGHTS[3]);
+    entries.push(format!("[{right}] = {{.all = {ffi}, .count = 0, .items = NULL}}"));
     let _ = writeln!(
         out,
-        "const zk_grant zk_grants[ZK_RIGHT_COUNT] = {{{}}};",
+        "static const zk_grant zk_t_grants[ZK_RIGHT_COUNT] = {{{}}};",
         entries.join(", ")
     );
-    let _ = writeln!(out, "const int zk_grant_prompt = {};", u8::from(grants.prompt));
-    let texts = ["read", "write", "env", "ffi", "env_all"].map(|k| {
-        let key = format!("target_c.permission.{k}");
-        c_string(&t!(&key))
-    });
+    fields.push(("grants", "zk_t_grants".into()));
+    fields.push(("grant_prompt", u8::from(grants.prompt).to_string()));
+    let all = table_texts();
+    // The last permission text, past the rights, covers the whole environment.
+    let names = RIGHTS.iter().copied().chain(["ZK_RIGHT_COUNT"]);
+    let texts: Vec<String> = names
+        .zip(&all.permission)
+        .map(|(r, t)| format!("[{r}] = {}", c_string(t)))
+        .collect();
     let _ = writeln!(
         out,
-        "const char *const zk_permission_text[ZK_RIGHT_COUNT + 1] = {{{}}};",
+        "static const char *const zk_t_permission[ZK_RIGHT_COUNT + 1] = {{{}}};",
         texts.join(", ")
     );
-    let flags =
-        ["read", "write", "env", "ffi"].map(|k| c_string(&format!("--allow-{k}")));
+    fields.push(("permission_text", "zk_t_permission".into()));
+    let flags: Vec<String> = RIGHTS
+        .iter()
+        .zip(&all.flags)
+        .map(|(r, t)| format!("[{r}] = {}", c_string(t)))
+        .collect();
     let _ = writeln!(
         out,
-        "const char *const zk_flag_text[ZK_RIGHT_COUNT] = {{{}}};",
+        "static const char *const zk_t_flags[ZK_RIGHT_COUNT] = {{{}}};",
         flags.join(", ")
     );
-    let ask = c_string(&t!("target_c.permission.ask"));
-    let _ = writeln!(out, "const char zk_ask_text[] = {ask};");
+    fields.push(("flag_text", "zk_t_flags".into()));
     out
-}
-
-/// A granted path as the runtime compares it: with `/` between its parts
-/// and a `/` in front; a name as it is.
-///
-/// # Arguments
-///
-/// * `item` - The path or name.
-/// * `path` - Whether it is a path.
-///
-/// # Returns
-///
-/// The text.
-fn c_path(item: &str, path: bool) -> String
-{
-    ret_if!(!path, item.to_string());
-    let slashed = item.replace('\\', "/");
-    tern!(slashed.starts_with('/'), slashed.clone(), format!("/{slashed}"))
 }

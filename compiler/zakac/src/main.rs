@@ -16,5 +16,6 @@ fn main() -> std::process::ExitCode
         zaka_vm::comptime::MAX_STEPS
     );
     zaka_vm::comptime::install_with(steps, editor);
+    let _ = zaka_vm::cli::JIT_RUNNER.set(zakac_codegen_target_native::cli::run_jit);
     executable_main::<cli::Zakac>()
 }

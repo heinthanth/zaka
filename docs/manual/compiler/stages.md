@@ -209,7 +209,8 @@ flow checker](../internals/borrow-checker.md).
 ### Code generation
 
 `zakac build` turns the IR into the ops of the VM, with a table that maps
-each op back to a range of the source:
+each op back to a range of the source. With `--target c` or `--target native` it turns
+the same IR into a native program instead ([Native programs](native.md)):
 
 ```text
 fn ပရိုဂရမ်

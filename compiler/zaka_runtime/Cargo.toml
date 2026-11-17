@@ -1,0 +1,18 @@
+[package]
+name = "zaka_runtime"
+description = "The runtime of a native Zaka program: the zk_* functions that generated code calls"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+# The staticlib links into executables (the C target, Cranelift AOT); the rlib
+# links into zakac for the JIT.
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+libffi = { workspace = true }
+zaka_host = { workspace = true }
+zakac_rust_sugars = { workspace = true }
+
+[build-dependencies]
+zakac_rust_sugars = { workspace = true }

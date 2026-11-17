@@ -1388,6 +1388,10 @@ A lib is named and laid out in its own form on each OS; a
   not open, or a C name no lib holds, stops the program with `ForeignLink`.
 - The VM in the browser opens no lib: a call of a C function stops the program with
   `ForeignCall`.
+- `zakac run --jit` opens the lib of each C function as the VM opens it, before the
+  program starts, and calls through libffi, as the VM does.
+- `zakac build --target native` links each lib as the C target does, below, and calls
+  through libffi.
 - `zakac build --target c` declares each C function in a C file of its own and links
   `-lX` for each lib `libX` other than libc and libm, and a lib given as a path as it is,
   with its folder as a run path. Give the folder of a named lib with
@@ -1436,8 +1440,8 @@ locals.
 
 The VM allows 4096 calls that wait to return at one time; the next call stops the
 program. `zakac run --max-depth <calls>` sets another limit. A native program, built with
-`zakac build --target c`, counts calls just so under the default checks and takes
-`--max-depth` too ([Native programs](../compiler/native.md#checks)). A recursion without a base
+`zakac build --target c` or `--target native` or run with `zakac run --jit`, counts calls
+just so under the default checks and takes `--max-depth` too ([Native programs](../compiler/native.md#checks)). A recursion without a base
 case meets this limit:
 
 ```zaka-stop

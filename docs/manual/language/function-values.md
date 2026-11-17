@@ -845,9 +845,11 @@ last use, so a late call traps and never runs freed code. A call from C on anoth
 ends the run with a message, since the program runs on one thread.
 
 **Where it runs.** `zakac run` makes one native closure for each closure given to C,
-found again from the octets of its record. A native build writes an extra file, `zaka_cb.c`,
-for a program that makes a closure and gives function values to C or holds a leave
-statement, and links `-lffi`; see [Native builds](../compiler/native.md). A C declaration
+found again from the octets of its record, and so does a native program, through the runtime
+it links. The C target writes an extra file, `zaka_callback.c`, with a bridge for each such
+function kind, for a program that makes a closure and gives function values to C or holds a
+leave statement, and links `-lffi`; the native target writes the bridges as machine code.
+See [Native builds](../compiler/native.md). A C declaration
 takes function values of numbers, booleans and addresses alone (ZK0465), so each closure
 that reaches C has a native closure. A leave of a function value whose kind takes or gives
 a struct, text or a function value, which no C function can get, is a construct a native

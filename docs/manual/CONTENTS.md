@@ -53,6 +53,7 @@
   - [The flow checker](internals/borrow-checker.md)
   - [IR and code](internals/codegen.md)
   - [The C target](internals/c-backend.md)
+  - [The native target](internals/native-backend.md)
 
 ---
 

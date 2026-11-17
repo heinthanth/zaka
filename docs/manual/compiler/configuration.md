@@ -75,7 +75,7 @@ it: `mem-check = "error"` reaches `borrowck`, `build` and `run`. A section named
 command sets an option in that command alone, and wins over the top:
 
 ```toml
-max-depth = 2048        # build --target c and run
+max-depth = 2048        # build --target c or native, and run
 
 [run]
 max-depth = 8192        # run alone
@@ -118,7 +118,7 @@ variable set in the shell wins:
 | `carets` | `ZAKAC_CARETS` | `carets = "cluster"` | the rows under a marked span; see [Diagnostics](diagnostics.md) |
 | `backtrace` | `ZAKA_BACKTRACE` | `backtrace = "full"` | how much of the stack a stop of `run` lists; see [Running a program](../vm/running.md) |
 | `cflags` | `CFLAGS` | `cflags = "-O3"` | flags for the C compiler of `build --target c` |
-| `ldflags` | `LDFLAGS` | `ldflags = ["-L/opt/lib", "-lfoo"]` | flags for its linker |
+| `ldflags` | `LDFLAGS` | `ldflags = ["-L/opt/lib", "-lfoo"]` | flags for its linker, which `build --target native` links with too |
 | `color` | `NO_COLOR` | `color = false` | turns color off; `true` leaves it as the terminal has it |
 
 These names can stand at the top of the file, for each command, or in a section, for the

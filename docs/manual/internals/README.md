@@ -39,6 +39,9 @@ zaka_vm                     runs the ops       (traps)
 
 zakac_codegen_target_c      C for each module, then an executable
                             (build --target c; after the flow check)
+
+zakac_codegen_target_native CLIF, run at once or linked into an executable
+                            (run --jit, build --target native)
 ```
 
 ## The workspace
@@ -62,7 +65,9 @@ workspace: Zed builds it on its own, with the target folder inside it.
 | `zakac_ir_builder` | the IR, lowering from the tree, constant folding |
 | `zakac_borrow_checker` | the flow check over the IR, and the lint on unsafe code (ZK07); the crate keeps its old name |
 | `zakac_codegen_target_vm` | the ops of the VM, and the asm listing |
-| `zakac_codegen_target_c` | the C of each module and its runtime (`runtime/`), and the build of an executable with a C compiler |
+| `zakac_codegen_target_c` | the C of each module, the runtime headers (`runtime/`) and the runtime lib built into it, and the build of an executable with a C compiler |
+| `zakac_codegen_target_native` | the IR lowered to Cranelift IR: run at once in `zakac` (`run --jit`), or written as an object file and linked (`build --target native`) |
+| `zaka_runtime` | the runtime of native programs, in Rust: a static lib that the C and native targets link, and that `zakac` links for the JIT |
 | `zakac_lsp` | the language server: checks the files an editor holds open and sends back errors, colors, hovers, completions, definitions, uses, renames and the outline; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
 | `zaka_vm` | the VM: stack of values, storage blocks, traps; the `run` subcommand |
 | `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
@@ -186,4 +191,5 @@ A new feature wants a test in each stage it touches, and a sample when a user ca
 | a flow check or a lint rule | [The flow checker](borrow-checker.md) |
 | the IR, folding, an op | [IR and code](codegen.md) |
 | the C of a native program, or its runtime | [The C target](c-backend.md) |
+| the Cranelift code of a native program, or the JIT | [The native target](native-backend.md) |
 | a message or a code | [Diagnostics](../compiler/diagnostics.md) |

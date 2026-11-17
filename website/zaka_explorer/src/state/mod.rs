@@ -506,7 +506,7 @@ pub fn provide_state() -> AppState
     let state = AppState::builder()
         .source(source)
         .options(options)
-        .c_mode(Signal::derive(move || options.with(|o| o.target == Target::C)))
+        .c_mode(Signal::derive(move || options.with(|o| o.target != Target::Vm)))
         .c_file(RwSignal::new(String::new()))
         .compiled(compiled)
         .pointer(RwSignal::new(None))
