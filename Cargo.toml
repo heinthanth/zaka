@@ -8,7 +8,7 @@ default-members = ["compiler/zakac"]
 edition = "2024"
 
 [workspace.dependencies]
-object = { version = "0.40", default-features = false, features = ["read_core", "macho", "elf", "coff"] }
+object = { version = "0.40", default-features = false, features = ["read_core", "macho", "elf", "coff", "pe"] }
 iced-x86 = { version = "1.22", default-features = false, features = ["std", "decoder", "intel"] }
 yaxpeax-arm = { version = "0.5", default-features = false, features = ["std", "fmt"] }
 yaxpeax-arch = { version = "0.3", default-features = false, features = ["std"] }

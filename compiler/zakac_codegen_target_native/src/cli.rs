@@ -339,6 +339,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             // The wrappers of a lib are C, which the C toolchain builds beside
             // the object.
             let platform = options.platform_bits;
+            let api = zakac_codegen_target_c::exports::api_names(&exports);
             let glue = files.as_ref().map(|_| {
                 let text = native_glue(&exports, &made.export_shapes, platform);
                 CFile::builder().name(LIB_GLUE).text(text).build()
@@ -353,7 +354,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
                     .sources(&sources).libs(&libs).abi(target.abi)
                     .maybe_archive(files.as_ref().map(|f| f.archive.as_path()))
-                    .debug_info(options.debug_info).build();
+                    .debug_info(options.debug_info).exports(&api).build();
                     build_and_link(matches, io, &info, link)
                 });
             let Some(f) =

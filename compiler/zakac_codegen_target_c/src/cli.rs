@@ -479,6 +479,7 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let files = files.unwrap();
     let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
     let libs = folded.map(|m| link_libs_for(&m.foreign, dialect)).unwrap_or_default();
+    let api = exports::api_names(&exports);
     let header = lib_files.as_ref().map(|f| {
         let links = static_links(built_for.abi, dialect, &libs);
         let text = exports::header(&exports, target.platform_bits, &f.name, &links);
@@ -487,7 +488,7 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(target.checks).emit(emit)
         .files(&files).libs(&libs).maybe_archive(lib_files.as_ref().map(|f| f.archive.as_path()))
-        .maybe_header(header).debug_info(target.debug_info).build();
+        .maybe_header(header).debug_info(target.debug_info).exports(&api).build();
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
@@ -592,6 +593,9 @@ struct Job<'a>
     header: Option<(PathBuf, String)>,
     /// Whether the build keeps the debug info.
     debug_info: bool,
+    /// The names the shared lib of a C lib build gives.
+    #[builder(default)]
+    exports: &'a [String],
 }
 
 /// The files a C lib build writes, in one folder: the static lib, the shared
@@ -683,7 +687,8 @@ fn build(
     ret_if!(job.emit == Emit::C, Ok(ExitCode::Success));
     #[rustfmt::skip]
     let link = Link::builder().cache(job.cache).out(job.out).checks(job.checks).sources(&sources)
-        .libs(job.libs).abi(abi).maybe_archive(job.archive).debug_info(job.debug_info).build();
+        .libs(job.libs).abi(abi).maybe_archive(job.archive).debug_info(job.debug_info)
+        .exports(job.exports).build();
     let built = build_and_link(matches, io, info, link)?;
     let Some((path, text)) = job.header.filter(|_| built == ExitCode::Success)
     else
@@ -719,6 +724,9 @@ pub struct Link<'a>
     /// Whether the build keeps the debug info.
     #[builder(default)]
     pub debug_info: bool,
+    /// The names the shared lib of a C lib build gives.
+    #[builder(default)]
+    pub exports: &'a [String],
 }
 
 /// Compile C files and link them with objects and libs into an executable,
@@ -767,7 +775,7 @@ pub fn build_and_link(
         .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
         .ldflags(&ldflags).libs(job.libs).abi(job.abi).maybe_archive(job.archive)
-        .debug_info(job.debug_info).build();
+        .debug_info(job.debug_info).exports(job.exports).build();
     let built = toolchain::build(&plan)?;
     // `cl` writes the name of each file it compiles, and its errors, to
     // standard output, so a step of MSVC that succeeds shows none of it.

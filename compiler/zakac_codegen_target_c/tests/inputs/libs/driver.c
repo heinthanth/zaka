@@ -1,4 +1,5 @@
-/* Calls the lib of mathlib.zaka: a sum, text in, a trap, then a call after it. */
+/* Calls the lib of mathlib.zaka: a sum, text in, a struct, a trap, then a call
+   after it. */
 #include <stdio.h>
 
 #include "mathlib.h"
@@ -15,6 +16,10 @@ int main(void)
     uint64_t count = 0;
     status = greet("Zaka", &count);
     printf("greet %d %llu\n", status, (unsigned long long)count);
+    point corner = {3, 4};
+    int32_t length = 0;
+    status = manhattan(corner, &length);
+    printf("manhattan %d %d\n", status, length);
     printf("trap before %s\n", zk_last_trap() == NULL ? "none" : "some");
     int64_t quotient = 0;
     status = divide(7, 0, &quotient);

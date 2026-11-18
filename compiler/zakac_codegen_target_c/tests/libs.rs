@@ -2,11 +2,14 @@
 //! and the shared lib, calls the functions that code outside can call, gets
 //! a trap back as a status, and finds the lib stopped after it.
 
+use std::ffi::OsString;
 use std::path::Path;
 use std::process::Command;
 
 use zakac_codegen_target_c::driver::runtime_lib;
 use zakac_codegen_target_c::toolchain::Dialect;
+use zakac_codegen_target_c::toolchain::Tool;
+use zakac_rust_sugars::tern;
 
 use crate::common::cc;
 use crate::common::root;
@@ -18,6 +21,7 @@ add 0 42
 no result 0
 မင်္ဂလာပါ Zaka
 greet 0 4
+manhattan 0 7
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
@@ -64,6 +68,100 @@ fn build_lib(dir: &Path)
     ran(&mut cmd, "the lib build");
 }
 
+/// The names a shared lib gives, sorted, with no `_` of Mach-O before them.
+///
+/// # Arguments
+///
+/// * `path` - The shared lib.
+///
+/// # Returns
+///
+/// The names.
+fn exported_names(path: &Path) -> Vec<String>
+{
+    use object::Object;
+
+    let octets = std::fs::read(path).unwrap();
+    let file = object::File::parse(&*octets).unwrap();
+    let macho = file.format() == object::BinaryFormat::MachO;
+    let name = |raw: &[u8]| {
+        let text = String::from_utf8_lossy(raw).into_owned();
+        let bare = text.strip_prefix('_').filter(|_| macho).map(str::to_string);
+        bare.unwrap_or(text)
+    };
+    let named = |e: object::Export<'_>| match e.name()
+    {
+        object::NameOrOrdinal::Name(raw) => Some(name(raw)),
+        _ => None,
+    };
+    let exports = file.exports().unwrap().map(Result::unwrap);
+    let mut names: Vec<String> = exports.filter_map(named).collect();
+    names.sort();
+    names
+}
+
+/// The command that builds the driver with the libs given, in the form of the
+/// toolchain: GNU flags, or those of MSVC's `cl`, with the options of the
+/// linker after `/link`. It runs in the folder, where `cl` leaves its objects.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `dialect` - Its flag form.
+/// * `dir` - The folder of the lib and the header.
+/// * `libs` - The libs and the flags of the link.
+/// * `exe` - The executable to write.
+///
+/// # Returns
+///
+/// The command.
+fn driver_cmd(
+    cc: &Tool, dialect: Dialect, dir: &Path, libs: &[OsString], exe: &Path,
+) -> Command
+{
+    let driver = root().join("tests/inputs/libs/driver.c");
+    let mut cmd = cc.command();
+    cmd.current_dir(dir);
+    if dialect == Dialect::Gnu
+    {
+        cmd.args(["-std=c11", "-I"])
+            .arg(dir)
+            .arg(&driver)
+            .args(libs)
+            .arg("-o")
+            .arg(exe);
+        return cmd;
+    }
+    let option = |l: &&OsString| l.to_string_lossy().starts_with('/');
+    let (options, files): (Vec<&OsString>, Vec<&OsString>) =
+        libs.iter().partition(option);
+    let mut named = OsString::from("/Fe");
+    named.push(exe);
+    cmd.args(["/nologo", "/std:c11", "/I"])
+        .arg(dir)
+        .arg(&driver)
+        .args(files)
+        .arg(named);
+    cmd.arg("/link").args(options);
+    cmd
+}
+
+/// Build the driver with the libs given, run it, and check what it prints.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `dir` - The folder of the lib.
+/// * `libs` - The libs and the flags of the link.
+/// * `name` - The name of the executable.
+fn check_driver(cc: &Tool, dir: &Path, libs: &[OsString], name: &str)
+{
+    let exe = dir.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    let dialect = Dialect::of(test_abi());
+    ran(&mut driver_cmd(cc, dialect, dir, libs, &exe), &format!("the link of {name}"));
+    assert_eq!(ran(&mut Command::new(&exe), name), EXPECTED, "{name}");
+}
+
 #[test]
 fn a_c_program_calls_a_zaka_lib()
 {
@@ -72,52 +170,64 @@ fn a_c_program_calls_a_zaka_lib()
     {
         return;
     };
-    // shortcut: the driver builds with GNU flags; an MSVC host checks the lib
-    // through a hand check until the driver has a form of `cl`.
-    if Dialect::of(test_abi()) == Dialect::Msvc
-    {
-        eprintln!("the C lib test runs with a GNU toolchain alone");
-        return;
-    }
     let dir = tempfile::tempdir().unwrap();
     let dir = dir.path();
     build_lib(dir);
-    let driver = root().join("tests/inputs/libs/driver.c");
-    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
-    let mut static_cmd = cc.command();
-    static_cmd.args(["-std=c11", "-I"]).arg(dir).arg(&driver);
-    static_cmd
-        .arg(dir.join("libmathlib.a"))
-        .args(os_libs.unwrap_or_default())
-        .arg("-lm");
-    static_cmd
-        .arg("-o")
-        .arg(dir.join(format!("static_driver{}", std::env::consts::EXE_SUFFIX)));
-    ran(&mut static_cmd, "the link of the static lib");
-    let out = ran(
-        &mut Command::new(
-            dir.join(format!("static_driver{}", std::env::consts::EXE_SUFFIX)),
-        ),
-        "the static driver",
+    let shared = format!(
+        "{}mathlib{}",
+        std::env::consts::DLL_PREFIX,
+        std::env::consts::DLL_SUFFIX
     );
-    assert_eq!(out, EXPECTED);
-    // A DLL is found beside the executable, which the test does not arrange.
-    if cfg!(windows)
+    let names = exported_names(&dir.join(&shared));
+    let api =
+        ["add_numbers", "digit_count", "divide", "greet", "manhattan", "zk_last_trap"];
+    assert_eq!(names, api);
+    let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
+    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
+    let os_libs = os_libs.unwrap_or_default().into_iter().map(OsString::from);
+    let archive = dir.join(tern!(msvc, "mathlib.lib", "libmathlib.a"));
+    let libm = (!msvc).then(|| OsString::from("-lm"));
+    let static_libs: Vec<OsString> =
+        std::iter::once(archive.into()).chain(os_libs).chain(libm).collect();
+    check_driver(&cc, dir, &static_libs, "static_driver");
+    // Windows finds a DLL beside the executable; GNU links the DLL itself, MSVC
+    // its import lib.
+    let shared_libs: Vec<OsString> = match (cfg!(windows), msvc)
+    {
+        (true, true) => vec![dir.join("mathlib.dll.lib").into()],
+        (true, false) => vec![dir.join(&shared).into()],
+        _ =>
+        {
+            let rpath = format!("-Wl,-rpath,{}", dir.display());
+            vec!["-L".into(), dir.into(), rpath.into(), "-lmathlib".into()]
+        }
+    };
+    check_driver(&cc, dir, &shared_libs, "shared_driver");
+}
+
+#[cfg(unix)]
+#[test]
+fn threads_call_a_zaka_lib_one_at_a_time()
+{
+    let Some(cc) = cc()
+    else
     {
         return;
-    }
-    let mut shared_cmd = cc.command();
-    shared_cmd.args(["-std=c11", "-I"]).arg(dir).arg(&driver).arg("-L").arg(dir);
-    shared_cmd.arg(format!("-Wl,-rpath,{}", dir.display())).arg("-lmathlib");
-    shared_cmd
-        .arg("-o")
-        .arg(dir.join(format!("shared_driver{}", std::env::consts::EXE_SUFFIX)));
-    ran(&mut shared_cmd, "the link of the shared lib");
-    let out = ran(
-        &mut Command::new(
-            dir.join(format!("shared_driver{}", std::env::consts::EXE_SUFFIX)),
-        ),
-        "the shared driver",
-    );
-    assert_eq!(out, EXPECTED);
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let dir = dir.path();
+    build_lib(dir);
+    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
+    let exe = dir.join("threads");
+    let mut link = cc.command();
+    link.args(["-std=c11", "-pthread", "-I"])
+        .arg(dir)
+        .arg(root().join("tests/inputs/libs/threads.c"))
+        .arg(dir.join("libmathlib.a"))
+        .args(os_libs.unwrap_or_default())
+        .args(["-lm", "-o"])
+        .arg(&exe);
+    ran(&mut link, "the link of the threads driver");
+    // Eight threads count the digits of 0 to 1999, three octets each.
+    assert_eq!(ran(&mut Command::new(&exe), "the threads driver"), "165360\n");
 }

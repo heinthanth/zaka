@@ -395,6 +395,10 @@ pub struct BuildPlan<'a>
     /// MSVC.
     #[builder(default)]
     pub debug_info: bool,
+    /// The names the shared lib of a C lib build gives; each other name of
+    /// the lib, those of the runtime among them, remains inside it.
+    #[builder(default)]
+    pub exports: &'a [String],
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -440,7 +444,9 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     let objects = sources.iter().map(|s| s.with_extension(object)).chain(libs);
     let objects: Vec<PathBuf> = objects.collect();
     let linker = plan.linker.unwrap_or(plan.cc);
-    let output = run(linker, link_command(plan, linker, &objects))?;
+    let mut link = link_command(plan, linker, &objects);
+    link.args(export_flag(plan, &objects)?);
+    let output = run(linker, link)?;
     let ok = output.status.success();
     outputs.push(output);
     ret_if!(!ok, Ok(failed(outputs, linker)));
@@ -454,6 +460,51 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     outputs.push(output);
     ret_if!(!ok, Ok(failed(outputs, &tool)));
     Ok(Built::builder().outputs(outputs).build())
+}
+
+/// Write the list of the names a shared lib gives, and give the flag of the
+/// linker that reads it: a version script for ELF, an exported-symbol list for
+/// Mach-O. A DLL gives the names `__declspec(dllexport)` marks alone, and MSVC
+/// links no such list.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `objects` - The objects, in the folder the list goes to.
+///
+/// # Returns
+///
+/// The flag, none for an executable or a DLL, or the error of a write.
+fn export_flag(
+    plan: &BuildPlan<'_>, objects: &[PathBuf],
+) -> zakac_host_errors::Result<Option<String>>
+{
+    let dll = plan.out.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
+    let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
+    ret_if!(plan.archive.is_none() || plan.exports.is_empty() || dll || msvc, Ok(None));
+    let dir = objects.first().and_then(|o| o.parent()).unwrap_or(Path::new("."));
+    let apple = plan.abi == TargetAbi::Apple;
+    let (file, text) = match apple
+    {
+        true => (
+            "zaka_exports.txt",
+            plan.exports.iter().map(|n| format!("_{n}\n")).collect(),
+        ),
+        false =>
+        {
+            let names: String = plan.exports.iter().map(|n| format!("{n}; ")).collect();
+            ("zaka_exports.map", format!("{{ global: {names}local: *; }};\n"))
+        }
+    };
+    let path = dir.join(file);
+    let context = || IOErrorContext::new(path.clone(), IOErrorAction::Write);
+    std::fs::write(&path, text).map_err(|e| Error::from_io(e, context()))?;
+    let shown = path.display();
+    Ok(Some(tern!(
+        apple,
+        format!("-Wl,-exported_symbols_list,{shown}"),
+        format!("-Wl,--version-script={shown}")
+    )))
 }
 
 /// Write the static lib of a C lib build: the objects, with the members of

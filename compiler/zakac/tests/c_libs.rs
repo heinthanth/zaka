@@ -17,6 +17,7 @@ add 0 42
 no result 0
 မင်္ဂလာပါ Zaka
 greet 0 4
+manhattan 0 7
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
