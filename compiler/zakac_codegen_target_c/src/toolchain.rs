@@ -197,8 +197,8 @@ impl Tool
     }
 }
 
-/// Find the C compiler: `--cc`, then `CC`, then the first of `cc`, `gcc`,
-/// `clang` and `zig cc` on the PATH.
+/// Find the C compiler of this compiler's own ABI: `--cc`, then `CC`, then
+/// the compilers of its dialect, as [`find_cc_for`] finds them.
 ///
 /// # Arguments
 ///
@@ -210,7 +210,8 @@ impl Tool
 /// the PATH.
 pub fn find_cc(chosen: Option<&str>) -> zakac_host_errors::Result<Tool>
 {
-    find_cc_for(chosen, Dialect::Gnu)
+    // A `BuildPlan` that names no ABI takes this one too.
+    find_cc_for(chosen, Dialect::of(host_abi()))
 }
 
 /// Find the C compiler of a dialect: `--cc`, then `CC`, then the compilers

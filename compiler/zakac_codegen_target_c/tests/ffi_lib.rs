@@ -51,7 +51,8 @@ fn build_lib(dir: &Path) -> PathBuf
 {
     // The lib is plain C for each ABI, so the GNU compiler builds it, with the
     // import lib MSVC links it through.
-    let cc = toolchain::find_cc(None).expect("a GNU C compiler builds the test lib");
+    let gnu = toolchain::find_cc_for(None, toolchain::Dialect::Gnu);
+    let cc = gnu.expect("a GNU C compiler builds the test lib");
     let name = format!(
         "{}zktest{}",
         std::env::consts::DLL_PREFIX,
