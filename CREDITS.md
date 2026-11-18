@@ -70,6 +70,7 @@ thanks to all of these projects.
 | [cranelift-native](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
 | [cranelift-object](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
 | [etcetera](https://github.com/lunacookies/etcetera) | 0.11.0 | MIT OR Apache-2.0 |
+| [find-msvc-tools](https://github.com/rust-lang/cc-rs) | 0.1.12 | MIT OR Apache-2.0 |
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
