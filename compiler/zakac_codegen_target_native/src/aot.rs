@@ -113,6 +113,7 @@ pub fn object(
     let lowered = emit(&mut m, program, files, options, grants, "main", want_clif)?;
     let mut product = m.finish();
     let places = crate::debug::write(&mut product, &lowered.lines)?;
+    crate::unwind::write(&mut product, &lowered.unwinds)?;
     let mut octets = product.emit().map_err(module_error)?;
     crate::debug::place_text(&mut octets, &places)?;
     Ok(Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes })

@@ -47,6 +47,8 @@ use crate::blob::define;
 use crate::debug::FnLines;
 use crate::debug::LineTable;
 use crate::func::FnGen;
+use crate::unwind::FnUnwind;
+use crate::unwind::fn_unwind;
 
 /// What a lowering gives: the main function, the data the runtime reads, and
 /// the CLIF text when it was asked for.
@@ -68,6 +70,9 @@ pub struct Lowered
     /// The line table of the code, in a build with debug info.
     #[builder(default)]
     pub lines: LineTable,
+    /// The unwind codes of each function, for 64-bit Windows.
+    #[builder(default)]
+    pub unwinds: Vec<FnUnwind>,
 }
 
 /// State shared across the functions of a program.
@@ -116,6 +121,9 @@ pub struct Shared<'m, M: Module>
     /// The lines of each function compiled so far, in a build with debug
     /// info.
     pub lines: Vec<FnLines>,
+    /// The unwind codes of each function compiled so far, for 64-bit
+    /// Windows.
+    pub unwinds: Vec<FnUnwind>,
 }
 
 impl<M: Module> Shared<'_, M>
@@ -426,7 +434,7 @@ pub fn emit<M: Module>(
         runtime: HashMap::new(), funcs: Vec::new(), globals: Vec::new(), records: Vec::new(),
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
-        cb_shapes: Vec::new(), lines: Vec::new() };
+        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new() };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
     let mut clif = String::new();
@@ -486,7 +494,8 @@ pub fn emit<M: Module>(
     let lines = line_table(&mut s, main, main_name);
     #[rustfmt::skip]
     return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
-        .export_shapes(export_shapes).lines(lines).build());
+        .export_shapes(export_shapes).lines(lines)
+        .unwinds(std::mem::take(&mut s.unwinds)).build());
 }
 
 /// The line table of a program: each function with code, named as a
@@ -615,6 +624,8 @@ fn define_fn<'m, M: Module>(
     let base = ctx.func.params.base_srcloc();
     let code = ctx.compiled_code().filter(|_| s.options.debug_info);
     do_if!(let Some(code) = code, s.lines.push(fn_lines(id, code, base)));
+    let unwind = ctx.compiled_code().and_then(|c| fn_unwind(id, c, s.m.isa()));
+    s.unwinds.extend(unwind);
     text
 }
 
