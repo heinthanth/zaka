@@ -175,12 +175,23 @@ impl Parser<'_>
         stmts
     }
 
-    /// Parse one statement, chosen from its first token.
+    /// Parse one statement; a call of a heap function of the prelude is its
+    /// heap statement.
     ///
     /// # Returns
     ///
     /// The statement, or a diagnostic.
     pub(crate) fn parse_stmt(&mut self) -> PResult<Stmt>
+    {
+        self.parse_stmt_node().map(|stmt| self.heap_node(stmt))
+    }
+
+    /// Parse one statement, chosen from its first token.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or a diagnostic.
+    fn parse_stmt_node(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
         ret_if!(self.at_fn_decl(), self.parse_fn_decl());
@@ -213,8 +224,6 @@ impl Parser<'_>
             Kw::NextIteration => self.parse_continue(),
             Kw::WillReturn | Kw::MarkSucceeded => self.parse_bare_return(),
             Kw::MarkFailed => self.parse_mark_failed(),
-            Kw::AllocHead => self.parse_alloc(),
-            Kw::Address => self.parse_heap(),
             Kw::WhenDone => Err(diag::update_outside_loop(tok.span)),
             Kw::BlockClose | Kw::ProgramClose =>
             {

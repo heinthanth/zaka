@@ -6,10 +6,10 @@ description: The stdlib module each file sees with no import, the compiler mark,
 # The prelude
 
 The prelude, `"စံကား/အခြေခံအုတ်မြစ်"`, is the stdlib module each file sees with no import
-sentence. Its source is three files of the `stdlib` folder of the source tree, which the
+sentence. Its source is four files of the `stdlib` folder of the source tree, which the
 compiler joins into one module: `core_kinds.zaka` holds the built-in kinds,
-`core_traits.zaka` the built-in traits, and `core_verbs.zaka` the verbs and counts the
-compiler gives. Their declarations hold the compiler mark: the compiler gives their
+`core_traits.zaka` the built-in traits, `core_verbs.zaka` the verbs and counts the
+compiler gives, and `core_heap.zaka` the [heap sentences](unsafe.md#heap-statements). Their declarations hold the compiler mark: the compiler gives their
 meaning. A trait of the prelude names the function a struct gives for an operator.
 
 ```zaka
@@ -127,27 +127,25 @@ warning ZK0350.
 ## Operators on structs
 
 A struct takes an operator through a function of its own, the function the trait of the
-operator names, with two parameters of the struct. The word operators are calls of these
-functions: the prelude gives each trait function its prepositions, `နှင့်` and `ကို` for the sum,
-the difference, the product and the bit operators of two values, `ကို` and `ဖြင့်` for the
-quotient, the remainder and the shifts, and `ကို` for `ဘစ်ပြောင်းပြန်`. A file sees each of
-them, so `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်` is `က + ခ` on numbers and the call of the struct's
-`ပေါင်း` on a struct. A struct function without these prepositions still takes the sign
-operator; the word form reaches it as the operator does.
+operator names, with two parameters of the struct. The word operators, such as
+`က နှင့် ခ ၏ ပေါင်းလဒ်`, are reserved words of the grammar, as the signs are: on numbers
+`က နှင့် ခ ၏ ပေါင်းလဒ်` is `က + ခ`, and on a struct each one calls the function of the struct,
+as the sign does. The function names are no reserved words: a struct declares `ပေါင်း` as it
+declares each function.
 
 | Operator, verb | Function |
 | --- | --- |
-| `+`, `… ကို ပေါင်းသည့်ရလဒ်` | `ပေါင်း` |
-| `-`, `… ကို နုတ်သည့်ရလဒ်` | `နုတ်` |
-| `*`, `… ကို မြှောက်သည့်ရလဒ်` | `မြှောက်` |
-| `/`, `… စားသည့်ရလဒ်` | `စား` |
-| `%`, `… အကြွင်းရှာသည့်ရလဒ်` | `အကြွင်းရှာ` |
-| `&`, `… ကို ဘစ်ဆုံသည့်ရလဒ်` | `ဘစ်ဆုံ` |
-| `\|`, `… ကို ဘစ်ပေါင်းစုသည့်ရလဒ်` | `ဘစ်ပေါင်းစု` |
-| `^`, `… ကို ဘစ်ခြားနားသည့်ရလဒ်` | `ဘစ်ခြားနား` |
-| `~`, `… ကို ဘစ်ပြောင်းပြန်သည့်ရလဒ်` | `ဘစ်ပြောင်းပြန်`, one parameter |
-| `<<`, `… ကို … ဖြင့် ဘစ်ဘယ်ရွေ့သည့်ရလဒ်` | `ဘစ်ဘယ်ရွေ့`, with the distance |
-| `>>`, `… ကို … ဖြင့် ဘစ်ညာရွေ့သည့်ရလဒ်` | `ဘစ်ညာရွေ့`, with the distance |
+| `+`, `… ၏ ပေါင်းလဒ်` | `ပေါင်း` |
+| `-`, `… ၏ နုတ်လဒ်` | `နုတ်` |
+| `*`, `… ၏ မြှောက်လဒ်` | `မြှောက်` |
+| `/`, `… ကို … ဖြင့် စားသော စားလဒ်` | `စား` |
+| `%`, `… ကို … ဖြင့် စားသော စားကြွင်း` | `အကြွင်းရှာ` |
+| `&`, `… ၏ ဘစ်အလိုက် ဆုံလဒ်` | `ဘစ်ဆုံ` |
+| `\|`, `… ၏ ဘစ်အလိုက် ပေါင်းစုလဒ်` | `ဘစ်ပေါင်းစု` |
+| `^`, `… ၏ ဘစ်အလိုက် ခြားနားလဒ်` | `ဘစ်ခြားနား` |
+| `~`, `… ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | `ဘစ်ပြောင်းပြန်`, one parameter |
+| `<<`, `… ကို ဘယ်သို့ … ဘစ် ရွေ့သောရလဒ်` | `ဘစ်ဘယ်ရွေ့`, with the distance |
+| `>>`, `… ကို ညာသို့ … ဘစ် ရွေ့သောရလဒ်` | `ဘစ်ညာရွေ့`, with the distance |
 | the `-` of one operand, `အနုတ်` | `အနုတ်ပြောင်း`, one parameter |
 | `<`, `ငယ်`; `>=`, `မငယ်` | `ငယ်မငယ်စစ်`; its negation |
 | `>`, `ကြီး`; `<=`, `မကြီး` | `ကြီးမကြီးစစ်`; its negation |

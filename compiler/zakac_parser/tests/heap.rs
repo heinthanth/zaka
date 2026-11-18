@@ -1,7 +1,9 @@
+use zakac_ast::s_expr::ToSexpr;
 use zakac_diagnostics::Code;
 
 use crate::common::codes;
 use crate::common::stmt;
+use crate::common::stmts;
 
 #[test]
 fn heap_statements()
@@ -41,7 +43,7 @@ fn heap_statements()
 fn a_size_reads_its_kind_or_a_literal_with_a_kind()
 {
     let found = codes("မင်မိုရီတွင် ကိန်းပြည့် ၁၀ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။");
-    assert_eq!(found, [Code::ExpectedToken]);
+    assert_eq!(found, [Code::ExpectedOperand]);
     assert_eq!(
         stmt("မင်မိုရီတွင် ၁၀ ဟူသော ကိန်းပြည့် တစ်ခု ဘိုက်စာ နေရာယူ၍ လိပ်စာကို p တွင် သိမ်းထားမည်။"),
         "(alloc p 10isize)"
@@ -70,13 +72,10 @@ fn blits_and_fills()
         "(resize p 10 isize)"
     );
     assert_eq!(
-        stmt("လိပ်စာ p ရှိ မင်မိုရီကို (က ကို ၂ ဖြင့် စားသည့်ရလဒ်) ဖြင့် ၁ ဘိုက်စာ ဖြည့်မည်။"),
+        stmt("လိပ်စာ p ရှိ မင်မိုရီကို (က ကို ၂ ဖြင့် စားသော စားလဒ်) ဖြင့် ၁ ဘိုက်စာ ဖြည့်မည်။"),
         "(fill p 1 [(div က 2)])"
     );
-    assert_eq!(
-        stmt("လိပ်စာ p ရှိ မင်မိုရီကို က ကို ၂ ဖြင့် စားသည့်ရလဒ် ဖြင့် ၁ ဘိုက်စာ ဖြည့်မည်။"),
-        "(fill p 1 (div က 2))"
-    );
+    assert_eq!(stmt("လိပ်စာ p ရှိ မင်မိုရီကို က / ၂ ဖြင့် ၁ ဘိုက်စာ ဖြည့်မည်။"), "(fill p 1 (/ က 2))");
     // A value with a kind word in front reads as a value: the verb at the end
     // makes the statement a fill.
     assert_eq!(
@@ -87,4 +86,43 @@ fn blits_and_fills()
         stmt("လိပ်စာ p ရှိ မင်မိုရီကို ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြင့် ၈ ဘိုက်စာ ဖြည့်မည်။"),
         "(fill p 8 1isize)"
     );
+}
+
+/// The heap sentences are calls of functions of the prelude, which the parser
+/// turns into their statements: `မှတ်ဉာဏ်` reads as `မင်မိုရီ`, and an argument
+/// can end in the `၏` readings of notation.
+#[test]
+fn heap_sentences_read_as_calls_of_the_prelude()
+{
+    assert_eq!(stmt("လိပ်စာ p ရှိ မှတ်ဉာဏ်ကို ပြန်လည်စွန့်လွှတ်မည်။"), "(free p)");
+    assert_eq!(
+        stmt("လိပ်စာ ကွက်များ ၏ အကွက် ၀ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"),
+        "(free (cell ကွက်များ 0))"
+    );
+    assert_eq!(
+        stmt("လိပ်စာ ဘူး ၏ ပ ၏ တန်ဖိုး ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"),
+        "(free (deref (field ဘူး ပ)))"
+    );
+    assert_eq!(
+        stmt("လိပ်စာ p + ၁ ၏ တန်ဖိုး ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။"),
+        "(free (deref (+ p 1)))"
+    );
+}
+
+/// A function of the file of a heap name hides the one of the prelude, and
+/// its calls remain calls.
+#[test]
+fn a_function_of_the_file_hides_a_heap_function()
+{
+    let own = "ဖြည့် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+               လုပ်ဆောင်စရာများ ပြီးပါပြီ။\nဖြည့် ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်မည်။";
+    assert_eq!(stmts(own)[1].to_sexpr(), "(call ဖြည့် 1)");
+}
+
+/// A heap sentence gives no value: its value form is ZK0315.
+#[test]
+fn a_heap_sentence_gives_no_value()
+{
+    let value = "ကိန်းရှင် က သည် လိပ်စာ p ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ် သည့် ရလဒ် ဖြစ်ပါစေ။";
+    assert_eq!(codes(value), [Code::ValueFromVoidFunction]);
 }

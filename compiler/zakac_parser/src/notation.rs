@@ -152,8 +152,23 @@ impl Parser<'_>
     /// The expression, or a diagnostic.
     pub(crate) fn parse_notation(&mut self) -> PResult<Expr>
     {
+        let readings = !std::mem::take(&mut self.bare_notation);
         let notation = self.notation_bp(0)?;
+        let notation = tern!(readings, self.ei_readings(notation)?, notation);
         Ok(self.octets_after(notation))
+    }
+
+    /// Parse a notation expression with no `၏` reading after it: a part of a
+    /// larger read, such as the number of a cell, whose reading goes with the
+    /// whole read.
+    ///
+    /// # Returns
+    ///
+    /// The expression, or a diagnostic.
+    pub(crate) fn parse_bare_notation(&mut self) -> PResult<Expr>
+    {
+        self.bare_notation = true;
+        self.parse_notation()
     }
 
     /// Parse a notation expression whose operators bind at least `min`.
@@ -474,7 +489,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The name.
-    fn parse_name(&mut self) -> Expr
+    pub(crate) fn parse_name(&mut self) -> Expr
     {
         let tok = self.bump();
         let raw = tok.kind == TokenKind::RawIdent;
@@ -579,7 +594,7 @@ impl Parser<'_>
     {
         self.bump();
         self.bump();
-        let index = self.parse_notation()?;
+        let index = self.parse_bare_notation()?;
         let value =
             self.at_punct(Punct::Ei) && kw_of(&self.peek_n(1)) == Some(Kw::Value);
         let (op, end, particle) = match value

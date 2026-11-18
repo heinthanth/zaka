@@ -85,6 +85,9 @@ pub enum Place
     /// list in words, so a verb that joins its operands with the joining word
     /// keeps its parentheses there.
     Argument,
+    /// An argument of a call written as a sentence, which is a notation: a
+    /// clause keeps its parentheses there.
+    SentenceArgument,
     /// Straight inside another group.
     Nested,
 }
@@ -111,7 +114,11 @@ pub enum Inner
     /// of such a call is a notation, and a sentence there would take the
     /// words of the call around it.
     Sentence,
-    /// An operand that stands on its own: a value, a notation or a clause.
+    /// A clause that no notation spells: a verb other than the `၏` readings
+    /// of notation, or a cell counted from 1. As an argument of a call written
+    /// as a sentence, whose arguments are notations, it keeps its parentheses.
+    Clause,
+    /// An operand that stands on its own: a value or a notation.
     Plain,
 }
 
@@ -136,6 +143,8 @@ impl Inner
             Expr::Verb(v) if joins_operands(v.op) => Inner::Joined,
             Expr::FnAddr(_) => Inner::FnValue,
             Expr::Call(c) if is_sentence(c) => Inner::Sentence,
+            Expr::Verb(v) if !reads_in_notation(v.op) => Inner::Clause,
+            Expr::Index(n) if n.first != 0 => Inner::Clause,
             _ => Inner::Plain,
         }
     }
@@ -352,8 +361,23 @@ fn is_text(expr: &Expr) -> bool
     }
 }
 
-/// Whether a verb joins its two operands with `နှင့်`: the sum, the
-/// difference, the product, the bitwise words, `ညီ`, `မညီ` and `တစ်ခုတည်း`.
+/// Whether a verb is a read that notation spells: `၏ တန်ဖိုး`, `၏ လိပ်စာ`
+/// and the row of a ဇယား.
+///
+/// # Arguments
+///
+/// * `op` - The verb.
+///
+/// # Returns
+///
+/// `true` for such a verb.
+fn reads_in_notation(op: VerbOp) -> bool
+{
+    matches!(op, VerbOp::Deref | VerbOp::AddrOf | VerbOp::Row | VerbOp::RowValue)
+}
+
+/// Whether a verb joins its two operands with `နှင့်`, so as an argument of a
+/// call written in words it keeps its parentheses.
 ///
 /// # Arguments
 ///

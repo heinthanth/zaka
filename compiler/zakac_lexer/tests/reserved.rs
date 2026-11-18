@@ -135,12 +135,6 @@ fn spoken_endings_read_as_their_written_words()
     let triples = [
         ("လုပ်ဆောင်မည်", "လုပ်ဆောင်မယ်", Kw::WillDo),
         ("ပြန်ပေးမည်", "ပြန်ပေးမယ်", Kw::WillReturn),
-        ("သိမ်းထားမည်", "သိမ်းထားမယ်", Kw::WillKeep),
-        ("နေရာအချဲ့အချုံ့လုပ်မည်", "နေရာအချဲ့အချုံ့လုပ်မယ်", Kw::WillResize),
-        ("ပြန်လည်စွန့်လွှတ်မည်", "ပြန်လည်စွန့်လွှတ်မယ်", Kw::WillRelease),
-        ("ကူးယူမည်", "ကူးယူမယ်", Kw::WillBlit),
-        ("ပြောင်းထည့်မည်", "ပြောင်းထည့်မယ်", Kw::WillShift),
-        ("ဖြည့်မည်", "ဖြည့်မယ်", Kw::WillFill),
     ];
     do_for!((written, spoken, kw) in triples, {
         assert_eq!(lookup(written), Some(kw), "{written}");

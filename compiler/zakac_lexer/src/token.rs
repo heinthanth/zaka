@@ -262,6 +262,34 @@ pub enum Kw
     Being,
     /// `ပြီးလျှင်`
     WhenDone,
+    /// `ဘယ်သို့`
+    ShiftLeft,
+    /// `ညာသို့`
+    ShiftRight,
+    /// `ပေါင်းလဒ်`
+    Sum,
+    /// `နုတ်လဒ်`
+    Difference,
+    /// `မြှောက်လဒ်`
+    Product,
+    /// `စားသော`
+    DivideHead,
+    /// `စားလဒ်`
+    QuotientTail,
+    /// `စားကြွင်း`
+    RemainderTail,
+    /// `ဘစ်အလိုက်`
+    BitwiseHead,
+    /// `ဆုံလဒ်`
+    MeetTail,
+    /// `ပေါင်းစုလဒ်`
+    UnionTail,
+    /// `ခြားနားလဒ်`
+    DifferTail,
+    /// `ပြောင်းပြန်ပြောင်းလဒ်`
+    InvertTail,
+    /// `ရွေ့သော`
+    ShiftHead,
     /// `ဘစ်`
     Bit,
 
@@ -385,6 +413,20 @@ pub enum Kw
     Done,
 
     // joined phrases
+    /// `စားသော စားလဒ်`
+    Divide,
+    /// `စားသော စားကြွင်း`
+    Remainder,
+    /// `ဘစ်အလိုက် ဆုံလဒ်`
+    BitAnd,
+    /// `ဘစ်အလိုက် ပေါင်းစုလဒ်`
+    BitOr,
+    /// `ဘစ်အလိုက် ခြားနားလဒ်`
+    BitXor,
+    /// `ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်`
+    BitNot,
+    /// `ရွေ့သော ရလဒ်`
+    Shift,
     /// `ပြောင်းလဲသော ရလဒ်`
     Convert,
     /// `လုပ်ဆောင်သော ရလဒ်`
@@ -412,12 +454,6 @@ pub enum Kw
     /// `အောက်ပါ တို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်`: opens an unsafe
     /// block
     UnsafeBlockOpen,
-    /// `နေရာယူ၍ လိပ်စာ ကို`
-    AllocTarget,
-    /// `မင်မိုရီ တွင်`; an allocation follows.
-    AllocHead,
-    /// `ရှိ မင်မိုရီ ကို`; a resize or a release follows.
-    HeapHead,
     /// `အောက်ပါ တို့ကို လုပ်ဆောင်ကာ`; a result clause follows.
     FnOpenRet,
     /// `လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?`
@@ -599,16 +635,10 @@ pub enum Kw
     TakeSpace,
     /// `တွင်`
     At,
-    /// `သိမ်းထားမည်`
-    WillKeep,
     /// `ရှိ`
     Located,
     /// `ဖြစ်အောင်`
     SoThat,
-    /// `နေရာအချဲ့အချုံ့လုပ်မည်`
-    WillResize,
-    /// `ပြန်လည်စွန့်လွှတ်မည်`
-    WillRelease,
     /// `ခေါ်ဆိုခွင့်`, "leave to call": the first piece of the statements that
     /// let C keep a function value and take that leave back
     CallLeave,
@@ -625,11 +655,6 @@ pub enum Kw
     RevokeCall,
     /// `ဆီသို့`
     Toward,
-    /// `ကူးယူမည်`: a blit whose two ranges must not overlap
-    WillBlit,
-    /// `ပြောင်းထည့်မည်`: a blit whose two ranges can overlap, or a move of a
-    /// value into a variable
-    WillShift,
     /// `ကူးထည့်မည်`: a duplicate of a value into a variable; a shallow duplicate
     /// of an object
     WillDupIn,
@@ -638,8 +663,6 @@ pub enum Kw
     WillDupAllIn,
     /// `အကုန်`: the word before `ကူးထည့်မည်` in a deep duplicate, written apart
     All,
-    /// `ဖြည့်မည်`
-    WillFill,
 
     // lists
     /// `စာရင်းအလွတ်`

@@ -432,15 +432,7 @@ const LATER_WORDS: &[Kw] = &[
     Kw::UnsafeBlockOpen,
     Kw::StartingAt,
     Kw::Mem,
-    Kw::AllocHead,
-    Kw::AllocTarget,
-    Kw::HeapHead,
-    Kw::WillKeep,
-    Kw::WillResize,
-    Kw::WillRelease,
     Kw::Toward,
-    Kw::WillBlit,
-    Kw::WillFill,
 ];
 
 /// The words of [`LATER_WORDS`] a program uses.

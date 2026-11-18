@@ -82,7 +82,6 @@ pub fn token_role(kind: &TokenKind) -> TokenRole
 pub fn role_with_text(kind: &TokenKind, text: &str) -> TokenRole
 {
     ret_if!(*kind == TokenKind::Ident && is_kind_name(text), TokenRole::Kind);
-    ret_if!(*kind == TokenKind::Ident && is_operator_word(text), TokenRole::Op);
     ret_if!(*kind == TokenKind::Ident && is_builtin_verb_word(text), TokenRole::Verb);
     ret_if!(*kind == TokenKind::Ident && builtin_count(text).is_some(), TokenRole::Op);
     token_role(kind)
@@ -93,6 +92,7 @@ pub fn role_with_text(kind: &TokenKind, text: &str) -> TokenRole
 pub const BUILTIN_VERBS: &[(&str, Kw)] = &[
     ("ပြသ", Kw::Print),
     ("ထည့်", Kw::Add),
+    ("ကူးထည့်", Kw::WillDupIn),
     ("ဖျက်", Kw::Remove),
     ("အစားထိုး", Kw::Replace),
 ];
@@ -220,9 +220,6 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::At
         | Kw::Located
         | Kw::SoThat
-        | Kw::AllocTarget
-        | Kw::AllocHead
-        | Kw::HeapHead
         | Kw::DataKindOpen
         | Kw::GenericKind
         | Kw::Substitutable
@@ -279,20 +276,14 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::MarkSucceeded
         | Kw::MarkFailed
         | Kw::WillMark
-        | Kw::WillKeep
-        | Kw::WillResize
-        | Kw::WillRelease
         | Kw::CallLeave
         | Kw::WillGrant
         | Kw::WillRevoke
         | Kw::AllowCall
         | Kw::RevokeCall
-        | Kw::WillBlit
-        | Kw::WillShift
         | Kw::WillDupIn
         | Kw::WillDupAllIn
         | Kw::All
-        | Kw::WillFill
         | Kw::Contains
         | Kw::ContainsAnd
         | Kw::Is
@@ -301,6 +292,27 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Replace
         | Kw::Import => TokenRole::Verb,
         Kw::Equal
+        | Kw::Sum
+        | Kw::Difference
+        | Kw::Product
+        | Kw::ShiftLeft
+        | Kw::ShiftRight
+        | Kw::DivideHead
+        | Kw::QuotientTail
+        | Kw::RemainderTail
+        | Kw::BitwiseHead
+        | Kw::MeetTail
+        | Kw::UnionTail
+        | Kw::DifferTail
+        | Kw::InvertTail
+        | Kw::ShiftHead
+        | Kw::Divide
+        | Kw::Remainder
+        | Kw::BitAnd
+        | Kw::BitOr
+        | Kw::BitXor
+        | Kw::BitNot
+        | Kw::Shift
         | Kw::SameOne
         | Kw::NotEqual
         | Kw::Greater
@@ -427,41 +439,4 @@ pub fn punct_role(punct: Punct) -> TokenRole
         Punct::ListSep | Punct::FullStop | Punct::Ei | Punct::LParen | Punct::RParen
     );
     tern!(delim, TokenRole::Delim, TokenRole::Op)
-}
-
-/// The functions of the prelude that the word operators call, as
-/// `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်` calls `ပေါင်း`.
-pub const OPERATOR_NAMES: &[&str] = &[
-    "ပေါင်း",
-    "နုတ်",
-    "မြှောက်",
-    "စား",
-    "အကြွင်းရှာ",
-    "ဘစ်ဆုံ",
-    "ဘစ်ပေါင်းစု",
-    "ဘစ်ခြားနား",
-    "ဘစ်ပြောင်းပြန်",
-    "ဘစ်ဘယ်ရွေ့",
-    "ဘစ်ညာရွေ့",
-];
-
-/// The value ends a word operator can have glued to it.
-const VALUE_ENDS: &[&str] =
-    &["သည့်ရလဒ်ကောင်း", "မည့်ရလဒ်ကောင်း", "သောရလဒ်ကောင်း", "သည့်ရလဒ်", "မည့်ရလဒ်", "သောရလဒ်"];
-
-/// Whether a name is a word operator: the name of a function of
-/// [`OPERATOR_NAMES`], alone or with a value end glued to it, so it is painted
-/// as an operator.
-///
-/// # Arguments
-///
-/// * `text` - The name.
-///
-/// # Returns
-///
-/// `true` for a word operator.
-pub fn is_operator_word(text: &str) -> bool
-{
-    let stem = VALUE_ENDS.iter().find_map(|end| text.strip_suffix(end));
-    OPERATOR_NAMES.contains(&stem.unwrap_or(text))
 }

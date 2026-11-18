@@ -21,14 +21,6 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     // လုပ်ဆောင်ချက် (အောင်မြင်သည်|မအောင်မြင်ပါ)ဟု သတ်မှတ်မည်။
     (&[Kw::Function, Kw::Succeeded, Kw::Hu, Kw::WillMark], Kw::MarkSucceeded),
     (&[Kw::Function, Kw::NotSucceeded, Kw::Hu, Kw::WillMark], Kw::MarkFailed),
-    // မင်မိုရီတွင် ... ဘိုက်စာ|ခုစာ နေရာယူ၍ လိပ်စာကို ... တွင် သိမ်းထားမည်။
-    (&[Kw::TakeSpace, Kw::Address, Kw::Ko], Kw::AllocTarget),
-    (&[Kw::Mem, Kw::At], Kw::AllocHead),
-    // လိပ်စာ ... ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-    // လိပ်စာ ... ရှိ မင်မိုရီကို ... ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
-    (&[Kw::Located, Kw::Mem, Kw::Ko], Kw::HeapHead),
-    // အကုန် ကူးထည့်မည် — the deep duplicate, written apart
-    (&[Kw::All, Kw::WillDupIn], Kw::WillDupAllIn),
     // <name> ဟူသော <kind> တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် / ဒေတာ ထည့်ပေးရန် — the marks of a parameter
     (&[Kw::Data, Kw::ToChange], Kw::DataToChange),
     (&[Kw::Data, Kw::ToFill], Kw::DataToFill),
@@ -43,6 +35,16 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
     // ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Program, Kw::Done], Kw::ProgramClose),
+    // ... ကို ... ဖြင့် စားသော စားလဒ် / စားကြွင်း
+    (&[Kw::DivideHead, Kw::QuotientTail], Kw::Divide),
+    (&[Kw::DivideHead, Kw::RemainderTail], Kw::Remainder),
+    // ... နှင့် ... ၏ ဘစ်အလိုက် ဆုံလဒ် / ပေါင်းစုလဒ် / ခြားနားလဒ်; ... ၏ ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်
+    (&[Kw::BitwiseHead, Kw::MeetTail], Kw::BitAnd),
+    (&[Kw::BitwiseHead, Kw::UnionTail], Kw::BitOr),
+    (&[Kw::BitwiseHead, Kw::DifferTail], Kw::BitXor),
+    (&[Kw::BitwiseHead, Kw::InvertTail], Kw::BitNot),
+    // ... ကို ဘယ်သို့|ညာသို့ ... ဘစ် ရွေ့သော ရလဒ်
+    (&[Kw::ShiftHead, Kw::Result], Kw::Shift),
     // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်
     (&[Kw::ConvertHead, Kw::Result], Kw::Convert),
     // ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း

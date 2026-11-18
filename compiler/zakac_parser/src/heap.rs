@@ -13,8 +13,6 @@ use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_lexer::classifiers::COUNT_ENDING;
 use zakac_lexer::token::Kw;
-use zakac_lexer::token::Punct;
-use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -23,196 +21,113 @@ use crate::describe::quote;
 use crate::parser::PResult;
 use crate::parser::Parser;
 
+/// `သိမ်းထား`: take room on the heap.
+const ALLOC: &str = "သိမ်းထား";
+/// `ပြန်လည်စွန့်လွှတ်`: give a block back.
+const FREE: &str = "ပြန်လည်စွန့်လွှတ်";
+/// `နေရာအချဲ့အချုံ့လုပ်`: give a block a new size.
+const RESIZE: &str = "နေရာအချဲ့အချုံ့လုပ်";
+/// `ဖြည့်`: set each cell of a block to one value.
+const FILL: &str = "ဖြည့်";
+/// `ကူးယူ`: write the cells of one block to another, with no overlap.
+const BLIT: &str = "ကူးယူ";
+/// `ပြောင်းထည့်`: write the cells of one block to another, overlap allowed.
+const SHIFT: &str = "ပြောင်းထည့်";
+
+/// The heap functions of the prelude, each with the number of its
+/// arguments: the parser turns a call statement of one into its statement
+/// node.
+pub(crate) const HEAP_FNS: [(&str, usize); 6] =
+    [(ALLOC, 2), (FREE, 1), (RESIZE, 2), (FILL, 3), (BLIT, 3), (SHIFT, 3)];
+
+/// The size argument of a heap call as the node holds it: a size operand
+/// gives its count and its kind; another value counts octets.
+///
+/// # Arguments
+///
+/// * `arg` - The argument.
+///
+/// # Returns
+///
+/// The size.
+fn size_arg(arg: Expr) -> SizeArg
+{
+    let span = arg.span();
+    match arg
+    {
+        Expr::Size(n) =>
+        {
+            SizeArg::builder().count(*n.count).maybe_unit(n.unit).span(n.span).build()
+        }
+        arg => SizeArg::builder().count(arg).span(span).build(),
+    }
+}
+
 impl Parser<'_>
 {
-    /// Parse `မင်မိုရီတွင် <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။`;
-    /// the current token is `မင်မိုရီတွင်`.
-    ///
-    /// # Returns
-    ///
-    /// The allocation, or a diagnostic.
-    pub(crate) fn parse_alloc(&mut self) -> PResult<Stmt>
-    {
-        let start = self.bump().span;
-        let size = self.parse_size_arg()?;
-        self.expect(Kw::AllocTarget)?;
-        let target = self.parse_clause_expr()?;
-        self.expect(Kw::At)?;
-        self.expect(Kw::WillKeep)?;
-        let stop = self.expect_stop()?;
-        let span = start.to(&stop.span);
-        let node = AllocStmt::builder().size(size).target(target).span(span).build();
-        Ok(Stmt::Alloc(node))
-    }
-
-    /// Parse a heap statement that starts with `လိပ်စာ <place> ရှိ`; the
-    /// current token is `လိပ်စာ`. A size before `မင်မိုရီကို` makes a blit.
-    /// After `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` makes a release; the verb
-    /// that ends the statement tells a fill from a resize, so a fill value
-    /// that starts with a kind word reads as a value, not as a size.
-    ///
-    /// # Returns
-    ///
-    /// The statement, or a diagnostic.
-    pub(crate) fn parse_heap(&mut self) -> PResult<Stmt>
-    {
-        let start = self.bump().span;
-        let target = self.parse_clause_expr()?;
-        ret_if!(self.at(Kw::Located), self.parse_blit_end(start, target));
-        self.expect(Kw::HeapHead)?;
-        ret_if!(self.at(Kw::WillRelease), self.parse_free_end(start, target));
-        ret_if!(self.ends_in_fill(), self.parse_fill_end(start, target));
-        self.parse_resize_end(start, target)
-    }
-
-    /// Whether the statement ends in `ဖြည့်မည်`: the verb of a fill comes
-    /// before the next `။`. No heap statement holds another statement, so
-    /// the first `။` ends this one.
-    ///
-    /// # Returns
-    ///
-    /// `true` if it does.
-    fn ends_in_fill(&self) -> bool
-    {
-        let stop = TokenKind::Punct(Punct::FullStop);
-        let kinds = (0..).map(|n| self.peek_n(n).kind);
-        let mut rest = kinds.take_while(|k| *k != stop && *k != TokenKind::Eof);
-        rest.any(|k| k == TokenKind::Kw(Kw::WillFill))
-    }
-
-    /// Parse `<size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။` after the head.
+    /// Turn a call statement of a heap function of the prelude into the
+    /// statement node the later stages take: `သိမ်းထား` an allocation,
+    /// `ပြန်လည်စွန့်လွှတ်` a release, `နေရာအချဲ့အချုံ့လုပ်` a resize, `ဖြည့်` a fill,
+    /// `ကူးယူ` and `ပြောင်းထည့်` a blit. A function of the file of such a name
+    /// hides the one of the prelude, and its calls remain calls; so does a
+    /// call with another number of arguments, which the check reports.
     ///
     /// # Arguments
     ///
-    /// * `start` - The span of `လိပ်စာ`.
-    /// * `target` - The place that holds the address.
+    /// * `stmt` - The statement.
     ///
     /// # Returns
     ///
-    /// The reallocation, or a diagnostic.
-    fn parse_resize_end(&mut self, start: Span, target: Expr) -> PResult<Stmt>
+    /// The heap statement, or the statement as it was.
+    pub(crate) fn heap_node(&self, stmt: Stmt) -> Stmt
     {
-        let size = self.parse_size_arg()?;
-        self.expect(Kw::SoThat)?;
-        self.expect(Kw::WillResize)?;
-        let span = start.to(&self.expect_stop()?.span);
-        let node = ResizeStmt::builder().target(target).size(size).span(span).build();
-        Ok(Stmt::Resize(node))
-    }
-
-    /// Parse `ရှိ <size> မင်မိုရီကို လိပ်စာ <dst> ဆီသို့ ကူးယူမည်။`, or the
-    /// same with `ပြောင်းထည့်မည်`, after the source address.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The span of `လိပ်စာ`.
-    /// * `src` - The address the cells come from.
-    ///
-    /// # Returns
-    ///
-    /// The blit, or a diagnostic.
-    fn parse_blit_end(&mut self, start: Span, src: Expr) -> PResult<Stmt>
-    {
-        self.bump();
-        let size = self.parse_size_arg()?;
-        self.expect(Kw::Mem)?;
-        self.expect(Kw::Ko)?;
-        self.expect(Kw::Address)?;
-        let dst = self.parse_clause_expr()?;
-        self.expect(Kw::Toward)?;
-        let verb = self.expect_one_of(&[Kw::WillBlit, Kw::WillShift])?;
-        let overlap = verb.kind == TokenKind::Kw(Kw::WillShift);
-        let span = start.to(&self.expect_stop()?.span);
-        #[rustfmt::skip]
-        let node = BlitStmt::builder().src(src).size(size).dst(dst).overlap(overlap).span(span).build();
-        Ok(Stmt::Blit(node))
-    }
-
-    /// Parse `<value> ဖြင့် <size> ဖြည့်မည်။` after the head. A `ဖြင့်`
-    /// right after a lone operand ends the value.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The span of `လိပ်စာ`.
-    /// * `dst` - The address of the first cell.
-    ///
-    /// # Returns
-    ///
-    /// The fill, or a diagnostic.
-    fn parse_fill_end(&mut self, start: Span, dst: Expr) -> PResult<Stmt>
-    {
-        let outer = std::mem::replace(&mut self.in_fill, true);
-        let value = self.parse_clause_expr();
-        self.in_fill = outer;
-        let value = value?;
-        self.expect(Kw::Hpjint)?;
-        let size = self.parse_size_arg()?;
-        self.expect(Kw::WillFill)?;
-        let span = start.to(&self.expect_stop()?.span);
-        let node =
-            FillStmt::builder().dst(dst).value(value).size(size).span(span).build();
-        Ok(Stmt::Fill(node))
-    }
-
-    /// Parse `ပြန်လည်စွန့်လွှတ်မည်။` after the head.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The span of `လိပ်စာ`.
-    /// * `target` - The address to release.
-    ///
-    /// # Returns
-    ///
-    /// The release, or a diagnostic.
-    fn parse_free_end(&mut self, start: Span, target: Expr) -> PResult<Stmt>
-    {
-        self.bump();
-        let span = start.to(&self.expect_stop()?.span);
-        Ok(Stmt::Free(FreeStmt::builder().target(target).span(span).build()))
-    }
-
-    /// Parse the size of a heap statement: `<count> ဘိုက်စာ`, or
-    /// `<kind> <count> <classifier>စာ`, whose classifier is the measure word of
-    /// the kind. A kind starts the second form unless it is the start of
-    /// `<kind> တစ်<classifier> ၏ အရွယ်အစား`.
-    ///
-    /// # Returns
-    ///
-    /// The size, or a diagnostic.
-    pub(crate) fn parse_size_arg(&mut self) -> PResult<SizeArg>
-    {
-        let start = self.peek().span;
-        ret_if!(!self.starts_kind() || self.at_size_of(), self.parse_octets(start));
-        let mut unit = self.parse_kind()?;
-        let count = self.parse_clause_expr()?;
-        let end = self.parse_items_word(&mut unit)?;
-        let span = start.to(&end);
-        Ok(SizeArg::builder().count(count).unit(unit).span(span).build())
-    }
-
-    /// Parse `<count> ဘိုက်စာ`. The notation of the count reads the
-    /// `ဘိုက်စာ` after it as a size operand, which gives the count back.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The span of the first token of the count.
-    ///
-    /// # Returns
-    ///
-    /// The size in octets, or a diagnostic.
-    fn parse_octets(&mut self, start: Span) -> PResult<SizeArg>
-    {
-        let count = match self.parse_clause_expr()?
+        let Stmt::Call(call) = stmt
+        else
         {
-            Expr::Size(n) if n.unit.is_none() =>
-            {
-                return Ok(SizeArg::builder().count(*n.count).span(n.span).build());
-            }
-            count => count,
+            return stmt;
         };
-        let end = self.expect(Kw::Octets)?.span;
-        let span = start.to(&end);
-        Ok(SizeArg::builder().count(count).span(span).build())
+        let name = call.callee.name.as_str();
+        let heap = self.prelude_heap.contains(name) && call.place.is_none();
+        let fits =
+            HEAP_FNS.iter().any(|(n, count)| *n == name && *count == call.args.len());
+        ret_if!(!heap || !fits || call.pass, Stmt::Call(call));
+        let span = call.span;
+        let mut args = call.args.into_iter();
+        let mut next = || args.next().expect("the count of the arguments is checked");
+        match name
+        {
+            ALLOC =>
+            {
+                let size = size_arg(next());
+                Stmt::Alloc(
+                    AllocStmt::builder().size(size).target(next()).span(span).build(),
+                )
+            }
+            FREE => Stmt::Free(FreeStmt::builder().target(next()).span(span).build()),
+            RESIZE =>
+            {
+                let target = next();
+                let size = size_arg(next());
+                Stmt::Resize(
+                    ResizeStmt::builder().target(target).size(size).span(span).build(),
+                )
+            }
+            FILL =>
+            {
+                let (dst, value) = (next(), next());
+                let size = size_arg(next());
+                #[rustfmt::skip]
+                let node = FillStmt::builder().dst(dst).value(value).size(size).span(span).build();
+                Stmt::Fill(node)
+            }
+            _ =>
+            {
+                let (src, size, dst) = (next(), size_arg(next()), next());
+                #[rustfmt::skip]
+                let node = BlitStmt::builder().src(src).size(size).dst(dst).overlap(name == SHIFT).span(span).build();
+                Stmt::Blit(node)
+            }
+        }
     }
 
     /// Parse the `<classifier>စာ` that closes a size of a kind, and give the

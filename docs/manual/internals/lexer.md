@@ -359,7 +359,7 @@ comment showing the sentence shape:
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ                           → FnOpenRet
 လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။                  → BlockClose
 ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။                         → ProgramClose
-... ကို ... ဖြင့် စားသည့်ရလဒ် | စားကြွင်း              → Divide | Remainder
+... ကို ... ဖြင့် စားသော စားလဒ် | စားကြွင်း              → Divide | Remainder
 ... ကို ... အဖြစ် ပြောင်းလဲသော ရလဒ်                    → Convert
 ... ဟူသော လုပ်ဆောင်ချက်ကို ... တို့ဖြင့် လုပ်ဆောင်သော ရလဒ်    → CallResult
 ... ရလဒ်ကောင်း (after the call head)                  → CallGoodResult

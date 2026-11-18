@@ -17,6 +17,7 @@
 use std::collections::HashMap;
 
 use bon::Builder;
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
@@ -25,6 +26,7 @@ use zakac_ast::expr::UsingParticle;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex_at;
@@ -280,6 +282,37 @@ fn in_notation(kw: Kw) -> bool
     )
 }
 
+/// Whether a notation argument can hold a reserved word as a word of a size
+/// or of a `၏` reading: the count word and `ဘိုက်စာ` of a size operand,
+/// `၏ အရွယ်အစား`, the words of a kind, as in `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ၃ ခုစာ`,
+/// and `၏ တန်ဖိုး`, `၏ လိပ်စာ` and `၏ အကွက် <start> မှစ၍ <length> ကွက်`. Such a
+/// word can stand in a preposition too, unlike the words of [`in_notation`].
+///
+/// # Arguments
+///
+/// * `kw` - The reserved word.
+///
+/// # Returns
+///
+/// `true` for such a word.
+fn in_size(kw: Kw) -> bool
+{
+    matches!(
+        kw,
+        Kw::Items
+            | Kw::Octets
+            | Kw::SizeOf
+            | Kw::Address
+            | Kw::Signed
+            | Kw::Unsigned
+            | Kw::Bit
+            | Kw::Value
+            | Kw::Cell
+            | Kw::StartingAt
+            | Kw::CellWord
+    )
+}
+
 /// What the start of a clause gave: a value, or a whole call statement.
 // The value, the common case, stays unboxed: a box would cost an allocation
 // for each clause.
@@ -390,7 +423,11 @@ impl Parser<'_>
                 continue;
             }
             let tok = self.peek_n(n);
-            ret_if!(self.stops_preposition_scan(&tok, depth), found);
+            // `<number> ဟူသော <kind> တစ်<word>` is one literal with its kind.
+            let with_kind = tok.kind == TokenKind::Kw(Kw::Called)
+                && n > 0
+                && matches!(self.peek_n(n - 1).kind, TokenKind::Number(_));
+            ret_if!(!with_kind && self.stops_preposition_scan(&tok, depth), found);
             match tok.kind
             {
                 TokenKind::Punct(Punct::LParen | Punct::LBracket) => depth += 1,
@@ -496,7 +533,8 @@ impl Parser<'_>
     /// `true` for such a token.
     pub(crate) fn starts_preposition(&self, tok: &Token) -> bool
     {
-        is_preposition_word(tok) && self.first_words.contains(self.text_of(tok.span))
+        is_preposition_word(tok)
+            && self.first_words.contains(written_form(self.text_of(tok.span)))
     }
 
     /// Whether the scan for the end of a preposition call stops at a token: the
@@ -520,14 +558,17 @@ impl Parser<'_>
         // preposition still reads, and the check names the preposition
         // it expects.
         let in_preposition = || {
-            self.preposition_words.contains(self.text_of(tok.span))
+            self.preposition_words.contains(written_form(self.text_of(tok.span)))
                 || is_plain_particle(tok)
         };
         match tok.kind
         {
             TokenKind::Punct(Punct::FullStop) | TokenKind::Eof => true,
             TokenKind::Punct(Punct::RParen | Punct::RBracket) => !deep,
-            TokenKind::Kw(kw) => !deep && !in_preposition() && !in_notation(kw),
+            TokenKind::Kw(kw) =>
+            {
+                !deep && !in_preposition() && !in_notation(kw) && !in_size(kw)
+            }
             _ => false,
         }
     }
@@ -576,7 +617,7 @@ impl Parser<'_>
     pub(crate) fn attempt_phrase_call(&mut self, mode: Mode) -> Option<Head>
     {
         let tok = self.peek();
-        let word = self.text_of(tok.span);
+        let word = written_form(self.text_of(tok.span));
         let opens = self.start_words.contains(word) || self.first_words.contains(word);
         ret_if!(!is_preposition_word(&tok) || !opens, None);
         let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
@@ -770,7 +811,14 @@ impl Parser<'_>
         #[rustfmt::skip]
         let parts = CallParts::builder().start(start).callee(callee).args(args)
             .prepositions(prepositions).phrases(phrases).build();
-        self.finish_using(parts, long, mode)
+        let head = self.finish_using(parts, long, mode)?;
+        // A heap function of the prelude gives no value (ZK0315).
+        let heap_value =
+            |c: &CallExpr| self.prelude_heap.contains(c.callee.name.as_str());
+        let value = tern!(let Head::Expr(Expr::Call(c)) = &head, Some(c), None);
+        let heap = value.filter(|c| heap_value(c));
+        do_if!(let Some(c) = heap, self.diags.push(rd::value_from_void_function(c.span, &c.callee.name)));
+        Ok(head)
     }
 
     /// Read the ending phrase of a call when the words ahead spell one of

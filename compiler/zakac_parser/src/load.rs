@@ -115,6 +115,8 @@ pub static STD_MODULES: &[(&str, &str, &str)] = &[
             include_str!("../../../stdlib/core_traits.zaka"),
             "\n",
             include_str!("../../../stdlib/core_verbs.zaka"),
+            "\n",
+            include_str!("../../../stdlib/core_heap.zaka"),
         ),
     ),
 ];

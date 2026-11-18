@@ -143,8 +143,13 @@ pub fn longest() -> usize { SPOKEN.iter().map(|s| s.spoken.len()).max().unwrap_o
 /// The spoken spelling, or `None` for a word that has none.
 pub fn spoken_twin(text: &str) -> Option<&'static str> { BY_WRITTEN.get(text).copied() }
 
+/// The second spellings of reserved words, each with the spelling a
+/// preposition or a phrase is written in: `မှတ်ဉာဏ်` reads as `မင်မိုရီ`.
+const SYNONYMS: &[(&str, &str)] = &[("မှတ်ဉာဏ်", "မင်မိုရီ")];
+
 /// The written spelling of a word: the written word a spoken spelling stands
-/// for, `၏` for `ရဲ့`, and each other word as it is.
+/// for, `၏` for `ရဲ့`, the first spelling of a reserved word with two, and
+/// each other word as it is.
 ///
 /// # Arguments
 ///
@@ -156,5 +161,7 @@ pub fn spoken_twin(text: &str) -> Option<&'static str> { BY_WRITTEN.get(text).co
 pub fn written_form(text: &str) -> &str
 {
     let ei = (text == SPOKEN_EI).then_some("၏");
-    spoken(text).map(|s| s.written).or(ei).unwrap_or(text)
+    let twin =
+        SYNONYMS.iter().find(|(second, _)| *second == text).map(|(_, first)| *first);
+    spoken(text).map(|s| s.written).or(ei).or(twin).unwrap_or(text)
 }

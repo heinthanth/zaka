@@ -51,7 +51,7 @@ fn declarations()
     assert_eq!(stmt(adult), "(var ကြီးသူ bool [(gt အသက် 18)])");
     let kinded = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(stmt(kinded), "(var က isize 5i8)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
 }
 
@@ -129,7 +129,7 @@ fn declarations_with_a_value_clause()
     assert_eq!(stmt(age), "(var အသက် isize 18)");
     let spaced = "ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုး သည် ၃.၁၄ ဖြစ်ပါစေ။";
     assert_eq!(stmt(spaced), "(const ပိုင် f64 3.14)");
-    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ကို ပေါင်းသည့်ရလဒ် ဖြစ်ပါစေ။";
+    let clause = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ခ နှင့် ဂ ၏ ပေါင်းလဒ် ဖြစ်ပါစေ။";
     assert_eq!(stmt(clause), "(var က isize (add ခ ဂ))");
     let adult = "ကိန်းရှင် ကြီးသူ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် သည် ၁၈ ထက် ကြီး ဖြစ်ပါစေ။";
     assert_eq!(stmt(adult), "(var ကြီးသူ bool (gt အသက် 18))");
@@ -1127,4 +1127,14 @@ fn the_marks_of_a_function_on_the_start_block_name_their_misuse()
     assert_eq!(start("စိတ်မချရသော"), [Code::UnsafeStart]);
     assert_eq!(start("ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော"), [Code::ComptimeMarkMisplaced]);
     assert_eq!(start("စိတ်မချရသော အများသုံး"), [Code::UnsafeStart, Code::ExportNotOnDecl]);
+}
+
+/// `ကူးထည့်` is a verb of the prelude, and `အကုန်` before it makes the
+/// duplicate deep, glued to it or apart.
+#[test]
+fn duplicates_read_through_the_verb_of_the_prelude()
+{
+    let glued = stmt("ခ ထဲသို့ က ကို အကုန်ကူးထည့်မည်။");
+    assert_eq!(glued, stmt("ခ ထဲသို့ က ကို အကုန် ကူးထည့် မည်။"));
+    assert_ne!(glued, stmt("ခ ထဲသို့ က ကို ကူးထည့်မည်။"));
 }

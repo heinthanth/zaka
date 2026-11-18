@@ -777,7 +777,7 @@ pub struct LogicExpr
 }
 
 /// A clause closed with a verb-noun or a comparison verb, such as
-/// `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်`.
+/// `က နှင့် ခ ၏ ပေါင်းလဒ်`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct VerbExpr
 {

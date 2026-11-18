@@ -22,7 +22,6 @@ use zakac_ast::verb::Dir;
 use zakac_ast::verb::Slot;
 use zakac_ast::verb::Verb;
 use zakac_ast::verb::VerbOp;
-use zakac_ast::verb::operator_verb;
 use zakac_ast::verb::verb_for;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
@@ -42,9 +41,11 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::notation::infix_of;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
@@ -163,6 +164,25 @@ impl Item
     fn expr(expr: Expr) -> Self { Item::builder().operand(Operand::Expr(expr)).build() }
 }
 
+/// The shift direction a token spells.
+///
+/// # Arguments
+///
+/// * `tok` - The token.
+///
+/// # Returns
+///
+/// The direction, or `None` for another token.
+fn as_shift_dir(tok: &Token) -> Option<Dir>
+{
+    match kw_of(tok)?
+    {
+        Kw::ShiftLeft => Some(Dir::Left),
+        Kw::ShiftRight => Some(Dir::Right),
+        _ => None,
+    }
+}
+
 /// The clause particle a token spells.
 ///
 /// The lexer calls more words particles than this: `မှ`, `ဖြစ်ပြီး` and the
@@ -225,6 +245,96 @@ fn into_expr(item: Item) -> Expr
 
 impl Parser<'_>
 {
+    /// Read the `၏` readings after a notation expression, as operators that
+    /// close the whole notation before them: `၏ တန်ဖိုး`, `၏ လိပ်စာ`,
+    /// `၏ အကွက် …` and a field, `၏ <name>`, so `ပ + ၁ ၏ တန်ဖိုး` reads the value
+    /// at `ပ + ၁`. A name is a field unless a function or a preposition has
+    /// it, as `x ၏ f` calls a function `f`; `x ၏ {f}` reads the field. The
+    /// range of a replace statement, `၏ အကွက် <start> မှ <end> ထိ`, is left
+    /// to its clause. The clause engine builds the same nodes from them.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The notation expression.
+    ///
+    /// # Returns
+    ///
+    /// The expression with its readings, or a diagnostic.
+    pub(crate) fn ei_readings(&mut self, mut value: Expr) -> PResult<Expr>
+    {
+        loop
+        {
+            let kw = kw_of(&self.peek_n(1));
+            // A reading with an operator after it is left to the clause, which
+            // reports the operator (ZK0209).
+            let alone = infix_of(&self.peek_n(2)).is_none();
+            let reading = (matches!(kw, Some(Kw::Value | Kw::Address)) && alone)
+                || (kw == Some(Kw::Cell) && !self.cell_starts_range())
+                || (self.field_name_at(1) && alone);
+            ret_if!(!self.at_punct(Punct::Ei) || !reading, Ok(value));
+            let ei = self.bump().span;
+            let item =
+                Item::builder().operand(Operand::Expr(value)).slot((Slot::Ei, ei));
+            let mut stack = vec![item.build()];
+            match kw
+            {
+                Some(Kw::Cell) => self.push_index(&mut stack)?,
+                Some(kw) =>
+                {
+                    let verb = verb_for(kw).expect("a reading is a verb row");
+                    self.reduce(&mut stack, verb, Mode::Expr, 1)?;
+                }
+                None =>
+                {
+                    extract!(Expr::Name(name) = self.parse_name());
+                    let field = self.field_of(&mut stack, name);
+                    stack.push(Item::expr(field));
+                }
+            }
+            value = into_expr(stack.pop().expect("a reading gives a value"));
+        }
+    }
+
+    /// Whether the token `n` ahead names a field after `၏`: a name in
+    /// braces, or a name that no function and no preposition has, that
+    /// spells no reading, as `စာလုံး` and `မိတ္တူ` do, and that no `ခုမြောက်`
+    /// follows, which makes it the number of a cell.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn field_name_at(&self, n: usize) -> bool
+    {
+        let tok = self.peek_n(n);
+        ret_true!(tok.kind == TokenKind::RawIdent);
+        let reading = self.name_at(n, CHAR_NAME) || self.name_at(n, DUP_WORD);
+        let ordinal = kw_of(&self.peek_n(n + 1)) == Some(Kw::Ordinal);
+        ret_false!(tok.kind != TokenKind::Ident || reading || ordinal);
+        let text = self.callee_text(&tok);
+        !self.functions.contains_key(&text) && !self.preposition_words.contains(&text)
+    }
+
+    /// Whether `၏ အကွက် <start>` at the cursor starts the range of a replace
+    /// statement, `မှ <end> ထိ`, which its clause reads. Nothing is consumed.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn cell_starts_range(&mut self) -> bool
+    {
+        let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
+        (self.advance(), self.advance());
+        let range = self.parse_bare_notation().is_ok() && self.at_range_end();
+        self.cur = cur;
+        self.diags.truncate(diags);
+        self.next_id = next_id;
+        range
+    }
+
     /// The verb at token `n` ahead and the number of its tokens: a reserved
     /// verb, `<name> မည်` of a function the compiler gives (`ပြသ မည်`, which a
     /// glued `ပြသမည်` splits into), or, right after `၏`, a count the compiler
@@ -241,6 +351,10 @@ impl Parser<'_>
     {
         let tok = self.peek_n(n);
         ret_if!(let Some(verb) = as_verb(&tok), Some((verb, 1)));
+        // `အကုန် ကူးထည့် မည်` is the deep duplicate of `ကူးထည့် မည်`.
+        let deep = tok.kind == TokenKind::Kw(Kw::All)
+            && self.verb_at(n + 1).is_some_and(|(v, _)| v.kw == Kw::WillDupIn);
+        ret_if!(deep, verb_for(Kw::WillDupAllIn).map(|v| (v, 3)));
         ret_if!(tok.kind != TokenKind::Ident, None);
         let name = self.text_of(tok.span);
         ret_if!(!prelude_builtins().contains(name), None);
@@ -306,11 +420,6 @@ impl Parser<'_>
                 self.attach_before(&mut stack)?;
                 continue;
             }
-            let fill_end = self.in_fill && tok.kind == TokenKind::Kw(Kw::Hpjint);
-            ret_if!(
-                fill_end && stack.len() == 1 && stack[0].slot.is_none(),
-                self.finish_clause(stack)
-            );
             // In an item of a list in words, a joining word ends the item.
             ret_if!(self.at_item_end(&stack), self.finish_clause(stack));
             // A joining word after the first case of a switch arm, with the
@@ -372,9 +481,9 @@ impl Parser<'_>
                 self.push_char_nth(&mut stack)?;
                 continue;
             }
-            if let Some((verb, dir)) = self.operator_at()
+            if let Some(dir) = as_shift_dir(&tok)
             {
-                self.reduce_operator(&mut stack, verb, dir)?;
+                self.push_shift(&mut stack, dir)?;
                 continue;
             }
             let Some((verb, words)) = self.verb_at(0)
@@ -594,7 +703,7 @@ impl Parser<'_>
             return Ok(());
         }
         let tok = self.peek();
-        ret_if!(self.verb_at(0).is_some() || self.operator_at().is_some(), Ok(()));
+        ret_if!(self.verb_at(0).is_some() || as_shift_dir(&tok).is_some(), Ok(()));
         let char_word = self.name_at(0, CHAR_NAME);
         ret_if!(char_word && matches!(slot, Slot::Ei | Slot::Ordinal), Ok(()));
         let after_ei =
@@ -603,7 +712,11 @@ impl Parser<'_>
         ret_if!(slot == Slot::Ei && self.at_dup_word(), Ok(()));
         let first = self.text_of(self.prev_span());
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
-        let expr = self.parse_operand()?;
+        // A name after `၏` is a field, and a reading after it reads the field.
+        self.bare_notation = slot == Slot::Ei;
+        let expr = self.parse_operand();
+        self.bare_notation = false;
+        let expr = expr?;
         let is_field = slot == Slot::Ei && !self.at(Kw::Ordinal);
         let item = match expr
         {
@@ -974,11 +1087,11 @@ impl Parser<'_>
     fn push_index(&mut self, stack: &mut Vec<Item>) -> PResult<()>
     {
         self.bump();
-        let index = self.parse_notation()?;
+        let index = self.parse_bare_notation()?;
         let list = into_expr(stack.pop().expect("the top operand holds ၏"));
         if self.eat(Kw::StartingAt)
         {
-            let len = self.parse_notation()?;
+            let len = self.parse_bare_notation()?;
             self.expect(Kw::CellWord)?;
             let span = list.span().to(&self.prev_span());
             #[rustfmt::skip]
@@ -1005,7 +1118,7 @@ impl Parser<'_>
     fn push_char_at(&mut self, stack: &mut Vec<Item>) -> PResult<()>
     {
         self.bump();
-        let index = self.parse_notation()?;
+        let index = self.parse_bare_notation()?;
         let text = into_expr(stack.pop().expect("the top operand holds ၏"));
         let span = text.span().to(&index.span());
         let node = self.char_verb(VerbOp::CharAt, text, index, span);
@@ -1078,7 +1191,7 @@ impl Parser<'_>
     ) -> PResult<()>
     {
         self.bump();
-        let end = self.parse_notation()?;
+        let end = self.parse_bare_notation()?;
         do_if!(chars, _ = self.expect(Kw::Ordinal)?);
         do_if!(chars, _ = self.expect_name(CHAR_NAME)?);
         let upto = self.expect(Kw::Upto)?;
@@ -1167,45 +1280,23 @@ impl Parser<'_>
         Ok(None)
     }
 
-    /// The word operator of the prelude at the current token: its function
-    /// name with a value end after it, `ပေါင်း သည့် ရလဒ်`. It is the operator, so
-    /// on a struct it calls the function of the struct, as `+` does.
-    ///
-    /// # Returns
-    ///
-    /// The verb row and the shift direction, or `None`.
-    pub(crate) fn operator_at(&self) -> Option<(&'static Verb, Option<Dir>)>
-    {
-        let tok = self.peek();
-        ret_if!(tok.kind != TokenKind::Ident, None);
-        let name = self.text_of(tok.span);
-        let end =
-            matches!(kw_of(&self.peek_n(1)), Some(Kw::UsedResult | Kw::UsedGoodResult));
-        ret_if!(!end, None);
-        operator_verb(name)
-    }
-
-    /// Reduce the operand stack on a word operator of the prelude, then read
-    /// its value end.
+    /// Push `ဘယ်သို့|ညာသို့ <distance> ဘစ်`; the direction word is current.
     ///
     /// # Arguments
     ///
     /// * `stack` - The operand stack.
-    /// * `verb` - The verb row.
-    /// * `dir` - The direction of a shift.
+    /// * `dir` - The direction.
     ///
     /// # Returns
     ///
     /// `Ok`, or a diagnostic.
-    fn reduce_operator(
-        &mut self, stack: &mut Vec<Item>, verb: &'static Verb, dir: Option<Dir>,
-    ) -> PResult<()>
+    fn push_shift(&mut self, stack: &mut Vec<Item>, dir: Dir) -> PResult<()>
     {
-        // The name and its end, `ပေါင်း` and `သည့်ရလဒ်`, are one verb, so a
-        // message names the whole word.
-        self.reduce(stack, verb, Mode::Expr, 2)?;
-        let top = stack.last_mut().expect("the reduce pushes the operation");
-        do_if!(let Operand::Expr(Expr::Verb(node)) = &mut top.operand, node.dir = dir);
+        self.bump();
+        let dist = self.parse_notation()?;
+        let bit = self.expect(Kw::Bit)?;
+        let item = Item::builder().operand(Operand::Expr(dist));
+        stack.push(item.slot((Slot::Bit(dir), bit.span)).build());
         Ok(())
     }
 
@@ -1274,6 +1365,11 @@ impl Parser<'_>
             let [list, index] = <[Item; 2]>::try_from(args).expect("slots are checked");
             return self.index_expr(into_expr(list), into_expr(index), 1, span);
         }
+        let dir = args.iter().find_map(|e| match e.slot
+        {
+            Some((Slot::Bit(dir), _)) => Some(dir),
+            _ => None,
+        });
         let (mut exprs, mut kind_arg) = (Vec::new(), None);
         for item in args
         {
@@ -1295,6 +1391,7 @@ impl Parser<'_>
             .op(verb.op)
             .args(exprs)
             .maybe_kind_arg(kind_arg)
+            .maybe_dir(dir)
             .pass(pass)
             .particle(tok.particle)
             .is_cmp(verb.is_cmp)

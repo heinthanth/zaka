@@ -80,7 +80,7 @@ clusters), digits and single other characters; it joins the pieces that touch in
   word that holds just particles (such as `ကိုကို`) is not split.
 - **A word with a vanna that is not reserved is a name.** `အသက်ကို` is one name, not
   `အသက်` then `ကို`.
-- **The words of a reserved phrase** such as `စားသည့်ရလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်မည်`
+- **The words of a reserved phrase** such as `စားသော စားလဒ်` or `အောက်ပါတို့ကို လုပ်ဆောင်မည်`
   can have white space between the words or none; both read the same.
 
 ```text
@@ -357,7 +357,7 @@ of a struct and its values, the members of an enumeration (`ပါဝင်သ�
 and the cases of a switch arm. A list without its `နှင့်` is ZK0245, and a closing word that
 does not fit the count is ZK0246.
 
-An item that holds a `နှင့်` of its own, such as the sum `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်`, stands in
+An item that holds a `နှင့်` of its own, such as the sum `က နှင့် ခ ၏ ပေါင်းလဒ်`, stands in
 parentheses, so the `နှင့်` of the list is never read as part of it. Lists in notation,
 `[က၊ ခ]` and `f(က၊ ခ)`, keep plain `၊`, and so do the parameters that end in `လည်းကောင်း`.
 
@@ -371,7 +371,7 @@ parentheses, so the `နှင့်` of the list is never read as part of it. L
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းများ ကို ပြသမည်။
-ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် (၁ နှင့် ၂ ကို ပေါင်းသည့်ရလဒ်) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် (၁ နှင့် ၂ ၏ ပေါင်းလဒ်) တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 ကိန်းရှင် စာ သည် "က"၊ "ခ" နှင့် "ဂ" တို့ကို ဆက်ထားသည့် စာသား ဖြစ်ပါစေ။
 စာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

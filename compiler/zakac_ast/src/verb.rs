@@ -9,9 +9,9 @@ use zakac_rust_sugars::ret_true;
 #[serde(rename_all = "snake_case")]
 pub enum Dir
 {
-    /// `ဘစ်ဘယ်ရွေ့`
+    /// `ဘယ်သို့`
     Left,
-    /// `ဘစ်ညာရွေ့`
+    /// `ညာသို့`
     Right,
 }
 
@@ -45,6 +45,10 @@ pub enum Slot
     /// `ဟု`
     #[strum(serialize = "ဟု")]
     Hu,
+    /// `ဘယ်သို့|ညာသို့ <operand> ဘစ်`; a verb that lists one direction
+    /// accepts both.
+    #[strum(serialize = "ဘယ်သို့|ညာသို့ ... ဘစ်")]
+    Bit(Dir),
     /// `ကို` or `ဟု`; listed as a wanted slot, never carried.
     #[strum(serialize = "ကို|ဟု")]
     KoOrHu,
@@ -84,6 +88,7 @@ impl Slot
     /// `ကို` or `ဟု` fills a slot that lists both.
     pub fn fills(self, want: Slot) -> bool
     {
+        ret_true!(matches!((self, want), (Slot::Bit(_), Slot::Bit(_))));
         ret_true!(matches!((self, want), (Slot::Ko | Slot::Hu, Slot::KoOrHu)));
         ret_true!(matches!((self, want), (Slot::Before, Slot::Into)));
         self == want
@@ -261,6 +266,8 @@ const fn row(kw: Kw, op: VerbOp, slots: &'static [Slot], is_stmt: bool, is_cmp: 
     Verb { kw, op, slots, is_stmt, is_cmp }
 }
 
+const PAIR: &[Slot] = &[Slot::Hnint, Slot::Ei];
+const DIVIDE: &[Slot] = &[Slot::Ko, Slot::Hpjint];
 const EQUAL: &[Slot] = &[Slot::Thi, Slot::Hnint];
 const GREATER: &[Slot] = &[Slot::Thi, Slot::Htet];
 const LESS: &[Slot] = &[Slot::Thi, Slot::Auk];
@@ -268,6 +275,16 @@ const LESS: &[Slot] = &[Slot::Thi, Slot::Auk];
 /// The valence table: each verb the clause engine reduces on.
 #[rustfmt::skip]
 pub static VERBS: &[Verb] = &[
+    row(Kw::Sum, VerbOp::Add, PAIR, false, false),
+    row(Kw::Difference, VerbOp::Sub, PAIR, false, false),
+    row(Kw::Product, VerbOp::Mul, PAIR, false, false),
+    row(Kw::Divide, VerbOp::Div, DIVIDE, false, false),
+    row(Kw::Remainder, VerbOp::Rem, DIVIDE, false, false),
+    row(Kw::BitAnd, VerbOp::BitAnd, PAIR, false, false),
+    row(Kw::BitOr, VerbOp::BitOr, PAIR, false, false),
+    row(Kw::BitXor, VerbOp::BitXor, PAIR, false, false),
+    row(Kw::BitNot, VerbOp::BitNot, &[Slot::Ei], false, false),
+    row(Kw::Shift, VerbOp::Shift, &[Slot::Ko, Slot::Bit(Dir::Left)], false, false),
     row(Kw::Equal, VerbOp::Eq, EQUAL, false, true),
     row(Kw::NotEqual, VerbOp::Ne, EQUAL, false, true),
     row(Kw::SameOne, VerbOp::Same, &[Slot::Hnint, Slot::Thi], false, true),
@@ -307,44 +324,3 @@ pub static VERBS: &[Verb] = &[
 ///
 /// The row, or `None` when `kw` is no verb.
 pub fn verb_for(kw: Kw) -> Option<&'static Verb> { VERBS.iter().find(|v| v.kw == kw) }
-
-/// The slots of `က နှင့် ခ ကို <fn>`.
-const WITH: &[Slot] = &[Slot::Hnint, Slot::Ko];
-/// The slots of `က ကို ခ ဖြင့် <fn>`.
-const BY: &[Slot] = &[Slot::Ko, Slot::Hpjint];
-/// The slot of `က ကို <fn>`.
-const ONE: &[Slot] = &[Slot::Ko];
-
-/// The function of the prelude each word operator calls, with the verb row
-/// the clause engine reduces on and the direction of a shift: `က နှင့် ခ ကို
-/// ပေါင်းသည့်ရလဒ်` is the sum, as `က + ခ` is, and nests as each verb does. The
-/// slots are the prepositions the prelude gives each function. A file that declares
-/// or imports its own function of the name calls that function instead.
-#[rustfmt::skip]
-pub static OPERATOR_VERBS: &[(&str, Verb, Option<Dir>)] = &[
-    ("ပေါင်း", row(Kw::UsedResult, VerbOp::Add, WITH, false, false), None),
-    ("နုတ်", row(Kw::UsedResult, VerbOp::Sub, WITH, false, false), None),
-    ("မြှောက်", row(Kw::UsedResult, VerbOp::Mul, WITH, false, false), None),
-    ("စား", row(Kw::UsedResult, VerbOp::Div, BY, false, false), None),
-    ("အကြွင်းရှာ", row(Kw::UsedResult, VerbOp::Rem, BY, false, false), None),
-    ("ဘစ်ဆုံ", row(Kw::UsedResult, VerbOp::BitAnd, WITH, false, false), None),
-    ("ဘစ်ပေါင်းစု", row(Kw::UsedResult, VerbOp::BitOr, WITH, false, false), None),
-    ("ဘစ်ခြားနား", row(Kw::UsedResult, VerbOp::BitXor, WITH, false, false), None),
-    ("ဘစ်ပြောင်းပြန်", row(Kw::UsedResult, VerbOp::BitNot, ONE, false, false), None),
-    ("ဘစ်ဘယ်ရွေ့", row(Kw::UsedResult, VerbOp::Shift, BY, false, false), Some(Dir::Left)),
-    ("ဘစ်ညာရွေ့", row(Kw::UsedResult, VerbOp::Shift, BY, false, false), Some(Dir::Right)),
-];
-
-/// The verb row and the shift direction of a word operator of the prelude.
-///
-/// # Arguments
-///
-/// * `name` - The function name.
-///
-/// # Returns
-///
-/// The row and the direction, or `None` for another name.
-pub fn operator_verb(name: &str) -> Option<(&'static Verb, Option<Dir>)>
-{
-    OPERATOR_VERBS.iter().find(|(n, ..)| *n == name).map(|(_, verb, dir)| (verb, *dir))
-}

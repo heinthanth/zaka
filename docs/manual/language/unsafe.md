@@ -413,9 +413,9 @@ and the pointer kind tells the size in octets. These operations alone exist on p
 
 | Form | Kinds | Gives |
 | --- | --- | --- |
-| `ပ + န`, `န + ပ`, `ပ နှင့် န ကို ပေါင်းသည့်ရလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values on |
-| `ပ - န`, `ပ နှင့် န ကို နုတ်သည့်ရလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values back |
-| `ပ - မ`, `ပ နှင့် မ ကို နုတ်သည့်ရလဒ်` | two pointers of one kind | the distance in values, a `ကိန်းပြည့်` |
+| `ပ + န`, `န + ပ`, `ပ နှင့် န ၏ ပေါင်းလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values on |
+| `ပ - န`, `ပ နှင့် န ၏ နုတ်လဒ်` | a pointer and an integer | a pointer of the same kind, `န` values back |
+| `ပ - မ`, `ပ နှင့် မ ၏ နုတ်လဒ်` | two pointers of one kind | the distance in values, a `ကိန်းပြည့်` |
 | `ပ သည် မ နှင့် ညီ`, `မညီ` | two pointers of one kind, or a pointer and the null address | whether both hold the same address |
 | `ပ သည် မ အောက် ငယ်` and the other orders | two pointers of one kind | which address is lower |
 
@@ -525,6 +525,15 @@ replaced with `မှတ်ဉာဏ်`. Resizing and giving back start alike, 
 `လိပ်စာ <place> ရှိ မင်မိုရီကို` ("the RAM at the address in the place"); the words after it
 tell the two apart.
 
+Each heap sentence is a [call written as a sentence](functions.md#starting-and-ending-phrases)
+of a function of the [prelude](prelude.md), which the compiler gives: `သိမ်းထား`,
+`ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and `ပြောင်းထည့်`. Their names
+are no reserved words, so a file that declares a function of one of these names hides the
+one of the prelude. Like an argument of each sentence call, an argument is a notation:
+a name, a number, an operator expression, a size, and the reads `ပ ၏ တန်ဖိုး`,
+`x ၏ လိပ်စာ`, `ကွက်များ ၏ အကွက် i` and a field `ဘူး ၏ ပ`. A clause such as a conversion
+goes in parentheses. A heap sentence gives no value; written as one, it is ZK0315.
+
 ### Sizes
 
 A request names its size in one of two forms:
@@ -535,7 +544,8 @@ A request names its size in one of two forms:
 | `<count> ဘိုက်စာ` | `count` octets |
 
 The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`: a literal fits as it stands, and a variable used as a
-count has that kind. Both forms are values too, outside the heap statements: the
+count has that kind. Another `လက္ခဏာမဲ့ ကိန်းပြည့်` value counts octets as well, as
+`n ဘိုက်စာ` does. Both forms are values too, outside the heap statements: the
 [size](kinds.md#the-size-of-a-kind) in octets, a `လက္ခဏာမဲ့ ကိန်းပြည့်`. Each form with a kind multiplies the count with the size of the kind,
 and a product that does not fit counts as running out of room.
 
@@ -674,9 +684,8 @@ The rules:
 - The value of a fill is of the kind of the cells when the size is `<kind> N <word>စာ`, and a
   `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` when the size is `N ဘိုက်စာ`; with another kind it is ZK0401.
   A struct value fills as well: `အမှတ်(ဒေါင်: ၁၊ အလျား: ၂) ဖြင့် အမှတ် ၃ ခုစာ`.
-- A `ဖြင့်` right after a lone value ends the value, while one inside a phrase such as a
-  division belongs to it: in `က ကို ၂ ဖြင့် စားသည့်ရလဒ် ဖြင့် ၁ ဘိုက်စာ` the value is the
-  quotient.
+- The value is a notation, as each argument is: `က / ၂ ဖြင့် ၁ ဘိုက်စာ` fills with the
+  quotient, and a clause goes in parentheses, `(က ကို ၂ ဖြင့် စားသော စားလဒ်) ဖြင့် ၁ ဘိုက်စာ`.
 - A count of 0 does nothing, and neither the compiler nor the VM checks the addresses.
   Else the VM checks that the source range lies in one live block and the destination
   range in one live block that can be written, and each failure stops the program as an

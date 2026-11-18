@@ -13,6 +13,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex_at;
+use zakac_lexer::reserved::lookup;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
 use zakac_lexer::token::Punct;
@@ -70,13 +71,19 @@ pub(crate) fn split_glued(
         let parts = (!declared_at(tokens, at))
             .then(|| glued_parts(text, base, tok, functions))
             .flatten();
-        parts.map_or_else(|| vec![*tok], |(stem, end)| split_token(tok, stem, end))
+        parts.map_or_else(|| vec![*tok], |parts| split_token(tok, parts))
     };
     out.tokens = (0..tokens.len()).flat_map(split).collect();
     out
 }
 
-/// The function name and the call end a name token is glued from.
+/// The parts of a glued call: the reserved word glued in front, with its
+/// length, as `အကုန်` in `အကုန်ကူးထည့်မည်`; the length of the function name;
+/// and the call end.
+type Glued = (Option<(Kw, usize)>, usize, &'static str);
+
+/// The reserved word, the function name and the call end a name token is
+/// glued from; the reserved word in front is optional.
 ///
 /// # Arguments
 ///
@@ -87,43 +94,58 @@ pub(crate) fn split_glued(
 ///
 /// # Returns
 ///
-/// The name and the end, or `None` for a token that is no glued call.
+/// The parts, or `None` for a token that is no glued call.
 fn glued_parts(
     text: &str, base: Pos, tok: &Token, functions: &Functions,
-) -> Option<(usize, &'static str)>
+) -> Option<Glued>
 {
     ret_if!(tok.kind != TokenKind::Ident, None);
     let word = &text[(tok.span.lo - base) as usize..(tok.span.hi - base) as usize];
-    let fits = |end: &&&str| {
-        let stem = word.strip_suffix(**end);
-        stem.is_some_and(|s| !s.is_empty() && functions.contains_key(s))
+    let lead = |stem: &str| -> Option<Option<(Kw, usize)>> {
+        ret_if!(functions.contains_key(stem), Some(None));
+        let mut cuts = (1..stem.len()).filter(|i| stem.is_char_boundary(*i));
+        let cut = cuts.find(|i| {
+            lookup(&stem[..*i]).is_some() && functions.contains_key(&stem[*i..])
+        })?;
+        lookup(&stem[..cut]).map(|kw| Some((kw, cut)))
     };
-    let end = ENDS.iter().find(fits)?;
-    Some((word.len() - end.len(), end))
+    let fits =
+        |end: &str| word.strip_suffix(end).filter(|s| !s.is_empty()).and_then(lead);
+    let end = ENDS.iter().find(|end| fits(end).is_some())?;
+    let front = fits(end)?;
+    let lead_len = front.map_or(0, |(_, len)| len);
+    Some((front, word.len() - end.len() - lead_len, end))
 }
 
-/// The name token and the end tokens of a glued call.
+/// The tokens of a glued call: the reserved word in front, when there is one,
+/// the name and the end.
 ///
 /// # Arguments
 ///
 /// * `tok` - The glued token.
-/// * `stem` - The length of the name, in octets.
-/// * `end` - The text of the end.
+/// * `parts` - The parts of the glued call.
 ///
 /// # Returns
 ///
 /// The tokens.
-fn split_token(tok: &Token, stem: usize, end: &str) -> Vec<Token>
+fn split_token(tok: &Token, parts: Glued) -> Vec<Token>
 {
+    let (front, stem, end) = parts;
+    let lead = front.map_or(0, |(_, len)| len);
+    let lead_tok = front.map(|(kw, len)| {
+        let span = Span::new(tok.span.lo, tok.span.lo + len);
+        Token { kind: TokenKind::Kw(kw), span, ..*tok }
+    });
     let mut name = *tok;
-    name.span = Span::new(tok.span.lo, tok.span.lo + stem);
-    let lexed = lex_at(end, tok.span.lo + stem, &LexerOptions::default());
+    name.span = Span::new(tok.span.lo + lead, tok.span.lo + lead + stem);
+    name.joined = name.joined || lead > 0;
+    let lexed = lex_at(end, tok.span.lo + lead + stem, &LexerOptions::default());
     let ends = lexed.tokens.into_iter().filter(|t| t.kind != TokenKind::Eof);
     let ends = ends.enumerate().map(|(n, mut t)| {
         t.joined = n == 0 || t.joined;
         t
     });
-    std::iter::once(name).chain(ends).collect()
+    lead_tok.into_iter().chain(std::iter::once(name)).chain(ends).collect()
 }
 
 /// Whether the name token at `at` is being declared: after `ကိန်းရှင်`,
@@ -191,9 +213,11 @@ pub(crate) fn clash_warnings(
             continue;
         }
         let word = &text[(tok.span.lo - base) as usize..(tok.span.hi - base) as usize];
-        if let Some((stem, end)) = glued_parts(text, base, tok, functions)
+        if let Some((front, stem, end)) = glued_parts(text, base, tok, functions)
         {
-            found.push(diag::name_reads_as_call(tok.span, word, &word[..stem], end));
+            let lead = front.map_or(0, |(_, len)| len);
+            let name = &word[lead..lead + stem];
+            found.push(diag::name_reads_as_call(tok.span, word, name, end));
         }
         let preposition =
             prepositions.iter().find(|(_, m)| m.split(' ').any(|w| w == word));
@@ -236,8 +260,9 @@ pub(crate) fn glued_spoken(
     let tokens = &lexed.tokens;
     let end_diags = |at: usize| {
         let tok = &tokens[at];
-        let (stem, end) = glued_parts(text, base, tok, functions)?;
-        Some(lex_at(end, tok.span.lo + stem, &LexerOptions::default()).diagnostics)
+        let (front, stem, end) = glued_parts(text, base, tok, functions)?;
+        let at = tok.span.lo + front.map_or(0, |(_, len)| len) + stem;
+        Some(lex_at(end, at, &LexerOptions::default()).diagnostics)
     };
     let open = (0..tokens.len()).filter(|&at| !declared_at(tokens, at));
     let found = open.filter_map(end_diags).flatten();

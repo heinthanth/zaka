@@ -36,7 +36,7 @@ Where two forms share a start, the start is read once and the token after it dec
 Zaka sentences are verb-final, and each operand carries a particle that names its role:
 
 ```text
-အသက် ကို   အသက် နှင့်  ၁ ကို ပေါင်းသည့်ရလဒ်  ဟု   ထားမည်။
+အသက် ကို   အသက် နှင့်  ၁ ၏ ပေါင်းလဒ်  ဟု   ထားမည်။
  operand ကို  operand နှင့်  operand ၏   verb    ဟု  statement verb
 ```
 
@@ -139,7 +139,7 @@ changes.
 
 ## One sentence, followed
 
-Take `အသက် ကို အသက် နှင့် ၁ ကို ပေါင်းသည့်ရလဒ် ဟု ထားမည်။` ("set age to the sum of age and 1").
+Take `အသက် ကို အသက် နှင့် ၁ ၏ ပေါင်းလဒ် ဟု ထားမည်။` ("set age to the sum of age and 1").
 The first token is a name, so `parse_stmt` sends it to `parse_expr_headed`, which runs the
 clause engine in statement mode. Letters stand for the slots: `K` is `ကို`, `H` is
 `နှင့်`, `E` is `၏`, `U` is `ဟု`.
@@ -279,8 +279,6 @@ token:
 | a text then `မှလာသော` after `NAME ဟူသော လုပ်ဆောင်ချက် သည်` | `parse_external`, through `at_lib` and `parse_origin` (`stmt.rs`) | the header of a C function: the same header as an external function, with the text of a lib where `ပြင်ပ` stood. The lexer has no joined word for it: the text is a `Str` token, then `မှ` (`Kw::From`) and `လာသော` (`Kw::Coming`). `parse_origin` gives `FnDecl::lib`, a `StrArg` of the text (`None` for the host form); the s-expression form is `(external "libm" name [params] ret)`. `parse_params(ends, rest)` takes `rest` for an external header: `အခြားတန်ဖိုးများနှင့်အတူ` (`Kw::WithOtherValues`, the lexer joins `Kw::OtherValues` and `နှင့်အတူ`, `Kw::Along`, written apart) after the last `လည်းကောင်း`, before the end word, sets `FnDecl::variadic` (the s-expression writes `...` among the parameters), and each parameter before it ends in `လည်းကောင်း`. A C function can use it; a host function that has it is ZK0334 |
 | an operand, then a preposition | `attempt_preposition_call` (`using.rs`) | the preposition call. `Parser::functions` holds the functions that declare prepositions, with the prepositions of each overload: `Parser::new` finds them in the headers of the file (`fn_header`), and the loader passes the ones a file imports to `parse_with`. `preposition_end` scans for the end of a call of such a function, outside parentheses, past prepositions and notation words; a value end with a preposition after it can be an argument, so the scan goes on past it and keeps it when no later end comes. `parse_preposition_call` then reads each argument, its preposition when it has one, and a `၊` when written, up to that end, and `attempt_preposition_call` keeps the call when its prepositions stand in the slots of the parameters of a function of that name; otherwise it puts the cursor, the diagnostics and the node number back, and the sentence reads as before (`က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` remains a set). The `"<file>" မှ` start of an import is read as an import unless `preposition_end` finds a preposition call |
 | a word of a starting phrase, or of an ending phrase, at the start of a clause | `attempt_phrase_call` (`using.rs`) | a call written as a sentence that opens with a phrase. `parse_head` tries it before the first operand, when the word is in `Parser::start_words` or `Parser::first_words`. `bare_phrase_call` reads the phrases, the name and the end of a function with no parameters; else `start_phrase_call` reads the longest starting phrase, the first argument, and the rest through `parse_preposition_call`. A call that does not read, or whose counts fit no function of its name (`fits_words`), puts the cursor, the diagnostics and the node number back. In `parse_preposition_call`, the words between the last argument (or its preposition) and the function name that spell an ending phrase of the function are that phrase (`parse_end_phrase`); the call keeps both in `Phrases` |
-| `မင်မိုရီတွင်` | `parse_alloc` | the allocation sentence |
-| `လိပ်စာ` | `parse_heap` | `လိပ်စာ PLACE ရှိ`, then a size before `မင်မိုရီကို` for a blit (`parse_blit_end`: `ကူးယူမည်` or `ပြောင်းထည့်မည်`); else after `မင်မိုရီကို`, `ပြန်လည်စွန့်လွှတ်မည်` for a release, a fill (`parse_fill_end`) when `ဖြည့်မည်` comes before the `။` (`ends_in_fill`), or a size for a resize. A size with a kind is `KIND N WORDစာ` (`parse_size_arg`): the text of the count word before its `စာ` becomes the measure word of the unit kind, `Kind::classifier`. The value of a fill is read with `in_fill` set, so a `ဖြင့်` right after a lone value ends it |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME ကို`, or the names as a list in words then `တို့ကို`, then `ထည့်သွင်းမည်။`; after another statement or inside a block it is parsed and reported (ZK0230) |
 | a name, then `ဟူသော`, the marks `အများသုံး`, `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ` | `parse_kind_decl` | checked first (`at_kind_decl`); the marks set `exported`, `shared` and `external`. `ဒေတာအစုအဝေး` (`Kw::StructWord`) then `တွင်` reads a struct (`parse_struct_decl`): fields with `၊` between them, each `NAME ဟူသော KIND တစ်WORD` (`parse_field`), then `တို့ပါဝင်သည်` (`FieldsClose`) or `တို့ပါဝင်ပြီး` (`FieldsCloseAnd`) and the classifier clause (`parse_decl_end`). With `ပြင်ပမှ လာသော` (`Kw::External`) it reads a kind from outside the program (`parse_external_kind`): `ဖြစ်သည်` (`Kw::Is`) ends a declaration with no field, and `တွင်` goes on to the fields and `တို့ပါဝင်သည်`; the node is a `StructDecl` with `shared` and `external` set (s-expression head `external_struct`). `ဒေတာအမျိုးအစားကွဲ` (`Kw::EnumWord`) then `တွင်` reads an enumeration (`parse_enum_decl`): members with `၊` between them, each `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် VALUE ရှိသည့်] NAME` (`parse_enum_member`; the lexer joins the mark into `Kw::InitialMark` and the opener of the value into `Kw::ValueAs`, `HavingRel` closes it; `EnumMember::initial` marks the one [initial member](../language/enums.md#the-initial-member)), then `တို့ပါဝင်သည်`, or `ပါဝင်သည်` after a lone member, or the `...ပြီး` closers and a classifier clause (`EnumDecl::classifier`). A declaration inside a block is parsed and reported (ZK0228, ZK0235) |
 | `အချက်အလက်အမျိုးအစား` | `parse_alias_decl` | the alias name, its kind parameters (`<…>`, or `သည်` and the word form, `parse_word_params`), `ကို`, the kind (`parse_kind`, with no measure word), then `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`), or `ဟုလည်း မှတ်ယူနိုင်ပြီး` (`Kw::AliasCloseAnd`) and a classifier clause (`AliasDecl::classifier`); inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
@@ -321,8 +319,29 @@ start a size operand, `<kind> <count> <word>စာ` (`Expr::Size`): `attempt_kin
 (`heap.rs`) reads the kind, the count as a notation expression and the count word, and puts
 the cursor, the diagnostics and the node number back when one of them is missing.
 `parse_notation` closes its expression with `ဘိုက်စာ` when the word follows
-(`octets_after`), so `n + ၁ ဘိုက်စာ` counts `n + ၁` octets; the octet size of a heap statement
-takes the count back out of that node.
+(`octets_after`), so `n + ၁ ဘိုက်စာ` counts `n + ၁` octets.
+
+Before that, `parse_notation` reads the `၏` reads of notation (`ei_readings` in
+`clause.rs`): `၏ တန်ဖိုး` and `၏ လိပ်စာ` through the verb rows (`reduce`), `၏ အကွက် …`
+through `push_index`, and a field through `field_of`, so the nodes are the ones the clause
+engine builds. A name is a field unless a function or a preposition has it, it spells a
+read (`စာလုံး`, `မိတ္တူ`) or `ခုမြောက်` follows it (`field_name_at`); a read with an
+operator after it, and the range of a replace statement (`cell_starts_range`), are left to
+the clause. Parts of a larger read take no read of their own (`parse_bare_notation`): the
+number and the length of a cell, the number of a character, the end of a range and the
+index of a row; so does the name after `၏` that the clause engine reads as a field
+(`bare_notation`, which `push_next_operand` sets).
+
+The heap sentences are calls of the functions of `core_heap.zaka` (`HEAP_FNS` in
+`heap.rs`). `with_prelude` keeps their prepositions, unlike the verbs of the prelude, and
+gives back the ones the file sees, which no function of its own hides
+(`Parser::prelude_heap`). `parse_stmt` turns a call statement of one, with its number of
+arguments, into its node (`heap_node`): `Stmt::Alloc`, `Free`, `Resize`, `Fill` or `Blit`.
+A size argument (`Expr::Size`) gives its count and its kind; another value counts octets.
+A call of one in a value's place is ZK0315 (`finish_sentence_call`). The scan for the end
+of a sentence call goes past the words of a size, a kind and a read (`in_size`) and past a
+literal with its kind; `written_form` reads `မှတ်ဉာဏ်` as `မင်မိုရီ`, so a preposition
+matches either spelling.
 
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes
@@ -379,14 +398,16 @@ no `fill` and `ဒေတာ ထည့်ပေးရန်` in a function kind s
 `ပြောင်းလဲရန်` or `ထည့်ပေးရန်` (`Kw::ToChange`, `Kw::ToFill`) is no marker and stops the item
 likewise.
 
-`ကူးထည့်မည်` (`Kw::WillDupIn`) and `အကုန်ကူးထည့်မည်` (`Kw::WillDupAllIn`) are statement
-verbs of the valence table with the slots `ထဲသို့` and `ကို`, as `ထည့်မည်` is
+`ကူးထည့်` is a verb of the prelude, as `ထည့်` is (`BUILTIN_VERBS` gives `Kw::WillDupIn`), and
+`အကုန်` before it gives `Kw::WillDupAllIn` (`verb_at`); a glued `အကုန်ကူးထည့်မည်` splits into
+the three words (`glued_parts`). Both are statement verbs of the valence table with the
+slots `ထဲသို့` and `ကို`, as `ထည့်မည်` is
 (`VerbOp::DupInto`, `VerbOp::DeepDupInto`): `x ထဲသို့ v ကို ကူးထည့်မည်` is an `AssignStmt`
 whose value is the duplicate expression of `v`, shallow or deep, as below. After `ကိန်းရှင်` or
 `ကိန်းသေ`, a name with `ထဲသို့` after it sends `parse_decl_or_loop` back to the name, reads
 the sentence as that assignment, and makes a `DeclStmt` with the value as its start and no
-written kind (`parse_decl_into`). `ပြောင်းထည့်မည်` (`Kw::WillShift`) is left to the heap
-statement, where it is the `memmove` form of `ကူးယူမည်`.
+written kind (`parse_decl_into`). `ပြောင်းထည့်` is the heap function of the prelude that is
+the `memmove` form of `ကူးယူ`.
 
 The duplicate word `မိတ္တူ` is no reserved word: when the clause engine meets the name `မိတ္တူ`
 after an operand that holds `၏` (`at_dup_word`), `push_dup` turns the operand into a duplicate
@@ -500,8 +521,7 @@ word, `လူတစ်ယောက်`. A kind with no word after it is ZK0234 (
 kind takes in its help. `slot_kind_len_at` measures the same with a look ahead, and
 `slot_then` asks whether a word follows a kind with or without its count word, which a
 conversion uses for `အဖြစ်`. A kind inside a kind takes no word, and neither does the kind
-of an alias. The size of a heap statement keeps its count word in `Kind::classifier` of
-its unit too. The loader writes `Kind::alias` when it puts the kind of an alias in place
+of an alias. A size operand keeps its count word in `Kind::classifier` of its unit too. The loader writes `Kind::alias` when it puts the kind of an alias in place
 of a use that adds no levels, so the naturalness check counts it with the word of the
 alias.
 
@@ -544,12 +564,12 @@ While an item is read, `Parser::in_word_list` is set, and the clause loop ends t
 `နှင့်` outside parentheses (`at_item_end`), and at `ဖြင့်` after a lone operand right before
 the end of a long call, which closes its one argument. A group, the arguments of a sign-form
 call and a callee place in parentheses clear the flag (`outside_word_list`), so an item that
-joins its own operands with `နှင့်`, as `(က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်)` does, stands in parentheses.
+joins its own operands with `နှင့်`, as `(က နှင့် ခ ၏ ပေါင်းလဒ်)` does, stands in parentheses.
 A switch arm of two or more cases starts at its `နှင့်` too, with the then-word ahead.
 
 The scan that tells a list from a clause, `word_list_ahead`, walks the tokens outside
 parentheses and brackets to the closing word, and stops at a particle, `၏` or the full
-stop, which no item holds; so `က နှင့် ခ ကို ပေါင်းသည့်ရလဒ်` is never taken for the start of a list.
+stop, which no item holds; so `က နှင့် ခ ၏ ပေါင်းလဒ်` is never taken for the start of a list.
 
 ### ဇယား kinds, rows and the fallback
 
@@ -639,7 +659,7 @@ preposition calls. The clause engine reads them as verbs (`verb_at`): `<name> �
 `role.rs`, which paints them too). Semcheck calls a function of the file of the name in
 place of the sentence when one takes the operands (`own_verb`, `own_count`).
 
-## Prepositions, glued ends and word operators
+## Prepositions and glued ends
 
 - A preposition string is lexed: its tokens are the preposition, so prepositions hold several words
   (`mark_words` in `using.rs`). `Parser::functions` maps each function the file declares
@@ -656,14 +676,15 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   own. `နှင့်` right before the word that closes a long call is its `ဖြင့်`
   (`at_with_before_call`), as is a `နှင့်` after the digits of a base.
 - `glued.rs` splits a name token that is a function the file sees with a call end glued
-  to it (`ပေါင်းသည့်ရလဒ်`) before the parse, never a declared name, and warns of names that
+  to it (`ပြသမည်`) before the parse, never a declared name, and warns of names that
   can clash (ZK0250, ZK0251). A name in braces never splits. The call ends hold the
   spoken ones too (`ပြသမယ်`), and `glued_spoken` reports each as ZK0510, since the lexer saw
   a name.
-- Each file sees the functions of the prelude (`with_prelude`); the operator functions come
-  without prepositions, since the clause engine reads them: `operator_at` takes
-  `<operator> <value end>` as a verb whose slots are the prepositions of the trait function
-  (`OPERATOR_VERBS` in `zakac_ast::verb`).
+- Each file sees the functions of the prelude (`with_prelude`); the functions of the
+  operator traits (`OPERATOR_FNS`) come without prepositions, as the word operators are
+  reserved words the clause engine reads through its verb rows: `ပေါင်းလဒ်` and the others,
+  `စားသော စားလဒ်` and the joined phrases of the lexer, and the shifts, whose
+  `ဘယ်သို့|ညာသို့ <distance> ဘစ်` fills `Slot::Bit` (`push_shift`).
 - `x ၏ f(a)` joins the sign-form call to the operand before `၏` (`method_of`); `x ၏ f` remains
   a field read, which the check turns into a call when no field fits.
 

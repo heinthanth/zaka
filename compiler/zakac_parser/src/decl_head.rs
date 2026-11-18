@@ -6,6 +6,7 @@ use zakac_ast::kind::Kind;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::spelling::canonical;
+use zakac_lexer::spoken::written_form;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
@@ -62,6 +63,9 @@ impl Parser<'_>
         ret_if!(counted && !self.size_at(len + 1), self.counted_head());
         ret_if!(counted || self.value_goes_on(len), self.value_head());
         ret_if!(self.items_ahead(len), self.value_head());
+        // A starting phrase that spells a kind, as `လိပ်စာ` does, starts a call.
+        let word = written_form(self.text_of(self.peek().span));
+        ret_if!(self.start_words.contains(word), self.value_head());
         Err(self.needs_word(len))
     }
 

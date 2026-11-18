@@ -46,8 +46,10 @@ and a file can declare a kind of its own under one of them. A word glued from th
 
 | Word | Reads as | Operator | Page |
 | --- | --- | --- | --- |
-| `ပေါင်း`, `နုတ်`, `မြှောက်`, `စား`, `အကြွင်းရှာ` with a value end, as `ပေါင်းသည့်ရလဒ်` | "the result that adds", "… subtracts", "… multiplies", "… divides", "… finds the remainder": calls of the operator functions of the prelude, not reserved words; on a struct each calls the function of the struct, as the sign does | `+`, `-`, `*`, `/`, `%` | [Arithmetic](../../learn/operators/arithmetic.md) |
-| `ဘစ်ဆုံ`, `ဘစ်ပေါင်းစု`, `ဘစ်ခြားနား`, `ဘစ်ပြောင်းပြန်`, `ဘစ်ဘယ်ရွေ့`, `ဘစ်ညာရွေ့` with a value end | the bit operators, called in the same form | `&`, `\|`, `^`, `~`, `<<`, `>>` | [Bitwise operators](../../learn/operators/bitwise.md) |
+| `ပေါင်းလဒ်`, `နုတ်လဒ်`, `မြှောက်လဒ်` | "the sum", "the difference", "the product", after `က နှင့် ခ ၏`; on a struct each calls the function of the struct, as the sign does | `+`, `-`, `*` | [Arithmetic](../../learn/operators/arithmetic.md) |
+| `စားသော စားလဒ်`, `စားသော စားကြွင်း` | "the quotient", "the remainder", after `က ကို ခ ဖြင့်` | `/`, `%` | [Arithmetic](../../learn/operators/arithmetic.md) |
+| `ဘစ်အလိုက် ဆုံလဒ်`, `ဘစ်အလိုက် ပေါင်းစုလဒ်`, `ဘစ်အလိုက် ခြားနားလဒ်`, `ဘစ်အလိုက် ပြောင်းပြန်ပြောင်းလဒ်` | the bit operators, after `က နှင့် ခ ၏` (`က ၏` for the flip) | `&`, `\|`, `^`, `~` | [Bitwise operators](../../learn/operators/bitwise.md) |
+| `ဘယ်သို့`, `ညာသို့`, `ရွေ့သော ရလဒ်` | the shifts: `က ကို ဘယ်သို့ n ဘစ် ရွေ့သောရလဒ်` | `<<`, `>>` | [Bitwise operators](../../learn/operators/bitwise.md) |
 | `ညီ`, `မညီ` | "equal", "not equal": compares contents, deep into lists, structs and shared objects | `==`, `!=` | [Comparison](../../learn/operators/comparison.md) |
 | `တစ်ခုတည်း` | "one and the same": `X နှင့် Y သည် တစ်ခုတည်း ဖြစ်လျှင်` asks whether two shared objects, or two function values, are one | | [Values and objects](../language/objects.md) |
 | `ကြီး`, `မကြီး` | "greater", "not greater" | `>`, `<=` | [Comparison](../../learn/operators/comparison.md) |
@@ -57,7 +59,7 @@ and a file can declare a kind of its own under one of them. A word glued from th
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running" | | [Results](../../learn/functions/results.md) |
 | `သည့် ရလဒ်` | "the result that ...": ends the short call `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်` | | [Results](../../learn/functions/results.md#arguments-first-with-a-result) |
 | `သည့် ရလဒ်ကောင်း` | "the good result that ...": the short call passes a failure on | `?` after a call | [Functions](../language/functions.md) |
-| `မည့် ရလဒ်`, `သော ရလဒ်` (`မည့်`, `သော`) | the same as `သည့် ရလဒ်`, each with a `ရလဒ်ကောင်း` form; each end can be glued to a function the file sees, `ပေါင်းသည့်ရလဒ်` | | [Functions](../language/functions.md#arguments-first) |
+| `မည့် ရလဒ်`, `သော ရလဒ်` (`မည့်`, `သော`) | the same as `သည့် ရလဒ်`, each with a `ရလဒ်ကောင်း` form; each end can be glued to a function the file sees, `ဖတ်သည့်ရလဒ်` | | [Functions](../language/functions.md#arguments-first) |
 | `လုပ်ဆောင်သော ရလဒ်ကောင်း` | "good result of running": the call passes a failure on | `?` after a call | [Errors and results](../../learn/error-handling/README.md) |
 | `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../../learn/operators/logic.md) |
@@ -91,10 +93,9 @@ objects](../language/objects.md).
 | `ကျော်မည်` | "will skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ခေါ်ဆိုခွင့် ပြုမည်` (`ခေါ်ဆိုခွင့်`, `ပြုမည်`) | "will grant leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` gives code outside the program, such as a C function, leave to call the function value `f` after the call that gave it. The fused spelling `ခေါ်ဆိုခွင့်ပြုမည်` is the same | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
 | `ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` (`ခေါ်ဆိုခွင့်`, `ပြန်လည်ရုပ်သိမ်းမည်`) | "will take back leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` ends that leave | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
-| `ထဲသို့ … ကို ကူးထည့်မည်` | "will duplicate … into": puts a duplicate into a variable, or declares one after `ကိန်းရှင်`; on a shared object, a new object with the same fields (a shallow duplicate) | [Values and objects](../language/objects.md) |
+| `ထဲသို့ … ကို ကူးထည့်မည်` | a verb of the prelude, as `ထည့်` is, "will duplicate … into": puts a duplicate into a variable, or declares one after `ကိန်းရှင်`; on a shared object, a new object with the same fields (a shallow duplicate) | [Values and objects](../language/objects.md) |
 | `ထဲသို့ … ကို အကုန်ကူးထည့်မည်` | "will duplicate all of … into": a deep duplicate, which duplicates each shared object it reaches once | [Values and objects](../language/objects.md) |
-| `အကုန်` | "all": the word `အကုန်ကူးထည့်မည်` starts with, written apart from `ကူးထည့်မည်`; reserved, so it cannot name a variable | [Values and objects](../language/objects.md) |
-| `ထဲသို့ … ကို ပြောင်းထည့်မည်` | "will move … into": puts the value into a variable and leaves its old place blank, or declares one after `ကိန်းရှင်` | [Statements](../language/statements.md) |
+| `အကုန်` | "all": before the verb `ကူးထည့်` it makes the duplicate deep, `အကုန်ကူးထည့်မည်` or `အကုန် ကူးထည့် မည်`; reserved, so it cannot name a variable | [Values and objects](../language/objects.md) |
 
 Each statement verb ends in `မည်`. The older spellings that end in `ပါ` (`ပြသပါ`, `ထားပါ`,
 `ပြန်ပေးပါ`, `လုပ်ဆောင်ပါ`, `ရပ်ပါ`, `ကျော်ပါ`, `ထည့်သွင်းပါ`, `ထည့်ပါ`, `ဖျက်ပါ`,
@@ -186,17 +187,11 @@ The words of this section belong to unsafe code; see [Unsafe Zaka](../language/u
 | `မင်မိုရီ`, `မှတ်ဉာဏ်` | "RAM" (two interchangeable spellings) | [Unsafe Zaka](../language/unsafe.md) |
 | `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [Unsafe Zaka](../language/unsafe.md) |
 | `ခုစာ`, `လုံးစာ` | "items' worth", as in `ကိန်းပြည့် n ခုစာ` and `စာလုံး n လုံးစာ`; a kind that names a classifier takes `<classifier>စာ` | [Unsafe Zaka](../language/unsafe.md) |
-| `မင်မိုရီတွင် … နေရာယူ၍ လိပ်စာကို … တွင် သိမ်းထားမည်` | "in RAM, taking … of room, keep the address in …" (allocate) | [Unsafe Zaka](../language/unsafe.md) |
-| `လိပ်စာ … ရှိ မင်မိုရီကို … ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်` | "make the RAM at … grow or shrink so that it is …" (resize) | [Unsafe Zaka](../language/unsafe.md) |
-| `လိပ်စာ … ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်` | "give back the RAM at …" (free) | [Unsafe Zaka](../language/unsafe.md) |
-| `လိပ်စာ … ရှိ … မင်မိုရီကို လိပ်စာ … ဆီသို့ ကူးယူမည်` | "write the RAM at … to the address …, ranges apart" (a `memcpy`) | [Writing and filling cells](../language/unsafe.md#writing-and-filling-cells) |
-| `လိပ်စာ … ရှိ … မင်မိုရီကို လိပ်စာ … ဆီသို့ ပြောင်းထည့်မည်` | "move the RAM at … to the address …, ranges can overlap" (a `memmove`) | [Writing and filling cells](../language/unsafe.md#writing-and-filling-cells) |
-| `လိပ်စာ … ရှိ မင်မိုရီကို … ဖြင့် … ဖြည့်မည်` | "fill the RAM at … with … for …" (fill) | [Writing and filling cells](../language/unsafe.md#writing-and-filling-cells) |
 
-The words inside the statements (`နေရာယူ၍`, `တွင်`, `သိမ်းထားမည်`, `ရှိ`,
-`ဖြစ်အောင်`, `နေရာအချဲ့အချုံ့လုပ်မည်`, `ပြန်လည်စွန့်လွှတ်မည်`, `ဆီသို့`, `ကူးယူမည်`,
-`ပြောင်းထည့်မည်`, `ဖြည့်မည်`) are reserved on their own
-as well.
+The heap sentences are calls of functions of the prelude, so their verbs (`သိမ်းထား`,
+`ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ`, `ပြောင်းထည့်`) are names
+([Heap statements](../language/unsafe.md#heap-statements)). The words inside them
+(`နေရာယူ၍`, `တွင်`, `ရှိ`, `ဖြစ်အောင်`, `ဆီသို့`) remain reserved.
 
 ## Lists
 
@@ -342,6 +337,8 @@ program uses the spoken spellings once it allows them (ZK0510); see
 | `လက်ခံတဲ့` | `လက်ခံသော` |
 | `ပြန်ပေးတဲ့` | `ပြန်ပေးသော` |
 | `ထားမယ်` | `ထားမည်` |
+| `စားတဲ့` | `စားသော` |
+| `ရွေ့တဲ့` | `ရွေ့သော` |
 | `ပြန်ပေးမယ်` | `ပြန်ပေးမည်` |
 | `ရပ်မယ်` | `ရပ်မည်` |
 | `ကျော်မယ်` | `ကျော်မည်` |
@@ -361,18 +358,10 @@ program uses the spoken spellings once it allows them (ZK0510); see
 | `စိတ်မချရတဲ့` | `စိတ်မချရသော` |
 | `မညွှန်းတဲ့` | `မညွှန်းသော` |
 | `မှာ` | `တွင်` |
-| `သိမ်းထားမယ်` | `သိမ်းထားမည်` |
-| `နေရာအချဲ့အချုံ့လုပ်မယ်` | `နေရာအချဲ့အချုံ့လုပ်မည်` |
-| `ပြန်လည်စွန့်လွှတ်မယ်` | `ပြန်လည်စွန့်လွှတ်မည်` |
 | `ပြုမယ်` | `ပြုမည်` |
 | `ပြန်လည်ရုပ်သိမ်းမယ်` | `ပြန်လည်ရုပ်သိမ်းမည်` |
 | `ခေါ်ဆိုခွင့်ပြုမယ်` | `ခေါ်ဆိုခွင့်ပြုမည်` |
 | `ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမယ်` | `ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမည်` |
-| `ကူးယူမယ်` | `ကူးယူမည်` |
-| `ပြောင်းထည့်မယ်` | `ပြောင်းထည့်မည်` |
-| `ကူးထည့်မယ်` | `ကူးထည့်မည်` |
-| `အကုန်ကူးထည့်မယ်` | `အကုန်ကူးထည့်မည်` |
-| `ဖြည့်မယ်` | `ဖြည့်မည်` |
 | `အရှေ့မှာ` | `အရှေ့တွင်` |
 | `ဆက်ထားတဲ့` | `ဆက်ထားသည့်` |
 | `ခုရှိတဲ့` | `ခုရှိသော` |
@@ -412,8 +401,7 @@ states them in full.
 - A function name with a call end glued to it (`fမည်`, `fသည့်ရလဒ်`, `fမည့်ရလဒ်`,
   `fသောရလဒ်`, the `ရလဒ်ကောင်း` forms, `fသည်`, `fပါ`, and the spoken `fမယ်`,
   `fတယ်`, `fမယ့်ရလဒ်`, `fတဲ့ရလဒ်`) reads as a call of the function
-  `f` the file sees. A name declared so is the warning ZK0251. The prelude's operator
-  functions and verbs are seen in each file, so `ပေါင်းမည်`, `စားသည့်ရလဒ်` and `ပြသမည်` are
-  no names.
+  `f` the file sees. A name declared so is the warning ZK0251. The prelude's verbs
+  are seen in each file, so `ပြသမည်` and `ထည့်မည်` are no names.
 
 A name in braces, `{name}`, is read as neither.

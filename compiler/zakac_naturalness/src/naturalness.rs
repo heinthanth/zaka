@@ -140,9 +140,12 @@ impl Checker
     /// # Arguments
     ///
     /// * `args` - The arguments.
-    fn report_args(&mut self, args: &[Expr])
+    /// * `sentence` - Whether the call is written as a sentence, so each
+    ///   argument is a notation.
+    fn report_args(&mut self, args: &[Expr], sentence: bool)
     {
-        do_for!(arg in args, self.report_value_in(arg, Place::Argument));
+        let place = tern!(sentence, Place::SentenceArgument, Place::Argument);
+        do_for!(arg in args, self.report_value_in(arg, place));
     }
 
     /// Run the rules on an expression that gives a value: its parentheses
@@ -257,13 +260,17 @@ impl Visitor for Checker
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        self.report_args(&n.args);
+        let sentence =
+            n.prepositions.iter().any(Option::is_some) || !n.phrases.is_empty();
+        self.report_args(&n.args, sentence);
         walk_call_stmt(self, n);
     }
 
     fn visit_call_expr(&mut self, n: &CallExpr)
     {
-        self.report_args(&n.args);
+        let sentence =
+            n.prepositions.iter().any(Option::is_some) || !n.phrases.is_empty();
+        self.report_args(&n.args, sentence);
         walk_call_expr(self, n);
     }
 

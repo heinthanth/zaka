@@ -12,6 +12,7 @@ use std::process::Command;
 use std::process::Output;
 use std::process::Stdio;
 
+use tempfile::TempDir;
 use zakac_ast::target::ABI_FACT;
 use zakac_ast::target::BITS_FACT;
 use zakac_ast::target::OS_FACT;
@@ -56,22 +57,20 @@ fn tools_here() -> bool
     here
 }
 
-/// A fresh folder of a test.
+/// A fresh folder of a test, removed with its build cache when the test is
+/// done with it.
 ///
 /// # Arguments
 ///
-/// * `name` - The name of the folder.
+/// * `name` - The name the folder starts with.
 ///
 /// # Returns
 ///
 /// The folder.
-fn folder(name: &str) -> PathBuf
+fn folder(name: &str) -> TempDir
 {
-    let dir = std::env::temp_dir().join(format!("zakac-wasi-{}", std::process::id()));
-    let dir = dir.join(name.replace('/', "-"));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
+    let prefix = format!("zakac-wasi-{}-", name.replace('/', "-"));
+    tempfile::Builder::new().prefix(&prefix).tempdir().unwrap()
 }
 
 /// Build a program for a WASI ABI into a folder, with each right granted.
@@ -200,10 +199,11 @@ fn run_in_vm(file: &Path, dir: &Path) -> Output
 /// `None` when the two match, else what went wrong.
 fn check_sample(name: &str, file: &Path, abi: &str) -> Option<String>
 {
-    let dir = folder(&format!("{abi}-{name}"));
+    let tmp = folder(&format!("{abi}-{name}"));
+    let dir = tmp.path();
     let vm = run_in_vm(file, &dir.join("vm"));
     let text = |raw: &[u8]| String::from_utf8_lossy(raw).into_owned();
-    let built = build(file, abi, &dir);
+    let built = build(file, abi, dir);
     let refused_in_both =
         !built.status.success() && !vm.status.success() && vm.stdout.is_empty();
     ret_if!(refused_in_both, None);
@@ -212,7 +212,7 @@ fn check_sample(name: &str, file: &Path, abi: &str) -> Option<String>
         failed,
         Some(format!("{name} ({abi}) did not build:\n{}", text(&built.stderr)))
     );
-    let ran = run(&dir);
+    let ran = run(dir);
     let wrong = ran.status.success() != vm.status.success() || ran.stdout != vm.stdout;
     let shown = || {
         let (got, want) = (text(&ran.stdout), text(&vm.stdout));
@@ -260,12 +260,13 @@ fn a_wasi_program_holds_the_facts_of_wasi()
     );
     for abi in ABIS
     {
-        let dir = folder(&format!("facts-{abi}"));
+        let tmp = folder(&format!("facts-{abi}"));
+        let dir = tmp.path();
         let file = dir.join("facts.zaka");
         std::fs::write(&file, &program).unwrap();
-        let built = build(&file, abi, &dir);
+        let built = build(&file, abi, dir);
         assert!(built.status.success(), "{}", String::from_utf8_lossy(&built.stderr));
-        let ran = run(&dir);
+        let ran = run(dir);
         let printed = String::from_utf8_lossy(&ran.stdout);
         let lines: Vec<&str> = printed.lines().collect();
         assert_eq!(lines[..2], ["wasi", abi], "{printed}");
@@ -279,8 +280,8 @@ fn a_wasi_program_holds_the_facts_of_wasi()
 fn c_functions_are_refused_on_wasi()
 {
     let file = repo().join("samples/ffi/libc.zaka");
-    let dir = folder("ffi");
-    let built = build(&file, "wasip1", &dir);
+    let tmp = folder("ffi");
+    let built = build(&file, "wasip1", tmp.path());
     assert!(!built.status.success());
     let stderr = String::from_utf8_lossy(&built.stderr);
     assert!(stderr.contains("cannot call C functions"), "{stderr}");

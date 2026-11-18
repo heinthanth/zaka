@@ -165,9 +165,13 @@ fn redundant_group(site: &Site) -> bool
         Place::Nested | Place::Condition => true,
         Place::Operand =>
         {
-            matches!(n.inner, Inner::Plain | Inner::Joined | Inner::Sentence)
+            matches!(
+                n.inner,
+                Inner::Plain | Inner::Joined | Inner::Sentence | Inner::Clause
+            )
         }
-        Place::Argument => n.inner == Inner::Plain,
+        Place::Argument => matches!(n.inner, Inner::Plain | Inner::Clause),
+        Place::SentenceArgument => n.inner == Inner::Plain,
     }
 }
 

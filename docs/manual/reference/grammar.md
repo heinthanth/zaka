@@ -205,7 +205,7 @@ See [Statements](../language/statements.md#declarations),
 ```text
 stmt         = var-decl | fn-decl | block | if-stmt | switch-stmt
              | while-loop | counted-loop | each-loop | generic-loop
-             | break | continue | return | call-stmt | verb-stmt | heap-stmt ;
+             | break | continue | return | call-stmt | verb-stmt ;
 
 block        = block-open "။" { stmt } block-close "။" ;
 block-open   = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
@@ -249,18 +249,11 @@ verb-stmt    = value ( "ကို" | "ဟု" ) "ပြသမည်" "။"
 text-range   = value "၏" "အကွက်" notation "မှ" notation
              | value "၏" notation ordinal "စာလုံး" "မှ" notation ordinal "စာလုံး" ;
 ordinal      = "ခုမြောက်" | "လုံးမြောက်" ;
-
-heap-stmt    = "မင်မိုရီတွင်" size "နေရာယူ၍ လိပ်စာကို" clause "တွင်" "သိမ်းထားမည်" "။"
-             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" "ပြန်လည်စွန့်လွှတ်မည်" "။"
-             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" size "ဖြစ်အောင်" "နေရာအချဲ့အချုံ့လုပ်မည်" "။"
-             | "လိပ်စာ" clause "ရှိ မင်မိုရီကို" clause "ဖြင့်" size "ဖြည့်မည်" "။"
-             | "လိပ်စာ" clause "ရှိ" size "မင်မိုရီ" "ကို" "လိပ်စာ" clause "ဆီသို့"
-               ( "ကူးယူမည်" | "ပြောင်းထည့်မည်" ) "။" ;
-size         = clause "ဘိုက်စာ"
-             | kind clause ( "ခုစာ" | "လုံးစာ" | classifier "စာ" ) ;   (* the word of the kind *)
 ```
 
-- `မင်မိုရီ` can be written `မှတ်ဉာဏ်`.
+- The heap sentences are [sentence calls](#calls) of functions of the prelude
+  (`core_heap.zaka`), which the parser turns into their statements; there `မင်မိုရီ` can
+  be written `မှတ်ဉာဏ်`.
 - A one-statement branch inside an `if` arm cannot be another `if`, and one inside a
   switch arm cannot be an `if` or a switch.
 - The `ပြီးလျှင်` statement of a generic loop comes last in its block. A switch arm after
@@ -291,7 +284,8 @@ operand      = notation | word-list | word-table | join | word-struct
              | first-call | short-call | preposition-call ;   (* a call with a value end *)
 join         = notation { "၊" notation } "နှင့်" notation "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
 
-notation     = prefix-expr { infix-op prefix-expr } [ "ဘိုက်စာ" ] ;   (* with ဘိုက်စာ: a size in octets *)
+notation     = prefix-expr { infix-op prefix-expr } { ei-read } [ "ဘိုက်စာ" ] ;   (* with ဘိုက်စာ: a size in octets *)
+ei-read      = "၏" ( "တန်ဖိုး" | "လိပ်စာ" | "အကွက်" notation [ "မှစ၍" notation "ကွက်" ] | name ) ;
 prefix-expr  = { prefix-op } atom { data-read } ;
 prefix-op    = "-" | "အနုတ်" | "~" | "!" | "*" | "&" ;   (* * and &: the value at an address, an address *)
 infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
@@ -310,10 +304,11 @@ wants, and gives a value that can be an operand of a later verb. In these frames
 `value` is an operand or such a value:
 
 ```text
-value "နှင့်" value "ကို" ( "ပေါင်း" | "နုတ်" | "မြှောက်" | "ဘစ်ဆုံ" | "ဘစ်ပေါင်းစု" | "ဘစ်ခြားနား" ) value-end
-value "ကို" "ဘစ်ပြောင်းပြန်" value-end
-value "ကို" value "ဖြင့်" ( "စား" | "အကြွင်းရှာ" | "ဘစ်ဘယ်ရွေ့" | "ဘစ်ညာရွေ့" ) value-end
-value-end = ( "သည့်" | "မည့်" | "သော" ) ( "ရလဒ်" | "ရလဒ်ကောင်း" ), glued or spaced
+value "နှင့်" value "၏" ( "ပေါင်းလဒ်" | "နုတ်လဒ်" | "မြှောက်လဒ်" )
+value "နှင့်" value "၏" "ဘစ်အလိုက်" ( "ဆုံလဒ်" | "ပေါင်းစုလဒ်" | "ခြားနားလဒ်" )
+value "၏" "ဘစ်အလိုက်" "ပြောင်းပြန်ပြောင်းလဒ်"
+value "ကို" value "ဖြင့်" "စားသော" ( "စားလဒ်" | "စားကြွင်း" )
+value "ကို" ( "ဘယ်သို့" | "ညာသို့" ) notation "ဘစ်" "ရွေ့သော" "ရလဒ်"
 value "သည်" value "နှင့်" ( "ညီ" | "မညီ" )
 value "သည်" value "ထက်" ( "ကြီး" | "မကြီး" )
 value "သည်" value "အောက်" ( "ငယ်" | "မငယ်" )
@@ -337,6 +332,12 @@ value "၏" ( "လိပ်စာ" | "တန်ဖိုး" )                  
 
 - A comparison cannot be an operand of another comparison without parentheses, in either
   tier.
+- In a notation, `၏ တန်ဖိုး`, `၏ လိပ်စာ`, `၏ အကွက် …` and a field `၏ <name>` close the
+  whole notation before them, as `ဘိုက်စာ` does: `p + ၁ ၏ တန်ဖိုး` is the value at `p + ၁`.
+  A name after `၏` is a field unless a function or a preposition has it (`x ၏ {f}` reads
+  the field). With an operator after it, a read is left to the clause, which reports the
+  operator (ZK0209). The other readings after `၏` (characters, counts, duplicates, a cell
+  counted from 1) are clauses.
 - A clause used where a value goes, such as the value of a declaration, is one clause:
   a logical expression there goes in parentheses.
 - `မိတ္တူ` is a name, read as the duplicate word after `၏` alone.
