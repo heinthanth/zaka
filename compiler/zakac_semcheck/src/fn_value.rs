@@ -102,7 +102,7 @@ impl Checker
             .edits(f.edits())
             .fills(f.fills())
             .maybe_ret(f.ret)
-            .maybe_prepositions(f.prepositions())
+            .prepositions(f.prepositions())
             .maybe_start(f.start)
             .maybe_end(f.end)
             .inner(name);
@@ -245,14 +245,13 @@ impl Checker
 /// The kind, its parameters with their `ဒေတာ ပြောင်းလဲရန်` flags and marks.
 pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
 {
-    let mark = |n: usize| sig.prepositions.as_ref().and_then(|m| m.get(n).copied());
     let edit = |n: usize| sig.edits.get(n).copied().unwrap_or(false);
     let fill = |n: usize| sig.fills.get(n).copied().unwrap_or(false);
     let param = |(n, kind): (usize, &DataKind)| FnParam {
         kind: *kind,
         edit: edit(n),
         fill: fill(n),
-        preposition: mark(n),
+        preposition: sig.preposition(n),
     };
     let params = sig.params.iter().enumerate().map(param).collect();
     FnKind::make_with(params, sig.ret, sig.start, sig.end)

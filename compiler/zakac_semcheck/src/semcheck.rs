@@ -973,7 +973,7 @@ impl Checker
             );
         }
         self.check_edits_apart(args, &sig.edits);
-        self.check_prepositions(callee, written.prepositions, &sig, span);
+        self.check_prepositions(callee, written, &sig, span);
         self.check_phrases(callee, written, &sig, span);
         ret
     }
@@ -1165,14 +1165,7 @@ impl Checker
         let short = args.len() < sig.params.len();
         ret_false!(tern!(sig.variadic, short, sig.params.len() != args.len()));
         ret_false!(!written.phrases_fit(sig.start, sig.end));
-        let prepositions = written.prepositions;
-        let named = |want: &Vec<Name>| {
-            let fits = |(m, w): (&Ident, &Name)| preposition_fits(m.name, *w, want);
-            prepositions.len() == want.len() && prepositions.iter().zip(want).all(fits)
-        };
-        ret_false!(
-            !prepositions.is_empty() && !sig.prepositions.as_ref().is_some_and(named)
-        );
+        ret_false!(written.has_prepositions() && !prepositions_fit(written, sig));
         let before = self.diags.len();
         args.iter()
             .zip(&sig.params)
@@ -1183,37 +1176,34 @@ impl Checker
     }
 
     /// Check that each argument of a preposition call carries the preposition
-    /// of its parameter. A preposition call of a function with no
-    /// prepositions, such as a call through a value whose kind has none, is
-    /// ZK0332: the kind of a value, not the function it holds, gives the
-    /// prepositions of a call through it.
+    /// of its parameter (ZK0331). A call that writes a preposition where the
+    /// function has none, or leaves one out where it has one, such as a call
+    /// through a value whose kind has none, is ZK0332: the kind of a value,
+    /// not the function it holds, gives the prepositions of a call through it.
     ///
     /// # Arguments
     ///
     /// * `callee` - The function name.
-    /// * `prepositions` - The prepositions written; blank for the other call
-    ///   forms.
+    /// * `written` - The prepositions and phrases written.
     /// * `sig` - The function the call runs.
     /// * `span` - The call.
     fn check_prepositions(
-        &mut self, callee: &Ident, prepositions: &[Ident], sig: &FnSig, span: Span,
+        &mut self, callee: &Ident, written: Written<'_>, sig: &FnSig, span: Span,
     )
     {
-        let Some(want) = sig.prepositions.as_deref()
-        else
-        {
-            let none = rd::no_overload_fits(span, &callee.name, &params_text(sig));
-            do_if!(!prepositions.is_empty(), self.report(none));
-            return;
+        ret_if!(!written.has_prepositions());
+        let slots = written.prepositions.iter().enumerate();
+        let placed = |(n, m): (usize, &Option<Ident>)| {
+            m.is_some() == sig.preposition(n).is_some()
         };
-        let wrong = prepositions
-            .iter()
-            .zip(want)
-            .enumerate()
-            .filter(|(_, (m, w))| !preposition_fits(m.name, **w, want));
-        let found: Vec<Diagnostic> = wrong
-            .map(|(n, (m, w))| {
-                rd::wrong_preposition(m.span, &callee.name, n + 1, &m.name, w)
+        let none = rd::no_overload_fits(span, &callee.name, &params_text(sig));
+        ret_if!(!slots.clone().all(placed), self.report(none));
+        let pairs =
+            slots.filter_map(|(n, m)| Some((n, m.as_ref()?, sig.preposition(n)?)));
+        let found: Vec<Diagnostic> = pairs
+            .filter(|(_, m, w)| !preposition_fits(m.name, *w, &sig.prepositions))
+            .map(|(n, m, w)| {
+                rd::wrong_preposition(m.span, &callee.name, n + 1, &m.name, &w)
             })
             .collect();
         do_for!(diag in found, self.report(diag));
@@ -2492,7 +2482,7 @@ fn err_name(err: Option<DataKind>) -> String
 /// The text.
 fn sentence_text(sig: &FnSig, name: &str) -> String
 {
-    let preposition = |n: usize| sig.prepositions.as_ref().map(|m| m[n].to_string());
+    let preposition = |n: usize| sig.preposition(n).map(|m| m.to_string());
     let args = (0..sig.params.len())
         .flat_map(|n| std::iter::once("…".to_string()).chain(preposition(n)));
     let start = sig.start.iter().map(|s| s.to_string());
@@ -2513,9 +2503,8 @@ fn sentence_text(sig: &FnSig, name: &str) -> String
 /// The text.
 fn params_text(sig: &FnSig) -> String
 {
-    let preposition = |n: usize| {
-        sig.prepositions.as_ref().map(|m| format!("({})", m[n])).unwrap_or_default()
-    };
+    let preposition =
+        |n: usize| sig.preposition(n).map_or(String::new(), |m| format!("({m})"));
     let each = sig
         .params
         .iter()
@@ -2537,8 +2526,31 @@ fn params_text(sig: &FnSig) -> String
 /// # Returns
 ///
 /// `true` when it fits.
-fn preposition_fits(written: Name, want: Name, wants: &[Name]) -> bool
+fn preposition_fits(written: Name, want: Name, wants: &[Option<Name>]) -> bool
 {
     let with = written == "နှင့်" && want == "ဖြင့်";
-    written == want || (with && !wants.iter().any(|w| *w == "နှင့်"))
+    written == want || (with && !wants.iter().flatten().any(|w| *w == "နှင့်"))
+}
+
+/// Whether the prepositions of a call fit the parameters of a function: an
+/// argument has a preposition where its parameter has one, and none where
+/// it has none, and each one written fits.
+///
+/// # Arguments
+///
+/// * `written` - The prepositions written.
+/// * `sig` - The function.
+///
+/// # Returns
+///
+/// `true` when the prepositions fit.
+fn prepositions_fit(written: Written<'_>, sig: &FnSig) -> bool
+{
+    let fits = |(n, m): (usize, &Option<Ident>)| match (m, sig.preposition(n))
+    {
+        (None, None) => true,
+        (Some(m), Some(w)) => preposition_fits(m.name, w, &sig.prepositions),
+        _ => false,
+    };
+    written.prepositions.iter().enumerate().all(fits)
 }

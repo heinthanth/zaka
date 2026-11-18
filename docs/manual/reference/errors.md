@@ -118,7 +118,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0234 | a kind with no `တစ်<classifier>` after it, in a declaration, a parameter, a field, a result, a function kind, a conversion, a size, a default arm or after a literal | [Measure words](../language/kinds.md#measure-words) |
 | ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
-| ZK0237 | a header that gives some parameters a preposition and not the others | [Functions](../language/functions.md) |
 | ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md) |
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md) |
 | ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
@@ -138,7 +137,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0256 | the comptime mark `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on something other than a function with a block at the top level | [Compile time](../language/compile-time.md#comptime-functions) |
 | ZK0257 | the unsafe mark `စိတ်မချရသော` on the start block | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0258 | a phrase string, after `အစ စကားစု` or `အဆုံး စကားစု`, that holds a word a phrase cannot hold, or `၏` | [Functions](../language/functions.md#starting-and-ending-phrases) |
-| ZK0259 | a head with phrases and two or more parameters, not each with a preposition | [Functions](../language/functions.md#starting-and-ending-phrases) |
 
 ### ZK03: names
 

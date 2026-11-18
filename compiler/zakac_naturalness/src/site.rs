@@ -390,5 +390,7 @@ fn joins_operands(op: VerbOp) -> bool
 /// `true` when it is.
 fn is_sentence(call: &CallExpr) -> bool
 {
-    !call.prepositions.is_empty() || !call.phrases.is_empty() || call.using.is_some()
+    call.prepositions.iter().any(Option::is_some)
+        || !call.phrases.is_empty()
+        || call.using.is_some()
 }

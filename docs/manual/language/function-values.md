@@ -65,13 +65,12 @@ word as `သော` there: `လက်ခံသည့်`, `ပြန်ပေး
   optional.
 - A [preposition](functions.md#prepositions) stands after `ကို`:
   `(စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)`; each
-  parameter has a preposition, or none has (ZK0237).
+  parameter has its own preposition or none.
 - The [phrases](functions.md#starting-and-ending-phrases) of a head stand first, as a head
   gives them after `သည်`: the list, then `သုံး၍` before the parameters or the result, or
   `သုံးသော` right before `လုပ်ဆောင်ချက် အမျိုးအစား` when the kind has neither:
   `(အစ စကားစု "ဖိုင်" ကို သုံး၍ စာသား တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)`,
-  `(အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား)`. Two or more parameters
-  of a kind with phrases each need a preposition (ZK0259).
+  `(အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား)`.
 - `ဒေတာ ပြောင်းလဲရန်` after `ကို` lets the function change the argument, as in a
   [header](functions.md#changed-parameters): a call through the value sets the argument
   first. `ဒေတာ ထည့်ပေးရန်` marks a [filled](functions.md#filled-parameters) parameter, as in a

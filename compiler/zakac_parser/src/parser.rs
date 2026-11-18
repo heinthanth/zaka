@@ -572,7 +572,13 @@ impl<'t> Parser<'t>
         {
             let word = |kw: Kw| depth == 0 && tok.kind == TokenKind::Kw(kw);
             let next = || self.preposition_at(header.get(n + 1));
-            do_if!(word(Kw::PrepositionWord), words.prepositions.extend(next()));
+            // The parameter a preposition marks is the one the count of
+            // `လည်းကောင်း` before it reaches.
+            if word(Kw::PrepositionWord)
+            {
+                words.prepositions.resize(joins + 1, None);
+                words.prepositions[joins] = next();
+            }
             do_if!(word(Kw::StartPhrase), words.start = next());
             do_if!(word(Kw::EndPhrase), words.end = next());
             accepts |= word(Kw::Accepting) || word(Kw::WillAccept);
@@ -585,9 +591,8 @@ impl<'t> Parser<'t>
             }
         }
         // Two or more parameters each end in `လည်းကောင်း`; a lone one need not.
-        let listed = tern!(accepts, joins.max(1), 0);
-        words.params =
-            tern!(words.prepositions.is_empty(), listed, words.prepositions.len());
+        words.params = tern!(accepts, joins.max(1), 0);
+        words.prepositions.resize(words.params, None);
         let name = unquote_raw(raw, self.text_of(name.span)).to_string();
         Some((name, words))
     }
@@ -641,7 +646,8 @@ impl<'t> Parser<'t>
         self.preposition_words = words.collect();
         // A call goes on after an argument from a preposition or an ending
         // phrase; a starting phrase stands before the first argument alone.
-        let after_arg = all.clone().flat_map(|w| w.prepositions.iter().chain(&w.end));
+        let after_arg =
+            all.clone().flat_map(|w| w.prepositions.iter().flatten().chain(&w.end));
         let first_word = |m: &String| m.split(' ').next().map(str::to_string);
         self.first_words = after_arg.filter_map(first_word).collect();
         let starts = all.filter_map(|w| w.start.as_ref());

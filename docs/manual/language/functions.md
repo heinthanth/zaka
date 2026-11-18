@@ -521,14 +521,15 @@ The rules of prepositions:
   arguments-first call (ZK0241).
 - A call reads the longest preposition of the function that the words after an argument spell,
   so `ရှိ ဖိုင်ကို` is one preposition, not `ရှိ` and then a name.
-- A header gives each parameter a preposition or none of them; prepositions on some alone are
-  ZK0237.
-- A call gives the arguments in the order of the parameters, each with the preposition of its
-  parameter. Another preposition is ZK0331.
+- Each parameter has a preposition or none. A call gives the arguments in the order of the
+  parameters, each with the preposition of its parameter, and nothing after an argument whose
+  parameter has none. Another preposition is ZK0331.
+- Two arguments with no preposition between them touch, `"a" "b"`, or `၊` parts
+  them, `"a"၊ "b"`: each argument ends where the next operand starts.
 - An argument is a notation expression, as in the arguments-first call; a sentence that
   gives a value, another preposition call included, goes in parentheses.
-- A preposition call ends at a call of a function that declares prepositions, when the number of
-  prepositions fits the function, and nowhere else. So a sentence that holds no such call keeps its
+- A preposition call ends at a call of a function that declares prepositions or phrases, when
+  its arguments and prepositions fit the function, and nowhere else. So a sentence that holds no such call keeps its
   meaning: `က ကို ခုနစ် သည့် ရလဒ် ဟု ထားမည်။` sets `က` when `ခုနစ်` declares no prepositions.
 
 ```zaka-error ZK0331
@@ -547,19 +548,22 @@ The rules of prepositions:
 error[ZK0331]: argument 2 of "ရေး" has the preposition "ထဲသို့", not "သို့"
 ```
 
-```zaka-error ZK0237
-ရေး ဟူသော လုပ်ဆောင်ချက် သည်
-စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+Here the first parameter has a preposition and the second has none:
+
+```zaka
+ကူး ဟူသော လုပ်ဆောင်ချက် သည်
+ရင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "မှ" ကို သုံး၍ လည်းကောင်း ပစ် ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-စာ ကို ပြသမည်။
+"{ရင်း} → {ပစ်}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"a.txt" မှ "b.txt" ကူး မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0237]: some parameters have a preposition and some do not
+a.txt → b.txt
 ```
 
 ## Starting and ending phrases
@@ -629,9 +633,9 @@ The rules of phrases:
 - The words of a phrase follow the rules of a [preposition](#prepositions): names and
   particles, one space apart, with no call end, no closer as the last word and no `၏`. Another
   string is ZK0258.
-- With one parameter, the phrases mark where the argument starts or ends, so the parameter
-  needs no preposition: `"ဟယ်လို" အမြန် ပြ မည်`. Two or more parameters each need a
-  preposition, which tells where each argument ends (ZK0259).
+- The parameters need no preposition beside phrases: `"ဟယ်လို" အမြန် ပြ မည်`. Arguments with
+  none between them touch or take `၊`, as in each
+  [preposition call](#prepositions).
 - A last preposition that starts with `၏` cannot stand before an ending phrase, as `x ၏ <word>`
   reads a field (ZK0249).
 - A call written as a sentence, with prepositions or phrases, gives the phrases of the head in
@@ -661,7 +665,9 @@ The rules of phrases:
 error[ZK0352]: the phrases of this call do not match the head of "ဖတ်"
 ```
 
-```zaka-error ZK0259
+Two parameters with no preposition, after a starting phrase:
+
+```zaka
 ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ကိန်း" ကို သုံး၍
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
@@ -669,11 +675,15 @@ error[ZK0352]: the phrases of this call do not match the head of "ဖတ်"
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၆ ဖြစ်ပါစေ။
+ကိန်း က ၇ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
+ကိန်း ၄၊ က + ၁ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0259]: a function with a phrase and two or more parameters needs a preposition on each parameter
+၁၃
+၁၁
 ```
 
 ```zaka-error ZK0258
@@ -878,9 +888,7 @@ each.
 | a preposition that holds a call end, `ဟူသော`, a literal word, `အနုတ်`, a sign, `၊` or `။`, or ends in a closer | the call could not end, or an argument could not start | ZK0241 |
 | `၏` in a preposition other than at the start of the last one, or before an ending phrase | elsewhere `x ၏ f` reads a field | ZK0249, ZK0241 |
 | `၏`, a call end or a closer at its end in a phrase | the call could not end, or would read a field | ZK0258 |
-| phrases and two or more parameters, not each with a preposition | a call could not tell where each argument ends | ZK0259 |
 | a first preposition that starts with `ကို သုံး၍` or `တို့ကို သုံး၍` | it starts the arguments-first call | ZK0241 |
-| prepositions on some parameters alone | a call could not tell where each argument ends | ZK0237 |
 | two functions of one name with the same parameter kinds, prepositions and phrases, in one file or across imports | no call could tell them apart | ZK0304 |
 
 A reserved word declared in braces can name a function: `{စီ} ဟူသော လုပ်ဆောင်ချက် သည် …` is called
@@ -2068,10 +2076,8 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | Code | Mistake |
 | --- | --- |
 | ZK0214 | an external function, a C function or the start block declared inside a block or a function |
-| ZK0237 | a header that gives some parameters a preposition and not the others |
 | ZK0241 | a preposition string with a word a preposition cannot hold |
 | ZK0258 | a phrase string with a word a phrase cannot hold, or with `၏` |
-| ZK0259 | a head with phrases and two or more parameters, not each with a preposition |
 | ZK0303 | a call to a function that is not declared |
 | ZK0304 | two functions with one name |
 | ZK0305 | one parameter name listed twice |

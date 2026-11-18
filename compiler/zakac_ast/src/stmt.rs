@@ -612,11 +612,12 @@ pub struct CallStmt
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
     pub using: Option<UsingParticle>,
-    /// The preposition after each argument of a preposition call, one for
-    /// each; blank for the other call forms.
+    /// The preposition after each argument of a preposition call, one slot
+    /// for each argument, `None` where the argument has none; blank for the
+    /// other call forms.
     #[builder(default)]
     #[serde(default)]
-    pub prepositions: Vec<Ident>,
+    pub prepositions: Vec<Option<Ident>>,
     /// The starting and the ending phrase of a call written as a sentence;
     /// blank for the other call forms.
     #[builder(default)]

@@ -582,8 +582,8 @@ fn a_counted_loop_from_a_cell_still_parses()
     assert!(looped.starts_with("(count i (cell l 0) 5 count"), "{looped}");
 }
 
-/// A parameter carries its preposition in parentheses after its name; with
-/// prepositions the parameters end in `လက်ခံပြီး` straight after the last.
+/// A parameter carries its preposition in parentheses after its name; each
+/// parameter can have one or none.
 #[test]
 fn parameters_have_prepositions()
 {
@@ -594,7 +594,7 @@ fn parameters_have_prepositions()
     let mixed = "ရေး ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း \
                  နေရာ ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
                  လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
-    assert_eq!(codes(mixed), [Code::MixedPrepositions]);
+    assert_eq!(stmt(mixed), "(fn ရေး [text စာ(ကို), text နေရာ] - (block))");
 }
 
 /// The function `ရေး`, whose two parameters have prepositions, before `rest`.
@@ -611,8 +611,11 @@ fn with_write(rest: &str) -> String
 fn second(text: &str) -> (String, Vec<String>)
 {
     let list = stmts(text);
-    let prepositions =
-        |m: &[zakac_ast::expr::Ident]| m.iter().map(|i| i.name.to_string()).collect();
+    let prepositions = |m: &[Option<zakac_ast::expr::Ident>]| {
+        m.iter()
+            .map(|i| i.as_ref().map_or("-".to_string(), |i| i.name.to_string()))
+            .collect()
+    };
     let found = match &list[1]
     {
         Stmt::Call(n) => prepositions(&n.prepositions),
@@ -644,6 +647,52 @@ fn preposition_calls_match_the_other_forms()
     assert_eq!(string.1, prepositions);
     let value = second(&with_write("ကိန်းရှင် ဂ သည် က ကို ခ သို့ ရေး သည့် ရလဒ် ဖြစ်ပါစေ။"));
     assert_eq!(value.1, prepositions);
+}
+
+/// The function `ကူး`, whose first parameter has the preposition `မှ` and
+/// whose second has none, before `rest`.
+fn with_move(rest: &str) -> String
+{
+    format!(
+        "ကူး ဟူသော လုပ်ဆောင်ချက် သည် ရင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"မှ\" ကို သုံး၍ လည်းကောင်း ပစ် ဟူသော \
+         စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n{rest}"
+    )
+}
+
+/// A call gives a preposition after each argument whose parameter has one,
+/// and none after the others; a wrong word stands where a preposition
+/// belongs, for the check of kinds to report.
+#[test]
+fn some_arguments_have_no_preposition()
+{
+    let want = second(&with_move("ကူး ဟူသော လုပ်ဆောင်ချက်ကို က နှင့် ခ တို့ဖြင့် လုပ်ဆောင်မည်။")).0;
+    let call = second(&with_move("က မှ ခ ကူး မည်။"));
+    assert_eq!(call, (want, vec!["မှ".to_string(), "-".to_string()]));
+    let wrong = second(&with_move("က ကို ခ ကူး မည်။"));
+    assert_eq!(wrong.1, ["ကို", "-"], "a wrong word is kept for the check of kinds");
+}
+
+/// The function `ပေါင်း`, whose start phrase is `ကိန်း` and whose two
+/// parameters have no preposition, before `rest`.
+fn with_sum(rest: &str) -> String
+{
+    format!(
+        "ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု \"ကိန်း\" ကို သုံး၍ က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း \
+         ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ \
+         ပြီးပါပြီ။\n{rest}"
+    )
+}
+
+/// Two arguments with no preposition between them touch, or/// `၊` parts them;
+/// each operand ends where the next one starts.
+#[test]
+fn bare_arguments_touch_or_take_a_comma()
+{
+    let touching = second(&with_sum("ကိန်း ၁ (၂ + ၃) ပေါင်း မည်။"));
+    assert_eq!(touching.0, "(call ပေါင်း 1 [(+ 2 3)])");
+    assert_eq!(touching.1, ["-", "-"]);
+    let comma = second(&with_sum("ကိန်း ၁၊ ၂ + ၃ ပေါင်း မည်။"));
+    assert_eq!(comma.0, "(call ပေါင်း 1 (+ 2 3))");
 }
 
 /// A name that declares no prepositions ends no preposition call, and a call
@@ -706,14 +755,14 @@ fn bad_phrases_are_reported()
     assert_eq!(codes(&phrase_head(call_end, "")), [Code::BadPhrase]);
 }
 
-/// Two or more parameters of a head with phrases each need a preposition,
-/// and a last preposition with `၏` cannot stand before an ending phrase.
+/// A head with phrases takes parameters with no preposition, and a last
+/// preposition with `၏` cannot stand before an ending phrase.
 #[test]
 fn phrases_check_the_parameters()
 {
     let two = "က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ";
     let start = "အစ စကားစု \"ကိန်း\" ကို သုံး၍";
-    assert_eq!(codes(&phrase_head(start, two)), [Code::PhrasesNeedPrepositions]);
+    assert_eq!(codes(&phrase_head(start, two)), []);
     let one = "က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ";
     assert_eq!(codes(&phrase_head(start, one)), []);
     let ei = "p ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၏\" ကို သုံး၍ လက်ခံပြီး ";
@@ -734,7 +783,7 @@ fn function_kinds_have_phrases()
     assert!(kind(bare).contains("fn{ဖန်သားပြင်ကို …}()"), "{}", kind(bare));
     let two = "ကိန်းရှင် ဖ သည် (အစ စကားစု \"ကိန်း\" ကို သုံး၍ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို \
                လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။";
-    assert_eq!(codes(two), [Code::PhrasesNeedPrepositions]);
+    assert_eq!(codes(two), []);
 }
 
 /// In a head with no block the phrases follow `ဖြစ်၍`, right before the

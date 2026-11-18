@@ -202,3 +202,23 @@ fn a_kind_with_phrases_wants_them()
                 ဖြစ်၍ တန်ဖိုးသည် ပြ ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။";
     assert!(!codes(&phrased(bare, decl)).is_empty());
 }
+
+/// `ကူး`, whose first parameter takes `မှ` and whose second takes none.
+const MOVE_TEXT: &str = "\
+ကူး ဟူသော လုပ်ဆောင်ချက် သည်
+ရင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"မှ\" ကို သုံး၍ လည်းကောင်း ပစ် ဟူသော စာသား တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ရင်း ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+/// A call gives a preposition after the arguments whose parameters have
+/// one; a wrong word there is ZK0331.
+#[test]
+fn some_parameters_take_no_preposition()
+{
+    let call = |stmts: &str| phrased(MOVE_TEXT, stmts);
+    ok(&call("\"က\" မှ \"ခ\" ကူး မည်။"));
+    ok(&call("ကူး ဟူသော လုပ်ဆောင်ချက်ကို \"က\" နှင့် \"ခ\" တို့ဖြင့် လုပ်ဆောင်မည်။"));
+    assert_eq!(codes(&call("\"က\" ကို \"ခ\" ကူး မည်။")), [Code::WrongPreposition]);
+}

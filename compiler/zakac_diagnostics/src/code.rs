@@ -141,8 +141,6 @@ DeclNeedsClassifier = ("ZK0234", Level::Error),
 NestedEnum = ("ZK0235", Level::Error),
 /// A switch arm follows the default arm.
 ArmAfterDefault = ("ZK0236", Level::Error),
-/// Some parameters of a header have a preposition and some do not.
-MixedPrepositions = ("ZK0237", Level::Error),
 /// An import names a module the stdlib does not have.
 UnknownStdModule = ("ZK0238", Level::Error),
 /// A function kind with parameters stands bare in a parameter or field list.
@@ -188,9 +186,6 @@ UnsafeStart = ("ZK0257", Level::Error),
 /// The starting or the ending phrase of a function head is not words a phrase
 /// can be.
 BadPhrase = ("ZK0258", Level::Error),
-/// A function with a phrase takes two or more parameters, and not each of
-/// them has a preposition.
-PhrasesNeedPrepositions = ("ZK0259", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

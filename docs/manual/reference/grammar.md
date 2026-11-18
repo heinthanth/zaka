@@ -182,11 +182,10 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
                ( "ဟုလည်း မှတ်ယူနိုင်ပါသည်" | "ဟုလည်း မှတ်ယူနိုင်ပြီး" word-clause ) "။" ;
 ```
 
-- With two or more parameters, each ends in `လည်းကောင်း`; either each parameter has a
-  preposition or none has. A function head names its function first, as a struct head does, and
+- With two or more parameters, each ends in `လည်းကောင်း`; each parameter has its own
+  preposition or none. A function head names its function first, as a struct head does, and
   its marks (`fn-marks`) stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in whatever order; the
   start block takes none. The comptime mark goes on a function with statements alone.
-- A head with phrases and two or more parameters gives each parameter a preposition.
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
   another function.
@@ -360,7 +359,7 @@ first-call   = [ word-kinds "အစားထိုးအသုံးပြု၍
                operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
-preposition-call = [ start-words ] operand [ preposition-word ] { notation preposition-word }
+preposition-call = [ start-words ] operand [ preposition-word ] { [ "၊" ] notation [ preposition-word ] }
                [ end-words ] ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end )
              | [ start-words ] [ end-words ] name short-end ;   (* phrases and no arguments *)
 sign-call    = name [ "::" kind-args ] "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
@@ -381,7 +380,10 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 - A preposition word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
   than `သည်`, `ပါ`, `ဖြစ်ကာ`, `ဖြစ်ပြီး`, `ပြီးလျှင်` and `လက်ခံပြီး`; `တွင်` and `ဆီသို့`
   can be prepositions too. A preposition call is read when a function of that name declares
-  prepositions or phrases and their count fits. `start-words` and `end-words` are the words of
+  prepositions or phrases and its arguments hold prepositions in the slots of its parameters:
+  a preposition after each argument whose parameter has one, none after the others. Two
+  arguments with no preposition between them touch or take `၊`; each ends where the next
+  operand starts. `start-words` and `end-words` are the words of
   the phrases the head declares with `အစ စကားစု` and `အဆုံး စကားစု`.
 - In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
   name, then a group. A `(` right after `)` calls the function value the call gives.
@@ -536,8 +538,7 @@ The parser keeps a flag per context and tests it before it takes the word:
 field or variant closes with `ပါဝင်သည်`, two or more with `တို့ပါဝင်သည်`; a list in words
 takes its closing word without `တို့` after one item and with it after two or more
 (`ကို` and `တို့ကို`, `ဖြင့်` and `တို့ဖြင့်`, `ပါသော` and `တို့ပါသော`), and joins its last
-item with `နှင့်`; one parameter can leave out `လည်းကောင်း`, two or more each end in it;
-prepositions go on each parameter or on none. These are finite, so a context-free grammar can
+item with `နှင့်`; one parameter can leave out `လည်းကောင်း`, two or more each end in it. These are finite, so a context-free grammar can
 state them, and the rules above do, as separate alternatives.
 
 **Count prefixes.** The count prefixes before a kind bind to its list levels from the

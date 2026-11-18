@@ -131,11 +131,11 @@ pub(crate) fn sig_of(
     let edits = decl.params.iter().map(|p| p.edit).collect();
     let fills = decl.params.iter().map(|p| p.fill).collect();
     let closes = decl.params.iter().map(|p| p.owned && decl.lib.is_some()).collect();
-    let prepositions: Option<Vec<_>> =
+    let prepositions =
         decl.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name)).collect();
     let phrase = |i: &Option<Ident>| i.as_ref().map(|i| i.name);
     #[rustfmt::skip]
     return FnSig::builder().params(params).edits(edits).fills(fills).maybe_ret(ret).exported(decl.exported)
         .maybe_start(phrase(&decl.phrases.start)).maybe_end(phrase(&decl.phrases.end))
-        .external(decl.external).unchecked(decl.unchecked).comptime(decl.comptime).variadic(decl.variadic).maybe_prepositions(prepositions).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
+        .external(decl.external).unchecked(decl.unchecked).comptime(decl.comptime).variadic(decl.variadic).prepositions(prepositions).closes(closes).inner(overload_name(decl.name.name, index)).decl(decl.name.span).maybe_unit(unit).build();
 }

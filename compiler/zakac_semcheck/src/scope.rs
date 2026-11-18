@@ -324,9 +324,10 @@ pub(crate) struct FnSig
     /// `နှင့် အခြားတန်ဖိုးများ`.
     #[builder(default)]
     pub variadic: bool,
-    /// The preposition of each parameter, when the parameters have
-    /// prepositions.
-    pub prepositions: Option<Vec<Name>>,
+    /// The preposition of each parameter, `None` where it has none; blank
+    /// for a function whose parameters have none.
+    #[builder(default)]
+    pub prepositions: Vec<Option<Name>>,
     /// The words of the starting phrase of the head, `အစ စကားစု "<words>"`.
     pub start: Option<Name>,
     /// The words of the ending phrase of the head, `အဆုံး စကားစု "<words>"`.
@@ -369,9 +370,24 @@ impl FnSig
     /// `true` when both match.
     pub fn same_params(&self, other: &FnSig) -> bool
     {
-        let words = (&self.prepositions, self.start, self.end);
-        self.params == other.params
-            && words == (&other.prepositions, other.start, other.end)
+        let words = (0..self.params.len()).map(|n| self.preposition(n));
+        let theirs = (0..other.params.len()).map(|n| other.preposition(n));
+        let phrases = (self.start, self.end) == (other.start, other.end);
+        self.params == other.params && phrases && words.eq(theirs)
+    }
+
+    /// The preposition of a parameter.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The place of the parameter, counted from 0.
+    ///
+    /// # Returns
+    ///
+    /// The preposition, or `None` when the parameter has none.
+    pub fn preposition(&self, n: usize) -> Option<Name>
+    {
+        self.prepositions.get(n).copied().flatten()
     }
 }
 
@@ -381,9 +397,9 @@ impl FnSig
 #[derive(Debug, Clone, Copy, Default, Builder)]
 pub struct Written<'a>
 {
-    /// The preposition after each argument.
+    /// The preposition after each argument, `None` where it has none.
     #[builder(default)]
-    pub prepositions: &'a [Ident],
+    pub prepositions: &'a [Option<Ident>],
     /// The words of the starting phrase.
     pub start: Option<Name>,
     /// The words of the ending phrase.
@@ -402,22 +418,32 @@ impl<'a> Written<'a>
     /// # Returns
     ///
     /// The words.
-    pub fn of(prepositions: &'a [Ident], phrases: &Phrases) -> Written<'a>
+    pub fn of(prepositions: &'a [Option<Ident>], phrases: &Phrases) -> Written<'a>
     {
         let name = |i: &Option<Ident>| i.as_ref().map(|i| i.name);
         let words = Written::builder().prepositions(prepositions);
         words.maybe_start(name(&phrases.start)).maybe_end(name(&phrases.end)).build()
     }
 
-    /// Whether the call is written as a sentence: it writes prepositions or
-    /// phrases.
+    /// Whether the call is written as a sentence: it writes a preposition or
+    /// a phrase.
     ///
     /// # Returns
     ///
     /// `true` when it is.
     pub fn is_sentence(&self) -> bool
     {
-        !self.prepositions.is_empty() || self.start.is_some() || self.end.is_some()
+        self.has_prepositions() || self.start.is_some() || self.end.is_some()
+    }
+
+    /// Whether the call writes a preposition after some argument.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    pub fn has_prepositions(&self) -> bool
+    {
+        self.prepositions.iter().any(Option::is_some)
     }
 
     /// Whether a sentence call writes the phrases of a head; another call

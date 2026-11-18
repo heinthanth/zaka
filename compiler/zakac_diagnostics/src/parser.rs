@@ -591,21 +591,6 @@ pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagno
         .with_help(t!("codes.ZK0234.help", k = kind, c = classifier))
 }
 
-/// Some parameters of a header have a preposition and some do not.
-///
-/// # Arguments
-///
-/// * `span` - The parameters.
-///
-/// # Returns
-///
-/// The `ZK0237` diagnostic.
-pub fn mixed_prepositions(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::MixedPrepositions, t!("codes.ZK0237.message"), span)
-        .with_help(t!("codes.ZK0237.help"))
-}
-
 /// An import names a module the stdlib does not have.
 ///
 /// # Arguments
@@ -971,20 +956,4 @@ pub fn bad_phrase(span: Span, phrase: &str) -> Diagnostic
 {
     Diagnostic::new(Code::BadPhrase, t!("codes.ZK0258.message", m = phrase), span)
         .with_help(t!("codes.ZK0258.help"))
-}
-
-/// A function with a phrase takes two or more parameters, and not each of
-/// them has a preposition, so a call could not tell where each argument ends.
-///
-/// # Arguments
-///
-/// * `span` - The parameters.
-///
-/// # Returns
-///
-/// The `ZK0259` diagnostic.
-pub fn phrases_need_prepositions(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::PhrasesNeedPrepositions, t!("codes.ZK0259.message"), span)
-        .with_help(t!("codes.ZK0259.help"))
 }

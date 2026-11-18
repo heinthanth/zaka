@@ -864,14 +864,10 @@ impl Checker
         let (start, end) =
             (phrase(&template.phrases.start), phrase(&template.phrases.end));
         ret_if!(!written.phrases_fit(start, end), None);
-        let prepositions = written.prepositions;
-        let words: Option<Vec<Name>> = template
-            .params
-            .iter()
-            .map(|p| p.preposition.as_ref().map(|m| m.name))
-            .collect();
-        let named = |w: Vec<Name>| prepositions.iter().map(|m| m.name).eq(w);
-        ret_if!(!prepositions.is_empty() && !words.is_some_and(named), None);
+        let want =
+            template.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name));
+        let have = written.prepositions.iter().map(|m| m.as_ref().map(|m| m.name));
+        ret_if!(written.has_prepositions() && !have.eq(want), None);
         ret_if!(kind_args.is_empty(), self.call_kinds(template, args, expect));
         ret_if!(kind_args.len() != template.kind_params.len(), None);
         Some(kind_args.iter().map(|k| DataKind::from_ast(k, &self.structs)).collect())

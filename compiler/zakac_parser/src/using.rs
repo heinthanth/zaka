@@ -63,9 +63,10 @@ pub(crate) struct CallParts
     /// The particle that closes the arguments of a call written arguments
     /// first.
     pub(crate) using: Option<UsingParticle>,
-    /// The word after each argument of a preposition call.
+    /// The word after each argument of a preposition call, `None` where the
+    /// argument has none.
     #[builder(default)]
-    pub(crate) prepositions: Vec<Ident>,
+    pub(crate) prepositions: Vec<Option<Ident>>,
     /// The starting and the ending phrase of a call written as a sentence.
     #[builder(default)]
     pub(crate) phrases: Phrases,
@@ -80,9 +81,10 @@ pub struct CallWords
 {
     /// The words before the first argument.
     pub start: Option<String>,
-    /// The word after each argument; blank for a function with none.
+    /// The word after the argument of each parameter, `None` for a parameter
+    /// with none; blank for a function with no parameters.
     #[builder(default)]
-    pub prepositions: Vec<String>,
+    pub prepositions: Vec<Option<String>>,
     /// The words right before the function name.
     pub end: Option<String>,
     /// The number of parameters.
@@ -103,11 +105,11 @@ impl CallWords
     /// Its words.
     pub fn of_decl(decl: &FnDecl) -> CallWords
     {
-        let prepositions = decl.params.iter().filter_map(|p| p.preposition.as_ref());
-        let name = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+        let word = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+        let name = word;
         #[rustfmt::skip]
         return CallWords::builder().maybe_start(name(&decl.phrases.start))
-            .prepositions(prepositions.map(|m| m.name.to_string()).collect())
+            .prepositions(decl.params.iter().map(|p| word(&p.preposition)).collect())
             .maybe_end(name(&decl.phrases.end)).params(decl.params.len()).build();
     }
 
@@ -119,7 +121,8 @@ impl CallWords
     /// `true` when it has.
     pub fn is_sentence(&self) -> bool
     {
-        self.start.is_some() || self.end.is_some() || !self.prepositions.is_empty()
+        let given = self.prepositions.iter().any(Option::is_some);
+        self.start.is_some() || self.end.is_some() || given
     }
 
     /// Each phrase and preposition, the starting phrase first.
@@ -130,7 +133,7 @@ impl CallWords
     pub fn texts(&self) -> impl Iterator<Item = &String>
     {
         let start = self.start.iter();
-        start.chain(&self.prepositions).chain(self.end.iter())
+        start.chain(self.prepositions.iter().flatten()).chain(self.end.iter())
     }
 }
 
@@ -352,16 +355,36 @@ impl Parser<'_>
     pub(crate) fn preposition_end(&self, from: usize) -> Option<usize>
     {
         ret_if!(!self.starts_preposition(&self.peek_n(from)), None);
+        self.sentence_end(from)
+    }
+
+    /// How far ahead the end of a call written as a sentence is, scanning
+    /// from `from` tokens ahead: the end of a call of a function that declares
+    /// phrases or prepositions. An argument with no preposition can touch the
+    /// next one, so the scan starts at each token. A value end with a
+    /// preposition or a `၊` after it can be an argument of a later call, so the
+    /// scan goes on past it, and keeps it when no later end comes.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - Where the scan starts.
+    ///
+    /// # Returns
+    ///
+    /// The distance to the first token of the end, or `None` with no such call
+    /// here.
+    pub(crate) fn sentence_end(&self, from: usize) -> Option<usize>
+    {
         let (mut n, mut depth, mut found) = (from, 0usize, None);
         loop
         {
             let end = tern!(depth == 0, self.call_end_at(n), None);
             if let Some((len, value)) = end
             {
-                ret_if!(
-                    !value || !self.starts_preposition(&self.peek_n(n + len)),
-                    Some(n)
-                );
+                let next = self.peek_n(n + len);
+                let goes_on = self.starts_preposition(&next)
+                    || next.kind == TokenKind::Punct(Punct::ListSep);
+                ret_if!(!value || !goes_on, Some(n));
                 found = Some(n);
                 n += len;
                 continue;
@@ -478,9 +501,9 @@ impl Parser<'_>
 
     /// Whether the scan for the end of a preposition call stops at a token: the
     /// end of the sentence, a `)` or `]` that closes no group of the call, or,
-    /// outside parentheses, a `၊` or a reserved word that is neither a word
-    /// of a visible preposition, a particle, nor a word a notation argument can
-    /// hold.
+    /// outside parentheses, a reserved word that is neither a word of a
+    /// visible preposition, a particle, nor a word a notation argument can
+    /// hold. A `၊` can part two arguments, so the scan goes past it.
     ///
     /// # Arguments
     ///
@@ -504,7 +527,6 @@ impl Parser<'_>
         {
             TokenKind::Punct(Punct::FullStop) | TokenKind::Eof => true,
             TokenKind::Punct(Punct::RParen | Punct::RBracket) => !deep,
-            TokenKind::Punct(Punct::ListSep) => !deep,
             TokenKind::Kw(kw) => !deep && !in_preposition() && !in_notation(kw),
             _ => false,
         }
@@ -638,16 +660,15 @@ impl Parser<'_>
     {
         let first = self.parse_notation()?;
         extract!(Head::Expr(first) = self.parse_short_after(first, Mode::Expr)?);
-        let at_fn = self.call_end_at(0).is_some();
-        let end = tern!(at_fn, Some(0), self.preposition_end(0));
+        let end = self.sentence_end(0);
         let end = end.ok_or_else(|| self.err_expected(&t!("parser.preposition")))?;
         self.parse_preposition_call(first, end, mode, Some(start))
     }
 
-    /// Whether the numbers of arguments and prepositions of a call written as
-    /// a sentence match a function of its name. The check of the names leaves
-    /// a wrong phrase or preposition to the names and kinds stage, which
-    /// names the words the function wants.
+    /// Whether the number of arguments of a call written as a sentence, and
+    /// the places of its prepositions, match a function of its name. The
+    /// check of the names leaves a wrong phrase or preposition to the names
+    /// and kinds stage, which names the words the function wants.
     ///
     /// # Arguments
     ///
@@ -659,16 +680,20 @@ impl Parser<'_>
     fn fits_words(&self, head: &Head) -> bool
     {
         let stmt = tern!(let Head::Stmt(s) = head, Some(&**s), None);
-        let (callee, args, count) = match (head, stmt)
+        let (callee, args, written) = match (head, stmt)
         {
-            (_, Some(Stmt::Call(n))) => (&n.callee, n.args.len(), n.prepositions.len()),
+            (_, Some(Stmt::Call(n))) => (&n.callee, n.args.len(), &n.prepositions),
             (Head::Expr(Expr::Call(n)), _) =>
             {
-                (&n.callee, n.args.len(), n.prepositions.len())
+                (&n.callee, n.args.len(), &n.prepositions)
             }
             _ => return false,
         };
-        let fits = |w: &&CallWords| w.params == args && w.prepositions.len() == count;
+        let places = |w: &CallWords| {
+            let declared = w.prepositions.iter().map(Option::is_some);
+            declared.eq(written.iter().map(Option::is_some))
+        };
+        let fits = |w: &&CallWords| w.params == args && places(w);
         self.fn_words(callee.name.as_str()).any(|w| fits(&w))
     }
 
@@ -693,8 +718,6 @@ impl Parser<'_>
         let end_at = self.peek_n(end).span.lo;
         let words: Vec<CallWords> =
             self.fn_words(&self.callee_text(&self.peek_n(end))).cloned().collect();
-        let known: Vec<String> =
-            words.iter().flat_map(|w| w.prepositions.clone()).collect();
         let ends: Vec<String> = words.iter().filter_map(|w| w.end.clone()).collect();
         let span = start.as_ref().map_or(first.span(), |s| s.span);
         let mut args = Args::default();
@@ -702,12 +725,12 @@ impl Parser<'_>
         let mut prepositions = Vec::new();
         let end = loop
         {
-            do_if!(
-                !known.is_empty(),
-                prepositions.push(self.parse_preposition(&known)?)
-            );
+            let at = prepositions.len();
+            prepositions.push(self.parse_arg_preposition(&words, at, end_at));
             let end = self.parse_end_phrase(&ends, end_at);
             do_if!(end.is_some() || self.peek().span.lo >= end_at, break end);
+            // A `၊` parts two arguments, as a preposition does.
+            self.eat_punct(Punct::ListSep);
             let arg = self.parse_notation()?;
             extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
             args.push(arg);
@@ -735,8 +758,8 @@ impl Parser<'_>
     ///
     /// The call, or a diagnostic.
     fn finish_sentence_call(
-        &mut self, start: Span, args: Args, prepositions: Vec<Ident>, phrases: Phrases,
-        mode: Mode,
+        &mut self, start: Span, args: Args, prepositions: Vec<Option<Ident>>,
+        phrases: Phrases, mode: Mode,
     ) -> PResult<Head>
     {
         let callee_tok = self.bump();
@@ -769,28 +792,35 @@ impl Parser<'_>
         Some(self.take_words(len))
     }
 
-    /// Read a preposition, each word in its written spelling: the longest of
-    /// the known prepositions that the next
-    /// words spell, or else one word a preposition can hold, so a call with
-    /// another preposition still reads and the check reports the
-    /// preposition.
+    /// Read the preposition after an argument, each word in its written
+    /// spelling: the longest of the prepositions the functions of the name give
+    /// the parameter at `at` that the next words spell. Where a function gives
+    /// one there, a reserved word that is no preposition of it still reads as
+    /// one, so the check names the preposition it wants; a name, a literal or a
+    /// group starts the next argument instead.
     ///
     /// # Arguments
     ///
-    /// * `known` - The prepositions of the functions the call can be of.
+    /// * `words` - The words of the functions the call can be of.
+    /// * `at` - The place of the argument.
+    /// * `end_at` - Where the function name starts.
     ///
     /// # Returns
     ///
-    /// The preposition as a name (its words joined with one space), or an
-    /// `expected-token` diagnostic.
-    pub(crate) fn parse_preposition(&mut self, known: &[String]) -> PResult<Ident>
+    /// The preposition as a name (its words joined with one space), or `None`
+    /// for an argument with none.
+    fn parse_arg_preposition(
+        &mut self, words: &[CallWords], at: usize, end_at: Pos,
+    ) -> Option<Ident>
     {
+        let given = |w: &CallWords| w.prepositions.get(at).cloned().flatten();
+        let known: Vec<String> = words.iter().filter_map(given).collect();
         let spelled = known.iter().filter_map(|m| self.spells_at(m, 0)).max();
-        ret_if!(
-            !is_preposition_word(&self.peek()),
-            Err(self.err_expected(&t!("parser.preposition")))
-        );
-        Ok(self.take_words(spelled.unwrap_or(1)))
+        ret_if!(let Some(len) = spelled, Some(self.take_words(len)));
+        let tok = self.peek();
+        let word = matches!(tok.kind, TokenKind::Kw(_)) && is_preposition_word(&tok);
+        let wrong = !known.is_empty() && word && tok.span.lo < end_at;
+        wrong.then(|| self.take_words(1))
     }
 
     /// Move past the next words, read as one preposition or phrase, each word

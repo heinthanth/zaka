@@ -32,7 +32,7 @@ pub struct FnParam
     /// too.
     pub fill: bool,
     /// The preposition after the argument in a preposition call, when the
-    /// parameters have prepositions.
+    /// parameter has one.
     pub preposition: Option<Name>,
 }
 
@@ -170,14 +170,13 @@ impl FnKind
     /// One flag for each parameter.
     pub fn fills(&self) -> Vec<bool> { self.params.iter().map(|p| p.fill).collect() }
 
-    /// The prepositions of the parameters, when each has one.
+    /// The prepositions of the parameters.
     ///
     /// # Returns
     ///
-    /// The prepositions in order, or `None` when the parameters have none.
-    pub fn prepositions(&self) -> Option<Vec<Name>>
+    /// The preposition of each parameter in order, `None` where it has none.
+    pub fn prepositions(&self) -> Vec<Option<Name>>
     {
-        ret_if!(self.params.is_empty(), None);
         self.params.iter().map(|p| p.preposition).collect()
     }
 

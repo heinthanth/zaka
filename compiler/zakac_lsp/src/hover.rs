@@ -777,14 +777,17 @@ impl PrepositionFinder<'_>
     /// * `callee` - The name of the function the call runs.
     /// * `prepositions` - The preposition after each argument.
     /// * `phrases` - The phrases of the call.
-    fn look(&mut self, callee: &Ident, prepositions: &[Ident], phrases: &Phrases)
+    fn look(
+        &mut self, callee: &Ident, prepositions: &[Option<Ident>], phrases: &Phrases,
+    )
     {
         let holds = |p: &&Ident| {
             let r = self.file.root_range(&p.span);
             self.file.in_root(&p.span) && r.lo <= self.at && self.at <= r.hi
         };
         let numbered = prepositions.iter().enumerate();
-        let words = numbered.map(|(n, p)| (p, CallWord::Preposition(n)));
+        let words =
+            numbered.filter_map(|(n, p)| Some((p.as_ref()?, CallWord::Preposition(n))));
         let words = words.chain(phrases.start.iter().map(|p| (p, CallWord::Start)));
         let mut words = words.chain(phrases.end.iter().map(|p| (p, CallWord::End)));
         let found = words.find(|(p, _)| holds(p));

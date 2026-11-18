@@ -754,7 +754,7 @@ impl Parser<'_>
             stmt => return Ok(stmt),
         };
         ret_if!(self.at_using_rest(), self.parse_using(first, mode));
-        let end = self.preposition_end(0);
+        let end = self.sentence_end(0);
         let Some(end) = end
         else
         {

@@ -328,15 +328,6 @@ en = "the default arm \"တခြား ... တစ်ခု ဖြစ်လျ�
 [codes.ZK0236.explain]
 en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> တစ်<classifier> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
-[codes.ZK0237.title]
-en = "prepositions on some parameters alone"
-[codes.ZK0237.message]
-en = "some parameters have a preposition and some do not"
-[codes.ZK0237.help]
-en = "give each parameter a preposition, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<preposition>\" ကို သုံး၍ လည်းကောင်း\", or leave out each preposition"
-[codes.ZK0237.explain]
-en = """A parameter can have a preposition, the word a preposition call writes after its argument: \"လမ်းကြောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၌ရှိသော\" ကို သုံး၍ လည်းကောင်း\". A preposition call gives each argument with its preposition, so a header gives each parameter a preposition or none of them."""
-
 [codes.ZK0238.title]
 en = "unknown stdlib module"
 [codes.ZK0238.message]
@@ -1649,15 +1640,6 @@ en = "\"%{m}\" cannot be a phrase"
 en = "a phrase is names and particles, as \"ဖိုင်\" or \"ဖန်သားပြင်ကို\", with no \"၏\""
 [codes.ZK0258.explain]
 en = """The string after \"အစ စကားစု\" or \"အဆုံး စကားစု\" holds the words a call written as a sentence puts before its first argument or right before the function name. Its words follow the rules of a preposition: names, and particles other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\", one space apart. \"၏\" cannot stand in it, as \"x ၏ f\" reads a field."""
-
-[codes.ZK0259.title]
-en = "phrases need prepositions"
-[codes.ZK0259.message]
-en = "a function with a phrase and two or more parameters needs a preposition on each parameter"
-[codes.ZK0259.help]
-en = "give each parameter a preposition, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<preposition>\" ကို သုံး၍ လည်းကောင်း\""
-[codes.ZK0259.explain]
-en = """A call written as a sentence gives its arguments one after the other. With one parameter, the phrases mark where the argument starts and ends; with two or more, the preposition after each argument tells where it ends, so each parameter needs one."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

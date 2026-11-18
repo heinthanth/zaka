@@ -1636,11 +1636,11 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
 /// * `using` - The particle, when the arguments come first.
 /// * `prepositions` - The word after each argument of a preposition call.
 fn call_prepositions_mut<V: VisitorMut + ?Sized>(
-    v: &mut V, using: &mut Option<UsingParticle>, prepositions: &mut [Ident],
+    v: &mut V, using: &mut Option<UsingParticle>, prepositions: &mut [Option<Ident>],
 )
 {
     do_if!(let Some(particle) = using, v.visit_span_mut(&mut particle.span));
-    do_for!(preposition in prepositions, v.visit_ident_mut(preposition));
+    do_for!(preposition in prepositions.iter_mut().flatten(), v.visit_ident_mut(preposition));
 }
 
 /// Visit the starting and the ending phrase of a head or a call.

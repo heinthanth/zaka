@@ -300,12 +300,6 @@ impl Parser<'_>
         let parts = self.parse_fn_parts(with_params, bare);
         self.in_list = outer;
         let (params, ret) = parts?;
-        let bare_params = params.iter().any(|p| p.preposition.is_none());
-        do_if!(
-            !phrases.is_empty() && params.len() > 1 && bare_params,
-            self.diags
-                .push(diag::phrases_need_prepositions(start.to(&self.prev_span())))
-        );
         #[rustfmt::skip]
         let sig = FnSig::builder().params(params).maybe_ret(ret).phrases(phrases).build();
         let span = start.to(&self.prev_span());
@@ -344,8 +338,8 @@ impl Parser<'_>
     }
 
     /// Parse the parameters of a function kind, up to the `လက်ခံ…` after
-    /// them. With more than one, each ends in `လည်းကောင်း`; either each has a
-    /// preposition or none has.
+    /// them. With more than one, each ends in `လည်းကောင်း`; each one can have a
+    /// preposition or none.
     ///
     /// # Returns
     ///
@@ -363,12 +357,6 @@ impl Parser<'_>
         }
         let open = params.len() > 1 && closed.contains(&false);
         ret_if!(open, Err(self.err_as_well_as()));
-        let given = params.iter().filter(|p| p.preposition.is_some()).count();
-        let span = params[0].span.to(&params[params.len() - 1].span);
-        do_if!(
-            given > 0 && given < params.len(),
-            self.diags.push(diag::mixed_prepositions(span))
-        );
         Ok(params)
     }
 
@@ -416,9 +404,8 @@ impl Parser<'_>
         {
             return;
         };
-        let prepositions = sig.params.iter().filter_map(|p| p.preposition.as_ref());
-        let prepositions: Vec<String> =
-            prepositions.map(|m| m.name.to_string()).collect();
+        let word = |p: &SigParam| p.preposition.as_ref().map(|m| m.name.to_string());
+        let prepositions: Vec<Option<String>> = sig.params.iter().map(word).collect();
         let phrase = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
         #[rustfmt::skip]
         let words = CallWords::builder().prepositions(prepositions).params(sig.params.len())

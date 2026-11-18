@@ -1677,12 +1677,6 @@ impl Parser<'_>
         self.in_list = outer;
         let (params, variadic) = read?;
         let end = self.expect_one_of(ends)?;
-        let given = params.iter().filter(|p| p.preposition.is_some()).count();
-        let span = params[0].span.to(&params[params.len() - 1].span);
-        do_if!(
-            given > 0 && given < params.len(),
-            self.diags.push(diag::mixed_prepositions(span))
-        );
         self.check_preposition_places(&params);
         Ok((params, kw_of(&end), variadic))
     }
@@ -1698,14 +1692,15 @@ impl Parser<'_>
     fn check_preposition_places(&mut self, params: &[Param])
     {
         ret_if!(self.in_builtin);
-        let prepositions: Vec<&Ident> =
-            params.iter().filter_map(|p| p.preposition.as_ref()).collect();
-        let before_last =
-            prepositions.iter().take(prepositions.len().saturating_sub(1));
-        let ei_prepositions = before_last.filter(|m| m.name.starts_with(EI));
+        let before_last = params.iter().take(params.len().saturating_sub(1));
+        let ei_prepositions = before_last
+            .filter_map(|p| p.preposition.as_ref())
+            .filter(|m| m.name.starts_with(EI));
         ei_prepositions.for_each(|m| {
             self.diags.push(diag::preposition_ei_not_last(m.span, &m.name))
         });
+        let prepositions: Vec<&Ident> =
+            params.iter().filter_map(|p| p.preposition.as_ref()).collect();
         let opens_using = |m: &&&Ident| {
             let words: Vec<&str> = m.name.split(' ').take(2).collect();
             matches!(words.as_slice(), ["ကို" | "တို့ကို", "သုံး၍"])
@@ -1853,8 +1848,7 @@ impl Parser<'_>
         Ok(phrase)
     }
 
-    /// Check the phrases of a function head against its parameters: two or
-    /// more parameters each need a preposition (ZK0259), and a last
+    /// Check the phrases of a function head against its parameters: a last
     /// preposition that starts with `၏` cannot stand before an ending phrase
     /// (ZK0249).
     ///
@@ -1864,15 +1858,7 @@ impl Parser<'_>
     fn check_phrases(&mut self, node: &FnDecl)
     {
         ret_if!(node.phrases.is_empty());
-        let params = &node.params;
-        let bare = params.iter().any(|p| p.preposition.is_none());
-        do_if!(
-            params.len() > 1 && bare,
-            self.diags.push(diag::phrases_need_prepositions(
-                params[0].span.to(&params[params.len() - 1].span)
-            ))
-        );
-        let last = params.last().and_then(|p| p.preposition.as_ref());
+        let last = node.params.last().and_then(|p| p.preposition.as_ref());
         let ei_last =
             last.filter(|m| node.phrases.end.is_some() && m.name.starts_with(EI));
         do_if!(let Some(m) = ei_last, self.diags.push(diag::preposition_ei_not_last(m.span, &m.name)));

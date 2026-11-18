@@ -139,8 +139,9 @@ A parameter can also name the word that follows its argument in a call, its *pre
 | `နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး` | "a text called `နေရာ`, written with `သို့`; having accepted" |
 | `"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်` | "will write 'hello' to the notebook" |
 
-Each argument takes the preposition of its parameter, in the order of the parameters. Give each
-parameter a preposition or none of them. The [Functions](../../manual/language/functions.md#prepositions)
+Each argument takes the preposition of its parameter, in the order of the parameters. A
+parameter can also have none: then its argument stands right before the next one, or `၊` parts
+them. The [Functions](../../manual/language/functions.md#prepositions)
 page of the manual has the full rules.
 
 ## Prepositions of several words
@@ -240,8 +241,8 @@ notes.txt ထဲမှ စာ
 
 A call that writes prepositions writes the phrases too, each in its place; one that leaves
 a phrase out is ZK0352. The other forms, `ဖတ်("notes.txt")` and `ရှင်း မည်`, leave the
-phrases out. With two or more parameters, each still needs a preposition, which tells where
-its argument ends. The [Functions](../../manual/language/functions.md#starting-and-ending-phrases)
+phrases out. The parameters need no preposition beside the phrases: `ကိန်း ၄၊ ၅ ပေါင်း`
+gives two bare arguments. The [Functions](../../manual/language/functions.md#starting-and-ending-phrases)
 page of the manual has the full rules.
 
 ## Names that read as calls
