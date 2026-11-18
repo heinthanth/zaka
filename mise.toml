@@ -30,8 +30,6 @@ LEPTOS_SITE_ADDR = '${LEPTOS_SITE_ADDR:-127.0.0.1:8000}'
 LEPTOS_RELOAD_PORT = '${LEPTOS_RELOAD_PORT:-8001}'
 ZAKA_SITE_ORIGIN = '${ZAKA_SITE_ORIGIN:-http://localhost:8000}'
 CARGO_TERM_COLOR = '${CARGO_TERM_COLOR:-always}'
-# The C target builds WASI programs with the clang of wasi-sdk, kept off the PATH.
-WASI_SDK_PATH = { value = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}", tools = true }
 
 [tasks.format]
 depends = ["format:rust", "format:c"]
@@ -55,10 +53,12 @@ description = "Write the C headers of a build into target/c-headers, which .clan
 [tasks.test]
 run = "cargo nextest run --workspace"
 description = "Run the tests"
+env = { WASI_SDK_PATH = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}" }
 
 [tasks."test:compiler"]
 run = "cargo nextest run -p 'zakac*' -p zaka_vm -p zaka_host"
 description = "Run the tests of the compiler and the VM, not the web crates"
+env = { WASI_SDK_PATH = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}" }
 
 [tasks."test:books"]
 run = "cargo nextest run -p zaka_website books::"
