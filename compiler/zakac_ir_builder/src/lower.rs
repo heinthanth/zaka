@@ -1521,6 +1521,30 @@ impl Lowerer<'_>
         Stmt::Fill { dst, count, value, span: n.span }
     }
 
+    /// Lower a size operand: its count as a `usize`, times the size of its
+    /// kind when one is written.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// The size in octets.
+    fn size_operand(&mut self, n: &ast::SizeExpr) -> ExprNode
+    {
+        let count = self.coerce(&n.count, DataKind::USIZE);
+        let Some(unit) = &n.unit
+        else
+        {
+            return count.node;
+        };
+        let each = ExprNode::SizeOf(DataKind::from_ast(unit, self.structs));
+        let each =
+            Expr::builder().kind(DataKind::USIZE).node(each).span(n.span).build();
+        infix_node(InfixOp::Mul, count, each)
+    }
+
     /// Lower the size operand of a heap statement.
     ///
     /// # Arguments
@@ -3462,6 +3486,7 @@ impl Lowerer<'_>
             {
                 ExprNode::SizeOf(DataKind::from_ast(&n.kind, self.structs))
             }
+            ast::Expr::Size(n) => self.size_operand(n),
             ast::Expr::Index(n) => ExprNode::Load { addr: Box::new(self.cell_addr(n)) },
             ast::Expr::Field(n) if self.kind_of(&n.base).as_external().is_some() =>
             {

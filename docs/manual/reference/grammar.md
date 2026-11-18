@@ -291,17 +291,18 @@ operand      = notation | word-list | word-table | join | word-struct
              | first-call | short-call | preposition-call ;   (* a call with a value end *)
 join         = notation { "၊" notation } "နှင့်" notation "တို့ကို" "ဆက်ထားသည့်" "စာသား" ;
 
-notation     = prefix-expr { infix-op prefix-expr } ;
+notation     = prefix-expr { infix-op prefix-expr } [ "ဘိုက်စာ" ] ;   (* with ဘိုက်စာ: a size in octets *)
 prefix-expr  = { prefix-op } atom { data-read } ;
 prefix-op    = "-" | "အနုတ်" | "~" | "!" | "*" | "&" ;   (* * and &: the value at an address, an address *)
 infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
              | "<" | ">" | "<=" | ">=" | "==" | "!=" ;
-atom         = name | "(" expr ")" | literal | fn-value | size-of | long-call | sign-call ;
+atom         = name | "(" expr ")" | literal | fn-value | size-of | size | long-call | sign-call ;
 data-read    = "ထဲမှ" "ဒေတာ" [ fallback ] | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ"
              | "ထဲမှ" "အညွှန်း" notation [ "၏" "တန်ဖိုး" ] ;   (* a row of a ဇယား, or its value *)
 fallback     = "၊" "မရှိလျှင်" prefix-expr ;
 fn-value     = name "ဟူသော" "လုပ်ဆောင်ချက်" ;
 size-of      = slot-kind "၏" "အရွယ်အစား" ;
+size         = kind notation count-word ;   (* count-word: a measure word and စာ, as ခုစာ *)
 ```
 
 Each verb of a clause takes the operands right before it, each with the particle it

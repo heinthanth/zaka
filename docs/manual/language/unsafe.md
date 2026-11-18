@@ -535,7 +535,8 @@ A request names its size in one of two forms:
 | `<count> ဘိုက်စာ` | `count` octets |
 
 The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`: a literal fits as it stands, and a variable used as a
-count has that kind. Each form with a kind multiplies the count with the size of the kind,
+count has that kind. Both forms are values too, outside the heap statements: the
+[size](kinds.md#the-size-of-a-kind) in octets, a `လက္ခဏာမဲ့ ကိန်းပြည့်`. Each form with a kind multiplies the count with the size of the kind,
 and a product that does not fit counts as running out of room.
 
 ### Asking for a block

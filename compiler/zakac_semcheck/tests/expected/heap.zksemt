@@ -1014,7 +1014,7 @@ program:
                     hi: 5520
                 target:
                   name:
-                    id: 62
+                    id: 63
                     name: ပစ္စည်း
                     span:
                       lo: 5571
@@ -1025,11 +1025,11 @@ program:
             - assign:
                 target:
                   verb:
-                    id: 64
+                    id: 65
                     op: deref
                     args:
                     - name:
-                        id: 63
+                        id: 64
                         name: ပစ္စည်း
                         span:
                           lo: 5643
@@ -1046,7 +1046,7 @@ program:
                       hi: 5690
                 value:
                   int:
-                    id: 65
+                    id: 66
                     value: 7
                     base: 10
                     kind: null
@@ -1087,29 +1087,29 @@ program:
             - assign:
                 target:
                   name:
-                    id: 66
+                    id: 67
                     name: ဈေးနှုန်း
                     span:
                       lo: 5911
                       hi: 5938
                 value:
                   verb:
-                    id: 70
+                    id: 71
                     op: cast
                     args:
                     - infix:
-                        id: 69
+                        id: 70
                         op: add
                         lhs:
                           name:
-                            id: 67
+                            id: 68
                             name: ပစ္စည်း
                             span:
                               lo: 5949
                               hi: 5970
                         rhs:
                           int:
-                            id: 68
+                            id: 69
                             value: 4
                             base: 10
                             kind: null
@@ -1149,11 +1149,11 @@ program:
             - assign:
                 target:
                   verb:
-                    id: 72
+                    id: 73
                     op: deref
                     args:
                     - name:
-                        id: 71
+                        id: 72
                         name: ဈေးနှုန်း
                         span:
                           lo: 6165
@@ -1170,7 +1170,7 @@ program:
                       hi: 6218
                 value:
                   int:
-                    id: 73
+                    id: 74
                     value: 1500
                     base: 10
                     kind: null
@@ -1184,11 +1184,11 @@ program:
             - print:
                 value:
                   verb:
-                    id: 75
+                    id: 76
                     op: deref
                     args:
                     - name:
-                        id: 74
+                        id: 75
                         name: ဈေးနှုန်း
                         span:
                           lo: 6271
@@ -1210,14 +1210,14 @@ program:
             - fill:
                 dst:
                   name:
-                    id: 76
+                    id: 77
                     name: ပစ္စည်း
                     span:
                       lo: 6376
                       hi: 6397
                 value:
                   int:
-                    id: 77
+                    id: 78
                     value: 0
                     base: 10
                     kind: null
@@ -1228,7 +1228,7 @@ program:
                 size:
                   count:
                     int:
-                      id: 78
+                      id: 79
                       value: 4
                       base: 10
                       kind: null
@@ -1246,18 +1246,18 @@ program:
             - blit:
                 src:
                   infix:
-                    id: 81
+                    id: 83
                     op: add
                     lhs:
                       name:
-                        id: 79
+                        id: 81
                         name: ပစ္စည်း
                         span:
                           lo: 6535
                           hi: 6556
                     rhs:
                       int:
-                        id: 80
+                        id: 82
                         value: 4
                         base: 10
                         kind: null
@@ -1271,7 +1271,7 @@ program:
                 size:
                   count:
                     int:
-                      id: 82
+                      id: 84
                       value: 4
                       base: 10
                       kind: null
@@ -1285,7 +1285,7 @@ program:
                     hi: 6598
                 dst:
                   name:
-                    id: 83
+                    id: 86
                     name: ပစ္စည်း
                     span:
                       lo: 6652
@@ -1297,7 +1297,7 @@ program:
             - blit:
                 src:
                   name:
-                    id: 84
+                    id: 87
                     name: ပစ္စည်း
                     span:
                       lo: 6740
@@ -1305,7 +1305,7 @@ program:
                 size:
                   count:
                     int:
-                      id: 85
+                      id: 88
                       value: 4
                       base: 10
                       kind: null
@@ -1319,18 +1319,18 @@ program:
                     hi: 6797
                 dst:
                   infix:
-                    id: 88
+                    id: 92
                     op: add
                     lhs:
                       name:
-                        id: 86
+                        id: 90
                         name: ပစ္စည်း
                         span:
                           lo: 6851
                           hi: 6872
                     rhs:
                       int:
-                        id: 87
+                        id: 91
                         value: 2
                         base: 10
                         kind: null
@@ -1348,7 +1348,7 @@ program:
             - free:
                 target:
                   name:
-                    id: 89
+                    id: 93
                     name: ပစ္စည်း
                     span:
                       lo: 6963
@@ -1450,33 +1450,33 @@ kinds:
   59: usize
   60: isize*
   61: usize
-  62: u8*
   63: u8*
-  64: u8
+  64: u8*
   65: u8
-  66: i32*
-  67: u8*
-  68: isize
-  69: u8*
-  70: i32*
+  66: u8
+  67: i32*
+  68: u8*
+  69: isize
+  70: u8*
   71: i32*
-  72: i32
+  72: i32*
   73: i32
-  74: i32*
-  75: i32
-  76: u8*
-  77: u8
-  78: usize
-  79: u8*
-  80: isize
+  74: i32
+  75: i32*
+  76: i32
+  77: u8*
+  78: u8
+  79: usize
   81: u8*
-  82: usize
+  82: isize
   83: u8*
-  84: u8*
-  85: usize
+  84: usize
   86: u8*
-  87: isize
-  88: u8*
-  89: u8*
+  87: u8*
+  88: usize
+  90: u8*
+  91: isize
+  92: u8*
+  93: u8*
 structs: {}
 diagnostics: []

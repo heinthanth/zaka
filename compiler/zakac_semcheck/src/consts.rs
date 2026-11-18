@@ -14,6 +14,7 @@ use zakac_ast::expr::LogicOp as AstLogic;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp as AstPrefix;
+use zakac_ast::expr::SizeExpr;
 use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::StrPiece;
 use zakac_ast::expr::VerbExpr;
@@ -539,6 +540,7 @@ impl Checker
             }
             Expr::Verb(n) => self.verb(n, kind),
             Expr::SizeOf(n) => self.size_of(&n.kind),
+            Expr::Size(n) => self.size(n),
             Expr::Member(n) =>
             {
                 let v = kind.as_enum().and_then(|en| en.member(&n.member.name));
@@ -883,6 +885,28 @@ impl Checker
         let kind = DataKind::from_ast(written, &self.structs);
         let usize_kind = DataKind::USIZE.int_kind().expect("usize is an integer kind");
         Ok(Value::int(usize_kind, u128::from(kind.size(self.platform)), self.platform))
+    }
+
+    /// Work out a size operand: its count, times the size of its kind when
+    /// one is written.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// The size in octets, or the reason it has none.
+    fn size(&self, n: &SizeExpr) -> Worked
+    {
+        let count = self.coerced(&n.count, DataKind::USIZE)?;
+        let Some(unit) = &n.unit
+        else
+        {
+            return Ok(count);
+        };
+        let each = self.size_of(unit)?;
+        value::infix(InfixOp::Mul, count, each, self.platform).map_err(|_| NONE)
     }
 }
 

@@ -200,6 +200,15 @@ fn a_clause_used_as_a_value_wants_thi()
     clean("ကိန်းရှင် ခ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။");
 }
 
+/// The count word of a size operand takes the classifier of its kind.
+#[test]
+fn size_operands_check_their_count_word()
+{
+    let size = "ကိန်းရှင် ခ သည် ကိန်းပြည့် ၃ လုံးစာ ဖြစ်ပါစေ။";
+    assert_eq!(warns(size), [Code::ClassifierMismatch]);
+    clean("ကိန်းရှင် ခ သည် ကိန်းပြည့် ၃ ခုစာ ဖြစ်ပါစေ။");
+}
+
 /// The result of a function kind takes the classifier of its kind, as a
 /// function header does, wherever the function kind stands.
 #[test]

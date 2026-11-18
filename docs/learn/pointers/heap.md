@@ -95,6 +95,19 @@ characters.
 The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်` (an unsigned integer). A literal such as `၁၀` fits
 on its own. A variable used as a count must have that kind.
 
+Both forms are values too, so a program can work out a size before it asks for it:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရွယ် သည် ကိန်းပြည့် ၁၀ ခုစာ ဖြစ်ပါစေ။
+အရွယ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၈၀
+```
+
 ## When there is no room
 
 If the heap has no room left, the pointer gets the null address, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, instead of an

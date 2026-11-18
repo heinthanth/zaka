@@ -204,6 +204,18 @@ fn pointer_expressions()
     assert_eq!(expr("p ကို ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"), "(cast p i32*)");
 }
 
+/// A size operand counts values of a kind, `<kind> <count> <word>စာ`, or
+/// octets, `<count> ဘိုက်စာ`, which closes the whole notation before it.
+#[test]
+fn size_operands()
+{
+    assert_eq!(expr("ကိန်းပြည့် ၃ ခုစာ"), "(size 3 isize)");
+    assert_eq!(expr("၃၂ ဘစ် ကိန်းပြည့် (n + ၁) ခုစာ + ၂"), "(+ (size [(+ n 1)] i32) 2)");
+    assert_eq!(expr("ကိန်းပြည့် လိပ်စာ n ခုစာ"), "(size n isize*)");
+    assert_eq!(expr("၁၆ ဘိုက်စာ"), "(size 16)");
+    assert_eq!(expr("n + ၁ ဘိုက်စာ"), "(size (+ n 1))");
+}
+
 #[test]
 fn a_verbal_join_lists_its_pieces()
 {

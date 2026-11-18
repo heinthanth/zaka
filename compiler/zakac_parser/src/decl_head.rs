@@ -61,7 +61,27 @@ impl Parser<'_>
         let counted = self.is_count_word_at(len);
         ret_if!(counted && !self.size_at(len + 1), self.counted_head());
         ret_if!(counted || self.value_goes_on(len), self.value_head());
+        ret_if!(self.items_ahead(len), self.value_head());
         Err(self.needs_word(len))
+    }
+
+    /// Whether a `<classifier>စာ` stands ahead in the statement, from `n`
+    /// tokens on, so the kind at the cursor starts a size operand.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead to start.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn items_ahead(&self, n: usize) -> bool
+    {
+        let stop = |k: &TokenKind| {
+            matches!(k, TokenKind::Punct(Punct::FullStop) | TokenKind::Eof)
+        };
+        let mut ahead = (n..).map(|i| self.peek_n(i).kind).take_while(|k| !stop(k));
+        ahead.any(|k| k == TokenKind::Kw(Kw::Items))
     }
 
     /// The token count of a kind phrase that starts with a name no struct

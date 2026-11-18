@@ -117,6 +117,12 @@ impl Checker
                 self.written_kind(&n.kind, KindUse::Other);
                 Some(DataKind::USIZE)
             }
+            Expr::Size(n) =>
+            {
+                self.expect_kind(&n.count, Some(DataKind::USIZE));
+                do_if!(let Some(unit) = &n.unit, _ = self.written_kind(unit, KindUse::Other));
+                Some(DataKind::USIZE)
+            }
             Expr::Index(n) => self.infer_index(n),
             Expr::Field(n) => self.infer_field(n),
             Expr::Range(n) => self.infer_range(n),

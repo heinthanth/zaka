@@ -353,6 +353,47 @@ pointers](#lists-objects-and-pointers), below:
 ၁၂
 ```
 
+A size can count several values too, as C writes `n * sizeof(T)`. `<kind> <count> <word>စာ`
+("room for `count` of the kind") is the size of `count` values of the kind, `<word>` its
+measure word before `စာ`, and `<count> ဘိုက်စာ` is `count` octets. Both are
+`လက္ခဏာမဲ့ ကိန်းပြည့်` values that stand wherever a value can, the forms the
+[heap statements](unsafe.md#heap-statements) take:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် n သည် လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
+ကိန်းပြည့် ၃ ခုစာ ကို ပြသမည်။
+စာလုံး n လုံးစာ ကို ပြသမည်။
+၃၂ ဘစ် ကိန်းပြည့် n + ၁ ခုစာ ကို ပြသမည်။
+n + ၁ ဘိုက်စာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂၄
+၁၆
+၂၀
+၅
+```
+
+- The count is a notation expression and a `လက္ခဏာမဲ့ ကိန်းပြည့်`; a count of another
+  kind is ZK0401.
+- The count word takes the measure word of the kind: `ခုစာ` for `ကိန်းပြည့်`, `လုံးစာ` for
+  `စာလုံး`. Another word is the warning ZK0509.
+- `ဘိုက်စာ` closes the whole notation before it, so `n + ၁ ဘိုက်စာ` is `n + ၁` octets.
+- A size of a kind with a constant count is a constant: `ကိန်းသေ ကျ သည် ကိန်းပြည့် ၃ ခုစာ ဖြစ်ပါစေ။`
+
+```zaka-error ZK0401
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် n သည် ၄ ဖြစ်ပါစေ။
+ကိန်းပြည့် n ခုစာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0401]: expected usize, found isize
+```
+
 ## Lists, objects and pointers
 
 More families of kind are built from the scalar kinds. Their rules have pages of their

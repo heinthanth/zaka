@@ -1,5 +1,7 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::SizeExpr;
+use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::FillStmt;
@@ -7,6 +9,7 @@ use zakac_ast::stmt::FreeStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_lexer::classifiers::COUNT_ENDING;
 use zakac_lexer::token::Kw;
@@ -182,16 +185,13 @@ impl Parser<'_>
         ret_if!(!self.starts_kind() || self.at_size_of(), self.parse_octets(start));
         let mut unit = self.parse_kind()?;
         let count = self.parse_clause_expr()?;
-        ret_if!(!self.at(Kw::Items), Err(self.err_items()));
-        let end = self.bump().span;
-        let word = self.text_of(end);
-        let classifier = word.strip_suffix(COUNT_ENDING).unwrap_or(word);
-        unit.classifier = Some(Ident::builder().name(classifier).span(end).build());
+        let end = self.parse_items_word(&mut unit)?;
         let span = start.to(&end);
         Ok(SizeArg::builder().count(count).unit(unit).span(span).build())
     }
 
-    /// Parse `<count> ဘိုက်စာ`.
+    /// Parse `<count> ဘိုက်စာ`. The notation of the count reads the
+    /// `ဘိုက်စာ` after it as a size operand, which gives the count back.
     ///
     /// # Arguments
     ///
@@ -202,10 +202,94 @@ impl Parser<'_>
     /// The size in octets, or a diagnostic.
     fn parse_octets(&mut self, start: Span) -> PResult<SizeArg>
     {
-        let count = self.parse_clause_expr()?;
+        let count = match self.parse_clause_expr()?
+        {
+            Expr::Size(n) if n.unit.is_none() =>
+            {
+                return Ok(SizeArg::builder().count(*n.count).span(n.span).build());
+            }
+            count => count,
+        };
         let end = self.expect(Kw::Octets)?.span;
         let span = start.to(&end);
         Ok(SizeArg::builder().count(count).span(span).build())
+    }
+
+    /// Parse the `<classifier>စာ` that closes a size of a kind, and give the
+    /// kind its classifier, the text before `စာ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The kind of each value.
+    ///
+    /// # Returns
+    ///
+    /// The span of the word, or a diagnostic.
+    fn parse_items_word(&mut self, unit: &mut Kind) -> PResult<Span>
+    {
+        ret_if!(!self.at(Kw::Items), Err(self.err_items()));
+        let end = self.bump().span;
+        let word = self.text_of(end);
+        let classifier = word.strip_suffix(COUNT_ENDING).unwrap_or(word);
+        unit.classifier = Some(Ident::builder().name(classifier).span(end).build());
+        Ok(end)
+    }
+
+    /// Read a size operand that starts with a kind, `<kind> <count>
+    /// <classifier>စာ`, when one reads here; nothing is read otherwise.
+    ///
+    /// # Returns
+    ///
+    /// The size, or `None` with no such operand here.
+    pub(crate) fn attempt_kind_size(&mut self) -> Option<Expr>
+    {
+        ret_if!(!self.starts_kind() || self.at_size_of(), None);
+        let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
+        let read = self.parse_kind_size();
+        ret_if!(let Ok(size) = read, Some(size));
+        self.cur = cur;
+        self.diags.truncate(diags);
+        self.next_id = next_id;
+        None
+    }
+
+    /// Parse `<kind> <count> <classifier>စာ`.
+    ///
+    /// # Returns
+    ///
+    /// The size, or a diagnostic.
+    fn parse_kind_size(&mut self) -> PResult<Expr>
+    {
+        let start = self.peek().span;
+        let mut unit = self.parse_kind()?;
+        let count = self.parse_notation()?;
+        let end = self.parse_items_word(&mut unit)?;
+        let span = start.to(&end);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = SizeExpr::builder().id(id).count(Box::new(count)).unit(unit).span(span).build();
+        Ok(Expr::Size(node))
+    }
+
+    /// Close a notation expression with `ဘိုက်စာ` when the word follows it:
+    /// the expression is then a count of octets.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The size, or the expression as it was.
+    pub(crate) fn octets_after(&mut self, count: Expr) -> Expr
+    {
+        ret_if!(!self.at(Kw::Octets), count);
+        let end = self.bump().span;
+        let span = count.span().to(&end);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = SizeExpr::builder().id(id).count(Box::new(count)).span(span).build();
+        Expr::Size(node)
     }
 
     /// An `expected-token` diagnostic for a missing `ခုစာ`.

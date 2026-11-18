@@ -1001,7 +1001,7 @@ program:
           hi: 5223
       target:
         name:
-          id: 62
+          id: 63
           name: ပစ္စည်း
           span:
             lo: 5274
@@ -1012,11 +1012,11 @@ program:
   - assign:
       target:
         verb:
-          id: 64
+          id: 65
           op: deref
           args:
           - name:
-              id: 63
+              id: 64
               name: ပစ္စည်း
               span:
                 lo: 5346
@@ -1033,7 +1033,7 @@ program:
             hi: 5393
       value:
         int:
-          id: 65
+          id: 66
           value: 7
           base: 10
           kind: null
@@ -1074,29 +1074,29 @@ program:
   - assign:
       target:
         name:
-          id: 66
+          id: 67
           name: ဈေးနှုန်း
           span:
             lo: 5614
             hi: 5641
       value:
         verb:
-          id: 70
+          id: 71
           op: cast
           args:
           - infix:
-              id: 69
+              id: 70
               op: add
               lhs:
                 name:
-                  id: 67
+                  id: 68
                   name: ပစ္စည်း
                   span:
                     lo: 5652
                     hi: 5673
               rhs:
                 int:
-                  id: 68
+                  id: 69
                   value: 4
                   base: 10
                   kind: null
@@ -1136,11 +1136,11 @@ program:
   - assign:
       target:
         verb:
-          id: 72
+          id: 73
           op: deref
           args:
           - name:
-              id: 71
+              id: 72
               name: ဈေးနှုန်း
               span:
                 lo: 5868
@@ -1157,7 +1157,7 @@ program:
             hi: 5921
       value:
         int:
-          id: 73
+          id: 74
           value: 1500
           base: 10
           kind: null
@@ -1171,11 +1171,11 @@ program:
   - print:
       value:
         verb:
-          id: 75
+          id: 76
           op: deref
           args:
           - name:
-              id: 74
+              id: 75
               name: ဈေးနှုန်း
               span:
                 lo: 5974
@@ -1197,7 +1197,7 @@ program:
   - free:
       target:
         name:
-          id: 76
+          id: 77
           name: ပစ္စည်း
           span:
             lo: 6079

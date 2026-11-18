@@ -150,7 +150,11 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The expression, or a diagnostic.
-    pub(crate) fn parse_notation(&mut self) -> PResult<Expr> { self.notation_bp(0) }
+    pub(crate) fn parse_notation(&mut self) -> PResult<Expr>
+    {
+        let notation = self.notation_bp(0)?;
+        Ok(self.octets_after(notation))
+    }
 
     /// Parse a notation expression whose operators bind at least `min`.
     ///
@@ -240,13 +244,14 @@ impl Parser<'_>
     /// Parse an atom: a literal, a name, `( expr )`, `[a၊ b]`,
     /// `<struct>(<field>: <value>)`, a call expression in the word form or
     /// the sign form `f(a၊ b)`, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` or
-    /// `<kind> တစ်<classifier> ၏ အရွယ်အစား`.
+    /// `<kind> တစ်<classifier> ၏ အရွယ်အစား` or `<kind> <count> <classifier>စာ`.
     ///
     /// # Returns
     ///
     /// The expression, or a diagnostic.
     fn parse_atom(&mut self) -> PResult<Expr>
     {
+        ret_if!(let Some(size) = self.attempt_kind_size(), Ok(size));
         let tok = self.peek();
         match tok.kind
         {

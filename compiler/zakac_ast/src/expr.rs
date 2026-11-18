@@ -89,6 +89,8 @@ pub enum Expr
     Null(NullLit),
     /// `kind တစ်<classifier> ၏ အရွယ်အစား`
     SizeOf(SizeOfExpr),
+    /// `<kind> <count> <classifier>စာ` or `<count> ဘိုက်စာ`: a size in octets.
+    Size(SizeExpr),
     /// `x ၏ အကွက် i` or `x ၏ n ခုမြောက်အကွက်`: one cell of a list.
     Index(IndexExpr),
     /// `x ၏ <field>`: one field of a struct.
@@ -309,6 +311,22 @@ pub struct SizeOfExpr
     pub id: NodeId,
     /// The measured kind.
     pub kind: Kind,
+    /// Source region.
+    pub span: Span,
+}
+
+/// `<kind> <count> <classifier>စာ`, the size of `count` values of a kind, or
+/// `<count> ဘိုက်စာ`, `count` octets: a `usize` in octets.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SizeExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The count of values, or of octets when no kind is written.
+    pub count: Box<Expr>,
+    /// The kind of each value, when written. Its [`Kind::classifier`] is the
+    /// text of the count word before its `စာ`: `ခု` in `ခုစာ`.
+    pub unit: Option<Kind>,
     /// Source region.
     pub span: Span,
 }
@@ -917,6 +935,7 @@ impl Expr
             Expr::Call(n) => n.id,
             Expr::Null(n) => n.id,
             Expr::SizeOf(n) => n.id,
+            Expr::Size(n) => n.id,
             Expr::Index(n) => n.id,
             Expr::Field(n) => n.id,
             Expr::Range(n) => n.id,
@@ -954,6 +973,7 @@ impl Expr
             Expr::Call(n) => &mut n.id,
             Expr::Null(n) => &mut n.id,
             Expr::SizeOf(n) => &mut n.id,
+            Expr::Size(n) => &mut n.id,
             Expr::Index(n) => &mut n.id,
             Expr::Field(n) => &mut n.id,
             Expr::Range(n) => &mut n.id,

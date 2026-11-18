@@ -264,7 +264,7 @@ token:
 | First token | Goes to | Notes |
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | arms of `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` are read here |
-| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD` (`parse_slot_kind`), with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234 (`needs_word`), and a kind with its word and then `၏ အရွယ်အစား` (`size_at`) is a value, a size; then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
+| `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | shared start `NAME သည်`, then the head (`parse_decl_head` in `decl_head.rs`): `kind တစ်WORD` (`parse_slot_kind`), with `ဖြစ်၍ တန်ဖိုးသည် VALUE` for a value, or a value alone; a kind with no count word after it is ZK0234 (`needs_word`), and a kind with its word and then `၏ အရွယ်အစား` (`size_at`) is a value, a size, and so is a kind with a count word ahead in the statement (`items_ahead`); then `ဖြစ်ပါစေ` is a declaration and `ဖြစ်ပြီး` a generic loop |
 | `လုပ်ဆောင်ချက်` | `parse_fn_decl` | a function declaration, `NAME ဟူသော လုပ်ဆောင်ချက် သည်`; a call never starts with this word |
 | a name or a group, then `ဟူသော လုပ်ဆောင်ချက်ကို` | `parse_first` (`clause.rs`) | the long call at the start of a statement (`at_long_call`): `parse_call_head`, then `finish_using` ends it as a statement after `လုပ်ဆောင်မည်` or as a value the clause goes on from |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the start block: the header of a function with no name, which gets the name `ပရိုဂရမ်` and `start: true`; its statements end at `ပရိုဂရမ် ပြီးဆုံးပါပြီး` (`ProgramClose`, a joined phrase of `ပရိုဂရမ်` and the done word) where other blocks end at `BlockClose` |
@@ -316,7 +316,13 @@ names does not hold it, so a struct, an enumeration, an alias or a kind paramete
 name hides the built-in kind. `starts_kind`, `plain_kind_len`, `at_sized_kind` and
 `parse_core` all ask `builtin_at`, so the AST holds the same kind as before, and the
 stages after the parser see no change. In a value's place, a built-in kind name starts
-a size (`ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား`), or is ZK0202.
+a size (`ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား`), or is ZK0202. A kind at the start of an atom can also
+start a size operand, `<kind> <count> <word>စာ` (`Expr::Size`): `attempt_kind_size`
+(`heap.rs`) reads the kind, the count as a notation expression and the count word, and puts
+the cursor, the diagnostics and the node number back when one of them is missing.
+`parse_notation` closes its expression with `ဘိုက်စာ` when the word follows
+(`octets_after`), so `n + ၁ ဘိုက်စာ` counts `n + ၁` octets; the octet size of a heap statement
+takes the count back out of that node.
 
 A remove has no verb row, since its list comes before `၏`. When the clause engine meets
 `နောက်ဆုံးအကွက်` (`Kw::LastCell`) after an operand that holds `၏`, `finish_remove` takes

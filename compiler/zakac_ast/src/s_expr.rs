@@ -104,6 +104,11 @@ impl ToSexpr for Expr
             Expr::Null(n) if n.blank => "blank".into(),
             Expr::Null(_) => "null".into(),
             Expr::SizeOf(n) => list("sizeof", [n.kind.to_sexpr()]),
+            Expr::Size(n) =>
+            {
+                let unit = n.unit.iter().map(ToSexpr::to_sexpr);
+                list("size", std::iter::once(n.count.to_sexpr()).chain(unit))
+            }
             Expr::Index(n) =>
             {
                 let head = tern!(n.first == 0, "cell", "cell1");

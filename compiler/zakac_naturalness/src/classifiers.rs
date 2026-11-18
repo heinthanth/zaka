@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use zakac_ast::expr::SizeExpr;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
@@ -9,13 +10,13 @@ use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ResizeStmt;
-use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_alloc;
 use zakac_ast::visit::walk_blit;
 use zakac_ast::visit::walk_fill;
 use zakac_ast::visit::walk_resize;
+use zakac_ast::visit::walk_size;
 use zakac_ast::visit::walk_struct_lit;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::naturalness as diag;
@@ -176,11 +177,11 @@ impl Sizes<'_>
     ///
     /// # Arguments
     ///
-    /// * `size` - The size.
-    fn check_size(&mut self, size: &SizeArg)
+    /// * `size` - The kind of each value of the size, when written.
+    fn check_size(&mut self, size: Option<&Kind>)
     {
-        self.unit = size.unit.as_ref().map(|u| u.span);
-        let Some(unit) = &size.unit
+        self.unit = size.map(|u| u.span);
+        let Some(unit) = size
         else
         {
             return;
@@ -208,25 +209,31 @@ impl Visitor for Sizes<'_>
 
     fn visit_alloc(&mut self, n: &AllocStmt)
     {
-        self.check_size(&n.size);
+        self.check_size(n.size.unit.as_ref());
         walk_alloc(self, n);
     }
 
     fn visit_resize(&mut self, n: &ResizeStmt)
     {
-        self.check_size(&n.size);
+        self.check_size(n.size.unit.as_ref());
         walk_resize(self, n);
     }
 
     fn visit_blit(&mut self, n: &BlitStmt)
     {
-        self.check_size(&n.size);
+        self.check_size(n.size.unit.as_ref());
         walk_blit(self, n);
+    }
+
+    fn visit_size(&mut self, n: &SizeExpr)
+    {
+        self.check_size(n.unit.as_ref());
+        walk_size(self, n);
     }
 
     fn visit_fill(&mut self, n: &FillStmt)
     {
-        self.check_size(&n.size);
+        self.check_size(n.size.unit.as_ref());
         walk_fill(self, n);
     }
 

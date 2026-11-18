@@ -92,6 +92,17 @@ fn casts_and_size_of()
     assert_eq!(codes(&float), [Code::InvalidCast]);
 }
 
+/// A size operand is a `usize`, and its count is one too.
+#[test]
+fn size_operands_count_with_a_usize()
+{
+    let checked = check(&lines(&[PTRS, "ကိန်းပြည့် ၃ ခုစာ ကို ပြသမည်။"]));
+    assert_eq!(kind_at(&checked, "ကိန်းပြည့် ၃ ခုစာ"), "usize");
+    ok(&lines(&[PTRS, "၁၆ ဘိုက်စာ ကို ပြသမည်။"]));
+    let signed = lines(&[PTRS, "ကိန်းပြည့် x ခုစာ ကို ပြသမည်။"]);
+    assert_eq!(codes(&signed), [Code::KindMismatch]);
+}
+
 #[test]
 fn heap_statements_take_pointer_places()
 {

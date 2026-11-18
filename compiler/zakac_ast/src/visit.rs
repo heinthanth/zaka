@@ -25,6 +25,7 @@ use crate::expr::NullLit;
 use crate::expr::Phrases;
 use crate::expr::PrefixExpr;
 use crate::expr::RangeExpr;
+use crate::expr::SizeExpr;
 use crate::expr::SizeOfExpr;
 use crate::expr::StrExpr;
 use crate::expr::StructLit;
@@ -167,6 +168,7 @@ VerbExpr => "verb", visit_verb;
 CallExpr => "call", visit_call_expr;
 NullLit => "null", visit_null;
 SizeOfExpr => "sizeof", visit_size_of;
+SizeExpr => "size", visit_size;
 IndexExpr => "index", visit_index;
 FieldExpr => "field", visit_field;
 RangeExpr => "range", visit_range;
@@ -255,6 +257,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Call(e) => e,
         Expr::Null(e) => e,
         Expr::SizeOf(e) => e,
+        Expr::Size(e) => e,
         Expr::Index(e) => e,
         Expr::Field(e) => e,
         Expr::Range(e) => e,
@@ -414,6 +417,8 @@ pub trait Visitor
     fn visit_null(&mut self, n: &NullLit) { walk_null(self, n) }
     /// Visit a size expression.
     fn visit_size_of(&mut self, n: &SizeOfExpr) { walk_size_of(self, n) }
+    /// Visit a size operand.
+    fn visit_size(&mut self, n: &SizeExpr) { walk_size(self, n) }
     /// Visit a list cell.
     fn visit_index(&mut self, n: &IndexExpr) { walk_index(self, n) }
 
@@ -854,6 +859,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Call(e) => v.visit_call_expr(e),
         Expr::Null(e) => v.visit_null(e),
         Expr::SizeOf(e) => v.visit_size_of(e),
+        Expr::Size(e) => v.visit_size(e),
         Expr::Index(e) => v.visit_index(e),
         Expr::Field(e) => v.visit_field(e),
         Expr::Range(e) => v.visit_range(e),
@@ -1009,6 +1015,15 @@ pub fn walk_size_of<V: Visitor + ?Sized>(v: &mut V, n: &SizeOfExpr)
     v.leave(n);
 }
 
+/// Visit the count, then the unit kind, of a size operand.
+pub fn walk_size<V: Visitor + ?Sized>(v: &mut V, n: &SizeExpr)
+{
+    v.enter(n);
+    v.visit_expr(&n.count);
+    do_if!(let Some(unit) = &n.unit, v.visit_kind(unit));
+    v.leave(n);
+}
+
 /// Visit the list and the cell number of a list cell.
 pub fn walk_index<V: Visitor + ?Sized>(v: &mut V, n: &IndexExpr)
 {
@@ -1150,6 +1165,8 @@ pub trait VisitorMut
     fn visit_null_mut(&mut self, n: &mut NullLit) { self.visit_span_mut(&mut n.span) }
     /// Visit a size expression.
     fn visit_size_of_mut(&mut self, n: &mut SizeOfExpr) { walk_size_of_mut(self, n) }
+    /// Visit a size operand.
+    fn visit_size_mut(&mut self, n: &mut SizeExpr) { walk_size_mut(self, n) }
 }
 
 /// Visit the index kind and the value kind of a ဇယား kind.
@@ -1528,6 +1545,7 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         Expr::Call(e) => walk_call_expr_mut(v, e),
         Expr::Null(e) => v.visit_null_mut(e),
         Expr::SizeOf(e) => v.visit_size_of_mut(e),
+        Expr::Size(e) => v.visit_size_mut(e),
         Expr::Index(e) => walk_pair_mut(v, &mut e.span, &mut e.list, &mut e.index),
         Expr::Field(e) =>
         {
@@ -1682,4 +1700,12 @@ pub fn walk_size_of_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeOfExpr)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_kind_mut(&mut n.kind);
+}
+
+/// Visit the count, then the unit kind, of a size operand.
+pub fn walk_size_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SizeExpr)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.count);
+    do_if!(let Some(unit) = &mut n.unit, v.visit_kind_mut(unit));
 }

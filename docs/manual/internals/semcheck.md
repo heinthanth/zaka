@@ -39,8 +39,8 @@ an expression (`consts.rs`). Where a kind is read (`written_kind`, and struct fi
 the folder's own math: `value.rs` and the operator enums of `const_op.rs` live in this
 crate, and the IR builder takes them from here. `work_out` follows lowering: each operand
 in its recorded kind, converted where lowering converts it, so literals, constants,
-operators in both spellings, comparisons, conversions and `၏ အရွယ်အစား` give the value the
-folder would; a constant list or struct is held as its items (`Folded`, kept in
+operators in both spellings, comparisons, conversions, `၏ အရွယ်အစား` and the size operands (`<kind> <count> <word>စာ`,
+`<count> ဘိုက်စာ`) give the value the folder would; a constant list or struct is held as its items (`Folded`, kept in
 `Checker::aggs` while a run lasts) when each item is known, as the folder's `is_known`
 asks, so a cell, a field or the count of a plain list reads it (`cell_place` reports
 ZK0603), and the count of a counted list comes from its kind, as lowering takes it. The
