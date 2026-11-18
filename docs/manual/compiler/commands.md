@@ -223,8 +223,11 @@ as results](../language/functions.md#lists-and-structs-as-results).
 | `--release` | off | build for release: leave out the source region of each op, the embedded source, the imported files and the diagnostics of the artifact, so a stop names the function and the index of the op, not the line; see [Release builds](../vm/running.md#how-a-run-ends) |
 
 `zakac build --backend c --release` writes no table of places and no marks for them, so a stop
-names the function alone (`(in addfee)`) and each backtrace line is a function name; it does not
-change the flags of the C compiler (`-O2`, no `-g`, with or with no `--release`). The native
+names the function alone (`(in addfee)`) and each backtrace line is a function name. It also
+leaves out the debug info: a build with no `--release` writes a `#line` before each
+statement and compiles with `-g` (`/Z7`, and `/DEBUG` for the link, for MSVC), and the native
+target writes a DWARF line table and the Zaka name of each function into its object, so
+lldb and gdb stop on a line of Zaka (see [Debuggers](native.md#debuggers)). The native
 target and `zakac run --jit` leave out the same table under `--release`. A `.zkc` or `.zkct` built with no `--release` keeps its
 lines, so `zakac run age.zkct` shows them.
 
@@ -372,7 +375,8 @@ $ zakac build --backend c --checks=+null age.zaka
 
 Integer overflow is not one of these: `--overflow` picks it.
 
-The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
+The flags reach the C compiler in this order: `-std=c11`, the default flags, `-g` unless
+`--release`, `CFLAGS`,
 then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. MSVC takes the same order in its own form: `/std:c11` and
 its default flags, then `X.lib` for each lib, and the options of the linker after `/link`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`

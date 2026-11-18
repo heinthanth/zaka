@@ -160,6 +160,27 @@ divide: the program stopped: integer division or remainder with zero as divisor 
 A `--release` build keeps no table of places: a stop names the function alone, and each
 backtrace line is a function name with no place.
 
+## Debuggers
+
+A build with no `--release` carries debug info, so lldb and gdb stop on a line of Zaka
+and show the lines of the calls in progress. The C target writes a `#line` before each
+statement, which names its line of the source, and compiles with `-g`; the native target
+writes a DWARF line table, from the code of each statement to its line, and a subprogram
+with the Zaka name of each function. Each names the source with its absolute path.
+
+```console
+$ zakac build --backend native divide.zaka
+$ lldb ./divide
+(lldb) breakpoint set --file divide.zaka --line 4
+(lldb) run
+```
+
+The debug info holds lines alone: no variable and no kind, so a debugger shows the
+registers and the raw storage of the program, not its values under their names. A backtrace through the C
+target names each function in C (`zk_f0`); the native target names it in Zaka. On macOS the
+debug info remains in the objects in the cache, which the executable names; `dsymutil` copies
+it into a `.dSYM` beside the executable, to keep once the cache is gone.
+
 ## Permissions
 
 An executable holds the rights its build granted, with the flags `zakac run` takes:

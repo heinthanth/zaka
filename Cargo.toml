@@ -8,6 +8,7 @@ default-members = ["compiler/zakac"]
 edition = "2024"
 
 [workspace.dependencies]
+object = { version = "0.40", default-features = false, features = ["read_core", "macho"] }
 cranelift-codegen = { version = "0.137", default-features = false }
 cranelift-frontend = "0.137"
 cranelift-jit = "0.137"

@@ -390,6 +390,11 @@ pub struct BuildPlan<'a>
     /// The static lib a C lib build writes beside the shared lib, which
     /// `out` names then; `None` for an executable.
     pub archive: Option<&'a Path>,
+    /// Whether the build keeps the debug info of the C, which the `#line` of
+    /// each statement points at the source: `-g`, or `/Z7` and `/DEBUG` for
+    /// MSVC.
+    #[builder(default)]
+    pub debug_info: bool,
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -593,6 +598,8 @@ fn compile_flags(plan: &BuildPlan<'_>) -> Vec<String>
     do_if!(plan.defaults, flags.extend(words(table.defaults)));
     let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
     do_if!(sanitized, flags.extend(words(table.sanitize)));
+    let debug = tern!(Dialect::of(plan.abi) == Dialect::Msvc, "/Z7", "-g");
+    do_if!(plan.debug_info, flags.push(debug.into()));
     // The objects of a C lib go into a shared lib too.
     let pic = plan.archive.is_some() && Dialect::of(plan.abi) == Dialect::Gnu;
     do_if!(pic, flags.push("-fPIC".into()));
@@ -706,6 +713,7 @@ fn msvc_link(
     let mut implib = OsString::from("/IMPLIB:");
     implib.push(plan.out.with_extension("dll.lib"));
     do_if!(dll, _ = cmd.arg(implib));
+    do_if!(plan.debug_info, _ = cmd.arg("/DEBUG"));
     cmd.args(options).args(plan.ldflags);
     cmd
 }

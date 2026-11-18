@@ -329,7 +329,8 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                     #[rustfmt::skip]
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
                     .sources(&sources).libs(&libs).abi(target.abi)
-                    .maybe_archive(files.as_ref().map(|f| f.archive.as_path())).build();
+                    .maybe_archive(files.as_ref().map(|f| f.archive.as_path()))
+                    .debug_info(options.debug_info).build();
                     build_and_link(matches, io, &info, link)
                 });
             let Some(f) =

@@ -111,6 +111,9 @@ pub fn object(
         ObjectBuilder::new(isa, "zaka", cranelift_module::default_libcall_names());
     let mut m = ObjectModule::new(builder.map_err(module_error)?);
     let lowered = emit(&mut m, program, files, options, grants, "main", want_clif)?;
-    let octets = m.finish().emit().map_err(module_error)?;
+    let mut product = m.finish();
+    let places = crate::debug::write(&mut product, &lowered.lines)?;
+    let mut octets = product.emit().map_err(module_error)?;
+    crate::debug::place_text(&mut octets, &places)?;
     Ok(Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes })
 }

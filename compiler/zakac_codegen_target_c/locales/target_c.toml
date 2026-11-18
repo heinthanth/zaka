@@ -25,7 +25,7 @@ en = "The most nested calls before the executable stops, under the language chec
 en = "The most octets of heap blocks the executable holds at once; 0 for no cap."
 
 [target_c.release]
-en = "Build for release: leave out the source line of each statement, so a stop names the function, not the line."
+en = "Build for release: leave out the source line of each statement, so a stop names the function, not the line, and the debug info of the debuggers."
 
 [target_c.where]
 en = "(in %{func}, at %{place})"

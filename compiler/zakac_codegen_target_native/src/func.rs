@@ -585,6 +585,8 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
         let site = self.s.site_of(span);
         ret_if!(site.is_none() || site == self.last_site);
         self.last_site = site;
+        // The code of the statement maps to its site in the line table.
+        self.b.set_srcloc(cranelift_codegen::ir::SourceLoc::new(site.unwrap_or(0)));
         let v = self.b.ins().iconst(types::I32, i64::from(site.unwrap_or(0)));
         self.rt("zk_at_site", &[types::I32], &[], &[v]);
     }

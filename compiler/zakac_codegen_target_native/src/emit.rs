@@ -7,6 +7,7 @@ use std::sync::Arc;
 use cranelift_codegen::Context;
 use cranelift_codegen::ir::AbiParam;
 use cranelift_codegen::ir::Signature;
+use cranelift_codegen::ir::SourceLoc;
 use cranelift_codegen::ir::Type;
 use cranelift_codegen::ir::UserFuncName;
 use cranelift_codegen::ir::types;
@@ -20,6 +21,7 @@ use zaka_host::Grants;
 use zakac_codegen_target_c::descriptors::Descriptors;
 use zakac_codegen_target_c::descriptors::KindRow;
 use zakac_codegen_target_c::emit::PROGRAM_TABLE;
+use zakac_codegen_target_c::emit::debug_path;
 use zakac_codegen_target_c::emit::site_mark;
 use zakac_codegen_target_c::emit::table_texts;
 use zakac_codegen_target_c::exports::EXPORT_KINDS;
@@ -42,6 +44,8 @@ use zakac_span::span::Span;
 use crate::blob::Blob;
 use crate::blob::Target;
 use crate::blob::define;
+use crate::debug::FnLines;
+use crate::debug::LineTable;
 use crate::func::FnGen;
 
 /// What a lowering gives: the main function, the data the runtime reads, and
@@ -61,6 +65,9 @@ pub struct Lowered
     /// code outside can call, in the order of `exported`.
     #[builder(default)]
     pub export_shapes: Vec<usize>,
+    /// The line table of the code, in a build with debug info.
+    #[builder(default)]
+    pub lines: LineTable,
 }
 
 /// State shared across the functions of a program.
@@ -106,6 +113,9 @@ pub struct Shared<'m, M: Module>
     pub c_fns: HashMap<String, FuncId>,
     /// Each function kind C calls back: its bridge and its native shape.
     pub cb_shapes: Vec<(DataKind, FuncId, DataId)>,
+    /// The lines of each function compiled so far, in a build with debug
+    /// info.
+    pub lines: Vec<FnLines>,
 }
 
 impl<M: Module> Shared<'_, M>
@@ -416,7 +426,7 @@ pub fn emit<M: Module>(
         runtime: HashMap::new(), funcs: Vec::new(), globals: Vec::new(), records: Vec::new(),
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
-        cb_shapes: Vec::new() };
+        cb_shapes: Vec::new(), lines: Vec::new() };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
     let mut clif = String::new();
@@ -473,9 +483,38 @@ pub fn emit<M: Module>(
     let shape_of =
         |e: &Export<'_>| s.cb_shapes.iter().position(|(k, _, _)| *k == e.kind);
     let export_shapes = exports.iter().filter_map(shape_of).collect();
+    let lines = line_table(&mut s, main, main_name);
     #[rustfmt::skip]
     return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
-        .export_shapes(export_shapes).build());
+        .export_shapes(export_shapes).lines(lines).build());
+}
+
+/// The line table of a program: each function with code, named as a
+/// backtrace shows it, the sites, and the path of each source file.
+///
+/// # Arguments
+///
+/// * `s` - The shared state, whose lines the table takes.
+/// * `main` - The main function.
+/// * `main_name` - Its name.
+///
+/// # Returns
+///
+/// The table.
+fn line_table<M: Module>(
+    s: &mut Shared<'_, M>, main: FuncId, main_name: &str,
+) -> LineTable
+{
+    let named =
+        s.funcs.iter().zip(&s.module.funcs).map(|(id, f)| (*id, shown_name(&f.name)));
+    let mut names: HashMap<FuncId, String> =
+        named.map(|(id, n)| (id, n.to_string())).collect();
+    names.insert(main, main_name.to_string());
+    let mut funcs = std::mem::take(&mut s.lines);
+    funcs.retain(|f| names.contains_key(&f.id));
+    funcs.iter_mut().for_each(|f| f.name = names[&f.id].clone());
+    let files = s.files.iter().map(|f| debug_path(f)).collect();
+    LineTable { funcs, sites: s.sites.clone(), files }
 }
 
 /// The error of a module, as the error of the build.
@@ -573,7 +612,37 @@ fn define_fn<'m, M: Module>(
     };
     let defined = tern!(s.missing.is_none(), s.m.define_function(id, &mut ctx), Ok(()));
     do_if!(let Err(e) = defined, s.missing(format!("{e:?}")));
+    let base = ctx.func.params.base_srcloc();
+    let code = ctx.compiled_code().filter(|_| s.options.debug_info);
+    do_if!(let Some(code) = code, s.lines.push(fn_lines(id, code, base)));
     text
+}
+
+/// The lines of a compiled function: the start of each run of code that
+/// belongs to one site, the name to be set later.
+///
+/// # Arguments
+///
+/// * `id` - The function.
+/// * `code` - Its code.
+/// * `base` - The site the relative sites of its code count from.
+///
+/// # Returns
+///
+/// The lines.
+fn fn_lines(
+    id: FuncId, code: &cranelift_codegen::CompiledCode, base: SourceLoc,
+) -> FnLines
+{
+    let abs = |l: &cranelift_codegen::MachSrcLoc| {
+        tern!(l.loc.is_rel(), l.loc.relocate(base), l.loc.as_abs())
+    };
+    let located = code.buffer.get_srclocs_sorted().iter().map(|l| (l.start, abs(l)));
+    let rows =
+        located.filter(|(_, loc)| !loc.is_default()).map(|(at, loc)| (at, loc.bits()));
+    let rows = rows.collect();
+    #[rustfmt::skip]
+    return FnLines::builder().id(id).name("").size(code.code_info().total_size).rows(rows).build();
 }
 
 /// Define each descriptor, with the tables of its fields and members.

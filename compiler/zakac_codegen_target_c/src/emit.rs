@@ -1018,6 +1018,8 @@ impl<'s, 'm> FnGen<'s, 'm>
     {
         let f = self.func.expect("a function");
         let proto = self.shared.signature(n);
+        // The entry of the function reads as the line of its head.
+        self.line_of(f.span);
         for (i, s) in f.locals.iter().enumerate()
         {
             let param = i < f.params as usize;
@@ -1170,8 +1172,46 @@ impl<'s, 'm> FnGen<'s, 'm>
         let site = self.shared.site_of(span);
         ret_if!(site.is_none() || site == self.last_site);
         self.last_site = site;
-        self.line(&format!("ZK_AT({});", site.unwrap_or(0)));
+        let site = site.unwrap_or(0);
+        self.line_of(span);
+        self.line(&format!("ZK_AT({site});"));
     }
+
+    /// Write a `#line` that names the line of the source a span starts on, in
+    /// a build with debug info: a debugger reads the lines of the C after it
+    /// as that line.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The source region.
+    fn line_of(&mut self, span: Span)
+    {
+        ret_if!(!self.shared.options.debug_info);
+        let Some((file, line, _)) = site_mark(&self.shared.files, span)
+        else
+        {
+            return;
+        };
+        let path = self.shared.files.get(file as usize).map(|f| debug_path(f));
+        do_if!(let Some(path) = path, self.line(&format!("#line {line} {}", c_string(&path))));
+    }
+}
+
+/// The path of a source file a debugger opens: absolute, with `/` between
+/// its parts, as `#line` and the line table of the native code name it.
+///
+/// # Arguments
+///
+/// * `file` - The source file.
+///
+/// # Returns
+///
+/// The path.
+pub fn debug_path(file: &SourceFile) -> String
+{
+    let named = file.name.virtual_path_string();
+    let whole = std::path::absolute(&named).map(|p| p.display().to_string());
+    whole.unwrap_or(named).replace(std::path::MAIN_SEPARATOR, "/")
 }
 
 /// The rights the build grants, as C: the grant of each right, whether the

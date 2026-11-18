@@ -6830,6 +6830,7 @@ dependencies = [
  "cranelift-native",
  "cranelift-object",
  "libloading",
+ "object",
  "tempfile",
  "zaka_host",
  "zaka_runtime",
