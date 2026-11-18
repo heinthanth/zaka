@@ -13,4 +13,4 @@ en = "Output file, or `-` for stdout: the ops (vm) or the executable (c) (defaul
 en = "The backend to build with: the Zaka VM (vm), a native executable through C (c), or a native executable through Cranelift (native)."
 
 [build.emit]
-en = "What to write. vm: the ops (zkc), the ops as text (zkct), or the asm listing (asm), default zkc. c: an executable (bin) or the C files alone (c), default bin."
+en = "What to write. vm: the ops (zkc), the ops as text (zkct), or the asm listing (asm), default zkc. c: an executable (bin), the C files alone (c) or a C lib (lib), default bin."

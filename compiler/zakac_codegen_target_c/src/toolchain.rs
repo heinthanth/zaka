@@ -387,6 +387,9 @@ pub struct BuildPlan<'a>
     /// the runtime lib; this compiler's own when left out.
     #[builder(default = host_abi())]
     pub abi: TargetAbi,
+    /// The static lib a C lib build writes beside the shared lib, which
+    /// `out` names then; `None` for an executable.
+    pub archive: Option<&'a Path>,
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -436,7 +439,121 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     let ok = output.status.success();
     outputs.push(output);
     ret_if!(!ok, Ok(failed(outputs, linker)));
+    let Some(to) = plan.archive
+    else
+    {
+        return Ok(Built::builder().outputs(outputs).build());
+    };
+    let (tool, output) = archive(plan, &objects, to)?;
+    let ok = output.status.success();
+    outputs.push(output);
+    ret_if!(!ok, Ok(failed(outputs, &tool)));
     Ok(Built::builder().outputs(outputs).build())
+}
+
+/// Write the static lib of a C lib build: the objects, with the members of
+/// each lib among them, in one archive. Apple's `libtool -static` takes the
+/// libs as such; MSVC's `lib` (or `llvm-lib` beside `clang-cl`) too; GNU
+/// `ar` adds the members of a lib through a script on its standard input
+/// (`ADDLIB`), with paths relative to the folder of the objects, since a
+/// script cannot quote a path.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `objects` - The objects and the libs.
+/// * `to` - The static lib to write.
+///
+/// # Returns
+///
+/// The tool and what it wrote, or the error when it cannot start.
+fn archive(
+    plan: &BuildPlan<'_>, objects: &[PathBuf], to: &Path,
+) -> zakac_host_errors::Result<(Tool, Output)>
+{
+    ret_if!(Dialect::of(plan.abi) == Dialect::Msvc, msvc_archive(plan.cc, objects, to));
+    let apple = plan.abi == TargetAbi::Apple;
+    let libtool = Tool::builder().program(PathBuf::from("libtool")).build();
+    if apple
+    {
+        let mut cmd = libtool.command();
+        cmd.args(["-static", "-no_warning_for_no_symbols", "-o"]).arg(to).args(objects);
+        return run(&libtool, cmd).map(|o| (libtool, o));
+    }
+    gnu_archive(objects, to)
+}
+
+/// Write a static lib with MSVC's `lib`, or `llvm-lib` for `clang-cl`.
+///
+/// # Arguments
+///
+/// * `cc` - The compiler, beside which the tool stands, with its variables.
+/// * `objects` - The objects and the libs.
+/// * `to` - The static lib to write.
+///
+/// # Returns
+///
+/// The tool and what it wrote, or the error when it cannot start.
+fn msvc_archive(
+    cc: &Tool, objects: &[PathBuf], to: &Path,
+) -> zakac_host_errors::Result<(Tool, Output)>
+{
+    let clang =
+        cc.program.file_stem().is_some_and(|s| s.eq_ignore_ascii_case("clang-cl"));
+    let beside = cc.program.with_file_name("lib.exe");
+    let program = match clang
+    {
+        true => PathBuf::from("llvm-lib"),
+        false if beside.is_file() => beside,
+        false => PathBuf::from("lib"),
+    };
+    let tool = Tool::builder().program(program).env(cc.env.clone()).build();
+    let mut out = OsString::from("/OUT:");
+    out.push(to);
+    let mut cmd = tool.command();
+    cmd.arg("/NOLOGO").arg(out).args(objects);
+    run(&tool, cmd).map(|o| (tool, o))
+}
+
+/// Write a static lib with GNU `ar` (or the one `AR` names) and a script.
+///
+/// # Arguments
+///
+/// * `objects` - The objects and the libs, in one folder.
+/// * `to` - The static lib to write.
+///
+/// # Returns
+///
+/// The tool and what it wrote, or the error when it cannot start.
+fn gnu_archive(
+    objects: &[PathBuf], to: &Path,
+) -> zakac_host_errors::Result<(Tool, Output)>
+{
+    let ar = std::env::var_os("AR").filter(|v| !v.is_empty()).unwrap_or("ar".into());
+    let tool = Tool::builder().program(PathBuf::from(ar)).build();
+    let dir = objects.first().and_then(|o| o.parent()).unwrap_or(Path::new("."));
+    let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().into_owned());
+    let is_lib = |p: &PathBuf| p.extension().is_some_and(|e| e == "a");
+    let line = |p: &PathBuf| {
+        let word = tern!(is_lib(p), "ADDLIB", "ADDMOD");
+        name(p).map(|n| format!("{word} {n}\n"))
+    };
+    let lines: String = objects.iter().filter_map(line).collect();
+    let made = dir.join("zk_lib.a");
+    let script = format!("CREATE zk_lib.a\n{lines}SAVE\nEND\n");
+    let mut cmd = tool.command();
+    cmd.arg("-M").current_dir(dir).stdin(Stdio::piped());
+    cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = cmd.spawn().map_err(|e| start_error(&tool, e))?;
+    let fed = child
+        .stdin
+        .take()
+        .map(|mut s| std::io::Write::write_all(&mut s, script.as_bytes()));
+    do_if!(let Some(Err(e)) = fed, return Err(start_error(&tool, e)));
+    let output = finish(&tool, child)?;
+    let copied = output.status.success().then(|| std::fs::copy(&made, to));
+    do_if!(let Some(Err(e)) = copied, return Err(start_error(&tool, e)));
+    Ok((tool, output))
 }
 
 /// The command that compiles one C file to an object.
@@ -476,6 +593,9 @@ fn compile_flags(plan: &BuildPlan<'_>) -> Vec<String>
     do_if!(plan.defaults, flags.extend(words(table.defaults)));
     let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
     do_if!(sanitized, flags.extend(words(table.sanitize)));
+    // The objects of a C lib go into a shared lib too.
+    let pic = plan.archive.is_some() && Dialect::of(plan.abi) == Dialect::Gnu;
+    do_if!(pic, flags.push("-fPIC".into()));
     flags.extend(plan.cflags.iter().cloned());
     flags
 }
@@ -532,6 +652,7 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     let os_libs: Vec<&str> =
         runtime_lib(plan.abi).map(|r| r.native_libs().collect()).unwrap_or_default();
     ret_if!(dialect == Dialect::Msvc, msvc_link(plan, cmd, objects, &os_libs));
+    do_if!(plan.archive.is_some(), _ = cmd.arg("-shared"));
     cmd.args(objects)
         .args(dialect.out(true, plan.out))
         .args(table.link_libs)
@@ -566,12 +687,18 @@ fn msvc_link(
     let stem = |t: &Tool| t.program.file_stem().map(|s| s.to_ascii_lowercase());
     let linker = plan.linker.and_then(stem);
     let link_exe = linker.is_some_and(|s| s == "link" || s == "lld-link");
+    let dll = plan.archive.is_some();
+    do_if!(dll, _ = cmd.arg(tern!(link_exe, "/DLL", "/LD")));
     cmd.args(objects).args(libs).args(plan.libs);
     let mut out = OsString::from("/OUT:");
     out.push(plan.out);
     do_if!(link_exe, _ = cmd.arg("/NOLOGO").arg(out));
     let cl_out = Dialect::Msvc.out(true, plan.out);
     do_if!(!link_exe, _ = cmd.arg("/nologo").args(cl_out).args(["/link", "/NOLOGO"]));
+    // The import lib of a DLL leaves `<name>.lib` to the static lib.
+    let mut implib = OsString::from("/IMPLIB:");
+    implib.push(plan.out.with_extension("dll.lib"));
+    do_if!(dll, _ = cmd.arg(implib));
     cmd.args(options).args(plan.ldflags);
     cmd
 }

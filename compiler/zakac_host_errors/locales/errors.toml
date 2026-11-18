@@ -45,6 +45,12 @@ en = "this program was built for %{built}, and this host is %{host}: build it ag
 [errors.no_wasi_compiler]
 en = "no C compiler for %{triple} found: set WASI_SDK_PATH to the folder of wasi-sdk, pass --cc, or put %{triple}-clang on the PATH"
 
+[errors.lib_with_no_exports]
+en = "a C lib needs a function that code outside can call: mark one with \"<C name>\" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော"
+
+[errors.lib_on_wasi]
+en = "a C lib cannot be built for WASI: build it for another OS"
+
 [errors.c_functions_on_wasi]
 en = "a program for WASI cannot call C functions: WASI loads no shared libs, so build it for another OS"
 

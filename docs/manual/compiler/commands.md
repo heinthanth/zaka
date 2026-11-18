@@ -276,7 +276,7 @@ $ zakac build [--backend vm|c|native] [--emit WHAT] [options] [INPUT]
 | Target | Makes | `--emit` | Output with no `-o` |
 | --- | --- | --- | --- |
 | `vm` (the default) | the ops of the VM, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
-| `c` | an executable, through C and a C compiler | `bin` (default), `c` | `<name>` beside the source (`<name>.exe` on Windows) |
+| `c` | an executable, through C and a C compiler; or a C lib | `bin` (default), `c`, `lib` | `<name>` beside the source (`<name>.exe` on Windows); for `lib`, `lib<name>.a`, the shared lib and `<name>.h` |
 | `native` | an executable, through Cranelift and the linker of a C compiler | `bin` (default), `obj`, `clif` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif` |
 
 A source read from standard input writes the ops to standard output. Each target
@@ -383,6 +383,33 @@ $ zakac build --backend c age.zaka
 $ ./age
 ၂၀
 $ CFLAGS=-O3 zakac build --backend c --linker 'clang -fuse-ld=lld' age.zaka
+```
+
+#### A C lib
+
+`--emit lib` builds a C lib of the functions marked `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော`,
+for C, Rust and each language that calls C. The program needs no start block, and a
+program with none of those functions is an error. The build writes three files in one
+folder, named after the input or the last part of `-o`:
+
+| File | What it holds |
+| --- | --- |
+| `lib<name>.a` (`<name>.lib` for MSVC) | the static lib: the objects of the program with the runtime lib inside it |
+| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib; MSVC writes its import lib as `<name>.dll.lib` |
+| `<name>.h` | the declaration of each function, under its C name, and `zk_last_trap` |
+
+Each function returns an `int32_t` status and gives its result through a last
+parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
+of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap, since a
+trap can leave the heap and the globals half written; `zk_last_trap()` gives the text of
+that trap. The first call starts the runtime and sets the globals. Text comes in as a
+`const char *`; an address or a handle as a `void *`. A program that links the static lib
+links the OS libs of the runtime with it, which the comment at the top of the header
+lists.
+
+```console
+$ zakac build --backend c --emit lib -o out/mathlib mathlib.zaka
+$ cc -Iout main.c out/libmathlib.a -liconv -lm -o main
 ```
 
 ### The native target

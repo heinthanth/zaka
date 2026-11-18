@@ -29,6 +29,8 @@ use zakac_cli_common::grants::attach_grant_args;
 use zakac_cli_common::grants::grants_from;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
+use zakac_host_errors::errors::IOErrorAction;
+use zakac_host_errors::errors::IOErrorContext;
 use zakac_i18n::t;
 use zakac_ir_builder::cli::attach_compile_args;
 use zakac_ir_builder::cli::fold_options;
@@ -39,6 +41,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::cli::target_from;
+use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::load_artifact;
 use zakac_session::config::Input;
@@ -49,6 +52,8 @@ use crate::driver::default_cache;
 use crate::driver::translate;
 use crate::driver::write_cache_for;
 use crate::emit::CFile;
+use crate::exports;
+use crate::exports::exported;
 use crate::ffi::link_libs_for;
 use crate::options::Emit;
 use crate::options::RunCheck;
@@ -384,20 +389,24 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     ret_if!(let Err(error) = source, report_command_error(io, &info, error));
     let source = source.unwrap();
+    let emit: Emit = arg(EMIT_ARG).unwrap_or_default().parse().unwrap_or_default();
+    let lib = emit == Emit::Lib;
+    // A lib has no start block: its functions start the runtime.
+    let checks = SemcheckOptions { as_module: lib, ..semcheck_options(matches) };
     let loaded = zakac_semcheck::open_chains::load_settled(
         &source,
         &mut source_map,
         &LexerOptions::default(),
         &target_from(matches, BuildTarget::C),
-        &semcheck_options(matches),
+        &checks,
     );
     ret_if!(let Err(error) = loaded, report_command_error(io, &info, error));
 
-    let target = target_options(matches);
+    let target = TargetCOptions { lib, ..target_options(matches) };
     let translated = translate(
         loaded.unwrap(),
         source_map.files(),
-        &semcheck_options(matches),
+        &checks,
         &fold_options(matches),
         &borrow_check_options(matches),
         target,
@@ -416,22 +425,36 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 
     let stem = input_path(&input);
     let cache = arg(CACHE_ARG).map_or_else(|| default_cache(&stem), PathBuf::from);
-    let emit: Emit = arg(EMIT_ARG).unwrap_or_default().parse().unwrap_or_default();
     let cross =
-        other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit == Emit::Bin);
+        other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit != Emit::C);
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
     let wasi = wasi::is_wasi(built_for.abi);
+    ret_if!(wasi && lib, report_command_error(io, &info, Error::LibOnWasi));
     let folded = translated.borrowchecked.lowered.folded.as_ref();
     let c_fns = wasi && folded.is_some_and(|m| !m.foreign.is_empty());
     ret_if!(c_fns, report_command_error(io, &info, Error::CFunctionsOnWasi));
-    let out = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
-    let out = tern!(wasi, with_extension_if_bare(out, wasi::EXTENSION), with_exe(out));
+    let exports = folded.map(exported).unwrap_or_default();
+    ret_if!(
+        lib && exports.is_empty(),
+        report_command_error(io, &info, Error::LibWithNoExports)
+    );
+    let base = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
+    let lib_files = lib.then(|| LibFiles::of(&base, built_for));
+    let out =
+        tern!(wasi, with_extension_if_bare(base, wasi::EXTENSION), with_exe(base));
+    let out = lib_files.as_ref().map_or(out, |f| f.shared.clone());
     let files = files.unwrap();
     let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
     let libs = folded.map(|m| link_libs_for(&m.foreign, dialect)).unwrap_or_default();
+    let header = lib_files.as_ref().map(|f| {
+        let links = static_links(built_for.abi, dialect, &libs);
+        let text = exports::header(&exports, target.platform_bits, &f.name, &links);
+        (f.header.clone(), text)
+    });
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(target.checks).emit(emit)
-        .files(&files).libs(&libs).build();
+        .files(&files).libs(&libs).maybe_archive(lib_files.as_ref().map(|f| f.archive.as_path()))
+        .maybe_header(header).build();
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
@@ -525,6 +548,78 @@ struct Job<'a>
     files: &'a [CFile],
     /// The link flag of each lib the C functions of the program come from.
     libs: &'a [String],
+    /// The static lib of a C lib build, beside the shared lib `out` names.
+    archive: Option<&'a Path>,
+    /// The header of a C lib build, and its text.
+    header: Option<(PathBuf, String)>,
+}
+
+/// The files a C lib build writes, in one folder: the static lib, the shared
+/// lib and the header.
+struct LibFiles
+{
+    /// The name of the lib, with no `lib` in front and no extension.
+    name: String,
+    /// The static lib: `lib<name>.a`, or `<name>.lib` for MSVC.
+    archive: PathBuf,
+    /// The shared lib: `lib<name>.so`, `lib<name>.dylib`, or `<name>.dll`.
+    shared: PathBuf,
+    /// The header, `<name>.h`.
+    header: PathBuf,
+}
+
+impl LibFiles
+{
+    /// The files of a lib, from the path `-o` gives or the input names.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The path, whose last part names the lib.
+    /// * `target` - The target, whose OS and ABI pick the names.
+    ///
+    /// # Returns
+    ///
+    /// The files.
+    fn of(base: &Path, target: zakac_ast::target::Target) -> LibFiles
+    {
+        let name = base.file_stem().map(|s| s.to_string_lossy().into_owned());
+        let name = name.unwrap_or_else(|| "zaka".into());
+        let at = |file: String| base.with_file_name(file);
+        let msvc = target.abi == zakac_ast::target::TargetAbi::Msvc;
+        let archive = tern!(msvc, format!("{name}.lib"), format!("lib{name}.a"));
+        let shared = match target.os
+        {
+            TargetOs::Macos => format!("lib{name}.dylib"),
+            TargetOs::Windows => format!("{name}.dll"),
+            _ => format!("lib{name}.so"),
+        };
+        #[rustfmt::skip]
+        return LibFiles { archive: at(archive), shared: at(shared), header: at(format!("{name}.h")), name };
+    }
+}
+
+/// What a program that links the static lib of a C lib links with it: the
+/// OS libs of the runtime, libm, and the libs of the C functions the program
+/// calls.
+///
+/// # Arguments
+///
+/// * `abi` - The ABI of the lib.
+/// * `dialect` - The flag form of its toolchain.
+/// * `libs` - The link flags of the C functions of the program.
+///
+/// # Returns
+///
+/// The link flags.
+fn static_links(
+    abi: zakac_ast::target::TargetAbi, dialect: toolchain::Dialect, libs: &[String],
+) -> Vec<String>
+{
+    let os =
+        crate::driver::runtime_lib(abi).map(|r| r.native_libs().collect::<Vec<_>>());
+    let os = os.unwrap_or_default().into_iter().map(String::from);
+    let m = (dialect == toolchain::Dialect::Gnu).then(|| "-lm".to_string());
+    os.chain(m).chain(libs.iter().cloned()).collect()
 }
 
 /// Write the C into the cache, then compile it unless `--emit c`.
@@ -548,8 +643,17 @@ fn build(
     ret_if!(job.emit == Emit::C, Ok(ExitCode::Success));
     #[rustfmt::skip]
     let link = Link::builder().cache(job.cache).out(job.out).checks(job.checks).sources(&sources)
-        .libs(job.libs).abi(abi).build();
-    build_and_link(matches, io, info, link)
+        .libs(job.libs).abi(abi).maybe_archive(job.archive).build();
+    let built = build_and_link(matches, io, info, link)?;
+    let Some((path, text)) = job.header.filter(|_| built == ExitCode::Success)
+    else
+    {
+        return Ok(built);
+    };
+    std::fs::write(&path, text).map_err(|e| {
+        Error::from_io(e, IOErrorContext::new(path.clone(), IOErrorAction::Write))
+    })?;
+    Ok(built)
 }
 
 /// What a step of the C compiler builds: C files and objects into an
@@ -570,6 +674,8 @@ pub struct Link<'a>
     /// The ABI of the executable; this compiler's own when left out.
     #[builder(default = crate::driver::host_abi())]
     pub abi: zakac_ast::target::TargetAbi,
+    /// The static lib of a C lib build, beside the shared lib `out` names.
+    pub archive: Option<&'a Path>,
 }
 
 /// Compile C files and link them with objects and libs into an executable,
@@ -617,7 +723,7 @@ pub fn build_and_link(
     let plan = BuildPlan::builder().cc(&cc).maybe_linker(linker.as_ref())
         .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
-        .ldflags(&ldflags).libs(job.libs).abi(job.abi).build();
+        .ldflags(&ldflags).libs(job.libs).abi(job.abi).maybe_archive(job.archive).build();
     let built = toolchain::build(&plan)?;
     // `cl` writes the name of each file it compiles, and its errors, to
     // standard output, so a step of MSVC that succeeds shows none of it.

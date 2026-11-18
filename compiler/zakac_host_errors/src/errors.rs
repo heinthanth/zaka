@@ -82,6 +82,10 @@ pub enum Error
     },
     #[error("{}", t!("errors.c_functions_on_wasi"))]
     CFunctionsOnWasi,
+    #[error("{}", t!("errors.lib_with_no_exports"))]
+    LibWithNoExports,
+    #[error("{}", t!("errors.lib_on_wasi"))]
+    LibOnWasi,
     #[error("{}", t!("errors.c_for_other_host", target = target, host = host))]
     CForOtherHost
     {

@@ -9,6 +9,7 @@ use zaka_host::Grants;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
@@ -43,6 +44,8 @@ use crate::descriptors::FN_TAIL;
 use crate::descriptors::GOOD_BARE;
 use crate::descriptors::GOOD_TEXT;
 use crate::descriptors::NO_DATA_TEXT;
+use crate::exports::exported;
+use crate::exports::lib_source;
 use crate::ffi::FFI_SOURCE;
 use crate::ffi::FfiCall;
 use crate::ffi::ffi_source;
@@ -211,7 +214,13 @@ pub fn emit(
         let text = FnGen::new(&mut shared, Some(f)).func(n as u32);
         units[unit_of(f.span.lo)].push_str(&text);
     }
-    let main = FnGen::new(&mut shared, None).main();
+    let start = FnGen::new(&mut shared, None);
+    let main = tern!(options.lib, start.lib_init(), start.main());
+    let exports = exported(module);
+    let shapes: Vec<Option<usize>> =
+        exports.iter().map(|e| shared.cb_shape(e.kind)).collect();
+    do_if!(shapes.contains(&None), _ = shared.missing(t!("target_c.export_kinds")));
+    let shapes: Vec<usize> = shapes.into_iter().flatten().collect();
     // A closure can go to a C function that takes a function value.
     let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
     let fn_params: Vec<DataKind> = fn_params.filter(|k| k.is_fn()).collect();
@@ -246,6 +255,8 @@ pub fn emit(
         out.push(CFile::builder().name(FFI_SOURCE).text(ffi).build())
     );
     let cb = cb_source(&shared.cb_kinds, platform, &mut shared.descr);
+    let cb = cb
+        + &tern!(options.lib, lib_source(&exports, &shapes, platform), String::new());
     do_if!(
         !shared.cb_kinds.is_empty(),
         out.push(CFile::builder().name(CALLBACK_SOURCE).text(cb).build())
@@ -1102,6 +1113,28 @@ impl<'s, 'm> FnGen<'s, 'm>
              **environ;\nint main(int argc, char **argv)\n{{\n    char **envp = \
              environ;\n#else\nint main(int argc, char **argv, char \
              **envp)\n{{\n#endif\n    (void)envp;\n{}}}\n",
+            self.out
+        )
+    }
+
+    /// Generate `zk_lib_init` of a C lib: the top-level statements, which set
+    /// the globals, with no drop of them at the end, since the globals live
+    /// as long as the lib.
+    ///
+    /// # Returns
+    ///
+    /// The C text of `main.c`.
+    fn lib_init(mut self) -> String
+    {
+        let main = &self.shared.module.main;
+        let global_drop = |s: &Stmt| {
+            matches!(s, Stmt::Drop { dest: Dest::Slot(Place::Global(_)), .. })
+        };
+        let kept =
+            main.len() - main.iter().rev().take_while(|s| global_drop(s)).count();
+        self.block(&main[..kept]);
+        format!(
+            "#include \"{KINDS_HEADER}\"\n\nvoid zk_lib_init(void)\n{{\n{}}}\n",
             self.out
         )
     }

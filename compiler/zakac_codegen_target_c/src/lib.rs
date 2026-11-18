@@ -3,6 +3,7 @@ pub mod cli;
 pub mod descriptors;
 pub mod driver;
 pub mod emit;
+pub mod exports;
 mod exprs;
 pub mod ffi;
 pub mod kinds;

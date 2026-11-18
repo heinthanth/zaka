@@ -237,6 +237,9 @@ pub enum Emit
     Bin,
     /// The C files alone.
     C,
+    /// A C lib: a static lib, a shared lib and a header, of the functions
+    /// that code outside can call.
+    Lib,
 }
 
 /// The choices of the C target.
@@ -266,6 +269,10 @@ pub struct TargetCOptions
     /// cap.
     #[builder(default)]
     pub max_heap: u64,
+    /// Whether the build makes a C lib: no `main`, and a wrapper for each
+    /// function that code outside can call.
+    #[builder(default)]
+    pub lib: bool,
 }
 
 impl Default for TargetCOptions

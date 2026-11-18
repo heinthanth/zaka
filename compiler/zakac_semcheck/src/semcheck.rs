@@ -1078,7 +1078,7 @@ impl Checker
     /// (ZK0490); its C name is a C name (ZK0337) that neither the runtime,
     /// a C function nor another such function takes (ZK0491); C can give
     /// each parameter (ZK0465, ZK0466) and take the result (ZK0465), as for
-    /// a function value C calls back.
+    /// a function value C calls back, save a plain struct parameter.
     ///
     /// # Arguments
     ///
@@ -1108,7 +1108,11 @@ impl Checker
         {
             let kind = DataKind::from_ast(&p.kind, &self.structs);
             do_if!(p.edit, self.report(kd::edit_across_c(p.span, &p.name.name)));
-            let stuck = !p.edit && !foreign::callback_param(kind, platform);
+            // shortcut: a plain struct needs its fields in the header of the
+            // lib, which the header lacks; write them there to let one in.
+            let whole =
+                matches!(kind, DataKind::Struct(_)) && kind.fallible_parts().is_none();
+            let stuck = !p.edit && (whole || !foreign::callback_param(kind, platform));
             do_if!(stuck, self.report(kd::kind_not_across_c(p.span, &kind.name())));
         }
         let bad_ret = ret.filter(|k| !foreign::callback_result(*k, platform));

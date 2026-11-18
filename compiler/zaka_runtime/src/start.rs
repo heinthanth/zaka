@@ -36,6 +36,10 @@ pub extern "C" fn zk_start(argc: i32, argv: *mut *mut c_char, program: *const Zk
     }
 }
 
+/// Write out what is buffered, as a C lib does at the end of each call.
+#[unsafe(no_mangle)]
+pub extern "C" fn zk_flush() { flush_out(); }
+
 /// End the run: write out what is buffered.
 ///
 /// # Arguments

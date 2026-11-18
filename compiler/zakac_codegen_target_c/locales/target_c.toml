@@ -7,13 +7,16 @@ en = "Build a native program: write C for each module, then compile it with a C 
 en = "Input file, or `-` for stdin (default: stdin)"
 
 [target_c.output]
-en = "The executable to write (default: the name of the input, without its extension)."
+en = "The executable to write, or with --emit lib the folder and the name of the lib, which names its files lib<name>.a, the shared lib and <name>.h (default: the name of the input, without its extension)."
 
 [target_c.cache]
 en = "The folder for the generated C (default: zakac/<folder>/<input>-<hash> in XDG_CACHE_HOME or ~/.cache, or in %LOCALAPPDATA% on Windows; .zakac_c_cache beside the input when that cannot be made)."
 
 [target_c.emit]
-en = "What to make: an executable (bin), or the C files alone (c) (default: bin)."
+en = "What to make: an executable (bin), the C files alone (c), or a C lib of the functions that code outside can call (lib): a static lib, a shared lib and a header (default: bin)."
+
+[target_c.export_kinds]
+en = "a function that code outside can call whose parameter or result kinds the bridge cannot pass"
 
 [target_c.checks]
 en = "The run-time checks of the executable: a level (none, default, mem), then checks to add (+name) or drop (-name): divide, shift, bounds, text, step, depth, null, overlap, sanitizers."

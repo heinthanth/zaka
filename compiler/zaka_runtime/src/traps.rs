@@ -1,6 +1,7 @@
 //! Stops: the trap line with its place, and the backtrace of the calls in
 //! progress, as the VM writes them.
 
+use std::ffi::CString;
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::io::Write;
@@ -96,6 +97,36 @@ const SHOWN_CALLS: u64 = 16;
 
 /// The name of the executable, without its folder, which leads a trap line.
 static NAME: OnceLock<Vec<u8>> = OnceLock::new();
+
+/// The function a C lib leaves a call through when the call stops on a trap:
+/// it jumps back to the wrapper of the call, which returns the trap as its
+/// status, so the program that loaded the lib goes on.
+static LEAVE: OnceLock<extern "C" fn(i32)> = OnceLock::new();
+
+/// The text of the trap a C lib stopped on: the trap line with its place,
+/// with no name of an executable and no backtrace.
+static LAST: OnceLock<CString> = OnceLock::new();
+
+/// Make each trap leave through `leave`, in place of the end of the run: a C
+/// lib sets it on its first call.
+///
+/// # Arguments
+///
+/// * `leave` - The function that leaves the call in progress; it takes the trap
+///   and does not return.
+#[unsafe(no_mangle)]
+pub extern "C" fn zk_on_trap(leave: extern "C" fn(i32)) { _ = LEAVE.set(leave); }
+
+/// The text of the trap a C lib stopped on.
+///
+/// # Returns
+///
+/// The text, ended with a zero octet, or NULL before a trap.
+#[unsafe(no_mangle)]
+pub extern "C" fn zk_trap_text() -> *const c_char
+{
+    LAST.get().map_or(std::ptr::null(), |t| t.as_ptr())
+}
 
 /// Keep the name of the executable for trap lines.
 ///
@@ -303,7 +334,8 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 
 /// Stop the run, as the VM does: write what is buffered, then the trap line
 /// `<executable>: the program stopped: <trap>` with its place, then the
-/// backtrace, and leave with status 1.
+/// backtrace, and leave with status 1. In a C lib that set [`zk_on_trap`],
+/// leave the call in progress instead.
 ///
 /// # Arguments
 ///
@@ -312,24 +344,75 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
 {
     flush_out();
-    let p = prog();
-    let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
-    let stopped = text(p.stopped_text);
-    let reason = fill(row(p.trap_text, trap as usize), pairs);
-    let mut line = [name, b": "].concat();
-    line.extend(fill(stopped, &[("e", &reason)]));
-    if tracks()
-        && let Some(f) = frames().last()
+    let said = stop_text(trap, pairs);
+    let Some(leave) = LEAVE.get().copied()
+    else
     {
-        line.push(b' ');
-        line.extend(call_text(*f, p.where_text, p.in_text));
-    }
+        exit_with(said)
+    };
+    leave_call(leave, trap, said)
+}
+
+/// End the run on a trap: write the trap line after the name of the
+/// executable, then the backtrace, and leave with status 1.
+///
+/// # Arguments
+///
+/// * `said` - The trap line, with no name before it.
+fn exit_with(said: Vec<u8>) -> !
+{
+    let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
+    let mut line = [name, b": "].concat();
+    line.extend(said);
     line.push(b'\n');
     line.extend(backtrace());
     let mut err = std::io::stderr().lock();
     let _ = err.write_all(&line);
     let _ = err.flush();
     std::process::exit(1)
+}
+
+/// The trap line with its place, with no name of an executable before it.
+///
+/// # Arguments
+///
+/// * `trap` - The trap.
+/// * `pairs` - Each name of its template and its value.
+///
+/// # Returns
+///
+/// The line, with no line end.
+fn stop_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
+{
+    let p = prog();
+    let reason = fill(row(p.trap_text, trap as usize), pairs);
+    let mut line = fill(text(p.stopped_text), &[("e", &reason)]);
+    if tracks()
+        && let Some(f) = frames().last()
+    {
+        line.push(b' ');
+        line.extend(call_text(*f, p.where_text, p.in_text));
+    }
+    line
+}
+
+/// Leave the call of a C lib that stopped on a trap: keep its text, then
+/// jump back to the wrapper of the call. Nothing of this frame needs a drop
+/// when `leave` runs, since the jump skips the drops of each frame it leaves;
+/// a frame of the runtime between the trap and here leaks what it holds, and
+/// the lib remains stopped after it.
+///
+/// # Arguments
+///
+/// * `leave` - The function of the lib that jumps back.
+/// * `trap` - The trap.
+/// * `said` - The trap line.
+fn leave_call(leave: extern "C" fn(i32), trap: i32, said: Vec<u8>) -> !
+{
+    let kept = CString::new(said).unwrap_or_default();
+    _ = LAST.set(kept);
+    leave(trap);
+    std::process::abort()
 }
 
 /// Stop the run: an integer division or remainder had zero as divisor.
