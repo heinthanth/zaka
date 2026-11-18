@@ -193,7 +193,7 @@ en = "The OS the compile-time conditionals read, as zakac --target-os sets it. T
 [explorer.settings.target_arch]
 en = "Target CPU"
 [explorer.settings.target_arch_note]
-en = "The CPU the compile-time conditionals read, as zakac --target-arch sets it. The native target writes x86-64 code, so this setting hides there."
+en = "The CPU the compile-time conditionals read, as zakac --target-arch sets it. For the native target it is also the CPU of the code: x86-64, aarch64 or riscv64."
 [explorer.settings.target_abi]
 en = "Target ABI"
 [explorer.settings.target_abi_note]

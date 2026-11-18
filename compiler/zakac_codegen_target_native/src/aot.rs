@@ -20,6 +20,10 @@ use zakac_span::source_file::SourceFile;
 use crate::emit::emit;
 use crate::emit::module_error;
 
+/// The CPUs Cranelift builds for.
+pub const ARCHES: [TargetArch; 3] =
+    [TargetArch::X86_64, TargetArch::Aarch64, TargetArch::Riscv64];
+
 /// The triple of a target, as Cranelift names it.
 ///
 /// # Arguments

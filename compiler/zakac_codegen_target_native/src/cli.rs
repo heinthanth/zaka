@@ -7,7 +7,6 @@ use std::sync::Arc;
 use zaka_host::Gate;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::Target;
-use zakac_ast::target::TargetArch;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::clap::ArgMatches;
@@ -44,11 +43,7 @@ use zakac_span::source_map::SourceMap;
 /// The error, or `None` for a CPU Cranelift builds for.
 pub fn arch_error(target: &Target) -> Option<Error>
 {
-    let known = matches!(
-        target.arch,
-        TargetArch::X86_64 | TargetArch::Aarch64 | TargetArch::Riscv64
-    );
-    ret_if!(known, None);
+    ret_if!(crate::aot::ARCHES.contains(&target.arch), None);
     let arch: &'static str = target.arch.into();
     Some(Error::ArchNotForNative { arch: arch.into() })
 }

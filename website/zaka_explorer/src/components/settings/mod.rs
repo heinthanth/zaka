@@ -29,6 +29,7 @@ use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::options::RunCheck;
 use zakac_codegen_target_c::options::RunChecks;
+use zakac_codegen_target_native::aot::ARCHES;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_codegen_target_vm::options::ScratchMode;
 use zakac_diagnostics::Code;
@@ -155,13 +156,11 @@ fn compiler_rows(state: AppState, lints_open: RwSignal<bool>) -> impl IntoView
             os_picker(state),
         ),
         move || {
-            (!native()).then(|| {
-                row(
-                    t!("explorer.settings.target_arch"),
-                    t!("explorer.settings.target_arch_note"),
-                    arch_picker(state),
-                )
-            })
+            row(
+                t!("explorer.settings.target_arch"),
+                t!("explorer.settings.target_arch_note"),
+                arch_picker(state, native()),
+            )
         },
         row(
             t!("explorer.settings.target_abi"),
@@ -511,20 +510,27 @@ fn os_picker(state: AppState) -> impl IntoView
     ))
 }
 
-/// Picker of the CPU the compile-time conditionals see.
+/// Picker of the CPU the compile-time conditionals see; for the native
+/// output, the CPUs Cranelift builds for alone.
 ///
 /// # Arguments
 ///
 /// * `state` - The state.
+/// * `native` - Whether the output is native code.
 ///
 /// # Returns
 ///
 /// The view.
-fn arch_picker(state: AppState) -> impl IntoView
+fn arch_picker(state: AppState, native: bool) -> impl IntoView
 {
-    let choice = |name: &&'static str| {
+    let choice = |arch: TargetArch| {
+        let name: &'static str = arch.into();
         Choice::builder().value(name.to_string()).label(name.to_string()).build()
     };
+    let arches = TargetArch::VARIANTS
+        .iter()
+        .filter_map(|v| v.parse::<TargetArch>().ok())
+        .filter(move |a| !native || ARCHES.contains(a));
     let current = Signal::derive(move || {
         <&'static str>::from(state.options.get().arch).to_string()
     });
@@ -538,7 +544,7 @@ fn arch_picker(state: AppState) -> impl IntoView
     };
     dropdown(picker(
         t!("explorer.settings.target_arch"),
-        TargetArch::VARIANTS.iter().map(choice).collect(),
+        arches.map(choice).collect(),
         current,
         on_pick,
     ))
@@ -866,7 +872,11 @@ fn target_picker(state: AppState) -> impl IntoView
     let current = Signal::derive(move || state.options.get().target.to_string());
     let on_pick = move |v: String| {
         let target = v.parse().unwrap_or_default();
-        state.options.update(|o| o.target = target);
+        state.options.update(|o| {
+            o.target = target;
+            let foreign = target == Target::Native && !ARCHES.contains(&o.arch);
+            do_if!(foreign, o.arch = TargetArch::X86_64);
+        });
     };
     dropdown(picker(
         t!("explorer.settings.target"),
