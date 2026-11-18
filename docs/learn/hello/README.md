@@ -107,15 +107,16 @@ Text in quotes takes `ဟု`; a number takes `ကို` ("show *this*"). The p
 If a statement has no `။`, the program does not run. The compiler stops and reports what
 it expected:
 
-```zaka-error ZK0201
+```zaka-error ZK0204
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသမည်
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
+error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
+
 
 When the compiler knows the change that fixes a message, it shows the line as the
 change leaves it, with `~` under the new text:

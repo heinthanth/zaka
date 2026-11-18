@@ -17,6 +17,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
+use zakac_parser::load::prelude_builtin_fns;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -69,8 +70,15 @@ impl Checker
             }
             (None, None) =>
             {
-                let diag = rd::undeclared_function(callee.span, &callee.name);
-                self.report(self.with_hidden(diag, &callee.name));
+                // A function the compiler gives reads as its sentences alone;
+                // a call with other words fits none of its heads.
+                let heads = builtin_heads(&callee.name);
+                let fits_none =
+                    heads.map(|h| rd::no_overload_fits(callee.span, &callee.name, &h));
+                let missing = rd::undeclared_function(callee.span, &callee.name);
+                let diag = fits_none
+                    .unwrap_or_else(|| self.with_hidden(missing, &callee.name));
+                self.report(diag);
                 None
             }
         }
@@ -255,4 +263,49 @@ pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
     };
     let params = sig.params.iter().enumerate().map(param).collect();
     FnKind::make_with(params, sig.ret, sig.start, sig.end)
+}
+
+/// The heads of the functions of a name that the compiler gives in the
+/// prelude, each as the sentence its call writes, each argument as `…`:
+/// `… ထဲသို့ … ကို ထည့်`.
+///
+/// # Arguments
+///
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The heads, `;` between them, or `None` when the prelude gives no such
+/// function.
+fn builtin_heads(name: &str) -> Option<String>
+{
+    let heads: Vec<String> = prelude_builtin_fns()
+        .iter()
+        .filter(|d| d.name.name == name)
+        .map(head_text)
+        .collect();
+    (!heads.is_empty()).then(|| heads.join("; "))
+}
+
+/// The sentence a call of a head writes, each argument as `…`.
+///
+/// # Arguments
+///
+/// * `decl` - The head.
+///
+/// # Returns
+///
+/// The text.
+fn head_text(decl: &FnDecl) -> String
+{
+    let word = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+    let args = decl
+        .params
+        .iter()
+        .flat_map(|p| std::iter::once("…".to_string()).chain(word(&p.preposition)));
+    let start = word(&decl.phrases.start).into_iter();
+    let end = word(&decl.phrases.end).into_iter();
+    let words: Vec<String> =
+        start.chain(args).chain(end).chain([decl.name.name.to_string()]).collect();
+    words.join(" ")
 }

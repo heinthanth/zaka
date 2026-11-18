@@ -134,18 +134,19 @@ particle is found where it is written, with a message that names it:
 ```
 
 ```text
-error[ZK0206]: "ပေါင်း" needs "နှင့်" after operand 1, found ကို
+error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after operand 1, found ကို
 ```
 
 An operand with no verb to take it is found at the end of the sentence:
 
-```zaka-error ZK0209
+```zaka-error ZK0204
 ၃ နှင့် ၄ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0209]: operands left over before "ပြသမည်": ၃ (နှင့်)
+error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
+
 
 **The verb is the last word.** The compiler knows what a sentence does when it reaches
 the verb, and `။` ends the statement. No guess is needed about where one statement stops.

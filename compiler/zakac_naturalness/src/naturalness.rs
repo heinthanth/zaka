@@ -5,32 +5,42 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::GroupExpr;
 use zakac_ast::expr::NextCtx;
 use zakac_ast::expr::NotExpr;
+use zakac_ast::expr::SizeExpr;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::stmt::AllocStmt;
 use zakac_ast::stmt::AssignStmt;
+use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::FillStmt;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
+use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_alloc;
 use zakac_ast::visit::walk_assign;
+use zakac_ast::visit::walk_blit;
 use zakac_ast::visit::walk_call_expr;
 use zakac_ast::visit::walk_call_stmt;
 use zakac_ast::visit::walk_counted;
 use zakac_ast::visit::walk_decl;
 use zakac_ast::visit::walk_each;
+use zakac_ast::visit::walk_fill;
 use zakac_ast::visit::walk_generic;
 use zakac_ast::visit::walk_group;
 use zakac_ast::visit::walk_if_arm;
 use zakac_ast::visit::walk_not;
 use zakac_ast::visit::walk_print;
+use zakac_ast::visit::walk_resize;
 use zakac_ast::visit::walk_return;
+use zakac_ast::visit::walk_size;
 use zakac_ast::visit::walk_verb;
 use zakac_ast::visit::walk_while;
 use zakac_diagnostics::Code;
@@ -278,6 +288,38 @@ impl Visitor for Checker
     {
         self.report_group(&n.inner, Place::Nested);
         walk_group(self, n);
+    }
+
+    // The count of a size is a whole notation, so parentheses around it
+    // change nothing: `ကိန်းပြည့် (n + ၁) ခုစာ` is `ကိန်းပြည့် n + ၁ ခုစာ`.
+    fn visit_size(&mut self, n: &SizeExpr)
+    {
+        self.report_group(&n.count, Place::Operand);
+        walk_size(self, n);
+    }
+
+    fn visit_alloc(&mut self, n: &AllocStmt)
+    {
+        self.report_group(&n.size.count, Place::Operand);
+        walk_alloc(self, n);
+    }
+
+    fn visit_resize(&mut self, n: &ResizeStmt)
+    {
+        self.report_group(&n.size.count, Place::Operand);
+        walk_resize(self, n);
+    }
+
+    fn visit_fill(&mut self, n: &FillStmt)
+    {
+        self.report_group(&n.size.count, Place::Operand);
+        walk_fill(self, n);
+    }
+
+    fn visit_blit(&mut self, n: &BlitStmt)
+    {
+        self.report_group(&n.size.count, Place::Operand);
+        walk_blit(self, n);
     }
 }
 

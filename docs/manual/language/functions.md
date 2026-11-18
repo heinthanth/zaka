@@ -438,9 +438,9 @@ The rules of these forms:
   more, with `နှင့်` before the last; the other particle is ZK0246, and a list without its
   `နှင့်` is ZK0245 ([Lists in words](words.md#lists-in-words)).
 - The long form ends in `လုပ်ဆောင်မည်`; `လုပ်ဆောင်မည်` after `သုံး၍` is ZK0201.
-- A statement end, `မည်` or `လုပ်ဆောင်မည်`, where a value is needed is ZK0201.
+- A statement end, `မည်` or `လုပ်ဆောင်မည်`, where a value is needed is ZK0204.
 
-```zaka-error ZK0201
+```zaka-error ZK0204
 ပြ ဟူသော လုပ်ဆောင်ချက် သည်
 န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -453,8 +453,9 @@ The rules of these forms:
 ```
 
 ```text
-error[ZK0201]: expected "သည့် ရလဒ်" or "သည့် ရလဒ်ကောင်း", found "မည်"
+error[ZK0204]: statement verb "ပြ မည်" cannot stand inside an expression
 ```
+
 
 ## Prepositions
 

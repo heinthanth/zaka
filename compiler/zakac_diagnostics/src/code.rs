@@ -473,8 +473,6 @@ TableNeedsKind = ("ZK0486", Level::Error),
 /// A ဇယား kind whose index kind holds a decimal number, which rounding can
 /// split into two rows.
 DecimalIndex = ("ZK0487", Level::Warning),
-/// `ကို ဖျက်မည်` after a value that is no row of a ဇယား.
-RemoveNeedsRow = ("ZK0488", Level::Error),
 /// A comptime function gives a kind that a constant cannot hold.
 ComptimeResultKind = ("ZK0489", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.

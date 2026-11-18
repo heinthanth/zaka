@@ -25,15 +25,16 @@ after it.
 Without the space, `အသက်ကို` is read as one long name. No such name exists, so the
 compiler complains, and it suggests the fix:
 
-```zaka-error ZK0206
+```zaka-error ZK0203
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0203]: this statement does not end in a statement verb, found "ပြသ"
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
+
 
 ## Where spaces are optional
 

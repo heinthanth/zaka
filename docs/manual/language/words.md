@@ -94,15 +94,16 @@ The fourth rule gives the one habit a Zaka writer needs: **put a space between a
 and the particle after it.** When the joined word is not a known name, the compiler
 guesses that a space is missing and reports it:
 
-```zaka-error ZK0206
+```zaka-error ZK0203
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0203]: this statement does not end in a statement verb, found "ပြသ"
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
+
 
 A polite ending (`သည်`, `ပါ`, `ပါသည်`) written attached to a comparison verb, to
 `မှန်`, `မမှန်` or `မဟုတ်` is part of that word; the lexer keeps it as a note on the

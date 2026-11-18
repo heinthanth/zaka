@@ -185,7 +185,8 @@ remove takes the row of the index out; with no such row, nothing happens.
 - The index and the value go in as an assigned value goes into a place: text, lists, structs
   and tables are copied, and a shared object is shared ([Values and objects](objects.md)).
 - The index and the value are worked out before the ဇယား changes.
-- `ကို ဖျက်မည်` after a value that is no row, `<table> ထဲမှ အညွှန်း <index>`, is ZK0488. A list
+- `ကို ဖျက်မည်` after a value that is no row, `<table> ထဲမှ အညွှန်း <index>`, fits no sentence
+  of `ဖျက်` (ZK0332), and the help lists them. A list
   loses its last cell through `နောက်ဆုံးအကွက်ကို ဖျက်မည်` ([Lists](lists.md#adding-and-removing-cells)).
 
 ```zaka-error ZK0306
@@ -199,7 +200,7 @@ remove takes the row of the index out; with no such row, nothing happens.
 error[ZK0306]: "ဇ" is a constant and cannot be assigned
 ```
 
-```zaka-error ZK0488
+```zaka-error ZK0332
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
 က ကို ဖျက်မည်။
@@ -207,8 +208,9 @@ error[ZK0306]: "ဇ" is a constant and cannot be assigned
 ```
 
 ```text
-error[ZK0488]: "ကို ဖျက်မည်" here removes a row of a ဇယား, written "<ဇယား> ထဲမှ အညွှန်း <index>"
+error[ZK0332]: no function "ဖျက်" takes these arguments
 ```
+
 
 ## Writing inside a row
 
@@ -455,6 +457,5 @@ index and the value.
 | ZK0485 | an index kind that cannot be hashed and compared as a whole value |
 | ZK0486 | a blank ဇယား with no kind from its place |
 | ZK0487 | a warning: an index kind that holds a decimal number |
-| ZK0488 | `ကို ဖျက်မည်` after a value that is no row |
 | ZK0434 | `အကွက်တိုင်း` or `စာလုံးတိုင်း` on a ဇယား |
 | ZK0306 | a set or a remove of a row of a constant |

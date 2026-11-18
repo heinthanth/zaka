@@ -86,21 +86,24 @@ help: write "ပြသမည်"
 ```
 
 A sentence that ends in another word is ZK0203, with a help line that lists the verbs.
-A verb that finds a missing or wrong particle on an operand is ZK0206, and one that finds
-too few operands is ZK0205. Operands left over before the verb are ZK0209. A missing
-`။` is ZK0201.
+A verb of the grammar, such as `ထားမည်`, that finds a missing or wrong particle on an
+operand is ZK0206, and one that finds too few operands is ZK0205. Operands left over
+before the verb are ZK0209. A missing `။` is ZK0201. The verbs of the prelude, such as
+`ပြသမည်` and `ထည့်မည်`, are calls of functions: a sentence of one that fits none of its
+heads is ZK0332, which lists the sentences of the verb, and one where a value goes is
+ZK0204.
 
 ```zaka-error ZK0203 ZK0206
 ၁ ကို ပြသမည်။
 ၅ + ၃။
 ၂ ကို ပြသမည်။
-၄ ပြသမည်။
+က ဟု ၄ ကို ထားမည်။
 ```
 
 ```text
 error[ZK0203]: this statement does not end in a statement verb, found "။"
 help: a statement ends in "ပြသမည်", "ထားမည်" or "ကို ပြန်ပေးမည်", or is a loop with "နေသရွေ့" or "မှ ... အထိ"
-error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0206]: "ထားမည်" needs "ကို" after operand 1, found ဟု
 ```
 
 The example shows how the compiler recovers: after an error in a statement it skips to

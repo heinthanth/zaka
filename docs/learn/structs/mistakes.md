@@ -178,15 +178,16 @@ error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is 
 A field inside an operator expression goes in parentheses. Without them, the sentence
 does not read:
 
-```zaka-error ZK0209
+```zaka-error ZK0204
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
 ကျော် ၏ အသက် + ၁ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0209]: operands left over before "ပြသမည်": ကျော် (၏)
+error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
+
 
 Write `(ကျော် ၏ အသက်) + ၁`.
 

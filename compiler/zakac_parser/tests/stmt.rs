@@ -449,8 +449,10 @@ fn arguments_first_calls_match_the_other_forms()
 #[test]
 fn call_ends_follow_the_place_of_the_call()
 {
-    let wrong = ["ကိန်းရှင် x သည် က ကို သုံး၍ ပြ မည် ဖြစ်ပါစေ။", "က ကို သုံး၍ ပြ။"];
-    do_for!(text in wrong, assert_eq!(codes(text), [Code::ExpectedToken], "{text}"));
+    // A statement end where a value goes is ZK0204.
+    let value = "ကိန်းရှင် x သည် က ကို သုံး၍ ပြ မည် ဖြစ်ပါစေ။";
+    assert_eq!(codes(value), [Code::StmtVerbInExpr]);
+    assert_eq!(codes("က ကို သုံး၍ ပြ။"), [Code::ExpectedToken]);
 }
 
 /// A parameter the function can change takes `ဒေတာ ပြောင်းလဲရန်` in its item, and
@@ -570,9 +572,10 @@ fn replace_of_a_range_parses()
 fn a_range_stands_in_a_replace_statement_alone()
 {
     let printed = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို ပြသမည်။");
-    assert_eq!(printed, [Code::SlotMismatch]);
-    let missing = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို \"x\" ကို အစားထိုးမည်။");
-    assert_eq!(missing, [Code::SlotMismatch]);
+    assert_eq!(printed, [Code::ExpectedToken]);
+    // Another word reads as a call, which fits no head of the verb (ZK0332).
+    let wrong = codes("t ၏ အကွက် ၀ မှ ၄ ထိကို \"x\" ကို အစားထိုးမည်။");
+    assert_eq!(wrong, []);
 }
 
 #[test]

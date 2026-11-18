@@ -142,15 +142,16 @@ so `မှာ` cannot lose its `မှ`. It refuses a cut where each piece is a 
 **A space between a made-up name and the particle after it.** The lexer sees one word
 where the writer meant two, and no cut can fix that:
 
-```zaka-error ZK0206
+```zaka-error ZK0203
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0203]: this statement does not end in a statement verb, found "ပြသ"
 help: write "အသက် ကို" with a space: a name joined to a particle is read as one word
 ```
+
 
 The message names the missing particle and gives the fix.
 

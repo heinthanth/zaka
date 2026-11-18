@@ -88,7 +88,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0201 | something unexpected, often a missing `။` | [Hello, world](../../learn/hello/README.md) |
 | ZK0202 | a value is missing where one was expected | |
 | ZK0203 | the statement does not end in a verb such as `ပြသမည်` | [Grouping and order](../../learn/operators/grouping.md) |
-| ZK0204 | a logical expression printed without parentheses | [Logic](../../learn/operators/logic.md) |
+| ZK0204 | a statement verb, or a call that ends in `မည်`, where a value goes, as a logical expression printed without parentheses | [Logic](../../learn/operators/logic.md) |
 | ZK0205 | a verb is missing one of its parts | [Particles](../../learn/sentences/particles.md) |
 | ZK0206 | wrong or missing particle, often a name joined to `ကို` | [Spaces between words](../../learn/sentences/spacing.md) |
 | ZK0207 | two particles in a row after one operand | [Particles](../../learn/sentences/particles.md) |
@@ -276,7 +276,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0485 | a ဇယား kind whose index kind holds a part that cannot be hashed and compared as a whole value: an object, a function value, a pointer, an optional, a result or a ဇယား | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
 | ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Index kinds](../language/tables.md#index-kinds) |
-| ZK0488 | `ကို ဖျက်မည်` after a value that is no row of a ဇယား | [Tables](../language/tables.md#setting-and-removing-rows) |
 | ZK0489 | a comptime function whose result is no value a constant can hold | [Compile time](../language/compile-time.md#comptime-functions) |
 
 ### ZK05: natural Zaka (warnings)

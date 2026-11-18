@@ -56,10 +56,10 @@ fn invalid_input_reports_one_error_per_bad_line()
     let found: Vec<Code> = artifact.diagnostics.iter().map(|d| d.code).collect();
     let want = [
         Code::DoubleParticle,
-        Code::DanglingOperands,
+        Code::StmtVerbInExpr,
         Code::MissingOperand,
         Code::ChainedComparison,
-        Code::SlotMismatch,
+        Code::ExpectedStmtVerb,
         Code::InvalidDigit,
         Code::ElseWithoutIf,
         Code::ExpectedStmtVerb,

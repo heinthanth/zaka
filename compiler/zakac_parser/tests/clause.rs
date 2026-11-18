@@ -104,7 +104,7 @@ fn particle_errors()
 #[test]
 fn statement_level_clause_errors()
 {
-    assert_eq!(codes("ဂ နှင့် က ကို ပြသမည်။"), [Code::DanglingOperands]);
+    assert_eq!(codes("ဂ နှင့် က ကို ပြသမည်။"), [Code::StmtVerbInExpr]);
     assert_eq!(codes("(က ကို ပြသမည်) ကို ပြသမည်။"), [Code::StmtVerbInExpr]);
     assert_eq!(stmt("၁ ကို ၂ ဟု ထားမည်။"), "(set 1 2)");
     assert_eq!(codes("က + ၁ ။"), [Code::ExpectedStmtVerb]);

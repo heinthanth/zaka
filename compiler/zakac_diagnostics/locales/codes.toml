@@ -1463,15 +1463,6 @@ en = "index the rows with an integer, such as the value scaled and rounded"
 [codes.ZK0487.explain]
 en = """Two decimal indexes are one row when their values are equal after rounding, so \"၀.၁ + ၀.၂\" and \"၀.၃\" name two rows. Each NaN names one row, and -0.0 and 0.0 name one row, as JS Map treats them; \"==\" on decimal numbers is not changed. An index that counts in whole steps, such as cents for a price, keeps the rows apart as written."""
 
-[codes.ZK0488.title]
-en = "a remove of no row"
-[codes.ZK0488.message]
-en = "\"ကို ဖျက်မည်\" here removes a row of a ဇယား, written \"<ဇယား> ထဲမှ အညွှန်း <index>\""
-[codes.ZK0488.help]
-en = "a list loses its last cell through \"<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်\""
-[codes.ZK0488.explain]
-en = """\"<ဇယား> ထဲမှ အညွှန်း <index> ကို ဖျက်မည်\" removes the row with that index, and does nothing when no row has it. A list and text lose their last cell or character through \"နောက်ဆုံးအကွက်ကို ဖျက်မည်\" and \"နောက်ဆုံးစာလုံးကို ဖျက်မည်\"."""
-
 [codes.ZK0489.title]
 en = "comptime result kind"
 [codes.ZK0489.message]

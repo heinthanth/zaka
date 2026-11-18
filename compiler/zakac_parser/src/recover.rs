@@ -1,6 +1,7 @@
 use zakac_ast::stmt::Stmt;
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment_at;
+use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::reserved::lookup;
@@ -61,7 +62,9 @@ impl Parser<'_>
     }
 
     /// Add a hint when one of the two tokens before the error is a name that
-    /// ends in a particle: the name and the particle must be two words.
+    /// ends in a particle: the name and the particle must be two words. It
+    /// takes the place of the help of a statement that ends in no verb, as a
+    /// joined particle hides the verb's operand.
     ///
     /// # Arguments
     ///
@@ -72,7 +75,8 @@ impl Parser<'_>
     /// The diagnostic, with the hint when it applies.
     fn hint_split(&self, err: Diagnostic) -> Diagnostic
     {
-        ret_if!(err.help.is_some(), err);
+        let plain = err.help.is_none() || err.code == Code::ExpectedStmtVerb;
+        ret_if!(!plain, err);
         let names = (1..=2).filter_map(|n| self.cur.back(n));
         let mut names = names.filter(|tok| tok.kind == TokenKind::Ident);
         let split = names.find_map(|tok| split_particle(self.text_of(tok.span)));

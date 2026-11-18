@@ -147,6 +147,10 @@ fn form_of_words(
         {
             Form::Replace(true)
         }
+        REPLACE if shape(&["၏", "ခုမြောက်စာလုံးမှ", "ခုမြောက်စာလုံးထိကို", "ဖြင့်"]) =>
+        {
+            Form::Replace(true)
+        }
         _ => return None,
     };
     Some(form)

@@ -10,12 +10,8 @@ use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::TableRow;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
-use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::LeaveStmt;
-use zakac_ast::stmt::PrintStmt;
-use zakac_ast::stmt::RemoveStmt;
-use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::Dir;
@@ -33,7 +29,6 @@ use zakac_lexer::reserved::LIST_NAME;
 use zakac_lexer::reserved::TABLE_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::role::builtin_count;
-use zakac_lexer::role::builtin_verb;
 use zakac_lexer::spoken::written_form;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
@@ -91,26 +86,6 @@ enum Operand
     Expr(Expr),
     /// `<kind>` in `<kind> အဖြစ်`.
     Kind(Kind),
-    /// The range of text in `<range> ထိကို`, which a replace statement
-    /// changes.
-    Range(Box<TextRange>),
-}
-
-/// `<text> ၏ အကွက် <start> မှ <end>` or
-/// `<text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံး`, before `ထိကို`.
-#[derive(Debug)]
-struct TextRange
-{
-    /// The text.
-    text: Expr,
-    /// The first cell or character.
-    start: Expr,
-    /// The last cell or character.
-    end: Expr,
-    /// Whether the ends count characters from 1, not cells from 0.
-    chars: bool,
-    /// Source region, from the text to `ထိ`.
-    span: Span,
 }
 
 impl Operand
@@ -126,7 +101,6 @@ impl Operand
         {
             Operand::Expr(e) => e.span(),
             Operand::Kind(k) => k.span,
-            Operand::Range(r) => r.span,
         }
     }
 }
@@ -354,19 +328,9 @@ impl Parser<'_>
     {
         let tok = self.peek_n(n);
         ret_if!(let Some(verb) = as_verb(&tok), Some((verb, 1)));
-        // `အကုန် ကူးထည့် မည်` is the deep duplicate of `ကူးထည့် မည်`.
-        let deep = tok.kind == TokenKind::Kw(Kw::All)
-            && self.verb_at(n + 1).is_some_and(|(v, _)| v.kw == Kw::WillDupIn);
-        ret_if!(deep, verb_for(Kw::WillDupAllIn).map(|v| (v, 3)));
         ret_if!(tok.kind != TokenKind::Ident, None);
         let name = self.text_of(tok.span);
         ret_if!(!prelude_builtins().contains(name), None);
-        // The verbs are read as sentence calls first (`verb_sentence`); their
-        // rows read what no cut reads, and report the operands a sentence
-        // leaves over.
-        let ends = kw_of(&self.peek_n(n + 1)) == Some(Kw::Will);
-        let verb = builtin_verb(name).filter(|_| ends);
-        ret_if!(let Some(kw) = verb, verb_for(kw).map(|v| (v, 2)));
         let after_ei = n.checked_sub(1).map_or_else(
             || self.cur.back(1).is_some_and(|t| t.kind == TokenKind::Punct(Punct::Ei)),
             |b| self.peek_n(b).kind == TokenKind::Punct(Punct::Ei),
@@ -414,18 +378,9 @@ impl Parser<'_>
             // `၏ အကွက်တိုင်း` opens an each-cell loop; the operand before it is
             // what the loop walks.
             ret_if!(self.at_each_head(), self.finish_clause(stack));
-            // `၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of the operand.
-            let last = matches!(tok.kind, TokenKind::Kw(Kw::LastCell | Kw::LastChar));
-            ret_if!(last && holds_ei(&stack), self.finish_remove(stack, mode));
             // `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` gives outside code leave to call the
             // operand.
             ret_if!(self.at_leave(), self.finish_leave(stack, mode));
-            // `<cell> ၏ အရှေ့တွင်` names where an add puts its value.
-            if tok.kind == TokenKind::Kw(Kw::Before) && holds_ei(&stack)
-            {
-                self.attach_before(&mut stack)?;
-                continue;
-            }
             // In an item of a list in words, a joining word ends the item.
             ret_if!(self.at_item_end(&stack), self.finish_clause(stack));
             // A joining word after the first case of a switch arm, with the
@@ -733,25 +688,6 @@ impl Parser<'_>
         };
         stack.push(Item::expr(item));
         Ok(())
-    }
-
-    /// Turn the `၏` of the top operand into `၏ အရှေ့တွင်`, then push the
-    /// operand that follows it.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack` - The operand stack; its top holds `၏`.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a diagnostic from the operand.
-    fn attach_before(&mut self, stack: &mut Vec<Item>) -> PResult<()>
-    {
-        let tok = self.bump();
-        let top = stack.last_mut().expect("the top operand holds ၏");
-        let (_, ei) = top.slot.expect("the top operand holds ၏");
-        top.slot = Some((Slot::Before, ei.to(&tok.span)));
-        self.push_next_operand(stack, Slot::Before)
     }
 
     /// Rebuild a read of the data of a field, `x ၏ f ထဲမှ ဒေတာ`, whose operand
@@ -1164,7 +1100,6 @@ impl Parser<'_>
             stack.push(Item::expr(Expr::Range(node)));
             return Ok(());
         }
-        ret_if!(self.at_range_end(), self.push_range(stack, list, index, false));
         let span = list.span().to(&index.span());
         stack.push(Item::expr(self.index_expr(list, index, 0, span)));
         Ok(())
@@ -1208,7 +1143,6 @@ impl Parser<'_>
         let word = self.bump();
         let index = into_expr(stack.pop().expect("the top operand holds ခုမြောက်"));
         let text = into_expr(stack.pop().expect("the operand under it holds ၏"));
-        ret_if!(self.at_range_end(), self.push_range(stack, text, index, true));
         let span = text.span().to(&word.span);
         let node = self.char_verb(VerbOp::CharNth, text, index, span);
         stack.push(Item::expr(node));
@@ -1235,37 +1169,6 @@ impl Parser<'_>
         };
         let kinds = (1..).map(|n| self.peek_n(n).kind);
         kinds.take_while(|k| !ends(k)).any(|k| k == TokenKind::Kw(Kw::Upto))
-    }
-
-    /// Push the range of a replace statement, from its `မှ` to its `ထိကို`,
-    /// then the value after it.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack` - The operand stack.
-    /// * `text` - The text the range is of.
-    /// * `start` - The first cell or character.
-    /// * `chars` - Whether the ends count characters from 1: the end is
-    ///   `<number> လုံးမြောက်စာလုံး`.
-    ///
-    /// # Returns
-    ///
-    /// `Ok`, or a diagnostic.
-    fn push_range(
-        &mut self, stack: &mut Vec<Item>, text: Expr, start: Expr, chars: bool,
-    ) -> PResult<()>
-    {
-        self.bump();
-        let end = self.parse_bare_notation()?;
-        do_if!(chars, _ = self.expect(Kw::Ordinal)?);
-        do_if!(chars, _ = self.expect_name(CHAR_NAME)?);
-        let upto = self.expect(Kw::Upto)?;
-        let ko = self.expect(Kw::Ko)?;
-        let span = text.span().to(&upto.span);
-        let range = TextRange { text, start, end, chars, span };
-        let item = Item::builder().operand(Operand::Range(Box::new(range)));
-        stack.push(item.slot((Slot::Upto, upto.span.to(&ko.span))).build());
-        self.push_next_operand(stack, Slot::Upto)
     }
 
     /// Build a character read of text.
@@ -1442,10 +1345,6 @@ impl Parser<'_>
             {
                 Operand::Expr(e) => exprs.push(e),
                 Operand::Kind(k) => kind_arg = Some(k),
-                Operand::Range(_) =>
-                {
-                    unreachable!("a range fills the slot of a statement verb alone")
-                }
             }
         }
         let id = self.new_id();
@@ -1484,94 +1383,16 @@ impl Parser<'_>
         ret_if!(!rest.is_empty(), Err(self.dangling(rest, tok)));
         let stop = self.expect_stop()?;
         let span = args[0].operand.span().to(&stop.span);
-        ret_if!(verb.op == VerbOp::Replace, Ok(replace_stmt(args, span)));
-        let slot = args[0].slot.map_or(Slot::Ko, |(slot, _)| slot);
         let mut args = args.into_iter().map(into_expr);
         let first = args.next().expect("statement verbs take operands");
         match verb.op
         {
             VerbOp::Assign => Ok(assign_stmt(first, args.next(), span)),
-            VerbOp::DupInto | VerbOp::DeepDupInto =>
-            {
-                let value = args.next().expect("a duplicate takes two operands");
-                let deep = verb.op == VerbOp::DeepDupInto;
-                let op = tern!(deep, VerbOp::DeepDupOf, VerbOp::DupOf);
-                let at = value.span();
-                let copied = self.dup_expr(op, value, at, Particle::None);
-                Ok(assign_stmt(first, Some(copied), span))
-            }
-            VerbOp::Print => Ok(print_stmt(first, slot, span)),
-            VerbOp::RemoveRow =>
-            {
-                let node =
-                    RemoveStmt::builder().list(first).row(true).span(span).build();
-                Ok(Stmt::Remove(node))
-            }
-            VerbOp::AddCell =>
-            {
-                let value = args.next().expect("an add statement takes two operands");
-                let before = slot == Slot::Before;
-                #[rustfmt::skip]
-                let node = AddStmt::builder().list(first).value(value).before(before).span(span).build();
-                Ok(Stmt::Add(node))
-            }
             _ =>
             {
                 Ok(Stmt::Return(ReturnStmt::builder().value(first).span(span).build()))
             }
         }
-    }
-
-    /// Finish `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။` at its `နောက်ဆုံးအကွက်`, or
-    /// `<text> ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` at its `နောက်ဆုံးစာလုံး`, and read its
-    /// full stop.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack` - The operand stack; its top holds `၏`.
-    /// * `mode` - Whether a statement can close the clause.
-    ///
-    /// # Returns
-    ///
-    /// The statement, or a diagnostic.
-    fn finish_remove(&mut self, mut stack: Vec<Item>, mode: Mode)
-    -> PResult<ClauseOut>
-    {
-        let tok = self.bump();
-        let name = self.text_of(tok.span);
-        ret_if!(mode == Mode::Expr, Err(diag::stmt_verb_in_expr(tok.span, name)));
-        let chars = tok.kind == TokenKind::Kw(Kw::LastChar);
-        let list = into_expr(stack.pop().expect("the top operand holds ၏"));
-        self.expect(Kw::Ko)?;
-        let verb = self.expect_verb(Kw::Remove)?;
-        ret_if!(!stack.is_empty(), Err(self.dangling(&stack, verb)));
-        let stop = self.expect_stop()?;
-        let span = list.span().to(&stop.span);
-        let node = RemoveStmt::builder().list(list).chars(chars).span(span).build();
-        Ok(ClauseOut::Stmt(Box::new(Stmt::Remove(node))))
-    }
-
-    /// Read a verb: its reserved word, or `<name> မည်` of the function the
-    /// compiler gives for it.
-    ///
-    /// # Arguments
-    ///
-    /// * `kw` - The reserved word of the verb.
-    ///
-    /// # Returns
-    ///
-    /// The first token of the verb, or an `expected-token` diagnostic.
-    fn expect_verb(&mut self, kw: Kw) -> PResult<Token>
-    {
-        let found = self.verb_at(0).filter(|(v, _)| v.kw == kw);
-        let Some((_, words)) = found
-        else
-        {
-            return self.expect(kw);
-        };
-        let first = self.bump();
-        let last = tern!(words == 2, self.bump(), first);
-        Ok(Token { span: first.span.to(&last.span), ..first })
     }
 
     /// Whether `ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` or
@@ -1711,26 +1532,6 @@ fn switch_head(stack: &mut Vec<Item>, at_arm: bool, mode: Mode) -> Option<Clause
     Some(ClauseOut::Switch(Box::new((subject, case))))
 }
 
-/// Build a replace statement from its range and its value.
-///
-/// # Arguments
-///
-/// * `args` - The range, with `ထိကို`, and the value, with `ဖြင့်`.
-/// * `span` - The whole statement.
-///
-/// # Returns
-///
-/// The statement.
-fn replace_stmt(args: Vec<Item>, span: Span) -> Stmt
-{
-    let [range, value] = <[Item; 2]>::try_from(args).expect("slots are checked");
-    extract!(Operand::Range(r) = range.operand, "the slot ထိကို holds a range");
-    #[rustfmt::skip]
-    let node = ReplaceStmt::builder().text(r.text).start(r.start).end(r.end).chars(r.chars)
-        .value(into_expr(value)).span(span).build();
-    Stmt::Replace(node)
-}
-
 /// Whether the top operand holds `၏`, so a cell word after it opens an index
 /// counted from 0.
 ///
@@ -1764,22 +1565,6 @@ fn holds_ordinal(stack: &[Item]) -> bool
         return false;
     };
     matches!((under.slot, top.slot), (Some((Slot::Ei, _)), Some((Slot::Ordinal, _))))
-}
-
-/// Build a print statement.
-///
-/// # Arguments
-///
-/// * `value` - The printed value.
-/// * `slot` - The particle written after it.
-/// * `span` - The statement.
-///
-/// # Returns
-///
-/// The statement.
-fn print_stmt(value: Expr, slot: Slot, span: Span) -> Stmt
-{
-    Stmt::Print(PrintStmt::builder().value(value).slot(slot).span(span).build())
 }
 
 /// Build an assignment. The parser takes each operand as a target; the

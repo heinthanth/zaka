@@ -8,7 +8,7 @@ program:
   - print:
       value:
         name:
-          id: 12
+          id: 13
           name: ခ
           span:
             lo: 501
@@ -30,12 +30,12 @@ diagnostics:
     lo: 14
     hi: 23
   help: null
-- code: ZK0209
+- code: ZK0204
   level: error
-  message: "operands left over before \"ပြသမည်\": က (နှင့်)"
+  message: statement verb "ပြသမည်" cannot stand inside an expression
   span:
-    lo: 46
-    hi: 49
+    lo: 80
+    hi: 98
   help: null
 - code: ZK0205
   level: error
@@ -51,12 +51,12 @@ diagnostics:
     lo: 170
     hi: 185
   help: join the two comparisons with "ဖြစ်၍", or put the inner one in parentheses
-- code: ZK0206
+- code: ZK0203
   level: error
-  message: "\"ပြသမည်\" needs \"ကို|ဟု\" after operand 1, found no particle"
+  message: this statement does not end in a statement verb, found "ပြသ"
   span:
-    lo: 218
-    hi: 239
+    lo: 240
+    hi: 249
   help: "write \"အသက် ကို\" with a space: a name joined to a particle is read as one word"
 - code: ZK0219
   level: error

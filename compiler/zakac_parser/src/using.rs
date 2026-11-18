@@ -26,6 +26,7 @@ use zakac_ast::expr::UsingParticle;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::parser as diag;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
 use zakac_lexer::lexer::LexerOptions;
@@ -49,7 +50,6 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::parser::unquote_raw;
-use crate::verb_call::VERB_FNS;
 
 /// What a call holds once its function is read.
 #[derive(Builder)]
@@ -736,17 +736,9 @@ impl Parser<'_>
             (_, Some(Stmt::Remove(_) | Stmt::Replace(_))) => return true,
             _ => return false,
         };
-        // A verb of the prelude takes the words of its heads alone, so a
-        // sentence with another word is left to the clause engine.
-        let exact = VERB_FNS.contains(&callee.name.as_str());
-        let words = |w: &CallWords| {
-            let names = written.iter().map(|p| p.as_ref().map(|i| i.name.to_string()));
-            w.prepositions.iter().cloned().eq(names)
-        };
         let places = |w: &CallWords| {
             let declared = w.prepositions.iter().map(Option::is_some);
-            let placed = declared.eq(written.iter().map(Option::is_some));
-            placed && (!exact || words(w))
+            declared.eq(written.iter().map(Option::is_some))
         };
         let fits = |w: &&CallWords| w.params == args && places(w);
         self.fn_words(callee.name.as_str()).any(|w| fits(&w))
@@ -1030,6 +1022,11 @@ impl Parser<'_>
             (false, Mode::Stmt) => &[Kw::Will, Kw::UsedResult, Kw::UsedGoodResult],
             (false, Mode::Expr) => &[Kw::UsedResult, Kw::UsedGoodResult],
         };
+        // A call that ends a statement, where a value goes, is ZK0204.
+        let stmt_end = mode == Mode::Expr
+            && matches!(kw_of(&self.peek()), Some(Kw::Will | Kw::WillDo));
+        let verb = parts.callee.span.to(&self.peek().span);
+        ret_if!(stmt_end, Err(diag::stmt_verb_in_expr(verb, self.text_of(verb))));
         let end = self.expect_one_of(ends)?;
         let kw = kw_of(&end);
         ret_if!(

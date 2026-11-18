@@ -206,17 +206,18 @@ impl Checker
     /// * `row` - What the statement removes.
     pub(crate) fn remove_row(&mut self, row: &Expr)
     {
+        // The parser builds the row of a remove from its ဇယား and its index.
         let Expr::Verb(v) = row
         else
         {
-            return self.report(kd::remove_needs_row(row.span()));
+            return;
         };
         let [table, index] = v.args.as_slice()
         else
         {
-            return self.report(kd::remove_needs_row(row.span()));
+            return;
         };
-        ret_if!(v.op != VerbOp::Row, self.report(kd::remove_needs_row(row.span())));
+        ret_if!(v.op != VerbOp::Row);
         let kind = self.place_kind(table);
         let Some((at, value)) = kind.and_then(DataKind::table_parts)
         else

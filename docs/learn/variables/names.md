@@ -45,15 +45,16 @@ it: `အသက်age` and `age၂` are names too, one word each.
 That is the reason a name needs a space before a particle. `ageကို` is one long name, not
 the name `age` and the particle `ကို`, so the verb finds no particle:
 
-```zaka-error ZK0206
+```zaka-error ZK0203
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ageကို ပြသမည်။
 ```
 
 ```text
-error[ZK0206]: "ပြသမည်" needs "ကို|ဟု" after operand 1, found no particle
+error[ZK0203]: this statement does not end in a statement verb, found "ပြသ"
   = help: write "age ကို" with a space: a name joined to a particle is read as one word
 ```
+
 
 Write `age ကို` and `အသက် ကို`, with a space (see [Spaces between
 words](../sentences/spacing.md)).

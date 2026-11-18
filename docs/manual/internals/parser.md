@@ -671,10 +671,10 @@ that call first (`verb_sentence`, from `parse_head`), its arguments as whole cla
 parser turns the call into the statement of its sentence (`verb_node`, from
 `finish_using`): `Stmt::Print` with its `ကို` or `ဟု`, `Stmt::Add`, the `AssignStmt` of a
 duplicate, `Stmt::Remove` and `Stmt::Replace`, as the words of the call tell
-(`form_of_words`). A verb takes the words of its heads alone (`fits_words`); a sentence
-that no head reads is left to the clause engine, whose rows for these verbs remain to
-read the spellings the heads leave out and to report the operands a sentence leaves over
-(`verb_at`). A value form of one is ZK0315. The other marked functions, the three counts,
+(`form_of_words`). The clause engine has no rows for these verbs: a sentence of one that
+fits no head is read as a call of it, which the check reports (ZK0332, with the heads of
+the verb as sentences from `prelude_builtin_fns`, or ZK0331), and a call that ends in
+`မည်` where a value goes is ZK0204 (`finish_using`). A value form of one is ZK0315. The other marked functions, the three counts,
 take no prepositions; the clause engine reads them right after `၏` (`BUILTIN_COUNTS` in
 the lexer's `role.rs`, which paints the verbs and the counts). Semcheck calls a function of the file of the name in
 place of the sentence when one takes the operands (`own_verb`, `own_count`).

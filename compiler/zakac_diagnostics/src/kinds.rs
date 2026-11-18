@@ -1371,21 +1371,6 @@ pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::DecimalIndex, msg, span).with_help(t!("codes.ZK0487.help"))
 }
 
-/// `ကို ဖျက်မည်` after a value that is no row of a ဇယား.
-///
-/// # Arguments
-///
-/// * `span` - The value.
-///
-/// # Returns
-///
-/// The `ZK0488` diagnostic.
-pub fn remove_needs_row(span: Span) -> Diagnostic
-{
-    let msg = t!("codes.ZK0488.message");
-    Diagnostic::new(Code::RemoveNeedsRow, msg, span).with_help(t!("codes.ZK0488.help"))
-}
-
 /// A comptime function gives a kind that a constant cannot hold.
 ///
 /// # Arguments
