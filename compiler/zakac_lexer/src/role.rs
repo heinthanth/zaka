@@ -264,6 +264,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::ValueAs
         | Kw::Export
         | Kw::Shareable
+        | Kw::ToShare
         | Kw::Unsafe
         | Kw::UnsafeThough
         | Kw::UnsafeBlockOpen => TokenRole::Control,
@@ -290,6 +291,9 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Add
         | Kw::Remove
         | Kw::Replace
+        | Kw::Again
+        | Kw::WillShare
+        | Kw::Reshare
         | Kw::Import => TokenRole::Verb,
         Kw::Equal
         | Kw::Sum

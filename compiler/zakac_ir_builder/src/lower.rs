@@ -1107,7 +1107,8 @@ impl Lowerer<'_>
             | st::Stmt::Alias(_)
             | st::Stmt::Trait(_)
             | st::Stmt::TraitBlock(_)
-            | st::Stmt::BuiltinKind(_) => (),
+            | st::Stmt::BuiltinKind(_)
+            | st::Stmt::Share(_) => (),
             st::Stmt::Import(n) => self.import(n),
             st::Stmt::Switch(n) => self.switch_stmt(n, out),
         }

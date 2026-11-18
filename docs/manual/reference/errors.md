@@ -138,6 +138,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0257 | the unsafe mark `စိတ်မချရသော` on the start block | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0258 | a phrase string, after `အစ စကားစု` or `အဆုံး စကားစု`, that holds a word a phrase cannot hold, or `၏` | [Functions](../language/functions.md#starting-and-ending-phrases) |
 | ZK0260 | a call written as a sentence whose words read as its arguments in more than one cut | [Functions](../language/functions.md#prepositions) |
+| ZK0261 | a share, `... ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`, that names a name the file does not import | [Modules](../language/modules.md#sharing-imported-names) |
+| ZK0262 | a use of a name that two whole imports bring from two files | [Modules](../language/modules.md#whole-imports) |
 
 ### ZK03: names
 

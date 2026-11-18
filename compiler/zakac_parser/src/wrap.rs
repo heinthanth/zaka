@@ -152,7 +152,8 @@ fn moves(
         | Stmt::Struct(_)
         | Stmt::Enum(_)
         | Stmt::Alias(_)
-        | Stmt::Import(_) => false,
+        | Stmt::Import(_)
+        | Stmt::Share(_) => false,
         Stmt::Decl(d) =>
         {
             !d.exported && !keep(d, seen, names.contains(d.name.name.as_str()))
@@ -169,8 +170,8 @@ fn moves(
 ///
 /// # Returns
 ///
-/// `false` for a function, a struct, an enumeration, an import, a variable or
-/// a constant.
+/// `false` for a function, a struct, an enumeration, an import, a share, a
+/// variable or a constant.
 fn runs(stmt: &Stmt) -> bool
 {
     !matches!(
@@ -180,6 +181,7 @@ fn runs(stmt: &Stmt) -> bool
             | Stmt::Enum(_)
             | Stmt::Alias(_)
             | Stmt::Import(_)
+            | Stmt::Share(_)
             | Stmt::Decl(_)
     )
 }

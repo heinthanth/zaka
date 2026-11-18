@@ -280,6 +280,8 @@ token:
 | an operand, then a preposition | `attempt_preposition_call` (`using.rs`) | the preposition call. `Parser::functions` holds the functions that declare prepositions, with the prepositions of each overload: `Parser::new` finds them in the headers of the file (`fn_header`), and the loader passes the ones a file imports to `parse_with`. `preposition_end` scans for the end of a call of such a function, outside parentheses, past prepositions and notation words; a value end with a preposition after it can be an argument, so the scan goes on past it and keeps it when no later end comes. `parse_preposition_call` then reads each argument, its preposition when it has one, and a `၊` when written, up to that end, and `attempt_preposition_call` keeps the call when its prepositions stand in the slots of the parameters of a function of that name; otherwise it puts the cursor, the diagnostics and the node number back, and the sentence reads as before (`က ကို ခ ၌ရှိသော ဖတ် သည့် ရလဒ် ဟု ထားမည်။` remains a set). The `"<file>" မှ` start of an import is read as an import unless `preposition_end` finds a preposition call |
 | a word of a starting phrase, or of an ending phrase, at the start of a clause | `attempt_phrase_call` (`using.rs`) | a call written as a sentence that opens with a phrase. `parse_head` tries it before the first operand, when the word is in `Parser::start_words` or `Parser::first_words`. `bare_phrase_call` reads the phrases, the name and the end of a function with no parameters; else `start_phrase_call` reads the longest starting phrase, the first argument, and the rest through `parse_preposition_call`. A call that does not read, or whose counts fit no function of its name (`fits_words`), puts the cursor, the diagnostics and the node number back. In `parse_preposition_call`, the words between the last argument (or its preposition) and the function name that spell an ending phrase of the function are that phrase (`parse_end_phrase`); the call keeps both in `Phrases` |
 | a string, then `မှ` | `parse_import` | `STR မှ NAME ကို`, or the names as a list in words then `တို့ကို`, then `ထည့်သွင်းမည်။`; after another statement or inside a block it is parsed and reported (ZK0230) |
+| a string, then `ကို` and `ထည့်သွင်းမည်` or `ပြန်လည် မျှဝေမည်` | `parse_whole_import` | a whole import (`ImportStmt.whole`), or a whole share (`ImportStmt.share`), with no names; placed as an import (ZK0230) |
+| names, then `ကို` or `တို့ကို`, `အများသုံးနိုင်ရန်` and `ပြန်လည် မျှဝေမည်` | `parse_share` (`at_share` looks for the two last words before `။`) | a `ShareStmt` of the names; placed as an import (ZK0230) |
 | a name, then `ဟူသော`, the marks `အများသုံး`, `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ` | `parse_kind_decl` | checked first (`at_kind_decl`); the marks set `exported`, `shared` and `external`. `ဒေတာအစုအဝေး` (`Kw::StructWord`) then `တွင်` reads a struct (`parse_struct_decl`): fields with `၊` between them, each `NAME ဟူသော KIND တစ်WORD` (`parse_field`), then `တို့ပါဝင်သည်` (`FieldsClose`) or `တို့ပါဝင်ပြီး` (`FieldsCloseAnd`) and the classifier clause (`parse_decl_end`). With `ပြင်ပမှ လာသော` (`Kw::External`) it reads a kind from outside the program (`parse_external_kind`): `ဖြစ်သည်` (`Kw::Is`) ends a declaration with no field, and `တွင်` goes on to the fields and `တို့ပါဝင်သည်`; the node is a `StructDecl` with `shared` and `external` set (s-expression head `external_struct`). `ဒေတာအမျိုးအစားကွဲ` (`Kw::EnumWord`) then `တွင်` reads an enumeration (`parse_enum_decl`): members with `၊` between them, each `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် VALUE ရှိသည့်] NAME` (`parse_enum_member`; the lexer joins the mark into `Kw::InitialMark` and the opener of the value into `Kw::ValueAs`, `HavingRel` closes it; `EnumMember::initial` marks the one [initial member](../language/enums.md#the-initial-member)), then `တို့ပါဝင်သည်`, or `ပါဝင်သည်` after a lone member, or the `...ပြီး` closers and a classifier clause (`EnumDecl::classifier`). A declaration inside a block is parsed and reported (ZK0228, ZK0235) |
 | `အချက်အလက်အမျိုးအစား` | `parse_alias_decl` | the alias name, its kind parameters (`<…>`, or `သည်` and the word form, `parse_word_params`), `ကို`, the kind (`parse_kind`, with no measure word), then `ဟုလည်း မှတ်ယူနိုင်ပါသည်` (`Kw::AliasClose`), or `ဟုလည်း မှတ်ယူနိုင်ပြီး` (`Kw::AliasCloseAnd`) and a classifier clause (`AliasDecl::classifier`); inside a block it is parsed and reported (ZK0240). The S-expression is `(alias NAME KIND)` |
 | `အများသုံး` | `parse_exported` | parses the next statement and sets `exported` on a function, kind alias or top-level declaration; on another statement or the start block it is ZK0229. A struct and an enumeration hold the mark after `ဟူသော` instead |
@@ -740,12 +742,23 @@ For each file, from the file that is run:
 3. Parse the file a second time with `parse_with`: its node numbers go on from the file
    before, so each expression of the program has a number of its own, and the struct
    names it imports from exported structs start a kind.
+   Before that parse, `bring` works out the names each import brings, each with the unit
+   that declares it: the listed names of a named import; for a whole import, each name
+   the file exports, less a name the importing file declares, one a named import brings,
+   and one another whole import brings from a different unit, a clash. A clash leaves the
+   name out of both, and `report_clashes` gives ZK0262 at its first use in the file. A
+   whole share brings nothing.
 4. Settle each compile-time conditional for the target (`comptime::settle`, run on the
-   first parse too, so the imports of the arm it keeps are read), set `unit` on each
-   import to the unit it reads, give a file that names a fact of the target an import
+   first parse too, so the imports of the arm it keeps are read), give each import its
+   names and set `unit` to the unit that declares them (`split_imports`: an import whose
+   names come from several units through shares becomes one import of each), give a file that names a fact of the target an import
    of it from the prelude (`import_facts`), append a `Unit` and the statements of the
    file to the program, and note the structs, enumerations and kind aliases the file
-   exports.
+   exports. `Loader::exports` notes each name the file exports with the unit that
+   declares it: its own exported declarations, then each name it shares (`shared`,
+   ZK0261 for a name it does not import, and `pass_on`, which copies the struct names,
+   the functions with their prepositions and the hints of the name from the unit it
+   comes from).
 
    For a file read from disk, `lib_paths_from` makes the lib of each C function that is a
    path (`is_lib_path`, in `zakac_ast`: it holds `/` or `\`, ends in `.so`, `.dylib` or

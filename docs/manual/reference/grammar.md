@@ -76,14 +76,18 @@ See [Source text and words](../language/words.md) and
 ```text
 file         = { import } { top-item } ;
 top-item     = declaration | start-block ;        (* another statement here is ZK0326 *)
-import       = string-lit "မှ" items(name) ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။" ;
+import       = string-lit "မှ" items(name) ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။"
+             | string-lit "ကို" "ထည့်သွင်းမည်" "။"
+             | string-lit "ကို" "ပြန်လည်" "မျှဝေမည်" "။"
+             | items(name) ( "ကို" | "တို့ကို" ) "အများသုံးနိုင်ရန်" "ပြန်လည်" "မျှဝေမည်" "။" ;
 start-block  = "ပရိုဂရမ်" "သည်" [ params "လက်ခံပြီး" ] fn-open "။"
                { stmt }
                "ပရိုဂရမ်" done "။" ;
 done         = "ပြီးဆုံးပါပြီး" | "ပြီးဆုံးပါပြီ" | "ပြီးပါပြီး" | "ပြီးပါပြီ" ;
 ```
 
-An import after another statement, or inside a block, is parsed and reported. See
+The last two forms are shares. An import or a share after another statement, or inside a
+block, is parsed and reported. See
 [Modules](../language/modules.md) and
 [The start block](../language/functions.md#the-start-block).
 

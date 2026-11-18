@@ -476,6 +476,16 @@ pub enum Kw
     Skip,
     /// `ထည့်သွင်းမည်`, which ends an import sentence
     Import,
+    /// `ပြန်လည်`, "again": the first word of `ပြန်လည် မျှဝေမည်`
+    Again,
+    /// `မျှဝေမည်`, "will share": the last word of `ပြန်လည် မျှဝေမည်`
+    WillShare,
+    /// `ပြန်လည် မျှဝေမည်`, which ends a sentence that shares imported names
+    /// again
+    Reshare,
+    /// `အများသုံးနိုင်ရန်`, "for others to use": names the imported names a
+    /// file shares again
+    ToShare,
     /// `ထည့်မည်`, which adds a cell to a list
     Add,
     /// `ဖျက်မည်`, which removes the last cell of a list

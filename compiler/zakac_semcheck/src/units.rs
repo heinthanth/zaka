@@ -281,6 +281,7 @@ fn runs_in_place(stmt: &Stmt) -> bool
             | Stmt::Alias(_)
             | Stmt::Decl(_)
             | Stmt::Import(_)
+            | Stmt::Share(_)
             | Stmt::Trait(_)
             | Stmt::TraitBlock(_)
             | Stmt::BuiltinKind(_)
@@ -418,7 +419,10 @@ impl Checker
             return;
         };
         let file = &n.path.lit.value;
+        let refs = self.refs.len();
         do_for!(name in &n.names, self.import_name(target, file, name));
+        // The names of a whole import stand on its path, which names none.
+        do_if!(n.whole, self.refs.truncate(refs));
     }
 
     /// Bring each exported item of one name into scope: a function, a

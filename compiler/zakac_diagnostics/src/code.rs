@@ -189,6 +189,10 @@ BadPhrase = ("ZK0258", Level::Error),
 /// A call written as a sentence whose words read as its arguments in more
 /// than one cut.
 AmbiguousCall = ("ZK0260", Level::Error),
+/// A share names a name the file does not import.
+ShareNotImported = ("ZK0261", Level::Error),
+/// A name two whole imports bring from two files is used.
+ImportClash = ("ZK0262", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

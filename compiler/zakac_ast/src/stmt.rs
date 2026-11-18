@@ -135,6 +135,8 @@ pub enum Stmt
     Struct(StructDecl),
     /// `"<file>" မှ <name>၊ ... နှင့် <name> တို့ကို ထည့်သွင်းမည်။`
     Import(ImportStmt),
+    /// `<name>၊ ... နှင့် <name> တို့ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`
+    Share(ShareStmt),
     /// `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`
     Enum(EnumDecl),
     /// `<subject> သည် <case> ဖြစ်လျှင် ... တခြား <kind> တစ်ခု ဖြစ်လျှင် ...`
@@ -941,10 +943,31 @@ pub struct ImportStmt
 {
     /// The file path, relative to the importing file.
     pub path: StrArg,
-    /// The imported names.
+    /// The imported names. A whole import lists none as written; the loader
+    /// fills in each name it brings.
     pub names: Vec<Ident>,
+    /// Whether the import brings each name the file exports:
+    /// `"<file>" ကို ထည့်သွင်းမည်။`.
+    #[builder(default)]
+    pub whole: bool,
+    /// Whether the import shares each name the file exports again, and
+    /// brings none of them: `"<file>" ကို ပြန်လည် မျှဝေမည်။`.
+    #[builder(default)]
+    pub share: bool,
     /// The unit of the imported file, once the loader has read it.
     pub unit: Option<u32>,
+    /// Source region, the full stop included.
+    pub span: Span,
+}
+
+/// A share of imported names: `<name>၊ ... နှင့် <name> တို့ကို အများသုံးနိုင်ရန်
+/// ပြန်လည် မျှဝေမည်။`, or with one name, `<name> ကို အများသုံးနိုင်ရန် ပြန်လည်
+/// မျှဝေမည်။`. A file that imports the file sharing them can import them too.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+pub struct ShareStmt
+{
+    /// The shared names.
+    pub names: Vec<Ident>,
     /// Source region, the full stop included.
     pub span: Span,
 }

@@ -974,3 +974,39 @@ pub fn ambiguous_call(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::AmbiguousCall, t!("codes.ZK0260.message", n = name), span)
         .with_help(t!("codes.ZK0260.help"))
 }
+
+/// A share names a name the file does not import: a share passes imported
+/// names on, and a declaration of the file takes the export mark instead.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0261` diagnostic.
+pub fn share_not_imported(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::ShareNotImported, t!("codes.ZK0261.message", n = name), span)
+        .with_help(t!("codes.ZK0261.help"))
+}
+
+/// A name two whole imports bring from two files is used.
+///
+/// # Arguments
+///
+/// * `span` - The first use of the name.
+/// * `name` - The name.
+/// * `first` - The first file, as its import writes it.
+/// * `second` - The second file.
+///
+/// # Returns
+///
+/// The `ZK0262` diagnostic.
+pub fn import_clash(span: Span, name: &str, first: &str, second: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0262.message", n = name, a = first, b = second);
+    Diagnostic::new(Code::ImportClash, msg, span)
+        .with_help(t!("codes.ZK0262.help", n = name))
+}

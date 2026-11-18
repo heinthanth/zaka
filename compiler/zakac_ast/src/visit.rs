@@ -65,6 +65,7 @@ use crate::stmt::RemoveStmt;
 use crate::stmt::ReplaceStmt;
 use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
+use crate::stmt::ShareStmt;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StrArg;
@@ -145,6 +146,7 @@ RemoveStmt => "remove", visit_remove;
 ReplaceStmt => "replace", visit_replace;
 StructDecl => "struct", visit_struct;
 ImportStmt => "import", visit_import;
+ShareStmt => "share", visit_share;
 EnumDecl => "enum", visit_enum;
 AliasDecl => "alias", visit_alias;
 TraitDecl => "trait", visit_trait;
@@ -221,6 +223,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Replace(s) => s,
         Stmt::Struct(s) => s,
         Stmt::Import(s) => s,
+        Stmt::Share(s) => s,
         Stmt::Enum(s) => s,
         Stmt::Switch(s) => s,
         Stmt::Alias(s) => s,
@@ -361,6 +364,8 @@ pub trait Visitor
 
     /// Visit an import.
     fn visit_import(&mut self, n: &ImportStmt) { walk_import(self, n) }
+    /// Visit a share of imported names.
+    fn visit_share(&mut self, n: &ShareStmt) { walk_share(self, n) }
     /// Visit an enumeration declaration.
     fn visit_enum(&mut self, n: &EnumDecl) { walk_enum(self, n) }
     /// Visit a kind alias.
@@ -485,6 +490,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Replace(s) => v.visit_replace(s),
         Stmt::Struct(s) => v.visit_struct(s),
         Stmt::Import(s) => v.visit_import(s),
+        Stmt::Share(s) => v.visit_share(s),
         Stmt::Enum(s) => v.visit_enum(s),
         Stmt::Switch(s) => v.visit_switch(s),
         Stmt::Alias(s) => v.visit_alias(s),
@@ -828,6 +834,14 @@ pub fn walk_import<V: Visitor + ?Sized>(v: &mut V, n: &ImportStmt)
 {
     v.enter(n);
     v.visit_str(&n.path);
+    do_for!(name in &n.names, v.visit_ident(name));
+    v.leave(n);
+}
+
+/// Visit the names of a share of imported names.
+pub fn walk_share<V: Visitor + ?Sized>(v: &mut V, n: &ShareStmt)
+{
+    v.enter(n);
     do_for!(name in &n.names, v.visit_ident(name));
     v.leave(n);
 }
@@ -1261,6 +1275,11 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         }
         Stmt::Struct(s) => walk_struct_mut(v, s),
         Stmt::Import(s) => walk_import_mut(v, s),
+        Stmt::Share(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            do_for!(name in &mut s.names, v.visit_ident_mut(name));
+        }
         Stmt::Enum(s) => walk_enum_mut(v, s),
         Stmt::Switch(s) => walk_switch_mut(v, s),
         Stmt::Alias(s) =>

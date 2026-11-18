@@ -242,6 +242,7 @@ impl ToSexpr for Stmt
             }
             Stmt::Struct(s) => exported(s.exported, struct_sexpr(s)),
             Stmt::Import(s) => import_sexpr(s),
+            Stmt::Share(s) => list("share", s.names.iter().map(|n| n.name.to_string())),
             Stmt::Enum(s) => exported(s.exported, enum_sexpr(s)),
             Stmt::Switch(s) => switch_sexpr(s),
             Stmt::Alias(s) => exported(s.exported, alias_sexpr(s)),
@@ -284,10 +285,13 @@ fn exported(flag: bool, decl: String) -> String
 fn import_sexpr(s: &ImportStmt) -> String
 {
     let path = format!("\"{}\"", s.path.lit.value);
-    list(
-        "import",
-        std::iter::once(path).chain(s.names.iter().map(|n| n.name.to_string())),
-    )
+    let head = match (s.share, s.whole)
+    {
+        (true, _) => "share_all",
+        (_, true) => "import_all",
+        _ => "import",
+    };
+    list(head, std::iter::once(path).chain(s.names.iter().map(|n| n.name.to_string())))
 }
 
 /// `(head part part)`; just `(head)` without parts.

@@ -31,6 +31,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     // ... ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။ / ... ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
     (&[Kw::CallLeave, Kw::WillGrant], Kw::AllowCall),
     (&[Kw::CallLeave, Kw::WillRevoke], Kw::RevokeCall),
+    // ... ကို ပြန်လည် မျှဝေမည်။ — shares imported names again
+    (&[Kw::Again, Kw::WillShare], Kw::Reshare),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။
     (&[Kw::Tasks, Kw::Done], Kw::BlockClose),
     // ပရိုဂရမ် ပြီး(ဆုံး)?ပါပြီ(း)?။

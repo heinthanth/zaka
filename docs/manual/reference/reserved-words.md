@@ -308,7 +308,10 @@ words: a name a program declares hides the prelude's.
 | Word | Reads as | Page |
 | --- | --- | --- |
 | `အများသုံး` | "for common use": exports a top-level declaration | [Modules](../../learn/modules/README.md#sharing-names) |
-| `ထည့်သွင်းမည်` | "will bring in": ends an import, after `"<file>" မှ <name> ကို` | [Modules](../../learn/modules/README.md#importing-names) |
+| `ထည့်သွင်းမည်` | "will bring in": ends an import, after `"<file>" မှ <name> ကို` or `"<file>" ကို` | [Modules](../../learn/modules/README.md#importing-names) |
+| `အများသုံးနိုင်ရန်` | "for common use": in a share, after the names it passes on | [Modules](../language/modules.md#sharing-imported-names) |
+| `ပြန်လည်` | "again": the first word of `ပြန်လည် မျှဝေမည်` | [Modules](../language/modules.md#sharing-imported-names) |
+| `မျှဝေမည်` | "will share": ends a share, after `ပြန်လည်` | [Modules](../language/modules.md#sharing-imported-names) |
 
 ## Spoken spellings
 
@@ -342,6 +345,8 @@ program uses the spoken spellings once it allows them (ZK0510); see
 | `ပြန်ပေးမယ်` | `ပြန်ပေးမည်` |
 | `ရပ်မယ်` | `ရပ်မည်` |
 | `ကျော်မယ်` | `ကျော်မည်` |
+| `မျှဝေမယ်` | `မျှဝေမည်` |
+| `ပြန်လည်မျှဝေမယ်` | `ပြန်လည်မျှဝေမည်` |
 | `ထည့်သွင်းမယ်` | `ထည့်သွင်းမည်` |
 | `ကွန်ပိုင်းလုပ်ချိန်မှာ` | `ကွန်ပိုင်းလုပ်ချိန်တွင်` |
 | `လုပ်ဆောင်နိုင်တဲ့` | `လုပ်ဆောင်နိုင်သော` |

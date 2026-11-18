@@ -59,6 +59,108 @@ fn import_sentences()
 }
 
 #[test]
+fn whole_imports_and_shares()
+{
+    let whole = "\"ဂဏန်း.zaka\" ကို ထည့်သွင်းမည်။";
+    assert_eq!(stmt(whole), "(import_all \"ဂဏန်း.zaka\")");
+    let share_all = "\"ဂဏန်း.zaka\" ကို ပြန်လည် မျှဝေမည်။";
+    assert_eq!(stmt(share_all), "(share_all \"ဂဏန်း.zaka\")");
+    let one = "ပေါင်း ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။";
+    assert_eq!(stmt(one), "(share ပေါင်း)");
+    let several = "ပေါင်း နှင့် နုတ် တို့ကို အများသုံးနိုင်ရန် ပြန်လည်မျှဝေမည်။";
+    assert_eq!(stmt(several), "(share ပေါင်း နုတ်)");
+    let late = "၁ ကို ပြသမည်။\nပေါင်း ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။";
+    assert_eq!(codes(late), [Code::ImportNotFirst]);
+}
+
+/// The names of each import of a loaded program, with the unit it reads.
+fn import_names(loaded: &Loaded) -> Vec<(Option<u32>, Vec<String>)>
+{
+    let imports = loaded.program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Import(n) => Some(n),
+        _ => None,
+    });
+    let names = |n: &zakac_ast::stmt::ImportStmt| {
+        n.names.iter().map(|i| i.name.to_string()).collect::<Vec<_>>()
+    };
+    imports.map(|n| (n.unit, names(n))).collect()
+}
+
+/// A file that exports each of `names` as a constant.
+fn exporting(names: &[&str]) -> String
+{
+    let decl =
+        |n: &&str| format!("အများသုံး ကိန်းသေ {n} သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။\n");
+    names.iter().map(decl).collect()
+}
+
+#[test]
+fn a_whole_import_brings_each_exported_name_but_the_own_ones()
+{
+    let lib = exporting(&["က", "ခ", "ဂ"]);
+    let main = "\"lib.zaka\" ကို ထည့်သွင်းမည်။\nကိန်းသေ ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။";
+    let files = [("/m/main.zaka", main), ("/m/lib.zaka", lib.as_str())];
+    let loaded = load_files(&files, "/m/main.zaka").unwrap();
+    assert_eq!(loaded_codes(&loaded), []);
+    assert_eq!(
+        import_names(&loaded),
+        [(Some(0), vec!["က".to_string(), "ခ".to_string()])]
+    );
+}
+
+#[test]
+fn a_shared_name_imports_from_the_file_that_declares_it()
+{
+    let point = exporting(&["က", "ခ"]);
+    let hub = "\"point.zaka\" ကို ပြန်လည် မျှဝေမည်။";
+    let one = "\"point.zaka\" မှ ခ ကို ထည့်သွင်းမည်။\nခ ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။";
+    let own = exporting(&["ဃ"]);
+    let main =
+        "\"hub.zaka\" မှ က ကို ထည့်သွင်းမည်။\n\"one.zaka\" ကို ထည့်သွင်းမည်။\n\"own.zaka\" ကို ထည့်သွင်းမည်။";
+    #[rustfmt::skip]
+    let files = [("/m/main.zaka", main), ("/m/point.zaka", point.as_str()), ("/m/hub.zaka", hub),
+        ("/m/one.zaka", one), ("/m/own.zaka", own.as_str())];
+    let loaded = load_files(&files, "/m/main.zaka").unwrap();
+    assert_eq!(loaded_codes(&loaded), []);
+    let main: Vec<_> = import_names(&loaded).into_iter().skip(2).collect();
+    let point = Some(0);
+    #[rustfmt::skip]
+    assert_eq!(main, [(point, vec!["က".to_string()]), (point, vec!["ခ".to_string()]),
+        (Some(3), vec!["ဃ".to_string()])]);
+}
+
+#[test]
+fn a_name_from_two_whole_imports_is_zk0262_once_used()
+{
+    let (a, b) = (exporting(&["က", "ခ"]), exporting(&["က"]));
+    let unused = "\"a.zaka\" ကို ထည့်သွင်းမည်။\n\"b.zaka\" ကို ထည့်သွင်းမည်။\nခ ကို ပြသမည်။";
+    let used = "\"a.zaka\" ကို ထည့်သွင်းမည်။\n\"b.zaka\" ကို ထည့်သွင်းမည်။\nက ကို ပြသမည်။\nက ကို ပြသမည်။";
+    let named = "\"a.zaka\" ကို ထည့်သွင်းမည်။\n\"b.zaka\" မှ က ကို ထည့်သွင်းမည်။\nက ကို ပြသမည်။";
+    let read = |main: &str| {
+        let files = [
+            ("/m/main.zaka", main),
+            ("/m/a.zaka", a.as_str()),
+            ("/m/b.zaka", b.as_str()),
+        ];
+        loaded_codes(&load_files(&files, "/m/main.zaka").unwrap())
+    };
+    assert_eq!(read(unused), []);
+    assert_eq!(read(used), [Code::ImportClash]);
+    assert_eq!(read(named), []);
+}
+
+#[test]
+fn a_share_of_a_name_not_imported_is_zk0261()
+{
+    let lib = exporting(&["က"]);
+    let main = "\"lib.zaka\" မှ က ကို ထည့်သွင်းမည်။\nက နှင့် ခ တို့ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။";
+    let files = [("/m/main.zaka", main), ("/m/lib.zaka", lib.as_str())];
+    let loaded = load_files(&files, "/m/main.zaka").unwrap();
+    assert_eq!(loaded_codes(&loaded), [Code::ShareNotImported]);
+}
+
+#[test]
 fn the_export_mark_sets_the_flag_of_a_declaration()
 {
     let var = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";

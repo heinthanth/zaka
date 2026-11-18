@@ -178,6 +178,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ရပ်မည်", Kw::Stop),
     ("ကျော်မည်", Kw::Skip),
     ("ထည့်သွင်းမည်", Kw::Import),
+    ("ပြန်လည်", Kw::Again),
+    ("မျှဝေမည်", Kw::WillShare),
+    ("ပြန်လည်မျှဝေမည်", Kw::Reshare),
+    ("အများသုံးနိုင်ရန်", Kw::ToShare),
     // control
     ("အကယ်၍", Kw::If),
     ("ကွန်ပိုင်းလုပ်ချိန်တွင်", Kw::AtCompileTime),

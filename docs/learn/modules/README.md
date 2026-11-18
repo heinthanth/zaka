@@ -108,6 +108,31 @@ An import names a file and the names it takes from it:
   itself imports remain in `math.zaka`; a file that needs them imports them from their
   own file.
 
+An import with no names brings each name the file exports:
+
+```zaka-file
+"math.zaka" ကို ထည့်သွင်းမည်။
+```
+
+When two such imports bring one name from two files, the program cannot tell which one
+it means, and a use of that name is the error ZK0262. A named import of it from one file settles
+it.
+
+A file can pass the names it imports on to the files that import it. This sharing suits
+a file that gathers several files into one:
+
+```zaka-file
+// shapes.zaka
+"point.zaka" ကို ပြန်လည် မျှဝေမည်။
+"circle.zaka" မှ စက်ဝိုင်း ကို ထည့်သွင်းမည်။
+စက်ဝိုင်း ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။
+```
+
+The first line shares each name `point.zaka` exports, without bringing them into
+`shapes.zaka`. The last line shares `စက်ဝိုင်း`, which `shapes.zaka` imports. A file
+that imports `shapes.zaka` now reaches both. [Modules](../../manual/language/modules.md#sharing-imported-names)
+has the full rules.
+
 A file is read once, however often other files import it. A variable it declares exists once,
 so each file that imports it sees the same value: when one file changes it, the others
 see the change.

@@ -17,6 +17,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
+use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::Unit;
@@ -457,6 +458,10 @@ struct Loader<'a>
     /// The written-as hints of the kinds and traits each unit exports.
     #[builder(default)]
     hints: Vec<Vec<Hint>>,
+    /// The names each unit exports, in order, each with the unit that
+    /// declares it: the unit itself, or the file a share passes it on from.
+    #[builder(default)]
+    exports: Vec<Vec<(String, u32)>>,
     /// The unit of each file read so far, indexed on its path.
     #[builder(default)]
     done: HashMap<PathBuf, u32>,
@@ -534,6 +539,8 @@ impl Loader<'_>
             settle(first.program.stmts, &self.target, &text_of, &spot);
         let imports: Vec<ImportStmt> =
             first_stmts.iter().filter_map(as_import).cloned().collect();
+        let shares: Vec<ShareStmt> =
+            first_stmts.iter().filter_map(as_share).cloned().collect();
         self.chain.push(path.clone());
         let mut targets = Vec::new();
         for n in &imports
@@ -544,10 +551,16 @@ impl Loader<'_>
         // The prelude is read once a file names one of its declarations, as
         // a file of its own ahead of that file.
         do_if!(self.wants_prelude, self.read_prelude());
-        let structs = imported_structs(&imports, &targets, &self.structs);
-        let prepositions =
-            imported_prepositions(&imports, &targets, &self.prepositions);
-        let hints = imported_hints(&imports, &targets, &self.hints);
+        let own: HashSet<String> = top_names(&first_stmts, false).into_iter().collect();
+        let brought = self.bring(&imports, &targets, &own);
+        let seen = imports.iter().zip(&brought.names).map(|(n, b)| {
+            let names = b.iter().map(|(i, _)| i.clone()).collect();
+            ImportStmt { names, ..n.clone() }
+        });
+        let seen: Vec<ImportStmt> = seen.collect();
+        let structs = imported_structs(&seen, &targets, &self.structs);
+        let prepositions = imported_prepositions(&seen, &targets, &self.prepositions);
+        let hints = imported_hints(&seen, &targets, &self.hints);
         #[rustfmt::skip]
         let parsed = parse_with(&file, &lexed, self.next_id, &structs, &prepositions, &hints);
         self.next_id = parsed.next_id;
@@ -559,7 +572,9 @@ impl Loader<'_>
         program.stmts = stmts;
         self.diagnostics.extend(settled);
         self.open.extend(open);
-        set_targets(&mut program, &imports, &targets);
+        split_imports(&mut program, &imports, &targets, &brought.names);
+        self.report_clashes(&file, &lexed, &brought.clashes);
+        let shared = self.shared(&shares, &imports, &targets, &brought);
         let facts = named_facts(&file, &lexed);
         self.target_used |= met || !facts.is_empty();
         self.import_facts(&mut program, &path, facts);
@@ -571,6 +586,9 @@ impl Loader<'_>
         self.structs.push(exported_structs(&program));
         self.prepositions.push(exported_prepositions(&program));
         self.hints.push(exported_hints(&program));
+        let own = top_names(&program.stmts, true).into_iter().map(|n| (n, unit));
+        self.exports.push(own.collect());
+        do_for!((name, origin, from) in shared, self.pass_on(&name, origin, from));
         self.stmts.extend(program.stmts);
         self.done.insert(path, unit);
         Ok(unit)
@@ -633,6 +651,278 @@ impl Loader<'_>
         self.imports.push(EmbeddedFile::of(&file));
         self.visit(file, path).map(Some)
     }
+}
+
+/// What the imports of a file bring.
+struct Brought
+{
+    /// The names each import brings, each with the unit that declares it; a
+    /// share of a whole file brings none.
+    names: Vec<Vec<(Ident, u32)>>,
+    /// Each name two whole imports bring from two files, with the paths of
+    /// the two imports.
+    clashes: HashMap<String, (String, String)>,
+}
+
+impl Loader<'_>
+{
+    /// The names each import of a file brings. A named import brings the
+    /// names it lists; a whole import, each name its file exports, but for a
+    /// name the file declares, one a named import brings, and one another
+    /// whole import brings from a different file, which clashes.
+    ///
+    /// # Arguments
+    ///
+    /// * `imports` - The imports of the file.
+    /// * `targets` - The unit each reads.
+    /// * `own` - The top-level names the file declares.
+    ///
+    /// # Returns
+    ///
+    /// The names.
+    fn bring(
+        &self, imports: &[ImportStmt], targets: &[Option<u32>], own: &HashSet<String>,
+    ) -> Brought
+    {
+        let named = |(n, t): (&ImportStmt, &Option<u32>)| {
+            let t = t.filter(|_| !n.whole && !n.share);
+            let found = t.map(move |t| {
+                n.names.iter().map(move |i| (i.clone(), self.origin(t, i)))
+            });
+            found.into_iter().flatten().collect::<Vec<_>>()
+        };
+        let mut names: Vec<Vec<(Ident, u32)>> =
+            imports.iter().zip(targets).map(named).collect();
+        let taken: HashSet<String> =
+            names.iter().flatten().map(|(i, _)| i.name.to_string()).collect();
+        let mut whole =
+            Whole { own, taken, first: HashMap::new(), clashes: HashMap::new() };
+        let wholes = imports.iter().zip(targets).enumerate();
+        let wholes = wholes.filter_map(|(k, (n, t))| Some((k, t.filter(|_| n.whole)?)));
+        for (k, t) in wholes
+        {
+            let exports = &self.exports[t as usize];
+            do_for!((name, origin) in exports, whole.add(&mut names, imports, k, name, *origin));
+        }
+        let clashes = whole.clashes;
+        let clear = |list: &mut Vec<(Ident, u32)>| {
+            list.retain(|(i, _)| !clashes.contains_key(i.name.as_str()));
+        };
+        names.iter_mut().for_each(clear);
+        Brought { names, clashes }
+    }
+
+    /// The unit that declares a name a unit exports: the unit itself, or the
+    /// file a share passes it on from; the unit itself for a name it does not
+    /// export, which the check reports.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The unit.
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// The declaring unit.
+    fn origin(&self, unit: u32, name: &Ident) -> u32
+    {
+        let exports = &self.exports[unit as usize];
+        let found = exports.iter().find(|(n, _)| n.as_str() == name.name.as_str());
+        found.map_or(unit, |(_, origin)| *origin)
+    }
+
+    /// Report the first use of each name two whole imports bring from two
+    /// files.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file.
+    /// * `lexed` - Its tokens.
+    /// * `clashes` - Each such name, with the two imports.
+    fn report_clashes(
+        &mut self, file: &SourceFile, lexed: &LexOutput,
+        clashes: &HashMap<String, (String, String)>,
+    )
+    {
+        ret_if!(clashes.is_empty());
+        let mut seen = HashSet::new();
+        let used = undeclared_names(file, lexed, |t| clashes.contains_key(t));
+        let first = used.into_iter().filter(|i| seen.insert(i.name));
+        for name in first
+        {
+            let (a, b) = &clashes[name.name.as_str()];
+            self.diagnostics.push(diag::import_clash(name.span, &name.name, a, b));
+        }
+    }
+
+    /// The names a file shares again: each name a share lists, which the
+    /// file must import, and each name a file it shares whole exports.
+    ///
+    /// # Arguments
+    ///
+    /// * `shares` - The shares of the file.
+    /// * `imports` - Its imports.
+    /// * `targets` - The unit each import reads.
+    /// * `brought` - What the imports bring.
+    ///
+    /// # Returns
+    ///
+    /// Each name, with the unit that declares it and the unit it comes from.
+    fn shared(
+        &mut self, shares: &[ShareStmt], imports: &[ImportStmt],
+        targets: &[Option<u32>], brought: &Brought,
+    ) -> Vec<(String, u32, u32)>
+    {
+        let mut found = Vec::new();
+        for name in shares.iter().flat_map(|s| &s.names)
+        {
+            let clash = brought.clashes.contains_key(name.name.as_str());
+            let item = bringing_import(name, targets, &brought.names);
+            let missing = item.is_none() && !clash;
+            found.extend(item);
+            do_if!(
+                missing,
+                self.diagnostics.push(diag::share_not_imported(name.span, &name.name))
+            );
+        }
+        let wholes = imports.iter().zip(targets).filter(|(n, _)| n.share);
+        let wholes = wholes.filter_map(|(_, t)| *t);
+        for t in wholes
+        {
+            let exports = self.exports[t as usize].iter();
+            found.extend(exports.map(|(name, origin)| (name.clone(), *origin, t)));
+        }
+        found
+    }
+
+    /// Export from the unit read last a name it shares again, with what the
+    /// unit it comes from exports of that name: its struct names, its
+    /// functions and its hints. A name the unit exports before keeps its first
+    /// export.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `origin` - The unit that declares it.
+    /// * `from` - The unit the share takes it from.
+    fn pass_on(&mut self, name: &str, origin: u32, from: u32)
+    {
+        let (from, at) = (from as usize, self.exports.len() - 1);
+        ret_if!(self.exports[at].iter().any(|(n, _)| n == name));
+        self.exports[at].push((name.to_string(), origin));
+        let stem = name.strip_suffix(PLURAL);
+        let structs = self.structs[from].iter();
+        let structs: Vec<String> = structs
+            .filter(|s| s.as_str() == name || Some(s.as_str()) == stem)
+            .cloned()
+            .collect();
+        self.structs[at].extend(structs);
+        let fns = self.prepositions[from].get(name).cloned();
+        do_if!(let Some(fns) = fns, _ = self.prepositions[at].entry(name.to_string()).or_insert(fns));
+        let hints: Vec<Hint> =
+            self.hints[from].iter().filter(|h| h.name == name).cloned().collect();
+        self.hints[at].extend(hints);
+    }
+}
+
+/// The names the whole imports of a file bring, in the order of the imports.
+struct Whole<'a>
+{
+    /// The top-level names the file declares.
+    own: &'a HashSet<String>,
+    /// The names its named imports bring.
+    taken: HashSet<String>,
+    /// Each name a whole import brought, with its declaring unit and the
+    /// import that brought it.
+    first: HashMap<String, (u32, usize)>,
+    /// Each name two whole imports bring from two files, with the paths of
+    /// the two imports.
+    clashes: HashMap<String, (String, String)>,
+}
+
+impl Whole<'_>
+{
+    /// Take one name a whole import brings: a name the file declares or a
+    /// named import brings is left out, a name brought before from the same
+    /// declaration is brought once, and one brought from another clashes.
+    ///
+    /// # Arguments
+    ///
+    /// * `names` - The names each import brings so far.
+    /// * `imports` - The imports.
+    /// * `k` - The whole import.
+    /// * `name` - The name.
+    /// * `origin` - The unit that declares it.
+    fn add(
+        &mut self, names: &mut [Vec<(Ident, u32)>], imports: &[ImportStmt], k: usize,
+        name: &str, origin: u32,
+    )
+    {
+        ret_if!(self.own.contains(name) || self.taken.contains(name));
+        ret_if!(self.clashes.contains_key(name));
+        let path = |k: usize| imports[k].path.lit.value.clone();
+        let Some((was, held)) = self.first.get(name).copied()
+        else
+        {
+            self.first.insert(name.to_string(), (origin, k));
+            let span = imports[k].path.span;
+            names[k].push((Ident::builder().name(name).span(span).build(), origin));
+            return;
+        };
+        ret_if!(was == origin);
+        self.clashes.insert(name.to_string(), (path(held), path(k)));
+    }
+}
+
+/// The import that brings a name, as a name a file shares again.
+///
+/// # Arguments
+///
+/// * `name` - The name.
+/// * `targets` - The unit each import reads.
+/// * `names` - The names each import brings.
+///
+/// # Returns
+///
+/// The name, its declaring unit and the unit its import reads; `None` when no
+/// import brings it.
+fn bringing_import(
+    name: &Ident, targets: &[Option<u32>], names: &[Vec<(Ident, u32)>],
+) -> Option<(String, u32, u32)>
+{
+    let held = |(list, t): (&Vec<(Ident, u32)>, &Option<u32>)| {
+        let (_, origin) = list.iter().find(|(i, _)| i.name == name.name)?;
+        Some((name.name.to_string(), *origin, (*t)?))
+    };
+    names.iter().zip(targets).find_map(held)
+}
+
+/// The top-level names a file declares: its functions, structs,
+/// enumerations, kind aliases, variables, constants and traits.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements of the file.
+/// * `exported` - Whether to keep the exported names alone.
+///
+/// # Returns
+///
+/// The names, in order.
+fn top_names(stmts: &[Stmt], exported: bool) -> Vec<String>
+{
+    let named = stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Fn(d) => Some((&d.name, d.exported)),
+        Stmt::Struct(d) => Some((&d.name, d.exported)),
+        Stmt::Enum(d) => Some((&d.name, d.exported)),
+        Stmt::Alias(d) => Some((&d.name, d.exported)),
+        Stmt::Decl(d) => Some((&d.name, d.exported)),
+        Stmt::Trait(d) => Some((&d.name, d.exported)),
+        _ => None,
+    });
+    let kept = named.filter(|(_, e)| *e || !exported).map(|(n, _)| n.name.to_string());
+    let mut seen = HashSet::new();
+    kept.filter(|n| seen.insert(n.clone())).collect()
 }
 
 impl Loader<'_>
@@ -730,6 +1020,24 @@ fn as_import(stmt: &Stmt) -> Option<&ImportStmt>
     match stmt
     {
         Stmt::Import(n) => Some(n),
+        _ => None,
+    }
+}
+
+/// The share of imported names a statement is.
+///
+/// # Arguments
+///
+/// * `stmt` - The statement.
+///
+/// # Returns
+///
+/// The share, or `None` for another statement.
+fn as_share(stmt: &Stmt) -> Option<&ShareStmt>
+{
+    match stmt
+    {
+        Stmt::Share(n) => Some(n),
         _ => None,
     }
 }
@@ -880,23 +1188,68 @@ fn enum_names(name: &str) -> Vec<String>
     std::iter::once(name.to_string()).chain(stem).collect()
 }
 
-/// Record on each import of a parsed file the unit it reads. The imports
-/// of the first parse and of the second come in one order.
+/// Record on each import of a parsed file the unit it reads, and the names it
+/// brings: an import whose names come from several files, through shares,
+/// becomes one import of each such file. The imports of the first parse and
+/// of the second come in one order.
 ///
 /// # Arguments
 ///
 /// * `program` - The program of the file.
 /// * `imports` - The imports of the first parse.
 /// * `targets` - The unit each of them reads.
-fn set_targets(program: &mut Program, imports: &[ImportStmt], targets: &[Option<u32>])
+/// * `brought` - The names each brings, with the unit that declares each.
+fn split_imports(
+    program: &mut Program, imports: &[ImportStmt], targets: &[Option<u32>],
+    brought: &[Vec<(Ident, u32)>],
+)
 {
-    let parsed = program.stmts.iter_mut().filter_map(|s| match s
-    {
-        Stmt::Import(n) => Some(n),
-        _ => None,
-    });
-    let pairs = parsed.zip(imports.iter().zip(targets));
-    do_for!((n, (first, unit)) in pairs, n.unit = (*unit).filter(|_| n.span == first.span));
+    let mut k = 0;
+    let mut split = |stmt: Stmt| {
+        let Stmt::Import(n) = stmt
+        else
+        {
+            return vec![stmt];
+        };
+        k += 1;
+        let same = imports.get(k - 1).is_some_and(|first| first.span == n.span);
+        let unit = targets.get(k - 1).copied().flatten().filter(|_| same);
+        let Some(unit) = unit
+        else
+        {
+            return vec![Stmt::Import(ImportStmt { unit: None, ..n })];
+        };
+        split_import(n, unit, &brought[k - 1])
+    };
+    let stmts = std::mem::take(&mut program.stmts);
+    program.stmts = stmts.into_iter().flat_map(&mut split).collect();
+}
+
+/// One import as an import of each file that declares a name it brings; an
+/// import that brings no name remains one import of the file it reads.
+///
+/// # Arguments
+///
+/// * `n` - The import.
+/// * `unit` - The unit it reads.
+/// * `brought` - The names it brings, with the unit that declares each.
+///
+/// # Returns
+///
+/// The imports.
+fn split_import(n: ImportStmt, unit: u32, brought: &[(Ident, u32)]) -> Vec<Stmt>
+{
+    ret_if!(
+        brought.is_empty(),
+        vec![Stmt::Import(ImportStmt { unit: Some(unit), names: Vec::new(), ..n })]
+    );
+    let mut origins: Vec<u32> = Vec::new();
+    do_for!((_, o) in brought, do_if!(!origins.contains(o), origins.push(*o)));
+    let of = |o: u32| {
+        let names = brought.iter().filter(|(_, x)| *x == o).map(|(i, _)| i.clone());
+        Stmt::Import(ImportStmt { unit: Some(o), names: names.collect(), ..n.clone() })
+    };
+    origins.into_iter().map(of).collect()
 }
 
 /// A path with `.` parts removed and `..` parts applied, without reading

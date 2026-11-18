@@ -24,6 +24,7 @@ use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::START_NAME;
+use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::StructDecl;
@@ -169,7 +170,8 @@ impl Parser<'_>
         while !self.at_eof()
         {
             let stmt = self.parse_stmt_recover();
-            self.imports_closed |= !matches!(stmt, Some(Stmt::Import(_)));
+            self.imports_closed |=
+                !matches!(stmt, Some(Stmt::Import(_) | Stmt::Share(_)));
             do_if!(let Some(stmt) = stmt, push_top(&mut stmts, stmt));
         }
         stmts
@@ -249,6 +251,11 @@ impl Parser<'_>
             is_str && from && self.preposition_end(1).is_none(),
             self.parse_import()
         );
+        let whole =
+            matches!(self.peek_n(2).kind, TokenKind::Kw(Kw::Import | Kw::Reshare));
+        let ko = self.peek_n(1).kind == TokenKind::Kw(Kw::Ko);
+        ret_if!(is_str && ko && whole, self.parse_whole_import());
+        ret_if!(self.at_share(), self.parse_share());
         let clause = self.parse_clause(Mode::Stmt)?;
         self.finish_expr_headed(clause)
     }
@@ -304,13 +311,93 @@ impl Parser<'_>
         self.expect(Kw::Import)?;
         let stop = self.expect_stop()?;
         let span = tok.span.to(&stop.span);
-        let late = self.nested() || self.imports_closed;
-        do_if!(late, self.diags.push(diag::import_not_first(span)));
+        self.check_import_place(span);
         let lit = self.strings[idx as usize].clone();
         let path = StrArg::builder().lit(lit).span(tok.span).build();
         Ok(Stmt::Import(
             ImportStmt::builder().path(path).names(names).span(span).build(),
         ))
+    }
+
+    /// Parse `"<file>" ကို ထည့်သွင်းမည်။`, which imports each name a file
+    /// exports, or `"<file>" ကို ပြန်လည် မျှဝေမည်။`, which shares each of
+    /// them again and brings none.
+    ///
+    /// # Returns
+    ///
+    /// The import, or a diagnostic.
+    fn parse_whole_import(&mut self) -> PResult<Stmt>
+    {
+        let tok = self.bump();
+        let TokenKind::Str(idx) = tok.kind
+        else
+        {
+            unreachable!("the current token is a string");
+        };
+        self.bump();
+        let share = self.bump().kind == TokenKind::Kw(Kw::Reshare);
+        let stop = self.expect_stop()?;
+        let span = tok.span.to(&stop.span);
+        self.check_import_place(span);
+        let lit = self.strings[idx as usize].clone();
+        let path = StrArg::builder().lit(lit).span(tok.span).build();
+        #[rustfmt::skip]
+        let node = ImportStmt::builder().path(path).names(Vec::new()).whole(!share)
+            .share(share).span(span).build();
+        Ok(Stmt::Import(node))
+    }
+
+    /// Whether the sentence ahead ends in `အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`,
+    /// a share of imported names.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    fn at_share(&self) -> bool
+    {
+        let ends = |t: &TokenKind| {
+            matches!(t, TokenKind::Eof | TokenKind::Punct(Punct::FullStop))
+        };
+        let Some(stop) = (0..).find(|n| ends(&self.peek_n(*n).kind))
+        else
+        {
+            return false;
+        };
+        let kind = |n: usize| self.peek_n(n).kind;
+        stop >= 3
+            && kind(stop - 1) == TokenKind::Kw(Kw::Reshare)
+            && kind(stop - 2) == TokenKind::Kw(Kw::ToShare)
+    }
+
+    /// Parse `<name>၊ ... နှင့် <name> တို့ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`,
+    /// or with one name, `<name> ကို ...`: a share of imported names.
+    ///
+    /// # Returns
+    ///
+    /// The share, or a diagnostic.
+    fn parse_share(&mut self) -> PResult<Stmt>
+    {
+        let first = self.peek().span;
+        let names = self.parse_word_list(Self::parse_ident)?;
+        self.expect_list_word(names.len(), Kw::Ko, Kw::ListKo)?;
+        self.expect(Kw::ToShare)?;
+        self.expect(Kw::Reshare)?;
+        let stop = self.expect_stop()?;
+        let span = first.to(&stop.span);
+        self.check_import_place(span);
+        Ok(Stmt::Share(ShareStmt::builder().names(names).span(span).build()))
+    }
+
+    /// Report an import or a share after another statement or inside a
+    /// block: each comes first in its file.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The import or the share.
+    fn check_import_place(&mut self, span: Span)
+    {
+        let late = self.nested() || self.imports_closed;
+        do_if!(late, self.diags.push(diag::import_not_first(span)));
     }
 
     /// Parse a declaration after the export mark `အများသုံး` and mark it

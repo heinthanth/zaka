@@ -39,6 +39,7 @@ use zakac_ast::stmt::RemoveStmt;
 use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
+use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
@@ -2031,6 +2032,9 @@ impl Visitor for Checker
     }
 
     fn visit_import(&mut self, n: &ImportStmt) { self.import(n) }
+
+    /// A share names imported names, which the loader checked.
+    fn visit_share(&mut self, _: &ShareStmt) {}
 
     fn visit_assign(&mut self, n: &AssignStmt)
     {
