@@ -40,7 +40,8 @@ fn ran(cmd: &mut Command, what: &str) -> String
     let out = cmd.output().unwrap();
     let errors = String::from_utf8_lossy(&out.stderr);
     assert!(out.status.success(), "{what} failed:\n{errors}");
-    String::from_utf8(out.stdout).unwrap()
+    // The C of Windows writes a line end as `\r\n`; the runtime writes `\n`.
+    String::from_utf8(out.stdout).unwrap().replace("\r\n", "\n")
 }
 
 /// Build the lib of `inputs/libs/mathlib.zaka` into a folder, through the
@@ -56,7 +57,9 @@ fn build_lib(dir: &Path)
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac_codegen_target_c"));
     // The trap names the file as the build was given it.
     cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1").arg("mathlib.zaka");
-    cmd.args(["--emit", "lib", "--cache"]);
+    // The lib is for the ABI the test links with.
+    let abi: &str = test_abi().into();
+    cmd.args(["--target-abi", abi, "--emit", "lib", "--cache"]);
     cmd.arg(dir.join("cache")).arg("-o").arg(dir.join("mathlib"));
     ran(&mut cmd, "the lib build");
 }
@@ -87,9 +90,16 @@ fn a_c_program_calls_a_zaka_lib()
         .arg(dir.join("libmathlib.a"))
         .args(os_libs.unwrap_or_default())
         .arg("-lm");
-    static_cmd.arg("-o").arg(dir.join("static_driver"));
+    static_cmd
+        .arg("-o")
+        .arg(dir.join(format!("static_driver{}", std::env::consts::EXE_SUFFIX)));
     ran(&mut static_cmd, "the link of the static lib");
-    let out = ran(&mut Command::new(dir.join("static_driver")), "the static driver");
+    let out = ran(
+        &mut Command::new(
+            dir.join(format!("static_driver{}", std::env::consts::EXE_SUFFIX)),
+        ),
+        "the static driver",
+    );
     assert_eq!(out, EXPECTED);
     // A DLL is found beside the executable, which the test does not arrange.
     if cfg!(windows)
@@ -99,8 +109,15 @@ fn a_c_program_calls_a_zaka_lib()
     let mut shared_cmd = cc.command();
     shared_cmd.args(["-std=c11", "-I"]).arg(dir).arg(&driver).arg("-L").arg(dir);
     shared_cmd.arg(format!("-Wl,-rpath,{}", dir.display())).arg("-lmathlib");
-    shared_cmd.arg("-o").arg(dir.join("shared_driver"));
+    shared_cmd
+        .arg("-o")
+        .arg(dir.join(format!("shared_driver{}", std::env::consts::EXE_SUFFIX)));
     ran(&mut shared_cmd, "the link of the shared lib");
-    let out = ran(&mut Command::new(dir.join("shared_driver")), "the shared driver");
+    let out = ran(
+        &mut Command::new(
+            dir.join(format!("shared_driver{}", std::env::consts::EXE_SUFFIX)),
+        ),
+        "the shared driver",
+    );
     assert_eq!(out, EXPECTED);
 }

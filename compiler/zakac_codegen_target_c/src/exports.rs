@@ -254,6 +254,15 @@ const GLUE: &str = "
 /* The status of each call after a call stopped on a trap. */
 #define ZK_STOPPED (-1)
 
+/* A longjmp of 64-bit Windows unwinds each frame it leaves, through the unwind
+   tables, which the code of Cranelift does not give. With no frame in its
+   buffer the jump restores the registers alone, as it does on each other OS. */
+#if defined(_WIN64)
+#define ZK_LIB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
+#else
+#define ZK_LIB_NO_UNWIND(buf) ((void)(buf))
+#endif
+
 /* A result as a bridge gives it back: a word of the kind of the result. */
 typedef union
 {
@@ -367,7 +376,7 @@ fn wrapper(e: &Export<'_>, shape: usize, platform: u16) -> String
         "\n/* {} */\nZK_LIB_EXPORT int32_t {}({})\n{{\n    void *zk_args[] = \
          {{{args}}};\n    zk_lib_result zk_r;\n    jmp_buf zk_here;\n    jmp_buf \
          *zk_outer = zk_lib_at;\n    RET_IF(zk_lib_state == 2, ZK_STOPPED);\n    if \
-         (setjmp(zk_here) != 0)\n        return zk_lib_stop(zk_outer);\n    zk_lib_at \
+         (setjmp(zk_here) != 0)\n        return zk_lib_stop(zk_outer);\n    ZK_LIB_NO_UNWIND(zk_here);\n    zk_lib_at \
          = &zk_here;\n    zk_lib_begin();\n    zk_cbb_{shape}(&zk_r, zk_args, \
          (uint8_t *)&{});\n    zk_lib_at = zk_outer;\n    zk_flush();\n{out}    \
          return ZK_OK;\n}}\n",

@@ -61,7 +61,8 @@ fn ran(cmd: &mut Command, what: &str) -> String
     let out = cmd.output().unwrap();
     let errors = String::from_utf8_lossy(&out.stderr);
     assert!(out.status.success(), "{what} failed:\n{errors}");
-    String::from_utf8(out.stdout).unwrap()
+    // The C of Windows writes a line end as `\r\n`; the runtime writes `\n`.
+    String::from_utf8(out.stdout).unwrap().replace("\r\n", "\n")
 }
 
 /// Build the lib of `mathlib.zaka` with a backend into a folder of its own.
@@ -97,9 +98,14 @@ fn run_c_driver(dir: &Path, os_libs: &[&str]) -> String
     let mut cmd = cc.command();
     cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("driver.c"));
     cmd.arg(dir.join("libmathlib.a")).args(os_libs).arg("-lm");
-    cmd.arg("-o").arg(dir.join("c_driver"));
+    cmd.arg("-o").arg(dir.join(format!("c_driver{}", std::env::consts::EXE_SUFFIX)));
     ran(&mut cmd, "the link of the C driver");
-    ran(&mut Command::new(dir.join("c_driver")), "the C driver")
+    ran(
+        &mut Command::new(
+            dir.join(format!("c_driver{}", std::env::consts::EXE_SUFFIX)),
+        ),
+        "the C driver",
+    )
 }
 
 /// Build the Rust driver with the static lib in a folder, and run it.
@@ -131,9 +137,14 @@ fn run_rust_driver(dir: &Path, os_libs: &[&str]) -> String
         None => ["-C".to_string(), format!("link-arg={f}")],
     };
     cmd.args(os_libs.iter().flat_map(flag));
-    cmd.arg("-o").arg(dir.join("rust_driver"));
+    cmd.arg("-o").arg(dir.join(format!("rust_driver{}", std::env::consts::EXE_SUFFIX)));
     ran(&mut cmd, "the build of the Rust driver");
-    ran(&mut Command::new(dir.join("rust_driver")), "the Rust driver")
+    ran(
+        &mut Command::new(
+            dir.join(format!("rust_driver{}", std::env::consts::EXE_SUFFIX)),
+        ),
+        "the Rust driver",
+    )
 }
 
 #[test]
