@@ -46,8 +46,8 @@ use zakac_span::span::Span;
 use crate::notation::infix_of;
 use crate::parser::PResult;
 use crate::parser::Parser;
+use crate::parser::core_builtins;
 use crate::parser::kw_of;
-use crate::parser::prelude_builtins;
 use crate::struct_lit::ONE;
 use crate::using::CallParts;
 use crate::using::Head;
@@ -330,7 +330,7 @@ impl Parser<'_>
         ret_if!(let Some(verb) = as_verb(&tok), Some((verb, 1)));
         ret_if!(tok.kind != TokenKind::Ident, None);
         let name = self.text_of(tok.span);
-        ret_if!(!prelude_builtins().contains(name), None);
+        ret_if!(!core_builtins().contains(name), None);
         let after_ei = n.checked_sub(1).map_or_else(
             || self.cur.back(1).is_some_and(|t| t.kind == TokenKind::Punct(Punct::Ei)),
             |b| self.peek_n(b).kind == TokenKind::Punct(Punct::Ei),
@@ -789,14 +789,14 @@ impl Parser<'_>
     /// The operand or the call statement, or a diagnostic.
     fn parse_head(&mut self, mode: Mode) -> PResult<Head>
     {
-        // A statement that ends in a verb of the prelude is read as its call.
+        // A statement that ends in a verb of the core is read as its call.
         let verb = tern!(mode == Mode::Stmt, self.verb_sentence(), None);
         ret_if!(let Some(read) = verb, read);
         self.parse_head_from(mode)
     }
 
     /// Parse the first operand of a clause, as [`Self::parse_head`] does, once
-    /// no statement of a verb of the prelude reads.
+    /// no statement of a verb of the core reads.
     ///
     /// # Arguments
     ///

@@ -177,7 +177,7 @@ impl Parser<'_>
         stmts
     }
 
-    /// Parse one statement; a call of a heap function of the prelude is its
+    /// Parse one statement; a call of a heap function of the core is its
     /// heap statement.
     ///
     /// # Returns

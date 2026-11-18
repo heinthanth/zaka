@@ -1,6 +1,6 @@
 //! Operators on structs. A struct takes `+ - * / %`, the bit operators, the
 //! shifts, the `-` of one operand, the comparisons, `==` and `!=` through
-//! functions of its own, the ones the traits of the prelude name: `+` on two
+//! functions of its own, the ones the traits of the core name: `+` on two
 //! values of a struct calls its `ပေါင်း`, `<` its `ငယ်မငယ်စစ်`, `>=` the
 //! negation of its `ငယ်မငယ်စစ်`, `<<` its `ဘစ်ဘယ်ရွေ့` with the distance, and so
 //! on. Printing
@@ -102,7 +102,7 @@ pub(crate) struct OpCalls
     pub(crate) verbs: HashMap<Span, CallStmt>,
 }
 
-/// The name of the function of the prelude a count stands for.
+/// The name of the function of the core a count stands for.
 ///
 /// # Arguments
 ///
@@ -126,7 +126,7 @@ impl Checker
 {
     /// Check a statement of a verb the compiler gives as the call of a
     /// function of the file of that name, when one takes the operands: a
-    /// function of the file joins the overloads of the prelude's.
+    /// function of the file joins the overloads of the core's.
     ///
     /// # Arguments
     ///

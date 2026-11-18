@@ -347,9 +347,9 @@ cursor, the diagnostics and the node number as they were. One cut is read
 (`read_cut`); two are ZK0260.
 
 The heap sentences are calls of the functions of `core_heap.zaka` (`HEAP_FNS` in
-`heap.rs`). `with_prelude` keeps their prepositions, unlike the verbs of the prelude, and
+`heap.rs`). `with_core` keeps their prepositions, unlike the verbs of the core, and
 gives back the ones the file sees, which no function of its own hides
-(`Parser::prelude_heap`). `parse_stmt` turns a call statement of one, with its number of
+(`Parser::core_heap`). `parse_stmt` turns a call statement of one, with its number of
 arguments, into its node (`heap_node`): `Stmt::Alloc`, `Free`, `Resize`, `Fill` or `Blit`.
 A size argument (`Expr::Size`) gives its count and its kind; another value counts octets.
 A call of one in a value's place is ZK0315 (`finish_sentence_call`). The scan for the end
@@ -412,7 +412,7 @@ no `fill` and `ဒေတာ ထည့်ပေးရန်` in a function kind s
 `ပြောင်းလဲရန်` or `ထည့်ပေးရန်` (`Kw::ToChange`, `Kw::ToFill`) is no marker and stops the item
 likewise.
 
-`ကူးထည့်` is a verb of the prelude, as `ထည့်` is (`BUILTIN_VERBS` gives `Kw::WillDupIn`), and
+`ကူးထည့်` is a verb of the core, as `ထည့်` is (`BUILTIN_VERBS` gives `Kw::WillDupIn`), and
 `အကုန်` before it gives `Kw::WillDupAllIn` (`verb_at`); a glued `အကုန်ကူးထည့်မည်` splits into
 the three words (`glued_parts`). Both are statement verbs of the valence table with the
 slots `ထဲသို့` and `ကို`, as `ထည့်မည်` is
@@ -420,7 +420,7 @@ slots `ထဲသို့` and `ကို`, as `ထည့်မည်` is
 whose value is the duplicate expression of `v`, shallow or deep, as below. After `ကိန်းရှင်` or
 `ကိန်းသေ`, a name with `ထဲသို့` after it sends `parse_decl_or_loop` back to the name, reads
 the sentence as that assignment, and makes a `DeclStmt` with the value as its start and no
-written kind (`parse_decl_into`). `ပြောင်းထည့်` is the heap function of the prelude that is
+written kind (`parse_decl_into`). `ပြောင်းထည့်` is the heap function of the core that is
 the `memmove` form of `ကူးယူ`.
 
 The duplicate word `မိတ္တူ` is no reserved word: when the clause engine meets the name `မိတ္တူ`
@@ -588,7 +588,7 @@ stop, which no item holds; so `က နှင့် ခ ၏ ပေါင်းလ
 ### ဇယား kinds, rows and the fallback
 
 A ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, is the written-as hint of the
-prelude's `ဇယား` (see [Generics and traits](#generics-and-traits)): after the index kind,
+core's `ဇယား` (see [Generics and traits](#generics-and-traits)): after the index kind,
 the rest of the hint is a level, as `စာရင်း` is, and the parser builds the ဇယား kind from its
 two slots. The value kind is each kind, a ဇယား included, and the levels after `ဇယား` wrap the
 ဇယား; an optional or a result index parses, so the check can refuse it.
@@ -630,7 +630,7 @@ their place (`expand_local_kinds`), marked in `Kind.alias` to count with `ခု
 
 A written-as hint (`zakac_parser/src/hint.rs`) is read twice. Before a file is parsed,
 `declared_hints` reads each hint of the file from its tokens, so a use can come before
-its declaration; `prelude_hints` reads those of the prelude once, and the loader hands
+its declaration; `core_hints` reads those of the core once, and the loader hands
 on the hints of the exported structs and traits a file imports (`exported_hints`,
 `imported_hints`). Each hint is a list of parts, a slot (the index of the kind argument
 it gives) or a fixed word. The declaration then parses its own hint
@@ -647,13 +647,21 @@ reads the longest kind (`kind_len_at`, then `parse_kind_with`). `builtin_generic
 form, into the list wrap and the ဇယား kind, unless the file declares a kind of that name.
 The list remains a level of its own (`Suffix::List`), since count prefixes go with it.
 
-## The prelude
+## The core
 
-The loader reads the prelude, `"စံကား/အခြေခံအုတ်မြစ်"` (`stdlib/core_kinds.zaka`,
-`core_traits.zaka` and `core_verbs.zaka`, joined into one source in `STD_MODULES`), as a
-file of the program once a file names one of its traits that the file does not declare
-itself (`uses_prelude`), ahead of that file. A part opened alone in an editor reads as the
-prelude (`std_module_at`), and the whole prelude is then not read beside it.
+The loader reads the core, `"စံကား/အခြေခံအုတ်မြစ်"` (`stdlib/core/mod.zaka` in
+`STD_MODULES`), as a file of the program once a file names one of its traits that the file does not declare
+itself (`uses_core`), ahead of that file. A part opened alone in an editor reads as the
+core (`std_module_at`), and the whole core is then not read beside it.
+
+`mod.zaka` shares its parts, `kinds.zaka`, `traits.zaka`, `verbs.zaka` and `heap.zaka`,
+whole. A relative import of the core reads a part from `CORE_PARTS` (`import_core_part`),
+each a unit named `စံကား/အခြေခံအုတ်မြစ်/<part>`; an import from another file cannot
+reach a part. The check counts each of these units as the core (`in_core`). The readers
+that take the declarations of the whole core from its words, before a parse (the
+functions, the hints, the compiler-marked names), read `CORE_SOURCE`, the parts joined
+into one text. The facts of the target a file names are imported from the part that
+declares them.
 
 The compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` heads three declarations:
 
@@ -666,7 +674,7 @@ The compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်
   after `သည်`, then `လုပ်ဆောင်ချက်ဖြစ်၍`, the kind parameters in the word form with
   `၎င်းသည်`, the phrases and the parameters.
 
-The verbs of the prelude, `ပြသ`, `ထည့်`, `ကူးထည့်`, `ဖျက်` and `အစားထိုး` (`VERB_FNS` in
+The verbs of the core, `ပြသ`, `ထည့်`, `ကူးထည့်`, `ဖျက်` and `အစားထိုး` (`VERB_FNS` in
 `verb_call.rs`), keep their prepositions in the table of preposition calls, beside the
 functions of their names a file declares. A statement that ends in `<verb> မည်` is read as
 that call first (`verb_sentence`, from `parse_head`), its arguments as whole clauses; the
@@ -675,7 +683,7 @@ parser turns the call into the statement of its sentence (`verb_node`, from
 duplicate, `Stmt::Remove` and `Stmt::Replace`, as the words of the call tell
 (`form_of_words`). The clause engine has no rows for these verbs: a sentence of one that
 fits no head is read as a call of it, which the check reports (ZK0332, with the heads of
-the verb as sentences from `prelude_builtin_fns`, or ZK0331), and a call that ends in
+the verb as sentences from `core_builtin_fns`, or ZK0331), and a call that ends in
 `မည်` where a value goes is ZK0204 (`finish_using`). A value form of one is ZK0315. The other marked functions, the three counts,
 take no prepositions; the clause engine reads them right after `၏` (`BUILTIN_COUNTS` in
 the lexer's `role.rs`, which paints the verbs and the counts). Semcheck calls a function of the file of the name in
@@ -702,7 +710,7 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   can clash (ZK0250, ZK0251). A name in braces never splits. The call ends hold the
   spoken ones too (`ပြသမယ်`), and `glued_spoken` reports each as ZK0510, since the lexer saw
   a name.
-- Each file sees the functions of the prelude (`with_prelude`); the functions of the
+- Each file sees the functions of the core (`with_core`); the functions of the
   operator traits (`OPERATOR_FNS`) come without prepositions, as the word operators are
   reserved words the clause engine reads through its verb rows: `ပေါင်းလဒ်` and the others,
   `စားသော စားလဒ်` and the joined phrases of the lexer, and the shifts, whose
@@ -752,7 +760,7 @@ For each file, from the file that is run:
    first parse too, so the imports of the arm it keeps are read), give each import its
    names and set `unit` to the unit that declares them (`split_imports`: an import whose
    names come from several units through shares becomes one import of each), give a file that names a fact of the target an import
-   of it from the prelude (`import_facts`), append a `Unit` and the statements of the
+   of it from the core (`import_facts`), append a `Unit` and the statements of the
    file to the program, and note the structs, enumerations and kind aliases the file
    exports. `Loader::exports` notes each name the file exports with the unit that
    declares it: its own exported declarations, then each name it shares (`shared`,
@@ -773,7 +781,7 @@ the defaults of a trait moved out (`push_top`). `settle` keeps the statements of
 arm whose condition holds, spliced in place, through each block, and reports ZK0255 for a
 condition outside the facts. `load_for` and `Loaded::single_for` take the target;
 `load` and `Loaded::single` take the host's. `fill_facts` writes the value of the target
-into each marked constant of the prelude (`DeclStmt.builtin`), and `Program.target`
+into each marked constant of the core (`DeclStmt.builtin`), and `Program.target`
 records the target when a file holds a conditional or names a fact.
 
 A condition that holds a call waits for the check. `settle` takes a `Resolved` table, the

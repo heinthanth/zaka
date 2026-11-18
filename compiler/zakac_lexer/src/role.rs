@@ -87,7 +87,7 @@ pub fn role_with_text(kind: &TokenKind, text: &str) -> TokenRole
     token_role(kind)
 }
 
-/// The functions of the prelude the compiler gives whose sentence ends in
+/// The functions of the core the compiler gives whose sentence ends in
 /// `<name> မည်`, with the reserved word of the verb each stands for.
 pub const BUILTIN_VERBS: &[(&str, Kw)] = &[
     ("ပြသ", Kw::Print),
@@ -97,7 +97,7 @@ pub const BUILTIN_VERBS: &[(&str, Kw)] = &[
     ("အစားထိုး", Kw::Replace),
 ];
 
-/// The functions of the prelude the compiler gives that are read right after
+/// The functions of the core the compiler gives that are read right after
 /// `၏`, with the reserved word of the reading each stands for.
 pub const BUILTIN_COUNTS: &[(&str, Kw)] = &[
     ("အကွက်အရေအတွက်", Kw::CellCount),

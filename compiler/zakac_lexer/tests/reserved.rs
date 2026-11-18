@@ -232,7 +232,7 @@ fn list_words_lex_and_split()
 {
     assert_eq!(lookup("စာရင်း"), None);
     assert_eq!(lookup("စာရင်းအလွတ်"), Some(Kw::BlankList));
-    // The count is a name the prelude declares, read as the count after `၏`.
+    // The count is a name the core declares, read as the count after `၏`.
     assert_eq!(lookup("အကွက်အရေအတွက်"), None);
     assert_eq!(builtin_count("အကွက်အရေအတွက်"), Some(Kw::CellCount));
     assert_eq!(lookup("ခုရှိသော"), Some(Kw::Having));
@@ -269,7 +269,7 @@ fn table_words_lex_and_split()
 #[test]
 fn replace_words_lex_and_split()
 {
-    // The verb is a function the prelude declares: `အစားထိုး` and `မည်`.
+    // The verb is a function the core declares: `အစားထိုး` and `မည်`.
     assert_eq!(lookup("အစားထိုးမည်"), None);
     assert_eq!(builtin_verb("အစားထိုး"), Some(Kw::Replace));
     assert_eq!(lookup("လုံးမြောက်"), Some(Kw::Ordinal));
@@ -387,7 +387,7 @@ fn an_old_ending_is_reported_and_read_as_the_new_verb()
         assert_eq!(common::kws(old), [*kw], "{old}");
         let (out, _) = common::lex_text(new);
         assert!(out.diagnostics.is_empty(), "{new}");
-        // A verb of a function the prelude declares lexes as a name, which the
+        // A verb of a function the core declares lexes as a name, which the
         // parser reads as the function and `မည်`.
         let declared = new.strip_suffix("မည်").and_then(builtin_verb) == Some(*kw);
         do_if!(declared, assert_eq!(out.tokens[0].kind, TokenKind::Ident, "{new}"));

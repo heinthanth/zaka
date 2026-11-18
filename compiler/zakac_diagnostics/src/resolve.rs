@@ -900,15 +900,15 @@ pub fn trait_block_place(span: Span, kind: &str, trait_name: &str) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0349` diagnostic.
-pub fn builtin_outside_prelude(span: Span) -> Diagnostic
+pub fn builtin_outside_core(span: Span) -> Diagnostic
 {
     let msg = t!("codes.ZK0349.message");
-    Diagnostic::new(Code::BuiltinOutsidePrelude, msg, span)
+    Diagnostic::new(Code::BuiltinOutsideCore, msg, span)
         .with_help(t!("codes.ZK0349.help"))
 }
 
 /// A function of a file has the name, the kinds and the prepositions of a
-/// function the compiler gives in the prelude, so it takes each sentence of
+/// function the compiler gives in the core, so it takes each sentence of
 /// that function in the file.
 ///
 /// # Arguments
@@ -919,10 +919,10 @@ pub fn builtin_outside_prelude(span: Span) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0350` diagnostic.
-pub fn same_as_prelude(span: Span, name: &str) -> Diagnostic
+pub fn same_as_core(span: Span, name: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0350.message", n = name);
-    Diagnostic::new(Code::SameAsPrelude, msg, span).with_help(t!("codes.ZK0350.help"))
+    Diagnostic::new(Code::SameAsCore, msg, span).with_help(t!("codes.ZK0350.help"))
 }
 
 /// A call written as a sentence gives other phrases than the head of its

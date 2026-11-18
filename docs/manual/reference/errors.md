@@ -193,8 +193,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0346 | a function of a trait block that is not one of its trait | [Generics and traits](../language/generics.md) |
 | ZK0347 | two functions that give a kind one function of a trait | [Generics and traits](../language/generics.md) |
 | ZK0348 | a trait block outside the file of its kind and of its trait | [Generics and traits](../language/generics.md) |
-| ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The prelude](../language/prelude.md) |
-| ZK0350 | warning: a function with the name, the kinds and the prepositions of a function the prelude gives, which then takes over each sentence of it | [The prelude](../language/prelude.md#verbs-on-structs) |
+| ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The core](../language/core.md) |
+| ZK0350 | warning: a function with the name, the kinds and the prepositions of a function the core gives, which then takes over each sentence of it | [The core](../language/core.md#verbs-on-structs) |
 | ZK0351 | warning: a trait block that takes the defaults of its trait when no function it leaves out has one | [Generics and traits](../language/generics.md#trait-blocks) |
 | ZK0352 | a call written as a sentence that leaves out a phrase of the head of its function, or writes another | [Functions](../language/functions.md#starting-and-ending-phrases) |
 

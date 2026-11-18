@@ -1,4 +1,4 @@
-// Operators on a struct, through its own functions, and the functions of the prelude.
+// Operators on a struct, through its own functions, and the functions of the core.
 
 ဗက်တာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 

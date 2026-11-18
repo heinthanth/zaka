@@ -374,7 +374,7 @@ pub trait Visitor
     fn visit_trait(&mut self, n: &TraitDecl) { walk_trait(self, n) }
     /// Visit a trait block.
     fn visit_trait_block(&mut self, n: &TraitBlock) { walk_trait_block(self, n) }
-    /// Visit a built-in kind of the prelude.
+    /// Visit a built-in kind of the core.
     fn visit_builtin_kind(&mut self, n: &BuiltinKindDecl)
     {
         self.enter(n);

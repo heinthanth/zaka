@@ -47,7 +47,7 @@ pub const LIST_NAME: &str = "စာရင်း";
 /// value kind: `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား`.
 pub const TABLE_NAME: &str = "ဇယား";
 
-/// The names of the kinds the compiler gives, which the prelude declares.
+/// The names of the kinds the compiler gives, which the core declares.
 /// These are names, not reserved words: a file can declare a kind of its own
 /// under one of them. A word glued from these names and reserved words still
 /// splits, and each name in it lexes as an identifier.
@@ -292,7 +292,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("သတိပြုရန်မှာ", Kw::NoteThat),
     ("သတိပြုစရာများ", Kw::Notes),
     ("ရှိသည်", Kw::Has),
-    // the mark of a declaration the compiler gives, in the prelude
+    // the mark of a declaration the compiler gives, in the core
     ("ကွန်ပိုင်လာထဲတွင်", Kw::InCompiler),
     ("ဟူသည့်", Kw::CalledRel),
     ("တစ်ပါတည်းပါဝင်သော", Kw::IncludedWith),

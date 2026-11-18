@@ -14,7 +14,6 @@ use zakac_ast::kind::Kind;
 use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_ast::stmt::KindParam;
-use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_diagnostics::parser as diag;
@@ -34,7 +33,7 @@ use zakac_span::span::Span;
 
 use crate::describe::quote;
 use crate::fn_kind::FnForm;
-use crate::load::STD_MODULES;
+use crate::load::CORE_SOURCE;
 use crate::parser::PResult;
 use crate::parser::Parser;
 
@@ -196,17 +195,16 @@ fn hint_words(
     Some((words, end))
 }
 
-/// The hints of the prelude, read once from its tokens.
+/// The hints of the core, read once from its tokens.
 ///
 /// # Returns
 ///
 /// The hints.
-pub(crate) fn prelude_hints() -> &'static [Hint]
+pub(crate) fn core_hints() -> &'static [Hint]
 {
     static HINTS: OnceLock<Vec<Hint>> = OnceLock::new();
     HINTS.get_or_init(|| {
-        let src =
-            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let src = CORE_SOURCE;
         let lexed = lex_at(src, Pos::ZERO, &LexerOptions::default());
         declared_hints(src, Pos::ZERO, &lexed.tokens)
     })
@@ -299,7 +297,7 @@ pub(crate) fn exported_hints(program: &Program) -> Vec<Hint>
 
 impl Parser<'_>
 {
-    /// Take the hints the parser knows: those of the prelude, then the given
+    /// Take the hints the parser knows: those of the core, then the given
     /// ones, a later hint of a name in place of an earlier one.
     ///
     /// # Arguments
@@ -307,7 +305,7 @@ impl Parser<'_>
     /// * `hints` - The hints the file imports, then its own.
     pub(crate) fn set_hints(&mut self, hints: impl IntoIterator<Item = Hint>)
     {
-        let mut known = prelude_hints().to_vec();
+        let mut known = core_hints().to_vec();
         for hint in hints
         {
             known.retain(|h| h.name != hint.name || h.is_trait != hint.is_trait);
@@ -349,7 +347,7 @@ impl Parser<'_>
     }
 
     /// Whether the token `n` places ahead names the list or the table kind
-    /// of the prelude, which no declaration of the file hides.
+    /// of the core, which no declaration of the file hides.
     ///
     /// # Arguments
     ///
@@ -381,7 +379,7 @@ impl Parser<'_>
     }
 
     /// Whether the token `n` places ahead is `စာရင်း` or `ဇယား`, the generic
-    /// kinds of the prelude, which no declaration of the file hides.
+    /// kinds of the core, which no declaration of the file hides.
     ///
     /// # Arguments
     ///
@@ -488,7 +486,7 @@ impl Parser<'_>
     }
 
     /// The hint of a kind that follows the kind before `at` as a level, as
-    /// `ဖြင့် ညွှန်းသော V ဇယား` follows `K`. The list of the prelude is read as
+    /// `ဖြင့် ညွှန်းသော V ဇယား` follows `K`. The list of the core is read as
     /// a level of its own, with its counts.
     ///
     /// # Arguments

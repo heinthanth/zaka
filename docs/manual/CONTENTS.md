@@ -22,7 +22,7 @@
   - [Kind aliases](language/aliases.md)
   - [Generics and traits](language/generics.md)
   - [Compile time](language/compile-time.md)
-  - [The prelude](language/prelude.md)
+  - [The core](language/core.md)
   - [Modules](language/modules.md)
   - [Input and output](language/io.md)
   - [The stdlib](language/stdlib.md)

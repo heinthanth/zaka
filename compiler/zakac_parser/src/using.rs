@@ -731,7 +731,7 @@ impl Parser<'_>
             {
                 (&n.callee, n.args.len(), &n.prepositions)
             }
-            // A call of a verb of the prelude, turned into its statement.
+            // A call of a verb of the core, turned into its statement.
             (_, Some(Stmt::Print(_) | Stmt::Add(_) | Stmt::Assign(_))) => return true,
             (_, Some(Stmt::Remove(_) | Stmt::Replace(_))) => return true,
             _ => return false,
@@ -818,10 +818,10 @@ impl Parser<'_>
         let parts = CallParts::builder().start(start).callee(callee).args(args)
             .prepositions(prepositions).phrases(phrases).build();
         let head = self.finish_using(parts, long, mode)?;
-        // A heap function or a verb of the prelude gives no value (ZK0315).
+        // A heap function or a verb of the core gives no value (ZK0315).
         let heap_value = |c: &CallExpr| {
             let name = c.callee.name.as_str();
-            self.prelude_heap.contains(name) || self.names_prelude_verb(c)
+            self.core_heap.contains(name) || self.names_core_verb(c)
         };
         let value = tern!(let Head::Expr(Expr::Call(c)) = &head, Some(c), None);
         let heap = value.filter(|c| heap_value(c));

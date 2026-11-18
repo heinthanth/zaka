@@ -264,7 +264,7 @@ are the named ones and then the other values. A struct goes in and out of a wrap
 address of its octets, and a struct result goes to the address of the first parameter,
 `zk_out`. A text goes in as the address of its octets and its count; the wrapper makes
 a duplicate that ends in a zero octet with `zk_text_cstr` (`seqs.rs`, declared in
-`zaka_target_c_runtime.h` and in the prelude of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
+`zaka_target_c_runtime.h` and in the core of `zaka_ffi.c`), and frees it with `zk_text_cstr_free`
 after the call. The module
 files call the wrappers through `ExprNode::Foreign` and `Stmt::Foreign`. A list of numbers
 comes as the address of its first cell, which the IR built before the call, so the wrapper

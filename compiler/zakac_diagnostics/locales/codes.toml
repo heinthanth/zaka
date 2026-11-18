@@ -754,16 +754,16 @@ en = "\"ကွန်ပိုင်လာထဲတွင် တစ်ပါတ�
 [codes.ZK0349.help]
 en = "write the declaration with no mark, and give it its code"
 [codes.ZK0349.explain]
-en = """The compiler gives the meaning and the code of a declaration marked \"ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော\", and it knows the ones of the stdlib modules, the prelude \"စံကား/အခြေခံအုတ်မြစ်\" among them, alone. A program declares its own functions, kinds and traits with their code and their rules written out."""
+en = """The compiler gives the meaning and the code of a declaration marked \"ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော\", and it knows the ones of the stdlib modules, the core \"စံကား/အခြေခံအုတ်မြစ်\" among them, alone. A program declares its own functions, kinds and traits with their code and their rules written out."""
 
 [codes.ZK0350.title]
-en = "function the same as the prelude's"
+en = "function the same as the core's"
 [codes.ZK0350.message]
-en = "\"%{n}\" has the kinds and the prepositions of the prelude's \"%{n}\", so it takes over each sentence of it in this file"
+en = "\"%{n}\" has the kinds and the prepositions of the core's \"%{n}\", so it takes over each sentence of it in this file"
 [codes.ZK0350.help]
 en = "give the function other kinds or prepositions to add an overload, or another name"
 [codes.ZK0350.explain]
-en = """A file can declare a function named after a verb or a count the compiler gives, such as \"ပြသ\", to add an overload: when it takes the operands of a sentence, the sentence calls it. A function with the same kinds and prepositions as the prelude's own takes each such sentence, so the built-in meaning is lost in that file."""
+en = """A file can declare a function named after a verb or a count the compiler gives, such as \"ပြသ\", to add an overload: when it takes the operands of a sentence, the sentence calls it. A function with the same kinds and prepositions as the core's own takes each such sentence, so the built-in meaning is lost in that file."""
 
 [codes.ZK0351.title]
 en = "no default to take"
@@ -1603,7 +1603,7 @@ en = "compares \"%{f}\" with \"%{v}\", a value it never holds; it holds one of %
 [codes.ZK0255.mixed]
 en = "compares text with a number, or orders text"
 [codes.ZK0255.explain]
-en = """A conditional written `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` is settled when the program is built: the compiler keeps the branch whose condition holds for the target and drops the others before it checks names and kinds. Its conditions read the four facts of the target, which the prelude declares as constants: the OS, the CPU architecture, the platform bit count and the code the compiler gives out; and calls of comptime functions, which the compiler runs first. Each condition of the chain is settled, so a value that a fact never holds, such as \"window\", is this error and not a branch that never runs."""
+en = """A conditional written `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` is settled when the program is built: the compiler keeps the branch whose condition holds for the target and drops the others before it checks names and kinds. Its conditions read the four facts of the target, which the core declares as constants: the OS, the CPU architecture, the platform bit count and the code the compiler gives out; and calls of comptime functions, which the compiler runs first. Each condition of the chain is settled, so a value that a fact never holds, such as \"window\", is this error and not a branch that never runs."""
 
 [codes.ZK0256.title]
 en = "misplaced comptime mark"

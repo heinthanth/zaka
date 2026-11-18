@@ -34,7 +34,7 @@ const BLIT: &str = "ကူးယူ";
 /// `ပြောင်းထည့်`: write the cells of one block to another, overlap allowed.
 const SHIFT: &str = "ပြောင်းထည့်";
 
-/// The heap functions of the prelude, each with the number of its
+/// The heap functions of the core, each with the number of its
 /// arguments: the parser turns a call statement of one into its statement
 /// node.
 pub(crate) const HEAP_FNS: [(&str, usize); 6] =
@@ -65,11 +65,11 @@ fn size_arg(arg: Expr) -> SizeArg
 
 impl Parser<'_>
 {
-    /// Turn a call statement of a heap function of the prelude into the
+    /// Turn a call statement of a heap function of the core into the
     /// statement node the later stages take: `သိမ်းထား` an allocation,
     /// `ပြန်လည်စွန့်လွှတ်` a release, `နေရာအချဲ့အချုံ့လုပ်` a resize, `ဖြည့်` a fill,
     /// `ကူးယူ` and `ပြောင်းထည့်` a blit. A function of the file of such a name
-    /// hides the one of the prelude, and its calls remain calls; so does a
+    /// hides the one of the core, and its calls remain calls; so does a
     /// call with another number of arguments, which the check reports.
     ///
     /// # Arguments
@@ -87,7 +87,7 @@ impl Parser<'_>
             return stmt;
         };
         let name = call.callee.name.as_str();
-        let heap = self.prelude_heap.contains(name) && call.place.is_none();
+        let heap = self.core_heap.contains(name) && call.place.is_none();
         let fits =
             HEAP_FNS.iter().any(|(n, count)| *n == name && *count == call.args.len());
         ret_if!(!heap || !fits || call.pass, Stmt::Call(call));

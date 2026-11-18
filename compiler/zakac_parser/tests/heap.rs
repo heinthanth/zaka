@@ -88,11 +88,11 @@ fn blits_and_fills()
     );
 }
 
-/// The heap sentences are calls of functions of the prelude, which the parser
+/// The heap sentences are calls of functions of the core, which the parser
 /// turns into their statements: `မှတ်ဉာဏ်` reads as `မင်မိုရီ`, and an argument
 /// can end in the `၏` readings of notation.
 #[test]
-fn heap_sentences_read_as_calls_of_the_prelude()
+fn heap_sentences_read_as_calls_of_the_core()
 {
     assert_eq!(stmt("လိပ်စာ p ရှိ မှတ်ဉာဏ်ကို ပြန်လည်စွန့်လွှတ်မည်။"), "(free p)");
     assert_eq!(
@@ -109,7 +109,7 @@ fn heap_sentences_read_as_calls_of_the_prelude()
     );
 }
 
-/// A function of the file of a heap name hides the one of the prelude, and
+/// A function of the file of a heap name hides the one of the core, and
 /// its calls remain calls.
 #[test]
 fn a_function_of_the_file_hides_a_heap_function()

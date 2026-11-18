@@ -244,11 +244,10 @@ pub fn file_uri(path: &Path) -> Option<Uri>
 fn std_replica(module: &str) -> Option<PathBuf>
 {
     use etcetera::BaseStrategy;
-    use zakac_parser::load::STD_MODULES;
     use zakac_parser::load::std_replicas;
     use zakac_rust_sugars::ret_if;
 
-    let (_, file, src) = STD_MODULES.iter().find(|(m, ..)| *m == module)?;
+    let (file, src) = zakac_parser::load::std_file(module)?;
     let cache = etcetera::choose_base_strategy().ok()?.cache_dir();
     let path = std_replicas(&cache).join(file);
     ret_if!(std::fs::read_to_string(&path).is_ok_and(|text| text == *src), Some(path));

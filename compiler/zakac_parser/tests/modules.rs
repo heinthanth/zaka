@@ -295,7 +295,7 @@ fn an_imported_struct_name_starts_a_kind()
 fn a_stdlib_file_read_from_storage_reads_as_its_module()
 {
     let tree =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib/core_verbs.zaka");
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib/core/verbs.zaka");
     let mut sm = SourceMap::new();
     let file = sm.load_file(&tree).unwrap();
     let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();

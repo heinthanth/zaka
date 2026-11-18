@@ -7,7 +7,7 @@ description: The modules of the stdlib written in Zaka - text, paths and lists -
 
 The compiler carries the modules of the stdlib; a program imports from each the names it
 needs, as from a file of its own ([Modules](modules.md)). Four modules beside the
-[prelude](prelude.md):
+[core](core.md):
 
 | Module | File | Holds |
 | --- | --- | --- |

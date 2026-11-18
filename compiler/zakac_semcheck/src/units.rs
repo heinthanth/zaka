@@ -17,7 +17,7 @@ use zakac_ast::visit::Visitor;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
-use zakac_parser::load::prelude_builtin_fns;
+use zakac_parser::load::core_builtin_fns;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -178,7 +178,7 @@ pub(crate) fn start_rules(program: &Program, needs_start: bool) -> Vec<Diagnosti
 }
 
 /// The functions of the files outside the stdlib with the name, the kinds and
-/// the prepositions of a function the compiler gives in the prelude: each is
+/// the prepositions of a function the compiler gives in the core: each is
 /// the warning ZK0350, since it takes over each sentence of that function.
 ///
 /// # Arguments
@@ -188,14 +188,14 @@ pub(crate) fn start_rules(program: &Program, needs_start: bool) -> Vec<Diagnosti
 /// # Returns
 ///
 /// The diagnostics.
-pub(crate) fn prelude_twins(program: &Program) -> Vec<Diagnostic>
+pub(crate) fn core_twins(program: &Program) -> Vec<Diagnostic>
 {
-    let builtins = prelude_builtin_fns();
+    let builtins = core_builtin_fns();
     let stmts = program.stmts.iter().enumerate();
     let own = stmts.filter(|(i, _)| !in_stdlib(program, program.unit_of(*i)));
     let fns = own.filter_map(|(_, s)| tern!(let Stmt::Fn(d) = s, Some(d), None));
     let twins = fns.filter(|d| !d.builtin && builtins.iter().any(|b| same_head(b, d)));
-    twins.map(|d| rd::same_as_prelude(d.name.span, &d.name.name)).collect()
+    twins.map(|d| rd::same_as_core(d.name.span, &d.name.name)).collect()
 }
 
 /// Whether two function heads have one name, and parameters of the same
@@ -341,7 +341,7 @@ impl Checker
             _ => false,
         };
         let outside = marked && !in_stdlib(program, unit);
-        do_if!(outside, self.report(rd::builtin_outside_prelude(stmt.span())));
+        do_if!(outside, self.report(rd::builtin_outside_core(stmt.span())));
         // A function the compiler gives has no code: a sentence stands for it.
         ret_if!(is_template(stmt) || matches!(stmt, Stmt::Fn(d) if d.builtin));
         self.top = top_name(stmt);

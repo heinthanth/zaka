@@ -1,5 +1,5 @@
 //! The target a program is built for: the facts a compile-time conditional
-//! tests and the prelude's marked constants hold.
+//! tests and the core's marked constants hold.
 
 use bon::Builder;
 use serde::Deserialize;
@@ -200,19 +200,19 @@ pub fn host_arch() -> TargetArch
     std::env::consts::ARCH.parse().unwrap_or(TargetArch::X86_64)
 }
 
-/// The constant of the prelude that holds the OS.
+/// The constant of the core that holds the OS.
 pub const OS_FACT: &str = "အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်";
 
-/// The constant of the prelude that holds the CPU architecture.
+/// The constant of the core that holds the CPU architecture.
 pub const ARCH_FACT: &str = "အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ";
 
-/// The constant of the prelude that holds the ABI.
+/// The constant of the core that holds the ABI.
 pub const ABI_FACT: &str = "အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်";
 
-/// The constant of the prelude that holds the platform bit count.
+/// The constant of the core that holds the platform bit count.
 pub const BITS_FACT: &str = "အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်";
 
-/// The constant of the prelude that holds the code the compiler gives out.
+/// The constant of the core that holds the code the compiler gives out.
 pub const OUTPUT_FACT: &str = "ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား";
 
 /// The names of the five facts of a target.

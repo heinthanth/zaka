@@ -13,9 +13,9 @@ use zakac_ast::expr::IntLit;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::StrPiece;
+use zakac_ast::stmt::CORE;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::ImportStmt;
-use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::Stmt;
@@ -88,6 +88,14 @@ pub struct Loaded
 /// The start of the import path of a module of the stdlib.
 pub const STD_PREFIX: &str = "စံကား/";
 
+/// A row of [`CORE_PARTS`]: the path in the `stdlib` folder of the source tree,
+/// and the source of that file.
+macro_rules! core_part {
+    ($file:literal) => {
+        (concat!("core/", $file), include_str!(concat!("../../../stdlib/core/", $file)))
+    };
+}
+
 /// A row of [`STD_MODULES`]: the import name, the file name in the `stdlib`
 /// folder of the source tree, and the source of that file.
 macro_rules! std_module {
@@ -105,25 +113,52 @@ pub static STD_MODULES: &[(&str, &str, &str)] = &[
     std_module!("စံကား/စာသား", "text.zaka"),
     std_module!("စံကား/လမ်းကြောင်း", "path.zaka"),
     std_module!("စံကား/စာရင်း", "list.zaka"),
-    // The prelude is written in parts, `core_<part>.zaka`, joined here into
-    // one module; a replica of it holds the joined text.
-    (
-        PRELUDE,
-        "prelude.zaka",
-        concat!(
-            include_str!("../../../stdlib/core_kinds.zaka"),
-            "\n",
-            include_str!("../../../stdlib/core_traits.zaka"),
-            "\n",
-            include_str!("../../../stdlib/core_verbs.zaka"),
-            "\n",
-            include_str!("../../../stdlib/core_heap.zaka"),
-        ),
-    ),
+    // The core shares the parts in `CORE_PARTS`.
+    std_module!(CORE, "core/mod.zaka"),
 ];
 
-/// The start of the file name of a part of the prelude in the `stdlib` folder.
-const PRELUDE_PART: &str = "core_";
+/// The parts of the core, each a file of the `core` folder of the stdlib
+/// that `core/mod.zaka` shares: its path in the `stdlib` folder and its
+/// source. A program cannot import a part on its own.
+pub static CORE_PARTS: &[(&str, &str)] = &[
+    core_part!("kinds.zaka"),
+    core_part!("traits.zaka"),
+    core_part!("verbs.zaka"),
+    core_part!("heap.zaka"),
+];
+
+/// The parts of the core joined into one text, for the readers that take
+/// the declarations of the whole core from its words.
+pub const CORE_SOURCE: &str = concat!(
+    include_str!("../../../stdlib/core/kinds.zaka"),
+    "\n",
+    include_str!("../../../stdlib/core/traits.zaka"),
+    "\n",
+    include_str!("../../../stdlib/core/verbs.zaka"),
+    "\n",
+    include_str!("../../../stdlib/core/heap.zaka"),
+);
+
+/// The file of the stdlib that a module or a part of the core is read
+/// from, named as the source map holds it.
+///
+/// # Arguments
+///
+/// * `name` - The import name of a module, or the name of a part.
+///
+/// # Returns
+///
+/// The path in the `stdlib` folder and the source, or `None` for another name.
+pub fn std_file(name: &str) -> Option<(&'static str, &'static str)>
+{
+    let module =
+        STD_MODULES.iter().find(|(m, ..)| *m == name).map(|(_, f, s)| (*f, *s));
+    let part = || {
+        let file = name.strip_prefix(CORE)?.strip_prefix('/')?;
+        CORE_PARTS.iter().find(|(f, _)| f.strip_prefix("core/") == Some(file)).copied()
+    };
+    module.or_else(part)
+}
 
 /// The folder of the replicas of the stdlib that a language server writes, so
 /// an editor can open a declaration of the stdlib: `zakac/stdlib/<version>`
@@ -142,8 +177,9 @@ pub fn std_replicas(cache: &Path) -> PathBuf
 }
 
 /// The module of the stdlib a file holds when it is a file of the source tree
-/// or a replica in [`std_replicas`], so a check of `stdlib/core_verbs.zaka`
-/// in an editor reads it as `စံကား/အခြေခံအုတ်မြစ်`, compiler marks and all.
+/// or a replica in [`std_replicas`], so a check of `stdlib/core/verbs.zaka`
+/// in an editor reads it as `စံကား/အခြေခံအုတ်မြစ်`, compiler marks and all: a
+/// file of the `core` folder reads as the core.
 ///
 /// # Arguments
 ///
@@ -158,10 +194,12 @@ fn std_module_at(path: &Path) -> Option<&'static str>
     let tree = normalize(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../stdlib"));
     let path = normalize(&std::path::absolute(path).ok()?);
     let folder = path.parent()?;
-    ret_if!(folder != tree && !folder.ends_with(std_replicas(Path::new(""))), None);
+    let replicas = std_replicas(Path::new(""));
+    let in_tree = |f: &Path| f == tree || f.ends_with(&replicas);
+    let core = folder.file_name().is_some_and(|f| f == "core");
+    ret_if!(core && folder.parent().is_some_and(in_tree), Some(CORE));
+    ret_if!(!in_tree(folder), None);
     let file = path.file_name()?;
-    let part = file.to_str().is_some_and(|f| f.starts_with(PRELUDE_PART));
-    ret_if!(part, Some(PRELUDE));
     STD_MODULES.iter().find(|(_, f, _)| file == *f).map(|(module, ..)| *module)
 }
 
@@ -170,7 +208,7 @@ impl Loaded
     /// Lex and parse one file that cannot read other files: each import it
     /// has is reported, except an import from the stdlib, which reads the
     /// module the compiler carries; a file that names a declaration of the
-    /// prelude reads the prelude too.
+    /// core reads the core too.
     ///
     /// # Arguments
     ///
@@ -186,7 +224,7 @@ impl Loaded
     }
 
     /// [`Loaded::single`] for a target: each compile-time conditional keeps
-    /// the arm that holds for it, and the prelude's marked constants hold
+    /// the arm that holds for it, and the core's marked constants hold
     /// its facts.
     ///
     /// # Arguments
@@ -226,7 +264,7 @@ impl Loaded
         let lexed = lex(source, options);
         let parsed = parse(source, &lexed);
         let mut imports = parsed.program.stmts.iter().filter_map(as_import);
-        let std = imports.any(is_std) || uses_prelude(source, &lexed);
+        let std = imports.any(is_std) || uses_core(source, &lexed);
         ret_if!(std, Loaded::with_std(source, options, target, resolved));
         let mut diagnostics = lexed.diagnostics;
         diagnostics.extend(parsed.diagnostics);
@@ -244,7 +282,7 @@ impl Loaded
         Loaded { open_conds: open, ..loaded(program, Vec::new(), diagnostics, &fixed) }
     }
 
-    /// Read one file with the prelude and the stdlib modules it imports, in a
+    /// Read one file with the core and the stdlib modules it imports, in a
     /// source map of its own that starts with the file; each other import is
     /// reported.
     ///
@@ -291,7 +329,7 @@ struct Fixed<'t>
 }
 
 /// A program read with its imports, each kind alias in it expanded and each
-/// marked constant of the prelude given the value of the target.
+/// marked constant of the core given the value of the target.
 ///
 /// # Arguments
 ///
@@ -368,7 +406,7 @@ pub fn load(
 }
 
 /// [`load`] for a target: each compile-time conditional keeps the arm that
-/// holds for it, and the prelude's marked constants hold its facts.
+/// holds for it, and the core's marked constants hold its facts.
 ///
 /// # Arguments
 ///
@@ -481,12 +519,12 @@ struct Loader<'a>
     /// imports from the stdlib alone.
     #[builder(default = true)]
     disk: bool,
-    /// Whether a file read so far names a declaration of the prelude.
+    /// Whether a file read so far names a declaration of the core.
     #[builder(default)]
-    wants_prelude: bool,
-    /// Whether the prelude was read, or is being read.
+    wants_core: bool,
+    /// Whether the core was read, or is being read.
     #[builder(default)]
-    prelude_read: bool,
+    core_read: bool,
     /// The target the files are settled for.
     #[builder(default)]
     target: Target,
@@ -521,10 +559,10 @@ impl Loader<'_>
     ) -> zakac_host_errors::Result<u32>
     {
         let lexed = lex(&file, self.options);
-        // A part of the prelude opened on its own reads as the prelude, so the
-        // whole prelude, read too, would declare its names twice.
-        self.prelude_read |= path == Path::new(PRELUDE);
-        self.wants_prelude |= uses_prelude(&file, &lexed);
+        // A part of the core opened on its own reads as the core, so the
+        // whole core, read too, would declare its names twice.
+        self.core_read |= path == Path::new(CORE);
+        self.wants_core |= uses_core(&file, &lexed);
         // The imports do not hang on struct names, so a first parse finds
         // them; the second parse knows the struct names those imports bring.
         let first = parse(&file, &lexed);
@@ -548,9 +586,9 @@ impl Loader<'_>
             targets.push(self.import(&path, n)?);
         }
         self.chain.pop();
-        // The prelude is read once a file names one of its declarations, as
+        // The core is read once a file names one of its declarations, as
         // a file of its own ahead of that file.
-        do_if!(self.wants_prelude, self.read_prelude());
+        do_if!(self.wants_core, self.read_core());
         let own: HashSet<String> = top_names(&first_stmts, false).into_iter().collect();
         let brought = self.bring(&imports, &targets, &own);
         let seen = imports.iter().zip(&brought.names).map(|(n, b)| {
@@ -629,6 +667,7 @@ impl Loader<'_>
     ) -> zakac_host_errors::Result<Option<u32>>
     {
         ret_if!(is_std(n), Ok(self.import_std(n)));
+        ret_if!(importer == Path::new(CORE), Ok(self.import_core_part(n)));
         if !self.disk
         {
             self.diagnostics.push(diag::import_needs_file(n.span, &n.path.lit.value));
@@ -927,8 +966,8 @@ fn top_names(stmts: &[Stmt], exported: bool) -> Vec<String>
 
 impl Loader<'_>
 {
-    /// Give a file the facts of the target it names, as an import of them
-    /// from the prelude ahead of its statements: the prelude's constants are
+    /// Give a file the facts of the target it names, as imports of them from
+    /// the parts of the core ahead of its statements: the core's constants are
     /// seen in each file with no import written.
     ///
     /// # Arguments
@@ -938,39 +977,71 @@ impl Loader<'_>
     /// * `facts` - The facts it names, each at its first use.
     fn import_facts(&mut self, program: &mut Program, path: &Path, facts: Vec<Ident>)
     {
-        let prelude = self.done.get(Path::new(PRELUDE)).copied();
-        let Some(unit) =
-            prelude.filter(|_| path != Path::new(PRELUDE) && !facts.is_empty())
+        let core = self.done.get(Path::new(CORE)).copied();
+        let Some(unit) = core.filter(|_| path != Path::new(CORE) && !facts.is_empty())
         else
         {
             return;
         };
         let span = facts[0].span;
-        let lit = StrLit { parts: Vec::new(), value: PRELUDE.to_string() };
+        let lit = StrLit { parts: Vec::new(), value: CORE.to_string() };
         let path = StrArg::builder().lit(lit).span(span).build();
+        let brought: Vec<(Ident, u32)> =
+            facts.iter().map(|f| (f.clone(), self.origin(unit, f))).collect();
         #[rustfmt::skip]
         let import = ImportStmt::builder().path(path).names(facts).unit(unit).span(span)
             .build();
-        program.stmts.insert(0, Stmt::Import(import));
+        // Each fact is imported from the part of the core that declares it.
+        let imports = split_import(import, unit, &brought);
+        program.stmts.splice(0..0, imports);
     }
 
-    /// Read the prelude, the module of the stdlib each file sees with no
+    /// Read the core, the module of the stdlib each file sees with no
     /// import, as a file of the program, once.
-    fn read_prelude(&mut self)
+    fn read_core(&mut self)
     {
-        ret_if!(self.prelude_read);
-        self.prelude_read = true;
-        let path = PathBuf::from(PRELUDE);
+        ret_if!(self.core_read);
+        self.core_read = true;
+        let path = PathBuf::from(CORE);
         let (_, _, src) = STD_MODULES
             .iter()
-            .find(|(module, ..)| *module == PRELUDE)
-            .expect("the stdlib carries the prelude");
+            .find(|(module, ..)| *module == CORE)
+            .expect("the stdlib carries the core");
         let file = self
             .source_map
-            .new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
+            .new_source_file(FileName::Custom(CORE.to_string()), src.to_string());
         self.imports.push(EmbeddedFile::of(&file));
         let read = self.visit(file, path);
-        read.expect("the prelude reads no file from disk");
+        read.expect("the core reads no file from disk");
+    }
+
+    /// Read the part of the core a share of `core/mod.zaka` names, from the
+    /// source the compiler carries, unless it was read before.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The share.
+    ///
+    /// # Returns
+    ///
+    /// The unit of the part; `None` for a file the core lacks, which is
+    /// reported.
+    fn import_core_part(&mut self, n: &ImportStmt) -> Option<u32>
+    {
+        let path = Path::new(CORE).join(&n.path.lit.value);
+        ret_if!(let Some(unit) = self.done.get(&path), Some(*unit));
+        let file = format!("core/{}", n.path.lit.value);
+        let Some((_, src)) = CORE_PARTS.iter().find(|(f, _)| *f == file)
+        else
+        {
+            self.diagnostics.push(diag::import_needs_file(n.span, &n.path.lit.value));
+            return None;
+        };
+        let name = FileName::Custom(self.shown(&path));
+        let file = self.source_map.new_source_file(name, src.to_string());
+        self.imports.push(EmbeddedFile::of(&file));
+        let read = self.visit(file, path);
+        Some(read.expect("a part of the core reads no file from disk"))
     }
 
     /// Read the module of the stdlib an import names, from the source the
@@ -1304,9 +1375,9 @@ fn lib_paths_from(program: &mut Program, file: &Path)
     }
 }
 
-/// Whether the words of a file name a declaration of the prelude: one of
+/// Whether the words of a file name a declaration of the core: one of
 /// its traits, and no name the file declares itself, which
-/// hides the prelude's.
+/// hides the core's.
 ///
 /// # Arguments
 ///
@@ -1315,10 +1386,10 @@ fn lib_paths_from(program: &mut Program, file: &Path)
 ///
 /// # Returns
 ///
-/// `true` when one of its names is a name the prelude declares.
-fn uses_prelude(file: &SourceFile, lexed: &LexOutput) -> bool
+/// `true` when one of its names is a name the core declares.
+fn uses_core(file: &SourceFile, lexed: &LexOutput) -> bool
 {
-    let names = prelude_names();
+    let names = core_names();
     !undeclared_names(file, lexed, |t| names.contains(t)).is_empty()
 }
 
@@ -1396,7 +1467,7 @@ fn snippet(file: &SourceFile, span: Span) -> String
     file.snippet(&lo, &hi).unwrap_or("").to_string()
 }
 
-/// Give each marked constant of the prelude the value of the target: the
+/// Give each marked constant of the core the value of the target: the
 /// declaration names no value, and the later stages see a plain constant.
 ///
 /// # Arguments
@@ -1434,18 +1505,18 @@ fn fill_facts(program: &mut Program, target: &Target, mut next_id: u32)
     }
 }
 
-/// The names of the traits the prelude declares.
+/// The names of the traits the core declares.
 ///
 /// # Returns
 ///
-/// The names, read from the prelude once.
-fn prelude_names() -> &'static HashSet<String>
+/// The names, read from the core once.
+fn core_names() -> &'static HashSet<String>
 {
     static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
         // The traits, and the constants the compiler gives: the facts of the
         // target.
-        let names = prelude_stmts().iter().filter_map(|s| match s
+        let names = core_stmts().iter().filter_map(|s| match s
         {
             Stmt::Trait(d) => Some(d.name.name.to_string()),
             Stmt::Decl(d) if d.builtin => Some(d.name.name.to_string()),
@@ -1455,17 +1526,17 @@ fn prelude_names() -> &'static HashSet<String>
     })
 }
 
-/// The functions the prelude declares with the compiler mark, which a
-/// program sees whether it reads the prelude or not.
+/// The functions the core declares with the compiler mark, which a
+/// program sees whether it reads the core or not.
 ///
 /// # Returns
 ///
-/// The declarations, read from the prelude once.
-pub fn prelude_builtin_fns() -> &'static [FnDecl]
+/// The declarations, read from the core once.
+pub fn core_builtin_fns() -> &'static [FnDecl]
 {
     static FNS: OnceLock<Vec<FnDecl>> = OnceLock::new();
     FNS.get_or_init(|| {
-        let marked = prelude_stmts().iter().filter_map(|s| match s
+        let marked = core_stmts().iter().filter_map(|s| match s
         {
             Stmt::Fn(d) if d.builtin => Some(d.clone()),
             _ => None,
@@ -1474,20 +1545,19 @@ pub fn prelude_builtin_fns() -> &'static [FnDecl]
     })
 }
 
-/// The statements of the prelude, parsed once on their own.
+/// The statements of the core, parsed once on their own.
 ///
 /// # Returns
 ///
 /// The statements.
-fn prelude_stmts() -> &'static [Stmt]
+fn core_stmts() -> &'static [Stmt]
 {
     static STMTS: OnceLock<Vec<Stmt>> = OnceLock::new();
     STMTS.get_or_init(|| {
-        let src =
-            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let src = CORE_SOURCE;
         let mut sm = SourceMap::new();
         let file =
-            sm.new_source_file(FileName::Custom(PRELUDE.to_string()), src.to_string());
+            sm.new_source_file(FileName::Custom(CORE.to_string()), src.to_string());
         parse(&file, &lex(&file, &LexerOptions::default())).program.stmts
     })
 }

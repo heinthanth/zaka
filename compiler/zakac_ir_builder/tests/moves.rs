@@ -3,7 +3,7 @@ use crate::common::plain;
 /// `p` an owner of an integer.
 const OWNER: &str = "ကိန်းရှင် p သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။\n";
 
-/// The owner prelude, then `rest`.
+/// The owner core, then `rest`.
 fn owner(rest: &str) -> String { format!("{OWNER}{rest}") }
 
 #[test]

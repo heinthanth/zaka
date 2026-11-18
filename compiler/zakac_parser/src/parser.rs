@@ -6,7 +6,6 @@ use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
-use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Program;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
@@ -43,7 +42,7 @@ use crate::glued::split_glued;
 use crate::heap::HEAP_FNS;
 use crate::hint::Hint;
 use crate::hint::declared_hints;
-use crate::load::STD_MODULES;
+use crate::load::CORE_SOURCE;
 use crate::stmt::FN_MARKS;
 use crate::using::CallWords;
 use crate::using::Functions;
@@ -114,10 +113,10 @@ pub fn parse_with(
         spellings(name).into_iter().map(move |n| (n, lists.clone()))
     });
     imported.for_each(|(name, lists)| known.entry(name).or_default().extend(lists));
-    let heap = with_prelude(&mut known);
+    let heap = with_core(&mut known);
     let split = split_glued(text, base, lexed, &known);
     let mut parser = Parser::new(text, base, &split);
-    parser.prelude_heap = heap;
+    parser.core_heap = heap;
     parser.next_id = first_id;
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
@@ -128,7 +127,7 @@ pub fn parse_with(
     finish(parser, span)
 }
 
-/// The functions of the operator traits of the prelude, which `+` and the
+/// The functions of the operator traits of the core, which `+` and the
 /// word operators call on a struct, as `ပေါင်း` for `+` and `ပေါင်းလဒ်`.
 const OPERATOR_FNS: &[&str] = &[
     "ပေါင်း",
@@ -144,7 +143,7 @@ const OPERATOR_FNS: &[&str] = &[
     "ဘစ်ညာရွေ့",
 ];
 
-/// Add the functions of the prelude that a file does not declare or import
+/// Add the functions of the core that a file does not declare or import
 /// itself: each file sees them, and a function of its own hides one.
 ///
 /// # Arguments
@@ -153,9 +152,9 @@ const OPERATOR_FNS: &[&str] = &[
 ///
 /// # Returns
 ///
-/// The heap functions of the prelude the file sees, which no function of
+/// The heap functions of the core the file sees, which no function of
 /// its own hides.
-fn with_prelude(known: &mut Functions) -> HashSet<String>
+fn with_core(known: &mut Functions) -> HashSet<String>
 {
     let heap = |name: &str| HEAP_FNS.iter().any(|(n, _)| *n == name);
     // A count the compiler gives is a reading of the clause engine, not a
@@ -166,7 +165,7 @@ fn with_prelude(known: &mut Functions) -> HashSet<String>
     let sentence = |name: &str| heap(name) || VERB_FNS.contains(&name);
     let verb = |name: &str| {
         OPERATOR_FNS.contains(&name)
-            || (prelude_builtins().contains(name) && !sentence(name))
+            || (core_builtins().contains(name) && !sentence(name))
     };
     let lists = |name: &str, lists: &Vec<CallWords>| {
         tern!(verb(name), vec![CallWords::default()], lists.clone())
@@ -176,14 +175,12 @@ fn with_prelude(known: &mut Functions) -> HashSet<String>
         .map(|(n, _)| n.to_string())
         .filter(|n| !known.contains_key(n))
         .collect();
-    let prelude = prelude_functions().iter();
-    prelude
-        .for_each(|(name, l)| _ = known.entry(name.clone()).or_insert(lists(name, l)));
-    // A verb of the prelude keeps its sentences beside the functions of its
+    let core = core_functions().iter();
+    core.for_each(|(name, l)| _ = known.entry(name.clone()).or_insert(lists(name, l)));
+    // A verb of the core keeps its sentences beside the functions of its
     // name the file declares, which add overloads.
-    let verbs = prelude_functions()
-        .iter()
-        .filter(|(name, _)| VERB_FNS.contains(&name.as_str()));
+    let verbs =
+        core_functions().iter().filter(|(name, _)| VERB_FNS.contains(&name.as_str()));
     verbs.for_each(|(name, l)| {
         let have = known.entry(name.clone()).or_default();
         let missing: Vec<CallWords> =
@@ -193,19 +190,18 @@ fn with_prelude(known: &mut Functions) -> HashSet<String>
     seen
 }
 
-/// The names of the functions the prelude declares with the compiler mark,
+/// The names of the functions the core declares with the compiler mark,
 /// read once from its tokens: each header from `လုပ်ဆောင်ချက်` to its full stop
 /// that holds `ကွန်ပိုင်လာထဲတွင်`.
 ///
 /// # Returns
 ///
 /// The names.
-pub(crate) fn prelude_builtins() -> &'static HashSet<String>
+pub(crate) fn core_builtins() -> &'static HashSet<String>
 {
     static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
-        let src =
-            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let src = CORE_SOURCE;
         let lexed = lex_at(src, Pos::ZERO, &LexerOptions::default());
         let tokens = &lexed.tokens;
         let word = |t: &Token| {
@@ -226,17 +222,16 @@ pub(crate) fn prelude_builtins() -> &'static HashSet<String>
     })
 }
 
-/// The functions the prelude declares, with their prepositions, read once.
+/// The functions the core declares, with their prepositions, read once.
 ///
 /// # Returns
 ///
 /// The functions.
-fn prelude_functions() -> &'static Functions
+fn core_functions() -> &'static Functions
 {
     static FNS: OnceLock<Functions> = OnceLock::new();
     FNS.get_or_init(|| {
-        let src =
-            STD_MODULES.iter().find(|(m, ..)| *m == PRELUDE).map_or("", |(.., s)| *s);
+        let src = CORE_SOURCE;
         let lexed = lex_at(src, Pos::ZERO, &LexerOptions::default());
         declared_functions(src, Pos::ZERO, &lexed)
     })
@@ -302,10 +297,10 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
     let span = Span::new(base, base + text.len());
     ret_if!(lexed.tokens.is_empty(), blank_output(span));
     let mut known = declared_functions(text, base, lexed);
-    let heap = with_prelude(&mut known);
+    let heap = with_core(&mut known);
     let split = split_glued(text, base, lexed, &known);
     let mut parser = Parser::new(text, base, &split);
-    parser.prelude_heap = heap;
+    parser.core_heap = heap;
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
     parser.diags.extend(glued_spoken(text, base, lexed, &known));
     parser.set_functions(known);
@@ -331,7 +326,7 @@ pub fn parse_lone_expr(
     let at_base = Span::new(base, base);
     ret_if!(lexed.tokens.is_empty(), Err(diag::expected_operand(at_base, "")));
     let mut known = Functions::new();
-    _ = with_prelude(&mut known);
+    _ = with_core(&mut known);
     let split = split_glued(text, base, lexed, &known);
     let mut parser = Parser::new(text, base, &split);
     parser.set_functions(known);
@@ -518,10 +513,10 @@ pub(crate) struct Parser<'t>
     /// field name after `၏`, or a part of a larger read.
     #[builder(default)]
     pub(crate) bare_notation: bool,
-    /// The heap functions of the prelude the file sees, which no function of
+    /// The heap functions of the core the file sees, which no function of
     /// its own hides: a call statement of one is its heap statement.
     #[builder(default)]
-    pub(crate) prelude_heap: HashSet<String>,
+    pub(crate) core_heap: HashSet<String>,
     /// Whether a list of parameters or fields is open: a function kind with
     /// parameters then stands in parentheses.
     #[builder(default)]
@@ -547,7 +542,7 @@ pub(crate) struct Parser<'t>
     /// level, so a later import is out of place.
     #[builder(default)]
     pub(crate) imports_closed: bool,
-    /// The written-as hints the file sees: those of the prelude, its imports
+    /// The written-as hints the file sees: those of the core, its imports
     /// and its own.
     #[builder(default)]
     pub(crate) hints: Vec<Hint>,

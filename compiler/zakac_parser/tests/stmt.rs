@@ -1132,10 +1132,10 @@ fn the_marks_of_a_function_on_the_start_block_name_their_misuse()
     assert_eq!(start("စိတ်မချရသော အများသုံး"), [Code::UnsafeStart, Code::ExportNotOnDecl]);
 }
 
-/// `ကူးထည့်` is a verb of the prelude, and `အကုန်` before it makes the
+/// `ကူးထည့်` is a verb of the core, and `အကုန်` before it makes the
 /// duplicate deep, glued to it or apart.
 #[test]
-fn duplicates_read_through_the_verb_of_the_prelude()
+fn duplicates_read_through_the_verb_of_the_core()
 {
     let glued = stmt("ခ ထဲသို့ က ကို အကုန်ကူးထည့်မည်။");
     assert_eq!(glued, stmt("ခ ထဲသို့ က ကို အကုန် ကူးထည့် မည်။"));
@@ -1190,10 +1190,10 @@ fn arguments_of_sentence_calls_are_whole_clauses()
     assert_eq!(codes(&two), [Code::AmbiguousCall]);
 }
 
-/// The verbs of the prelude read as calls written as a sentence and become
+/// The verbs of the core read as calls written as a sentence and become
 /// their statements; a function of the file with other words remains a call.
 #[test]
-fn verbs_of_the_prelude_read_as_sentence_calls()
+fn verbs_of_the_core_read_as_sentence_calls()
 {
     assert_eq!(stmt("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။"), "(print (add က ခ))");
     assert_eq!(stmt("ကွက်များ ထဲသို့ က နှင့် ခ ၏ ပေါင်းလဒ် ကို ထည့်မည်။"), "(add ကွက်များ (add က ခ))");

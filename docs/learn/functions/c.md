@@ -337,7 +337,7 @@ A lib is not named and laid out the same on each OS: the UCRT of Windows calls `
 `_strdup`. `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင်` is a conditional the compiler settles before
 the program runs: it keeps the arm whose condition holds for the target, so each OS
 declares its own C functions. Its conditions read the facts of the target, constants
-the prelude declares, as `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`:
+the core declares, as `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`:
 
 ```zaka
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

@@ -20,7 +20,6 @@ use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::GenericStmt;
 use zakac_ast::stmt::KindParam;
-use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::TraitDecl;
 use zakac_ast::visit::Node;
@@ -42,7 +41,7 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::token::Comment;
 use zakac_lexer::token::CommentKind;
-use zakac_parser::load::STD_MODULES;
+use zakac_parser::load::CORE_SOURCE;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::artifact::Checked;
@@ -278,12 +277,12 @@ fn kind_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card>
     let (range, kind) = finder.best?;
     let data = DataKind::from_ast(&kind, &checked.structs);
     let text = file.sm.span_to_snippet(&kind.span).unwrap_or_default();
-    let doc = text.split_whitespace().last().and_then(prelude_doc);
+    let doc = text.split_whitespace().last().and_then(core_doc);
     let card = Card::builder().range(range).code(data.name()).maybe_doc(doc);
     Some(card.notes(size_note(data).into_iter().collect()).build())
 }
 
-/// The `///` lines above the declaration of a built-in kind in the prelude,
+/// The `///` lines above the declaration of a built-in kind in the core,
 /// which the compiler carries.
 ///
 /// # Arguments
@@ -292,11 +291,10 @@ fn kind_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card>
 ///
 /// # Returns
 ///
-/// The lines, or `None` for a name the prelude declares no kind of.
-fn prelude_doc(name: &str) -> Option<String>
+/// The lines, or `None` for a name the core declares no kind of.
+fn core_doc(name: &str) -> Option<String>
 {
-    let (.., source) = STD_MODULES.iter().find(|(module, ..)| *module == PRELUDE)?;
-    let lines: Vec<&str> = source.lines().collect();
+    let lines: Vec<&str> = CORE_SOURCE.lines().collect();
     let head = format!("{name} သည် ");
     let at =
         lines.iter().position(|l| l.starts_with(&head) && l.contains(BUILTIN_HEAD))?;

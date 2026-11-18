@@ -75,7 +75,7 @@ objects](../language/objects.md).
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ပြသမည်` | "will show", a call of the prelude's function `ပြသ` with `မည်` (not a reserved word) | [Printing](../../learn/hello/printing.md) |
+| `ပြသမည်` | "will show", a call of the core's function `ပြသ` with `မည်` (not a reserved word) | [Printing](../../learn/hello/printing.md) |
 | `ထားမည်` | "will set" | [Changing a variable](../../learn/variables/assignment.md) |
 | `ဖြစ်ပါစေ` | "let it be" | [Variables](../../learn/variables/README.md) |
 | `လုပ်ဆောင်မည်` | "will run": ends a call statement, and the long arguments-first call | [Functions](../language/functions.md) |
@@ -87,13 +87,13 @@ objects](../language/objects.md).
 | `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | "mark the function as not succeeded": ends it with a failure that holds no error value | [Writing result kinds](../../learn/error-handling/kinds.md) |
 | `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | "if it fails, give back the error value": ends a call statement that passes a failure on | [Errors and results](../../learn/error-handling/README.md) |
 | `ရပ်မည်` | "will stop" | [Break and continue](../../learn/control-flow/break-continue.md) |
-| `ထည့်မည်` | "will add", a call of the prelude's function `ထည့်` with `မည်` (not a reserved word): `l ထဲသို့ v ကို ထည့်မည်` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
-| `ဖျက်မည်` | "will remove", a call of the prelude's function `ဖျက်` with `မည်` (not a reserved word): `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
-| `အစားထိုးမည်` | "will replace", a call of the prelude's function `အစားထိုး` with `မည်` (not a reserved word): `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
+| `ထည့်မည်` | "will add", a call of the core's function `ထည့်` with `မည်` (not a reserved word): `l ထဲသို့ v ကို ထည့်မည်` adds `v` as a new last cell of `l`, or, when `l` is text, adds the text or character `v` at its end; `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` puts it in front of cell `i` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `ဖျက်မည်` | "will remove", a call of the core's function `ဖျက်` with `မည်` (not a reserved word): `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` removes the last cell of `l` | [Adding and removing cells](../../learn/lists/growing.md) |
+| `အစားထိုးမည်` | "will replace", a call of the core's function `အစားထိုး` with `မည်` (not a reserved word): `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်` puts `v` in place of cells `a` to `b` of text `t` | [Text](../../learn/text/changing.md#replacing-part-of-text) |
 | `ကျော်မည်` | "will skip" | [Break and continue](../../learn/control-flow/break-continue.md) |
 | `ခေါ်ဆိုခွင့် ပြုမည်` (`ခေါ်ဆိုခွင့်`, `ပြုမည်`) | "will grant leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်` gives code outside the program, such as a C function, leave to call the function value `f` after the call that gave it. The fused spelling `ခေါ်ဆိုခွင့်ပြုမည်` is the same | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
 | `ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` (`ခေါ်ဆိုခွင့်`, `ပြန်လည်ရုပ်သိမ်းမည်`) | "will take back leave to call": `f ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်` ends that leave | [Function values](../language/function-values.md#nested-functions-and-closures), [Calling C](../../learn/functions/c.md) |
-| `ထဲသို့ … ကို ကူးထည့်မည်` | a verb of the prelude, as `ထည့်` is, "will duplicate … into": puts a duplicate into a variable, or declares one after `ကိန်းရှင်`; on a shared object, a new object with the same fields (a shallow duplicate) | [Values and objects](../language/objects.md) |
+| `ထဲသို့ … ကို ကူးထည့်မည်` | a verb of the core, as `ထည့်` is, "will duplicate … into": puts a duplicate into a variable, or declares one after `ကိန်းရှင်`; on a shared object, a new object with the same fields (a shallow duplicate) | [Values and objects](../language/objects.md) |
 | `ထဲသို့ … ကို အကုန်ကူးထည့်မည်` | "will duplicate all of … into": a deep duplicate, which duplicates each shared object it reaches once | [Values and objects](../language/objects.md) |
 | `အကုန်` | "all": before the verb `ကူးထည့်` it makes the duplicate deep, `အကုန်ကူးထည့်မည်` or `အကုန် ကူးထည့် မည်`; reserved, so it cannot name a variable | [Values and objects](../language/objects.md) |
 
@@ -188,7 +188,7 @@ The words of this section belong to unsafe code; see [Unsafe Zaka](../language/u
 | `ဘိုက်စာ` | "octets' worth", as in `n ဘိုက်စာ` | [Unsafe Zaka](../language/unsafe.md) |
 | `ခုစာ`, `လုံးစာ` | "items' worth", as in `ကိန်းပြည့် n ခုစာ` and `စာလုံး n လုံးစာ`; a kind that names a classifier takes `<classifier>စာ` | [Unsafe Zaka](../language/unsafe.md) |
 
-The heap sentences are calls of functions of the prelude, so their verbs (`သိမ်းထား`,
+The heap sentences are calls of functions of the core, so their verbs (`သိမ်းထား`,
 `ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ`, `ပြောင်းထည့်`) are names
 ([Heap statements](../language/unsafe.md#heap-statements)). The words inside them
 (`နေရာယူ၍`, `တွင်`, `ရှိ`, `ဖြစ်အောင်`, `ဆီသို့`) remain reserved.
@@ -197,16 +197,16 @@ The heap sentences are calls of functions of the prelude, so their verbs (`သ�
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `စာရင်း` | "list", a name of the prelude (not a reserved word): after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count, through its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
+| `စာရင်း` | "list", a name of the core (not a reserved word): after `<kind>` it makes a list kind (`<kind> စာရင်း`, or `<kind> ၏ စာရင်း`), plain with no count, through its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော စာရင်း` closes a list literal | [Lists](../../learn/lists/README.md) |
 | `အကွက်` | "cell": `x ၏ အကွက် i` is cell `i`, counted from 0; `အကွက် n ခုရှိသော` gives the count of a counted list kind | [Lists](../../learn/lists/README.md) |
 | `ခုမြောက်`, `လုံးမြောက်` | "-th": `x ၏ n ခုမြောက်အကွက်` is cell `n`, counted from 1, and `t ၏ n ခုမြောက်စာလုံး` or `t ၏ n လုံးမြောက်စာလုံး` character `n` of text | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `ခုရှိသော`, `ရှိသော` | "that has", in `အကွက် n ခုရှိသော <kind> စာရင်း` | [Static data and counted lists](../../learn/forms/counted-lists.md#counted-lists) |
-| `အကွက်အရေအတွက်` | "cell count", a function of the prelude read after `၏` (not a reserved word), in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
+| `အကွက်အရေအတွက်` | "cell count", a function of the core read after `၏` (not a reserved word), in `x ၏ အကွက်အရေအတွက်` | [Lists](../../learn/lists/README.md#cell-numbers) |
 | `နောက်ဆုံးအကွက်` | "last cell", right after `၏` and before `ကို ဖျက်မည်` alone | [Adding and removing cells](../../learn/lists/growing.md) |
 | `နောက်ဆုံးစာလုံး` | "last character", right after `၏` and before `ကို ဖျက်မည်` alone: `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်` removes the last character of text | [Text](../../learn/text/changing.md#adding-in-the-middle-and-removing-the-end) |
 | `အရှေ့တွင်` | "in front of", after `<cell> ၏` or `<character> ၏` in an add: `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်` | [Adding and removing cells](../../learn/lists/growing.md#adding-in-the-middle) |
 | `ဆက်ထားသည့်` | "that joins", in `a နှင့် b တို့ကို ဆက်ထားသည့် စာသား`: new text that joins the pieces | [Text](../../learn/text/README.md#joining-text) |
-| `စာလုံးအရေအတွက်` | "character count", a function of the prelude read after `၏` (not a reserved word), in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
+| `စာလုံးအရေအတွက်` | "character count", a function of the core read after `၏` (not a reserved word), in `t ၏ စာလုံးအရေအတွက်`; `t ၏ စာလုံး i` is character `i` of text, counted from 0 | [Text](../../learn/text/characters.md#characters) |
 | `စာရင်းအလွတ်` | "blank list": a plain list with no cells; a counted list cannot take it (ZK0436) | [Lists](../../learn/lists/README.md) |
 | `တို့ပါသော` | "that hold these", before `စာရင်း` in a list literal | [Lists](../../learn/lists/README.md#list-kinds) |
 | `ပါသော` | "that holds", before `စာရင်း` or `ဇယား` in a literal of one cell or row | [Lists in words](../language/words.md#lists-in-words) |
@@ -218,11 +218,11 @@ The heap sentences are calls of functions of the prelude, so their verbs (`သ�
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `ဇယား` | "table", a name of the prelude (not a reserved word): ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော ဇယား` closes a ဇယား literal | [Tables](../language/tables.md) |
+| `ဇယား` | "table", a name of the core (not a reserved word): ends a ဇယား kind, `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`, its [written-as hint](../language/generics.md#written-as-hints); `တို့ပါသော ဇယား` closes a ဇယား literal | [Tables](../language/tables.md) |
 | `ဇယားအလွတ်` | "blank table": a ဇယား with no rows, as `[:]` is | [Tables](../language/tables.md#literals) |
 | `ညွှန်းသော` | "indexed", after `<index kind> ဖြင့်` in a ဇယား kind; `မညွှန်းသော` of the null address is a word of its own | [Tables](../language/tables.md) |
 | `အညွှန်း` | "index": `<table> ထဲမှ အညွှန်း <index>` is the row of the index, and `၏ တန်ဖိုး` after it its value | [Tables](../language/tables.md#reading-a-row) |
-| `အညွှန်းအရေအတွက်` | "index count", a function of the prelude read after `၏` (not a reserved word), in `<table> ၏ အညွှန်းအရေအတွက်`: the number of rows | [Tables](../language/tables.md#counting-and-walking-the-rows) |
+| `အညွှန်းအရေအတွက်` | "index count", a function of the core read after `၏` (not a reserved word), in `<table> ၏ အညွှန်းအရေအတွက်`: the number of rows | [Tables](../language/tables.md#counting-and-walking-the-rows) |
 | `အညွှန်းတိုင်း`, `အတန်းတိုင်း` | "each index", "each row": the loops over the rows of a ဇယား | [Tables](../language/tables.md#counting-and-walking-the-rows) |
 
 `ထဲမှ` and `အနေဖြင့်` take part in a ဇယား too, in `<table> ထဲမှ အညွှန်း <index>` and in the row
@@ -287,7 +287,7 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `အစားထိုးအသုံးပြု၍` | "putting in place": after the kinds of a call written arguments first | [Generics and traits](../language/generics.md#calls) |
 | `::` | the kinds of a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics and traits](../language/generics.md#calls) |
 | `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Generics and traits](../language/generics.md#traits) |
-| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a kind, a trait or a function of the prelude, where `ပြင်ပမှလာသော` marks an external one | [The prelude](../language/prelude.md#the-compiler-mark) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": marks a kind, a trait or a function of the core, where `ပြင်ပမှလာသော` marks an external one | [The core](../language/core.md#the-compiler-mark) |
 | `ရေးသားရာတွင်` | "when written": opens the written-as hint of a generic struct, kind or trait, which `ဟု` closes | [Generics and traits](../language/generics.md#written-as-hints) |
 | `ရေးသားနိုင်သည်`, `ရေးသားနိုင်ပြီး` | "can be written", "can be written, and": end the clause of a written-as hint, in a struct or a kind and in the head of a trait | [Generics and traits](../language/generics.md#written-as-hints) |
 | `အခြားလုပ်ဆောင်ချက်များကိုလည်း`, `မူရင်းအတိုင်း`, `ဆက်ခံမည်` | "the other functions too", "as in the original", "will inherit": the last line of a trait block, `<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။`, which takes the defaults of the trait | [Generics and traits](../language/generics.md#trait-blocks) |
@@ -300,8 +300,8 @@ The pieces of the closers, `လည်း` ("also"), `မှတ်ယူနို
 | `သတိပြုစရာများ` | "the notes": opens the closer of a notes block | [Generics and traits](../language/generics.md#the-notes-block) |
 | `ရှိသည်` | "has": closes a constraint in a notes block, `A တွင် … ဂုဏ်သတ္တိ ရှိသည်။` | [Generics and traits](../language/generics.md#the-notes-block) |
 
-The names of the traits the [prelude](../language/prelude.md) declares are not reserved
-words: a name a program declares hides the prelude's.
+The names of the traits the [core](../language/core.md) declares are not reserved
+words: a name a program declares hides the core's.
 
 ## Modules
 
@@ -406,7 +406,7 @@ states them in full.
 - A function name with a call end glued to it (`fမည်`, `fသည့်ရလဒ်`, `fမည့်ရလဒ်`,
   `fသောရလဒ်`, the `ရလဒ်ကောင်း` forms, `fသည်`, `fပါ`, and the spoken `fမယ်`,
   `fတယ်`, `fမယ့်ရလဒ်`, `fတဲ့ရလဒ်`) reads as a call of the function
-  `f` the file sees. A name declared so is the warning ZK0251. The prelude's verbs
+  `f` the file sees. A name declared so is the warning ZK0251. The core's verbs
   are seen in each file, so `ပြသမည်` and `ထည့်မည်` are no names.
 
 A name in braces, `{name}`, is read as neither.

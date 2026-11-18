@@ -1,0 +1,6 @@
+// စံကား/အခြေခံအုတ်မြစ်: the core, which each file sees with no import. It shares
+// each part of this folder; a program cannot import a part on its own.
+"kinds.zaka" ကို ပြန်လည် မျှဝေမည်။
+"traits.zaka" ကို ပြန်လည် မျှဝေမည်။
+"verbs.zaka" ကို ပြန်လည် မျှဝေမည်။
+"heap.zaka" ကို ပြန်လည် မျှဝေမည်။

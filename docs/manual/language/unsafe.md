@@ -526,10 +526,10 @@ replaced with `မှတ်ဉာဏ်`. Resizing and giving back start alike, 
 tell the two apart.
 
 Each heap sentence is a [call written as a sentence](functions.md#starting-and-ending-phrases)
-of a function of the [prelude](prelude.md), which the compiler gives: `သိမ်းထား`,
+of a function of the [core](core.md), which the compiler gives: `သိမ်းထား`,
 `ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and `ပြောင်းထည့်`. Their names
 are no reserved words, so a file that declares a function of one of these names hides the
-one of the prelude. As in each sentence call, an argument is a whole clause: a name, a
+one of the core. As in each sentence call, an argument is a whole clause: a name, a
 number, a size, `ပ ၏ တန်ဖိုး`, a field, or a conversion. A heap sentence gives no value;
 written as one, it is ZK0315.
 

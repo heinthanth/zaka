@@ -99,7 +99,7 @@ declaration  = var-decl | fn-decl | external-fn | struct-decl | handle-decl
 
 var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
                ( "သည်" decl-head "ဖြစ်ပါစေ"
-               | "သည်" compiler-mark slot-kind "ဖြစ်သည်"     (* a constant of the prelude *)
+               | "သည်" compiler-mark slot-kind "ဖြစ်သည်"     (* a constant of the core *)
                | "ထဲသို့" clause "ကို" ( "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) ) "။" ;
 decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်" clause ]
              | clause ;                           (* the kind comes from the value *)
@@ -132,7 +132,7 @@ fn-head      = name "ဟူသော" "လုပ်ဆောင်ချက်" 
                ( params ( "လက်ခံမည်" | "လက်ခံပြီး" result ) | result ) "။"
              | name "ဟူသော" "လုပ်ဆောင်ချက်" "သည်" params "လက်ခံပြီး" fn-open "။"   (* a default *)
                { stmt } block-close "။" ;
-compiler-mark = "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;   (* the prelude alone, ZK0349 *)
+compiler-mark = "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;   (* the core alone, ZK0349 *)
 trait-block  = kind "တွင်" trait-ref "ဂုဏ်သတ္တိ" "ရှိစေရန်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ"
                "ကို" "ထည့်သွင်းမည်" "။"
                { fn-decl }
@@ -255,7 +255,7 @@ text-range   = value "၏" "အကွက်" notation "မှ" notation
 ordinal      = "ခုမြောက်" | "လုံးမြောက်" ;
 ```
 
-- The heap sentences are [sentence calls](#calls) of functions of the prelude
+- The heap sentences are [sentence calls](#calls) of functions of the core
   (`core_heap.zaka`), which the parser turns into their statements; there `မင်မိုရီ` can
   be written `မှတ်ဉာဏ်`.
 - A one-statement branch inside an `if` arm cannot be another `if`, and one inside a

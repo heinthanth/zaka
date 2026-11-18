@@ -1,5 +1,5 @@
 //! Compile-time conditionals and the facts of the target: the loader keeps
-//! the arm that holds for the target, and the prelude's marked constants hold
+//! the arm that holds for the target, and the core's marked constants hold
 //! its facts.
 
 use zakac_ast::expr::Expr;
@@ -32,7 +32,7 @@ fn load(text: &str, target: &Target) -> Loaded
 }
 
 /// The names of the constants a program declares, in order, the facts of the
-/// prelude left out.
+/// core left out.
 fn constants(loaded: &Loaded) -> Vec<String>
 {
     let decls = loaded.program.stmts.iter().filter_map(|s| match s
@@ -129,7 +129,7 @@ fn an_arm_at_the_top_level_holds_top_level_declarations()
     assert!(loaded.program.stmts.iter().any(|s| matches!(s, Stmt::Trait(_))));
 }
 
-/// A file that names a fact reads the prelude, whose marked constant holds
+/// A file that names a fact reads the core, whose marked constant holds
 /// the value of the target, and imports it with no import written.
 #[test]
 fn a_named_fact_holds_the_target()

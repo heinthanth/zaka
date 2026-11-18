@@ -37,7 +37,7 @@ others before it checks names and kinds.
 
 ## The facts of the target
 
-A condition reads the five facts of the target, which the [prelude](prelude.md)
+A condition reads the five facts of the target, which the [core](core.md)
 declares as constants:
 
 | Constant | Values |

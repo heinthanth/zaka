@@ -118,7 +118,7 @@ use crate::traits::Traits;
 use crate::traits::inheriting;
 use crate::traits::traits;
 use crate::units::StructHomes;
-use crate::units::prelude_twins;
+use crate::units::core_twins;
 use crate::units::private_in_exports;
 use crate::units::start_rules;
 use crate::units::struct_homes;
@@ -496,7 +496,7 @@ fn check_once(
     let decls = KindDecls::of(program);
     diags.extend(private_in_exports(program, &homes));
     diags.extend(start_rules(program, !options.as_module));
-    diags.extend(prelude_twins(program));
+    diags.extend(core_twins(program));
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
@@ -505,7 +505,7 @@ fn check_once(
         .known(known).open_structs(open_structs(program)).decls(decls)
         .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
         .uses(instances.uses.clone()).root_unit(program.units.len().saturating_sub(1) as u32)
-        .maybe_prelude_unit((0..program.units.len() as u32).find(|u| generic::in_prelude(program, *u)))
+        .core_units((0..program.units.len() as u32).filter(|u| generic::in_core(program, *u)).collect())
         .traits(traits(program)).inheriting(inheriting(program)).build();
     checker.scopes.push();
     checker.check_struct_bounds();
@@ -589,8 +589,9 @@ pub(crate) struct Checker
     /// the kinds of a generic function its arguments leave open; the check
     /// of the call takes it.
     pub call_expect: Option<DataKind>,
-    /// The unit of the prelude, when the program reads it.
-    pub prelude_unit: Option<u32>,
+    /// The units of the core, when the program reads it.
+    #[builder(default)]
+    pub core_units: Vec<u32>,
     /// Whether the walk is in an instance of a generic function, which sees
     /// the functions of the files of its generic, its kinds and its traits.
     #[builder(default)]

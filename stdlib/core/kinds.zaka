@@ -1,6 +1,6 @@
-// စံကား/အခြေခံအုတ်မြစ်, part one: the kinds the compiler gives. The compiler
-// joins the files `core_*.zaka` of this folder into one module: the kinds, the
-// traits, then the verbs.
+// စံကား/အခြေခံအုတ်မြစ်, part one: the kinds the compiler gives. `mod.zaka`
+// shares each part of this folder: the kinds, the traits, the verbs, then the
+// heap sentences.
 
 /// ကိန်းပြည့်: an integer. `လက္ခဏာမဲ့` before it makes it unsigned, and
 /// `<n> ဘစ်` gives it 8, 16, 32 or 64 bits; with none it has the bits of the

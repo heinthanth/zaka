@@ -48,7 +48,7 @@ A written count comes first, then the kind of each cell, then `စာရင်�
 | `အကွက် ၃ ရှိသော ကိန်းပြည့် ၏ စာရင်း` |
 
 - `<cell kind> စာရင်း` is the [written-as hint](generics.md#written-as-hints) of the
-  prelude's `စာရင်း`, a name and not a reserved word, so the long form
+  core's `စာရင်း`, a name and not a reserved word, so the long form
   `ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် စာရင်း` and `စာရင်း<ကိန်းပြည့်>` name a plain list
   too. A count prefix goes with the hint alone.
 - The count is a whole number above zero (ZK0227): digits, or each expression the

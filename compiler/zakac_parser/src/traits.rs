@@ -418,7 +418,7 @@ impl Parser<'_>
         Ok((phrases, params, end))
     }
 
-    /// Whether a built-in kind of the prelude is declared here: a kind name,
+    /// Whether a built-in kind of the core is declared here: a kind name,
     /// `စာရင်း` or `ဇယား`, then `သည်`, then the compiler mark or the kind
     /// parameters.
     ///
@@ -435,7 +435,7 @@ impl Parser<'_>
             && matches!(next, Some(Kw::InCompiler | Kw::GenericKind))
     }
 
-    /// Parse a built-in kind of the prelude: `<kind> သည် ကွန်ပိုင်လာထဲတွင်
+    /// Parse a built-in kind of the core: `<kind> သည် ကွန်ပိုင်လာထဲတွင်
     /// တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for a list or a
     /// table, the mark first, then `ဖြစ်၍`, the kind parameters in words and
     /// `၎င်းကို`, then the written-as hint: `<word> သည် ကွန်ပိုင်လာထဲတွင် … ဒေတာအမျိုးအစား

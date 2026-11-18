@@ -80,14 +80,14 @@ fn the_same_parameters_and_marks_twice_are_zk0304()
 }
 
 /// A function of a file with the name, the kinds and the prepositions of a verb
-/// the prelude gives is ZK0350; one with other kinds adds an overload, quietly.
+/// the core gives is ZK0350; one with other kinds adds an overload, quietly.
 #[test]
-fn a_twin_of_a_prelude_verb_is_zk0350()
+fn a_twin_of_a_core_verb_is_zk0350()
 {
     let twin = "ထည့် ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော စာသား တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် ဝိဘတ် \"ထဲသို့\" ကို \
                 သုံး၍ လည်းကောင်း ပ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း \
                 လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";
-    assert_eq!(codes(twin), [Code::SameAsPrelude]);
+    assert_eq!(codes(twin), [Code::SameAsCore]);
     let other = "ထည့် ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် ဝိဘတ် \"ထဲသို့\" ကို \
                  သုံး၍ လည်းကောင်း ပ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ကို\" ကို သုံး၍ လည်းကောင်း \
                  လက်ခံပြီး\nအောက်ပါတို့ကို လုပ်ဆောင်မည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n";

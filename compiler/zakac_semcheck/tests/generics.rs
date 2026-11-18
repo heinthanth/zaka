@@ -377,14 +377,14 @@ fn a_function_kind_is_a_kind_argument()
     assert!(found.is_empty(), "{found:?}");
 }
 
-/// The compiler mark belongs to the prelude: in another file it is ZK0349.
+/// The compiler mark belongs to the core: in another file it is ZK0349.
 #[test]
-fn the_compiler_mark_outside_the_prelude_is_zk0349()
+fn the_compiler_mark_outside_the_core_is_zk0349()
 {
     let marked = "ပြနိုင်သော ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A \
                   ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။\nဂုဏ်သတ္တိတွင် ပါသော \
                   လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။\n";
-    assert_eq!(codes(marked, "၁ ကို ပြသမည်။"), [Code::BuiltinOutsidePrelude]);
+    assert_eq!(codes(marked, "၁ ကို ပြသမည်။"), [Code::BuiltinOutsideCore]);
 }
 
 /// An operator on two values of a struct calls the function of the struct

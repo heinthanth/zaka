@@ -611,8 +611,8 @@ struct, record theirs through `struct_call` (`infer_prefix`, `infer_neg`,
 for a shift. `ပြသမည်` and a template slot record a call of `စာသားအဖြစ်ပြောင်း`. Once the check
 settles, `write_op_calls` puts each call into the tree, `!` around a negated one, with
 fresh node numbers and their kinds. A name a file declares, or a variable, hides a
-generic of the prelude (`templates_named`); a template or a trait of a file hides one of
-the prelude. The compiler mark outside the prelude is ZK0349.
+generic of the core (`templates_named`); a template or a trait of a file hides one of
+the core. The compiler mark outside the core is ZK0349.
 
 ## Calls a node stands for
 

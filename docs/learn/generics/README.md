@@ -191,7 +191,7 @@ are the places where a use writes a kind:
 
 `စာသား နှင့် ကိန်းပြည့် အတွဲ` is the same kind as
 `စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် အတွဲ`; the hint adds a spelling. The
-list and the table have hints of their own in the prelude: so a program writes
+list and the table have hints of their own in the core: so a program writes
 `ကိန်းပြည့် စာရင်း` and `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား`.
 A hint can name a kind parameter twice, as
 `ရေးသားရာတွင် က ကို က ဖြင့် တွဲသော ညီအတွဲဟု ရေးသားနိုင်သည်` does: a use then writes one kind in

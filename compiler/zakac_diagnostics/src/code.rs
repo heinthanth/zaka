@@ -297,10 +297,10 @@ TraitFnTwice = ("ZK0347", Level::Error),
 /// trait.
 TraitBlockPlace = ("ZK0348", Level::Error),
 /// The mark of a declaration the compiler gives stands outside the stdlib.
-BuiltinOutsidePrelude = ("ZK0349", Level::Error),
+BuiltinOutsideCore = ("ZK0349", Level::Error),
 /// A function of a file has the name, the kinds and the prepositions of a function
-/// the compiler gives in the prelude.
-SameAsPrelude = ("ZK0350", Level::Warning),
+/// the compiler gives in the core.
+SameAsCore = ("ZK0350", Level::Warning),
 /// A trait block takes the defaults of its trait, but gives each function
 /// that has one itself, or the trait has none.
 InheritsNothing = ("ZK0351", Level::Warning),

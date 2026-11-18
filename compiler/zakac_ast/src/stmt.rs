@@ -1024,7 +1024,7 @@ pub struct TraitDecl
     pub span: Span,
 }
 
-/// A built-in kind as the prelude names it, for its doc comment:
+/// A built-in kind as the core names it, for its doc comment:
 /// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, with
 /// the kind parameters of a list or a table between `သည်` and the mark.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
@@ -1052,8 +1052,8 @@ pub struct BuiltinKindDecl
 }
 
 /// The name of the stdlib module that each file sees with no import: the
-/// prelude, which declares the built-in traits, kinds and verbs.
-pub const PRELUDE: &str = "စံကား/အခြေခံအုတ်မြစ်";
+/// core, which declares the built-in traits, kinds and verbs.
+pub const CORE: &str = "စံကား/အခြေခံအုတ်မြစ်";
 
 /// A trait block: functions that give a kind a trait.
 /// `<kind> တွင် <trait> ဂုဏ်သတ္တိရှိစေရန် အောက်ပါလုပ်ဆောင်ချက်များ ကို ထည့်သွင်းမည်။`,

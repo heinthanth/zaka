@@ -1,5 +1,5 @@
-//! The verbs of the prelude the compiler gives, `ပြသ`, `ထည့်`, `ကူးထည့်`, `ဖျက်`
-//! and `အစားထိုး`, are calls written as a sentence: the prelude declares the
+//! The verbs of the core the compiler gives, `ပြသ`, `ထည့်`, `ကူးထည့်`, `ဖျက်`
+//! and `အစားထိုး`, are calls written as a sentence: the core declares the
 //! words of each sentence. The parser turns a call statement of one, with the
 //! words of one of its heads, into the statement node of that sentence, so the
 //! later stages see the statements they take.
@@ -42,11 +42,11 @@ const REMOVE: &str = "ဖျက်";
 /// `အစားထိုး`: replace a part of text.
 const REPLACE: &str = "အစားထိုး";
 
-/// The verbs of the prelude whose call statements the parser turns into their
+/// The verbs of the core whose call statements the parser turns into their
 /// statements.
 pub(crate) const VERB_FNS: [&str; 5] = [PRINT, ADD, DUP, REMOVE, REPLACE];
 
-/// The sentence a call of a verb of the prelude writes.
+/// The sentence a call of a verb of the core writes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Form
 {
@@ -158,7 +158,7 @@ fn form_of_words(
 
 impl Parser<'_>
 {
-    /// Turn a call statement of a verb of the prelude into the statement of
+    /// Turn a call statement of a verb of the core into the statement of
     /// its sentence: a print, an add, a duplicate, a remove or a replace. A
     /// call with other words, through a place, or that passes a failure on
     /// remains a call.
@@ -236,7 +236,7 @@ impl Parser<'_>
         }
     }
 
-    /// Whether a call of a function names a verb of the prelude, which gives no
+    /// Whether a call of a function names a verb of the core, which gives no
     /// value.
     ///
     /// # Arguments
@@ -246,13 +246,13 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` for such a verb.
-    pub(crate) fn names_prelude_verb(&self, call: &CallExpr) -> bool
+    pub(crate) fn names_core_verb(&self, call: &CallExpr) -> bool
     {
         form_of_words(call.callee.name.as_str(), &call.prepositions, &call.phrases)
             .is_some()
     }
 
-    /// Read a statement that ends in a call of a verb of the prelude as that
+    /// Read a statement that ends in a call of a verb of the core as that
     /// call, its arguments as whole clauses, when one cut of its words reads.
     ///
     /// # Returns

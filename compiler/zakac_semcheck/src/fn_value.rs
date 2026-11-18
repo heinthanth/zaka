@@ -17,7 +17,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
-use zakac_parser::load::prelude_builtin_fns;
+use zakac_parser::load::core_builtin_fns;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
@@ -266,7 +266,7 @@ pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
 }
 
 /// The heads of the functions of a name that the compiler gives in the
-/// prelude, each as the sentence its call writes, each argument as `…`:
+/// core, each as the sentence its call writes, each argument as `…`:
 /// `… ထဲသို့ … ကို ထည့်`.
 ///
 /// # Arguments
@@ -275,11 +275,11 @@ pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
 ///
 /// # Returns
 ///
-/// The heads, `;` between them, or `None` when the prelude gives no such
+/// The heads, `;` between them, or `None` when the core gives no such
 /// function.
 fn builtin_heads(name: &str) -> Option<String>
 {
-    let heads: Vec<String> = prelude_builtin_fns()
+    let heads: Vec<String> = core_builtin_fns()
         .iter()
         .filter(|d| d.name.name == name)
         .map(head_text)

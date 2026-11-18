@@ -155,7 +155,7 @@ with no block takes no default at all. A block of the line alone takes each defa
 
 ## Built-in traits
 
-The traits of the operators come with the [prelude](../../manual/language/prelude.md),
+The traits of the operators come with the [core](../../manual/language/core.md),
 the module each file sees with no import:
 
 | Trait | Kinds |

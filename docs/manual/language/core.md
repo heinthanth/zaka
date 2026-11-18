@@ -1,18 +1,19 @@
 ---
-title: The prelude
+title: The core
 description: The stdlib module each file sees with no import, the compiler mark, the built-in traits, and operators on structs.
 ---
 
-# The prelude
+# The core
 
-The prelude, `"စံကား/အခြေခံအုတ်မြစ်"`, is the stdlib module each file sees with no import
-sentence. Its source is four files of the `stdlib` folder of the source tree, which the
-compiler joins into one module: `core_kinds.zaka` holds the built-in kinds,
-`core_traits.zaka` the built-in traits, `core_verbs.zaka` the verbs and counts the
-compiler gives, and `core_heap.zaka` the [heap sentences](unsafe.md#heap-statements). A
+The core, `"စံကား/အခြေခံအုတ်မြစ်"`, is the stdlib module each file sees with no import
+sentence. Its source is the `core` folder of the `stdlib` folder of the source tree:
+`mod.zaka` [shares](modules.md#sharing-imported-names) each of the four parts, and a
+program cannot import a part on its own. `kinds.zaka` holds the built-in kinds,
+`traits.zaka` the built-in traits, `verbs.zaka` the verbs and counts the compiler gives,
+and `heap.zaka` the [heap sentences](unsafe.md#heap-statements). A
 sentence of a verb, such as `က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်`, is a call of the function its
 head declares, written as a sentence, and its arguments are whole clauses. Their declarations hold the compiler mark: the compiler gives their
-meaning. A trait of the prelude names the function a struct gives for an operator.
+meaning. A trait of the core names the function a struct gives for an operator.
 
 ```zaka
 နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
@@ -37,7 +38,7 @@ T တွင် ပေါင်းနိုင်သော ဂုဏ်သတ္�
 ## The compiler mark
 
 `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` ("included inside the compiler") marks a kind, a
-trait or a function of the prelude. In the head of a kind or a trait, `အများသုံး` stands
+trait or a function of the core. In the head of a kind or a trait, `အများသုံး` stands
 right before the noun, after the mark; in the head of a function it stands after `ဟူသော`:
 
 ```text
@@ -62,13 +63,13 @@ right before the noun, after the mark; in the head of a function it stands after
   `အကွက်အရေအတွက်`, `စာလုံးအရေအတွက်` and `အညွှန်းအရေအတွက်` are the counts read after `၏`.
   A function a file declares with one of these names joins the overloads, as below.
 - A marked constant names no value: the compiler gives it the value of the target it
-  builds for. The four of the prelude are the facts a
+  builds for. The four of the core are the facts a
   [compile-time conditional](compile-time.md) reads, and a file that names one sees it
   with no import.
-- The mark belongs to the modules of the stdlib, the prelude among them: in another
+- The mark belongs to the modules of the stdlib, the core among them: in another
   file it is ZK0349.
 
-## What the prelude declares
+## What the core declares
 
 | Declaration | What it is |
 | --- | --- |
@@ -83,18 +84,18 @@ right before the noun, after the mark; in the head of a function it stands after
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the kinds `ပြသမည်` prints: each kind but a handle of a kind from outside |
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile-time conditionals](compile-time.md)) |
 
-A name a file declares hides the prelude's: a trait named `ပေါင်းနိုင်သော` in a file is
-the file's own. The compiler reads the prelude for a program that names one of its
+A name a file declares hides the core's: a trait named `ပေါင်းနိုင်သော` in a file is
+the file's own. The compiler reads the core for a program that names one of its
 traits or one of its constants. The built-in kinds, verbs and counts are names, not reserved words
 ([Reserved words](../reference/reserved-words.md)).
 
 ## Verbs on structs
 
-A file can declare a function named after a verb or a count of the prelude. When that
+A file can declare a function named after a verb or a count of the core. When that
 function takes the operands of a sentence, the sentence calls it; else the sentence keeps
 the meaning the compiler gives. So `လ ကို ပြသမည်။` prints a struct through the file's own
 `ပြသ`, and `၅ ကို ပြသမည်။` prints the number as before. A function with the same kinds
-and prepositions as the prelude's own takes over each sentence of it in the file, which is the
+and prepositions as the core's own takes over each sentence of it in the file, which is the
 warning ZK0350.
 
 ```zaka

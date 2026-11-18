@@ -145,7 +145,7 @@ fn a_notes_block_names_local_kinds_and_traits()
     assert_eq!(codes(&other), [Code::NoteNamesNoParam]);
 }
 
-/// The prelude marks the traits the compiler gives, in the slot of
+/// The core marks the traits the compiler gives, in the slot of
 /// `ပြင်ပမှလာသော`: a trait.
 #[test]
 fn the_compiler_mark_stands_where_an_external_mark_stands()

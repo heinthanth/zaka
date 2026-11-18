@@ -26,7 +26,7 @@ use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
-use crate::generic::in_prelude;
+use crate::generic::in_core;
 use crate::generic::kind_ast;
 use crate::kind::DataKind;
 use crate::ops::Want;
@@ -96,10 +96,10 @@ pub(crate) fn traits(program: &Program) -> Traits
         };
         let unit = program.unit_of(i);
         // The first of a name wins, but a trait of a file hides one of the
-        // prelude.
+        // core.
         let held = found.get(&decl.name.name).map(|(u, _)| *u);
         let taken =
-            held.is_some_and(|u| !in_prelude(program, u) || in_prelude(program, unit));
+            held.is_some_and(|u| !in_core(program, u) || in_core(program, unit));
         do_if!(!taken, _ = found.insert(decl.name.name, (unit, decl.clone())));
     }
     found

@@ -250,7 +250,7 @@ the parameters, as for a plain [alias](aliases.md). Another count of kinds is ZK
 
 ```text
 … မျိုးပြပစ္စည်းမှာ <word> ဖြစ်ကာ ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။                  (struct)
-… ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။                         (kind of the prelude)
+… ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။                         (kind of the core)
 … (ကို|တို့ကို)အစားထိုးသုံးနိုင်၍ ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး ၎င်းတွင် …            (trait)
 <name><<A>၊ …> ဟူသည့် ဂုဏ်သတ္တိ သည် ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်ပြီး ၎င်းတွင် …      (trait, sign form)
 ```
@@ -301,10 +301,10 @@ name the same kind.
 ```
 
 The [list](lists.md) and the [table](tables.md) are written through hints the
-[prelude](prelude.md) gives them: `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`. `စာရင်း`
+[core](core.md) gives them: `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`. `စာရင်း`
 and `ဇယား` are names, not reserved words, so the long and sign forms name them too:
 `ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် စာရင်း`, `ဇယား<စာသား၊ ကိန်းပြည့်>`. A file that
-declares a kind of either name hides the one of the prelude.
+declares a kind of either name hides the one of the core.
 
 A trait with a hint:
 
@@ -547,7 +547,7 @@ T တွင် ငယ်စဉ်ကြီးလိုက်စီနိုင�
 
 ## Built-in traits
 
-The [prelude](prelude.md) declares the built-in traits, with the compiler mark: the
+The [core](core.md) declares the built-in traits, with the compiler mark: the
 built-in kinds have them through the compiler's rule, and a struct through its
 functions, which its operators then call.
 
@@ -603,5 +603,5 @@ keeps its number last, `ရွေး<isize>#2`, as a later plain function of a n
 | ZK0346 | a function of a trait block that is not one of its trait |
 | ZK0347 | two functions that give a kind one function of a trait |
 | ZK0348 | a trait block outside the file of its kind and of its trait |
-| ZK0349 | the compiler mark outside the [prelude](prelude.md) |
+| ZK0349 | the compiler mark outside the [core](core.md) |
 | ZK0351 | a trait block that takes the defaults of its trait when none is left to take (warning) |

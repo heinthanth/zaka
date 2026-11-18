@@ -20,13 +20,14 @@ use zakac_ast::kind::SigParam;
 use zakac_ast::kind::TableParts;
 use zakac_ast::kind::Wrap;
 use zakac_ast::name::Name;
+use zakac_ast::stmt::CORE;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::KindParam;
-use zakac_ast::stmt::PRELUDE;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::StructDecl;
+use zakac_ast::stmt::Unit;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr;
@@ -90,7 +91,7 @@ impl Templates
     }
 
     /// Record a generic function as one more of its name. The ones of a file
-    /// hide those of the prelude.
+    /// hide those of the core.
     ///
     /// # Arguments
     ///
@@ -101,11 +102,10 @@ impl Templates
     {
         let name = decl.name.name;
         let inner = self.of_name.get(&name).cloned().unwrap_or_default();
-        let prelude =
-            |k: &Name| self.units.get(k).is_some_and(|u| in_prelude(program, *u));
-        let held_in_file = inner.iter().any(|k| !prelude(k));
-        ret_if!(in_prelude(program, unit) && held_in_file);
-        let hidden = !in_prelude(program, unit) && !inner.is_empty() && !held_in_file;
+        let core = |k: &Name| self.units.get(k).is_some_and(|u| in_core(program, *u));
+        let held_in_file = inner.iter().any(|k| !core(k));
+        ret_if!(in_core(program, unit) && held_in_file);
+        let hidden = !in_core(program, unit) && !inner.is_empty() && !held_in_file;
         do_if!(hidden, self.drop_fns(&name));
         let held = self.fns_of(&name);
         let twice = held.iter().any(|h| same_head(h, decl));
@@ -134,7 +134,7 @@ impl Templates
     }
 
     /// Record a generic struct: the first of a name wins, but one of a file
-    /// hides one of the prelude.
+    /// hides one of the core.
     ///
     /// # Arguments
     ///
@@ -147,7 +147,7 @@ impl Templates
         let held =
             self.structs.contains_key(&name).then(|| self.units.get(&name)).flatten();
         let taken =
-            held.is_some_and(|u| !in_prelude(program, *u) || in_prelude(program, unit));
+            held.is_some_and(|u| !in_core(program, *u) || in_core(program, unit));
         ret_if!(taken);
         self.units.insert(name, unit);
         self.structs.insert(name, decl.clone());
@@ -227,7 +227,7 @@ pub(crate) fn is_template(stmt: &Stmt) -> bool
 /// # Returns
 ///
 /// The templates: each generic function of a name, and the first generic
-/// struct of a name; the ones of a file hide those of the prelude.
+/// struct of a name; the ones of a file hide those of the core.
 pub(crate) fn templates(program: &Program) -> Templates
 {
     let mut found = Templates::default();
@@ -260,7 +260,7 @@ pub(crate) fn in_stdlib(program: &Program, unit: u32) -> bool
     program.units.get(unit as usize).is_some_and(|u| u.name.starts_with("စံကား/"))
 }
 
-/// Whether a unit is the prelude.
+/// Whether a unit is the core: its `mod.zaka`, or a part it shares.
 ///
 /// # Arguments
 ///
@@ -269,10 +269,15 @@ pub(crate) fn in_stdlib(program: &Program, unit: u32) -> bool
 ///
 /// # Returns
 ///
-/// `true` for the prelude.
-pub(crate) fn in_prelude(program: &Program, unit: u32) -> bool
+/// `true` for the core.
+pub(crate) fn in_core(program: &Program, unit: u32) -> bool
 {
-    program.units.get(unit as usize).is_some_and(|u| u.name == PRELUDE)
+    let named = |u: &Unit| {
+        u.name
+            .strip_prefix(CORE)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+    };
+    program.units.get(unit as usize).is_some_and(named)
 }
 
 /// The name of the instance of a template for some kinds, `f<isize၊ text>`;
@@ -1097,7 +1102,7 @@ impl Checker
 {
     /// The generic functions a name calls: none when the file declares a
     /// function of the name, or a variable or a parameter holds it, as the
-    /// file's own name hides a generic, the prelude's ones included.
+    /// file's own name hides a generic, the core's ones included.
     ///
     /// # Arguments
     ///
@@ -1203,12 +1208,12 @@ impl Checker
     ///   too.
     pub(crate) fn name_foreign(&mut self, sig: &FnSig, span: Span, sigs: &[FnSig])
     {
-        let from_prelude = |u: &u32| Some(*u) == self.prelude_unit;
+        let from_core = |u: &u32| self.core_units.contains(u);
         let mut units: Vec<u32> = sigs.iter().filter_map(|s| s.unit).collect();
         units.dedup();
         let spread = units.len() > 1;
         let foreign = sig.unit.filter(|u| {
-            *u != self.unit && (self.in_instance || from_prelude(u) || spread)
+            *u != self.unit && (self.in_instance || from_core(u) || spread)
         });
         let Some(unit) = foreign
         else

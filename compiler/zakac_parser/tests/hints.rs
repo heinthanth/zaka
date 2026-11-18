@@ -25,10 +25,10 @@ const PAIR: &str = "အတွဲ ဟူသော ဒေတာအစုအဝေ�
                     တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် ပထမ ဟူသော က တစ်ခု နှင့် ဒုတိယ ဟူသော ခ တစ်ခု တို့ပါဝင်ပြီး \
                     မျိုးပြပစ္စည်းမှာ တွဲ ဖြစ်ကာ ရေးသားရာတွင် ခ ကို က ဖြင့် တွဲသော အတွဲဟု ရေးသားနိုင်သည်။\n";
 
-/// The list and the table of the prelude read the same in their hints, in
+/// The list and the table of the core read the same in their hints, in
 /// the long form and in the notation form.
 #[test]
-fn prelude_kinds_read_alike_in_each_form()
+fn core_kinds_read_alike_in_each_form()
 {
     let list = kind_tree("", "ကိန်းပြည့် စာရင်း");
     assert_eq!(kind_tree("", "ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် စာရင်း"), list);
@@ -84,9 +84,9 @@ fn a_bad_hint_is_reported()
     assert!(bad("A ဖြင့် A ဖြင့် B ကဟု").is_empty());
 }
 
-/// A file that declares a kind named `စာရင်း` hides the list of the prelude.
+/// A file that declares a kind named `စာရင်း` hides the list of the core.
 #[test]
-fn a_kind_of_the_file_hides_the_prelude_list()
+fn a_kind_of_the_file_hides_the_core_list()
 {
     let own = "စာရင်း ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\n";
     let tree = kind_tree(own, "စာရင်း");
