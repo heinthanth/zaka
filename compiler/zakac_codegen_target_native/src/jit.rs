@@ -6,7 +6,6 @@ use std::ffi::c_char;
 use std::sync::Arc;
 
 use cranelift_codegen::settings;
-use cranelift_codegen::settings::Configurable;
 use cranelift_jit::JITBuilder;
 use cranelift_jit::JITModule;
 use zaka_host::Gate;
@@ -34,8 +33,7 @@ type MainFn = extern "C" fn(i32, *const *const c_char, *const *const c_char) -> 
 /// The module, or the error when the host has no backend.
 fn module(program: &IrModule) -> Result<JITModule, Error>
 {
-    let mut flags = settings::builder();
-    flags.set("opt_level", "speed").map_err(module_error)?;
+    let flags = crate::aot::base_flags()?;
     let isa = cranelift_native::builder().map_err(module_error)?;
     let isa = isa.finish(settings::Flags::new(flags)).map_err(module_error)?;
     let mut jb = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
@@ -146,8 +144,12 @@ fn c_fn_addr(lib: &str, name: &str) -> Result<Option<*const u8>, Error>
 {
     ret_if!(LINKED.contains(&lib) && !cfg!(windows), Ok(None));
     let opened = open_lib(lib).map_err(module_error)?;
+    // SAFETY: the address is taken, not called; the program's declaration
+    // gives each call its kinds.
     let found = unsafe { opened.get::<unsafe extern "C" fn()>(name.as_bytes()) };
-    let addr = found.map(|s| *s as *const u8).map_err(module_error)?;
+    let inline = || crt_inline(name).filter(|_| LINKED.contains(&lib));
+    let found = found.map(|s| *s as *const u8);
+    let addr = found.or_else(|e| inline().ok_or(e)).map_err(module_error)?;
     // The lib remains open for the run, as the code holds its functions.
     std::mem::forget(opened);
     Ok(Some(addr))
@@ -182,4 +184,82 @@ fn open_lib(lib: &str) -> Result<libloading::Library, libloading::Error>
     let versioned = format!("{}.6", file.to_string_lossy());
     // SAFETY: as above.
     unsafe { libloading::Library::new(versioned) }
+}
+
+/// The address of a stdio function that the UCRT keeps inline in its headers,
+/// so `ucrtbase.dll` holds none of them: the CRT that `zakac` links holds each
+/// as a function (MinGW's `libucrt.a`, or `legacy_stdio_definitions.lib` for
+/// MSVC).
+///
+/// # Arguments
+///
+/// * `name` - The C name.
+///
+/// # Returns
+///
+/// The address, or `None` for another name.
+#[cfg(windows)]
+fn crt_inline(name: &str) -> Option<*const u8>
+{
+    // The JIT takes the addresses alone, so the kinds of these declarations do
+    // not matter; the program declares each call.
+    #[allow(clashing_extern_declarations)]
+    #[cfg_attr(target_env = "msvc", link(name = "legacy_stdio_definitions"))]
+    unsafe extern "C" {
+        fn printf();
+        fn fprintf();
+        fn sprintf();
+        fn snprintf();
+        fn vprintf();
+        fn vfprintf();
+        fn vsprintf();
+        fn vsnprintf();
+        fn scanf();
+        fn fscanf();
+        fn sscanf();
+    }
+    let table: [(&str, unsafe extern "C" fn()); 11] = [
+        ("printf", printf),
+        ("fprintf", fprintf),
+        ("sprintf", sprintf),
+        ("snprintf", snprintf),
+        ("vprintf", vprintf),
+        ("vfprintf", vfprintf),
+        ("vsprintf", vsprintf),
+        ("vsnprintf", vsnprintf),
+        ("scanf", scanf),
+        ("fscanf", fscanf),
+        ("sscanf", sscanf),
+    ];
+    table.iter().find(|(n, _)| *n == name).map(|(_, f)| *f as *const u8)
+}
+
+/// The address of a stdio function the UCRT keeps inline: none off Windows,
+/// where libc holds each.
+///
+/// # Arguments
+///
+/// * `_name` - The C name.
+///
+/// # Returns
+///
+/// `None`.
+#[cfg(not(windows))]
+fn crt_inline(_name: &str) -> Option<*const u8> { None }
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn libc_holds_snprintf_and_strlen()
+    {
+        for name in ["snprintf", "strlen"]
+        {
+            let addr = c_fn_addr("libc", name).expect("libc opens");
+            // Off Windows the process holds libc, and the JIT asks it alone.
+            assert!(addr.is_some() || !cfg!(windows), "{name}");
+        }
+    }
 }

@@ -55,6 +55,24 @@ pub struct Object
     pub clif: String,
 }
 
+/// The Cranelift flags of both the JIT and AOT: code tuned for speed, and a
+/// probe of each page of a frame larger than one page, inline. A Windows
+/// thread commits its stack a page at a time behind a guard page, so a frame
+/// that skips over the guard page faults; the probes cost a few stores on the
+/// other hosts.
+///
+/// # Returns
+///
+/// The flags, or the error of a name Cranelift does not know.
+pub(crate) fn base_flags() -> Result<settings::Builder, Error>
+{
+    let mut flags = settings::builder();
+    flags.set("opt_level", "speed").map_err(module_error)?;
+    flags.set("enable_probestack", "true").map_err(module_error)?;
+    flags.set("probestack_strategy", "inline").map_err(module_error)?;
+    Ok(flags)
+}
+
 /// Lower a program into an object file whose `main` starts it.
 ///
 /// # Arguments
@@ -74,8 +92,7 @@ pub fn object(
     grants: &Grants, target: &Target, want_clif: bool,
 ) -> Result<Object, Error>
 {
-    let mut flags = settings::builder();
-    flags.set("opt_level", "speed").map_err(module_error)?;
+    let mut flags = base_flags()?;
     flags.set("is_pic", "true").map_err(module_error)?;
     let isa = cranelift_codegen::isa::lookup_by_name(&triple(target))
         .map_err(module_error)?;

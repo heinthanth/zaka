@@ -3,6 +3,7 @@ use std::sync::Arc;
 use strum::VariantNames;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::Target;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_ast::target::host_arch;
@@ -51,6 +52,7 @@ const TARGET_BITS_ARG: &str = "target_bits";
 const PLATFORM_WIDTHS: &[&str] = &["8", "16", "32", "64"];
 const TARGET_OS_ARG: &str = "target_os";
 const TARGET_ARCH_ARG: &str = "target_arch";
+const TARGET_ABI_ARG: &str = "target_abi";
 
 /// The `zakac-semcheck` command, `zakac semcheck` as a subcommand.
 pub struct ZakacSemcheck
@@ -80,8 +82,9 @@ fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
     attach_target_os_args(cmd).about(t!("semcheck.about"))
 }
 
-/// Add `--target-os` and `--target-arch`, the OS and the CPU a program
-/// is built for, each the host's unless given.
+/// Add `--target-os`, `--target-arch` and `--target-abi`, the OS, the CPU and
+/// the ABI a program is built for: the OS and the CPU are the host's unless
+/// given, and the ABI is the usual one of the two.
 ///
 /// # Arguments
 ///
@@ -104,11 +107,16 @@ pub fn attach_target_os_args(cmd: clap::Command) -> clap::Command
         .help(t!("semcheck.target_arch"))
         .value_parser(TargetArch::VARIANTS.to_vec())
         .default_value(<&'static str>::from(host_arch()));
-    cmd.arg(os).arg(arch)
+    let abi = Arg::new(TARGET_ABI_ARG)
+        .long("target-abi")
+        .value_name("ABI")
+        .help(t!("semcheck.target_abi"))
+        .value_parser(TargetAbi::VARIANTS.to_vec());
+    cmd.arg(os).arg(arch).arg(abi)
 }
 
-/// The target a command builds for, from `--target-os`, `--target-arch` and
-/// `--platform-bits`.
+/// The target a command builds for, from `--target-os`, `--target-arch`,
+/// `--target-abi` and `--platform-bits`.
 ///
 /// # Arguments
 ///
@@ -122,11 +130,13 @@ pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
 {
     let word = |id: &str| matches.try_get_one::<String>(id).ok().flatten();
     let os = word(TARGET_OS_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_os);
-    let arch = word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok());
+    let arch =
+        word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_arch);
+    let abi = word(TARGET_ABI_ARG).and_then(|w| w.parse().ok());
     let bits = word(TARGET_BITS_ARG).and_then(|b| b.parse().ok()).unwrap_or(64);
     #[rustfmt::skip]
-    return Target::builder().os(os).arch(arch.unwrap_or_else(host_arch)).bits(bits)
-        .output(output).build();
+    return Target::builder().os(os).arch(arch).maybe_abi(abi).bits(bits).output(output)
+        .build();
 }
 
 /// The check options from the command line.

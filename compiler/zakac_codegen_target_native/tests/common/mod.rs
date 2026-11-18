@@ -138,8 +138,14 @@ pub fn run_aot(
     let errors: Vec<_> =
         built.outputs.iter().map(|o| String::from_utf8_lossy(&o.stderr)).collect();
     assert!(built.failed.is_none(), "the link failed:\n{}", errors.concat());
+    // Windows looks for a lib in the folder of the executable and on the PATH,
+    // and the libs of a program sit beside it.
+    let folder = path.parent().map(Path::to_path_buf);
+    let paths = std::env::var_os("PATH").unwrap_or_default();
+    let search = folder.into_iter().chain(std::env::split_paths(&paths));
     let ran = std::process::Command::new(&exe)
         .current_dir(dir.path())
+        .env("PATH", std::env::join_paths(search).unwrap())
         .stdin(Stdio::null())
         .output()
         .unwrap();

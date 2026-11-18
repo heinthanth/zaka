@@ -10,6 +10,7 @@ use zaka_explorer::state::permalink::encode;
 use zaka_explorer::state::permalink::read;
 use zaka_explorer::state::settings::AstMode;
 use zaka_explorer::state::settings::LowerMode;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::options::MemCheck;
@@ -66,8 +67,8 @@ fn links_keep_the_stage_and_the_ast_view()
     let shown = encode(&link_at(Phase::Parse, AstMode::Graph));
     assert!(
         shown.starts_with(
-            "9.64.7.warn.4.in-place.apart.vm.63.linux.x86_64.000000000000000000000000.\
-             parse.graph.folded."
+            "10.64.7.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
+             000000000000000000000000.parse.graph.folded."
         ),
         "{shown}"
     );
@@ -90,7 +91,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
             let hash = encode(&link);
             assert!(
                 hash.starts_with(&format!(
-                    "9.64.{n}.warn.4.in-place.apart.vm.63.linux.x86_64.\
+                    "10.64.{n}.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
                      000000000000000000000000.lower."
                 )),
                 "{hash}"
@@ -114,7 +115,10 @@ fn links_keep_the_ownership_checks()
             let link = Link::builder().source("x").options(options).build();
             let hash = encode(&link);
             let word: &'static str = check.into();
-            assert!(hash.starts_with(&format!("9.64.7.{word}.{}.", mem | 4)), "{hash}");
+            assert!(
+                hash.starts_with(&format!("10.64.7.{word}.{}.", mem | 4)),
+                "{hash}"
+            );
             assert_eq!(decode(&hash), Some(link));
         }
     }
@@ -131,7 +135,7 @@ fn links_keep_the_result_mode()
         let word: &'static str = results.into();
         assert!(
             hash.starts_with(&format!(
-                "9.64.7.warn.4.{word}.apart.vm.63.linux.x86_64.\
+                "10.64.7.warn.4.{word}.apart.vm.63.linux.x86_64.usual.\
                  000000000000000000000000."
             )),
             "{hash}"
@@ -151,7 +155,7 @@ fn links_keep_the_scratch_mode()
         let word: &'static str = scratch.into();
         assert!(
             hash.starts_with(&format!(
-                "9.64.7.warn.4.in-place.{word}.vm.63.linux.x86_64.\
+                "10.64.7.warn.4.in-place.{word}.vm.63.linux.x86_64.usual.\
                  000000000000000000000000."
             )),
             "{hash}"
@@ -170,7 +174,7 @@ fn links_keep_the_target()
         let hash = encode(&link);
         let word: &'static str = target.into();
         assert!(
-            hash.starts_with(&format!("9.64.7.warn.4.in-place.apart.{word}.")),
+            hash.starts_with(&format!("10.64.7.warn.4.in-place.apart.{word}.")),
             "{hash}"
         );
         assert_eq!(decode(&hash), Some(link));
@@ -186,25 +190,28 @@ fn links_keep_the_c_checks()
         let options = Options::builder().target(Target::C).c_checks(checks).build();
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
-        let head = format!("9.64.7.warn.4.in-place.apart.c.{}.", checks.bits());
+        let head = format!("10.64.7.warn.4.in-place.apart.c.{}.", checks.bits());
         assert!(hash.starts_with(&head), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
 }
 
 #[test]
-fn links_keep_the_target_os_the_cpu_and_the_lint()
+fn links_keep_the_target_os_the_cpu_the_abi_and_the_lint()
 {
     let lint = LintLevels::default()
         .set(Code::SpokenForm, Some(LintLevel::Off))
         .set(Code::BlockLeaked, Some(LintLevel::Error));
     #[rustfmt::skip]
     let options = Options::builder().os(TargetOs::Windows).arch(TargetArch::Aarch64)
-        .lint(lint).build();
+        .abi(TargetAbi::Msvc).lint(lint).build();
     let link = Link::builder().source("x").options(options).build();
     let hash = encode(&link);
-    assert!(hash.contains(".windows.aarch64."), "{hash}");
+    assert!(hash.contains(".windows.aarch64.msvc."), "{hash}");
     assert_eq!(decode(&hash), Some(link));
+    // A format 9 link holds no ABI, and opens with the usual one of its OS.
+    let old = hash.replacen("10.", "9.", 1).replace(".msvc.", ".");
+    assert_eq!(decode(&old).map(|l| l.options.abi), Some(None));
 }
 
 #[test]
@@ -336,7 +343,7 @@ fn links_keep_the_overflow_mode_in_the_mem_flags()
         let link = Link::builder().source("x").options(options).build();
         let hash = encode(&link);
         let digit = if overflow == OverflowMode::Stop { 6 } else { 2 };
-        assert!(hash.starts_with(&format!("9.64.7.warn.{digit}.")), "{hash}");
+        assert!(hash.starts_with(&format!("10.64.7.warn.{digit}.")), "{hash}");
         assert_eq!(decode(&hash), Some(link));
     }
     assert_eq!(

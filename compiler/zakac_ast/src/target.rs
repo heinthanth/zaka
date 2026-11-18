@@ -45,6 +45,51 @@ pub enum TargetArch
     Wasm32,
 }
 
+/// The ABI a program is built for: the C runtime and the calling contract
+/// that its machine code and the libs it links share.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(IntoStaticStr, EnumString, VariantNames)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum TargetAbi
+{
+    /// The GNU ABI: glibc on Linux, MinGW on Windows.
+    Gnu,
+    /// The ABI of Microsoft's C compiler, on Windows.
+    Msvc,
+    /// The ABI of Apple's platforms.
+    Apple,
+    /// The ABI of WebAssembly.
+    Wasm,
+}
+
+impl TargetAbi
+{
+    /// The ABI an OS and a CPU take when none is given: a 32-bit WebAssembly
+    /// CPU takes `Wasm`, macOS takes `Apple`, Windows takes the ABI of this
+    /// compiler on a Windows host and `Gnu` elsewhere, and Linux takes `Gnu`.
+    ///
+    /// # Arguments
+    ///
+    /// * `os` - The OS.
+    /// * `arch` - The CPU architecture.
+    ///
+    /// # Returns
+    ///
+    /// The ABI.
+    pub fn usual(os: TargetOs, arch: TargetArch) -> TargetAbi
+    {
+        let msvc_host = cfg!(all(windows, target_env = "msvc"));
+        match (os, arch)
+        {
+            (_, TargetArch::Wasm32) => TargetAbi::Wasm,
+            (TargetOs::Macos, _) => TargetAbi::Apple,
+            (TargetOs::Windows, _) if msvc_host => TargetAbi::Msvc,
+            _ => TargetAbi::Gnu,
+        }
+    }
+}
+
 /// The code the compiler gives out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[derive(IntoStaticStr, EnumString, VariantNames)]
@@ -69,6 +114,10 @@ pub struct Target
     pub os: TargetOs,
     /// The CPU architecture.
     pub arch: TargetArch,
+    /// The ABI; the usual one of the OS and the CPU when the builder leaves
+    /// it out.
+    #[builder(default = TargetAbi::usual(os, arch))]
+    pub abi: TargetAbi,
     /// The bit count of the platform-sized kinds and addresses.
     pub bits: u16,
     /// The code the compiler gives out.
@@ -93,6 +142,34 @@ impl Target
 impl Default for Target
 {
     fn default() -> Self { Target::host() }
+}
+
+impl Target
+{
+    /// Whether the target is the host's: its OS, CPU and ABI are those of this
+    /// compiler.
+    ///
+    /// # Returns
+    ///
+    /// `true` for the host.
+    pub fn is_host(&self) -> bool
+    {
+        let host = Target::host();
+        (self.os, self.arch, self.abi) == (host.os, host.arch, host.abi)
+    }
+
+    /// The OS, the CPU and the ABI as a reader sees them, such as
+    /// `windows/x86_64/gnu`.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    pub fn shown(&self) -> String
+    {
+        let words: [&'static str; 3] =
+            [self.os.into(), self.arch.into(), self.abi.into()];
+        words.join("/")
+    }
 }
 
 /// The OS the compiler runs on.
@@ -123,14 +200,17 @@ pub const OS_FACT: &str = "အလုပ်လုပ်မည့်ကွန်�
 /// The constant of the prelude that holds the CPU architecture.
 pub const ARCH_FACT: &str = "အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ";
 
+/// The constant of the prelude that holds the ABI.
+pub const ABI_FACT: &str = "အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်";
+
 /// The constant of the prelude that holds the platform bit count.
 pub const BITS_FACT: &str = "အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်";
 
 /// The constant of the prelude that holds the code the compiler gives out.
 pub const OUTPUT_FACT: &str = "ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား";
 
-/// The names of the four facts of a target.
-pub const FACTS: [&str; 4] = [OS_FACT, ARCH_FACT, BITS_FACT, OUTPUT_FACT];
+/// The names of the five facts of a target.
+pub const FACTS: [&str; 5] = [OS_FACT, ARCH_FACT, ABI_FACT, BITS_FACT, OUTPUT_FACT];
 
 /// The value of one fact of a target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,6 +239,7 @@ impl Target
         {
             OS_FACT => Some(FactValue::Text(self.os.into(), TargetOs::VARIANTS)),
             ARCH_FACT => Some(FactValue::Text(self.arch.into(), TargetArch::VARIANTS)),
+            ABI_FACT => Some(FactValue::Text(self.abi.into(), TargetAbi::VARIANTS)),
             BITS_FACT => Some(FactValue::Bits(self.bits)),
             OUTPUT_FACT =>
             {

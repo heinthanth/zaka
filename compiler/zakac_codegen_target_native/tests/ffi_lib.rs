@@ -200,6 +200,7 @@ fn a_program_calls_a_lib_of_its_own_as_an_executable()
     {
         return;
     };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, WANT, "{}", run.stderr);
     let Some(run) = run_with_lib_aot(&format!("{CALLED_BACK}{CALLS_BACK}"))
     else

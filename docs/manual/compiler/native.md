@@ -29,9 +29,8 @@ it with no Visual Studio.
 
 The runtime, `zaka_runtime`, is a Rust lib that `zakac` carries inside it, built for the
 host: the build writes it into the cache and links it, so no Rust toolchain is needed.
-Under the C target, a program that gives closures to C also needs the header of libffi,
-where the C compiler looks at first: the SDK on macOS, a dev package such as `libffi-dev`
-on Linux. The native target needs no libffi of the host: the runtime carries its own.
+Neither target needs a libffi of the host: the runtime carries its own, closures to C
+included.
 
 Floats print as the VM prints them, digit for digit, on each host: the runtime works out
 the digits from the bits of the float, with no print from libc.
@@ -185,7 +184,7 @@ from native code with no VM between. The build writes one more file, `zaka_ffi.c
   [When a program stops](../vm/traps.md#c-functions)).
 
 The link gets `-lX` for each lib `libX` the program names, but libc and libm, after `-lm`
-and before `LDFLAGS` and each `--ld-flag`. A program with `zaka_callback.c` adds `-lffi` as well. Give the folder of a lib with `--ld-flag`:
+and before `LDFLAGS` and each `--ld-flag`. Give the folder of a lib with `--ld-flag`:
 
 ```console
 $ zakac build --backend c --ld-flag -L/opt/gears/lib gears.zaka
@@ -232,12 +231,9 @@ A [function value](../language/function-values.md) is one word in the C, of the 
 - A call through a value reads `zk_fn_bound(f)`: for a closure it calls the thunk with the
   arguments and the record, for a plain function it calls the code with the arguments.
 - A program that makes a closure and gives function values to C, or holds a leave
-  statement, gets one more generated file, `zaka_callback.c`: a head that includes libffi and the runtime, then a
-  bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the
-  closures themselves live in the runtime. The link then adds libffi: on macOS `-lffi` from the SDK; elsewhere the flags `pkg-config
-  --cflags --libs libffi` gives (the compile flags go to `zaka_callback.c`), or `-lffi` alone
-  when `pkg-config` or its record for libffi is missing. A program with no closure
-  keeps the old path, with no libffi. The wrapper of a C function calls `zk_cb_code` for a
+  statement, gets one more generated file, `zaka_callback.c`: a head that includes the runtime, then a
+  bridge and a `zk_cb_native_shape` (`zk_cbs_<n>`, the C kinds of its values) for each
+  function kind that goes to C; the closures themselves, and libffi, live in the runtime. The wrapper of a C function calls `zk_cb_code` for a
   parameter of a function kind, which gives the code address of a plain function and the
   libffi closure of a closure, and wraps the C call in `zk_cb_lent()` and `zk_cb_end()`, so
   the closure is lent to the call. `zk_cb_leave` and `zk_cb_revoke` run the two leave

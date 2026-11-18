@@ -21,6 +21,7 @@ use zaka_web_ui_common::controls::settings::switch;
 use zaka_web_ui_common::controls::settings::switch_row;
 use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::icon::sliders;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::options::MemCheck;
@@ -161,6 +162,11 @@ fn compiler_rows(state: AppState, lints_open: RwSignal<bool>) -> impl IntoView
                 )
             })
         },
+        row(
+            t!("explorer.settings.target_abi"),
+            t!("explorer.settings.target_abi_note"),
+            abi_picker(state),
+        ),
         row(
             t!("explorer.settings.platform_bits"),
             t!("explorer.settings.platform_bits_note"),
@@ -526,6 +532,37 @@ fn arch_picker(state: AppState) -> impl IntoView
     dropdown(picker(
         t!("explorer.settings.target_arch"),
         TargetArch::VARIANTS.iter().map(choice).collect(),
+        current,
+        on_pick,
+    ))
+}
+
+/// Picker of the ABI the compile-time conditionals see: the usual one of
+/// the OS, or one of the ABIs by name.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn abi_picker(state: AppState) -> impl IntoView
+{
+    const USUAL: &str = "usual";
+    let choice = |value: &str, label: Cow<'static, str>| {
+        Choice::builder().value(value.to_string()).label(label).build()
+    };
+    let usual = choice(USUAL, t!("explorer.settings.abi_usual"));
+    let named = TargetAbi::VARIANTS.iter().map(|n| choice(n, Cow::Borrowed(*n)));
+    let current = Signal::derive(move || {
+        let abi = state.options.get().abi;
+        abi.map_or(USUAL, <&'static str>::from).to_string()
+    });
+    let on_pick = move |v: String| state.options.update(|o| o.abi = v.parse().ok());
+    dropdown(picker(
+        t!("explorer.settings.target_abi"),
+        std::iter::once(usual).chain(named).collect(),
         current,
         on_pick,
     ))

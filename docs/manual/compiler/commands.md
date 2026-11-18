@@ -135,6 +135,7 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 | `--target-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
 | `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos` or `linux` |
 | `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
+| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple` or `wasm`; left out, `apple` on macOS, `gnu` on Linux, and on Windows the ABI `zakac` was built for. The VM, `--jit` and an executable take the host's ABI alone |
 | `--lint-allow <NAME>`, `--lint-warn <NAME>`, `--lint-error <NAME>` | | set the level of a lint group or code, as below; the front end reads the groups `naturalness` and `spoken` |
 
 These belong to `irgen` and the stages after it, and to `run`:
@@ -370,7 +371,7 @@ $ zakac build --backend c --checks=+null age.zaka
 Integer overflow is not one of these: `--overflow` picks it.
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
-then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), the flags of libffi from `pkg-config` when the build writes `zaka_callback.c` (a program that gives closures to C, whose bridges read the libffi header), `LDFLAGS`, then each `--ld-flag`. A later
+then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 
@@ -394,7 +395,7 @@ there is no C to compile.
   function, for reading.
 - The CPU is `x86_64`, `aarch64` or `riscv64`; the others stop the build with an error.
 - An executable is linked for the host alone. `--emit obj` and `--emit clif` take another
-  `--target-os` or `--target-arch`, to link the object there.
+  `--target-os`, `--target-arch` or `--target-abi`, to link the object there.
 - The `sanitizers` check has no effect: Cranelift code holds no marks for them.
 
 ```console

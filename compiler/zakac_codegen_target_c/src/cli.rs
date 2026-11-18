@@ -4,8 +4,6 @@ use std::sync::Arc;
 
 use strum::IntoEnumIterator;
 use zakac_ast::target::BuildTarget;
-use zakac_ast::target::host_arch;
-use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_borrow_checker::cli::checked_fixes;
@@ -443,14 +441,9 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 /// The error, or `None` for the host.
 fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
 {
-    let (os, arch) = (host_os(), host_arch());
-    ret_if!(target.os == os && target.arch == arch, None);
-    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
-    let host = pair(os.into(), arch.into());
-    Some(Error::CForOtherHost {
-        target: pair(target.os.into(), target.arch.into()),
-        host,
-    })
+    ret_if!(target.is_host(), None);
+    let host = zakac_ast::target::Target::host().shown();
+    Some(Error::CForOtherHost { target: target.shown(), host })
 }
 
 /// The path of the input: its file, or `main.zaka` in the working folder

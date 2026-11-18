@@ -683,7 +683,7 @@ impl Shared<'_>
         out.push_str(&self.descr.declarations());
         let _ = writeln!(out, "extern const zk_program {PROGRAM_TABLE};");
         let shapes = (0..self.cb_kinds.len()).map(shape_name);
-        shapes.for_each(|s| _ = writeln!(out, "extern const zk_cb_shape {s};"));
+        shapes.for_each(|s| _ = writeln!(out, "extern const zk_cb_native_shape {s};"));
         out.push_str("\n#endif\n");
         out
     }

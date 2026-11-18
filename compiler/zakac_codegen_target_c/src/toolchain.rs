@@ -11,10 +11,7 @@ use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
-use zakac_rust_sugars::tern;
 
-use crate::callbacks::CALLBACK_SOURCE;
-use crate::callbacks::ffi_flags;
 use crate::driver::native_libs;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
@@ -289,7 +286,7 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Command
 {
     let mut cmd = plan.cc.command();
-    cmd.args(compile_flags(plan, source)).arg("-c").arg(source).arg("-o").arg(object);
+    cmd.args(compile_flags(plan)).arg("-c").arg(source).arg("-o").arg(object);
     cmd
 }
 
@@ -298,20 +295,17 @@ fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Comman
 /// # Arguments
 ///
 /// * `plan` - What to build.
-/// * `source` - The C file.
 ///
 /// # Returns
 ///
 /// The flags.
-fn compile_flags(plan: &BuildPlan<'_>, source: &Path) -> Vec<String>
+fn compile_flags(plan: &BuildPlan<'_>) -> Vec<String>
 {
     let mut flags = vec![STD_FLAG.to_owned()];
     let words = |list: &[&str]| list.iter().map(|f| f.to_string()).collect::<Vec<_>>();
     do_if!(plan.defaults, flags.extend(words(DEFAULT_FLAGS)));
     let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
     do_if!(sanitized, flags.extend(words(SANITIZE_FLAGS)));
-    let callbacks = source.file_name() == Some(CALLBACK_SOURCE.as_ref());
-    do_if!(callbacks, flags.extend(ffi_flags().0.iter().cloned()));
     flags.extend(plan.cflags.iter().cloned());
     flags
 }
@@ -365,18 +359,12 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     {
         cmd.args(SANITIZE_FLAGS);
     }
-    // libffi links when `zaka_callback.c` is built, with the flags `pkg-config`
-    // gives.
-    let callbacks =
-        plan.sources.iter().any(|s| s.file_name() == Some(CALLBACK_SOURCE.as_ref()));
-    let ffi: &[String] = tern!(callbacks, &ffi_flags().1, &[]);
     cmd.args(objects)
         .arg("-o")
         .arg(plan.out)
         .args(LINK_LIBS)
         .args(native_libs())
         .args(plan.libs)
-        .args(ffi)
         .args(plan.ldflags);
     cmd
 }

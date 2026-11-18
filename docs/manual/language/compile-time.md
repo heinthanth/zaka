@@ -1,6 +1,6 @@
 ---
 title: Compile time
-description: What the compiler works out before the program runs - the conditional it settles for the target, with the four facts and calls of comptime functions; comptime functions, the spots where their calls run, what a run can do - and their errors.
+description: What the compiler works out before the program runs - the conditional it settles for the target, with the five facts and calls of comptime functions; comptime functions, the spots where their calls run, what a run can do - and their errors.
 ---
 
 # Compile time
@@ -37,13 +37,14 @@ others before it checks names and kinds.
 
 ## The facts of the target
 
-A condition reads the four facts of the target, which the [prelude](prelude.md)
+A condition reads the five facts of the target, which the [prelude](prelude.md)
 declares as constants:
 
 | Constant | Values |
 | --- | --- |
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်` | the OS: `"windows"`, `"macos"` or `"linux"` |
 | `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ` | the CPU: `"x86_64"`, `"aarch64"`, `"x86"`, `"arm"`, `"riscv64"` or `"wasm32"` |
+| `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်` | the ABI the machine code and the libs share: `"gnu"`, `"msvc"`, `"apple"` or `"wasm"`; when `--target-abi` gives none, the usual one of the OS: `"apple"` on macOS, `"gnu"` on Linux, and on Windows the ABI `zakac` itself was built for |
 | `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--target-bits`: 8, 16, 32 or 64 |
 | `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"`, `"c"` or `"native"` |
 

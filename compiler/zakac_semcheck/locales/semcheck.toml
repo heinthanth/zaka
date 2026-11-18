@@ -12,6 +12,9 @@ en = "The OS the program is built for; the host's when not given."
 [semcheck.target_arch]
 en = "The CPU architecture the program is built for; the host's when not given."
 
+[semcheck.target_abi]
+en = "The ABI the program is built for (gnu, msvc, apple, wasm); the usual one of the OS when not given."
+
 [semcheck.instance_use]
 en = "in the instance \"%{n}\", which this use asks for"
 

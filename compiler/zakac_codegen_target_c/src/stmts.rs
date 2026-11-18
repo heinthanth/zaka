@@ -15,7 +15,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::value::Value;
 use zakac_semcheck::value::compare;
 
-use crate::callbacks::shape_name;
+use crate::callbacks::shape_ref;
 use crate::emit::FnGen;
 use crate::emit::c_string;
 use crate::emit::func_name;
@@ -660,7 +660,7 @@ impl FnGen<'_, '_>
         };
         let line = tern!(
             grant,
-            format!("zk_cb_leave({v}, &{});", shape_name(n)),
+            format!("zk_cb_leave({v}, {});", shape_ref(n)),
             format!("zk_cb_revoke({v});")
         );
         self.line(&line);

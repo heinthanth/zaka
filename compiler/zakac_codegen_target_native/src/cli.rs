@@ -8,8 +8,6 @@ use zaka_host::Gate;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::Target;
 use zakac_ast::target::TargetArch;
-use zakac_ast::target::host_arch;
-use zakac_ast::target::host_os;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_borrow_checker::cli::checked_fixes;
 use zakac_cli_common::clap::ArgMatches;
@@ -146,11 +144,10 @@ pub fn run_jit(
 /// The error, or `None` for the host.
 fn other_host(target: &Target) -> Option<Error>
 {
-    ret_if!(target.os == host_os() && target.arch == host_arch(), None);
-    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
+    ret_if!(target.is_host(), None);
     Some(Error::BuiltForOtherHost {
-        built: pair(target.os.into(), target.arch.into()),
-        host: pair(host_os().into(), host_arch().into()),
+        built: target.shown(),
+        host: Target::host().shown(),
     })
 }
 
@@ -323,10 +320,9 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 /// The error, or `None` for the host.
 fn native_other_host(target: &Target) -> Option<Error>
 {
-    ret_if!(target.os == host_os() && target.arch == host_arch(), None);
-    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
+    ret_if!(target.is_host(), None);
     Some(Error::NativeForOtherHost {
-        target: pair(target.os.into(), target.arch.into()),
-        host: pair(host_os().into(), host_arch().into()),
+        target: target.shown(),
+        host: Target::host().shown(),
     })
 }

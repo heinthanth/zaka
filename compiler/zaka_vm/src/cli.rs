@@ -4,8 +4,7 @@ use std::sync::Arc;
 use zaka_host::Gate;
 use zaka_host::TermWorld;
 use zakac_ast::target::BuildTarget;
-use zakac_ast::target::host_arch;
-use zakac_ast::target::host_os;
+use zakac_ast::target::Target;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_borrow_checker::cli::checked_fixes;
@@ -359,12 +358,10 @@ fn run_gate(matches: &ArgMatches) -> Gate
 fn other_host(module: &Module) -> Option<Error>
 {
     let built = module.built_for?;
-    ret_if!(built.os == host_os() && built.arch == host_arch(), None);
-    let pair = |os: &'static str, arch: &'static str| format!("{os}/{arch}");
-    let host = pair(host_os().into(), host_arch().into());
+    ret_if!(built.is_host(), None);
     Some(Error::BuiltForOtherHost {
-        built: pair(built.os.into(), built.arch.into()),
-        host,
+        built: built.shown(),
+        host: Target::host().shown(),
     })
 }
 

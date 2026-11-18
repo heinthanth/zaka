@@ -28,7 +28,7 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
 | `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
-| `callbacks.rs` | `zaka_callback.c`: its head (`CALLBACK_HEAD`: the libffi header and `zaka_runtime.h`), then a bridge and a `zk_cb_shape` (`zk_cbs_<n>`) for each function kind that goes to C; the `-lffi` flag |
+| `callbacks.rs` | `zaka_callback.c`: its head (`CALLBACK_HEAD`: `zaka_runtime.h`), the scalar C kinds the bridges name (`zk_ck_<name>`, `scalar_kinds`), then a bridge and a `zk_cb_native_shape` (`zk_cbs_<n>`) for each function kind that goes to C |
 | `toolchain.rs` | finding the compiler, the flags, the compiles of the `.c` files (started at once) and the link, which takes the other inputs, the runtime lib among them, unchanged |
 | `build.rs` | builds `zaka_runtime` as a static lib for the target of the build (see [The runtime](#the-runtime)) |
 | `runtime/` | the two hand-written C11 headers: `zaka_target_c_runtime.h` and `zaka_c_sugars.h` |
@@ -259,13 +259,16 @@ program stops where it happens.
 
 A closure goes to C through `zaka_callback.c`, which `emit` writes when the program makes a
 closure and gives function values to C or holds a leave statement (`Stmt::Leave`). The file
-starts with the libffi header and `zaka_runtime.h` (the runtime keeps
+starts with `zaka_runtime.h` (the runtime keeps
 `zk_cb_code`, `zk_cb_lent`, `zk_cb_end`, `zk_cb_leave` and `zk_cb_revoke` in `callbacks.rs`,
 with `zk_fn_size` and `zk_fn_release` in `heap.rs`), and for each
-function kind that goes to C a bridge and a `zk_cb_shape` named `zk_cbs_<n>`. A wrapper
-passes `zk_cb_code(value, &zk_cbs_<n>)` for such a parameter, and wraps the C call in
-`zk_cb_lent()` and `zk_cb_end()`, so the closure is lent to the call; a leave statement is
-`zk_cb_leave(value, &shape)` or `zk_cb_revoke(value)`. Each closure gets one libffi
+function kind that goes to C a bridge and a `zk_cb_native_shape` named `zk_cbs_<n>`: the C
+kinds of its result and parameters (`zk_c_kind`), as the native backend writes them. A
+wrapper passes `zk_cb_code(value, zk_cb_shape_of(&zk_cbs_<n>))` for such a parameter
+(`shape_ref`), and wraps the C call in `zk_cb_lent()` and `zk_cb_end()`, so the closure is
+lent to the call; a leave statement is `zk_cb_leave(value, zk_cb_shape_of(&shape))` or
+`zk_cb_revoke(value)`. `zk_cb_shape_of` makes the libffi kinds of a shape on its first use
+and keeps them for the run. Each closure gets one libffi
 closure, found again from the octets of its record, and its code is never freed, so a late
 call from C stops the run with `ZK_TRAP_CLOSURE_ESCAPE` and never runs freed code; a call
 on another thread aborts with a message.
@@ -274,7 +277,7 @@ A function kind whose parameters each cross as written (`as_is`: numbers, boolea
 addresses) lets a plain function reach C as its own code. Each other kind a C declaration
 takes (`callback_param`) goes through the bridge, for a plain function too (`zk_cb_of` keeps
 one libffi closure for it, `kept` for the run): `crossing` picks how each parameter crosses.
-A struct passed as a whole value gets a libffi struct kind (`zk_cbst_<i>`, its elements in
+A struct passed as a whole value gets a C kind with the tag 12 (`zk_cbst_<i>`, its members in
 `zk_cbse_<i>`, a counted list as one element for each cell) and is copied into an aligned
 block; text comes from `zk_text_of_c` (NULL is `ZK_TRAP_NULL_FROM_C`); an optional of text from
 `zk_text_from_c`; a handle from `zk_cb_handle`, a new box around the address (NULL gives a box
@@ -282,10 +285,10 @@ holding 0); an optional of a handle from `zk_cb_opt_handle`. The function gets a
 duplicate (`zk_lend_seqs`, room 0), and the bridge drops the original with `zk_drop` once it
 returns. `zk_fn_c` remains the guard of a program with no `zaka_callback.c`. A leave of a kind the bridge has no shape for (a parameter `callback_param`
 refuses, or a result that is no number, boolean or address) is a construct the target
-cannot build. The runtime lib carries libffi itself (the `libffi` crate builds it), but
-the bridges read the `ffi_type` kinds through the header of the host's libffi:
-`link_command` adds the flags of `pkg-config` for it when `zaka_callback.c` is written, so a
-program with no such closure never needs the host's libffi.
+cannot build. The runtime lib carries libffi itself (the `libffi` crate builds it), and the
+bridges name no libffi kind: no build needs the host's libffi, its header or `-lffi`. A
+bridge writes a narrow integer result as a whole word (`intptr_t` or `uintptr_t`, the width
+of libffi's `ffi_arg`).
 
 `link_libs` gives `-lX` for each lib `libX` the program names, but libc and libm, in
 order of first use. `BuildPlan::libs` puts them after `-lm` and before the `LDFLAGS` and

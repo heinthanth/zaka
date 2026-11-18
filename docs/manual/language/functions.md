@@ -1176,8 +1176,8 @@ Each build gives C a pointer it can call:
   such call, and keeps it for the run. The callback runs the function in the VM until it
   returns.
 - A native build passes the code address of a function with no captures. A closure goes
-  through the native closure of libffi, which the build links in with `-lffi` (see
-  [Native builds](../compiler/native.md)); a program with no closure never needs it.
+  through a native closure of libffi, which the runtime lib carries (see
+  [Native builds](../compiler/native.md)): the build needs no libffi of the host.
 
 A trap inside a callback waits until C returns, then stops the program; each later
 callback of that C call gives 0. Text that a callback prints in the VM comes out after

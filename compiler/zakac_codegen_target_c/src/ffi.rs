@@ -24,6 +24,7 @@ use zakac_semcheck::foreign::is_lib_path;
 use zakac_semcheck::kind::DataKind;
 
 use crate::callbacks::shape_name;
+use crate::callbacks::shape_ref;
 use crate::kinds::c_kind;
 use crate::kinds::is_blob;
 
@@ -197,7 +198,7 @@ pub fn ffi_source(
     let mut out = PRELUDE.to_string();
     do_if!(wrappers.contains("zk_ffi_put("), out.push_str(FFI_PUT));
     shapes.iter().enumerate().for_each(|(n, _)| {
-        _ = writeln!(out, "extern const zk_cb_shape {};", shape_name(n));
+        _ = writeln!(out, "extern const zk_cb_native_shape {};", shape_name(n));
     });
     structs
         .iter()
@@ -481,7 +482,7 @@ impl Names<'_>
             let shape = self.shapes.iter().position(|k| *k == kind);
             let code = shape.map_or_else(
                 || format!("zk_fn_code(zk_fn_c(zk_a{i}))"),
-                |n| format!("zk_cb_code(zk_a{i}, &{})", shape_name(n)),
+                |n| format!("zk_cb_code(zk_a{i}, {})", shape_ref(n)),
             );
             return format!("    {decl} = zk_a{i} ? ({cast}){code} : ({cast})0;\n");
         }

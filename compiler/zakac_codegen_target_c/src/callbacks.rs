@@ -6,8 +6,6 @@
 //! file, and its link needs no libffi.
 
 use std::fmt::Write;
-use std::process::Command;
-use std::sync::OnceLock;
 
 use zakac_ir_builder::ir::fn_shape;
 use zakac_rust_sugars::ret_if;
@@ -25,50 +23,52 @@ use crate::kinds::is_blob;
 /// The name of the file of the closures C calls back.
 pub const CALLBACK_SOURCE: &str = "zaka_callback.c";
 
-/// The link flag of libffi, which `zaka_callback.c` calls.
-pub const FFI_LIB: &str = "-lffi";
-
-/// The flags of libffi, asked of `pkg-config` once: the compile flags of
-/// `zaka_callback.c` and the link flags. macOS keeps libffi in the SDK, where
-/// the compiler finds it, so `-lffi` alone links there; so it does where
-/// `pkg-config` or its entry for libffi is missing.
-///
-/// # Returns
-///
-/// The compile flags and the link flags.
-pub fn ffi_flags() -> &'static (Vec<String>, Vec<String>)
-{
-    static FLAGS: OnceLock<(Vec<String>, Vec<String>)> = OnceLock::new();
-    FLAGS.get_or_init(|| {
-        let ask = |what: &str| -> Option<Vec<String>> {
-            ret_if!(cfg!(target_os = "macos"), None);
-            let out =
-                Command::new("pkg-config").args([what, "libffi"]).output().ok()?;
-            let text = String::from_utf8_lossy(&out.stdout);
-            out.status
-                .success()
-                .then(|| text.split_whitespace().map(str::to_string).collect())
-        };
-        let cflags = ask("--cflags").unwrap_or_default();
-        let libs = ask("--libs").filter(|l| !l.is_empty());
-        (cflags, libs.unwrap_or_else(|| vec![FFI_LIB.to_string()]))
-    })
-}
-
 /// The head of `zaka_callback.c`. The runtime keeps the closures themselves
-/// (`zk_cb_code` and the rest); the bridges read the libffi kinds of their
-/// shapes through the header of libffi, and the runtime links its own libffi.
+/// (`zk_cb_code` and the rest) and libffi with them: each shape names the C
+/// kinds of its values (`zk_c_kind`), and `zk_cb_shape_of` makes the libffi
+/// kinds of a shape on its first use, so the file needs no header of libffi.
 const CALLBACK_HEAD: &str = "\
 /* The bridges of the function kinds C calls back. */
-#if defined(__APPLE__)
-#include <ffi/ffi.h>
-#else
-#include <ffi.h>
-#endif
+#include <stdint.h>
 #include <string.h>
 
 #include \"zaka_runtime.h\"
 ";
+
+/// The C kind of each scalar a bridge names, with its tag in `zk_c_kind`.
+const SCALARS: &[(&str, u32)] = &[
+    ("void", 0),
+    ("u8", 1),
+    ("i8", 2),
+    ("u16", 3),
+    ("i16", 4),
+    ("u32", 5),
+    ("i32", 6),
+    ("u64", 7),
+    ("i64", 8),
+    ("f32", 9),
+    ("f64", 10),
+    ("ptr", 11),
+];
+
+/// The definitions of the scalar C kinds a text names as `&zk_ck_<name>`,
+/// in the order of their tags.
+///
+/// # Arguments
+///
+/// * `text` - The C text of the bridges.
+///
+/// # Returns
+///
+/// The C text of the definitions.
+fn scalar_kinds(text: &str) -> String
+{
+    let used = SCALARS.iter().filter(|(n, _)| text.contains(&format!("&zk_ck_{n}")));
+    let line = |(n, tag): &(&str, u32)| {
+        format!("static const zk_c_kind zk_ck_{n} = {{{tag}, 0, NULL}};\n")
+    };
+    used.map(line).collect()
+}
 
 /// The name of the shape of a function kind C calls back.
 ///
@@ -80,6 +80,18 @@ const CALLBACK_HEAD: &str = "\
 ///
 /// The name, `zk_cbs_<n>`.
 pub fn shape_name(n: usize) -> String { format!("zk_cbs_{n}") }
+
+/// The C text of the shape of a function kind C calls back, as the runtime
+/// takes it: the libffi shape `zk_cb_shape_of` makes of its native shape.
+///
+/// # Arguments
+///
+/// * `n` - Its index among the shapes of the program.
+///
+/// # Returns
+///
+/// The C text, `zk_cb_shape_of(&zk_cbs_<n>)`.
+pub fn shape_ref(n: usize) -> String { format!("zk_cb_shape_of(&{})", shape_name(n)) }
 
 /// How a value C passes to a function of the program becomes a value of
 /// Zaka in the bridge.
@@ -282,13 +294,13 @@ fn ffi_kind(kind: DataKind, platform: u16) -> Option<String>
         {
             let bits = repr.bits(platform);
             ret_if!(bits > 64, None);
-            Some(format!("ffi_type_{}int{bits}", tern!(k.signed, "s", "u")))
+            Some(format!("zk_ck_{}{bits}", tern!(k.signed, "i", "u")))
         }
-        DataKind::Float(32) => Some("ffi_type_float".into()),
-        DataKind::Float(64) => Some("ffi_type_double".into()),
-        DataKind::Char => Some("ffi_type_uint32".into()),
-        DataKind::Bool => Some("ffi_type_uint8".into()),
-        DataKind::Ptr(_) | DataKind::Null => Some("ffi_type_pointer".into()),
+        DataKind::Float(32) => Some("zk_ck_f32".into()),
+        DataKind::Float(64) => Some("zk_ck_f64".into()),
+        DataKind::Char => Some("zk_ck_u32".into()),
+        DataKind::Bool => Some("zk_ck_u8".into()),
+        DataKind::Ptr(_) | DataKind::Null => Some("zk_ck_ptr".into()),
         _ => None,
     }
 }
@@ -307,10 +319,10 @@ fn result_line(kind: DataKind) -> String
 {
     match kind.repr()
     {
-        DataKind::Int(k) if k.signed => "*(ffi_sarg *)zk_ret = (ffi_sarg)zk_r;".into(),
+        DataKind::Int(k) if k.signed => "*(intptr_t *)zk_ret = (intptr_t)zk_r;".into(),
         DataKind::Int(_) | DataKind::Char | DataKind::Bool =>
         {
-            "*(ffi_arg *)zk_ret = (ffi_arg)zk_r;".into()
+            "*(uintptr_t *)zk_ret = (uintptr_t)zk_r;".into()
         }
         DataKind::Float(32) => "*(float *)zk_ret = zk_r;".into(),
         DataKind::Float(_) => "*(double *)zk_ret = zk_r;".into(),
@@ -353,10 +365,24 @@ pub(crate) fn cb_source(
         _ = writeln!(out, "extern const zk_kind {};", d.trim_start_matches('&'))
     });
     let bridge = Bridge { platform, structs: &structs };
+    let mut body = String::new();
+    each_struct(&bridge, &structs, &mut body);
+    fns.iter().for_each(|(n, k, f)| body.push_str(&bridge.shape(*n, *k, f, descr)));
+    out.push_str(&scalar_kinds(&body));
+    out + &body
+}
+
+/// Add the C kind of each struct C passes as a value.
+///
+/// # Arguments
+///
+/// * `bridge` - The bridges.
+/// * `structs` - The structs.
+/// * `out` - The C text so far.
+fn each_struct(bridge: &Bridge<'_>, structs: &[DataKind], out: &mut String)
+{
     let each = structs.iter().enumerate();
     each.for_each(|(i, s)| out.push_str(&bridge.struct_kind(*s, i)));
-    fns.iter().for_each(|(n, k, f)| out.push_str(&bridge.shape(*n, *k, f, descr)));
-    out
 }
 
 /// What the bridges of `zaka_callback.c` share.
@@ -407,12 +433,14 @@ impl Bridge<'_>
         };
         let each = s.fields().iter().map(|(_, k)| cells(*k));
         let members = each.flat_map(|(cell, n)| std::iter::repeat_n(member(cell), n));
-        let members: Vec<String> = members.chain(["NULL".to_string()]).collect();
+        let members: Vec<String> = members.collect();
         format!(
-            "\n/* {} */\nstatic ffi_type *zk_cbse_{at}[] = {{{}}};\nstatic ffi_type \
-             zk_cbst_{at} = {{0, 0, FFI_TYPE_STRUCT, zk_cbse_{at}}};\n",
+            "\n/* {} */\nstatic const zk_c_kind *const zk_cbse_{at}[] = \
+             {{{}}};\nstatic const zk_c_kind zk_cbst_{at} = {{12, {}, \
+             zk_cbse_{at}}};\n",
             s.name.replace("*/", "* /"),
-            members.join(", ")
+            members.join(", "),
+            members.len()
         )
     }
 
@@ -435,7 +463,7 @@ impl Bridge<'_>
             {
                 format!("&{}", ffi_kind(kind, self.platform).unwrap_or_default())
             }
-            Some(_) => "&ffi_type_pointer".into(),
+            Some(_) => "&zk_ck_ptr".into(),
         }
     }
 
@@ -506,15 +534,16 @@ impl Bridge<'_>
         let listed: Vec<String> = params.iter().map(|k| self.param_ffi(*k)).collect();
         let listed = tern!(listed.is_empty(), "NULL".to_string(), listed.join(", "));
         let ret_ffi = ret.map_or_else(
-            || "ffi_type_void".into(),
+            || "zk_ck_void".into(),
             |k| ffi_kind(k, self.platform).unwrap_or_default(),
         );
         let name = kind.name().replace("*/", "* /");
         format!(
             "\n/* {name} */\nstatic void zk_cbb_{n}(void *zk_ret, void **zk_args, \
-             unsigned char *zk_rec)\n{{\n{steps}}}\nstatic ffi_type *zk_cbt_{n}[] = \
-             {{{listed}}};\nconst zk_cb_shape {} = {{.bridge = zk_cbb_{n}, .ret = \
-             &{ret_ffi}, .args = (void **)zk_cbt_{n}, .nargs = {}, .as_is = {}}};\n",
+             uint8_t *zk_rec)\n{{\n{steps}}}\nstatic const zk_c_kind *const \
+             zk_cbt_{n}[] = {{{listed}}};\nconst zk_cb_native_shape {} = {{.bridge = \
+             zk_cbb_{n}, .ret = &{ret_ffi}, .args = zk_cbt_{n}, .nargs = {}, .as_is = \
+             {}}};\n",
             shape_name(n),
             params.len(),
             u8::from(as_is(f, self.platform))

@@ -11,6 +11,7 @@ pub use zaka_web_ui_common::paint::token_class;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::Program;
 use zakac_ast::target::BuildTarget;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::borrow_check;
@@ -134,6 +135,9 @@ pub struct Options
     /// The CPU the compile-time conditionals see.
     #[builder(default = TargetArch::X86_64)]
     pub arch: TargetArch,
+    /// The ABI the compile-time conditionals see; the usual one of the OS
+    /// when `None`.
+    pub abi: Option<TargetAbi>,
 }
 
 /// What code generation writes; its static name is the word links and the
@@ -731,8 +735,8 @@ fn explorer_target(options: &Options) -> zakac_ast::target::Target
         Target::Native => BuildTarget::Native,
     };
     #[rustfmt::skip]
-    return zakac_ast::target::Target::builder().os(options.os)
-        .arch(options.arch).bits(options.platform_bits).output(output).build();
+    return zakac_ast::target::Target::builder().os(options.os).arch(options.arch)
+        .maybe_abi(options.abi).bits(options.platform_bits).output(output).build();
 }
 
 /// Run all phases over `source`.

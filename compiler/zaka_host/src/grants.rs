@@ -425,7 +425,10 @@ mod tests
         let mut gate =
             Gate::new(Grants::builder().read(Grant::Some(vec!["/r".into()])).build());
         gate.root = Some(PathBuf::from("/r"));
-        assert_eq!(gate.check(Right::Read, "x/../y.txt"), Ok("/r/y.txt".into()));
+        // The path is the host's, with `\` on Windows, so it compares as a
+        // path.
+        let landed = gate.check(Right::Read, "x/../y.txt").map(PathBuf::from);
+        assert_eq!(landed, Ok(PathBuf::from("/r/y.txt")));
         assert!(gate.check(Right::Read, "../s/y.txt").is_err());
     }
 

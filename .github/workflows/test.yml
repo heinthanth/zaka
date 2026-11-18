@@ -27,16 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-
-      # ubuntu-latest is x86-64 and has gcc; closures given to C link libffi,
-      # which needs its dev package. macos-latest has clang and the SDK libffi.
-      - name: Install libffi (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libffi-dev pkg-config
+      # Windows builds with the GNU host: the C and native targets link with
+      # MinGW, and the runtime lib they carry is built for that host.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || 'stable' }}
 
       # windows-latest has no gcc on the PATH: MinGW from MSYS2 gives the C
-      # target a compiler and libffi, and no Visual Studio is involved.
+      # target a compiler, and no Visual Studio is involved. The runtime lib
+      # carries its own libffi on each host.
       - name: Install MinGW (Windows)
         if: runner.os == 'Windows'
         id: msys2
@@ -46,7 +45,7 @@ jobs:
           update: false
           install: >-
             mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-libffi
+            make
 
       # The ucrt64 folder alone joins the PATH, so `cc` and `gcc` are found
       # and the MSYS tools do not shadow the Windows ones.
@@ -69,4 +68,15 @@ jobs:
         run: cargo fetch --locked
 
       - name: Run the tests
+        if: runner.os != 'Windows'
         run: cargo nextest run --workspace --locked --no-fail-fast
+
+      # libffi-sys builds its vendored libffi for a GNU target with sh, cp and
+      # make: the MSYS tools join the end of the PATH, so they shadow no
+      # Windows tool.
+      - name: Run the tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:PATH;${{ steps.msys2.outputs.msys2-location }}\usr\bin"
+          cargo nextest run --workspace --locked --no-fail-fast

@@ -6,6 +6,7 @@ use zakac_ast::expr::Expr;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::Target;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_diagnostics::Code;
@@ -158,6 +159,30 @@ fn a_named_fact_holds_the_target()
         .any(|s| matches!(s, Stmt::Import(n) if n.unit.is_some()));
     assert!(imported);
     assert_eq!(loaded.program.target, Some(on(TargetOs::Windows)));
+}
+
+/// The ABI fact holds the ABI of the target: the arm on `"msvc"` stands for
+/// an MSVC target and the other arm for a GNU one, and an OS with no ABI
+/// given takes its usual one.
+#[test]
+fn the_abi_fact_holds_the_abi()
+{
+    let chain = CHAIN.replace(
+        "အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == \"windows\"",
+        "အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ် == \"msvc\"",
+    );
+    let with = |abi| {
+        #[rustfmt::skip]
+        let target = Target::builder().os(TargetOs::Windows).arch(TargetArch::X86_64)
+            .abi(abi).bits(64).output(BuildTarget::Vm).build();
+        load(&chain, &target)
+    };
+    let msvc = with(TargetAbi::Msvc);
+    assert!(msvc.diagnostics.is_empty(), "{:?}", msvc.diagnostics);
+    assert_eq!(constants(&msvc), ["ပြတင်း"]);
+    assert_eq!(constants(&with(TargetAbi::Gnu)), ["ယူနစ်"]);
+    assert_eq!(on(TargetOs::Macos).abi, TargetAbi::Apple);
+    assert_eq!(on(TargetOs::Linux).abi, TargetAbi::Gnu);
 }
 
 /// An import in the arm the target keeps is read; one in a dropped arm is
