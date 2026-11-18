@@ -134,11 +134,13 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 ## Limits
 
 - A function C can call takes integers, decimal numbers, true and false, characters,
-  addresses, text, handles and optionals of text or handles; it gives back one of the
-  numbers, a character, true or false, or an address (ZK0465).
+  addresses, text, handles, optionals of text or handles, and plain structs of these; it
+  gives back one of the numbers, a character, true or false, or an address (ZK0465).
+- A struct it takes needs a C name, which the header declares it under (ZK0492):
+  `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် ...`.
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
-- A lib runs on one thread.
+- Threads can call a lib, but one call runs at a time; the others wait.
 
 ## Hands on
 

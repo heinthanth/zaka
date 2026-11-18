@@ -201,6 +201,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Callable
         | Kw::UnderName
         | Kw::CallableOutside
+        | Kw::Usable
+        | Kw::UsableOutside
         | Kw::OneFunction
         | Kw::WillAccept
         | Kw::AcceptingRel

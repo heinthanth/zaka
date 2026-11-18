@@ -62,6 +62,7 @@ use zakac_diagnostics::resolve as rd;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
@@ -157,6 +158,40 @@ fn struct_classifiers(program: &Program) -> HashMap<String, String>
         _ => None,
     });
     declared.collect()
+}
+
+/// The C name of each struct a lib gives to C, under the struct name,
+/// reporting a C name that is no C name (ZK0337) and one the runtime or
+/// another struct takes (ZK0491).
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+/// * `diags` - Where to report.
+///
+/// # Returns
+///
+/// The C names.
+fn c_structs(program: &Program, diags: &mut Vec<Diagnostic>)
+-> HashMap<String, String>
+{
+    let mut names = HashMap::new();
+    let marked = program.stmts.iter().filter_map(|s| match s
+    {
+        Stmt::Struct(d) => d.c_name.as_ref().map(|c| (d, c)),
+        _ => None,
+    });
+    for (d, c) in marked
+    {
+        let name = c.lit.value.clone();
+        let named = foreign::is_c_name(&name);
+        do_if!(!named, diags.push(rd::not_a_c_struct_name(c.span, &name)));
+        let taken =
+            foreign::is_runtime_name(&name) || names.values().any(|n| *n == name);
+        do_if!(named && taken, diags.push(kd::c_name_taken(c.span, &name)));
+        names.insert(d.name.name.to_string(), name);
+    }
+    names
 }
 
 /// Options of the check.
@@ -498,11 +533,12 @@ fn check_once(
     diags.extend(private_in_exports(program, &homes));
     diags.extend(start_rules(program, !options.as_module));
     diags.extend(core_twins(program));
+    let c_structs = c_structs(program, &mut diags);
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
         .homes(homes).unit_names(unit_names(program)).structs(structs)
         .diags(diags).platform(options.platform_bits).no_unsafe(options.no_unsafe)
-        .as_module(options.as_module)
+        .as_module(options.as_module).c_structs(c_structs)
         .known(known).open_structs(open_structs(program)).decls(decls)
         .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
         .uses(instances.uses.clone()).root_unit(program.units.len().saturating_sub(1) as u32)
@@ -665,6 +701,9 @@ pub(crate) struct Checker
     /// far.
     #[builder(default)]
     pub c_exports: HashSet<String>,
+    /// The C name of each struct a lib gives to C, under the struct name.
+    #[builder(default)]
+    pub c_structs: HashMap<String, String>,
     /// Whether unsafe code is refused.
     #[builder(default)]
     pub no_unsafe: bool,
@@ -1078,7 +1117,8 @@ impl Checker
     /// (ZK0490); its C name is a C name (ZK0337) that neither the runtime,
     /// a C function nor another such function takes (ZK0491); C can give
     /// each parameter (ZK0465, ZK0466) and take the result (ZK0465), as for
-    /// a function value C calls back, save a plain struct parameter.
+    /// a function value C calls back; and each struct a parameter passes to C
+    /// has a C name (ZK0492).
     ///
     /// # Arguments
     ///
@@ -1101,6 +1141,7 @@ impl Checker
         do_if!(!named, self.report(rd::not_a_c_export_name(c.span, &name)));
         let taken = foreign::is_runtime_name(&name)
             || self.c_names.contains_key(&name)
+            || self.c_structs.values().any(|c| *c == name)
             || !self.c_exports.insert(name.clone());
         do_if!(named && taken, self.report(kd::c_name_taken(c.span, &name)));
         let platform = self.platform;
@@ -1108,15 +1149,34 @@ impl Checker
         {
             let kind = DataKind::from_ast(&p.kind, &self.structs);
             do_if!(p.edit, self.report(kd::edit_across_c(p.span, &p.name.name)));
-            // shortcut: a plain struct needs its fields in the header of the
-            // lib, which the header lacks; write them there to let one in.
-            let whole =
-                matches!(kind, DataKind::Struct(_)) && kind.fallible_parts().is_none();
-            let stuck = !p.edit && (whole || !foreign::callback_param(kind, platform));
+            let stuck = !p.edit && !foreign::callback_param(kind, platform);
             do_if!(stuck, self.report(kd::kind_not_across_c(p.span, &kind.name())));
+            do_if!(!stuck, self.check_c_struct(kind, p.span));
         }
         let bad_ret = ret.filter(|k| !foreign::callback_result(*k, platform));
         do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
+    }
+
+    /// Report each struct that a parameter of a function code outside can
+    /// call passes to C with no C name (ZK0492): the struct of the parameter
+    /// and each struct among its fields, through lists.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the parameter or of a field inside it.
+    /// * `span` - The parameter.
+    fn check_c_struct(&mut self, kind: DataKind, span: Span)
+    {
+        let mut cell = kind;
+        do_while!(let Some(l) = cell.as_list(), cell = l.cell);
+        let Some(s) = cell.as_struct()
+        else
+        {
+            return;
+        };
+        let named = self.c_structs.contains_key(&s.name);
+        do_if!(!named, self.report(kd::struct_needs_c_name(span, &s.name)));
+        s.fields().iter().for_each(|(_, k)| self.check_c_struct(*k, span));
     }
 
     /// Choose the function a call runs among the functions of its name: the

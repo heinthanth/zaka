@@ -654,8 +654,10 @@ en = "write the name as the lib spells it: ASCII letters, digits and \"_\", not 
 en = "\"%{n}\" is the name C calls the function with, so it must be a C name"
 [codes.ZK0337.help_export]
 en = "write a name of ASCII letters, digits and \"_\", not starting with a digit"
+[codes.ZK0337.message_struct]
+en = "\"%{n}\" is the name C knows the struct under, so it must be a C name"
 [codes.ZK0337.explain]
-en = """A function that comes from a C lib, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A function that code outside can call, \"\"<C name>\" အမည်ဖြင့် ...\", is called from C with the C name it gives. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
+en = """A function that comes from a C lib, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A function that code outside can call, \"\"<C name>\" အမည်ဖြင့် ...\", is called from C with the C name it gives, and a struct a lib gives to C, \"\"<C name>\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး\", is known to C under its C name. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
 
 [codes.ZK0339.title]
 en = "a function that can end with no result"
@@ -1490,9 +1492,18 @@ en = "a C name that is taken"
 [codes.ZK0491.message]
 en = "the C name \"%{n}\" is taken"
 [codes.ZK0491.help]
-en = "pick another C name: the runtime keeps \"main\" and the names that start with \"zk_\" or \"ZK_\", and each C name names one function"
+en = "pick another C name: the runtime keeps \"main\" and the names that start with \"zk_\" or \"ZK_\", and each C name names one function or struct"
 [codes.ZK0491.explain]
-en = """A lib names each function C calls with its C name, and a C program links each name to one function. So the C name of a function that code outside can call cannot be one the runtime of Zaka keeps for itself, `main` and the names that start with `zk_` or `ZK_`, nor the name of a C function the program calls, nor that of another function that code outside can call."""
+en = """A lib names each function C calls with its C name, and a C program links each name to one function. So the C name of a function that code outside can call cannot be one the runtime of Zaka keeps for itself, `main` and the names that start with `zk_` or `ZK_`, nor the name of a C function the program calls, nor that of another function that code outside can call. The C name of a struct a lib gives to C, `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး`, follows the same rule, and two such structs, or such a struct and such a function, cannot share one."""
+
+[codes.ZK0492.title]
+en = "a struct C knows no name for"
+[codes.ZK0492.message]
+en = "the struct \"%{n}\" crosses to C here, so it needs a C name"
+[codes.ZK0492.help]
+en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည် \"<C name>\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် ...`"
+[codes.ZK0492.explain]
+en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"

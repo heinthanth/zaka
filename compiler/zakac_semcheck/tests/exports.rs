@@ -65,3 +65,38 @@ fn a_nested_function_c_cannot_call_is_zk0490()
     let outer = export("အပြင်", "outer_fn", &one(int), int, inner);
     assert_eq!(codes(&outer), [Code::ExportNotPlain]);
 }
+
+/// A struct `name` of two 32-bit fields, with the C name `c_name` when one
+/// is given.
+fn point(name: &str, c_name: Option<&str>) -> String
+{
+    let mark = c_name.map_or("တွင်".to_string(), |c| {
+        format!("သည် \"{c}\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင်")
+    });
+    format!(
+        "{name} ဟူသော ဒေတာအစုအဝေး{mark} x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် \
+         တစ်ခု တို့ပါဝင်သည်။\n"
+    )
+}
+
+#[test]
+fn a_struct_c_takes_needs_a_c_name()
+{
+    let int = "၃၂ ဘစ် ကိန်းပြည့်";
+    let call = export("အကွာ", "manhattan", &one("pt"), int, "(က ၏ x) ကို ပြန်ပေးမည်။");
+    ok(&(point("pt", Some("point")) + &call));
+    assert_eq!(codes(&(point("pt", None) + &call)), [Code::StructNeedsCName]);
+}
+
+#[test]
+fn struct_c_names_are_checked()
+{
+    assert_eq!(codes(&point("pt", Some("2d"))), [Code::NotACName]);
+    assert_eq!(codes(&point("pt", Some("zk_point"))), [Code::CNameTaken]);
+    let twice = point("pt", Some("point")) + &point("pt2", Some("point"));
+    assert_eq!(codes(&twice), [Code::CNameTaken]);
+    let int = "ကိန်းပြည့်";
+    let clash = point("pt", Some("twice"))
+        + &export("က", "twice", &one(int), int, "က ကို ပြန်ပေးမည်။");
+    assert_eq!(codes(&clash), [Code::CNameTaken]);
+}

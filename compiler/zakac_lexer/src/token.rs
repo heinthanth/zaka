@@ -382,6 +382,9 @@ pub enum Kw
     /// `ခေါ်ဆိုနိုင်သော`, "that can be called": the last piece of
     /// `ပြင်ပမှ ခေါ်ဆိုနိုင်သော`
     Callable,
+    /// `ယူသုံးနိုင်ပြီး`, "that can be taken up, and": the last piece of
+    /// `ပြင်ပမှ ယူသုံးနိုင်ပြီး`
+    Usable,
     /// `အမည်ဖြင့်`, "under the name": follows the C name of a function that
     /// code outside can call
     UnderName,
@@ -447,6 +450,9 @@ pub enum Kw
     /// `ပြင်ပ မှ ခေါ်ဆိုနိုင်သော`, "that outside code can call": marks a function
     /// that a lib the build writes gives to C and to other languages
     CallableOutside,
+    /// `ပြင်ပ မှ ယူသုံးနိုင်ပြီး`, "that outside code can take up, and": marks a
+    /// struct that a lib the build writes gives to C under a C name
+    UsableOutside,
     /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
     UsedGoodResult,
     /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်`: a call statement passes a

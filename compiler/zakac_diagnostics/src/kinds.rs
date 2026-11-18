@@ -1421,3 +1421,20 @@ pub fn c_name_taken(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::CNameTaken, t!("codes.ZK0491.message", n = name), span)
         .with_help(t!("codes.ZK0491.help"))
 }
+
+/// A function that code outside can call passes a struct to C that has no
+/// C name.
+///
+/// # Arguments
+///
+/// * `span` - The parameter.
+/// * `name` - The struct name.
+///
+/// # Returns
+///
+/// The `ZK0492` diagnostic.
+pub fn struct_needs_c_name(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::StructNeedsCName, t!("codes.ZK0492.message", n = name), span)
+        .with_help(t!("codes.ZK0492.help", n = name))
+}

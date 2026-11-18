@@ -686,6 +686,23 @@ pub fn not_a_c_export_name(span: Span, name: &str) -> Diagnostic
         .with_help(t!("codes.ZK0337.help_export"))
 }
 
+/// The C name of a struct a lib gives to C is no C name.
+///
+/// # Arguments
+///
+/// * `span` - The C name.
+/// * `name` - The C name.
+///
+/// # Returns
+///
+/// The `ZK0337` diagnostic.
+pub fn not_a_c_struct_name(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0337.message_struct", n = name);
+    Diagnostic::new(Code::NotACName, msg, span)
+        .with_help(t!("codes.ZK0337.help_export"))
+}
+
 /// A C function of a name declared before has other parameter or result
 /// kinds.
 ///

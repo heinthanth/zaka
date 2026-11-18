@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -128,7 +129,8 @@ pub fn lower(
     #[rustfmt::skip]
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
-        .unsafe_spans(unsafe_spans(program)).maybe_built_for(program.target)
+        .unsafe_spans(unsafe_spans(program)).c_structs(c_structs(program))
+        .maybe_built_for(program.target)
         .span(program.span).build();
     module
 }
@@ -164,6 +166,28 @@ fn unsafe_spans(program: &st::Program) -> Vec<Span>
     let mut marks = Marks(Vec::new());
     marks.visit_program(program);
     marks.0
+}
+
+/// The C name of each struct a lib gives to C, under the struct name.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The C names.
+fn c_structs(program: &st::Program) -> BTreeMap<String, String>
+{
+    let named = |s: &st::Stmt| {
+        let st::Stmt::Struct(d) = s
+        else
+        {
+            return None;
+        };
+        d.c_name.as_ref().map(|c| (d.name.name.to_string(), c.lit.value.clone()))
+    };
+    program.stmts.iter().filter_map(named).collect()
 }
 
 /// What the function names of a unit end with: nothing for the file that

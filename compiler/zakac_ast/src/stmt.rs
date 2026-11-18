@@ -822,6 +822,11 @@ pub struct StructDecl
     #[builder(default)]
     #[serde(default)]
     pub external: bool,
+    /// The C name a lib the build writes gives the struct,
+    /// `သည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင်`; a function that
+    /// code outside can call takes a struct with one alone.
+    #[serde(default)]
+    pub c_name: Option<StrArg>,
     /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
     /// order, each kind parameter among them a slot; none when not written.
     #[builder(default)]

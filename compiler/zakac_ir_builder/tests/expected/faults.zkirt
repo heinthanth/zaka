@@ -1825,6 +1825,7 @@ module:
     exit: 0
   foreign: []
   unsafe_spans: []
+  c_structs: {}
   built_for: null
   span:
     lo: 0

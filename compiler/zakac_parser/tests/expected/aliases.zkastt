@@ -42,6 +42,7 @@ program:
       exported: false
       shared: false
       external: false
+      c_name: null
       hint: []
       span:
         lo: 76

@@ -1626,9 +1626,60 @@ The rules:
 - Its kinds are those C passes to a function value it calls back
   ([Callbacks](#c-functions)): a parameter is a number, a character, true or false, an
   address, text (a `const char *`; NULL stops the call), a handle of a kind from outside,
-  or an optional of text or of a handle (NULL holds no data); a plain struct is not taken
-  for now. The result is a number, a character, true or false, or an address (ZK0465).
+  an optional of text or of a handle (NULL holds no data), or a plain struct of such
+  fields, passed whole. The result is a number, a character, true or false, or an
+  address (ZK0465).
   `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်` are ZK0466.
+- Each struct a parameter passes has a C name (ZK0492): the struct of the parameter and
+  each struct among its fields. A text and `အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်း` between
+  `ဒေတာအစုအဝေးသည်` and `တွင်` give it one, and the header of the lib declares the struct
+  under that name. The C name follows the rules of the C name of a function (ZK0337,
+  ZK0491), and no two structs or functions share one.
+
+```zaka
+point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+အကွာအဝေး ဟူသော လုပ်ဆောင်ချက် သည် "manhattan" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+က ဟူသော point တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+(က ၏ x) + (က ၏ y) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ထောင့် သည် x အနေဖြင့် ၃ နှင့် y အနေဖြင့် ၄ ရှိသော point တစ်ခု ဖြစ်ပါစေ။
+အကွာအဝေး ဟူသော လုပ်ဆောင်ချက်ကို ထောင့် ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၇
+```
+
+The header declares the struct with its fields in order, each under its Zaka name when
+that is a C name, else `f<n>`:
+
+```c
+typedef struct
+{
+    int32_t x;
+    int32_t y;
+} point;
+
+int32_t manhattan(point zk_p0, int32_t *zk_out);
+```
+
+```zaka-error ZK0492
+point ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+
+အကွာအဝေး ဟူသော လုပ်ဆောင်ချက် သည် "manhattan" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+က ဟူသော point တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+(က ၏ x) + (က ၏ y) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
 ```zaka-error ZK0491
 ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် "zk_add" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -1658,7 +1709,9 @@ a last parameter, an address it writes unless it is NULL: the function above is
 the number of the trap the call stopped on, with its text from `zk_last_trap()`, or
 `ZK_STOPPED` (-1) for each call after a trap, since a trap can leave the heap and the
 globals half written. The first call starts the runtime and sets the globals; the text a
-call prints goes out before it returns. A lib runs on one thread.
+call prints goes out before it returns. Threads can call the lib: one call runs at a
+time, and a call from another thread waits until it ends. C that a call calls can call
+the lib again on the same thread.
 
 ## Recursion
 

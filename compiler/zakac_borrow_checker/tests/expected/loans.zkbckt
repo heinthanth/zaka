@@ -1074,6 +1074,7 @@ module:
     hi: 2570
   - lo: 2732
     hi: 7082
+  c_structs: {}
   built_for: null
   span:
     lo: 0

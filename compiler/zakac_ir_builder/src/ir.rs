@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
 
@@ -51,6 +52,11 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub unsafe_spans: Vec<Span>,
+    /// The C name of each struct a lib gives to C, under the struct name:
+    /// `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး`.
+    #[builder(default)]
+    #[serde(default)]
+    pub c_structs: BTreeMap<String, String>,
     /// The target the program was settled for, when it depends on one.
     #[serde(default)]
     pub built_for: Option<Target>,

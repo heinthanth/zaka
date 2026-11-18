@@ -1381,9 +1381,11 @@ impl Parser<'_>
         &mut self, start: Span, name: Ident, mut kind_params: Vec<KindParam>,
     ) -> PResult<Stmt>
     {
+        let mut c_name = None;
         if kind_params.is_empty() && self.eat(Kw::Thi)
         {
-            kind_params = self.parse_word_params()?;
+            c_name = self.parse_struct_c_name()?;
+            do_if!(c_name.is_none(), kind_params = self.parse_word_params()?);
         }
         self.expect(Kw::At)?;
         let added = self.add_kind_names(&kind_params);
@@ -1395,8 +1397,34 @@ impl Parser<'_>
         do_if!(self.nested(), self.diags.push(diag::nested_struct(span)));
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
-            .maybe_classifier(classifier).hint(hint).span(span).build();
+            .maybe_classifier(classifier).maybe_c_name(c_name).hint(hint).span(span)
+            .build();
         Ok(Stmt::Struct(node))
+    }
+
+    /// Parse the C name of a struct a lib gives to C, when one starts here
+    /// after `သည်`: `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်း`, up to the
+    /// `တွင်` before the fields. The phrase with no C name before it is an
+    /// error.
+    ///
+    /// # Returns
+    ///
+    /// The C name, `None` when no such head starts here, or a diagnostic.
+    fn parse_struct_c_name(&mut self) -> PResult<Option<StrArg>>
+    {
+        ret_if!(self.at(Kw::UsableOutside), Err(self.err_expected(C_NAME_HEAD)));
+        let TokenKind::Str(idx) = self.peek().kind
+        else
+        {
+            return Ok(None);
+        };
+        ret_if!(self.peek_n(1).kind != TokenKind::Kw(Kw::UnderName), Ok(None));
+        let tok = self.bump();
+        self.advance();
+        self.expect(Kw::UsableOutside)?;
+        self.expect(Kw::Itself)?;
+        let lit = self.strings[idx as usize].clone();
+        Ok(Some(StrArg::builder().lit(lit).span(tok.span).build()))
     }
 
     /// Parse the end of a struct or an enumeration declaration after its
