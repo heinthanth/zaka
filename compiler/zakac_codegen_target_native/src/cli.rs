@@ -228,6 +228,8 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ret_if!(let Err(error) = source, report_command_error(io, &info, error));
     let target = target_from(matches, BuildTarget::Native);
     ret_if!(let Some(error) = arch_error(&target), report_command_error(io, &info, error));
+    let given = zakac_codegen_target_c::cli::take_runtime_lib(matches, target.abi);
+    ret_if!(let Err(error) = given, report_command_error(io, &info, error));
     let cross =
         native_other_host(&target).filter(|_| matches!(emit, Emit::Bin | Emit::Lib));
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
@@ -311,8 +313,9 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             let dialect = Dialect::of(target.abi);
             let libs = link_libs_for(&program.foreign, dialect);
             let files = lib.then(|| LibFiles::of(&out(""), target.clone()));
-            let exe =
-                files.as_ref().map_or_else(|| with_exe(out("")), |f| f.shared.clone());
+            let exe = files
+                .as_ref()
+                .map_or_else(|| with_exe(out(""), target.os), |f| f.shared.clone());
             // The wrappers of a lib are C, which the C toolchain builds beside
             // the object.
             let platform = options.platform_bits;
@@ -367,7 +370,10 @@ fn native_other_host(target: &Target) -> Option<Error>
     let host = Target::host();
     let same = (target.os, target.arch) == (host.os, host.arch);
     let carried = zakac_codegen_target_c::driver::runtime_lib(target.abi).is_some();
-    ret_if!(same && carried, None);
+    // A runtime lib built for the target, with a C toolchain for it, links
+    // for each OS and CPU.
+    let given = zakac_codegen_target_c::driver::runtime_given();
+    ret_if!((same || given) && carried, None);
     Some(Error::NativeForOtherHost {
         target: target.shown(),
         host: Target::host().shown(),

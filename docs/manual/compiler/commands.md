@@ -347,6 +347,7 @@ differs from the VM.
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC) |
+| `--runtime-lib <FILE>` | the runtime lib `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; with a C compiler for that target in `--cc`, the C and native targets build for its OS and CPU (see [Cross builds](native.md#cross-builds)) |
 | `--allow-read[=<PATHS>]`, `--allow-write[=<PATHS>]`, `--allow-env[=<NAMES>]`, `--allow-ffi`, `-A`, `--no-permission-prompt` | none | the rights the executable holds, written into it, as `zakac run` grants them to a run; the executable asks for a right it lacks on a terminal, as the VM does; see [Permissions](../vm/running.md#permissions) |
 
 Each run-time check is one kind of stop. A level sets each check: `none` turns all of

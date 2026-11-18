@@ -51,6 +51,9 @@ en = "  ... %{n} calls more"
 [target_c.full_hint]
 en = "note: set %{var}=full to list each call, or %{var}=0 to leave the calls out"
 
+[target_c.runtime_lib]
+en = "A runtime lib built for another target (cargo build -p zaka_runtime --target <triple>), to build for that OS and CPU with a C compiler for it; native-libs.txt beside it lists the OS libs it needs, one flag a line."
+
 [target_c.cc]
 en = "The C compiler, with the words before its flags (default: CC, then cc, gcc, clang or zig cc from the PATH)."
 

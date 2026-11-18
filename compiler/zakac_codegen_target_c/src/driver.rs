@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use etcetera::BaseStrategy;
 use zakac_ast::target::Target;
@@ -66,6 +67,45 @@ const WASIP2_LIB: &[u8] =
 const WASIP2_LIBS: &str =
     include_str!(concat!(env!("OUT_DIR"), "/native-libs-wasip2.txt"));
 
+/// The runtime lib that `--runtime-lib` names, built for another target with
+/// `cargo build -p zaka_runtime --target <triple>`; it takes the place of
+/// each lib this compiler carries.
+static GIVEN_LIB: OnceLock<RuntimeLib> = OnceLock::new();
+
+/// The file beside a given runtime lib that lists the OS libs it needs, one
+/// flag a line, as rustc prints them with `--print native-static-libs`.
+pub const GIVEN_LIBS_FILE: &str = "native-libs.txt";
+
+/// Use a runtime lib built for another target, with the OS libs its
+/// [`GIVEN_LIBS_FILE`] lists, when it has one.
+///
+/// # Arguments
+///
+/// * `path` - The lib.
+/// * `abi` - The ABI of the target, which names the lib in the cache.
+///
+/// # Returns
+///
+/// `Ok`, or the error of a lib that does not read.
+pub fn give_runtime_lib(path: &Path, abi: TargetAbi) -> zakac_host_errors::Result<()>
+{
+    let context = IOErrorContext::new(path.to_path_buf(), IOErrorAction::Read);
+    let octets = std::fs::read(path).map_err(|e| Error::from_io(e, context))?;
+    let libs = std::fs::read_to_string(path.with_file_name(GIVEN_LIBS_FILE));
+    let name = tern!(abi == TargetAbi::Msvc, "zaka_runtime.lib", "libzaka_runtime.a");
+    let octets: &'static [u8] = Box::leak(octets.into_boxed_slice());
+    let libs: &'static str = Box::leak(libs.unwrap_or_default().into_boxed_str());
+    _ = GIVEN_LIB.set(RuntimeLib { octets, name, libs });
+    Ok(())
+}
+
+/// Whether `--runtime-lib` gave a runtime lib for another target.
+///
+/// # Returns
+///
+/// `true` when it did.
+pub fn runtime_given() -> bool { GIVEN_LIB.get().is_some() }
+
 /// The runtime lib of one ABI, as this compiler carries it.
 #[derive(Debug, Clone, Copy)]
 pub struct RuntimeLib
@@ -116,6 +156,7 @@ pub fn host_abi() -> TargetAbi { Target::host().abi }
 /// The lib, or `None` for an ABI this compiler carries no runtime of.
 pub fn runtime_lib(abi: TargetAbi) -> Option<RuntimeLib>
 {
+    ret_if!(let Some(lib) = GIVEN_LIB.get(), Some(*lib));
     let name = tern!(abi == TargetAbi::Msvc, "zaka_runtime.lib", "libzaka_runtime.a");
     let other = match host_abi()
     {

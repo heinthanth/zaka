@@ -88,6 +88,8 @@ const CC_FLAG_ARG: &str = "cc_flag";
 const LD_FLAG_ARG: &str = "ld_flag";
 /// The flag that leaves out the default C flags.
 const NO_DEFAULT_FLAGS_ARG: &str = "no_default_flags";
+/// The flag that names a runtime lib built for another target.
+pub const RUNTIME_LIB_ARG: &str = "runtime_lib";
 
 /// The `zakac_codegen_target_c` command: the C target on its own.
 /// `zakac build --target c` runs the same build.
@@ -196,6 +198,7 @@ pub const TARGET_ARGS: &[&str] = &[
     CC_FLAG_ARG,
     LD_FLAG_ARG,
     NO_DEFAULT_FLAGS_ARG,
+    RUNTIME_LIB_ARG,
     "allow-read",
     "allow-write",
     "allow-env",
@@ -271,6 +274,31 @@ fn attach_toolchain_args(cmd: clap::Command) -> clap::Command
         .arg(flag(CC_FLAG_ARG, "cc-flag", t!("target_c.cc_flag")))
         .arg(flag(LD_FLAG_ARG, "ld-flag", t!("target_c.ld_flag")))
         .arg(no_defaults)
+        .arg(
+            Arg::new(RUNTIME_LIB_ARG)
+                .long("runtime-lib")
+                .value_name("FILE")
+                .help(t!("target_c.runtime_lib")),
+        )
+}
+
+/// Use the runtime lib `--runtime-lib` names, for a build for another
+/// target.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+/// * `abi` - The ABI of the target.
+///
+/// # Returns
+///
+/// `Ok`, or the error of a lib that does not read.
+pub fn take_runtime_lib(
+    matches: &ArgMatches, abi: zakac_ast::target::TargetAbi,
+) -> zakac_host_errors::Result<()>
+{
+    let given = matches.try_get_one::<String>(RUNTIME_LIB_ARG).ok().flatten();
+    given.map_or(Ok(()), |p| crate::driver::give_runtime_lib(Path::new(p), abi))
 }
 
 impl Command for ZakacTargetC
@@ -425,6 +453,8 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 
     let stem = input_path(&input);
     let cache = arg(CACHE_ARG).map_or_else(|| default_cache(&stem), PathBuf::from);
+    let given = take_runtime_lib(matches, built_for.abi);
+    ret_if!(let Err(error) = given, report_command_error(io, &info, error));
     let cross =
         other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit != Emit::C);
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
@@ -440,8 +470,11 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     );
     let base = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
     let lib_files = lib.then(|| LibFiles::of(&base, built_for));
-    let out =
-        tern!(wasi, with_extension_if_bare(base, wasi::EXTENSION), with_exe(base));
+    let out = tern!(
+        wasi,
+        with_extension_if_bare(base, wasi::EXTENSION),
+        with_exe(base, built_for.os)
+    );
     let out = lib_files.as_ref().map_or(out, |f| f.shared.clone());
     let files = files.unwrap();
     let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
@@ -478,7 +511,10 @@ fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
     let wasi = target.os == TargetOs::Wasi && target.arch == TargetArch::Wasm32;
     let wasi = wasi && wasi::is_wasi(target.abi);
     let carried = crate::driver::runtime_lib(target.abi).is_some();
-    ret_if!((same || wasi) && carried, None);
+    // A runtime lib built for the target, with a C compiler for it, builds
+    // for each OS and CPU.
+    let given = crate::driver::runtime_given();
+    ret_if!((same || wasi || given) && carried, None);
     Some(Error::CForOtherHost { target: target.shown(), host: host.shown() })
 }
 
@@ -501,18 +537,20 @@ pub fn input_path(input: &Input) -> PathBuf
     }
 }
 
-/// An executable path with `.exe` on Windows when it has no extension.
+/// An executable path with `.exe` for a Windows target when it has no
+/// extension.
 ///
 /// # Arguments
 ///
 /// * `path` - The path.
+/// * `os` - The OS of the target.
 ///
 /// # Returns
 ///
 /// The path to write.
-pub fn with_exe(path: PathBuf) -> PathBuf
+pub fn with_exe(path: PathBuf, os: TargetOs) -> PathBuf
 {
-    with_extension_if_bare(path, std::env::consts::EXE_EXTENSION)
+    with_extension_if_bare(path, tern!(os == TargetOs::Windows, "exe", ""))
 }
 
 /// A path with an extension when it has none.

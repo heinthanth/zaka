@@ -86,3 +86,27 @@ fn another_os_is_refused_on_this_host()
     assert!(!build.status.success());
     assert!(String::from_utf8_lossy(&build.stderr).contains("--emit c"));
 }
+
+/// A build for another OS is refused with the runtime lib `zakac` carries,
+/// and goes through with one `--runtime-lib` names; `true` stands in for a C
+/// compiler of that OS.
+#[cfg(unix)]
+#[test]
+fn a_runtime_lib_for_another_os_lets_a_build_through()
+{
+    let file = program_file("cross");
+    let dir = file.parent().unwrap().to_path_buf();
+    let lib = dir.join("libzaka_runtime.a");
+    std::fs::write(&lib, b"!<arch>\n").unwrap();
+    let cache = dir.join("cross-cache");
+    let path = file.to_str().unwrap();
+    let base = ["build", "--backend", "c", "--target-os", other_os(), "--cc", "true"];
+    let mut args: Vec<&str> = base.to_vec();
+    args.extend(["--cache", cache.to_str().unwrap(), path]);
+    let refused = zakac(&args);
+    assert!(!refused.status.success());
+    args.extend(["--runtime-lib", lib.to_str().unwrap()]);
+    let built = zakac(&args);
+    let stderr = String::from_utf8_lossy(&built.stderr);
+    assert!(built.status.success(), "{stderr}");
+}
