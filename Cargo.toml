@@ -40,7 +40,6 @@ leptos-scoped-style = { version = "0.1.1", features = ["scss_file"] }
 leptos-use-color-mode = "0.20"
 leptos-use-css-var = "0.20"
 leptos-use-draggable = "0.20"
-leptos-use-element = "0.20"
 leptos-use-element-bounding = "0.20"
 leptos-use-event-listener = "0.20"
 leptos-use-interval-fn = "0.20"
