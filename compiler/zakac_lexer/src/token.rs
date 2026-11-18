@@ -379,6 +379,12 @@ pub enum Kw
     Outside,
     /// `လာသော`, "coming": the last piece of `ပြင်ပမှလာသော`
     Coming,
+    /// `ခေါ်ဆိုနိုင်သော`, "that can be called": the last piece of
+    /// `ပြင်ပမှ ခေါ်ဆိုနိုင်သော`
+    Callable,
+    /// `အမည်ဖြင့်`, "under the name": follows the C name of a function that
+    /// code outside can call
+    UnderName,
     /// `အခြားတန်ဖိုးများ`, "other values": the last item of the parameters of a
     /// C function that takes more arguments than it names
     OtherValues,
@@ -438,6 +444,9 @@ pub enum Kw
     /// `ပြင်ပ မှ လာသော`, "coming from outside": marks a function the host
     /// serves
     External,
+    /// `ပြင်ပ မှ ခေါ်ဆိုနိုင်သော`, "that outside code can call": marks a function
+    /// that a lib the build writes gives to C and to other languages
+    CallableOutside,
     /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
     UsedGoodResult,
     /// `မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်`: a call statement passes a

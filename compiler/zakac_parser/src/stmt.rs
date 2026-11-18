@@ -83,6 +83,10 @@ pub(crate) struct RetClause
 /// The count word `တစ်ခု` ("one") in `လုပ်ဆောင်ချက် တစ်ခု`.
 const ONE_THING: &str = "တစ်ခု";
 
+/// What a function that code outside can call writes before the phrase that
+/// marks it: its C name.
+const C_NAME_HEAD: &str = "\"<C name>\" အမည်ဖြင့်";
+
 /// The direction a counted-loop word names.
 ///
 /// # Arguments
@@ -1010,6 +1014,7 @@ impl Parser<'_>
         do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
         self.expect(Kw::Function)?;
         self.expect(Kw::Thi)?;
+        let c_name = self.parse_c_name()?;
         let word_kinds = kind_params.is_empty() && self.at(Kw::GenericKind);
         if word_kinds
         {
@@ -1032,8 +1037,34 @@ impl Parser<'_>
         };
         marks.iter().try_for_each(|m| mark_fn(node, kw_of(m), m.span, top))?;
         do_if!(!phrases.is_empty(), node.phrases = phrases);
+        node.c_name = c_name;
         self.check_phrases(node);
         Ok(stmt)
+    }
+
+    /// Parse the head of a function that code outside can call, when one
+    /// starts here: `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍`. The
+    /// phrase with no C name before it is an error.
+    ///
+    /// # Returns
+    ///
+    /// The C name, `None` when no such head starts here, or a diagnostic.
+    fn parse_c_name(&mut self) -> PResult<Option<StrArg>>
+    {
+        ret_if!(self.at(Kw::CallableOutside), Err(self.err_expected(C_NAME_HEAD)));
+        let TokenKind::Str(idx) = self.peek().kind
+        else
+        {
+            return Ok(None);
+        };
+        ret_if!(self.peek_n(1).kind != TokenKind::Kw(Kw::UnderName), Ok(None));
+        let tok = self.bump();
+        self.advance();
+        self.expect(Kw::CallableOutside)?;
+        self.parse_one_function()?;
+        self.expect(Kw::And)?;
+        let lit = self.strings[idx as usize].clone();
+        Ok(Some(StrArg::builder().lit(lit).span(tok.span).build()))
     }
 
     /// Parse the rest of a function declaration after its head: an external

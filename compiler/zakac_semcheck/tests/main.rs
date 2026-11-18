@@ -6,6 +6,7 @@ mod cli;
 mod common;
 mod counts;
 mod edits;
+mod exports;
 mod external;
 mod faults;
 mod generics;

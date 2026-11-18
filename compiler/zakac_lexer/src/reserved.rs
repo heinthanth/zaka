@@ -156,6 +156,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("သုံးသည့်", Kw::UsingRel),
     ("ပြင်ပ", Kw::Outside),
     ("လာသော", Kw::Coming),
+    ("ခေါ်ဆိုနိုင်သော", Kw::Callable),
+    ("အမည်ဖြင့်", Kw::UnderName),
     ("အခြားတန်ဖိုးများ", Kw::OtherValues),
     ("နှင့်အတူ", Kw::Along),
     ("အခြားတန်ဖိုးများနှင့်အတူ", Kw::WithOtherValues),

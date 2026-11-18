@@ -2223,7 +2223,8 @@ impl Lowerer<'_>
         return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
             .params((f.params.len() + usize::from(own.is_some()) + captures.len()) as u32)
             .maybe_result(result).owned(f.params.iter().map(|p| p.owned).collect())
-            .owned_ret(f.owned_ret).maybe_ret(given).locals(frame.locals).block(block).span(f.span).build();
+            .owned_ret(f.owned_ret).maybe_ret(given).locals(frame.locals).block(block)
+            .maybe_c_name(f.c_name.as_ref().map(|c| c.lit.value.clone())).span(f.span).build();
     }
 
     /// The one statement of an external function: its result variable takes

@@ -35,8 +35,9 @@ pub static SPOKEN_PARTS: &[(&str, &str)] = &[
 pub const SPOKEN_EI: &str = "ရဲ့";
 
 /// Reserved words in which a written part is no particle, so each has no
-/// spoken spelling: the `မည်` and `သည်` of `မည်သည်ကိုမှ` ask "which".
-const NO_SPOKEN: &[&str] = &["မည်သည်ကိုမှ"];
+/// spoken spelling: the `မည်` and `သည်` of `မည်သည်ကိုမှ` ask "which", and the
+/// `မည်` of `အမည်ဖြင့်` is the end of `အမည်`, "name".
+const NO_SPOKEN: &[&str] = &["မည်သည်ကိုမှ", "အမည်ဖြင့်"];
 
 /// One spoken spelling.
 #[derive(Debug, Clone, PartialEq, Eq)]

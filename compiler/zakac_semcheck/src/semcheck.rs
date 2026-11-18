@@ -42,6 +42,7 @@ use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::stmt::StrArg;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::stmt::TraitBlock;
@@ -660,6 +661,10 @@ pub(crate) struct Checker
     /// far, in each file.
     #[builder(default)]
     pub c_names: HashMap<String, (Vec<DataKind>, Option<DataKind>)>,
+    /// The C names of the functions that code outside can call, declared so
+    /// far.
+    #[builder(default)]
+    pub c_exports: HashSet<String>,
     /// Whether unsafe code is refused.
     #[builder(default)]
     pub no_unsafe: bool,
@@ -1061,6 +1066,53 @@ impl Checker
         let shape = (params, ret);
         let first = self.c_names.entry(name.clone()).or_insert_with(|| shape.clone());
         do_if!(*first != shape, self.report(rd::c_name_twice(n.name.span, &name)));
+        do_if!(
+            self.c_exports.contains(&name),
+            self.report(kd::c_name_taken(n.name.span, &name))
+        );
+    }
+
+    /// Check a function that code outside can call,
+    /// `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍`: it stands at the top
+    /// level with a block, takes no kind parameters and hands no block over
+    /// (ZK0490); its C name is a C name (ZK0337) that neither the runtime,
+    /// a C function nor another such function takes (ZK0491); C can give
+    /// each parameter (ZK0465, ZK0466) and take the result (ZK0465), as for
+    /// a function value C calls back.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The declaration.
+    /// * `c` - Its C name.
+    /// * `nested` - Whether it stands inside a function.
+    /// * `ret` - Its result kind.
+    fn check_c_export(
+        &mut self, n: &FnDecl, c: &StrArg, nested: bool, ret: Option<DataKind>,
+    )
+    {
+        let name = c.lit.value.clone();
+        let owns = n.owned_ret || n.params.iter().any(|p| p.owned);
+        let plain = !nested && n.kind_params.is_empty() && !n.external && !n.builtin;
+        do_if!(
+            !plain || owns,
+            self.report(kd::export_not_plain(n.name.span, &n.name.name))
+        );
+        let named = foreign::is_c_name(&name);
+        do_if!(!named, self.report(rd::not_a_c_export_name(c.span, &name)));
+        let taken = foreign::is_runtime_name(&name)
+            || self.c_names.contains_key(&name)
+            || !self.c_exports.insert(name.clone());
+        do_if!(named && taken, self.report(kd::c_name_taken(c.span, &name)));
+        let platform = self.platform;
+        for p in &n.params
+        {
+            let kind = DataKind::from_ast(&p.kind, &self.structs);
+            do_if!(p.edit, self.report(kd::edit_across_c(p.span, &p.name.name)));
+            let stuck = !p.edit && !foreign::callback_param(kind, platform);
+            do_if!(stuck, self.report(kd::kind_not_across_c(p.span, &kind.name())));
+        }
+        let bad_ret = ret.filter(|k| !foreign::callback_result(*k, platform));
+        do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
     }
 
     /// Choose the function a call runs among the functions of its name: the
@@ -2323,6 +2375,7 @@ impl Visitor for Checker
         do_for!(p in &n.params, self.declare_param(p));
         do_if!(n.start, self.check_start_header(n, ret));
         do_if!(n.external, self.check_external(n, given));
+        do_if!(let Some(c) = &n.c_name, self.check_c_export(n, c, nested, given));
         self.check_owned(n, given);
         self.visit_stmts(&n.block.stmts);
         let open_end = ret.is_some() && !n.start && !n.external;

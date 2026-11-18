@@ -134,9 +134,40 @@ pub fn is_callback(kind: DataKind, platform: u16) -> bool
     {
         return false;
     };
-    let scalar = |k: DataKind| !k.is_struct() && crosses(k, platform);
     let params = f.params.iter().all(|p| !p.edit && callback_param(p.kind, platform));
-    params && f.ret.is_none_or(|k| !k.is_borrow() && scalar(k))
+    params && f.ret.is_none_or(|k| callback_result(k, platform))
+}
+
+/// Whether C can take a value of the kind from a function of Zaka it calls:
+/// an integer of up to 64 bits, an `f32` or `f64`, a boolean or an address
+/// that is no borrow.
+///
+/// # Arguments
+///
+/// * `kind` - The result kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+pub fn callback_result(kind: DataKind, platform: u16) -> bool
+{
+    !kind.is_borrow() && !kind.is_struct() && crosses(kind, platform)
+}
+
+/// Whether a C name is one the runtime keeps for itself: `main`, or one that
+/// starts with `zk_` or `ZK_`.
+///
+/// # Arguments
+///
+/// * `name` - The C name.
+///
+/// # Returns
+///
+/// `true` for a name of the runtime.
+pub fn is_runtime_name(name: &str) -> bool
+{
+    name == "main" || name.starts_with("zk_") || name.starts_with("ZK_")
 }
 
 /// Whether a parameter of a function value can take what C passes when it

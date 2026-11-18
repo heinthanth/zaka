@@ -140,6 +140,10 @@ pub struct Func
     #[builder(default)]
     #[serde(default)]
     pub owned_ret: bool,
+    /// The C name a lib the build writes gives the function under, for a
+    /// function that code outside can call.
+    #[serde(default)]
+    pub c_name: Option<String>,
     /// Source region of the declaration.
     pub span: Span,
 }

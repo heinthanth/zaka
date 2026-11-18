@@ -1388,3 +1388,36 @@ pub fn comptime_result_kind(span: Span, name: &str, kind: &str) -> Diagnostic
     Diagnostic::new(Code::ComptimeResultKind, msg, span)
         .with_help(t!("codes.ZK0489.help"))
 }
+
+/// A function that code outside can call is not one C can call: it is
+/// generic, stands inside a function, has no block, or hands a block over.
+///
+/// # Arguments
+///
+/// * `span` - The name of the function.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0490` diagnostic.
+pub fn export_not_plain(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::ExportNotPlain, t!("codes.ZK0490.message", n = name), span)
+        .with_help(t!("codes.ZK0490.help"))
+}
+
+/// The C name of a function that code outside can call is taken.
+///
+/// # Arguments
+///
+/// * `span` - The C name.
+/// * `name` - The C name.
+///
+/// # Returns
+///
+/// The `ZK0491` diagnostic.
+pub fn c_name_taken(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::CNameTaken, t!("codes.ZK0491.message", n = name), span)
+        .with_help(t!("codes.ZK0491.help"))
+}

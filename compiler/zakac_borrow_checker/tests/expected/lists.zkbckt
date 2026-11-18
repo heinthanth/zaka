@@ -294,6 +294,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 117
       hi: 2014
@@ -578,6 +579,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 2104
       hi: 3522
@@ -849,6 +851,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 3604
       hi: 5311
@@ -908,6 +911,7 @@ module:
     owned:
     - false
     owned_ret: false
+    c_name: null
     span:
       lo: 5447
       hi: 6337
@@ -964,6 +968,7 @@ module:
     owned:
     - false
     owned_ret: false
+    c_name: null
     span:
       lo: 6389
       hi: 7024
@@ -1280,6 +1285,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 7163
       hi: 9014
@@ -1698,6 +1704,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 9112
       hi: 11602
@@ -1902,6 +1909,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 11682
       hi: 13617

@@ -523,6 +523,11 @@ pub struct FnDecl
     /// the C function of its name there. `None` for a function the host serves.
     #[serde(default)]
     pub lib: Option<StrArg>,
+    /// The C name of a function that code outside can call,
+    /// `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍`: a lib the build
+    /// writes gives the function to C under that name.
+    #[serde(default)]
+    pub c_name: Option<StrArg>,
     /// `true` when the parameters end in `နှင့် အခြားတန်ဖိုးများ`: a call can
     /// give more arguments than the function names, as a C `...` takes.
     #[builder(default)]

@@ -181,7 +181,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0334 | an external function that is none of the functions the VM serves | [Functions](../language/functions.md) |
 | ZK0335 | a call whose name finds both a declared function and a value of a function kind | [Function values](../language/function-values.md) |
 | ZK0336 | a chain of kind aliases that comes back to its start | [Kind aliases](../language/aliases.md#errors) |
-| ZK0337 | a C function whose name is no C name | [Functions](../language/functions.md) |
+| ZK0337 | a C function, or the C name of a function that code outside can call, that is no C name | [Functions](../language/functions.md) |
 | ZK0338 | a C function declared twice with other parameter or result kinds | [Functions](../language/functions.md) |
 | ZK0339 | a function with a result whose block can reach its end with no return | [Results](../../learn/functions/results.md) |
 | ZK0340 | a call or a kind that gives a generic another number of kinds than it declares, or kinds for a function that is not generic | [Generics and traits](../language/generics.md) |
@@ -279,6 +279,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
 | ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0489 | a comptime function whose result is no value a constant can hold | [Compile time](../language/compile-time.md#comptime-functions) |
+| ZK0490 | a function that code outside can call is generic, stands inside a function, has no statements, or takes or gives back a block as its own | [Functions](../language/functions.md) |
+| ZK0491 | the C name of a function that code outside can call is `main`, starts with `zk_` or `ZK_`, or names a C function or another such function | [Functions](../language/functions.md) |
 
 ### ZK05: natural Zaka (warnings)
 

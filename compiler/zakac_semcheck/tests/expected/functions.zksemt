@@ -260,6 +260,7 @@ program:
       builtin: false
       external: false
       lib: null
+      c_name: null
       variadic: false
       owned_ret: false
       captures: []
@@ -404,6 +405,7 @@ program:
       builtin: false
       external: false
       lib: null
+      c_name: null
       variadic: false
       owned_ret: false
       captures: []
@@ -456,6 +458,7 @@ program:
       builtin: false
       external: false
       lib: null
+      c_name: null
       variadic: false
       owned_ret: false
       captures: []
@@ -559,6 +562,7 @@ program:
       builtin: false
       external: false
       lib: null
+      c_name: null
       variadic: false
       owned_ret: false
       captures: []

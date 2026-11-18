@@ -479,6 +479,12 @@ TableNeedsKind = ("ZK0486", Level::Error),
 DecimalIndex = ("ZK0487", Level::Warning),
 /// A comptime function gives a kind that a constant cannot hold.
 ComptimeResultKind = ("ZK0489", Level::Error),
+/// A function that code outside can call is generic, stands inside a
+/// function, has no block, or hands a block over.
+ExportNotPlain = ("ZK0490", Level::Error),
+/// The C name of a function that code outside can call is one the runtime,
+/// a C function or another such function takes.
+CNameTaken = ("ZK0491", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

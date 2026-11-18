@@ -136,6 +136,7 @@ module:
     owned:
     - false
     owned_ret: false
+    c_name: null
     span:
       lo: 104
       hi: 1105
@@ -697,6 +698,7 @@ module:
     shared_params: []
     owned: []
     owned_ret: false
+    c_name: null
     span:
       lo: 1304
       hi: 4748

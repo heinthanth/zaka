@@ -650,8 +650,12 @@ en = "C function name is no C name"
 en = "\"%{n}\" comes from a C lib, so its name must be a C name"
 [codes.ZK0337.help]
 en = "write the name as the lib spells it: ASCII letters, digits and \"_\", not starting with a digit"
+[codes.ZK0337.message_export]
+en = "\"%{n}\" is the name C calls the function with, so it must be a C name"
+[codes.ZK0337.help_export]
+en = "write a name of ASCII letters, digits and \"_\", not starting with a digit"
 [codes.ZK0337.explain]
-en = """A function that comes from a C lib, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
+en = """A function that comes from a C lib, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် \"<lib>\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", calls the C function of its name in that lib. A function that code outside can call, \"\"<C name>\" အမည်ဖြင့် ...\", is called from C with the C name it gives. A C name holds ASCII letters, digits and \"_\" alone, and does not start with a digit."""
 
 [codes.ZK0339.title]
 en = "a function that can end with no result"
@@ -1471,6 +1475,24 @@ en = "\"%{n}\" gives %{k}, which a constant cannot hold, so the compiler cannot 
 en = "a comptime function gives a number, a character, true or false, a member of an enumeration, text, a list or a struct of these"
 [codes.ZK0489.explain]
 en = """A call of a comptime function in a constant or a list count runs while the compiler runs, and the value it gives becomes a literal of the program. A number, a character, true or false, a member of an enumeration, text, plain and counted lists and structs of these can be written out so. A pointer, a table, a function value or an optional cannot, so a comptime function that gives one is this error."""
+
+[codes.ZK0490.title]
+en = "a function C cannot call"
+[codes.ZK0490.message]
+en = "C cannot call \"%{n}\": a function that code outside can call stands at the top level with a block, takes no kind parameters, and neither takes nor gives back a block as its own"
+[codes.ZK0490.help]
+en = "declare it at the top level with its statements, with no kind parameters and no \"အပိုင်အနေဖြင့်\""
+[codes.ZK0490.explain]
+en = """A function marked `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍` is given to C, and to each language that calls C, through the lib the build writes. C calls it as a plain C function, so it cannot be generic, since C has no kinds to give; it cannot stand inside a function, since C gives no locals around it; it needs statements of its own; and it cannot take or give back a block as its own, since C frees what it allocates with its own allocator."""
+
+[codes.ZK0491.title]
+en = "a C name that is taken"
+[codes.ZK0491.message]
+en = "the C name \"%{n}\" is taken"
+[codes.ZK0491.help]
+en = "pick another C name: the runtime keeps \"main\" and the names that start with \"zk_\" or \"ZK_\", and each C name names one function"
+[codes.ZK0491.explain]
+en = """A lib names each function C calls with its C name, and a C program links each name to one function. So the C name of a function that code outside can call cannot be one the runtime of Zaka keeps for itself, `main` and the names that start with `zk_` or `ZK_`, nor the name of a C function the program calls, nor that of another function that code outside can call."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
