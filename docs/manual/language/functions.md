@@ -526,10 +526,14 @@ The rules of prepositions:
   parameter has none. Another preposition is ZK0331.
 - Two arguments with no preposition between them touch, `"a" "b"`, or `၊` parts
   them, `"a"၊ "b"`: each argument ends where the next operand starts.
-- An argument is a notation expression, as in the arguments-first call, and can end in
-  the reads of notation: `ပ ၏ တန်ဖိုး`, `x ၏ လိပ်စာ`, `ကွက်များ ၏ အကွက် i` and a field
-  `ဘူး ၏ ပ` ([Expressions](../reference/grammar.md#expressions)). A sentence that gives a
-  value, another preposition call included, goes in parentheses.
+- An argument is a whole clause: `က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြ မည်` passes the sum. The
+  compiler cuts the words before the function at its prepositions, and keeps each cut
+  whose pieces each read as one clause. A word inside an argument can be a preposition of
+  the call too, as the `နှင့်` of a sum: in `က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ကို တွဲ မည်`, a cut at
+  the first `နှင့်` leaves `ခ ၏ ပေါင်းလဒ် နှင့် ဂ`, which reads as no clause, so the call
+  passes the sum and `ဂ`.
+- When the words cut into the arguments in two cuts that each read, the call is ZK0260;
+  parentheses around an argument keep its words together.
 - A preposition call ends at a call of a function that declares prepositions or phrases, when
   its arguments and prepositions fit the function, and nowhere else. So a sentence that holds no such call keeps its
   meaning: `က ကို ခုနစ် သည့် ရလဒ် ဟု ထားမည်။` sets `က` when `ခုနစ်` declares no prepositions.
@@ -680,12 +684,34 @@ Two parameters with no preposition, after a starting phrase:
 ကိန်းရှင် က သည် ၆ ဖြစ်ပါစေ။
 ကိန်း က ၇ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ကိန်း ၄၊ က + ၁ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
+ကိန်း က နှင့် ၁ ၏ ပေါင်းလဒ် ၇ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ၁၃
 ၁၁
+၁၄
+```
+
+Two bare arguments that a sign can join cut into two readings: `က` and `- ၁ - ၂`, or `က - ၁` and
+`- ၂`:
+
+```zaka-error ZK0260
+ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ကိန်း" ကို သုံး၍
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၆ ဖြစ်ပါစေ။
+ကိန်း က - ၁ - ၂ ပေါင်း သည့် ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0260]: the words before "ပေါင်း" read as its arguments in more than one cut
 ```
 
 ```zaka-error ZK0258

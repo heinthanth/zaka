@@ -1,6 +1,7 @@
 pub mod alias;
 pub mod artifact;
 mod clause;
+mod clause_call;
 pub mod cli;
 pub mod comptime;
 mod cursor;

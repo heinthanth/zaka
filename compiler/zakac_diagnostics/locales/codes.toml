@@ -1641,6 +1641,15 @@ en = "a phrase is names and particles, as \"ဖိုင်\" or \"ဖန်သ�
 [codes.ZK0258.explain]
 en = """The string after \"အစ စကားစု\" or \"အဆုံး စကားစု\" holds the words a call written as a sentence puts before its first argument or right before the function name. Its words follow the rules of a preposition: names, and particles other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\", one space apart. \"၏\" cannot stand in it, as \"x ၏ f\" reads a field."""
 
+[codes.ZK0260.title]
+en = "a call with two readings"
+[codes.ZK0260.message]
+en = "the words before \"%{n}\" read as its arguments in more than one cut"
+[codes.ZK0260.help]
+en = "put the argument that holds a preposition of the call in parentheses"
+[codes.ZK0260.explain]
+en = """A call written as a sentence cuts the words before its function at the prepositions of the function, and each piece is one argument, a whole clause. When a word inside an argument is also a preposition of the call, the words can cut into two sets of arguments that each read, and the compiler does not guess between them. Parentheses around an argument keep its words together."""
+
 [codes.ZK0472.title]
 en = "C function must be unsafe"
 [codes.ZK0472.message]

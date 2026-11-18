@@ -332,6 +332,18 @@ number and the length of a cell, the number of a character, the end of a range a
 index of a row; so does the name after `၏` that the clause engine reads as a field
 (`bare_notation`, which `push_next_operand` sets).
 
+When the short reading of a call written as a sentence does not fit, `parse_head` goes
+back to the start of the clause and reads its arguments as whole clauses
+(`clause_call.rs`, `attempt_clause_call`); at a word of a starting phrase it does so before
+it reads the word as a name. It takes the functions ahead that end such a call, the
+farthest first (`callees_ahead`), and for each head of one lists the cuts of the words
+before it (`cuts_of`, `cut_args`): the phrases where the head has them, and each argument
+up to a spelling of its preposition, or up to each token for a bare one. A cut is kept
+when each piece reads as one clause and nothing more (`arg_reads`): the cursor reads an
+end of input at the end of the piece (`Cursor::limited`), and the parse leaves the
+cursor, the diagnostics and the node number as they were. One cut is read
+(`read_cut`); two are ZK0260.
+
 The heap sentences are calls of the functions of `core_heap.zaka` (`HEAP_FNS` in
 `heap.rs`). `with_prelude` keeps their prepositions, unlike the verbs of the prelude, and
 gives back the ones the file sees, which no function of its own hides

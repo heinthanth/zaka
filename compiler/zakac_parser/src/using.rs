@@ -450,7 +450,7 @@ impl Parser<'_>
     ///
     /// The number of tokens of the end and whether it gives a value, or
     /// `None`.
-    fn call_end_at(&self, n: usize) -> Option<(usize, bool)>
+    pub(crate) fn call_end_at(&self, n: usize) -> Option<(usize, bool)>
     {
         let long = kw_of(&self.peek_n(n + 1)) == Some(Kw::FnValue)
             && kw_of(&self.peek_n(n + 2)) == Some(Kw::Ko);
@@ -515,7 +515,9 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The words of each such function.
-    fn fn_words<'a>(&'a self, name: &str) -> impl Iterator<Item = &'a CallWords>
+    pub(crate) fn fn_words<'a>(
+        &'a self, name: &str,
+    ) -> impl Iterator<Item = &'a CallWords>
     {
         let lists = self.functions.get(name).into_iter().flatten();
         lists.filter(|words| words.is_sentence())
@@ -798,7 +800,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The call, or a diagnostic.
-    fn finish_sentence_call(
+    pub(crate) fn finish_sentence_call(
         &mut self, start: Span, args: Args, prepositions: Vec<Option<Ident>>,
         phrases: Phrases, mode: Mode,
     ) -> PResult<Head>
@@ -881,7 +883,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The words joined with one space.
-    fn take_words(&mut self, len: usize) -> Ident
+    pub(crate) fn take_words(&mut self, len: usize) -> Ident
     {
         let toks: Vec<Token> = (0..len).map(|_| self.bump()).collect();
         let words: Vec<&str> =
@@ -901,7 +903,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The number of its words, or `None` when the words ahead differ.
-    fn spells_at(&self, words: &str, from: usize) -> Option<usize>
+    pub(crate) fn spells_at(&self, words: &str, from: usize) -> Option<usize>
     {
         let words: Vec<&str> = words.split(' ').collect();
         let at = |(n, w): (usize, &&str)| {

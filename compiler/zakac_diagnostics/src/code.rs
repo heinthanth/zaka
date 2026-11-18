@@ -186,6 +186,9 @@ UnsafeStart = ("ZK0257", Level::Error),
 /// The starting or the ending phrase of a function head is not words a phrase
 /// can be.
 BadPhrase = ("ZK0258", Level::Error),
+/// A call written as a sentence whose words read as its arguments in more
+/// than one cut.
+AmbiguousCall = ("ZK0260", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

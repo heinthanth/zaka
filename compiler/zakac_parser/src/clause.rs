@@ -32,6 +32,7 @@ use zakac_lexer::reserved::TABLE_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
 use zakac_lexer::role::builtin_count;
 use zakac_lexer::role::builtin_verb;
+use zakac_lexer::spoken::written_form;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
@@ -856,6 +857,13 @@ impl Parser<'_>
             return self.give_kind_args(head, kind_args, start);
         }
         do_if!(let Some(head) = self.attempt_phrase_call(mode), return Ok(head));
+        // A starting phrase starts a call, whose arguments can then be clauses;
+        // its word is never read as a name.
+        let word = written_form(self.text_of(self.peek().span));
+        let phrase = self.start_words.contains(word);
+        let read = tern!(phrase, self.attempt_clause_call(mode), None);
+        ret_if!(let Some(read) = read, read);
+        let start = (self.cur.pos(), self.diags.len(), self.next_id);
         let first = match self.parse_first(mode)?
         {
             Head::Expr(first) => first,
@@ -867,13 +875,42 @@ impl Parser<'_>
             stmt => return Ok(stmt),
         };
         ret_if!(self.at_using_rest(), self.parse_using(first, mode));
-        let end = self.sentence_end(0);
-        let Some(end) = end
-        else
+        let at = self.cur.pos();
+        let head = match self.sentence_end(0)
         {
-            return Ok(Head::Expr(first));
+            Some(end) => self.attempt_preposition_call(first, end, mode)?,
+            None => Head::Expr(first),
         };
-        self.attempt_preposition_call(first, end, mode)
+        ret_if!(self.cur.pos() != at, Ok(head));
+        self.clause_call_or(start, head, mode)
+    }
+
+    /// Read a call written as a sentence from the start of the clause, its
+    /// arguments as whole clauses, when one reads; else keep what was read.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The token index, the diagnostic count and the node number at
+    ///   the start of the clause.
+    /// * `head` - What was read from there.
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or `head` as it was.
+    fn clause_call_or(
+        &mut self, start: (usize, usize, u32), head: Head, mode: Mode,
+    ) -> PResult<Head>
+    {
+        let after = (self.cur, self.diags.len(), self.next_id);
+        (self.cur, self.next_id) = (self.cur.at(start.0), start.2);
+        let kept: Vec<_> = self.diags.drain(start.1..).collect();
+        let read = self.attempt_clause_call(mode);
+        ret_if!(let Some(read) = read, read);
+        self.diags.extend(kept);
+        (self.cur, self.next_id) = (after.0, after.2);
+        debug_assert_eq!(self.diags.len(), after.1);
+        Ok(head)
     }
 
     /// Parse the first operand of a clause. At the start of a statement a

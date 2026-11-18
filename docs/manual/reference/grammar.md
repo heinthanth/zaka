@@ -361,7 +361,7 @@ first-call   = [ word-kinds "အစားထိုးအသုံးပြု၍
                operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
-preposition-call = [ start-words ] operand [ preposition-word ] { [ "၊" ] notation [ preposition-word ] }
+preposition-call = [ start-words ] clause [ preposition-word ] { [ "၊" ] clause [ preposition-word ] }
                [ end-words ] ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end )
              | [ start-words ] [ end-words ] name short-end ;   (* phrases and no arguments *)
 sign-call    = name [ "::" kind-args ] "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
@@ -384,8 +384,9 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
   can be prepositions too. A preposition call is read when a function of that name declares
   prepositions or phrases and its arguments hold prepositions in the slots of its parameters:
   a preposition after each argument whose parameter has one, none after the others. Two
-  arguments with no preposition between them touch or take `၊`; each ends where the next
-  operand starts. `start-words` and `end-words` are the words of
+  arguments with no preposition between them touch or take `၊`. Each argument is a clause:
+  the parser cuts the words before the function at its prepositions and keeps the cuts
+  whose pieces each read as one clause; two such cuts are ZK0260. `start-words` and `end-words` are the words of
   the phrases the head declares with `အစ စကားစု` and `အဆုံး စကားစု`.
 - In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
   name, then a group. A `(` right after `)` calls the function value the call gives.

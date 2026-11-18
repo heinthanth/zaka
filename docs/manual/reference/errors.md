@@ -137,6 +137,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0256 | the comptime mark `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on something other than a function with a block at the top level | [Compile time](../language/compile-time.md#comptime-functions) |
 | ZK0257 | the unsafe mark `စိတ်မချရသော` on the start block | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0258 | a phrase string, after `အစ စကားစု` or `အဆုံး စကားစု`, that holds a word a phrase cannot hold, or `၏` | [Functions](../language/functions.md#starting-and-ending-phrases) |
+| ZK0260 | a call written as a sentence whose words read as its arguments in more than one cut | [Functions](../language/functions.md#prepositions) |
 
 ### ZK03: names
 

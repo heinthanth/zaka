@@ -957,3 +957,20 @@ pub fn bad_phrase(span: Span, phrase: &str) -> Diagnostic
     Diagnostic::new(Code::BadPhrase, t!("codes.ZK0258.message", m = phrase), span)
         .with_help(t!("codes.ZK0258.help"))
 }
+
+/// A call written as a sentence whose words read as its arguments in more than
+/// one cut.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The `ZK0260` diagnostic.
+pub fn ambiguous_call(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::AmbiguousCall, t!("codes.ZK0260.message", n = name), span)
+        .with_help(t!("codes.ZK0260.help"))
+}

@@ -12,6 +12,9 @@ pub(crate) struct Cursor<'t>
     /// Index of the current token.
     #[builder(default)]
     pos: usize,
+    /// The index the input ends at for now, when it ends before its last
+    /// token: the cursor reads an end-of-input token there.
+    limit: Option<usize>,
 }
 
 impl<'t> Cursor<'t>
@@ -29,8 +32,46 @@ impl<'t> Cursor<'t>
     pub(crate) fn peek_n(&self, n: usize) -> Token
     {
         let last = self.tokens.len() - 1;
-        self.tokens[(self.pos + n).min(last)]
+        let at = (self.pos + n).min(last);
+        let cut = self.limit.filter(|limit| at >= *limit);
+        let end = |limit: usize| Token {
+            kind: TokenKind::Eof,
+            ..self.tokens[limit.min(last)]
+        };
+        cut.map_or(self.tokens[at], end)
     }
+
+    /// The cursor at another token.
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - The index of the token.
+    ///
+    /// # Returns
+    ///
+    /// The cursor.
+    pub(crate) fn at(self, pos: usize) -> Self { Cursor { pos, ..self } }
+
+    /// The cursor with the input ending at a token for now.
+    ///
+    /// # Arguments
+    ///
+    /// * `limit` - The index the input ends at, or `None` for its own end.
+    ///
+    /// # Returns
+    ///
+    /// The cursor.
+    pub(crate) fn limited(self, limit: Option<usize>) -> Self
+    {
+        Cursor { limit, ..self }
+    }
+
+    /// The index the input ends at for now, when it ends before its last token.
+    ///
+    /// # Returns
+    ///
+    /// The index, or `None`.
+    pub(crate) fn limit(&self) -> Option<usize> { self.limit }
 
     /// The token `n` places behind the current one.
     ///

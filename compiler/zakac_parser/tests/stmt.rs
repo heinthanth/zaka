@@ -1138,3 +1138,51 @@ fn duplicates_read_through_the_verb_of_the_prelude()
     assert_eq!(glued, stmt("ခ ထဲသို့ က ကို အကုန် ကူးထည့် မည်။"));
     assert_ne!(glued, stmt("ခ ထဲသို့ က ကို ကူးထည့်မည်။"));
 }
+
+/// `ပြ` with one parameter, preposition `ကို`; `ပြော` with one, `ဟု`; `တွဲ`
+/// with two, `နှင့်` and `ကို`; `ပေါင်းစု` with the starting phrase `ကိန်း` and
+/// two bare parameters; then `rest`.
+fn with_clause_fns(rest: &str) -> String
+{
+    let head = |name: &str, params: &str| {
+        format!(
+            "{name} ဟူသော လုပ်ဆောင်ချက် သည် {params} လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။ \
+             လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n"
+        )
+    };
+    let int = |n: &str, prep: &str| format!("{n} ဟူသော ကိန်းပြည့် တစ်ခု ကို {prep}လည်းကောင်း");
+    let prep = |w: &str| format!("ဝိဘတ် \"{w}\" ကို သုံး၍ ");
+    [
+        head("ပြ", &int("က", &prep("ကို"))),
+        head("ပြော", &format!("ခ ဟူသော မှန်မှားတန်ဖိုး တစ်ခု ကို {}လည်းကောင်း", prep("ဟု"))),
+        head("တွဲ", &format!("{} {}", int("က", &prep("နှင့်")), int("ခ", &prep("ကို")))),
+        head(
+            "ပေါင်းစု",
+            &format!("အစ စကားစု \"ကိန်း\" ကို သုံး၍ {} {}", int("က", ""), int("ခ", "")),
+        ),
+        rest.to_string(),
+    ]
+    .concat()
+}
+
+/// The statements after the four functions of [`with_clause_fns`], as trees.
+fn clause_calls(rest: &str) -> Vec<String>
+{
+    stmts(&with_clause_fns(rest)).iter().skip(4).map(Stmt::to_sexpr).collect()
+}
+
+/// An argument of a call written as a sentence is a whole clause where the
+/// words before the function cut just once; two cuts are ZK0260.
+#[test]
+fn arguments_of_sentence_calls_are_whole_clauses()
+{
+    assert_eq!(clause_calls("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြ မည်။"), ["(call ပြ (add က ခ))"]);
+    assert_eq!(clause_calls("က သည် ခ ထက် ကြီး ဟု ပြော မည်။"), ["(call ပြော (gt က ခ))"]);
+    // The first `နှင့်` belongs to the sum: cut there, `ခ ၏ ပေါင်းလဒ် နှင့် ဂ` reads as
+    // no clause.
+    let pair = clause_calls("က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ကို တွဲ မည်။");
+    assert_eq!(pair, ["(call တွဲ (add က ခ) ဂ)"]);
+    // `က` and `- ခ - ဂ`, or `က - ခ` and `- ဂ`: two cuts.
+    let two = with_clause_fns("ကိန်း က - ခ - ဂ ပေါင်းစု မည်။");
+    assert_eq!(codes(&two), [Code::AmbiguousCall]);
+}

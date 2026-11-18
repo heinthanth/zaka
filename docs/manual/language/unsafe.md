@@ -529,10 +529,9 @@ Each heap sentence is a [call written as a sentence](functions.md#starting-and-e
 of a function of the [prelude](prelude.md), which the compiler gives: `သိမ်းထား`,
 `ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and `ပြောင်းထည့်`. Their names
 are no reserved words, so a file that declares a function of one of these names hides the
-one of the prelude. Like an argument of each sentence call, an argument is a notation:
-a name, a number, an operator expression, a size, and the reads `ပ ၏ တန်ဖိုး`,
-`x ၏ လိပ်စာ`, `ကွက်များ ၏ အကွက် i` and a field `ဘူး ၏ ပ`. A clause such as a conversion
-goes in parentheses. A heap sentence gives no value; written as one, it is ZK0315.
+one of the prelude. As in each sentence call, an argument is a whole clause: a name, a
+number, a size, `ပ ၏ တန်ဖိုး`, a field, or a conversion. A heap sentence gives no value;
+written as one, it is ZK0315.
 
 ### Sizes
 
