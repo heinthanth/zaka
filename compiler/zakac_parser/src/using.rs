@@ -49,6 +49,7 @@ use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
 use crate::parser::unquote_raw;
+use crate::verb_call::VERB_FNS;
 
 /// What a call holds once its function is read.
 #[derive(Builder)]
@@ -730,11 +731,22 @@ impl Parser<'_>
             {
                 (&n.callee, n.args.len(), &n.prepositions)
             }
+            // A call of a verb of the prelude, turned into its statement.
+            (_, Some(Stmt::Print(_) | Stmt::Add(_) | Stmt::Assign(_))) => return true,
+            (_, Some(Stmt::Remove(_) | Stmt::Replace(_))) => return true,
             _ => return false,
+        };
+        // A verb of the prelude takes the words of its heads alone, so a
+        // sentence with another word is left to the clause engine.
+        let exact = VERB_FNS.contains(&callee.name.as_str());
+        let words = |w: &CallWords| {
+            let names = written.iter().map(|p| p.as_ref().map(|i| i.name.to_string()));
+            w.prepositions.iter().cloned().eq(names)
         };
         let places = |w: &CallWords| {
             let declared = w.prepositions.iter().map(Option::is_some);
-            declared.eq(written.iter().map(Option::is_some))
+            let placed = declared.eq(written.iter().map(Option::is_some));
+            placed && (!exact || words(w))
         };
         let fits = |w: &&CallWords| w.params == args && places(w);
         self.fn_words(callee.name.as_str()).any(|w| fits(&w))
@@ -814,9 +826,11 @@ impl Parser<'_>
         let parts = CallParts::builder().start(start).callee(callee).args(args)
             .prepositions(prepositions).phrases(phrases).build();
         let head = self.finish_using(parts, long, mode)?;
-        // A heap function of the prelude gives no value (ZK0315).
-        let heap_value =
-            |c: &CallExpr| self.prelude_heap.contains(c.callee.name.as_str());
+        // A heap function or a verb of the prelude gives no value (ZK0315).
+        let heap_value = |c: &CallExpr| {
+            let name = c.callee.name.as_str();
+            self.prelude_heap.contains(name) || self.names_prelude_verb(c)
+        };
         let value = tern!(let Head::Expr(Expr::Call(c)) = &head, Some(c), None);
         let heap = value.filter(|c| heap_value(c));
         do_if!(let Some(c) = heap, self.diags.push(rd::value_from_void_function(c.span, &c.callee.name)));
@@ -1020,7 +1034,8 @@ impl Parser<'_>
         let kw = kw_of(&end);
         ret_if!(
             matches!(kw, Some(Kw::WillDo | Kw::Will)),
-            self.finish_call_stmt(parts).map(|s| Head::Stmt(Box::new(s)))
+            self.finish_call_stmt(parts)
+                .map(|s| Head::Stmt(Box::new(self.verb_node(s))))
         );
         let pass = matches!(kw, Some(Kw::CallGoodResult | Kw::UsedGoodResult));
         let CallParts { start, callee, place, args, using, prepositions, phrases } =

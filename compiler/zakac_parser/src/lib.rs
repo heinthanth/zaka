@@ -24,6 +24,7 @@ mod str_lit;
 mod struct_lit;
 mod traits;
 pub mod using;
+mod verb_call;
 mod word_list;
 pub mod wrap;
 

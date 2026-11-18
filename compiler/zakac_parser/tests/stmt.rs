@@ -1186,3 +1186,15 @@ fn arguments_of_sentence_calls_are_whole_clauses()
     let two = with_clause_fns("ကိန်း က - ခ - ဂ ပေါင်းစု မည်။");
     assert_eq!(codes(&two), [Code::AmbiguousCall]);
 }
+
+/// The verbs of the prelude read as calls written as a sentence and become
+/// their statements; a function of the file with other words remains a call.
+#[test]
+fn verbs_of_the_prelude_read_as_sentence_calls()
+{
+    assert_eq!(stmt("က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။"), "(print (add က ခ))");
+    assert_eq!(stmt("ကွက်များ ထဲသို့ က နှင့် ခ ၏ ပေါင်းလဒ် ကို ထည့်မည်။"), "(add ကွက်များ (add က ခ))");
+    let own = "ထည့် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် \"သို့\" ကို သုံး၍ လက်ခံပြီး \
+               အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n၁ သို့ ထည့် မည်။";
+    assert_eq!(stmts(own)[1].to_sexpr(), "(call ထည့် 1)");
+}

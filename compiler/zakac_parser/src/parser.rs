@@ -48,6 +48,7 @@ use crate::stmt::FN_MARKS;
 use crate::using::CallWords;
 use crate::using::Functions;
 use crate::using::preposition_words;
+use crate::verb_call::VERB_FNS;
 
 /// Result of a parse step; the error is the diagnostic to report.
 pub(crate) type PResult<T> = Result<T, Diagnostic>;
@@ -157,14 +158,15 @@ const OPERATOR_FNS: &[&str] = &[
 fn with_prelude(known: &mut Functions) -> HashSet<String>
 {
     let heap = |name: &str| HEAP_FNS.iter().any(|(n, _)| *n == name);
-    // A function the compiler gives is a verb of the clause engine, not a
+    // A count the compiler gives is a reading of the clause engine, not a
     // preposition call, so its prepositions remain outside the preposition
     // calls of the file; so are the functions of the operator traits, which
-    // the operators call. The heap functions are read as the sentences their
-    // heads spell.
+    // the operators call. The heap functions and the verbs are read as the
+    // sentences their heads spell.
+    let sentence = |name: &str| heap(name) || VERB_FNS.contains(&name);
     let verb = |name: &str| {
         OPERATOR_FNS.contains(&name)
-            || (prelude_builtins().contains(name) && !heap(name))
+            || (prelude_builtins().contains(name) && !sentence(name))
     };
     let lists = |name: &str, lists: &Vec<CallWords>| {
         tern!(verb(name), vec![CallWords::default()], lists.clone())
@@ -177,6 +179,17 @@ fn with_prelude(known: &mut Functions) -> HashSet<String>
     let prelude = prelude_functions().iter();
     prelude
         .for_each(|(name, l)| _ = known.entry(name.clone()).or_insert(lists(name, l)));
+    // A verb of the prelude keeps its sentences beside the functions of its
+    // name the file declares, which add overloads.
+    let verbs = prelude_functions()
+        .iter()
+        .filter(|(name, _)| VERB_FNS.contains(&name.as_str()));
+    verbs.for_each(|(name, l)| {
+        let have = known.entry(name.clone()).or_default();
+        let missing: Vec<CallWords> =
+            l.iter().filter(|w| !have.contains(w)).cloned().collect();
+        have.extend(missing);
+    });
     seen
 }
 

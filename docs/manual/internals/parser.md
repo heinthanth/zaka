@@ -664,11 +664,19 @@ The compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်
   after `သည်`, then `လုပ်ဆောင်ချက်ဖြစ်၍`, the kind parameters in the word form with
   `၎င်းသည်`, the phrases and the parameters.
 
-The names of the marked functions (`prelude_builtins`) take no prepositions in the table of
-preposition calls. The clause engine reads them as verbs (`verb_at`): `<name> မည်` of `ပြသ`,
-`ထည့်`, `ဖျက်` and `အစားထိုး` (a glued `ပြသမည်` splits so), and the three counts right after
-`၏`; each stands for its old verb row (`BUILTIN_VERBS`, `BUILTIN_COUNTS` in the lexer's
-`role.rs`, which paints them too). Semcheck calls a function of the file of the name in
+The verbs of the prelude, `ပြသ`, `ထည့်`, `ကူးထည့်`, `ဖျက်` and `အစားထိုး` (`VERB_FNS` in
+`verb_call.rs`), keep their prepositions in the table of preposition calls, beside the
+functions of their names a file declares. A statement that ends in `<verb> မည်` is read as
+that call first (`verb_sentence`, from `parse_head`), its arguments as whole clauses; the
+parser turns the call into the statement of its sentence (`verb_node`, from
+`finish_using`): `Stmt::Print` with its `ကို` or `ဟု`, `Stmt::Add`, the `AssignStmt` of a
+duplicate, `Stmt::Remove` and `Stmt::Replace`, as the words of the call tell
+(`form_of_words`). A verb takes the words of its heads alone (`fits_words`); a sentence
+that no head reads is left to the clause engine, whose rows for these verbs remain to
+read the spellings the heads leave out and to report the operands a sentence leaves over
+(`verb_at`). A value form of one is ZK0315. The other marked functions, the three counts,
+take no prepositions; the clause engine reads them right after `၏` (`BUILTIN_COUNTS` in
+the lexer's `role.rs`, which paints the verbs and the counts). Semcheck calls a function of the file of the name in
 place of the sentence when one takes the operands (`own_verb`, `own_count`).
 
 ## Prepositions and glued ends

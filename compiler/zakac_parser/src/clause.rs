@@ -24,6 +24,8 @@ use zakac_ast::verb::Verb;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::verb::verb_for;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::Code;
+use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::reserved::CHAR_NAME;
@@ -359,6 +361,9 @@ impl Parser<'_>
         ret_if!(tok.kind != TokenKind::Ident, None);
         let name = self.text_of(tok.span);
         ret_if!(!prelude_builtins().contains(name), None);
+        // The verbs are read as sentence calls first (`verb_sentence`); their
+        // rows read what no cut reads, and report the operands a sentence
+        // leaves over.
         let ends = kw_of(&self.peek_n(n + 1)) == Some(Kw::Will);
         let verb = builtin_verb(name).filter(|_| ends);
         ret_if!(let Some(kw) = verb, verb_for(kw).map(|v| (v, 2)));
@@ -848,12 +853,30 @@ impl Parser<'_>
     /// The operand or the call statement, or a diagnostic.
     fn parse_head(&mut self, mode: Mode) -> PResult<Head>
     {
+        // A statement that ends in a verb of the prelude is read as its call.
+        let verb = tern!(mode == Mode::Stmt, self.verb_sentence(), None);
+        ret_if!(let Some(read) = verb, read);
+        self.parse_head_from(mode)
+    }
+
+    /// Parse the first operand of a clause, as [`Self::parse_head`] does, once
+    /// no statement of a verb of the prelude reads.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether a call statement can stand here.
+    ///
+    /// # Returns
+    ///
+    /// The operand or the call statement, or a diagnostic.
+    fn parse_head_from(&mut self, mode: Mode) -> PResult<Head>
+    {
         // Kind arguments in the word form come before the call that takes them.
         if let Some(closer) = self.word_call_kind_args()
         {
             let start = self.peek().span;
             let kind_args = self.parse_word_kind_args(closer)?;
-            let head = self.parse_head(mode)?;
+            let head = self.parse_head_from(mode)?;
             return self.give_kind_args(head, kind_args, start);
         }
         do_if!(let Some(head) = self.attempt_phrase_call(mode), return Ok(head));
@@ -905,8 +928,13 @@ impl Parser<'_>
         let after = (self.cur, self.diags.len(), self.next_id);
         (self.cur, self.next_id) = (self.cur.at(start.0), start.2);
         let kept: Vec<_> = self.diags.drain(start.1..).collect();
+        // A cut that reads, or ZK0260, is final; another error of the cut
+        // leaves the clause to the clause engine, which names what is wrong.
         let read = self.attempt_clause_call(mode);
-        ret_if!(let Some(read) = read, read);
+        let ambiguous = |e: &Diagnostic| e.code == Code::AmbiguousCall;
+        let last =
+            read.filter(|r| r.as_ref().is_ok() || r.as_ref().is_err_and(ambiguous));
+        ret_if!(let Some(read) = last, read);
         self.diags.extend(kept);
         (self.cur, self.next_id) = (after.0, after.2);
         debug_assert_eq!(self.diags.len(), after.1);

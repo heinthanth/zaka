@@ -62,7 +62,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The distances to the function names, nearest first.
-    fn callees_ahead(&self) -> Vec<usize>
+    pub(crate) fn callees_ahead(&self) -> Vec<usize>
     {
         let (mut depth, mut found) = (0usize, Vec::new());
         for n in 0..

@@ -9,7 +9,9 @@ The prelude, `"စံကား/အခြေခံအုတ်မြစ်"`, is 
 sentence. Its source is four files of the `stdlib` folder of the source tree, which the
 compiler joins into one module: `core_kinds.zaka` holds the built-in kinds,
 `core_traits.zaka` the built-in traits, `core_verbs.zaka` the verbs and counts the
-compiler gives, and `core_heap.zaka` the [heap sentences](unsafe.md#heap-statements). Their declarations hold the compiler mark: the compiler gives their
+compiler gives, and `core_heap.zaka` the [heap sentences](unsafe.md#heap-statements). A
+sentence of a verb, such as `က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်`, is a call of the function its
+head declares, written as a sentence, and its arguments are whole clauses. Their declarations hold the compiler mark: the compiler gives their
 meaning. A trait of the prelude names the function a struct gives for an operator.
 
 ```zaka
