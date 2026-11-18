@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use strum::IntoEnumIterator;
 use zakac_ast::target::BuildTarget;
+use zakac_ast::target::TargetArch;
+use zakac_ast::target::TargetOs;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
 use zakac_borrow_checker::cli::borrow_check_options;
 use zakac_borrow_checker::cli::checked_fixes;
@@ -56,6 +58,7 @@ use crate::toolchain;
 use crate::toolchain::BuildPlan;
 use crate::toolchain::CFLAGS;
 use crate::toolchain::LDFLAGS;
+use crate::wasi;
 
 /// The flag that names the cache folder.
 const CACHE_ARG: &str = "cache";
@@ -417,10 +420,13 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let cross =
         other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit == Emit::Bin);
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
-    let out = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
-    let out = with_exe(out);
-    let files = files.unwrap();
+    let wasi = wasi::is_wasi(built_for.abi);
     let folded = translated.borrowchecked.lowered.folded.as_ref();
+    let c_fns = wasi && folded.is_some_and(|m| !m.foreign.is_empty());
+    ret_if!(c_fns, report_command_error(io, &info, Error::CFunctionsOnWasi));
+    let out = arg("output").map_or_else(|| stem.with_extension(""), PathBuf::from);
+    let out = tern!(wasi, with_extension_if_bare(out, wasi::EXTENSION), with_exe(out));
+    let files = files.unwrap();
     let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
     let libs = folded.map(|m| link_libs_for(&m.foreign, dialect)).unwrap_or_default();
     #[rustfmt::skip]
@@ -445,7 +451,11 @@ fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
 {
     let host = zakac_ast::target::Target::host();
     let same = (target.os, target.arch) == (host.os, host.arch);
-    ret_if!(same && crate::driver::runtime_lib(target.abi).is_some(), None);
+    // The clang of wasi-sdk builds for WASI on each host.
+    let wasi = target.os == TargetOs::Wasi && target.arch == TargetArch::Wasm32;
+    let wasi = wasi && wasi::is_wasi(target.abi);
+    let carried = crate::driver::runtime_lib(target.abi).is_some();
+    ret_if!((same || wasi) && carried, None);
     Some(Error::CForOtherHost { target: target.shown(), host: host.shown() })
 }
 
@@ -479,9 +489,23 @@ pub fn input_path(input: &Input) -> PathBuf
 /// The path to write.
 pub fn with_exe(path: PathBuf) -> PathBuf
 {
-    let bare =
-        path.extension().is_none() && !std::env::consts::EXE_EXTENSION.is_empty();
-    ret_if!(bare, path.with_extension(std::env::consts::EXE_EXTENSION));
+    with_extension_if_bare(path, std::env::consts::EXE_EXTENSION)
+}
+
+/// A path with an extension when it has none.
+///
+/// # Arguments
+///
+/// * `path` - The path.
+/// * `extension` - The extension; a blank one leaves the path as it is.
+///
+/// # Returns
+///
+/// The path to write.
+fn with_extension_if_bare(path: PathBuf, extension: &str) -> PathBuf
+{
+    let bare = path.extension().is_none() && !extension.is_empty();
+    ret_if!(bare, path.with_extension(extension));
     path
 }
 
@@ -572,7 +596,13 @@ pub fn build_and_link(
     let env_cc = std::env::var_os("CC").is_some_and(|v| !v.is_empty());
     let dialect = toolchain::Dialect::of(job.abi);
     let chosen = tern!(on_line || !env_cc, arg(CC_ARG), None);
-    let cc = toolchain::find_cc_for(chosen, dialect)?;
+    // `CC` and a `--cc` of a config file name a compiler of the host.
+    let wasi_cc = || wasi::find_cc(arg(CC_ARG).filter(|_| on_line), job.abi);
+    let cc = tern!(
+        wasi::is_wasi(job.abi),
+        wasi_cc(),
+        toolchain::find_cc_for(chosen, dialect)
+    )?;
     let linker = arg(LINKER_ARG).map(toolchain::named).transpose()?;
     let mem = job.checks.has(RunCheck::Sanitizers);
     let sanitizers = mem && toolchain::has_sanitizers(&cc, job.cache, dialect);

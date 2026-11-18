@@ -30,6 +30,9 @@ fn export_rows(path: &Path) -> Option<String>
 {
     let module = path.file_stem()?.to_str()?;
     ret_if!(module == "lib" || module == "exports", None);
+    // WASI builds leave out the modules that call through libffi.
+    let wasi = std::env::var("CARGO_CFG_TARGET_OS").is_ok_and(|os| os == "wasi");
+    ret_if!(wasi && (module == "ffi" || module == "callbacks"), None);
     let text = std::fs::read_to_string(path).expect("a source file is readable");
     let heads = text
         .lines()

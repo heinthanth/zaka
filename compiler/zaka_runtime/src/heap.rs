@@ -31,7 +31,7 @@ unsafe extern "C" {
     fn atexit(f: extern "C" fn()) -> i32;
     #[cfg(target_os = "macos")]
     fn malloc_size(p: *const c_void) -> usize;
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "wasi"))]
     fn malloc_usable_size(p: *mut c_void) -> usize;
     #[cfg(windows)]
     fn _msize(p: *mut c_void) -> usize;
@@ -146,7 +146,7 @@ fn raw_size(p: *mut u8) -> usize
     #[cfg(target_os = "macos")]
     // SAFETY: `p` came from the C allocator.
     return unsafe { malloc_size(p.cast()) };
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "wasi"))]
     // SAFETY: `p` came from the C allocator.
     return unsafe { malloc_usable_size(p.cast()) };
     #[cfg(windows)]

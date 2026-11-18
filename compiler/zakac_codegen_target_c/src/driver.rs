@@ -50,6 +50,22 @@ const OTHER_LIB: &[u8] =
 const OTHER_LIBS: &str =
     include_str!(concat!(env!("OUT_DIR"), "/native-libs-other.txt"));
 
+/// The runtime lib of WASI preview 1, blank when the host could not build it.
+const WASIP1_LIB: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/zaka_runtime-wasip1"));
+
+/// The OS libs of the runtime lib of WASI preview 1.
+const WASIP1_LIBS: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/native-libs-wasip1.txt"));
+
+/// The runtime lib of WASI preview 2, blank when the host could not build it.
+const WASIP2_LIB: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/zaka_runtime-wasip2"));
+
+/// The OS libs of the runtime lib of WASI preview 2.
+const WASIP2_LIBS: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/native-libs-wasip2.txt"));
+
 /// The runtime lib of one ABI, as this compiler carries it.
 #[derive(Debug, Clone, Copy)]
 pub struct RuntimeLib
@@ -111,6 +127,8 @@ pub fn runtime_lib(abi: TargetAbi) -> Option<RuntimeLib>
     {
         a if a == host_abi() => (RUNTIME_LIB, NATIVE_LIBS),
         a if a == other => (OTHER_LIB, OTHER_LIBS),
+        TargetAbi::Wasip1 => (WASIP1_LIB, WASIP1_LIBS),
+        TargetAbi::Wasip2 => (WASIP2_LIB, WASIP2_LIBS),
         _ => return None,
     };
     ret_if!(octets.is_empty() && !RUNTIME_LIB.is_empty(), None);

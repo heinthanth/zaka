@@ -4,3 +4,4 @@ mod backtrace;
 mod config_example;
 mod mutants;
 mod target;
+mod wasi;

@@ -132,10 +132,10 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--target-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
-| `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos` or `linux` |
+| `--target-bits <BITS>` | `32` for `wasm32`, else `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
+| `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos`, `linux` or `wasi`; `wasi` takes the CPU `wasm32` when `--target-arch` is not given, and `--backend c` builds a WebAssembly program for it ([Native programs](native.md#wasi)) |
 | `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
-| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple` or `wasm`; left out, `apple` on macOS, `gnu` on Linux, and on Windows the ABI `zakac` was built for. The VM and `--jit` take the ABI of `zakac` alone; an executable on Windows takes `gnu` or `msvc` ([Native programs](native.md#windows)) |
+| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple`, `wasip1` or `wasip2`; left out, `apple` on macOS, `gnu` on Linux, `wasip1` on WASI, and on Windows the ABI `zakac` was built for. The VM and `--jit` take the ABI of `zakac` alone; an executable on Windows takes `gnu` or `msvc` ([Native programs](native.md#windows)) |
 | `--lint-allow <NAME>`, `--lint-warn <NAME>`, `--lint-error <NAME>` | | set the level of a lint group or code, as below; the front end reads the groups `naturalness` and `spoken` |
 
 These belong to `irgen` and the stages after it, and to `run`:
@@ -328,7 +328,8 @@ The ops are listed in [Instructions](../vm/instructions.md).
 `--backend c` writes a C file for each module of the program, then compiles and links
 them with a C compiler; `--emit c` stops after the C files. The C is plain C11, so GCC,
 Clang, MinGW and `zig cc` each build it, and so does MSVC on Windows (`--target-abi msvc`,
-see [Native programs](native.md#windows)).
+see [Native programs](native.md#windows)). `--target-os wasi` builds a WebAssembly program
+with the Clang of wasi-sdk ([WASI](native.md#wasi)).
 [Native programs](native.md) tells what the executable checks, and where its output
 differs from the VM.
 
@@ -338,7 +339,7 @@ differs from the VM.
 | `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
 | `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
 | `--cache <DIR>` | the cache of the user | the folder for the C files, the objects and the runtime lib (`libzaka_runtime.a`, or `zaka_runtime.lib` for MSVC, which `zakac` carries inside it and writes there); when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
-| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc`; for `--target-abi msvc`, `cl`, `clang-cl`, then the `cl` of Visual Studio | the C compiler, with the words before its flags |
+| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc`; for `--target-abi msvc`, `cl`, `clang-cl`, then the `cl` of Visual Studio; for WASI, `--cc` alone, then `wasm32-wasip1-clang` or `wasm32-wasip2-clang` in the `bin` folder of `WASI_SDK_PATH`, then on the PATH | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |

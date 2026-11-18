@@ -10,9 +10,12 @@ edition.workspace = true
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-libffi = { workspace = true }
 zaka_host = { workspace = true }
 zakac_rust_sugars = { workspace = true }
+
+# WASI has no libffi; a program for it calls no C function.
+[target.'cfg(not(target_os = "wasi"))'.dependencies]
+libffi = { workspace = true }
 
 [build-dependencies]
 zakac_rust_sugars = { workspace = true }

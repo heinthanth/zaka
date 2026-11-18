@@ -15,6 +15,7 @@ use zakac_cli_common::clap;
 use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::crate_name;
+use zakac_cli_common::clap::parser::ValueSource;
 use zakac_cli_common::clap_utils::CommandInfo;
 use zakac_cli_common::clap_utils::attach_common_io_args;
 use zakac_cli_common::clap_utils::report_command_error;
@@ -130,13 +131,64 @@ pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
 {
     let word = |id: &str| matches.try_get_one::<String>(id).ok().flatten();
     let os = word(TARGET_OS_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_os);
-    let arch =
-        word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_arch);
     let abi = word(TARGET_ABI_ARG).and_then(|w| w.parse().ok());
-    let bits = word(TARGET_BITS_ARG).and_then(|b| b.parse().ok()).unwrap_or(64);
+    let (arch, bits) = (target_arch(matches), platform_bits(matches));
     #[rustfmt::skip]
     return Target::builder().os(os).arch(arch).maybe_abi(abi).bits(bits).output(output)
         .build();
+}
+
+/// Whether a flag was given on the command line, not left at its default.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+/// * `id` - The flag.
+///
+/// # Returns
+///
+/// `true` when the user gave it.
+fn given(matches: &ArgMatches, id: &str) -> bool
+{
+    let source =
+        matches.try_contains_id(id).ok().and_then(|_| matches.value_source(id));
+    source.is_some_and(|s| s != ValueSource::DefaultValue)
+}
+
+/// The CPU a command builds for, from `--target-arch`: WASI runs 32-bit
+/// WebAssembly alone, so `--target-os wasi` with no CPU given takes `wasm32`.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The CPU; the host's for a command that lacks the flag.
+fn target_arch(matches: &ArgMatches) -> TargetArch
+{
+    let word = |id: &str| matches.try_get_one::<String>(id).ok().flatten();
+    let wasi = word(TARGET_OS_ARG).is_some_and(|w| w == "wasi");
+    ret_if!(wasi && !given(matches, TARGET_ARCH_ARG), TargetArch::Wasm32);
+    word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_arch)
+}
+
+/// The bit count of the platform-sized kinds, from `--target-bits`: 32 for a
+/// WebAssembly CPU and 64 for the others, unless given.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// The bit count.
+pub fn platform_bits(matches: &ArgMatches) -> u16
+{
+    let word = matches.try_get_one::<String>(TARGET_BITS_ARG).ok().flatten();
+    let usual = tern!(target_arch(matches) == TargetArch::Wasm32, 32, 64);
+    let given = word.filter(|_| given(matches, TARGET_BITS_ARG));
+    given.and_then(|b| b.parse().ok()).unwrap_or(usual)
 }
 
 /// The check options from the command line.
@@ -150,8 +202,7 @@ pub fn target_from(matches: &ArgMatches, output: BuildTarget) -> Target
 /// The options.
 fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
-    let bits = matches.get_one::<String>(TARGET_BITS_ARG);
-    let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
+    let bits = platform_bits(matches);
     // The comptime runs of the command take the rights its flags grant.
     crate::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));
     #[rustfmt::skip]

@@ -21,6 +21,9 @@ pub enum TargetOs
     Macos,
     /// Linux.
     Linux,
+    /// The WebAssembly System Interface: a host such as wasmtime runs the
+    /// program.
+    Wasi,
 }
 
 /// The CPU architecture a program runs on, as Rust's `std::env::consts::ARCH`
@@ -59,15 +62,18 @@ pub enum TargetAbi
     Msvc,
     /// The ABI of Apple's platforms.
     Apple,
-    /// The ABI of WebAssembly.
-    Wasm,
+    /// WASI preview 1: a core WebAssembly module that imports
+    /// `wasi_snapshot_preview1`.
+    Wasip1,
+    /// WASI preview 2: a WebAssembly component of the WASI interfaces.
+    Wasip2,
 }
 
 impl TargetAbi
 {
-    /// The ABI an OS and a CPU take when none is given: a 32-bit WebAssembly
-    /// CPU takes `Wasm`, macOS takes `Apple`, Windows takes the ABI of this
-    /// compiler on a Windows host and `Gnu` elsewhere, and Linux takes `Gnu`.
+    /// The ABI an OS and a CPU take when none is given: WASI takes `Wasip1`,
+    /// macOS takes `Apple`, Windows takes the ABI of this compiler on a
+    /// Windows host and `Gnu` elsewhere, and Linux takes `Gnu`.
     ///
     /// # Arguments
     ///
@@ -82,7 +88,7 @@ impl TargetAbi
         let msvc_host = cfg!(all(windows, target_env = "msvc"));
         match (os, arch)
         {
-            (_, TargetArch::Wasm32) => TargetAbi::Wasm,
+            (TargetOs::Wasi, _) => TargetAbi::Wasip1,
             (TargetOs::Macos, _) => TargetAbi::Apple,
             (TargetOs::Windows, _) if msvc_host => TargetAbi::Msvc,
             _ => TargetAbi::Gnu,

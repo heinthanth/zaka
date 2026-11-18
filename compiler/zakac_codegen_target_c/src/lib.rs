@@ -9,5 +9,6 @@ pub mod kinds;
 pub mod options;
 mod stmts;
 pub mod toolchain;
+pub mod wasi;
 
 zakac_i18n::init!();

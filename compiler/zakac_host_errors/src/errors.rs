@@ -75,6 +75,13 @@ pub enum Error
     {
         built: String, host: String
     },
+    #[error("{}", t!("errors.no_wasi_compiler", triple = triple))]
+    NoWasiCompiler
+    {
+        triple: String
+    },
+    #[error("{}", t!("errors.c_functions_on_wasi"))]
+    CFunctionsOnWasi,
     #[error("{}", t!("errors.c_for_other_host", target = target, host = host))]
     CForOtherHost
     {

@@ -42,6 +42,12 @@ en = "%{flag} does not go with --target %{target}"
 [errors.built_for_other_host]
 en = "this program was built for %{built}, and this host is %{host}: build it again with the --target-os, --target-arch and --target-abi of this host"
 
+[errors.no_wasi_compiler]
+en = "no C compiler for %{triple} found: set WASI_SDK_PATH to the folder of wasi-sdk, pass --cc, or put %{triple}-clang on the PATH"
+
+[errors.c_functions_on_wasi]
+en = "a program for WASI cannot call C functions: WASI loads no shared libs, so build it for another OS"
+
 [errors.c_for_other_host]
 en = "the C compiler builds for this host, %{host}, not for %{target}: give --emit c to write the C files and build them there"
 
@@ -61,7 +67,7 @@ en = "the native target cannot build %{what} at present"
 en = "the native target builds for x86_64, aarch64 and riscv64, not for %{arch}: give --backend c, or --backend vm"
 
 [errors.runtime_not_carried]
-en = "this zakac carries no runtime lib for the ABI %{abi}: build zakac on Windows with the Rust target and the C tools of that ABI, or give another --target-abi"
+en = "this zakac carries no runtime lib for the ABI %{abi}: build zakac with the Rust target of that ABI installed (for a Windows ABI, with its C tools too), or give another --target-abi"
 
 [errors.native_for_other_host]
 en = "the native target links for this host, %{host}, not for %{target}: give --emit obj to write the object file and link it there"

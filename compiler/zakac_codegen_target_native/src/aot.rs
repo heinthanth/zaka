@@ -43,6 +43,7 @@ fn triple(target: &Target) -> String
         (TargetOs::Linux, _) => "unknown-linux-gnu",
         (TargetOs::Windows, TargetAbi::Msvc) => "pc-windows-msvc",
         (TargetOs::Windows, _) => "pc-windows-gnu",
+        (TargetOs::Wasi, _) => "unknown-wasi",
     };
     format!("{arch}-{rest}")
 }

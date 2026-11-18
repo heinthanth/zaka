@@ -26,6 +26,7 @@ zaka_vm = { workspace = true, features = ["ffi"] }
 
 [dev-dependencies]
 zaka_host = { workspace = true }
+zakac_ast = { workspace = true }
 zakac_span = { workspace = true }
 
 [build-dependencies]

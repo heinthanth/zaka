@@ -29,6 +29,7 @@ use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::cli::attach_target_os_args;
+use zakac_semcheck::cli::platform_bits;
 use zakac_semcheck::cli::target_from;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_session::artifact::ArtifactFormat;
@@ -117,8 +118,7 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
 /// The options.
 pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
 {
-    let bits = matches.get_one::<String>(TARGET_BITS_ARG);
-    let bits = bits.and_then(|b| b.parse().ok()).unwrap_or(64);
+    let bits = platform_bits(matches);
     let no_unsafe = matches.get_flag(NO_UNSAFE_ARG);
     // The comptime runs of the command take the rights its flags grant.
     zakac_semcheck::comptime_calls::set_grants(grants_from(matches, Granted::Comptime));

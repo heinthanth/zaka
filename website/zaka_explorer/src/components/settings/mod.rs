@@ -38,6 +38,7 @@ use zakac_diagnostics::lint::LintLevel;
 use zakac_diagnostics::lint::LintLevels;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 
 use crate::compile::Options;
@@ -467,6 +468,7 @@ fn os_label(os: TargetOs) -> Cow<'static, str>
         TargetOs::Windows => t!("explorer.settings.os_windows"),
         TargetOs::Macos => t!("explorer.settings.os_macos"),
         TargetOs::Linux => t!("explorer.settings.os_linux"),
+        TargetOs::Wasi => t!("explorer.settings.os_wasi"),
     }
 }
 
@@ -494,7 +496,12 @@ fn os_picker(state: AppState) -> impl IntoView
         {
             return;
         };
-        state.options.update(|o| o.os = os);
+        // WASI runs 32-bit WebAssembly alone, as `--target-os wasi` takes it.
+        let wasi = os == TargetOs::Wasi;
+        state.options.update(|o| {
+            o.os = os;
+            do_if!(wasi, (o.arch, o.platform_bits) = (TargetArch::Wasm32, 32));
+        });
     };
     dropdown(picker(
         t!("explorer.settings.target_os"),

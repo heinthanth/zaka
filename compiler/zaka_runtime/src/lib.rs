@@ -12,7 +12,11 @@
 // values it names, as each C function takes them.
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
+// WASI has no libffi: a program for it calls no C function and hands C no
+// closure.
+#[cfg(not(target_os = "wasi"))]
 pub mod callbacks;
+#[cfg(not(target_os = "wasi"))]
 pub mod ffi;
 pub mod heap;
 pub mod host;

@@ -6665,6 +6665,7 @@ dependencies = [
  "strum",
  "zaka_host",
  "zaka_vm",
+ "zakac_ast",
  "zakac_borrow_checker",
  "zakac_burmese_segmenter",
  "zakac_cli_common",

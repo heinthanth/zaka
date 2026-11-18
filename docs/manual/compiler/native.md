@@ -55,6 +55,38 @@ takes `/OUT:` and each option itself; another links as `cl` does.
   (`/fsanitize=address`).
 - `zakac run` and `zakac run --jit` run inside `zakac`, so a run takes the ABI of `zakac`.
 
+## WASI
+
+`--target-os wasi` builds a WebAssembly program that a WASI host, such as
+[wasmtime](https://wasmtime.dev), runs. Its CPU is `wasm32`, with 32-bit platform kinds,
+and `--target-abi` picks the version of WASI. The two ABIs do not mix: each has its own libc.
+
+| ABI | Makes | Runs in |
+| --- | --- | --- |
+| `wasip1`, the default | a core module that imports `wasi_snapshot_preview1` | wasmtime, wasmer, Node, and the WASI shims of the browsers |
+| `wasip2` | a component of the WASI interfaces | wasmtime and other hosts of components |
+
+```console
+$ zakac build --backend c --target-os wasi hello.zaka
+$ wasmtime hello.wasm
+မင်္ဂလာပါ ကမ္ဘာကြီး
+```
+
+The build needs [wasi-sdk](https://github.com/WebAssembly/wasi-sdk). It takes the compiler
+`--cc` names, else `wasm32-wasip1-clang` (or `wasm32-wasip2-clang`) in the `bin` folder of
+`WASI_SDK_PATH`, else that name on the PATH; `CC` and the `cc` of a config file name a
+compiler of the host, so the build skips them. `zakac` carries the runtime lib of both
+ABIs. With no extension on `-o`, the program ends in `.wasm`.
+
+- A WASI host lets a program open no file unless told to: `wasmtime run --dir .
+  program.wasm` gives it the working folder. The rights of the build (`--allow-read`,
+  ...) hold inside it as well.
+- WASI loads no shared libs, so a program that declares C functions does not build for
+  it.
+- The stack is 8 MiB, as a native thread has.
+- The `sanitizers` check has no effect.
+- `zakac run` runs no WASI program: run it in a WASI host.
+
 Floats print as the VM prints them, digit for digit, on each host: the runtime works out
 the digits from the bits of the float, with no print from libc.
 

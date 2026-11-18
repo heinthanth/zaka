@@ -1095,9 +1095,13 @@ impl<'s, 'm> FnGen<'s, 'm>
             |g| format!("(int)(uint8_t){}", global_name(g)),
         );
         self.line(&format!("return zk_finish({status});"));
+        // WASI starts a `main` of two parameters alone and keeps the
+        // environment in `environ`.
         format!(
-            "#include \"{KINDS_HEADER}\"\n\nint main(int argc, char **argv, char \
-             **envp)\n{{\n    (void)envp;\n{}}}\n",
+            "#include \"{KINDS_HEADER}\"\n\n#if defined(__wasi__)\nextern char \
+             **environ;\nint main(int argc, char **argv)\n{{\n    char **envp = \
+             environ;\n#else\nint main(int argc, char **argv, char \
+             **envp)\n{{\n#endif\n    (void)envp;\n{}}}\n",
             self.out
         )
     }

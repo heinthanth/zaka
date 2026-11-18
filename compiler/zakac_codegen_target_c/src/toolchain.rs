@@ -537,6 +537,7 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
         .args(table.link_libs)
         .args(os_libs)
         .args(plan.libs)
+        .args(crate::wasi::link_flags(plan.abi))
         .args(plan.ldflags);
     cmd
 }

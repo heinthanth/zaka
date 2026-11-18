@@ -1,6 +1,6 @@
 [[tools.rust]]
 version = "stable"
-targets = ["wasm32-unknown-unknown"]
+targets = ["wasm32-unknown-unknown", "wasm32-wasip1", "wasm32-wasip2"]
 
 [[tools.rust]]
 version = "nightly"
@@ -13,6 +13,8 @@ cargo-binstall = "latest"
 clang-format = "23"
 hyperfine = "latest"
 typst = "latest"
+wasmtime = "latest"
+"github:WebAssembly/wasi-sdk" = { version = "latest", bin_path = "nothing-on-the-path", strip_components = 1 }
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-llvm-cov" = "latest"
 "cargo:cargo-leptos" = "0.3.11"
@@ -28,6 +30,8 @@ LEPTOS_SITE_ADDR = '${LEPTOS_SITE_ADDR:-127.0.0.1:8000}'
 LEPTOS_RELOAD_PORT = '${LEPTOS_RELOAD_PORT:-8001}'
 ZAKA_SITE_ORIGIN = '${ZAKA_SITE_ORIGIN:-http://localhost:8000}'
 CARGO_TERM_COLOR = '${CARGO_TERM_COLOR:-always}'
+# The C target builds WASI programs with the clang of wasi-sdk, kept off the PATH.
+WASI_SDK_PATH = { value = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}", tools = true }
 
 [tasks.format]
 depends = ["format:rust", "format:c"]

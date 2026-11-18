@@ -151,11 +151,32 @@ The `build.rs` of the crate runs a cargo of its own: `cargo rustc -p zaka_runtim
 `zaka-runtime` profile builds for release with `panic = "abort"`. A GNU lib is stripped
 (`strip -S`) and `include_bytes!` puts it into `zakac`; `driver::write_cache_for` writes it
 into the cache folder of each build, and the link puts it after the objects. A build for
-`wasm32` (the explorer) gets a blank lib. A Windows build makes the lib of the other ABI
-as well (`other_windows`: `x86_64-pc-windows-gnu` and `-msvc` swapped), named as that ABI
-names it (`zaka_runtime.lib` for MSVC, `libzaka_runtime.a` for GNU); when it cannot (the
-Rust target of the toolchain or the C tools of that ABI are missing) the build warns and
-carries a blank lib, and `write_cache_for` refuses that ABI (`RuntimeNotCarried`).
+`wasm32` (the explorer) gets blank libs. Beside the lib of the host, `build_other` builds the
+libs of other targets at once, each in a thread and a target folder of its own: on
+Windows the lib of the other ABI (`other_windows`: `x86_64-pc-windows-gnu` and `-msvc`
+swapped), named as that ABI names it (`zaka_runtime.lib` for MSVC, `libzaka_runtime.a`
+for GNU), and on each host the libs of `wasm32-wasip1` and `wasm32-wasip2`, which are not
+stripped, as the `strip` of the host reads no WebAssembly. When a lib cannot build (the
+Rust target or the C tools of that ABI are missing) the build warns and carries a blank
+lib, and `write_cache_for` refuses that ABI (`RuntimeNotCarried`).
+
+### WASI
+
+`--target-os wasi` keeps the C of each other host, with three changes in `wasi.rs` and
+one in `main.c`:
+
+- `wasi::find_cc` takes `--cc`, then `bin/<triple>-clang` of `WASI_SDK_PATH`, then
+  `<triple>-clang` on the PATH; the Clang of wasi-sdk named for a triple builds for it
+  with the sysroot of the SDK. `CC` is skipped, as it names a compiler of the host.
+- `wasi::link_flags` adds a stack of 8 MiB (the linker gives 64 KiB), and for `wasip2`
+  `--export=cabi_realloc`: the std of the runtime lib defines that function, which the
+  component needs, and the linker leaves it unexported unless asked.
+- `cli::other_host` lets a `wasi` target with the CPU `wasm32` and a WASI ABI through,
+  and a build with C functions stops with `CFunctionsOnWasi`. The runtime leaves out
+  its modules `ffi` and `callbacks` on WASI, with libffi.
+- `main.c` starts with `#if defined(__wasi__)`: WASI starts a `main` of two
+  parameters alone, so that `main` reads the environment from `environ`, where the other
+  hosts take a third parameter, `envp`.
 
 `zaka_checks.h` defines one `ZK_CHECK_<NAME>` as 1 or 0 for each run-time check
 (`RunCheck` in `options.rs`: `DIVIDE`, `SHIFT`, `BOUNDS`, `TEXT`, `STEP`, `DEPTH`, `NULL`,

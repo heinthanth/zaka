@@ -25,37 +25,68 @@ fn main()
     let target = std::env::var("TARGET").expect("cargo sets TARGET");
     let lib = out.join("libzaka_runtime.a");
     let libs = out.join("native-libs.txt");
-    let (other_lib, other_libs) =
-        (out.join("zaka_runtime-other"), out.join("native-libs-other.txt"));
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     for watched in ["compiler/zaka_runtime", "compiler/zaka_host/src", "Cargo.lock"]
     {
         println!("cargo:rerun-if-changed={}", root.join(watched).display());
     }
     write_header(&root.join("compiler/zaka_runtime"), &out.join("zaka_runtime.h"));
+    // Beside the lib of the target itself, a Windows host carries the lib of
+    // the other ABI, so `--target-abi` picks either, and each host carries
+    // the libs of WASI.
+    let carried = [
+        ("other", other_windows(&target)),
+        ("wasip1", Some("wasm32-wasip1")),
+        ("wasip2", Some("wasm32-wasip2")),
+    ];
     // The explorer builds this crate for the browser, which links no program.
-    let blank = [&lib, &libs, &other_lib, &other_libs];
-    ret_if!(target.starts_with("wasm32"), blank.iter().for_each(|f| write(f, b"")));
+    let blank = || {
+        [&lib, &libs].iter().for_each(|f| write(f, b""));
+        carried.iter().for_each(|(name, _)| build_other(&root, &out, name, None));
+    };
+    ret_if!(target.starts_with("wasm32"), blank());
     let printed = build_runtime(&root, &out.join("zaka_runtime-target"), &target, &lib);
     let printed =
         printed.unwrap_or_else(|e| panic!("the runtime lib did not build:\n{e}"));
     write(&libs, native_libs(&printed).as_bytes());
-    // A Windows host carries the runtime of the other ABI too, so
-    // `--target-abi` picks either; a host that cannot build it carries
-    // none.
-    let other =
-        other_windows(&target).map(|t| (t, out.join("zaka_runtime-other-target")));
-    let built = other.map(|(t, dir)| (t, build_runtime(&root, &dir, t, &other_lib)));
-    match built
+    // The nested builds of the carried libs each take a folder of their own,
+    // so they run at once.
+    let (root, out) = (&root, &out);
+    std::thread::scope(|s| {
+        do_for!((name, triple) in carried, _ = s.spawn(move || build_other(root, out, name, triple)));
+    });
+}
+
+/// Build the runtime lib of another target and write it, with its link list,
+/// to `zaka_runtime-<name>` and `native-libs-<name>.txt`; both are blank for
+/// no target, or when the host cannot build for it.
+///
+/// # Arguments
+///
+/// * `root` - The workspace folder.
+/// * `out` - The folder of the build script.
+/// * `name` - The name of the lib among those carried.
+/// * `triple` - The target triple, or `None` for a blank lib.
+fn build_other(root: &Path, out: &Path, name: &str, triple: Option<&str>)
+{
+    let lib = out.join(format!("zaka_runtime-{name}"));
+    let libs = out.join(format!("native-libs-{name}.txt"));
+    let blank = || [&lib, &libs].iter().for_each(|f| write(f, b""));
+    let Some(triple) = triple
+    else
     {
-        Some((_, Ok(printed))) => write(&other_libs, native_libs(&printed).as_bytes()),
-        Some((t, Err(_))) =>
-        {
-            println!("cargo:warning=no runtime lib for {t}: `rustup target add {t}`");
-            [&other_lib, &other_libs].iter().for_each(|f| write(f, b""));
-        }
-        None => [&other_lib, &other_libs].iter().for_each(|f| write(f, b"")),
-    }
+        return blank();
+    };
+    let dir = out.join(format!("zaka_runtime-{name}-target"));
+    let Ok(printed) = build_runtime(root, &dir, triple, &lib)
+    else
+    {
+        println!(
+            "cargo:warning=no runtime lib for {triple}: `rustup target add {triple}`"
+        );
+        return blank();
+    };
+    write(&libs, native_libs(&printed).as_bytes());
 }
 
 /// The Windows target of the other ABI, for a Windows target.
@@ -183,7 +214,8 @@ fn build_runtime(
     std::fs::copy(&built, lib).expect("the runtime lib is readable");
     // Debug info is most of the lib; a host with no `strip` keeps it, and the
     // `strip` of GNU leaves an MSVC lib alone.
-    let gnu = !target.ends_with("-msvc");
+    // `strip` of the host reads no WebAssembly.
+    let gnu = !target.ends_with("-msvc") && !target.starts_with("wasm32");
     do_if!(gnu, _ = Command::new("strip").arg("-S").arg(lib).status());
     Ok(printed)
 }

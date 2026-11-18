@@ -197,7 +197,7 @@ en = "The CPU the compile-time conditionals read, as zakac --target-arch sets it
 [explorer.settings.target_abi]
 en = "Target ABI"
 [explorer.settings.target_abi_note]
-en = "The ABI the compile-time conditionals read, as zakac --target-abi sets it: gnu, msvc, apple or wasm. The usual one follows the OS: msvc or gnu on Windows (as the compiler was built), apple on macOS, gnu on Linux."
+en = "The ABI the compile-time conditionals read, as zakac --target-abi sets it: gnu, msvc, apple, wasip1 or wasip2. The usual one follows the OS: msvc or gnu on Windows (as the compiler was built), apple on macOS, gnu on Linux, wasip1 on WASI."
 [explorer.settings.abi_usual]
 en = "Usual for the OS"
 [explorer.settings.os_windows]
@@ -206,6 +206,8 @@ en = "Windows"
 en = "macOS"
 [explorer.settings.os_linux]
 en = "Linux"
+[explorer.settings.os_wasi]
+en = "WASI"
 [explorer.settings.lints]
 en = "Lints"
 [explorer.settings.lints_note]

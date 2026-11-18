@@ -42,10 +42,10 @@ declares as constants:
 
 | Constant | Values |
 | --- | --- |
-| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်` | the OS: `"windows"`, `"macos"` or `"linux"` |
+| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်` | the OS: `"windows"`, `"macos"`, `"linux"` or `"wasi"` |
 | `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ` | the CPU: `"x86_64"`, `"aarch64"`, `"x86"`, `"arm"`, `"riscv64"` or `"wasm32"` |
-| `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်` | the ABI the machine code and the libs share: `"gnu"`, `"msvc"`, `"apple"` or `"wasm"`; when `--target-abi` gives none, the usual one of the OS: `"apple"` on macOS, `"gnu"` on Linux, and on Windows the ABI `zakac` itself was built for |
-| `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--target-bits`: 8, 16, 32 or 64 |
+| `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်` | the ABI the machine code and the libs share: `"gnu"`, `"msvc"`, `"apple"`, `"wasip1"` or `"wasip2"`; when `--target-abi` gives none, the usual one of the OS: `"apple"` on macOS, `"gnu"` on Linux, `"wasip1"` on WASI, and on Windows the ABI `zakac` itself was built for |
+| `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်` | the bit count of `--target-bits`: 8, 16, 32 or 64; when not given, 32 for `"wasm32"` and 64 for the other CPUs |
 | `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the code the compiler gives out: `"vm"`, `"c"` or `"native"` |
 
 A condition holds the facts, text and digits, `==` and `!=` (and `<`, `<=`, `>`, `>=` on
@@ -117,7 +117,7 @@ links its own `snprintf`.
 
 The target is the host the compiler runs on: its OS, its CPU, the bit count of
 `--target-bits`, and the code of the command (`"c"` for `zakac build --backend c`,
-`"native"` for `zakac build --backend native` and `zakac run --jit`, `"vm"` for the rest). `--target-os` and `--target-arch` name another
+`"native"` for `zakac build --backend native` and `zakac run --jit`, `"vm"` for the rest). `--target-os` and `--target-arch` name another; `--target-os wasi` takes the CPU `wasm32` unless `--target-arch` names one
 ([Commands](../compiler/commands.md#options-of-the-compile-stages)).
 
 - A program that holds a compile-time conditional or names a fact is settled for its
