@@ -40,14 +40,23 @@ pub struct FnKind
     pub params: Vec<FnParam>,
     /// The result kind; `None` for a function with no result.
     pub ret: Option<DataKind>,
+    /// The starting phrase a call through a value of the kind writes.
+    pub start: Option<Name>,
+    /// The ending phrase a call through a value of the kind writes.
+    pub end: Option<Name>,
 }
 
 /// Each function kind made so far, so a kind is made once and remains
 /// `Copy`.
 static FNS: OnceLock<Mutex<HashSet<&'static FnKind>>> = OnceLock::new();
 
-/// The text that opens the short name of a function kind.
-const OPEN: &str = "fn(";
+/// The text that opens the short name of a function kind, before its
+/// phrases or its `(`.
+const OPEN: &str = "fn";
+
+/// The mark between the starting and the ending phrase in a short name,
+/// where the arguments stand.
+const ARGS: &str = "…";
 
 /// The text between the parameters and the result in a short name.
 const ARROW: &str = " -> ";
@@ -67,7 +76,28 @@ impl FnKind
     /// The kind.
     pub fn make(params: Vec<FnParam>, ret: Option<DataKind>) -> &'static FnKind
     {
-        let wanted = FnKind { params, ret };
+        FnKind::make_with(params, ret, None, None)
+    }
+
+    /// The function kind with these parts and phrases, made once and kept for
+    /// the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - The parameters.
+    /// * `ret` - The result kind, when the function has one.
+    /// * `start` - The starting phrase, when written.
+    /// * `end` - The ending phrase, when written.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn make_with(
+        params: Vec<FnParam>, ret: Option<DataKind>, start: Option<Name>,
+        end: Option<Name>,
+    ) -> &'static FnKind
+    {
+        let wanted = FnKind { params, ret, start, end };
         let fns = FNS.get_or_init(Mutex::default);
         let mut fns = fns.lock().unwrap_or_else(PoisonError::into_inner);
         ret_if!(let Some(found) = fns.get(&wanted), found);
@@ -104,15 +134,33 @@ impl FnKind
         self.params.iter().map(|p| p.preposition).collect()
     }
 
-    /// The kind with each preposition dropped.
+    /// The kind with each preposition and each phrase dropped.
     ///
     /// # Returns
     ///
-    /// The kind whose parameters have no prepositions.
-    pub fn without_prepositions(&self) -> &'static FnKind
+    /// The kind whose calls write no words beside the arguments.
+    pub fn without_words(&self) -> &'static FnKind
     {
         let drop = |p: &FnParam| FnParam { preposition: None, ..p.clone() };
         FnKind::make(self.params.iter().map(drop).collect(), self.ret)
+    }
+
+    /// The phrases of the kind as its short name writes them, the arguments
+    /// as `…`: `{ဖိုင် … စာကို}`; blank with no phrase.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    fn phrases_text(&self) -> String
+    {
+        ret_if!(self.start.is_none() && self.end.is_none(), String::new());
+        let words = [
+            self.start.map(|s| s.to_string()),
+            Some(ARGS.to_string()),
+            self.end.map(|e| e.to_string()),
+        ];
+        let words: Vec<String> = words.into_iter().flatten().collect();
+        format!("{{{}}}", words.join(" "))
     }
 
     /// Whether a function of this kind fits a place of kind `want`: the
@@ -130,8 +178,9 @@ impl FnKind
     pub fn fits(&self, want: &FnKind) -> bool
     {
         ret_if!(self == want, true);
-        let given = want.params.iter().any(|p| p.preposition.is_some());
-        !given && std::ptr::eq(self.without_prepositions(), want.without_prepositions())
+        let phrased = want.start.is_some() || want.end.is_some();
+        let given = phrased || want.params.iter().any(|p| p.preposition.is_some());
+        !given && std::ptr::eq(self.without_words(), want.without_words())
     }
 
     /// The short name of the kind: `fn(<param>, …) -> <result>`.
@@ -154,7 +203,7 @@ impl FnKind
         let ret = self
             .ret
             .map_or(String::new(), |r| format!("{ARROW}{}", r.spell_inner(full)));
-        format!("{OPEN}{}){ret}", params.join(", "))
+        format!("{OPEN}{}({}){ret}", self.phrases_text(), params.join(", "))
     }
 }
 
@@ -166,6 +215,8 @@ pub struct FnText<'a>
     pub params: Vec<(bool, &'a str, Option<&'a str>)>,
     /// The result kind text.
     pub ret: Option<&'a str>,
+    /// The phrases inside their braces, `ဖိုင် … စာကို`, when written.
+    pub phrases: Option<&'a str>,
 }
 
 /// How a character moves the bracket depth of a kind name: `(`, `{` and `<`
@@ -272,12 +323,32 @@ fn closes_at_end(text: &str) -> bool
 pub fn split_fn(text: &str) -> Option<FnText<'_>>
 {
     let rest = text.strip_prefix(OPEN)?;
+    let braced = rest.strip_prefix('{').and_then(|r| r.split_once('}'));
+    let phrases = braced.map(|(p, _)| p);
+    let rest = braced.map_or(rest, |(_, r)| r).strip_prefix('(')?;
     let close = matching_close(rest)?;
     let (inner, tail) = (&rest[..close], &rest[close + 1..]);
     let ret = tern!(tail.is_empty(), None, Some(tail.strip_prefix(ARROW)?));
     let parts = tern!(inner.is_empty(), Vec::new(), split_top(inner, ','));
     let params = parts.into_iter().map(|p| split_param(p.trim())).collect();
-    Some(FnText { params, ret })
+    Some(FnText { params, ret, phrases })
+}
+
+/// The starting and the ending phrase of the phrases of a short name,
+/// `ဖိုင် … စာကို`.
+///
+/// # Arguments
+///
+/// * `text` - The text inside the braces.
+///
+/// # Returns
+///
+/// The two phrases, each `None` when not written.
+fn split_phrases(text: &str) -> (Option<Name>, Option<Name>)
+{
+    let (start, end) = text.split_once(ARGS).unwrap_or((text, ""));
+    let word = |w: &str| Some(w.trim()).filter(|w| !w.is_empty()).map(Name::new);
+    (word(start), word(end))
 }
 
 /// The place of the `)` that closes text whose `(` came just before it.
@@ -359,7 +430,8 @@ pub fn join_fn(parts: &FnText<'_>) -> String
     };
     let params: Vec<String> = parts.params.iter().map(param).collect();
     let ret = parts.ret.map_or(String::new(), |r| format!("{ARROW}{r}"));
-    format!("{OPEN}{}){ret}", params.join(", "))
+    let phrases = parts.phrases.map_or(String::new(), |p| format!("{{{p}}}"));
+    format!("{OPEN}{phrases}({}){ret}", params.join(", "))
 }
 
 /// Read the short name of a function kind, each part read with `read`.
@@ -392,7 +464,8 @@ pub fn parse_fn_with(
         Some(r) => Some(read(r)?),
         None => None,
     };
-    Some(DataKind::Fn(FnKind::make(params, ret)))
+    let (start, end) = parts.phrases.map_or((None, None), split_phrases);
+    Some(DataKind::Fn(FnKind::make_with(params, ret, start, end)))
 }
 
 /// Whether text names a function kind, in parentheses or not.
@@ -404,7 +477,11 @@ pub fn parse_fn_with(
 /// # Returns
 ///
 /// `true` if it does.
-pub fn is_fn_text(text: &str) -> bool { unwrap_parens(text).starts_with(OPEN) }
+pub fn is_fn_text(text: &str) -> bool
+{
+    let rest = unwrap_parens(text).strip_prefix(OPEN);
+    rest.is_some_and(|r| r.starts_with(['(', '{']))
+}
 
 /// Map each part of the short name of a function kind, and write the name
 /// again in parentheses, as it stands inside another name.
@@ -433,5 +510,6 @@ pub fn map_fn_text(
         None => None,
     };
     let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
-    Some(format!("({})", join_fn(&FnText { params, ret: ret.as_deref() })))
+    let parts = FnText { params, ret: ret.as_deref(), phrases: parts.phrases };
+    Some(format!("({})", join_fn(&parts)))
 }

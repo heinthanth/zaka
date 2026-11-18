@@ -301,7 +301,8 @@ fn field_text(
             .collect();
         let ret = sig.ret.as_ref().map(text);
         let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
-        let parts = FnText { params, ret: ret.as_deref() };
+        let phrases = phrases_inside(&sig.phrases);
+        let parts = FnText { params, ret: ret.as_deref(), phrases: phrases.as_deref() };
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("({}){}", join_fn(&parts), split_marks(&marks).1);
     }
@@ -418,4 +419,23 @@ fn reach_inline<'a>(
         }
     }
     seen
+}
+
+/// The phrases of a function kind as its short name writes them inside the
+/// braces, the arguments as `…`: `ဖိုင် … စာကို`.
+///
+/// # Arguments
+///
+/// * `phrases` - The phrases.
+///
+/// # Returns
+///
+/// The text, or `None` with no phrase.
+fn phrases_inside(phrases: &zakac_ast::expr::Phrases) -> Option<String>
+{
+    let word =
+        |i: &Option<zakac_ast::expr::Ident>| i.as_ref().map(|i| i.name.to_string());
+    let words = [word(&phrases.start), Some("…".to_string()), word(&phrases.end)];
+    let words: Vec<String> = words.into_iter().flatten().collect();
+    (!phrases.is_empty()).then(|| words.join(" "))
 }

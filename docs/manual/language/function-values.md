@@ -63,6 +63,12 @@ A function kind repeats the header of a function, with `သော` ("that") in f
 - A [preposition](functions.md#prepositions) stands after `ကို`:
   `(စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)`; each
   parameter has a preposition, or none has (ZK0237).
+- The [phrases](functions.md#starting-and-ending-phrases) of a head stand first, as a head
+  gives them after `သည်`: the list, then `သုံး၍` before the parameters or the result, or
+  `သုံးသော` right before `လုပ်ဆောင်ချက် အမျိုးအစား` when the kind has neither:
+  `(အစ စကားစု "ဖိုင်" ကို သုံး၍ စာသား တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား)`,
+  `(အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား)`. Two or more parameters
+  of a kind with phrases each need a preposition (ZK0259).
 - `ဒေတာ ပြောင်းလဲရန်` after `ကို` lets the function change the argument, as in a
   [header](functions.md#changed-parameters). A function kind takes that marker alone:
   `ဒေတာ ထည့်ပေးရန်` in one is ZK0243. A function whose parameter is
@@ -77,8 +83,10 @@ A function kind repeats the header of a function, with `သော` ("that") in f
   and `လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု` for the kind with neither parameters nor result.
 
 Messages write a function kind as `fn(<parameters>) -> <result>`, each parameter as its
-short name with `mut ` in front of a changed one and its preposition after it:
-`fn(isize, isize) -> bool`, `fn(text(ကို), text(သို့))`, `fn()`. Inside another short
+short name with `mut ` in front of a changed one and its preposition after it, and the
+phrases in braces after `fn`, the arguments as `…`:
+`fn(isize, isize) -> bool`, `fn(text(ကို), text(သို့))`, `fn()`,
+`fn{ဖိုင် … စာကို}(text(ထဲမှ)) -> text`. Inside another short
 name, such as a list of function values, it stands in parentheses: `(fn(isize))[]`. See
 [Short names for kinds](../reference/errors.md#short-names-for-kinds).
 
@@ -464,24 +472,25 @@ through `ပြသမည်`, a template slot, and inside a list or a struct:
 အလွတ်
 ```
 
-## Prepositions and changed parameters
+## Prepositions, phrases and changed parameters
 
 A function kind compares its parameter kinds, its `ဒေတာ ပြောင်းလဲရန်` markers and its result as written,
-with no widening. Prepositions are words of a call sentence, not part of what the function
-does, so a kind with none takes a function with prepositions:
+with no widening. Prepositions and phrases are words of a call sentence, not part of what the
+function does, so a kind with none takes a function with them:
 
 | The kind | Takes |
 | --- | --- |
-| no prepositions | a function with prepositions or without, when the rest matches |
-| prepositions | a function with the same prepositions, in the same order, alone |
+| no prepositions and no phrases | a function with prepositions or phrases or without, when the rest matches |
+| prepositions or phrases | a function with the same prepositions and phrases, in the same order, alone |
 
-A call through a value uses the prepositions of its kind. Through a kind with prepositions, the call
+A call through a value uses the prepositions and the phrases of its kind, as a call of a
+function uses those of its head. Through a kind with prepositions, the call
 reads as a sentence. A variable or a constant reads so in two cases:
 
 | The declaration | Its prepositions |
 | --- | --- |
 | writes a kind | those of the kind; a kind with none gives none, whatever the starting value |
-| writes no kind, and starts as a function with prepositions | those of the function, imported or not |
+| writes no kind, and starts as a function with prepositions or phrases | those of the function, imported or not |
 
 A parameter, a field and a result have the prepositions of their kinds alone. Below, the
 parameter `ပို့သူ` and the variable `ပို့ရန်` take a sentence, and `ဖ`, whose kind has
@@ -548,6 +557,30 @@ Where the sentence still reads as a call through a value whose kind has no prepo
 such as through a name in an inner block that shadows a name with prepositions, the
 check reports it as ZK0332: no function of that name takes the arguments.
 
+
+A kind with phrases gives a call through a value the words of a command. Below, the
+parameter `လုပ်` takes a function with no parameters, called with its starting phrase:
+
+```zaka
+ရှင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ရှင်းပြီ" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ခေါ် ဟူသော လုပ်ဆောင်ချက် သည်
+လုပ် ဟူသော (အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဖန်သားပြင်ကို လုပ် မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ခေါ် ဟူသော လုပ်ဆောင်ချက်ကို ရှင်း ဟူသော လုပ်ဆောင်ချက် ဖြင့် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရှင်းပြီ
+```
 
 ## How a function value is held
 

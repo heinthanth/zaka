@@ -662,6 +662,135 @@ fn other_sentences_keep_their_meaning()
     assert!(matches!(stmts(&import)[0], Stmt::Import(_)));
 }
 
+/// A head with `phrases` after `သည်`, then `rest` up to `လက်ခံပြီး`, and a blank
+/// block.
+fn phrase_head(phrases: &str, rest: &str) -> String
+{
+    format!(
+        "ဖတ် ဟူသော လုပ်ဆောင်ချက် သည် {phrases} {rest}အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ \
+         ပြီးပါပြီ။"
+    )
+}
+
+/// One text parameter whose preposition is `ထဲမှ`.
+const FROM_PARAM: &str = "လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ထဲမှ\" ကို သုံး၍ လက်ခံပြီး ";
+
+/// The phrases of a head stand after `သည်` as a list in words, and the tree
+/// shows them after the name.
+#[test]
+fn heads_have_phrases()
+{
+    let both = "အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍";
+    assert_eq!(
+        stmt(&phrase_head(both, FROM_PARAM)),
+        "(fn ဖတ် {ဖိုင် … စာကို} [text လမ်း(ထဲမှ)] - (block))"
+    );
+    let start = "အစစကားစု \"ဖိုင်\" ကို သုံး၍";
+    assert_eq!(stmt(&phrase_head(start, "")), "(fn ဖတ် {ဖိုင် …} [] - (block))");
+    let end = "အဆုံး စကားစု \"အမြန်\" ကို သုံး၍";
+    assert_eq!(stmt(&phrase_head(end, "")), "(fn ဖတ် {… အမြန်} [] - (block))");
+}
+
+/// The phrase list takes the words of a list in words, and the words of a
+/// phrase follow the rules of a preposition, with no `၏`.
+#[test]
+fn bad_phrases_are_reported()
+{
+    let count = "အစ စကားစု \"က\" နှင့် အဆုံး စကားစု \"ခ\" ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(count, "")), [Code::ListWordCount]);
+    let order = "အဆုံး စကားစု \"ခ\" နှင့် အစ စကားစု \"က\" တို့ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(order, "")), [Code::ExpectedToken]);
+    let ei = "အဆုံး စကားစု \"x ၏\" ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(ei, "")), [Code::BadPhrase]);
+    let call_end = "အစ စကားစု \"ပြ မည်\" ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(call_end, "")), [Code::BadPhrase]);
+}
+
+/// Two or more parameters of a head with phrases each need a preposition,
+/// and a last preposition with `၏` cannot stand before an ending phrase.
+#[test]
+fn phrases_check_the_parameters()
+{
+    let two = "က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ";
+    let start = "အစ စကားစု \"ကိန်း\" ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(start, two)), [Code::PhrasesNeedPrepositions]);
+    let one = "က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ";
+    assert_eq!(codes(&phrase_head(start, one)), []);
+    let ei = "p ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"၏\" ကို သုံး၍ လက်ခံပြီး ";
+    let end = "အဆုံး စကားစု \"အမြန်\" ကို သုံး၍";
+    assert_eq!(codes(&phrase_head(end, ei)), [Code::PrepositionEiNotLast]);
+}
+
+/// A function kind gives its phrases first: `သုံး၍` before its parameters or
+/// its result, `သုံးသော` when it has neither.
+#[test]
+fn function_kinds_have_phrases()
+{
+    let kind = |k: &str| stmt(&format!("ကိန်းရှင် ဖ သည် {k} တစ်ခု ဖြစ်ပါစေ။"));
+    let read = "(အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍ စာသား တစ်ခု ကို ဝိဘတ် \"ထဲမှ\" ကို \
+                သုံး၍ လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)";
+    assert!(kind(read).contains("fn{ဖိုင် … စာကို}(text(ထဲမှ)) -> text"), "{}", kind(read));
+    let bare = "(အစ စကားစု \"ဖန်သားပြင်ကို\" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား)";
+    assert!(kind(bare).contains("fn{ဖန်သားပြင်ကို …}()"), "{}", kind(bare));
+    let two = "ကိန်းရှင် ဖ သည် (အစ စကားစု \"ကိန်း\" ကို သုံး၍ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို \
+               လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(codes(two), [Code::PhrasesNeedPrepositions]);
+}
+
+/// The phrases of the second statement of a program, each as its words.
+fn second_phrases(text: &str) -> (Option<String>, Option<String>)
+{
+    let list = stmts(text);
+    let words = |p: &zakac_ast::expr::Phrases| {
+        let name =
+            |i: &Option<zakac_ast::expr::Ident>| i.as_ref().map(|i| i.name.to_string());
+        (name(&p.start), name(&p.end))
+    };
+    match &list[1]
+    {
+        Stmt::Call(n) => words(&n.phrases),
+        Stmt::Print(n) => match &n.value
+        {
+            zakac_ast::expr::Expr::Call(c) => words(&c.phrases),
+            _ => (None, None),
+        },
+        _ => (None, None),
+    }
+}
+
+/// A call written as a sentence takes the phrases of its function: before
+/// the first argument, and right before the function name; a function with
+/// no parameters takes its phrases alone.
+#[test]
+fn calls_take_the_phrases()
+{
+    let both = "အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍";
+    let read = phrase_head(both, FROM_PARAM);
+    let want = (Some("ဖိုင်".to_string()), Some("စာကို".to_string()));
+    let call = format!("{read}\nဖိုင် \"a\" ထဲမှ စာကို ဖတ် မည်။");
+    assert_eq!(second_phrases(&call), want);
+    let value = format!("{read}\nဖိုင် \"a\" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။");
+    assert_eq!(second_phrases(&value), want);
+    let long = format!("{read}\nဖိုင် \"a\" ထဲမှ စာကို ဖတ် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။");
+    assert_eq!(second_phrases(&long), want);
+    let bare = phrase_head("အစ စကားစု \"ဖန်သားပြင်ကို\" နှင့် အဆုံး စကားစု \"အားလုံး\" တို့ကို သုံး၍", "");
+    let bare = format!("{bare}\nဖန်သားပြင်ကို အားလုံး ဖတ် မည်။");
+    let want = (Some("ဖန်သားပြင်ကို".to_string()), Some("အားလုံး".to_string()));
+    assert_eq!(second_phrases(&bare), want);
+    let end = phrase_head("အဆုံး စကားစု \"အမြန်\" ကို သုံး၍", "စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး ");
+    let end = format!("{end}\n\"a\" အမြန် ဖတ် မည်။");
+    assert_eq!(second_phrases(&end), (None, Some("အမြန်".to_string())));
+}
+
+/// A starting word that no call follows reads as the name it is.
+#[test]
+fn a_starting_word_alone_is_a_name()
+{
+    let read = phrase_head("အစ စကားစု \"ဖိုင်\" ကို သုံး၍", FROM_PARAM);
+    let text = format!("{read}\n{{ဖိုင်}} ကို ပြသမည်။");
+    assert!(stmts(&text)[1].to_sexpr().starts_with("(print"), "{text}");
+}
+
 /// A function kind with two text parameters and no prepositions.
 const PLAIN_KIND: &str =
     "စာသား တစ်ခု ကို လည်းကောင်း စာသား တစ်ခု ကို လည်းကောင်း လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား";

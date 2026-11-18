@@ -11,6 +11,7 @@ use zakac_span::span::Span;
 
 use crate::expr::Expr;
 use crate::expr::Ident;
+use crate::expr::Phrases;
 use crate::name::Name;
 
 /// The base of a kind, without its size or sign.
@@ -97,6 +98,11 @@ pub struct FnSig
     /// result.
     #[serde(default)]
     pub ret: Option<Kind>,
+    /// The starting and the ending phrase a call through a value of the kind
+    /// writes, as a function head gives them.
+    #[builder(default)]
+    #[serde(default)]
+    pub phrases: Phrases,
 }
 
 /// The two sides of a result kind; a side with no value is `None`, as
@@ -456,4 +462,5 @@ fn same_sig(a: &FnSig, b: &FnSig) -> bool
     };
     same_list(&a.params, &b.params, param)
         && same_opt(a.ret.as_ref(), b.ret.as_ref(), Kind::same_as)
+        && a.phrases.same_words(&b.phrases)
 }

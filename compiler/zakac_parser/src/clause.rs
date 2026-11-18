@@ -742,6 +742,7 @@ impl Parser<'_>
             let head = self.parse_head(mode)?;
             return self.give_kind_args(head, kind_args, start);
         }
+        do_if!(let Some(head) = self.attempt_phrase_call(mode), return Ok(head));
         let first = match self.parse_first(mode)?
         {
             Head::Expr(first) => first,

@@ -1920,7 +1920,9 @@ fn fn_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
         preposition: p.preposition.as_ref().map(|m| m.name),
     };
     let ret = sig.ret.as_ref().map(|r| DataKind::from_ast(r, structs));
-    FnKind::make(sig.params.iter().map(param).collect(), ret)
+    let phrase = |i: &Option<zakac_ast::expr::Ident>| i.as_ref().map(|i| i.name);
+    let (start, end) = (phrase(&sig.phrases.start), phrase(&sig.phrases.end));
+    FnKind::make_with(sig.params.iter().map(param).collect(), ret, start, end)
 }
 
 /// The short name of an integer kind.

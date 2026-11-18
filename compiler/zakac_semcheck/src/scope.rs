@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use bon::Builder;
+use zakac_ast::expr::Ident;
+use zakac_ast::expr::Phrases;
 use zakac_ast::name::Name;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -321,6 +323,10 @@ pub(crate) struct FnSig
     /// The preposition of each parameter, when the parameters have
     /// prepositions.
     pub prepositions: Option<Vec<Name>>,
+    /// The words of the starting phrase of the head, `အစ စကားစု "<words>"`.
+    pub start: Option<Name>,
+    /// The words of the ending phrase of the head, `အဆုံး စကားစု "<words>"`.
+    pub end: Option<Name>,
     /// Whether the function takes each parameter over and closes it: a
     /// parameter of a C function marked `အပိုင်အနေဖြင့်`.
     #[builder(default)]
@@ -348,7 +354,7 @@ pub(crate) struct FnSig
 impl FnSig
 {
     /// Whether two functions take the same parameters with the same
-    /// prepositions, so no call can tell them apart.
+    /// prepositions and phrases, so no call can tell them apart.
     ///
     /// # Arguments
     ///
@@ -359,7 +365,71 @@ impl FnSig
     /// `true` when both match.
     pub fn same_params(&self, other: &FnSig) -> bool
     {
-        self.params == other.params && self.prepositions == other.prepositions
+        let words = (&self.prepositions, self.start, self.end);
+        self.params == other.params
+            && words == (&other.prepositions, other.start, other.end)
+    }
+}
+
+/// The words a call writes beside its arguments: the preposition after each
+/// argument and the phrases of a call written as a sentence; blank for the
+/// other call forms.
+#[derive(Debug, Clone, Copy, Default, Builder)]
+pub struct Written<'a>
+{
+    /// The preposition after each argument.
+    #[builder(default)]
+    pub prepositions: &'a [Ident],
+    /// The words of the starting phrase.
+    pub start: Option<Name>,
+    /// The words of the ending phrase.
+    pub end: Option<Name>,
+}
+
+impl<'a> Written<'a>
+{
+    /// The words of a call.
+    ///
+    /// # Arguments
+    ///
+    /// * `prepositions` - The preposition after each argument.
+    /// * `phrases` - The phrases written.
+    ///
+    /// # Returns
+    ///
+    /// The words.
+    pub fn of(prepositions: &'a [Ident], phrases: &Phrases) -> Written<'a>
+    {
+        let name = |i: &Option<Ident>| i.as_ref().map(|i| i.name);
+        let words = Written::builder().prepositions(prepositions);
+        words.maybe_start(name(&phrases.start)).maybe_end(name(&phrases.end)).build()
+    }
+
+    /// Whether the call is written as a sentence: it writes prepositions or
+    /// phrases.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it is.
+    pub fn is_sentence(&self) -> bool
+    {
+        !self.prepositions.is_empty() || self.start.is_some() || self.end.is_some()
+    }
+
+    /// Whether a sentence call writes the phrases of a head; another call
+    /// form leaves them out and fits each head.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The starting phrase of the head.
+    /// * `end` - The ending phrase of the head.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the phrases fit.
+    pub fn phrases_fit(&self, start: Option<Name>, end: Option<Name>) -> bool
+    {
+        !self.is_sentence() || (self.start, self.end) == (start, end)
     }
 }
 

@@ -7,6 +7,7 @@ use zakac_span::span::Span;
 
 use crate::expr::Expr;
 use crate::expr::Ident;
+use crate::expr::Phrases;
 use crate::expr::UsingParticle;
 use crate::kind::Kind;
 use crate::target::Target;
@@ -542,6 +543,12 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub has_default: bool,
+    /// The starting and the ending phrase of the head, `အစ စကားစု "<words>"` and
+    /// `အဆုံး စကားစု "<words>"`: the words a call written as a sentence puts
+    /// before its first argument and right before the function name.
+    #[builder(default)]
+    #[serde(default)]
+    pub phrases: Phrases,
     /// Source region.
     pub span: Span,
 }
@@ -610,6 +617,11 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub prepositions: Vec<Ident>,
+    /// The starting and the ending phrase of a call written as a sentence;
+    /// blank for the other call forms.
+    #[builder(default)]
+    #[serde(default)]
+    pub phrases: Phrases,
     /// Source region.
     pub span: Span,
 }

@@ -45,6 +45,7 @@ use crate::hint::Hint;
 use crate::hint::declared_hints;
 use crate::load::STD_MODULES;
 use crate::stmt::FN_MARKS;
+use crate::using::CallWords;
 use crate::using::Functions;
 use crate::using::preposition_words;
 
@@ -138,8 +139,8 @@ fn with_prelude(known: &mut Functions)
     // remain outside the preposition calls of the file.
     let verb =
         |name: &str| operator_verb(name).is_some() || prelude_builtins().contains(name);
-    let lists = |name: &str, lists: &Vec<Vec<String>>| {
-        tern!(verb(name), vec![Vec::new()], lists.clone())
+    let lists = |name: &str, lists: &Vec<CallWords>| {
+        tern!(verb(name), vec![CallWords::default()], lists.clone())
     };
     let prelude = prelude_functions().iter();
     prelude
@@ -452,6 +453,11 @@ pub(crate) struct Parser<'t>
     /// argument.
     #[builder(default)]
     pub(crate) first_words: HashSet<String>,
+    /// The first word of each starting phrase of a function in
+    /// [`Self::functions`], and so each word a call written as a sentence can
+    /// start from.
+    #[builder(default)]
+    pub(crate) start_words: HashSet<String>,
     /// Whether the header of a function the compiler gives is being parsed:
     /// its prepositions spell the words of a sentence, so the places of `၏` and
     /// of `ကို သုံး၍` are not checked.
@@ -547,7 +553,7 @@ impl<'t> Parser<'t>
     /// call.
     pub(crate) fn fn_header(
         &self, tokens: &[Token], at: usize,
-    ) -> Option<(String, Vec<String>)>
+    ) -> Option<(String, CallWords)>
     {
         let tokens = tokens.get(at..)?;
         fn_head_at(tokens)?;
@@ -560,11 +566,17 @@ impl<'t> Parser<'t>
         // parentheses of a function kind prepositions a parameter of
         // that kind.
         let mut depth = 0usize;
-        let mut prepositions = Vec::new();
+        let mut words = CallWords::default();
+        let (mut accepts, mut joins) = (false, 0usize);
         for (n, tok) in header.iter().enumerate()
         {
-            let given = depth == 0 && tok.kind == TokenKind::Kw(Kw::PrepositionWord);
-            do_if!(given, prepositions.extend(self.preposition_at(header.get(n + 1))));
+            let word = |kw: Kw| depth == 0 && tok.kind == TokenKind::Kw(kw);
+            let next = || self.preposition_at(header.get(n + 1));
+            do_if!(word(Kw::PrepositionWord), words.prepositions.extend(next()));
+            do_if!(word(Kw::StartPhrase), words.start = next());
+            do_if!(word(Kw::EndPhrase), words.end = next());
+            accepts |= word(Kw::Accepting) || word(Kw::WillAccept);
+            joins += usize::from(word(Kw::AsWellAs));
             match tok.kind
             {
                 TokenKind::Punct(Punct::LParen) => depth += 1,
@@ -572,8 +584,12 @@ impl<'t> Parser<'t>
                 _ => (),
             }
         }
+        // Two or more parameters each end in `လည်းကောင်း`; a lone one need not.
+        let listed = tern!(accepts, joins.max(1), 0);
+        words.params =
+            tern!(words.prepositions.is_empty(), listed, words.prepositions.len());
         let name = unquote_raw(raw, self.text_of(name.span)).to_string();
-        Some((name, prepositions))
+        Some((name, words))
     }
 
     /// The preposition a string token after `ဝိဘတ်` holds, its words joined with
@@ -604,7 +620,7 @@ impl<'t> Parser<'t>
     ///
     /// * `name` - The name.
     /// * `lists` - The prepositions of each function.
-    pub(crate) fn add_function(&mut self, name: &str, lists: Vec<Vec<String>>)
+    pub(crate) fn add_function(&mut self, name: &str, lists: Vec<CallWords>)
     {
         let mut functions = std::mem::take(&mut self.functions);
         functions.entry(name.to_string()).or_default().extend(lists);
@@ -619,12 +635,17 @@ impl<'t> Parser<'t>
     /// * `functions` - The functions.
     pub(crate) fn set_functions(&mut self, functions: Functions)
     {
-        let prepositions = functions.values().flatten().flatten();
-        let words = prepositions.clone().flat_map(|m| m.split(' ').map(str::to_string));
+        let all = functions.values().flatten();
+        let texts = all.clone().flat_map(CallWords::texts);
+        let words = texts.flat_map(|m| m.split(' ').map(str::to_string));
         self.preposition_words = words.collect();
-        let firsts =
-            prepositions.filter_map(|m| m.split(' ').next().map(str::to_string));
-        self.first_words = firsts.collect();
+        // A call goes on after an argument from a preposition or an ending
+        // phrase; a starting phrase stands before the first argument alone.
+        let after_arg = all.clone().flat_map(|w| w.prepositions.iter().chain(&w.end));
+        let first_word = |m: &String| m.split(' ').next().map(str::to_string);
+        self.first_words = after_arg.filter_map(first_word).collect();
+        let starts = all.filter_map(|w| w.start.as_ref());
+        self.start_words = starts.filter_map(first_word).collect();
         self.functions = functions;
     }
 

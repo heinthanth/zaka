@@ -1,5 +1,6 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::Phrases;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
@@ -869,7 +870,8 @@ impl Parser<'_>
     /// The statement, or a diagnostic.
     pub(crate) fn finish_call_stmt(&mut self, parts: CallParts) -> PResult<Stmt>
     {
-        let CallParts { start, callee, place, args, using, prepositions } = parts;
+        let CallParts { start, callee, place, args, using, prepositions, phrases } =
+            parts;
         let pass = self.at_punct(Punct::ListSep)
             && kw_of(&self.peek_n(1)) == Some(Kw::PassFault);
         do_if!(pass, {
@@ -880,7 +882,7 @@ impl Parser<'_>
         let span = start.to(&stop.span);
         #[rustfmt::skip]
         let node = CallStmt::builder().callee(callee).maybe_place(place).args(args).pass(pass)
-            .maybe_using(using).prepositions(prepositions).span(span).build();
+            .maybe_using(using).prepositions(prepositions).phrases(phrases).span(span).build();
         Ok(Stmt::Call(node))
     }
 
@@ -917,6 +919,7 @@ impl Parser<'_>
             kind_params = self.parse_word_params()?;
             self.expect(Kw::Thi)?;
         }
+        let phrases = self.parse_head_phrases()?;
         let mut stmt = self.parse_fn_kinds(start, name, kind_params)?;
         let Stmt::Fn(node) = &mut stmt
         else
@@ -924,6 +927,8 @@ impl Parser<'_>
             return Ok(stmt);
         };
         marks.iter().try_for_each(|m| mark_fn(node, kw_of(m), m.span, top))?;
+        node.phrases = phrases;
+        self.check_phrases(node);
         Ok(stmt)
     }
 
@@ -1749,6 +1754,25 @@ impl Parser<'_>
         let edit = fill || self.eat(Kw::DataToChange);
         let owned = self.eat(Kw::AsOwned);
         ret_if!(!self.eat(Kw::PrepositionWord), Ok((owned, edit, fill, None)));
+        let (preposition, words) = self.parse_words_string()?;
+        do_if!(
+            words.is_none(),
+            self.diags.push(diag::bad_preposition(preposition.span, &preposition.name))
+        );
+        self.expect(Kw::Ko)?;
+        self.expect(Kw::Using)?;
+        Ok((owned, edit, fill, Some(preposition)))
+    }
+
+    /// Parse the string of a preposition or a phrase, read as its words.
+    ///
+    /// # Returns
+    ///
+    /// The words joined with one space (the text as written when it is no
+    /// preposition), and the words, or `None` when the text is no
+    /// preposition; or a diagnostic.
+    fn parse_words_string(&mut self) -> PResult<(Ident, Option<Vec<String>>)>
+    {
         let tok = self.peek();
         let TokenKind::Str(idx) = tok.kind
         else
@@ -1758,15 +1782,89 @@ impl Parser<'_>
         self.bump();
         let text = self.strings[idx as usize].value.clone();
         let words = preposition_words(&text);
+        let name = words.as_ref().map_or(text, |w| w.join(" "));
+        Ok((Ident::builder().name(name).span(tok.span).build(), words))
+    }
+
+    /// Parse the phrases of a function head after `သည်`, when written, and
+    /// the `သုံး၍` that closes them.
+    ///
+    /// # Returns
+    ///
+    /// The phrases, blank when none is written, or a diagnostic.
+    fn parse_head_phrases(&mut self) -> PResult<Phrases>
+    {
+        let phrases = self.parse_phrase_list()?;
+        do_if!(!phrases.is_empty(), _ = self.expect(Kw::Using)?);
+        Ok(phrases)
+    }
+
+    /// Parse a list of phrases, when one is written: a starting phrase, an
+    /// ending phrase, or both joined with `နှင့်`, as a list in words,
+    /// `အစ စကားစု "<words>" နှင့် အဆုံး စကားစု "<words>" တို့ကို`; the word
+    /// after it, `သုံး၍` or `သုံးသော`, is left to the caller.
+    ///
+    /// # Returns
+    ///
+    /// The phrases, blank when none is written, or a diagnostic.
+    pub(crate) fn parse_phrase_list(&mut self) -> PResult<Phrases>
+    {
+        let start_first = self.at(Kw::StartPhrase);
+        ret_if!(!start_first && !self.at(Kw::EndPhrase), Ok(Phrases::default()));
+        let start = tern!(start_first, Some(self.parse_phrase(Kw::StartPhrase)?), None);
+        let both = start_first && self.eat(Kw::Hnint);
+        let end =
+            tern!(!start_first || both, Some(self.parse_phrase(Kw::EndPhrase)?), None);
+        self.expect_list_word(usize::from(both) + 1, Kw::Ko, Kw::ListKo)?;
+        Ok(Phrases::builder().maybe_start(start).maybe_end(end).build())
+    }
+
+    /// Parse one phrase of a function head: its reserved word, then its
+    /// string. A string that is no phrase, or that holds `၏`, is reported
+    /// (ZK0258) and read all the same.
+    ///
+    /// # Arguments
+    ///
+    /// * `kw` - `အစ စကားစု` or `အဆုံး စကားစု`.
+    ///
+    /// # Returns
+    ///
+    /// The phrase, its words joined with one space, or a diagnostic.
+    fn parse_phrase(&mut self, kw: Kw) -> PResult<Ident>
+    {
+        self.expect(kw)?;
+        let (phrase, words) = self.parse_words_string()?;
+        let ei = |w: &Vec<String>| w.iter().any(|w| w == EI);
         do_if!(
-            words.is_none(),
-            self.diags.push(diag::bad_preposition(tok.span, &text))
+            words.is_none_or(|w| ei(&w)),
+            self.diags.push(diag::bad_phrase(phrase.span, &phrase.name))
         );
-        let text = words.map_or(text, |w| w.join(" "));
-        self.expect(Kw::Ko)?;
-        self.expect(Kw::Using)?;
-        let preposition = Ident::builder().name(text).span(tok.span).build();
-        Ok((owned, edit, fill, Some(preposition)))
+        Ok(phrase)
+    }
+
+    /// Check the phrases of a function head against its parameters: two or
+    /// more parameters each need a preposition (ZK0259), and a last
+    /// preposition that starts with `၏` cannot stand before an ending phrase
+    /// (ZK0249).
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The declaration.
+    fn check_phrases(&mut self, node: &FnDecl)
+    {
+        ret_if!(node.phrases.is_empty());
+        let params = &node.params;
+        let bare = params.iter().any(|p| p.preposition.is_none());
+        do_if!(
+            params.len() > 1 && bare,
+            self.diags.push(diag::phrases_need_prepositions(
+                params[0].span.to(&params[params.len() - 1].span)
+            ))
+        );
+        let last = params.last().and_then(|p| p.preposition.as_ref());
+        let ei_last =
+            last.filter(|m| node.phrases.end.is_some() && m.name.starts_with(EI));
+        do_if!(let Some(m) = ei_last, self.diags.push(diag::preposition_ei_not_last(m.span, &m.name)));
     }
 
     /// Parse one parameter: `<name> ဟူသော <kind> တစ်<classifier> ကို`, then its

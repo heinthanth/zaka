@@ -264,6 +264,9 @@ program:
       owned_ret: false
       captures: []
       has_default: false
+      phrases:
+        start: null
+        end: null
       span:
         lo: 1
         hi: 958
@@ -405,6 +408,9 @@ program:
       owned_ret: false
       captures: []
       has_default: false
+      phrases:
+        start: null
+        end: null
       span:
         lo: 960
         hi: 1638
@@ -454,6 +460,9 @@ program:
       owned_ret: false
       captures: []
       has_default: false
+      phrases:
+        start: null
+        end: null
       span:
         lo: 1640
         hi: 2001
@@ -480,6 +489,9 @@ program:
             pass: false
             using: null
             prepositions: []
+            phrases:
+              start: null
+              end: null
             span:
               lo: 2120
               hi: 2249
@@ -525,6 +537,9 @@ program:
                 pass: false
                 using: null
                 prepositions: []
+                phrases:
+                  start: null
+                  end: null
                 span:
                   lo: 2250
                   hi: 2481
@@ -548,6 +563,9 @@ program:
       owned_ret: false
       captures: []
       has_default: false
+      phrases:
+        start: null
+        end: null
       span:
         lo: 2003
         hi: 2584

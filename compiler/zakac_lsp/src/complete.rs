@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use gen_lsp_types::CompletionItem;
 use gen_lsp_types::CompletionItemKind;
+use gen_lsp_types::InsertTextFormat;
 use gen_lsp_types::Position;
 use zakac_ast::expr::Ident;
 use zakac_ast::kind::BaseKind;
@@ -23,6 +24,7 @@ use zakac_ast::visit::walk_counted;
 use zakac_ast::visit::walk_each;
 use zakac_ast::visit::walk_fn;
 use zakac_ast::visit::walk_generic;
+use zakac_i18n::t;
 use zakac_lexer::phrases::PHRASES;
 use zakac_lexer::reserved::KIND_NAMES;
 use zakac_lexer::reserved::RESERVED;
@@ -72,7 +74,71 @@ pub fn completions(file: Option<&FileCheck>, pos: Position) -> Vec<CompletionIte
         .iter()
         .map(|name| item(name.to_string(), CompletionItemKind::Struct, kind_role));
     let names = file.map(|f| names_in_scope(f, pos)).unwrap_or_default();
-    words.chain(phrases).chain(kinds).chain(names).collect()
+    let sentences = file.map(|f| sentences_in_scope(f, pos)).unwrap_or_default();
+    words.chain(phrases).chain(kinds).chain(names).chain(sentences).collect()
+}
+
+/// A call written as a sentence for each function in scope at the cursor
+/// whose head gives phrases or prepositions, as a snippet with a stop on
+/// each argument.
+///
+/// # Arguments
+///
+/// * `file` - The check of the open file.
+/// * `pos` - The cursor.
+///
+/// # Returns
+///
+/// The items, one for each spelling.
+fn sentences_in_scope(file: &FileCheck, pos: Position) -> Vec<CompletionItem>
+{
+    let (Some(scope), Some(checked)) = (scope_at(file, pos), file.checked.as_ref())
+    else
+    {
+        return Vec::new();
+    };
+    let seen = |f: &&FnDecl| scope.names.contains_key(&shown_name(&f.name));
+    let stmts = checked.lowered.checked.program.stmts.iter();
+    let fns = stmts.filter_map(|s| tern!(let Stmt::Fn(f) = s, Some(f), None));
+    let items = fns.filter(seen).filter_map(sentence_item);
+    let found: BTreeMap<String, CompletionItem> =
+        items.map(|i| (i.label.clone(), i)).collect();
+    found.into_values().collect()
+}
+
+/// The call of a function written as a sentence, when its head gives
+/// phrases or prepositions: the label with `…` for each argument, and a
+/// snippet with a stop on each, named after its parameter.
+///
+/// # Arguments
+///
+/// * `f` - The function.
+///
+/// # Returns
+///
+/// The item, or `None` for a head with no words beside its arguments.
+fn sentence_item(f: &FnDecl) -> Option<CompletionItem>
+{
+    let given = f.params.iter().any(|p| p.preposition.is_some());
+    ret_if!(f.phrases.is_empty() && !given, None);
+    let word = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+    let spell = |slot: &dyn Fn(usize, &Ident) -> String| {
+        let args = f.params.iter().enumerate();
+        let args =
+            args.flat_map(|(n, p)| [Some(slot(n, &p.name)), word(&p.preposition)]);
+        let end = tern!(f.ret.is_some(), "သည့် ရလဒ်", "မည်").to_string();
+        let tail = [word(&f.phrases.end), Some(shown_name(&f.name)), Some(end)];
+        let words = std::iter::once(word(&f.phrases.start)).chain(args).chain(tail);
+        words.flatten().collect::<Vec<_>>().join(" ")
+    };
+    let label = spell(&|_, _| "…".to_string());
+    let snippet = spell(&|n, name| format!("${{{}:{}}}", n + 1, shown_name(name)));
+    let detail = t!("lsp.complete_sentence").to_string();
+    #[rustfmt::skip]
+    return Some(CompletionItem { filter_text: Some(label.replace("… ", "")), label,
+        kind: Some(CompletionItemKind::Function), detail: Some(detail),
+        insert_text: Some(snippet), insert_text_format: Some(InsertTextFormat::Snippet),
+        ..Default::default() });
 }
 
 /// A reserved word or phrase as an item, with its role as the detail.

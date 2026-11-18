@@ -23,6 +23,7 @@ use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
 use crate::place::place_of;
+use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::struct_check::unknown_name;
 
@@ -361,7 +362,7 @@ impl Checker
         ret_if!(!self.templates_named(&Name::from(name.as_str())).is_empty(), true);
         let sigs = self.fns.get(name).cloned().unwrap_or_default();
         let args = [(*n.base).clone()];
-        sigs.iter().any(|s| self.fits_call(s, &args, &[]))
+        sigs.iter().any(|s| self.fits_call(s, &args, Written::default()))
     }
 
     /// Check a field read with no field as the call it stands for: `x ၏ f`

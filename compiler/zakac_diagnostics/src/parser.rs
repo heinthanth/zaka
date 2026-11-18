@@ -970,3 +970,36 @@ pub fn unsafe_start(span: Span) -> Diagnostic
     Diagnostic::new(Code::UnsafeStart, t!("codes.ZK0257.message"), span)
         .with_help(t!("codes.ZK0257.help"))
 }
+
+/// The starting or the ending phrase of a function head is not words a phrase
+/// can be.
+///
+/// # Arguments
+///
+/// * `span` - The string.
+/// * `phrase` - Its text.
+///
+/// # Returns
+///
+/// The `ZK0258` diagnostic.
+pub fn bad_phrase(span: Span, phrase: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::BadPhrase, t!("codes.ZK0258.message", m = phrase), span)
+        .with_help(t!("codes.ZK0258.help"))
+}
+
+/// A function with a phrase takes two or more parameters, and not each of
+/// them has a preposition, so a call could not tell where each argument ends.
+///
+/// # Arguments
+///
+/// * `span` - The parameters.
+///
+/// # Returns
+///
+/// The `ZK0259` diagnostic.
+pub fn phrases_need_prepositions(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::PhrasesNeedPrepositions, t!("codes.ZK0259.message"), span)
+        .with_help(t!("codes.ZK0259.help"))
+}

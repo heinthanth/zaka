@@ -52,6 +52,7 @@ use crate::place::place_of;
 use crate::proof::result_var;
 use crate::scope::Access;
 use crate::scope::FnSig;
+use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::structs::StructTable;
 
@@ -841,7 +842,7 @@ impl Checker
             &n.kind_args,
             place,
             &n.args,
-            &n.prepositions,
+            Written::of(&n.prepositions, &n.phrases),
             n.span,
         )?;
         self.check_pass(&n.callee, ret, n.pass, false, n.span);

@@ -624,7 +624,7 @@ en = "call fits more than one function"
 [codes.ZK0333.message]
 en = "more than one function \"%{n}\" takes these arguments"
 [codes.ZK0333.help]
-en = "write the prepositions of the function meant, or give each argument the kind of its parameter"
+en = "write the prepositions and the phrases of the function meant, or give each argument the kind of its parameter"
 [codes.ZK0333.explain]
 en = """A file can declare several functions of one name, each with other parameter kinds or other prepositions. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no prepositions fits functions that differ in their prepositions alone. Write the prepositions of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
 
@@ -782,6 +782,15 @@ en = "this trait block takes the defaults of \"%{t}\", but no function it leaves
 en = "remove the line that takes the defaults"
 [codes.ZK0351.explain]
 en = """The line \"<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။\" gives the kind of a trait block the default of each function of the trait that the block leaves out. When the trait has no defaults, or the block gives each function that has one, the line takes nothing."""
+
+[codes.ZK0352.title]
+en = "wrong phrase"
+[codes.ZK0352.message]
+en = "the phrases of this call do not match the head of \"%{n}\""
+[codes.ZK0352.help]
+en = "write the call as \"%{w}\""
+[codes.ZK0352.explain]
+en = """A call written as a sentence gives the starting and the ending phrase of the head of its function, in their places: the starting phrase before the first argument, and the ending phrase right before the function name. A call in another form, such as \"f(x)\" or \"f ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်\", leaves the phrases out."""
 
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
@@ -1545,20 +1554,20 @@ en = """The notes block after the head of a generic function or a trait gives a 
 [codes.ZK0249.title]
 en = "\"၏\" preposition before the last parameter"
 [codes.ZK0249.message]
-en = "the preposition \"%{m}\" starts with \"၏\", but its parameter is not the last"
+en = "the preposition \"%{m}\" starts with \"၏\", but more words come between it and the function name"
 [codes.ZK0249.help]
-en = "a preposition that starts with \"၏\" can stand on the last parameter alone, right before the function name"
+en = "a preposition that starts with \"၏\" stands right before the function name: on the last parameter, in a head with no ending phrase"
 [codes.ZK0249.explain]
-en = """A preposition call reads \"x ၏ f\" as a call when the function and its call end come right after \"၏\". Elsewhere \"x ၏ f\" reads the field \"f\" of \"x\", so a preposition that starts with \"၏\" belongs to the last parameter."""
+en = """A preposition call reads \"x ၏ f\" as a call when the function and its call end come right after \"၏\". Elsewhere \"x ၏ f\" reads the field \"f\" of \"x\", so a preposition that starts with \"၏\" belongs to the last parameter, and the head gives no ending phrase, whose words would stand after it."""
 
 [codes.ZK0250.title]
-en = "name is a word of a preposition"
+en = "name is a word of a preposition or a phrase"
 [codes.ZK0250.message]
-en = "\"%{n}\" is a word of the preposition \"%{m}\" of \"%{f}\""
+en = "\"%{n}\" is a word of \"%{m}\", which a call of \"%{f}\" writes"
 [codes.ZK0250.help]
 en = "write {%{n}} where the name is meant, or pick another name"
 [codes.ZK0250.explain]
-en = """Each word of a preposition that a file declares or imports reads as that preposition where a preposition can stand, so a variable, constant, parameter or function of the same name can read as a preposition in a preposition call. A name in braces remains a name. Fields are not checked: a field never stands where a preposition can."""
+en = """Each word of a preposition or a phrase that a file declares or imports reads as that preposition or phrase where one can stand, so a variable, constant, parameter or function of the same name can read as one in a call written as a sentence. A name in braces remains a name. Fields are not checked: a field never stands where a preposition or a phrase can."""
 
 [codes.ZK0251.title]
 en = "name reads as a glued call"
@@ -1640,6 +1649,24 @@ en = "\"စိတ်မချရသော\" marks a function, and the start bloc
 en = "remove the mark, and put the unsafe statements in a block that opens with \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\" inside the start block"
 [codes.ZK0257.explain]
 en = """\"စိတ်မချရသော\" stands between \"ဟူသော\" and \"လုပ်ဆောင်ချက်\" and makes a whole function unsafe. The start block, \"ပရိုဂရမ်သည်\", is no function a call can reach, and its statements are safe code: the pointer work in it goes in an unsafe block, \"အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။\", inside it."""
+
+[codes.ZK0258.title]
+en = "bad phrase"
+[codes.ZK0258.message]
+en = "\"%{m}\" cannot be a phrase"
+[codes.ZK0258.help]
+en = "a phrase is names and particles, as \"ဖိုင်\" or \"ဖန်သားပြင်ကို\", with no \"၏\""
+[codes.ZK0258.explain]
+en = """The string after \"အစ စကားစု\" or \"အဆုံး စကားစု\" holds the words a call written as a sentence puts before its first argument or right before the function name. Its words follow the rules of a preposition: names, and particles other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\", one space apart. \"၏\" cannot stand in it, as \"x ၏ f\" reads a field."""
+
+[codes.ZK0259.title]
+en = "phrases need prepositions"
+[codes.ZK0259.message]
+en = "a function with a phrase and two or more parameters needs a preposition on each parameter"
+[codes.ZK0259.help]
+en = "give each parameter a preposition, as \"<name> ဟူသော <kind> တစ်ခု ကို ဝိဘတ် \"<preposition>\" ကို သုံး၍ လည်းကောင်း\""
+[codes.ZK0259.explain]
+en = """A call written as a sentence gives its arguments one after the other. With one parameter, the phrases mark where the argument starts and ends; with two or more, the preposition after each argument tells where it ends, so each parameter needs one."""
 
 [codes.ZK0472.title]
 en = "C function must be unsafe"

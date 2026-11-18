@@ -54,6 +54,15 @@ en = "parameter of %{name}"
 [lsp.hover_preposition]
 en = "the preposition of the parameter %{param}"
 
+[lsp.hover_start_phrase]
+en = "the starting phrase of the call"
+
+[lsp.hover_end_phrase]
+en = "the ending phrase of the call"
+
+[lsp.complete_sentence]
+en = "the call written as a sentence"
+
 [lsp.hover_loop]
 en = "loop variable"
 

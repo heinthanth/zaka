@@ -3,6 +3,7 @@ use zakac_lexer::token::Particle;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 
+use crate::common::kinds;
 use crate::common::kws;
 use crate::common::lex_text;
 
@@ -73,6 +74,22 @@ fn phrase_span_covers_all_pieces()
     let hi = (tok.span.hi - file.start_pos) as usize;
     assert_eq!(&file.src[lo..hi], "မအောင်မြင်ပါက အမှားအယွင်း ကို ပြန်ပေးမည်");
     assert!(!tok.joined);
+}
+
+#[test]
+fn head_phrases_join_glued_and_spaced()
+{
+    assert_eq!(kws("အစ စကားစု"), [Kw::StartPhrase]);
+    assert_eq!(kws("အစစကားစု"), [Kw::StartPhrase]);
+    assert_eq!(kws("အဆုံး စကားစု"), [Kw::EndPhrase]);
+    assert_eq!(kws("အဆုံးစကားစု"), [Kw::EndPhrase]);
+}
+
+#[test]
+fn head_phrase_words_alone_are_names()
+{
+    assert_eq!(kinds("အစ အဆုံး စကားစု"), [TokenKind::Ident, TokenKind::Kw(Kw::EndPhrase)]);
+    assert_eq!(kinds("စကားစု အစ"), [TokenKind::Ident, TokenKind::Ident]);
 }
 
 #[test]

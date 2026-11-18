@@ -196,6 +196,54 @@ elsewhere `x ၏ y` reads a field, as before. A call reads the longest prepositi
 function that the words after an argument spell, so `မှ စ၍` is one preposition, not `မှ`
 and then a name.
 
+## Phrases: a function as a command
+
+Prepositions follow arguments. A head can also give words that stand before the first
+argument, a *starting phrase*, and words that stand right before the function name, an
+*ending phrase*. Both go right after `သည်`, joined with `နှင့်` and closed with
+`တို့ကို သုံး၍`, or one alone with `ကို သုံး၍`. A function with no parameters can take them
+too, so a call reads as a command:
+
+```zaka
+// "Function read: starting phrase ဖိုင် ('file'), the path (preposition ထဲမှ), ending phrase စာကို ('the text')"
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု "ဖိုင်" နှင့် အဆုံး စကားစု "စာကို" တို့ကို သုံး၍
+လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲမှ" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{လမ်း} ထဲမှ စာ" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+// "Function clear: no parameters, the words ဖန်သားပြင်ကို ('the screen') before it"
+ရှင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ရှင်းပြီ" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// "Show the result of reading the text from the file 'notes.txt'"
+ဖိုင် "notes.txt" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။
+// "(I) will clear the screen"
+ဖန်သားပြင်ကို ရှင်း မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+notes.txt ထဲမှ စာ
+ရှင်းပြီ
+```
+
+| Words | Reads as |
+| --- | --- |
+| `အစ စကားစု "ဖိုင်"` | "the starting phrase 'file'" |
+| `အဆုံး စကားစု "စာကို"` | "the ending phrase 'the text'" |
+| `ဖိုင် "notes.txt" ထဲမှ စာကို ဖတ်` | "read the text from the file 'notes.txt'" |
+
+A call that writes prepositions writes the phrases too, each in its place; one that leaves
+a phrase out is ZK0352. The other forms, `ဖတ်("notes.txt")` and `ရှင်း မည်`, leave the
+phrases out. With two or more parameters, each still needs a preposition, which tells where
+its argument ends. The [Functions](../../manual/language/functions.md#starting-and-ending-phrases)
+page of the manual has the full rules.
+
 ## Names that read as calls
 
 Gluing has a cost. In a file with a function `နာ` ("hurt"), the word `နာမည်` ("name") can

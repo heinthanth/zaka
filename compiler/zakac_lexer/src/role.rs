@@ -202,6 +202,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::WillAccept
         | Kw::AcceptingRel
         | Kw::ReturningRel
+        | Kw::UsingRel
         | Kw::DoAnd
         | Kw::Tasks
         | Kw::Done
@@ -354,6 +355,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::DataToChange
         | Kw::DataToFill
         | Kw::PrepositionWord
+        | Kw::StartPhrase
+        | Kw::EndPhrase
         | Kw::Called
         | Kw::Named
         | Kw::That

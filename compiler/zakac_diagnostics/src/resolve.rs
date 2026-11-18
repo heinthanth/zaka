@@ -924,3 +924,23 @@ pub fn same_as_prelude(span: Span, name: &str) -> Diagnostic
     let msg = t!("codes.ZK0350.message", n = name);
     Diagnostic::new(Code::SameAsPrelude, msg, span).with_help(t!("codes.ZK0350.help"))
 }
+
+/// A call written as a sentence gives other phrases than the head of its
+/// function: another starting or ending phrase, or none where the head has
+/// one.
+///
+/// # Arguments
+///
+/// * `span` - The call.
+/// * `name` - The function name.
+/// * `want` - The call as the head spells it, the arguments as `…`.
+///
+/// # Returns
+///
+/// The `ZK0352` diagnostic.
+pub fn wrong_phrase(span: Span, name: &str, want: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0352.message", n = name);
+    Diagnostic::new(Code::WrongPhrase, msg, span)
+        .with_help(t!("codes.ZK0352.help", w = want))
+}

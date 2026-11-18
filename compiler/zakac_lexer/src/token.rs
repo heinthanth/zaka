@@ -316,6 +316,12 @@ pub enum Kw
     /// `ဝိဘတ်`, "preposition": opens the preposition of a parameter, `ဝိဘတ်
     /// "<preposition>" ဖြင့်`
     PrepositionWord,
+    /// `အစ စကားစု`, "starting phrase": in a function head, the words a call
+    /// writes before its first argument, `အစ စကားစု "<words>"`
+    StartPhrase,
+    /// `အဆုံး စကားစု`, "ending phrase": in a function head, the words a call
+    /// writes after its last argument, right before the function name
+    EndPhrase,
     /// `ဟူသော`, "called": before `လုပ်ဆောင်ချက်` in a function value
     Called,
     /// `မည့်`, "named": before `လုပ်ဆောင်ချက်`, the same as `ဟူသော`
@@ -338,6 +344,9 @@ pub enum Kw
     Which,
     /// `သုံး၍`, "using": the arguments of a call written before the function
     Using,
+    /// `သုံးသော`, "that uses": closes the phrases of a function kind with no
+    /// parameters and no result, right before `လုပ်ဆောင်ချက် အမျိုးအစား`
+    UsingRel,
     /// `ပြင်ပ`, "outside": the first piece of `ပြင်ပမှလာသော`
     Outside,
     /// `လာသော`, "coming": the last piece of `ပြင်ပမှလာသော`

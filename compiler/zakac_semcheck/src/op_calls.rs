@@ -36,6 +36,7 @@ use zakac_span::span::Span;
 
 use crate::kind::DataKind;
 use crate::scope::FnSig;
+use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::semcheck::KindTable;
 
@@ -185,7 +186,7 @@ impl Checker
     fn own_fits(&mut self, name: &str, args: &[Expr]) -> bool
     {
         let sigs = self.fns.get(&Name::from(name)).cloned().unwrap_or_default();
-        sigs.iter().any(|s| self.fits_call(s, args, &[]))
+        sigs.iter().any(|s| self.fits_call(s, args, Written::default()))
     }
 }
 

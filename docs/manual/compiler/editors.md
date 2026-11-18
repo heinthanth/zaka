@@ -28,7 +28,8 @@ program never differ in version.
   show under its code block, at each use of the name. On a kind phrase, such as
   `၃၂ ဘစ် ကိန်းပြည့်` or `ကိန်းပြည့် စာရင်း`, the hover shows the kind, its size and the doc of
   the built-in kind of its last word. On the preposition of a call argument it shows the
-  function and the parameter the preposition marks. On another expression the hover
+  function and the parameter the preposition marks, and on a phrase of a call, the function
+  and which phrase it is; the head of a function shows its phrases after its name. On another expression the hover
   shows its kind, in the short form the messages use, such as `i32`, `usize` or `text`.
 - **Go to the declaration** of a variable, a parameter, a constant (also one used in a
   list count above its declaration), a function, a struct, a field, an enumeration, a
@@ -48,7 +49,9 @@ program never differ in version.
   its structs with their fields, its enumerations with their members, its kind aliases,
   and its global variables and constants.
 - **Completion** of reserved words, joined phrases such as
-  `အောက်ပါတို့ကို လုပ်ဆောင်မည်`, and the names in scope at the cursor: the top-level
+  `အောက်ပါတို့ကို လုပ်ဆောင်မည်`, the call written as a sentence of each function in scope
+  whose head gives phrases or prepositions, as a snippet with a stop on each argument
+  (`ဖိုင် … ထဲမှ စာကို ဖတ် သည့် ရလဒ်`), and the names in scope at the cursor: the top-level
   names of the file and the names it imports, and inside a function its parameters,
   its result and the variables declared above the cursor in the blocks around it. A
   name another file keeps private is never offered. After `<name> ၏` it offers the

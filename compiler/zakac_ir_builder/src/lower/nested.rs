@@ -160,7 +160,10 @@ impl Lowerer<'_>
             preposition: p.preposition.as_ref().map(|m| m.name),
         };
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
-        DataKind::Fn(FnKind::make(f.params.iter().map(param).collect(), ret))
+        let phrase = |i: &Option<zakac_ast::expr::Ident>| i.as_ref().map(|i| i.name);
+        let (start, end) = (phrase(&f.phrases.start), phrase(&f.phrases.end));
+        let params = f.params.iter().map(param).collect();
+        DataKind::Fn(FnKind::make_with(params, ret, start, end))
     }
 
     /// Make the closure of a function with captures where it is declared:

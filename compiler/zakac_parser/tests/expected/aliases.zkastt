@@ -146,6 +146,9 @@ program:
               lo: 853
               hi: 909
           ret: null
+          phrases:
+            start: null
+            end: null
         span:
           lo: 852
           hi: 1006
@@ -221,6 +224,9 @@ program:
             span:
               lo: 1369
               hi: 1414
+          phrases:
+            start: null
+            end: null
         span:
           lo: 1165
           hi: 1542
@@ -341,6 +347,9 @@ program:
       owned_ret: false
       captures: []
       has_default: false
+      phrases:
+        start: null
+        end: null
       span:
         lo: 1796
         hi: 2191

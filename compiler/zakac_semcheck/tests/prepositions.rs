@@ -116,3 +116,89 @@ fn with_fills_through_in_a_function_with_no_with_of_its_own()
     let call = "\"က\" ကို \"ခ\" နှင့် \"ဂ\" နှင့် ဆွဲ မည်။";
     assert!(!codes(&format!("{both}{start}{call}{end}")).is_empty());
 }
+
+/// `ဖတ်`, with both phrases and one parameter, and `ရှင်း`, with phrases and
+/// no parameters.
+const PHRASED: &str = "\
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍
+လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ထဲမှ\" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+လမ်း ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ရှင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု \"ဖန်သားပြင်ကို\" ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+/// A program: `PHRASED` and `more`, then a start block that holds `stmts`.
+fn phrased(more: &str, stmts: &str) -> String
+{
+    format!("{PHRASED}{more}ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{stmts}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။")
+}
+
+#[test]
+fn a_call_with_the_phrases_of_its_head_checks()
+{
+    ok(&phrased("", "ဖိုင် \"a\" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။"));
+    ok(&phrased("", "ဖန်သားပြင်ကို ရှင်း မည်။"));
+    ok(&phrased("", "ဖတ်(\"a\") ကို ပြသမည်။\nရှင်း မည်။"));
+}
+
+#[test]
+fn a_sentence_call_without_the_phrases_is_zk0352()
+{
+    let bare = phrased("", "\"a\" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။");
+    assert_eq!(codes(&bare), [Code::WrongPhrase]);
+}
+
+/// A second `ရှင်း` with another starting phrase.
+const CLEAR_LIST: &str = "\
+ရှင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု \"စာရင်းကို\" ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn phrases_tell_functions_of_one_name_apart()
+{
+    ok(&phrased(CLEAR_LIST, "ဖန်သားပြင်ကို ရှင်း မည်။\nစာရင်းကို ရှင်း မည်။"));
+    assert_eq!(codes(&phrased(CLEAR_LIST, "ရှင်း မည်။")), [Code::OverloadUnclear]);
+    let twin = CLEAR_LIST.replace("စာရင်းကို", "ဖန်သားပြင်ကို");
+    assert_eq!(codes(&phrased(&twin, "")), [Code::DuplicateFunction]);
+}
+
+/// `ဖတ်` as a value: through a variable with no kind written, through a kind
+/// with its phrases, and through a kind with none.
+#[test]
+fn a_function_value_keeps_its_phrases()
+{
+    let kind = "(အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍ စာသား တစ်ခု ကို ဝိဘတ် \"ထဲမှ\" ကို \
+                သုံး၍ လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)";
+    ok(&phrased(
+        "",
+        "ကိန်းရှင် ဖ သည် ဖတ် ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\nဖိုင် \"a\" ထဲမှ စာကို ဖ သည့် ရလဒ် ကို ပြသမည်။",
+    ));
+    let declared = format!(
+        "ကိန်းရှင် ဂ သည် {kind} တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဖတ် ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\nဖိုင် \"b\" ထဲမှ \
+         စာကို ဂ သည့် ရလဒ် ကို ပြသမည်။"
+    );
+    ok(&phrased("", &declared));
+    let plain = "ကိန်းရှင် ဃ သည် (စာသား တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် \
+                 အမျိုးအစား) တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ဖတ် ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\nဃ(\"c\") ကို \
+                 ပြသမည်။";
+    ok(&phrased("", plain));
+}
+
+/// A kind with phrases takes no function without them.
+#[test]
+fn a_kind_with_phrases_wants_them()
+{
+    let bare = "\
+ပြ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+    let decl = "ကိန်းရှင် ဖ သည် (အစ စကားစု \"ဖန်သားပြင်ကို\" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု \
+                ဖြစ်၍ တန်ဖိုးသည် ပြ ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။";
+    assert!(!codes(&phrased(bare, decl)).is_empty());
+}

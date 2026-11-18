@@ -22,6 +22,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
+use crate::using::CallWords;
 use crate::using::Functions;
 
 /// The call ends that can be glued to a function name, longest first, so
@@ -169,7 +170,10 @@ pub(crate) fn clash_warnings(
     let prepositions: Vec<(&str, &str)> = functions
         .iter()
         .flat_map(|(f, lists)| {
-            lists.iter().flatten().map(move |m| (f.as_str(), m.as_str()))
+            lists
+                .iter()
+                .flat_map(CallWords::texts)
+                .map(move |m| (f.as_str(), m.as_str()))
         })
         .collect();
     let words: HashSet<&str> =

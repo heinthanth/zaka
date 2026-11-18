@@ -58,6 +58,7 @@ use crate::hint::Hint;
 use crate::hint::exported_hints;
 use crate::parser::parse;
 use crate::parser::parse_with;
+use crate::using::CallWords;
 use crate::using::Functions;
 
 /// A program read with its imports.
@@ -835,9 +836,7 @@ fn exported_prepositions(program: &Program) -> Prepositions
     });
     for d in decls
     {
-        let prepositions = d.params.iter().filter_map(|p| p.preposition.as_ref());
-        let prepositions = prepositions.map(|m| m.name.to_string()).collect();
-        found.entry(d.name.name.to_string()).or_default().push(prepositions);
+        found.entry(d.name.name.to_string()).or_default().push(CallWords::of_decl(d));
     }
     found
 }

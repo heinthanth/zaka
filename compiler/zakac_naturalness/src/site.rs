@@ -1,3 +1,4 @@
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NextCtx;
@@ -105,6 +106,11 @@ pub enum Inner
     /// would start a long call without the parentheses, as before the mark
     /// `ကိုသုံး၍`.
     FnValue,
+    /// A call written as a sentence, with prepositions, phrases or
+    /// `ကို သုံး၍`: as an argument it keeps its parentheses, since an argument
+    /// of such a call is a notation, and a sentence there would take the
+    /// words of the call around it.
+    Sentence,
     /// An operand that stands on its own: a value, a notation or a clause.
     Plain,
 }
@@ -129,6 +135,7 @@ impl Inner
             Expr::List(_) | Expr::Struct(_) => Inner::List,
             Expr::Verb(v) if joins_operands(v.op) => Inner::Joined,
             Expr::FnAddr(_) => Inner::FnValue,
+            Expr::Call(c) if is_sentence(c) => Inner::Sentence,
             _ => Inner::Plain,
         }
     }
@@ -369,4 +376,19 @@ fn joins_operands(op: VerbOp) -> bool
             | VerbOp::Ne
             | VerbOp::Same
     )
+}
+
+/// Whether a call is written as a sentence: with prepositions, phrases, or
+/// its arguments first.
+///
+/// # Arguments
+///
+/// * `call` - The call.
+///
+/// # Returns
+///
+/// `true` when it is.
+fn is_sentence(call: &CallExpr) -> bool
+{
+    !call.prepositions.is_empty() || !call.phrases.is_empty() || call.using.is_some()
 }

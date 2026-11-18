@@ -129,8 +129,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0246 | the word that closes a list in words does not fit its count: `တို့` after one item, or none after two or more | [Lists in words](../language/words.md#lists-in-words) |
 | ZK0247 | a trait or a trait block inside a block | [Generics and traits](../language/generics.md) |
 | ZK0248 | a note in a notes block on a name that is no kind parameter of its declaration | [Generics and traits](../language/generics.md) |
-| ZK0249 | a preposition that starts with `၏` on a parameter other than the last | [Functions](../language/functions.md#prepositions) |
-| ZK0250 | warning: a declared name that is a word of the preposition of a function the file sees | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
+| ZK0249 | a preposition that starts with `၏` on a parameter other than the last, or before an ending phrase | [Functions](../language/functions.md#prepositions) |
+| ZK0250 | warning: a declared name that is a word of a preposition or a phrase of a function the file sees | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 | ZK0251 | warning: a declared name that reads as a function the file sees with a glued call end | [Functions](../language/functions.md#what-the-flexible-grammar-costs) |
 | ZK0252 | a written-as hint that breaks a rule of its form | [Generics and traits](../language/generics.md#written-as-hints) |
 | ZK0253 | a use of a written-as hint that writes two kinds for one kind parameter the hint names twice | [Generics and traits](../language/generics.md#written-as-hints) |
@@ -138,6 +138,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0255 | a compile-time condition that holds what the compiler cannot settle, or compares a fact of the target with a value it never holds | [Compile time](../language/compile-time.md) |
 | ZK0256 | the comptime mark `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on something other than a function with a block at the top level | [Compile time](../language/compile-time.md#comptime-functions) |
 | ZK0257 | the unsafe mark `စိတ်မချရသော` on the start block | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0258 | a phrase string, after `အစ စကားစု` or `အဆုံး စကားစု`, that holds a word a phrase cannot hold, or `၏` | [Functions](../language/functions.md#starting-and-ending-phrases) |
+| ZK0259 | a head with phrases and two or more parameters, not each with a preposition | [Functions](../language/functions.md#starting-and-ending-phrases) |
 
 ### ZK03: names
 
@@ -194,6 +196,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The prelude](../language/prelude.md) |
 | ZK0350 | warning: a function with the name, the kinds and the prepositions of a function the prelude gives, which then takes over each sentence of it | [The prelude](../language/prelude.md#verbs-on-structs) |
 | ZK0351 | warning: a trait block that takes the defaults of its trait when no function it leaves out has one | [Generics and traits](../language/generics.md#trait-blocks) |
+| ZK0352 | a call written as a sentence that leaves out a phrase of the head of its function, or writes another | [Functions](../language/functions.md#starting-and-ending-phrases) |
 
 ### ZK04: kinds
 

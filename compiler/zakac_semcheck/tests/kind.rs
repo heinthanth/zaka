@@ -2,6 +2,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
+use zakac_rust_sugars::do_for;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::IntKind;
 use zakac_semcheck::kind::Width;
@@ -322,4 +323,19 @@ fn opaque_pointers_pass_address_free_blocks_alone()
     {
         assert!(widens(from, to), "{from} to {to}");
     }
+}
+
+/// A function kind with phrases writes them in braces before its
+/// parameters, and its name reads back.
+#[test]
+fn function_kinds_with_phrases_round_trip()
+{
+    let names =
+        ["fn{ဖိုင် … စာကို}(text(ထဲမှ)) -> text", "fn{ဖန်သားပြင်ကို …}()", "fn{… အမြန်}(text)"];
+    do_for!(name in names, assert_eq!(k(name).name(), name));
+    let plain = k("fn(text) -> text");
+    let phrased = k("fn{ဖိုင် … စာကို}(text) -> text");
+    let (plain, phrased) = (plain.as_fn().unwrap(), phrased.as_fn().unwrap());
+    assert!(phrased.fits(plain), "a kind with no words takes a function with phrases");
+    assert!(!plain.fits(phrased), "a kind with phrases wants them");
 }

@@ -172,6 +172,25 @@ fn hover_on_a_preposition_names_the_parameter_it_marks()
 }
 
 #[test]
+fn hover_on_a_phrase_names_it()
+{
+    let text = "ရှင်း ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု \"ဖန်သားပြင်ကို\" နှင့် အဆုံး စကားစု \"အားလုံး\" တို့ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+\"ရှင်းပြီ\" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဖန်သားပြင်ကို အားလုံး ရှင်း မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let file = check("phrases.zaka", text, Buffers::default());
+    let start = hover_text(&file, text, 6, "ဖန်သားပြင်ကို");
+    assert!(start.contains("the starting phrase of the call"), "{start}");
+    let end = hover_text(&file, text, 6, "အားလုံး");
+    assert!(end.contains("the ending phrase of the call"), "{end}");
+}
+
+#[test]
 fn a_module_needs_no_start_block()
 {
     let text = include_str!("../../../samples/modules/lib/point.zaka");
@@ -272,6 +291,28 @@ fn completion_offers_reserved_words_and_declared_names()
         .collect();
     assert!(labels.iter().any(|l| l == "ပရိုဂရမ်"));
     assert!(labels.iter().any(|l| l == "နှစ်ထပ်"));
+}
+
+#[test]
+fn completion_offers_a_call_written_as_a_sentence()
+{
+    let text = "ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု \"ဖိုင်\" နှင့် အဆုံး စကားစု \"စာကို\" တို့ကို သုံး၍
+လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် \"ထဲမှ\" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+လမ်း ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+\"a\" ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let file = check("sentences.zaka", text, Buffers::default());
+    let found = completions(Some(&file), Position { line: 7, character: 0 });
+    let item = found.iter().find(|c| c.label == "ဖိုင် … ထဲမှ စာကို ဖတ် သည့် ရလဒ်");
+    let item = item.expect("the sentence of ဖတ်");
+    assert_eq!(item.insert_text.as_deref(), Some("ဖိုင် ${1:လမ်း} ထဲမှ စာကို ဖတ် သည့် ရလဒ်"));
+    let head = hover_text(&file, text, 0, "ဖတ်");
+    assert!(head.contains("ဖတ် {ဖိုင် … စာကို}"), "{head}");
 }
 
 #[test]

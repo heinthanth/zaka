@@ -829,8 +829,55 @@ pub struct CallExpr
     #[builder(default)]
     #[serde(default)]
     pub prepositions: Vec<Ident>,
+    /// The starting and the ending phrase of a call written as a sentence;
+    /// blank for the other call forms.
+    #[builder(default)]
+    #[serde(default)]
+    pub phrases: Phrases,
     /// Source region.
     pub span: Span,
+}
+
+/// The starting and the ending phrase of a function head, or of a call
+/// written as a sentence: the words before the first argument, and the words
+/// after the last argument, right before the function name.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Builder)]
+pub struct Phrases
+{
+    /// `အစ စကားစု "<words>"`: the words before the first argument, joined with
+    /// one space.
+    #[serde(default)]
+    pub start: Option<Ident>,
+    /// `အဆုံး စကားစု "<words>"`: the words right before the function name,
+    /// joined with one space.
+    #[serde(default)]
+    pub end: Option<Ident>,
+}
+
+impl Phrases
+{
+    /// Whether neither phrase is written.
+    ///
+    /// # Returns
+    ///
+    /// `true` with no phrase.
+    pub fn is_empty(&self) -> bool { self.start.is_none() && self.end.is_none() }
+
+    /// Whether these phrases spell the same words as `other`.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other phrases.
+    ///
+    /// # Returns
+    ///
+    /// `true` when both phrases match word for word.
+    pub fn same_words(&self, other: &Phrases) -> bool
+    {
+        let words = |p: &Option<Ident>| p.as_ref().map(|i| i.name.clone());
+        words(&self.start) == words(&other.start)
+            && words(&self.end) == words(&other.end)
+    }
 }
 
 /// The particle that closes the arguments of a call written arguments first:

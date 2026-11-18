@@ -22,6 +22,7 @@ use crate::expr::MemberExpr;
 use crate::expr::NameExpr;
 use crate::expr::NotExpr;
 use crate::expr::NullLit;
+use crate::expr::Phrases;
 use crate::expr::PrefixExpr;
 use crate::expr::RangeExpr;
 use crate::expr::SizeOfExpr;
@@ -1371,6 +1372,7 @@ pub fn walk_fn_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut FnDecl)
         v.visit_span_mut(&mut c.span);
         v.visit_ident_mut(&mut c.name);
     }
+    phrases_mut(v, &mut n.phrases);
     opt_kind_mut(v, &mut n.ret);
     v.visit_block_mut(&mut n.block);
 }
@@ -1448,6 +1450,7 @@ pub fn walk_call_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallStmt)
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_prepositions_mut(v, &mut n.using, &mut n.prepositions);
+    phrases_mut(v, &mut n.phrases);
 }
 
 /// Visit the size, then the target, of a heap allocation.
@@ -1622,6 +1625,7 @@ pub fn walk_call_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CallExpr)
     do_if!(let Some(place) = &mut n.place, v.visit_expr_mut(place));
     do_for!(a in &mut n.args, v.visit_expr_mut(a));
     call_prepositions_mut(v, &mut n.using, &mut n.prepositions);
+    phrases_mut(v, &mut n.phrases);
 }
 
 /// Visit the particle before `သုံး၍` and the prepositions of a call.
@@ -1637,6 +1641,18 @@ fn call_prepositions_mut<V: VisitorMut + ?Sized>(
 {
     do_if!(let Some(particle) = using, v.visit_span_mut(&mut particle.span));
     do_for!(preposition in prepositions, v.visit_ident_mut(preposition));
+}
+
+/// Visit the starting and the ending phrase of a head or a call.
+///
+/// # Arguments
+///
+/// * `v` - The visitor.
+/// * `phrases` - The phrases.
+fn phrases_mut<V: VisitorMut + ?Sized>(v: &mut V, phrases: &mut Phrases)
+{
+    do_if!(let Some(start) = &mut phrases.start, v.visit_ident_mut(start));
+    do_if!(let Some(end) = &mut phrases.end, v.visit_ident_mut(end));
 }
 
 /// Visit the cells of a list literal.

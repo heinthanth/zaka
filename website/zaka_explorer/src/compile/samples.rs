@@ -86,6 +86,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("functions", "comparator"),
     sample!("functions", "dispatch"),
     sample!("functions", "nested"),
+    sample!("functions", "phrases"),
     sample!("error_handling", "failures"),
     sample!("error_handling", "optionals"),
     sample!("error_handling", "result_kinds"),

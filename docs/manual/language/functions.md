@@ -31,6 +31,7 @@ travel into a call, and the errors the compiler reports. For a gentle start, see
 
 ```text
 <name> ဟူသော လုပ်ဆောင်ချက် သည်
+<phrases> ကို သုံး၍                              (left out when there are none)
 <parameters> လက်ခံပြီး                          (left out when there are none)
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။                       (no result)
   or
@@ -43,6 +44,7 @@ travel into a call, and the errors the compiler reports. For a gentle start, see
 | --- | --- |
 | name | a name like each other name; it comes first, then `ဟူသော`, as in the head of a [struct](structs.md) |
 | marks | `အများသုံး` ([Modules](modules.md)), `စိတ်မချရသော` ([Unsafe Zaka](unsafe.md)) and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` ([Compile time](compile-time.md#comptime-functions)) stand between `ဟူသော` and `လုပ်ဆောင်ချက်`, in whatever order |
+| phrases | the starting phrase, the ending phrase, or both, the words a call written as a sentence puts around its arguments; see [Starting and ending phrases](#starting-and-ending-phrases) |
 | parameters | each `<name> ဟူသော <kind> တစ်<word> ကို`, then its markers; see [Parameters](#parameters) |
 | closer of each parameter | `လည်းကောင်း` after each one when there are two or more; after a lone parameter it can stand or be left out |
 | result | a single kind, then `တစ်` with the measure word of the kind (`တစ်ခု` for most kinds, `တစ်လုံး` for `စာလုံး`, the classifier of a struct, an enumeration or an alias), then `ကို ပြန်ပေးမည်` |
@@ -512,7 +514,8 @@ The rules of prepositions:
   `ပြီးလျှင်` and `လက်ခံပြီး`: such a string is ZK0241. A closer before another word of
   the preposition is fine, as `ပါ` in `ပါရှိသော`.
 - `၏` can start the last preposition, right before the function:
-  `p ၏ ဖိုင်အမည်နောက်တွဲ သည့် ရလဒ်`. On another parameter it is ZK0249, and after the first
+  `p ၏ ဖိုင်အမည်နောက်တွဲ သည့် ရလဒ်`. On another parameter, or before an
+  [ending phrase](#starting-and-ending-phrases), it is ZK0249, and after the first
   word of a preposition it is ZK0241. Elsewhere `x ၏ f` reads a field, as before.
 - The first preposition cannot start with `ကို သုံး၍` or `တို့ကို သုံး၍`, which start the
   arguments-first call (ZK0241).
@@ -559,13 +562,139 @@ error[ZK0331]: argument 2 of "ရေး" has the preposition "ထဲသို့
 error[ZK0237]: some parameters have a preposition and some do not
 ```
 
+## Starting and ending phrases
+
+A head can also give words that belong to no parameter: a *starting phrase*, which a call
+writes before its first argument, and an *ending phrase*, which a call writes after its last
+argument, right before the function name. With them a function reads as a command of its
+own. The phrases stand right after `သည်`, before the parameters, as a
+[list in words](words.md#lists-in-words) that `သုံး၍` closes:
+
+```text
+<name> ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "<words>" ကို သုံး၍ ...
+<name> ဟူသော လုပ်ဆောင်ချက် သည် အဆုံး စကားစု "<words>" ကို သုံး၍ ...
+<name> ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "<words>" နှင့် အဆုံး စကားစု "<words>" တို့ကို သုံး၍ ...
+
+<start> <argument> <preposition> ... <argument> <preposition> <end> <name> မည်။
+```
+
+A function with no parameters takes its phrases alone, so a call of it is the phrases, the
+name and the end: `ဖန်သားပြင်ကို အားလုံး ရှင်း မည်။`.
+
+```zaka
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု "ဖိုင်" နှင့် အဆုံး စကားစု "စာကို" တို့ကို သုံး၍
+လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲမှ" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{လမ်း} ထဲမှ စာ" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ရှင်း ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု "ဖန်သားပြင်ကို" နှင့် အဆုံး စကားစု "အားလုံး" တို့ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"ရှင်းပြီ" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပြ ဟူသော လုပ်ဆောင်ချက် သည် အဆုံး စကားစု "အမြန်" ကို သုံး၍
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"{စ}!" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဖိုင် "a.txt" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။
+ဖန်သားပြင်ကို အားလုံး ရှင်း မည်။
+"ဟယ်လို" အမြန် ပြ မည်။
+ဖတ်("b.txt") ကို ပြသမည်။
+ရှင်း မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+a.txt ထဲမှ စာ
+ရှင်းပြီ
+ဟယ်လို!
+b.txt ထဲမှ စာ
+ရှင်းပြီ
+```
+
+The rules of phrases:
+
+- `အစ စကားစု` and `အဆုံး စကားစု` are reserved words, glued (`အစစကားစု`) or apart. `အစ`
+  and `အဆုံး` alone remain names.
+- The list follows the rules of lists in words: `ကို` after one phrase, `တို့ကို` after two
+  (ZK0246), `နှင့်` between them, and the starting phrase first (ZK0201).
+- The words of a phrase follow the rules of a [preposition](#prepositions): names and
+  particles, one space apart, with no call end, no closer as the last word and no `၏`. Another
+  string is ZK0258.
+- With one parameter, the phrases mark where the argument starts or ends, so the parameter
+  needs no preposition: `"ဟယ်လို" အမြန် ပြ မည်`. Two or more parameters each need a
+  preposition, which tells where each argument ends (ZK0259).
+- A last preposition that starts with `၏` cannot stand before an ending phrase, as `x ၏ <word>`
+  reads a field (ZK0249).
+- A call written as a sentence, with prepositions or phrases, gives the phrases of the head in
+  their places. One that leaves a phrase out, or writes another, is ZK0352, and the help shows
+  the call as the head spells it. The other call forms, `ဖတ်("b.txt")`,
+  `ဖတ် ဟူသော လုပ်ဆောင်ချက်ကို "b.txt" ဖြင့် လုပ်ဆောင်မည်` and the short `ရှင်း မည်`, leave the
+  phrases out.
+- The phrases can tell two functions of one name apart, as prepositions can
+  ([One name, several functions](#one-name-several-functions)).
+- A [function kind](function-values.md#the-kind) can give phrases too, and a call through a
+  value of it writes them, as a call of a function does.
+
+```zaka-error ZK0352
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အစ စကားစု "ဖိုင်" နှင့် အဆုံး စကားစု "စာကို" တို့ကို သုံး၍
+လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲမှ" ကို သုံး၍ လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+လမ်း ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"a.txt" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0352]: the phrases of this call do not match the head of "ဖတ်"
+```
+
+```zaka-error ZK0259
+ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ကိန်း" ကို သုံး၍
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0259]: a function with a phrase and two or more parameters needs a preposition on each parameter
+```
+
+```zaka-error ZK0258
+ယူ ဟူသော လုပ်ဆောင်ချက် သည် အဆုံး စကားစု "x ၏" ကို သုံး၍
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0258]: "x ၏" cannot be a phrase
+```
+
 ## One name, several functions
 
 A file can declare several functions of one name when their parameter kinds or their
 prepositions differ. One function for each kind, written once, is a
 [generic](generics.md) instead. A call runs the one its arguments fit: an argument for each parameter, the
 prepositions of the parameters when the call writes prepositions, and each argument fit for the kind of
-its parameter, under the rules a call to a single function follows. The prepositions can tell two
+its parameter, under the rules a call to a single function follows. The prepositions, and the
+[phrases](#starting-and-ending-phrases) of a call written as a sentence, can tell two
 functions apart on their own, so a preposition call chooses with the words written too.
 
 ```zaka
@@ -611,7 +740,7 @@ The rules of functions that share a name:
   on the number, or the prepositions of the function meant.
 - An import of the name brings each exported function of it. Imports of one name from
   several files join into one set, so `ပါမပါစစ်` of text and `ပါမပါစစ်` of lists can both be
-  imported; two functions with the same parameter kinds and prepositions, from one file or from
+  imported; two functions with the same parameter kinds, prepositions and phrases, from one file or from
   two, are ZK0304. A file cannot declare a function of a name it imports (ZK0304).
 - Inside the compiler, the second function of a name is `<name>#2`, the third
   `<name>#3`; the IR, the flow checker and the VM listing show these names.
@@ -724,7 +853,8 @@ each.
 - **Braces.** `{x}` is the name `x`, whatever it spells: never a reserved word, a preposition, a
   call, or a name with a call end glued to it. `x ၏ {f}` reads the field `f` alone. A name
   in braces can hold spaces and signs too ([Names](words.md#names)).
-- **Words of a preposition read as the preposition.** A word of a preposition that a file declares or imports
+- **Words of a preposition read as the preposition.** A word of a preposition or of a
+  [phrase](#starting-and-ending-phrases) that a file declares or imports
   reads as that preposition where a preposition can stand. Declaring a variable, constant, parameter or
   function of such a name is the warning ZK0250; write `{name}` where the name is meant.
   Fields are not checked, since a field never stands where a preposition can.
@@ -744,10 +874,12 @@ each.
 | Signature | Reason | Code |
 | --- | --- | --- |
 | a preposition that holds a call end, `ဟူသော`, a literal word, `အနုတ်`, a sign, `၊` or `။`, or ends in a closer | the call could not end, or an argument could not start | ZK0241 |
-| `၏` in a preposition other than at the start of the last one | elsewhere `x ၏ f` reads a field | ZK0249, ZK0241 |
+| `၏` in a preposition other than at the start of the last one, or before an ending phrase | elsewhere `x ၏ f` reads a field | ZK0249, ZK0241 |
+| `၏`, a call end or a closer at its end in a phrase | the call could not end, or would read a field | ZK0258 |
+| phrases and two or more parameters, not each with a preposition | a call could not tell where each argument ends | ZK0259 |
 | a first preposition that starts with `ကို သုံး၍` or `တို့ကို သုံး၍` | it starts the arguments-first call | ZK0241 |
 | prepositions on some parameters alone | a call could not tell where each argument ends | ZK0237 |
-| two functions of one name with the same parameter kinds and prepositions, in one file or across imports | no call could tell them apart | ZK0304 |
+| two functions of one name with the same parameter kinds, prepositions and phrases, in one file or across imports | no call could tell them apart | ZK0304 |
 
 A reserved word declared in braces can name a function: `{စီ} ဟူသော လုပ်ဆောင်ချက် သည် …` is called
 as `l ကို စီ မည်။`, the word bare, right before a call end. Elsewhere the word keeps its
@@ -1936,6 +2068,8 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0214 | an external function, a C function or the start block declared inside a block or a function |
 | ZK0237 | a header that gives some parameters a preposition and not the others |
 | ZK0241 | a preposition string with a word a preposition cannot hold |
+| ZK0258 | a phrase string with a word a phrase cannot hold, or with `၏` |
+| ZK0259 | a head with phrases and two or more parameters, not each with a preposition |
 | ZK0303 | a call to a function that is not declared |
 | ZK0304 | two functions with one name |
 | ZK0305 | one parameter name listed twice |
@@ -1947,6 +2081,7 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0327 | a program with no start block |
 | ZK0314 | a wrong number of arguments |
 | ZK0315 | the result of a function that has none, used as a value |
+| ZK0352 | a call written as a sentence whose phrases are not those of the head |
 | ZK0401 | an argument or a returned value that does not fit its kind |
 | ZK0306 | a constant as the argument of a changed parameter |
 | ZK0410 | an argument of a changed parameter that is no place |

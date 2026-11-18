@@ -10,6 +10,7 @@
 //! kind with no parameters never needs them.
 
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::Ident;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::FnSig;
 use zakac_ast::kind::Kind;
@@ -27,6 +28,7 @@ use crate::describe::quote;
 use crate::parser::PResult;
 use crate::parser::Parser;
 use crate::parser::kw_of;
+use crate::using::CallWords;
 
 /// The parameters and the result kind of a function kind.
 type FnParts = (Vec<SigParam>, Option<Kind>);
@@ -70,11 +72,63 @@ impl Parser<'_>
     /// The token count, or `None` when none starts there.
     pub(crate) fn fn_head_at(&self, at: usize, form: FnForm) -> Option<usize>
     {
+        ret_if!(let Some((n, _)) = self.phrased_head_len(at, form), Some(n));
         let closer = kw_of(&self.peek_n(at)) == Some(Kw::FnKind);
         ret_if!(closer, Some(1));
         ret_if!(form == FnForm::NoFn, None);
         let listed = tern!(form == FnForm::Full, self.listed_head_len(at), None);
         listed.or_else(|| self.ret_tail_len(at))
+    }
+
+    /// The token count of a function kind that opens with phrases, `at`
+    /// tokens ahead, and whether it has parameters: the phrases, then
+    /// `သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား`, or `သုံး၍` and the parameters or the
+    /// result.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    /// * `form` - The forms allowed.
+    ///
+    /// # Returns
+    ///
+    /// The token count and whether it has parameters, or `None`.
+    fn phrased_head_len(&self, at: usize, form: FnForm) -> Option<(usize, bool)>
+    {
+        ret_if!(form == FnForm::NoFn, None);
+        let n = self.phrases_len(at)?;
+        let closer = kw_of(&self.peek_n(at + n))?;
+        let closed = kw_of(&self.peek_n(at + n + 1)) == Some(Kw::FnKind);
+        ret_if!(closer == Kw::UsingRel, closed.then_some((n + 2, false)));
+        ret_if!(closer != Kw::Using, None);
+        let listed =
+            tern!(form == FnForm::Full, self.listed_head_len(at + n + 1), None);
+        let rest = listed.map(|l| (l, true));
+        let rest =
+            rest.or_else(|| self.ret_tail_len(at + n + 1).map(|r| (r, false)))?;
+        Some((n + 1 + rest.0, rest.1))
+    }
+
+    /// The token count of a list of phrases that starts `at` tokens ahead,
+    /// up to the word that closes it: one phrase and `ကို`, or two joined
+    /// with `နှင့်` and `တို့ကို`. Each phrase is its reserved word and its
+    /// string.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` with no phrase there.
+    fn phrases_len(&self, at: usize) -> Option<usize>
+    {
+        let is = |n: usize, kw: Kw| kw_of(&self.peek_n(at + n)) == Some(kw);
+        ret_if!(!is(0, Kw::StartPhrase) && !is(0, Kw::EndPhrase), None);
+        let both = is(0, Kw::StartPhrase) && is(2, Kw::Hnint) && is(3, Kw::EndPhrase);
+        let n = tern!(both, 5, 2);
+        let closer = tern!(both, Kw::ListKo, Kw::Ko);
+        is(n, closer).then_some(n + 1)
     }
 
     /// The token count of a function kind with parameters that starts `at`
@@ -219,7 +273,8 @@ impl Parser<'_>
     /// `true` if it does.
     pub(crate) fn at_bare_listed_kind(&self) -> bool
     {
-        self.in_list && self.listed_head_len(0).is_some()
+        let phrased = self.phrased_head_len(0, FnForm::Full).is_some_and(|(_, p)| p);
+        self.in_list && (phrased || self.listed_head_len(0).is_some())
     }
 
     /// Parse a function kind with no levels, after the borrow marks, the
@@ -237,12 +292,22 @@ impl Parser<'_>
     pub(crate) fn parse_fn_head(&mut self, form: FnForm) -> PResult<Kind>
     {
         let start = self.peek().span;
+        let phrases = self.parse_phrase_list()?;
+        let bare = !phrases.is_empty() && self.eat(Kw::UsingRel);
+        do_if!(!phrases.is_empty() && !bare, _ = self.expect(Kw::Using)?);
         let with_params = form == FnForm::Full && self.listed_head_len(0).is_some();
         let outer = std::mem::replace(&mut self.in_list, true);
-        let parts = self.parse_fn_parts(with_params);
+        let parts = self.parse_fn_parts(with_params, bare);
         self.in_list = outer;
         let (params, ret) = parts?;
-        let sig = FnSig::builder().params(params).maybe_ret(ret).build();
+        let bare_params = params.iter().any(|p| p.preposition.is_none());
+        do_if!(
+            !phrases.is_empty() && params.len() > 1 && bare_params,
+            self.diags
+                .push(diag::phrases_need_prepositions(start.to(&self.prev_span())))
+        );
+        #[rustfmt::skip]
+        let sig = FnSig::builder().params(params).maybe_ret(ret).phrases(phrases).build();
         let span = start.to(&self.prev_span());
         Ok(Kind::builder().base(BaseKind::Fn).sig(Box::new(sig)).span(span).build())
     }
@@ -253,13 +318,16 @@ impl Parser<'_>
     /// # Arguments
     ///
     /// * `with_params` - Whether a parameter list comes first.
+    /// * `bare` - Whether `သုံးသော` closed the phrases, so neither the parameters
+    ///   nor the result follows.
     ///
     /// # Returns
     ///
     /// The parameters and the result kind with its measure word, or a
     /// diagnostic.
-    fn parse_fn_parts(&mut self, with_params: bool) -> PResult<FnParts>
+    fn parse_fn_parts(&mut self, with_params: bool, bare: bool) -> PResult<FnParts>
     {
+        do_if!(bare, return self.expect(Kw::FnKind).map(|_| (Vec::new(), None)));
         ret_if!(self.eat(Kw::FnKind), Ok((Vec::new(), None)));
         let params = tern!(with_params, self.parse_sig_params()?, Vec::new());
         if with_params && self.eat(Kw::AcceptingRel)
@@ -353,8 +421,12 @@ impl Parser<'_>
         let prepositions = sig.params.iter().filter_map(|p| p.preposition.as_ref());
         let prepositions: Vec<String> =
             prepositions.map(|m| m.name.to_string()).collect();
-        ret_if!(prepositions.is_empty());
-        self.add_function(name, vec![prepositions]);
+        let phrase = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+        #[rustfmt::skip]
+        let words = CallWords::builder().prepositions(prepositions).params(sig.params.len())
+            .maybe_start(phrase(&sig.phrases.start)).maybe_end(phrase(&sig.phrases.end)).build();
+        ret_if!(!words.is_sentence());
+        self.add_function(name, vec![words]);
     }
 
     /// Register a variable that starts as the address of a function with

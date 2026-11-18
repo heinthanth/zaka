@@ -110,6 +110,7 @@ use crate::scope::Binding;
 use crate::scope::FnSig;
 use crate::scope::FnSigs;
 use crate::scope::Scopes;
+use crate::scope::Written;
 use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
 use crate::traits::Traits;
@@ -905,7 +906,8 @@ impl Checker
     /// * `kind_args` - The kinds written for a generic function.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
-    /// * `prepositions` - The word after each argument of a preposition call.
+    /// * `written` - The prepositions and phrases of a call written as a
+    ///   sentence.
     /// * `span` - The call.
     ///
     /// # Returns
@@ -914,45 +916,35 @@ impl Checker
     /// `None` when the call names no function it can run.
     pub fn check_call(
         &mut self, callee: &Ident, kind_args: &[Kind], place: Option<&Expr>,
-        args: &[Expr], prepositions: &[Ident], span: Span,
+        args: &[Expr], written: Written<'_>, span: Span,
     ) -> Option<Option<DataKind>>
     {
         let expect = self.call_expect.take();
         let templates =
             tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
-        let target = match templates.is_empty()
-        {
-            false =>
+        let target =
+            match templates.is_empty()
             {
-                let t = self.choose_template(
-                    templates,
-                    callee,
-                    kind_args,
-                    args,
-                    prepositions,
-                    expect,
-                );
-                let sig = t.and_then(|t| {
-                    self.generic_callee(&t, callee, kind_args, args, expect)
-                });
-                sig.map(|s| vec![s])
-            }
-            true => self.plain_or_generic(
-                callee,
-                kind_args,
-                place,
-                args,
-                prepositions,
-                expect,
-            ),
-        };
+                false =>
+                {
+                    let t = self.choose_template(
+                        templates, callee, kind_args, args, written, expect,
+                    );
+                    let sig = t.and_then(|t| {
+                        self.generic_callee(&t, callee, kind_args, args, expect)
+                    });
+                    sig.map(|s| vec![s])
+                }
+                true => self
+                    .plain_or_generic(callee, kind_args, place, args, written, expect),
+            };
         let Some(sigs) = target
         else
         {
             self.infer_all(args);
             return None;
         };
-        let Some(sig) = self.choose(callee, args, prepositions, &sigs, span)
+        let Some(sig) = self.choose(callee, args, written, &sigs, span)
         else
         {
             self.infer_all(args);
@@ -981,7 +973,8 @@ impl Checker
             );
         }
         self.check_edits_apart(args, &sig.edits);
-        self.check_prepositions(callee, prepositions, &sig, span);
+        self.check_prepositions(callee, written.prepositions, &sig, span);
+        self.check_phrases(callee, written, &sig, span);
         ret
     }
 
@@ -1078,8 +1071,8 @@ impl Checker
     ///
     /// * `callee` - The function name at the call.
     /// * `args` - The arguments.
-    /// * `prepositions` - The prepositions written; blank for the other call
-    ///   forms.
+    /// * `written` - The prepositions and phrases written; blank for the other
+    ///   call forms.
     /// * `sigs` - The functions of the name.
     /// * `span` - The call.
     ///
@@ -1087,13 +1080,13 @@ impl Checker
     ///
     /// The function, or `None` after a report.
     fn choose(
-        &mut self, callee: &Ident, args: &[Expr], prepositions: &[Ident],
-        sigs: &[FnSig], span: Span,
+        &mut self, callee: &Ident, args: &[Expr], written: Written<'_>, sigs: &[FnSig],
+        span: Span,
     ) -> Option<FnSig>
     {
         ret_if!(sigs.len() == 1, sigs.first().cloned());
         let fits: Vec<&FnSig> =
-            sigs.iter().filter(|s| self.fits_call(s, args, prepositions)).collect();
+            sigs.iter().filter(|s| self.fits_call(s, args, written)).collect();
         let list = || sigs.iter().map(params_text).collect::<Vec<_>>().join(" / ");
         match fits.as_slice()
         {
@@ -1126,7 +1119,8 @@ impl Checker
     /// * `kind_args` - The kinds written for a generic function.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
-    /// * `prepositions` - The word after each argument of a preposition call.
+    /// * `written` - The prepositions and phrases of a call written as a
+    ///   sentence.
     /// * `expect` - The kind the place of the call expects.
     ///
     /// # Returns
@@ -1134,47 +1128,44 @@ impl Checker
     /// The functions, or `None` after a report.
     fn plain_or_generic(
         &mut self, callee: &Ident, kind_args: &[Kind], place: Option<&Expr>,
-        args: &[Expr], prepositions: &[Ident], expect: Option<DataKind>,
+        args: &[Expr], written: Written<'_>, expect: Option<DataKind>,
     ) -> Option<Vec<FnSig>>
     {
         let open = place.is_none() && self.fns.contains_key(&callee.name);
         let generic = tern!(open, self.templates.fns_of(&callee.name), Vec::new());
         ret_if!(generic.is_empty(), self.plain_callee(callee, kind_args, place));
         let plain = self.fns.get(&callee.name).cloned().unwrap_or_default();
-        let fits = plain.iter().any(|s| self.fits_call(s, args, prepositions));
+        let fits = plain.iter().any(|s| self.fits_call(s, args, written));
         ret_if!(fits, self.plain_callee(callee, kind_args, place));
-        let template = self.choose_template(
-            generic,
-            callee,
-            kind_args,
-            args,
-            prepositions,
-            expect,
-        )?;
+        let template =
+            self.choose_template(generic, callee, kind_args, args, written, expect)?;
         let sig = self.generic_callee(&template, callee, kind_args, args, expect);
         sig.map(|s| vec![s])
     }
 
     /// Whether a call fits a function: an argument for each parameter, the
-    /// prepositions of the parameters when the call writes prepositions, and
-    /// each argument fit for its parameter with no report, which the check
-    /// gives back.
+    /// prepositions of the parameters when the call writes prepositions, the
+    /// phrases of the head when the call is written as a sentence, and each
+    /// argument fit for its parameter with no report, which the check gives
+    /// back.
     ///
     /// # Arguments
     ///
     /// * `sig` - The function.
     /// * `args` - The arguments.
-    /// * `prepositions` - The prepositions written.
+    /// * `written` - The prepositions and phrases written.
     ///
     /// # Returns
     ///
     /// `true` when it fits.
     pub(crate) fn fits_call(
-        &mut self, sig: &FnSig, args: &[Expr], prepositions: &[Ident],
+        &mut self, sig: &FnSig, args: &[Expr], written: Written<'_>,
     ) -> bool
     {
         let short = args.len() < sig.params.len();
         ret_false!(tern!(sig.variadic, short, sig.params.len() != args.len()));
+        ret_false!(!written.phrases_fit(sig.start, sig.end));
+        let prepositions = written.prepositions;
         let named = |want: &Vec<Name>| {
             let fits = |(m, w): (&Ident, &Name)| preposition_fits(m.name, *w, want);
             prepositions.len() == want.len() && prepositions.iter().zip(want).all(fits)
@@ -1226,6 +1217,27 @@ impl Checker
             })
             .collect();
         do_for!(diag in found, self.report(diag));
+    }
+
+    /// Check that a call written as a sentence gives the phrases of the head
+    /// of its function (ZK0352); another call form leaves them out.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The function name.
+    /// * `written` - The prepositions and phrases written.
+    /// * `sig` - The function the call runs.
+    /// * `span` - The call.
+    fn check_phrases(
+        &mut self, callee: &Ident, written: Written<'_>, sig: &FnSig, span: Span,
+    )
+    {
+        ret_if!(written.phrases_fit(sig.start, sig.end));
+        self.report(rd::wrong_phrase(
+            span,
+            &callee.name,
+            &sentence_text(sig, &callee.name),
+        ));
     }
 
     /// Check how a call meets a failure of the function: a call statement
@@ -2372,7 +2384,7 @@ impl Visitor for Checker
             &n.kind_args,
             place,
             &n.args,
-            &n.prepositions,
+            Written::of(&n.prepositions, &n.phrases),
             n.span,
         );
         do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
@@ -2465,6 +2477,29 @@ pub fn each_list(kind: DataKind, chars: bool) -> DataKind
 fn err_name(err: Option<DataKind>) -> String
 {
     err.map_or_else(|| "မအောင်မြင်သည့်သတင်း".to_string(), DataKind::name)
+}
+
+/// A call of a function written as a sentence, as its head spells it, each
+/// argument as `…`: `ဖိုင် … ထဲမှ စာကို ဖတ်`.
+///
+/// # Arguments
+///
+/// * `sig` - The function.
+/// * `name` - The function name.
+///
+/// # Returns
+///
+/// The text.
+fn sentence_text(sig: &FnSig, name: &str) -> String
+{
+    let preposition = |n: usize| sig.prepositions.as_ref().map(|m| m[n].to_string());
+    let args = (0..sig.params.len())
+        .flat_map(|n| std::iter::once("…".to_string()).chain(preposition(n)));
+    let start = sig.start.iter().map(|s| s.to_string());
+    let end = sig.end.iter().map(|s| s.to_string());
+    let words: Vec<String> =
+        start.chain(args).chain(end).chain([name.to_string()]).collect();
+    words.join(" ")
 }
 
 /// The parameters of a function as a message shows them: `(text(ကို), text)`.

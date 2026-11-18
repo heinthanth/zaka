@@ -124,6 +124,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပြောင်းလဲရန်", Kw::ToChange),
     ("ထည့်ပေးရန်", Kw::ToFill),
     ("ဝိဘတ်", Kw::PrepositionWord),
+    // The spaced spellings, `အစ စကားစု` and `အဆုံး စကားစု`, join in
+    // `crate::phrases::join_named_phrases`, so `အစ` and `အဆုံး` remain names.
+    ("အစစကားစု", Kw::StartPhrase),
+    ("အဆုံးစကားစု", Kw::EndPhrase),
     ("ဟူသော", Kw::Called),
     ("မည့်", Kw::Named),
     ("သော", Kw::That),
@@ -133,6 +137,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မည်", Kw::Will),
     ("သည့်", Kw::Which),
     ("သုံး၍", Kw::Using),
+    ("သုံးသော", Kw::UsingRel),
     ("ပြင်ပ", Kw::Outside),
     ("လာသော", Kw::Coming),
     ("အခြားတန်ဖိုးများ", Kw::OtherValues),

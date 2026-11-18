@@ -188,6 +188,12 @@ BadCompileTimeTest = ("ZK0255", Level::Error),
 ComptimeMarkMisplaced = ("ZK0256", Level::Error),
 /// The unsafe mark stands before the start block, which cannot be unsafe.
 UnsafeStart = ("ZK0257", Level::Error),
+/// The starting or the ending phrase of a function head is not words a phrase
+/// can be.
+BadPhrase = ("ZK0258", Level::Error),
+/// A function with a phrase takes two or more parameters, and not each of
+/// them has a preposition.
+PhrasesNeedPrepositions = ("ZK0259", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -299,6 +305,9 @@ SameAsPrelude = ("ZK0350", Level::Warning),
 /// A trait block takes the defaults of its trait, but gives each function
 /// that has one itself, or the trait has none.
 InheritsNothing = ("ZK0351", Level::Warning),
+/// A call written as a sentence gives other phrases than the head of its
+/// function.
+WrongPhrase = ("ZK0352", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

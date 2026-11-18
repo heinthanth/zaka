@@ -398,7 +398,27 @@ fn fn_kind_sexpr(k: &Kind) -> String
     let params: Vec<String> = sig.params.iter().map(param).collect();
     let ret =
         sig.ret.as_ref().map_or(String::new(), |r| format!(" -> {}", r.to_sexpr()));
-    format!("fn({}){ret}", params.join(", "))
+    let phrases = phrases_text(&sig.phrases).unwrap_or_default();
+    format!("fn{phrases}({}){ret}", params.join(", "))
+}
+
+/// The phrases of a head or a function kind, the arguments as `…`:
+/// `{ဖိုင် … စာကို}`.
+///
+/// # Arguments
+///
+/// * `phrases` - The phrases.
+///
+/// # Returns
+///
+/// The text, or `None` with no phrase.
+fn phrases_text(phrases: &crate::expr::Phrases) -> Option<String>
+{
+    let phrase =
+        |i: &Option<crate::expr::Ident>| i.as_ref().map(|i| i.name.to_string());
+    let words = [phrase(&phrases.start), Some("…".to_string()), phrase(&phrases.end)];
+    let words: Vec<String> = words.into_iter().flatten().collect();
+    (!phrases.is_empty()).then(|| format!("{{{}}}", words.join(" ")))
 }
 
 /// An integer literal with its kind prefix as a suffix: `18u8`.
@@ -625,7 +645,8 @@ fn generic_sexpr(s: &GenericStmt) -> String
 /// function that takes locals around it lists them after its parameters:
 /// `(fn name [kind param] [dup a, move b, lend c] ret {..})`. An external
 /// function is `(external name ...)`, with its lib first when it has one:
-/// `(external "libm" name ...)`.
+/// `(external "libm" name ...)`. A head with phrases shows them after its
+/// name, the arguments as `…`: `(fn name {ဖိုင် … စာကို} ...)`.
 ///
 /// # Arguments
 ///
@@ -646,8 +667,13 @@ fn fn_sexpr(s: &FnDecl) -> String
     let taken: Vec<String> = s.captures.iter().map(taken).collect();
     let taken = (!taken.is_empty()).then(|| format!("[{}]", taken.join(", ")));
     let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
-    let head = [name, format!("[{}]", params.join(", "))];
-    let parts: Vec<String> = head.into_iter().chain(taken).chain([ret]).collect();
+    let head = [
+        Some(name),
+        phrases_text(&s.phrases),
+        Some(format!("[{}]", params.join(", "))),
+    ];
+    let head = head.into_iter().flatten();
+    let parts: Vec<String> = head.chain(taken).chain([ret]).collect();
     let lib = s.lib.iter().map(|l| format!("\"{}\"", l.lit.value));
     ret_if!(s.external, list("external", lib.chain(parts)));
     list(tern!(s.start, "start", "fn"), parts.into_iter().chain([s.block.to_sexpr()]))

@@ -102,6 +102,8 @@ impl Checker
             .edits(f.edits())
             .maybe_ret(f.ret)
             .maybe_prepositions(f.prepositions())
+            .maybe_start(f.start)
+            .maybe_end(f.end)
             .inner(name);
         Some(vec![sig.build()])
     }
@@ -249,5 +251,6 @@ pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
         edit: edit(n),
         preposition: mark(n),
     };
-    FnKind::make(sig.params.iter().enumerate().map(param).collect(), sig.ret)
+    let params = sig.params.iter().enumerate().map(param).collect();
+    FnKind::make_with(params, sig.ret, sig.start, sig.end)
 }

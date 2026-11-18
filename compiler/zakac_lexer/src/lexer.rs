@@ -21,6 +21,7 @@ use crate::classifiers::mark_classifiers;
 use crate::ident::is_ident;
 use crate::number::lex_number;
 use crate::number::word_script;
+use crate::phrases::join_named_phrases;
 use crate::phrases::join_phrases;
 use crate::reserved::AMONG;
 use crate::reserved::NOTE_MARKER;
@@ -140,6 +141,8 @@ impl Driver<'_, '_>
     fn finish(mut self) -> LexOutput
     {
         self.out.tokens = join_phrases(std::mem::take(&mut self.out.tokens));
+        let tokens = std::mem::take(&mut self.out.tokens);
+        self.out.tokens = join_named_phrases(tokens, self.text, self.base);
         mark_classifiers(&mut self.out.tokens, self.text, self.base);
         self.report_mix();
         let end = self.base + self.text.len();

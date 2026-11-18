@@ -48,6 +48,7 @@ use crate::kind::DataKind;
 use crate::kind::Width;
 use crate::scope::FnSig;
 use crate::scope::FnSigs;
+use crate::scope::Written;
 use crate::scope::overload_name;
 use crate::semcheck::Checker;
 
@@ -747,7 +748,8 @@ impl Checker
     /// * `callee` - The name at the call.
     /// * `kind_args` - The kinds written at the call.
     /// * `args` - The arguments.
-    /// * `prepositions` - The word after each argument of a preposition call.
+    /// * `written` - The prepositions and phrases of a call written as a
+    ///   sentence.
     /// * `expect` - The kind the place of the call expects.
     ///
     /// # Returns
@@ -755,15 +757,14 @@ impl Checker
     /// The generic function, or `None` after a report.
     pub(crate) fn choose_template(
         &mut self, mut templates: Vec<FnDecl>, callee: &Ident, kind_args: &[Kind],
-        args: &[Expr], prepositions: &[Ident], expect: Option<DataKind>,
+        args: &[Expr], written: Written<'_>, expect: Option<DataKind>,
     ) -> Option<FnDecl>
     {
         ret_if!(templates.len() == 1, templates.pop());
         let mut fits: Vec<(FnDecl, Vec<DataKind>)> = templates
             .iter()
             .filter_map(|t| {
-                let kinds =
-                    self.fitting_kinds(t, kind_args, args, prepositions, expect)?;
+                let kinds = self.fitting_kinds(t, kind_args, args, written, expect)?;
                 Some((t.clone(), kinds))
             })
             .collect();
@@ -838,15 +839,16 @@ impl Checker
 
     /// The kinds of a generic function for a call, when the call fits its
     /// head: an argument for each parameter, the prepositions of the
-    /// parameters when the call writes prepositions, and kinds written or
-    /// shown for each kind parameter.
+    /// parameters when the call writes prepositions, the phrases of the head
+    /// when the call is written as a sentence, and kinds written or shown for
+    /// each kind parameter.
     ///
     /// # Arguments
     ///
     /// * `template` - The generic function.
     /// * `kind_args` - The kinds written at the call.
     /// * `args` - The arguments.
-    /// * `prepositions` - The prepositions written.
+    /// * `written` - The prepositions and phrases written.
     /// * `expect` - The kind the place of the call expects.
     ///
     /// # Returns
@@ -854,10 +856,15 @@ impl Checker
     /// The kinds, or `None` when the call does not fit.
     fn fitting_kinds(
         &mut self, template: &FnDecl, kind_args: &[Kind], args: &[Expr],
-        prepositions: &[Ident], expect: Option<DataKind>,
+        written: Written<'_>, expect: Option<DataKind>,
     ) -> Option<Vec<DataKind>>
     {
         ret_if!(template.params.len() != args.len(), None);
+        let phrase = |i: &Option<Ident>| i.as_ref().map(|i| i.name);
+        let (start, end) =
+            (phrase(&template.phrases.start), phrase(&template.phrases.end));
+        ret_if!(!written.phrases_fit(start, end), None);
+        let prepositions = written.prepositions;
         let words: Option<Vec<Name>> = template
             .params
             .iter()

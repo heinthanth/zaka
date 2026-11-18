@@ -20,7 +20,9 @@ use bon::Builder;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
+use zakac_ast::expr::Phrases;
 use zakac_ast::expr::UsingParticle;
+use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::Node;
 use zakac_i18n::t;
@@ -64,12 +66,78 @@ pub(crate) struct CallParts
     /// The word after each argument of a preposition call.
     #[builder(default)]
     pub(crate) prepositions: Vec<Ident>,
+    /// The starting and the ending phrase of a call written as a sentence.
+    #[builder(default)]
+    pub(crate) phrases: Phrases,
 }
 
-/// The prepositions of each function the parser knows, under its name: one list
-/// for each function of the name, each preposition its words joined with one
-/// space. A function with no prepositions has a blank list.
-pub type Functions = HashMap<String, Vec<Vec<String>>>;
+/// The words a call written as a sentence takes for one function: its
+/// starting phrase, the preposition of each parameter and its ending phrase,
+/// each with its words joined with one space, and the number of its
+/// parameters.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Builder)]
+pub struct CallWords
+{
+    /// The words before the first argument.
+    pub start: Option<String>,
+    /// The word after each argument; blank for a function with none.
+    #[builder(default)]
+    pub prepositions: Vec<String>,
+    /// The words right before the function name.
+    pub end: Option<String>,
+    /// The number of parameters.
+    #[builder(default)]
+    pub params: usize,
+}
+
+impl CallWords
+{
+    /// The words of the head of a function declaration.
+    ///
+    /// # Arguments
+    ///
+    /// * `decl` - The declaration.
+    ///
+    /// # Returns
+    ///
+    /// Its words.
+    pub fn of_decl(decl: &FnDecl) -> CallWords
+    {
+        let prepositions = decl.params.iter().filter_map(|p| p.preposition.as_ref());
+        let name = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+        #[rustfmt::skip]
+        return CallWords::builder().maybe_start(name(&decl.phrases.start))
+            .prepositions(prepositions.map(|m| m.name.to_string()).collect())
+            .maybe_end(name(&decl.phrases.end)).params(decl.params.len()).build();
+    }
+
+    /// Whether a call of the function can be written as a sentence: it has a
+    /// phrase or prepositions.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it has.
+    pub fn is_sentence(&self) -> bool
+    {
+        self.start.is_some() || self.end.is_some() || !self.prepositions.is_empty()
+    }
+
+    /// Each phrase and preposition, the starting phrase first.
+    ///
+    /// # Returns
+    ///
+    /// The texts.
+    pub fn texts(&self) -> impl Iterator<Item = &String>
+    {
+        let start = self.start.iter();
+        start.chain(&self.prepositions).chain(self.end.iter())
+    }
+}
+
+/// The functions the parser knows, under their names: the words of each
+/// function of the name. A function with no phrase and no preposition has
+/// blank words.
+pub type Functions = HashMap<String, Vec<CallWords>>;
 
 /// Whether a token can be a word of a preposition: a name, `၏`, or a reserved
 /// word that is no call end, no `ဟူသော`, and no word that starts an operand. A
@@ -310,8 +378,8 @@ impl Parser<'_>
         }
     }
 
-    /// The end of a call of a function that declares prepositions, `n` tokens
-    /// ahead: `<fn> မည်`, `<fn> သည့် ရလဒ်(ကောင်း)`, or
+    /// The end of a call of a function that declares phrases or prepositions,
+    /// `n` tokens ahead: `<fn> မည်`, `<fn> သည့် ရလဒ်(ကောင်း)`, or
     /// `<fn> ဟူသော လုပ်ဆောင်ချက်ကို` with `လုပ်ဆောင်မည်` or `လုပ်ဆောင်သော ရလဒ်(ကောင်း)`.
     ///
     /// # Arguments
@@ -326,7 +394,7 @@ impl Parser<'_>
     {
         let long = kw_of(&self.peek_n(n + 1)) == Some(Kw::FnValue)
             && kw_of(&self.peek_n(n + 2)) == Some(Kw::Ko);
-        ret_if!(!self.is_preposition_fn(n), None);
+        ret_if!(!self.is_sentence_fn(n), None);
         let word = kw_of(&self.peek_n(tern!(long, n + 3, n + 1)))?;
         let len = tern!(long, 4, 2);
         match word
@@ -339,7 +407,8 @@ impl Parser<'_>
         }
     }
 
-    /// Whether the token `n` ahead names a function that declares prepositions:
+    /// Whether the token `n` ahead names a function that declares phrases or
+    /// prepositions:
     /// a name, a name in braces, or a reserved word that such a function
     /// was declared with in braces (`{စီ}`).
     ///
@@ -350,14 +419,14 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` for such a name.
-    fn is_preposition_fn(&self, n: usize) -> bool
+    fn is_sentence_fn(&self, n: usize) -> bool
     {
         let tok = self.peek_n(n);
         let named = matches!(
             tok.kind,
             TokenKind::Ident | TokenKind::RawIdent | TokenKind::Kw(_)
         );
-        named && self.fn_prepositions(&self.callee_text(&tok)).next().is_some()
+        named && self.fn_words(&self.callee_text(&tok)).next().is_some()
     }
 
     /// The text of a token as the name of a function: a name in braces
@@ -376,7 +445,7 @@ impl Parser<'_>
         unquote_raw(raw, self.text_of(tok.span)).to_string()
     }
 
-    /// The preposition lists of the functions of a name that declare
+    /// The words of the functions of a name that declare phrases or
     /// prepositions.
     ///
     /// # Arguments
@@ -385,13 +454,11 @@ impl Parser<'_>
     ///
     /// # Returns
     ///
-    /// Each list, one for each such function.
-    fn fn_prepositions<'a>(
-        &'a self, name: &str,
-    ) -> impl Iterator<Item = &'a Vec<String>>
+    /// The words of each such function.
+    fn fn_words<'a>(&'a self, name: &str) -> impl Iterator<Item = &'a CallWords>
     {
         let lists = self.functions.get(name).into_iter().flatten();
-        lists.filter(|prepositions| !prepositions.is_empty())
+        lists.filter(|words| words.is_sentence())
     }
 
     /// Whether a token can start a preposition of a visible function, so a
@@ -463,16 +530,124 @@ impl Parser<'_>
     ) -> PResult<Head>
     {
         let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
-        let read = self.parse_preposition_call(first.clone(), end, mode);
-        ret_if!(read.as_ref().is_ok_and(|head| self.fits_prepositions(head)), read);
+        let read = self.parse_preposition_call(first.clone(), end, mode, None);
+        ret_if!(read.as_ref().is_ok_and(|head| self.fits_words(head)), read);
         self.cur = cur;
         self.diags.truncate(diags);
         self.next_id = next_id;
         Ok(Head::Expr(first))
     }
 
-    /// Whether the number of prepositions of a preposition call matches the
-    /// parameters of a function of its name.
+    /// Read a call written as a sentence that starts at the start of a
+    /// clause with a phrase: a starting phrase and the rest of the call, or
+    /// the phrases of a function with no parameters and the function, as
+    /// `ဖန်သားပြင်ကို အားလုံး ရှင်း မည်`. When no such call reads and fits a
+    /// function of its name, nothing is read.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or `None` with no such call here.
+    pub(crate) fn attempt_phrase_call(&mut self, mode: Mode) -> Option<Head>
+    {
+        let tok = self.peek();
+        let word = self.text_of(tok.span);
+        let opens = self.start_words.contains(word) || self.first_words.contains(word);
+        ret_if!(!is_preposition_word(&tok) || !opens, None);
+        let (cur, diags, next_id) = (self.cur, self.diags.len(), self.next_id);
+        let bare = self.bare_phrase_call(mode);
+        let read = tern!(bare.is_some(), bare, self.start_phrase_call(mode));
+        let read = read.and_then(Result::ok).filter(|head| self.fits_words(head));
+        ret_if!(read.is_some(), read);
+        self.cur = cur;
+        self.diags.truncate(diags);
+        self.next_id = next_id;
+        None
+    }
+
+    /// Read the call of a function with no parameters that the phrases ahead
+    /// spell, the function name and a call end after them.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or `None` when no such function fits the words ahead.
+    fn bare_phrase_call(&mut self, mode: Mode) -> Option<PResult<Head>>
+    {
+        let all =
+            self.functions.iter().flat_map(|(f, l)| l.iter().map(move |w| (f, w)));
+        let bare = all.filter(|(_, w)| w.params == 0 && w.is_sentence());
+        let spelled = bare.filter_map(|(f, w)| {
+            let start = w.start.as_ref().map_or(Some(0), |m| self.spells_at(m, 0))?;
+            let end = w.end.as_ref().map_or(Some(0), |m| self.spells_at(m, start))?;
+            let named = self.callee_text(&self.peek_n(start + end)) == *f;
+            let ends = named && self.call_end_at(start + end).is_some();
+            ends.then_some((start + end, start, end))
+        });
+        let (_, start, end) = spelled.max()?;
+        let start = (start > 0).then(|| self.take_words(start));
+        let end = (end > 0).then(|| self.take_words(end));
+        let phrases = Phrases::builder().maybe_start(start).maybe_end(end).build();
+        let span = phrases.start.as_ref().or(phrases.end.as_ref()).map(|i| i.span)?;
+        Some(self.finish_sentence_call(
+            span,
+            Args::default(),
+            Vec::new(),
+            phrases,
+            mode,
+        ))
+    }
+
+    /// Read a call that opens with the longest starting phrase the words
+    /// ahead spell: the phrase, the first argument, then the rest as a
+    /// preposition call.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or `None` when no starting phrase is ahead.
+    fn start_phrase_call(&mut self, mode: Mode) -> Option<PResult<Head>>
+    {
+        let all = self.functions.values().flatten();
+        let starts = all.filter(|w| w.params > 0).filter_map(|w| w.start.as_ref());
+        let len = starts.filter_map(|m| self.spells_at(m, 0)).max()?;
+        let start = self.take_words(len);
+        Some(self.read_after_start(start, mode))
+    }
+
+    /// Read the rest of a call after its starting phrase.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The starting phrase.
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn read_after_start(&mut self, start: Ident, mode: Mode) -> PResult<Head>
+    {
+        let first = self.parse_notation()?;
+        extract!(Head::Expr(first) = self.parse_short_after(first, Mode::Expr)?);
+        let at_fn = self.call_end_at(0).is_some();
+        let end = tern!(at_fn, Some(0), self.preposition_end(0));
+        let end = end.ok_or_else(|| self.err_expected(&t!("parser.preposition")))?;
+        self.parse_preposition_call(first, end, mode, Some(start))
+    }
+
+    /// Whether the numbers of arguments and prepositions of a call written as
+    /// a sentence match a function of its name. The check of the names leaves
+    /// a wrong phrase or preposition to the names and kinds stage, which
+    /// names the words the function wants.
     ///
     /// # Arguments
     ///
@@ -481,17 +656,20 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` when the numbers match.
-    fn fits_prepositions(&self, head: &Head) -> bool
+    fn fits_words(&self, head: &Head) -> bool
     {
         let stmt = tern!(let Head::Stmt(s) = head, Some(&**s), None);
-        let (callee, count) = match (head, stmt)
+        let (callee, args, count) = match (head, stmt)
         {
-            (_, Some(Stmt::Call(n))) => (&n.callee, n.prepositions.len()),
-            (Head::Expr(Expr::Call(n)), _) => (&n.callee, n.prepositions.len()),
+            (_, Some(Stmt::Call(n))) => (&n.callee, n.args.len(), n.prepositions.len()),
+            (Head::Expr(Expr::Call(n)), _) =>
+            {
+                (&n.callee, n.args.len(), n.prepositions.len())
+            }
             _ => return false,
         };
-        self.fn_prepositions(callee.name.as_str())
-            .any(|prepositions| prepositions.len() == count)
+        let fits = |w: &&CallWords| w.params == args && w.prepositions.len() == count;
+        self.fn_words(callee.name.as_str()).any(|w| fits(&w))
     }
 
     /// Parse the rest of a preposition call after its first argument: the
@@ -509,33 +687,86 @@ impl Parser<'_>
     ///
     /// The call, or a diagnostic.
     pub(crate) fn parse_preposition_call(
-        &mut self, first: Expr, end: usize, mode: Mode,
+        &mut self, first: Expr, end: usize, mode: Mode, start: Option<Ident>,
     ) -> PResult<Head>
     {
-        let callee_tok = self.peek_n(end);
-        let end_at = callee_tok.span.lo;
-        let name = self.callee_text(&callee_tok);
+        let end_at = self.peek_n(end).span.lo;
+        let words: Vec<CallWords> =
+            self.fn_words(&self.callee_text(&self.peek_n(end))).cloned().collect();
         let known: Vec<String> =
-            self.fn_prepositions(&name).flatten().cloned().collect();
-        let start = first.span();
+            words.iter().flat_map(|w| w.prepositions.clone()).collect();
+        let ends: Vec<String> = words.iter().filter_map(|w| w.end.clone()).collect();
+        let span = start.as_ref().map_or(first.span(), |s| s.span);
         let mut args = Args::default();
         args.push(first);
-        let mut prepositions = vec![self.parse_preposition(&known)?];
-        while self.peek().span.lo < end_at
+        let mut prepositions = Vec::new();
+        let end = loop
         {
+            do_if!(
+                !known.is_empty(),
+                prepositions.push(self.parse_preposition(&known)?)
+            );
+            let end = self.parse_end_phrase(&ends, end_at);
+            do_if!(end.is_some() || self.peek().span.lo >= end_at, break end);
             let arg = self.parse_notation()?;
             extract!(Head::Expr(arg) = self.parse_short_after(arg, Mode::Expr)?);
             args.push(arg);
-            prepositions.push(self.parse_preposition(&known)?);
-        }
-        self.bump();
+        };
+        ret_if!(
+            self.peek().span.lo != end_at,
+            Err(self.err_expected(&t!("parser.preposition")))
+        );
+        let phrases = Phrases::builder().maybe_start(start).maybe_end(end).build();
+        self.finish_sentence_call(span, args, prepositions, phrases, mode)
+    }
+
+    /// Read the function and the end of a call written as a sentence, after
+    /// its arguments, prepositions and phrases.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Where the call starts.
+    /// * `args` - The arguments.
+    /// * `prepositions` - The preposition after each argument.
+    /// * `phrases` - The phrases written.
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn finish_sentence_call(
+        &mut self, start: Span, args: Args, prepositions: Vec<Ident>, phrases: Phrases,
+        mode: Mode,
+    ) -> PResult<Head>
+    {
+        let callee_tok = self.bump();
+        let name = self.callee_text(&callee_tok);
         let callee = Ident::builder().name(name).span(callee_tok.span).build();
         let long = self.eat(Kw::FnValue);
         do_if!(long, _ = self.expect(Kw::Ko)?);
         #[rustfmt::skip]
-        let parts = CallParts::builder().start(start).callee(callee).args(args).prepositions(prepositions)
-            .build();
+        let parts = CallParts::builder().start(start).callee(callee).args(args)
+            .prepositions(prepositions).phrases(phrases).build();
         self.finish_using(parts, long, mode)
+    }
+
+    /// Read the ending phrase of a call when the words ahead spell one of
+    /// `ends` and the function comes right after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `ends` - The ending phrases of the functions the call can be of.
+    /// * `end_at` - Where the function name starts.
+    ///
+    /// # Returns
+    ///
+    /// The phrase, or `None` with no such phrase ahead.
+    fn parse_end_phrase(&mut self, ends: &[String], end_at: Pos) -> Option<Ident>
+    {
+        let reaches = |len: &usize| self.peek_n(*len).span.lo == end_at;
+        let spelled = ends.iter().filter_map(|m| self.spells_at(m, 0));
+        let len = spelled.filter(reaches).max()?;
+        Some(self.take_words(len))
     }
 
     /// Read a preposition, each word in its written spelling: the longest of
@@ -554,35 +785,50 @@ impl Parser<'_>
     /// `expected-token` diagnostic.
     pub(crate) fn parse_preposition(&mut self, known: &[String]) -> PResult<Ident>
     {
-        let spelled = known.iter().filter_map(|m| self.spells_preposition(m)).max();
-        let len = spelled.unwrap_or(1);
-        let first = self.peek();
+        let spelled = known.iter().filter_map(|m| self.spells_at(m, 0)).max();
         ret_if!(
-            !is_preposition_word(&first),
+            !is_preposition_word(&self.peek()),
             Err(self.err_expected(&t!("parser.preposition")))
         );
-        let toks: Vec<Token> = (0..len).map(|n| self.peek_n(n)).collect();
-        (0..len).for_each(|_| _ = self.bump());
-        let words: Vec<&str> =
-            toks.iter().map(|t| written_form(self.text_of(t.span))).collect();
-        let span = first.span.to(&toks[len - 1].span);
-        Ok(Ident::builder().name(words.join(" ")).span(span).build())
+        Ok(self.take_words(spelled.unwrap_or(1)))
     }
 
-    /// The count of words a preposition takes when the next words spell it.
+    /// Move past the next words, read as one preposition or phrase, each word
+    /// in its written spelling.
     ///
     /// # Arguments
     ///
-    /// * `preposition` - The preposition, its words joined with one space.
+    /// * `len` - The number of words; at least one.
     ///
     /// # Returns
     ///
-    /// The number of its words, or `None` when the next words differ.
-    fn spells_preposition(&self, preposition: &str) -> Option<usize>
+    /// The words joined with one space.
+    fn take_words(&mut self, len: usize) -> Ident
     {
-        let words: Vec<&str> = preposition.split(' ').collect();
+        let toks: Vec<Token> = (0..len).map(|_| self.bump()).collect();
+        let words: Vec<&str> =
+            toks.iter().map(|t| written_form(self.text_of(t.span))).collect();
+        let span = toks[0].span.to(&toks[len - 1].span);
+        Ident::builder().name(words.join(" ")).span(span).build()
+    }
+
+    /// The count of words a preposition or a phrase takes when the words from
+    /// `from` tokens ahead spell it.
+    ///
+    /// # Arguments
+    ///
+    /// * `words` - The preposition or phrase, its words joined with one space.
+    /// * `from` - How far ahead it starts.
+    ///
+    /// # Returns
+    ///
+    /// The number of its words, or `None` when the words ahead differ.
+    fn spells_at(&self, words: &str, from: usize) -> Option<usize>
+    {
+        let words: Vec<&str> = words.split(' ').collect();
         let at = |(n, w): (usize, &&str)| {
-            written_form(self.text_of(self.peek_n(n).span)) == *w
+            let tok = self.peek_n(from + n);
+            is_preposition_word(&tok) && written_form(self.text_of(tok.span)) == *w
         };
         words.iter().enumerate().all(at).then_some(words.len())
     }
@@ -697,12 +943,14 @@ impl Parser<'_>
             self.finish_call_stmt(parts).map(|s| Head::Stmt(Box::new(s)))
         );
         let pass = matches!(kw, Some(Kw::CallGoodResult | Kw::UsedGoodResult));
-        let CallParts { start, callee, place, args, using, prepositions } = parts;
+        let CallParts { start, callee, place, args, using, prepositions, phrases } =
+            parts;
         let call = self.call_expr(start.to(&end.span), callee, args, pass);
         let mut call = crate::notation::with_place(call, place);
         extract!(Expr::Call(node) = &mut call);
         node.using = using;
         node.prepositions = prepositions;
+        node.phrases = phrases;
         Ok(Head::Expr(call))
     }
 }

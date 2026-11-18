@@ -12,6 +12,7 @@ use gen_lsp_types::CompletionItemKind;
 use gen_lsp_types::Contents;
 use gen_lsp_types::DocumentSymbol;
 use gen_lsp_types::InlayHint;
+use gen_lsp_types::InsertTextFormat;
 use gen_lsp_types::Label;
 use gen_lsp_types::Location;
 use gen_lsp_types::Position;
@@ -606,6 +607,13 @@ struct Suggestion
     kind: u32,
     /// The text written in place of the range.
     insert_text: String,
+    /// `4` when the text is a snippet with stops, as Monaco numbers the
+    /// rule.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    insert_text_rules: Option<u32>,
+    /// The text the word written so far is matched against, when not the label.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filter_text: Option<String>,
     /// The word the suggestion replaces.
     range: EditorRange,
     /// A note beside it.
@@ -627,11 +635,17 @@ impl Suggestion
     /// The suggestion.
     fn of(c: CompletionItem, range: EditorRange) -> Self
     {
+        let snippet = c.insert_text_format == Some(InsertTextFormat::Snippet);
+        let text = c.insert_text.unwrap_or_else(|| c.label.clone());
         #[rustfmt::skip]
-        return Suggestion::builder().insert_text(c.label.clone()).label(c.label)
+        return Suggestion::builder().insert_text(text).label(c.label)
+            .maybe_insert_text_rules(snippet.then_some(SNIPPET_RULE)).maybe_filter_text(c.filter_text)
             .kind(suggestion_kind(c.kind)).range(range).maybe_detail(c.detail).build();
     }
 }
+
+/// Monaco's rule that reads the text of a suggestion as a snippet.
+const SNIPPET_RULE: u32 = 4;
 
 /// Monaco's number for an LSP completion kind.
 ///

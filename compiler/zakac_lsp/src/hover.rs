@@ -8,6 +8,7 @@ use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
+use zakac_ast::expr::Phrases;
 use zakac_ast::kind::Kind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AliasDecl;
@@ -218,9 +219,9 @@ fn unmarked(line: &str) -> String
     text.strip_prefix(' ').unwrap_or(text).to_string()
 }
 
-/// The card of the preposition of a call argument under the cursor: the
-/// card of the function the call runs, with the parameter the preposition
-/// marks.
+/// The card of the preposition of a call argument, or of a phrase of a call,
+/// under the cursor: the card of the function the call runs, with the
+/// parameter the preposition marks, or the phrase.
 ///
 /// # Arguments
 ///
@@ -236,14 +237,22 @@ fn preposition_card(file: &FileCheck, checked: &Checked, at: u32) -> Option<Card
 {
     let mut finder = PrepositionFinder { file, at, found: None };
     finder.visit_program(&checked.program);
-    let (range, callee, nth) = finder.found?;
+    let (range, callee, word) = finder.found?;
     let callee_at = file.root_range(&callee).lo;
     let card = name_card(file, checked, callee_at)?;
     let (_, decl) = checked.refs.iter().find(|(used, _)| *used == callee)?;
     let mut params = ParamNames { decl: *decl, names: Vec::new() };
     params.visit_program(&checked.program);
-    let param = params.names.get(nth)?;
-    let note = t!("lsp.hover_preposition", param = param).to_string();
+    let note = match word
+    {
+        CallWord::Preposition(nth) =>
+        {
+            let param = params.names.get(nth)?;
+            t!("lsp.hover_preposition", param = param).to_string()
+        }
+        CallWord::Start => t!("lsp.hover_start_phrase").to_string(),
+        CallWord::End => t!("lsp.hover_end_phrase").to_string(),
+    };
     let mut notes = vec![note];
     notes.extend(card.notes);
     Some(Card { range, notes, ..card })
@@ -446,7 +455,16 @@ impl CardMaker<'_>
         };
         let params: Vec<String> = n.params.iter().map(param).collect();
         let ret = n.ret.as_ref().map(|k| format!(": {}", text(k)));
-        let name = shown_name(&n.name);
+        let word = |i: &Option<Ident>| i.as_ref().map(|i| i.name.to_string());
+        let words =
+            [word(&n.phrases.start), Some("…".to_string()), word(&n.phrases.end)];
+        let words: Vec<String> = words.into_iter().flatten().collect();
+        let phrases = tern!(
+            n.phrases.is_empty(),
+            String::new(),
+            format!(" {{{}}}", words.join(" "))
+        );
+        let name = shown_name(&n.name) + &phrases;
         let comptime = tern!(n.comptime, format!("{COMPTIME} "), String::new());
         let mark = comptime + &tern!(n.unchecked, format!("{UNSAFE} "), String::new());
         let params = params.join("၊ ");
@@ -726,35 +744,51 @@ impl CardMaker<'_>
     }
 }
 
-/// Finds the preposition of a call argument that holds an offset: its
-/// range, the name of the callee and the number of the argument.
+/// A word a call written as a sentence writes beside its arguments.
+#[derive(Debug, Clone, Copy)]
+enum CallWord
+{
+    /// The preposition after the argument of this number.
+    Preposition(usize),
+    /// The starting phrase.
+    Start,
+    /// The ending phrase.
+    End,
+}
+
+/// Finds the preposition or the phrase of a call that holds an offset: its
+/// range, the name of the callee and which word it is.
 struct PrepositionFinder<'a>
 {
     /// The check of the open file.
     file: &'a FileCheck,
     /// The offset, in the text the editor holds.
     at: u32,
-    /// The preposition, once found.
-    found: Option<(Range, Span, usize)>,
+    /// The word, once found.
+    found: Option<(Range, Span, CallWord)>,
 }
 
 impl PrepositionFinder<'_>
 {
-    /// Note the preposition of a call that holds the offset.
+    /// Note the preposition or the phrase of a call that holds the offset.
     ///
     /// # Arguments
     ///
     /// * `callee` - The name of the function the call runs.
     /// * `prepositions` - The preposition after each argument.
-    fn look(&mut self, callee: &Ident, prepositions: &[Ident])
+    /// * `phrases` - The phrases of the call.
+    fn look(&mut self, callee: &Ident, prepositions: &[Ident], phrases: &Phrases)
     {
-        let holds = |p: &Ident| {
+        let holds = |p: &&Ident| {
             let r = self.file.root_range(&p.span);
             self.file.in_root(&p.span) && r.lo <= self.at && self.at <= r.hi
         };
-        let nth = prepositions.iter().position(holds);
-        let found =
-            nth.map(|n| (self.file.root_range(&prepositions[n].span), callee.span, n));
+        let numbered = prepositions.iter().enumerate();
+        let words = numbered.map(|(n, p)| (p, CallWord::Preposition(n)));
+        let words = words.chain(phrases.start.iter().map(|p| (p, CallWord::Start)));
+        let mut words = words.chain(phrases.end.iter().map(|p| (p, CallWord::End)));
+        let found = words.find(|(p, _)| holds(p));
+        let found = found.map(|(p, w)| (self.file.root_range(&p.span), callee.span, w));
         do_if!(found.is_some(), self.found = found);
     }
 }
@@ -763,13 +797,13 @@ impl Visitor for PrepositionFinder<'_>
 {
     fn visit_call_expr(&mut self, n: &CallExpr)
     {
-        self.look(&n.callee, &n.prepositions);
+        self.look(&n.callee, &n.prepositions, &n.phrases);
         walk_call_expr(self, n);
     }
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
-        self.look(&n.callee, &n.prepositions);
+        self.look(&n.callee, &n.prepositions, &n.phrases);
         walk_call_stmt(self, n);
     }
 }

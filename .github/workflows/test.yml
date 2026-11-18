@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run the tests (${{ matrix.os }}${{ matrix.host && format(', {0} host', matrix.host) || '' }})
+    name: Tests (${{ matrix.os }}${{ matrix.host && format(', {0} toolchain', matrix.host) || '' }})
     runs-on: ${{ matrix.os }}
     env:
       # A host with no C compiler fails the native build tests; it does not skip them.

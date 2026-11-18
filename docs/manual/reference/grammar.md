@@ -101,7 +101,7 @@ decl-head    = slot-kind [ "ဖြစ်၍" "တန်ဖိုး" "သည်"
              | clause ;                           (* the kind comes from the value *)
 
 fn-decl      = name [ sign-params ] "ဟူသော" fn-marks "လုပ်ဆောင်ချက်" "သည်"
-               [ word-params "သည်" ]
+               [ word-params "သည်" ] [ phrases ]
                [ params "လက်ခံပြီး" ] fn-open "။"
                [ notes ]
                { stmt }
@@ -145,6 +145,10 @@ params       = param [ "လည်းကောင်း" ]
 param        = name "ဟူသော" listed-kind "ကို" markers ;
 markers      = [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
 preposition  = "ဝိဘတ်" string-lit "ကို" "သုံး၍" ;   (* the string holds names and particles *)
+phrases      = ( start-phrase | end-phrase ) "ကို" "သုံး၍"
+             | start-phrase "နှင့်" end-phrase "တို့ကို" "သုံး၍" ;
+start-phrase = "အစ စကားစု" string-lit ;          (* the words before the first argument *)
+end-phrase   = "အဆုံး စကားစု" string-lit ;        (* the words right before the function name *)
 
 external-fn  = name "ဟူသော" fn-marks "လုပ်ဆောင်ချက်" "သည်"
                origin "လုပ်ဆောင်ချက်" [ "တစ်ခု" ]
@@ -182,6 +186,7 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
   preposition or none has. A function head names its function first, as a struct head does, and
   its marks (`fn-marks`) stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in whatever order; the
   start block takes none. The comptime mark goes on a function with statements alone.
+- A head with phrases and two or more parameters gives each parameter a preposition.
 - The kind of an alias takes no measure word. A function, a struct, an enumeration or an
   alias inside a block is parsed and reported; a function with a block can stand inside
   another function.
@@ -355,8 +360,9 @@ first-call   = [ word-kinds "အစားထိုးအသုံးပြု၍
                operand [ { "၊" notation } "နှင့်" notation ] ( "ကို" | "တို့ကို" ) "သုံး၍"
                ( name short-end | long-head long-end ) ;
 short-call   = name short-end ;                   (* no arguments *)
-preposition-call = operand preposition-word { notation preposition-word }
-               ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end ) ;
+preposition-call = [ start-words ] operand [ preposition-word ] { notation preposition-word }
+               [ end-words ] ( name short-end | name ( "ဟူသော" | "မည့်" ) "လုပ်ဆောင်ချက်" "ကို" long-end )
+             | [ start-words ] [ end-words ] name short-end ;   (* phrases and no arguments *)
 sign-call    = name [ "::" kind-args ] "(" [ args ] ")" [ "?" ] { "(" [ args ] ")" [ "?" ] } ;
 kind-args    = "<" kind { "၊" kind } ">" ;       (* ">>" closes two *)
 
@@ -375,7 +381,8 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 - A preposition word is the word a parameter declares with `ဝိဘတ်`: a name, or a particle other
   than `သည်`, `ပါ`, `ဖြစ်ကာ`, `ဖြစ်ပြီး`, `ပြီးလျှင်` and `လက်ခံပြီး`; `တွင်` and `ဆီသို့`
   can be prepositions too. A preposition call is read when a function of that name declares
-  prepositions and their count fits.
+  prepositions or phrases and their count fits. `start-words` and `end-words` are the words of
+  the phrases the head declares with `အစ စကားစု` and `အဆုံး စကားစု`.
 - In the sign form, `(` touches the name and `?` touches `)`; with a space, `f (က)` is a
   name, then a group. A `(` right after `)` calls the function value the call gives.
 - Kinds for a generic function stand after `::` in the sign form and before the name in
@@ -385,6 +392,7 @@ pass-on      = [ "၊" "မအောင်မြင်ပါက အမှား�
 See [Calls](../language/functions.md#calls),
 [Arguments first](../language/functions.md#arguments-first),
 [Prepositions](../language/functions.md#prepositions),
+[Starting and ending phrases](../language/functions.md#starting-and-ending-phrases),
 [Calling a function value](../language/function-values.md#calling-a-function-value) and
 [Passing a failure on](../language/error-handling.md#passing-a-failure-on).
 
@@ -450,8 +458,11 @@ good-side    = core { level } | "(" fn-kind ")" ;
 error-side   = "မအောင်မြင်သည့်သတင်း" | "အမှားအယွင်းအနေဖြင့်" core { level } ;
 
 fn-kind      = "လုပ်ဆောင်ချက် အမျိုးအစား"
-             | sig-params "လက်ခံသော" "လုပ်ဆောင်ချက် အမျိုးအစား"
-             | [ sig-params "လက်ခံပြီး" ] slot-kind "ကို" "ပြန်ပေးသော" "လုပ်ဆောင်ချက် အမျိုးအစား" ;
+             | [ kind-phrases "သုံး၍" ] sig-params "လက်ခံသော" "လုပ်ဆောင်ချက် အမျိုးအစား"
+             | [ kind-phrases "သုံး၍" ] [ sig-params "လက်ခံပြီး" ] slot-kind "ကို" "ပြန်ပေးသော" "လုပ်ဆောင်ချက် အမျိုးအစား"
+             | kind-phrases "သုံးသော" "လုပ်ဆောင်ချက် အမျိုးအစား" ;   (* phrases alone *)
+kind-phrases = ( start-phrase | end-phrase ) "ကို"
+             | start-phrase "နှင့်" end-phrase "တို့ကို" ;
 sig-params   = sig-param [ "လည်းကောင်း" ]
              | sig-param "လည်းကောင်း" sig-param "လည်းကောင်း" { sig-param "လည်းကောင်း" } ;
 sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
@@ -505,7 +516,7 @@ tables; `parse_with` merges the kind names and the functions with prepositions a
 | --- | --- | --- |
 | kind names | each struct, enumeration and alias name, the stem of an enumeration name, in both spellings of `ဒေတာ` | whether a name starts a `kind` (`လူ တစ်ယောက်`) or an `expr`; whether `<stem>များထဲမှ` reads a member |
 | classifiers | each word after `မျိုးပြပစ္စည်းမှာ` in the file | the lexer retags `<word>စာ` as the size token (`လူ ၂ ယောက်စာ`); else it stands as a name |
-| functions with prepositions | each function whose header declares prepositions with `ဝိဘတ်`, and the prepositions of each overload | where a preposition call ends |
+| functions with prepositions | each function whose header declares prepositions with `ဝိဘတ်` or phrases with `အစ စကားစု` and `အဆုံး စကားစု`, with the words of each overload | where a call written as a sentence starts and ends |
 
 Since the tables come from a pre-pass, a kind can be used above its declaration. The
 classifier table is per file: the retagging runs in the lexer, before imports resolve.

@@ -1,5 +1,6 @@
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_span::pos::Pos;
 
 use crate::token::Kw;
 use crate::token::Token;
@@ -137,6 +138,52 @@ fn next_token(tokens: &[Token]) -> (Token, usize)
     phrase_at(tokens)
         .map(|(len, kw)| (joined_token(&tokens[..len], kw), len))
         .unwrap_or((tokens[0], 1))
+}
+
+/// The first words of the head phrases that start with a name, with the
+/// phrase each one opens before [`PHRASE_NOUN`].
+static NAMED_PHRASES: &[(&str, Kw)] =
+    &[("အစ", Kw::StartPhrase), ("အဆုံး", Kw::EndPhrase)];
+
+/// `စကားစု`, "phrase": the second word of `အစ စကားစု` and `အဆုံး စကားစု`.
+const PHRASE_NOUN: &str = "စကားစု";
+
+/// Replace each name pair `အစ စကားစု` or `အဆုံး စကားစု` with the reserved word
+/// it spells. The first words are no reserved words, so `အစ` and `အဆုံး` remain
+/// names in each other place.
+///
+/// # Arguments
+///
+/// * `tokens` - The tokens with phrases joined.
+/// * `text` - The source text.
+/// * `base` - Absolute position of `text`.
+///
+/// # Returns
+///
+/// The tokens with these pairs joined.
+pub fn join_named_phrases(tokens: Vec<Token>, text: &str, base: Pos) -> Vec<Token>
+{
+    let text_of = |tok: &Token| {
+        let lo = (tok.span.lo - base) as usize;
+        &text[lo..(tok.span.hi - base) as usize]
+    };
+    let named_kw = |pair: &[Token]| {
+        let names = pair.iter().all(|t| t.kind == TokenKind::Ident);
+        ret_if!(!names || text_of(&pair[1]) != PHRASE_NOUN, None);
+        let first = NAMED_PHRASES.iter().find(|(w, _)| *w == text_of(&pair[0]));
+        first.map(|(_, kw)| *kw)
+    };
+    let mut out = Vec::with_capacity(tokens.len());
+    let mut idx = 0;
+    while idx < tokens.len()
+    {
+        let pair = tokens.get(idx..idx + 2).and_then(|p| named_kw(p).map(|k| (p, k)));
+        let (tok, len) =
+            pair.map_or((tokens[idx], 1), |(p, kw)| (joined_token(p, kw), 2));
+        out.push(tok);
+        idx += len;
+    }
+    out
 }
 
 /// Find the phrase that starts at the first token.

@@ -214,6 +214,7 @@ fn same_head(a: &FnDecl, b: &FnDecl) -> bool
     let sizes =
         a.params.len() == b.params.len() && a.kind_params.len() == b.kind_params.len();
     ret_if!(a.name.name != b.name.name || !sizes, false);
+    ret_if!(!a.phrases.same_words(&b.phrases), false);
     let preposition = |p: &Param| p.preposition.as_ref().map(|m| m.name);
     let same = |(p, q): (&Param, &Param)| {
         preposition(p) == preposition(q)
