@@ -73,10 +73,14 @@ jobs:
 
       # libffi-sys builds its vendored libffi for a GNU target with sh, cp and
       # make: the MSYS tools join the end of the PATH, so they shadow no
-      # Windows tool.
+      # Windows tool. The sh of Git for Windows comes first on the runner, and
+      # configure writes its path, whose space ("Program Files") breaks the
+      # make of libtool, so the folders of Git leave the PATH of this step.
       - name: Run the tests (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $env:PATH = "$env:PATH;${{ steps.msys2.outputs.msys2-location }}\usr\bin"
+          $kept = ($env:PATH -split ';') | Where-Object { $_ -notlike '*\Git\*' }
+          $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
+          Get-Command sh, make, cp, gcc | Format-Table Name, Source -AutoSize
           cargo nextest run --workspace --locked --no-fail-fast
