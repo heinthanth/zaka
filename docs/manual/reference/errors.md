@@ -56,7 +56,7 @@ for `စာရင်း`, and `@` after the name of a shared object kind.
 | `text` | `စာသား` |
 | `အကောင့်@`, `အကောင့်@[]` | a [shared object](../language/objects.md) of the kind `အကောင့်`, a list of them |
 | `null` | the kind of the null address, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` |
-| `fn(isize, isize) -> bool`, `fn(text(ကို))`, `fn()` | a [function kind](../language/function-values.md): its parameters, `mut ` before one marked `ဒေတာ ပြောင်းလဲရန်` and its mark after it, then `->` and the result; `(fn(isize))[]` is a list of them, a function kind inside another name in parentheses |
+| `fn(isize, isize) -> bool`, `fn(text(ကို))`, `fn()` | a [function kind](../language/function-values.md): its parameters, `mut ` before one marked `ဒေတာ ပြောင်းလဲရန်`, `out ` before one marked `ဒေတာ ထည့်ပေးရန်`, and its mark after it, then `->` and the result; `(fn(isize))[]` is a list of them, a function kind inside another name in parentheses |
 | `isize result or text error` | `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်`, a [result kind](../language/error-handling.md) |
 | `success or text error`, `isize result or failure` | `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်`, `ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်`: `success` and `failure` stand for a side with no value |
 | `optional isize` | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, an [optional kind](../language/optionals.md) |
@@ -123,7 +123,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md) |
 | ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
 | ZK0241 | a parameter preposition string, after `ဝိဘတ်`, that holds a word a preposition cannot hold, or a first preposition that starts with `ကို သုံး၍` | [Functions](../language/functions.md) |
-| ZK0243 | a parameter of a function kind marked `ဒေတာ ထည့်ပေးရန်` | [Function values](../language/function-values.md) |
 | ZK0244 | nesting of parentheses, operands, calls, lists or blocks more than 128 levels deep | [The nesting limit](../internals/parser.md#the-nesting-limit) |
 | ZK0245 | a list in words of two or more items without `နှင့်` before the last item, or with a `၊` after it | [Lists in words](../language/words.md#lists-in-words) |
 | ZK0246 | the word that closes a list in words does not fit its count: `တို့` after one item, or none after two or more | [Lists in words](../language/words.md#lists-in-words) |

@@ -389,7 +389,7 @@ fn fn_kind_sexpr(k: &Kind) -> String
     };
     let param = |p: &crate::kind::SigParam| {
         let owned = tern!(p.owned, "own ", "");
-        let edit = tern!(p.edit, "mut ", "");
+        let edit = tern!(p.fill, "out ", tern!(p.edit, "mut ", ""));
         let name = p.name.as_ref().map_or(String::new(), |n| format!(" {}", n.name));
         let preposition =
             p.preposition.as_ref().map_or(String::new(), |m| format!("({})", m.name));

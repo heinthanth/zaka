@@ -1917,6 +1917,7 @@ fn fn_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
     let param = |p: &zakac_ast::kind::SigParam| FnParam {
         kind: DataKind::from_ast(&p.kind, structs),
         edit: p.edit,
+        fill: p.fill,
         preposition: p.preposition.as_ref().map(|m| m.name),
     };
     let ret = sig.ret.as_ref().map(|r| DataKind::from_ast(r, structs));

@@ -394,13 +394,11 @@ impl Parser<'_>
         let start = self.peek().span;
         let kind = self.parse_slot_kind_with(FnForm::NoParams)?;
         self.expect(Kw::Ko)?;
-        let fill = self.peek_n(0).kind == TokenKind::Kw(Kw::DataToFill);
-        let (owned, edit, _, preposition) = self.parse_item_markers(fill)?;
-        do_if!(fill, self.diags.push(diag::fill_in_fn_kind(self.prev_span())));
+        let (owned, edit, fill, preposition) = self.parse_item_markers(true)?;
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        return Ok(SigParam::builder().owned(owned).edit(edit).kind(kind).maybe_preposition(preposition)
-            .span(span).build());
+        return Ok(SigParam::builder().owned(owned).edit(edit).fill(fill).kind(kind)
+            .maybe_preposition(preposition).span(span).build());
     }
 
     /// Register the name of a parameter or a variable whose kind is a

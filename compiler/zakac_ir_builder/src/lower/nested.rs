@@ -157,6 +157,7 @@ impl Lowerer<'_>
         let param = |p: &st::Param| FnParam {
             kind: DataKind::from_ast(&p.kind, self.structs),
             edit: p.edit,
+            fill: p.fill,
             preposition: p.preposition.as_ref().map(|m| m.name),
         };
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));

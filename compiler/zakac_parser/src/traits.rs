@@ -14,6 +14,7 @@
 use std::collections::HashMap;
 
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::Phrases;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
@@ -21,6 +22,7 @@ use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BuiltinKindDecl;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::KindParam;
+use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::TraitBlock;
 use zakac_ast::stmt::TraitDecl;
@@ -338,7 +340,8 @@ impl Parser<'_>
     /// Parse the rest of the head of a function the compiler gives, after
     /// `<name> ဟူသော လုပ်ဆောင်ချက် သည်`, as an external function's:
     /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက် ဖြစ်သည်။`, or `… ဖြစ်၍` then
-    /// the parameters ending in `လက်ခံမည်` or `လက်ခံပြီး` and the result clause.
+    /// the kind parameters in words with `၎င်းသည်`, the phrases, and the
+    /// parameters ending in `လက်ခံမည်` or `လက်ခံပြီး` and the result clause.
     /// No block follows: a sentence of the language stands for each call.
     ///
     /// # Arguments
@@ -358,12 +361,14 @@ impl Parser<'_>
         self.expect(Kw::Function)?;
         let bare =
             self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
-        let ends = [Kw::Accepting, Kw::WillAccept];
-        let outer = std::mem::replace(&mut self.in_builtin, true);
-        let read =
-            tern!(bare, Ok((Vec::new(), None, false)), self.parse_params(&ends, false));
-        self.in_builtin = outer;
-        let (params, end, _) = read?;
+        // The kind parameters in words follow the compiler mark: `… ဖြစ်၍
+        // ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်`, then the phrases.
+        let words = !bare && kind_params.is_empty() && self.at(Kw::GenericKind);
+        let kind_params = tern!(words, self.parse_word_params_then_thi()?, kind_params);
+        let added = self.add_kind_names(&kind_params);
+        let read = self.parse_builtin_rest(bare);
+        self.drop_kind_names(added);
+        let (phrases, params, end) = read?;
         let no_ret = bare || end == Some(Kw::WillAccept);
         let ret = tern!(no_ret, Default::default(), self.parse_ret_clause(true)?);
         let stop = self.expect_stop()?;
@@ -372,9 +377,45 @@ impl Parser<'_>
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).kind_params(kind_params).params(params)
-            .maybe_ret(ret.kind).owned_ret(ret.owned).block(block).builtin(true).span(span)
-            .build();
+            .maybe_ret(ret.kind).owned_ret(ret.owned).block(block).builtin(true)
+            .phrases(phrases).span(span).build();
         Ok(Stmt::Fn(node))
+    }
+
+    /// Parse the kind parameters in words and the `၎င်းသည်` after them.
+    ///
+    /// # Returns
+    ///
+    /// The kind parameters, or a diagnostic.
+    fn parse_word_params_then_thi(&mut self) -> PResult<Vec<KindParam>>
+    {
+        let params = self.parse_word_params()?;
+        self.expect(Kw::Thi)?;
+        Ok(params)
+    }
+
+    /// Parse the phrases and the parameters of the head of a function the
+    /// compiler gives, after `ဖြစ်၍`; none after `ဖြစ်သည်`.
+    ///
+    /// # Arguments
+    ///
+    /// * `bare` - Whether `ဖြစ်သည်` ended the head.
+    ///
+    /// # Returns
+    ///
+    /// The phrases, the parameters and the word that ended them, or a
+    /// diagnostic.
+    fn parse_builtin_rest(
+        &mut self, bare: bool,
+    ) -> PResult<(Phrases, Vec<Param>, Option<Kw>)>
+    {
+        ret_if!(bare, Ok((Phrases::default(), Vec::new(), None)));
+        let phrases = self.parse_head_phrases()?;
+        let outer = std::mem::replace(&mut self.in_builtin, true);
+        let read = self.parse_params(&[Kw::Accepting, Kw::WillAccept], false);
+        self.in_builtin = outer;
+        let (params, end, _) = read?;
+        Ok((phrases, params, end))
     }
 
     /// Whether a built-in kind of the prelude is declared here: a kind name,
@@ -395,9 +436,11 @@ impl Parser<'_>
     }
 
     /// Parse a built-in kind of the prelude: `<kind> သည် ကွန်ပိုင်လာထဲတွင်
-    /// တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for
-    /// a list or a table, `<word> သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
-    /// ၎င်းသည် ကွန်ပိုင်လာထဲတွင် …`.
+    /// တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for a list or a
+    /// table, the mark first, then `ဖြစ်၍`, the kind parameters in words and
+    /// `၎င်းကို`, then the written-as hint: `<word> သည် ကွန်ပိုင်လာထဲတွင် … ဒေတာအမျိုးအစား
+    /// ဖြစ်၍ ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် … ဟု
+    /// ရေးသားနိုင်သည်။`. Kind parameters before the mark are ZK0201.
     ///
     /// # Returns
     ///
@@ -408,13 +451,14 @@ impl Parser<'_>
         let word = self.text_of(head.span).to_string();
         let name = Ident::builder().name(word.as_str()).span(head.span).build();
         self.expect(Kw::Thi)?;
-        let kind_params = self.parse_word_params()?;
-        do_if!(!kind_params.is_empty(), _ = self.expect(Kw::Thi)?);
         self.expect(Kw::InCompiler)?;
         self.expect(Kw::IncludedWith)?;
         let exported = self.eat(Kw::Export);
         self.expect(Kw::DataKindOpen)?;
-        let hinted = self.eat(Kw::Being);
+        let generic = self.eat(Kw::And);
+        let kind_params = tern!(generic, self.parse_word_params()?, Vec::new());
+        do_if!(generic, _ = self.expect(Kw::Ko)?);
+        let hinted = generic || self.eat(Kw::Being);
         do_if!(!hinted, _ = self.expect(Kw::Is)?);
         let hint = tern!(
             hinted,

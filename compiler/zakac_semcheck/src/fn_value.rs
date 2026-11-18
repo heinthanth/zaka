@@ -100,6 +100,7 @@ impl Checker
         let sig = FnSig::builder()
             .params(f.param_kinds())
             .edits(f.edits())
+            .fills(f.fills())
             .maybe_ret(f.ret)
             .maybe_prepositions(f.prepositions())
             .maybe_start(f.start)
@@ -246,9 +247,11 @@ pub(crate) fn sig_kind(sig: &FnSig) -> &'static FnKind
 {
     let mark = |n: usize| sig.prepositions.as_ref().and_then(|m| m.get(n).copied());
     let edit = |n: usize| sig.edits.get(n).copied().unwrap_or(false);
+    let fill = |n: usize| sig.fills.get(n).copied().unwrap_or(false);
     let param = |(n, kind): (usize, &DataKind)| FnParam {
         kind: *kind,
         edit: edit(n),
+        fill: fill(n),
         preposition: mark(n),
     };
     let params = sig.params.iter().enumerate().map(param).collect();

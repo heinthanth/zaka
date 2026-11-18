@@ -567,7 +567,9 @@ error[ZK0237]: some parameters have a preposition and some do not
 A head can also give words that belong to no parameter: a *starting phrase*, which a call
 writes before its first argument, and an *ending phrase*, which a call writes after its last
 argument, right before the function name. With them a function reads as a command of its
-own. The phrases stand right after `သည်`, before the parameters, as a
+own. The phrases stand right before the parameters: right after `သည်` (or the `၎င်းသည်` of
+a [generic](generics.md)), and after `ဖြစ်၍` in the head of an
+[external](#external-functions) or a [C](#c-functions) function. The phrases form a
 [list in words](words.md#lists-in-words) that `သုံး၍` closes:
 
 ```text

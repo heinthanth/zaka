@@ -737,6 +737,44 @@ fn function_kinds_have_phrases()
     assert_eq!(codes(two), [Code::PhrasesNeedPrepositions]);
 }
 
+/// In a head with no block the phrases follow `ဖြစ်၍`, right before the
+/// parameters, as the phrases follow `သည်` in a head with statements.
+#[test]
+fn an_external_head_takes_its_phrases_after_its_origin()
+{
+    let text = "ရေး ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ အစ စကားစု \"ဖိုင်\" ကို သုံး၍ \
+                စ ဟူသော စာသား တစ်ခု ကို လက်ခံမည်။";
+    assert!(stmt(text).contains("{ဖိုင် …}"), "{}", stmt(text));
+}
+
+/// The compiler mark of a function stands right after `သည်`, before the kind
+/// parameters in words; after them it is ZK0201.
+#[test]
+fn the_compiler_mark_comes_before_the_kind_parameters()
+{
+    let kinds = "ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်";
+    let mark = "ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍";
+    let head = |middle: &str| {
+        format!("ပြ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် {middle} ပစ္စည်း ဟူသော A တစ်ခု ကို လက်ခံမည်။")
+    };
+    assert!(stmt(&head(&format!("{mark} {kinds}"))).contains("ပြ<A>"));
+    assert_eq!(codes(&head(&format!("{kinds} {mark}"))), [Code::ExpectedToken]);
+}
+
+/// The compiler mark of a built-in kind comes right after `သည်`, and its kind
+/// parameters follow `ဖြစ်၍`; before the mark the kind parameters are ZK0201.
+#[test]
+fn a_built_in_kind_takes_its_kind_parameters_after_the_mark()
+{
+    let new = "စာရင်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်၍ \
+               ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် A စာရင်းဟု ရေးသားနိုင်သည်။";
+    assert!(stmt(new).contains("စာရင်း<A>"), "{}", stmt(new));
+    let old = "စာရင်း သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည် ကွန်ပိုင်လာထဲတွင် \
+               တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် A စာရင်းဟု \
+               ရေးသားနိုင်သည်။";
+    assert!(codes(old).contains(&Code::ExpectedToken), "{:?}", codes(old));
+}
+
 /// The phrases of the second statement of a program, each as its words.
 fn second_phrases(text: &str) -> (Option<String>, Option<String>)
 {
@@ -925,16 +963,21 @@ fn a_kind_from_outside_parses()
     assert!(!codes("စက် ဟူသော အများသုံး ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။").is_empty());
 }
 
-/// A function kind takes `ဒေတာ ပြောင်းလဲရန်` alone; `ဒေတာ ထည့်ပေးရန်` on one of
-/// its parameters is reported at the mark.
+/// A function kind takes `ဒေတာ ထည့်ပေးရန်` as a head does, and the `သည့်`
+/// spellings of its closing words are the `သော` ones.
 #[test]
-fn a_filled_parameter_in_a_function_kind_is_zk0243()
+fn a_function_kind_takes_a_filled_parameter()
 {
     let text = "သုံး ဟူသော လုပ်ဆောင်ချက် သည်
-ဖ ဟူသော (ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး
+ဖ ဟူသော (ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လက်ခံသည့် လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
-    assert_eq!(codes(text), [Code::FillInFnKind]);
+    assert!(stmt(text).contains("fn(out isize)"), "{}", stmt(text));
+    let ret = "ကိန်းရှင် ဖ သည် (ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသည့် လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။";
+    assert!(stmt(ret).contains("fn() -> isize"), "{}", stmt(ret));
+    let bare =
+        "ကိန်းရှင် ဖ သည် (အစ စကားစု \"ဖန်သားပြင်ကို\" ကို သုံးသည့် လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်ပါစေ။";
+    assert!(stmt(bare).contains("fn{ဖန်သားပြင်ကို …}()"), "{}", stmt(bare));
 }
 
 /// One field or one member closes with `ပါဝင်သည်`; `တို့ပါဝင်သည်` is for several.

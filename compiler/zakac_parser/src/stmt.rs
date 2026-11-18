@@ -914,20 +914,28 @@ impl Parser<'_>
         do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
         self.expect(Kw::Function)?;
         self.expect(Kw::Thi)?;
-        if kind_params.is_empty() && self.at(Kw::GenericKind)
+        let word_kinds = kind_params.is_empty() && self.at(Kw::GenericKind);
+        if word_kinds
         {
             kind_params = self.parse_word_params()?;
             self.expect(Kw::Thi)?;
         }
-        let phrases = self.parse_head_phrases()?;
-        let mut stmt = self.parse_fn_kinds(start, name, kind_params)?;
+        // The compiler mark stands right after `သည်`, before the kind parameters
+        // in words; after them it is no mark, and the head goes on as one with
+        // statements.
+        let builtin = self.at(Kw::InCompiler) && !word_kinds;
+        // The phrases stand right before the parameters: here in a head with
+        // statements, after `ဖြစ်၍` in a head with no block.
+        let blockless = builtin || self.at(Kw::External) || self.at_lib();
+        let phrases = tern!(blockless, Phrases::default(), self.parse_head_phrases()?);
+        let mut stmt = self.parse_fn_kinds(start, name, kind_params, builtin)?;
         let Stmt::Fn(node) = &mut stmt
         else
         {
             return Ok(stmt);
         };
         marks.iter().try_for_each(|m| mark_fn(node, kw_of(m), m.span, top))?;
-        node.phrases = phrases;
+        do_if!(!phrases.is_empty(), node.phrases = phrases);
         self.check_phrases(node);
         Ok(stmt)
     }
@@ -940,19 +948,21 @@ impl Parser<'_>
     /// * `start` - Where the declaration starts.
     /// * `name` - The function name.
     /// * `kind_params` - The kind parameters of a generic function.
+    /// * `builtin` - Whether the compiler mark stands in its place, right after
+    ///   `သည်`.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic.
     fn parse_fn_kinds(
-        &mut self, start: Span, name: Ident, kind_params: Vec<KindParam>,
+        &mut self, start: Span, name: Ident, kind_params: Vec<KindParam>, builtin: bool,
     ) -> PResult<Stmt>
     {
         let external = self.at(Kw::External) || self.at_lib();
         ret_if!(external, self.parse_external(start, name));
         let added = self.add_kind_names(&kind_params);
         let parsed = tern!(
-            self.at(Kw::InCompiler),
+            builtin,
             self.parse_builtin_fn(start, name, kind_params),
             self.parse_fn_rest(start, name, false, kind_params)
         );
@@ -1054,6 +1064,7 @@ impl Parser<'_>
         self.parse_one_function()?;
         let bare =
             self.expect_one_of(&[Kw::And, Kw::Is])?.kind == TokenKind::Kw(Kw::Is);
+        let phrases = tern!(bare, Phrases::default(), self.parse_head_phrases()?);
         let ends = [Kw::Accepting, Kw::WillAccept];
         let (params, end, variadic) =
             tern!(bare, (Vec::new(), None, false), self.parse_params(&ends, true)?);
@@ -1068,7 +1079,7 @@ impl Parser<'_>
         let block = BlockStmt::builder().span(stop.span).build();
         #[rustfmt::skip]
         let node = FnDecl::builder().name(name).params(params).maybe_ret(ret).block(block)
-            .external(true).maybe_lib(lib).variadic(variadic).owned_ret(owned)
+            .external(true).maybe_lib(lib).phrases(phrases).variadic(variadic).owned_ret(owned)
             .span(span).build();
         Ok(Stmt::Fn(node))
     }
@@ -1792,7 +1803,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The phrases, blank when none is written, or a diagnostic.
-    fn parse_head_phrases(&mut self) -> PResult<Phrases>
+    pub(crate) fn parse_head_phrases(&mut self) -> PResult<Phrases>
     {
         let phrases = self.parse_phrase_list()?;
         do_if!(!phrases.is_empty(), _ = self.expect(Kw::Using)?);

@@ -19,6 +19,7 @@ use zakac_rust_sugars::tern;
 
 use crate::buildable::report_unbuildable;
 use crate::fn_kind::FnText;
+use crate::fn_kind::ParamMode;
 use crate::fn_kind::join_fn;
 use crate::foreign;
 use crate::kind::DataKind;
@@ -292,13 +293,12 @@ fn field_text(
     if let Some(sig) = kind.sig.as_deref()
     {
         let text = |k: &Kind| field_text(k, names, shared, enums);
-        let params: Vec<(bool, String, Option<&str>)> = sig
-            .params
-            .iter()
-            .map(|p| {
-                (p.edit, text(&p.kind), p.preposition.as_ref().map(|m| m.name.as_str()))
-            })
-            .collect();
+        let param = |p: &zakac_ast::kind::SigParam| {
+            let mode = ParamMode::of(p.edit, p.fill);
+            (mode, text(&p.kind), p.preposition.as_ref().map(|m| m.name.as_str()))
+        };
+        let params: Vec<(ParamMode, String, Option<&str>)> =
+            sig.params.iter().map(param).collect();
         let ret = sig.ret.as_ref().map(text);
         let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
         let phrases = phrases_inside(&sig.phrases);

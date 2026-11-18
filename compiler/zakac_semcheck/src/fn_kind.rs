@@ -12,6 +12,7 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::PoisonError;
 
+use strum::IntoStaticStr;
 use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -26,9 +27,48 @@ pub struct FnParam
     pub kind: DataKind,
     /// Whether the function can change the argument.
     pub edit: bool,
+    /// Whether the function writes the argument before it reads it,
+    /// `ဒေတာ ထည့်ပေးရန်`, so the caller need not set it; [`FnParam::edit`] holds
+    /// too.
+    pub fill: bool,
     /// The preposition after the argument in a preposition call, when the
     /// parameters have prepositions.
     pub preposition: Option<Name>,
+}
+
+/// How a parameter of a function kind passes its argument, with the text
+/// its short name writes before the kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, IntoStaticStr)]
+pub enum ParamMode
+{
+    /// A value.
+    #[default]
+    #[strum(serialize = "")]
+    Plain,
+    /// `ဒေတာ ပြောင်းလဲရန်`: the caller's place, set before the call.
+    #[strum(serialize = "mut ")]
+    Edit,
+    /// `ဒေတာ ထည့်ပေးရန်`: the caller's place, which the function sets.
+    #[strum(serialize = "out ")]
+    Fill,
+}
+
+impl ParamMode
+{
+    /// The mode of a parameter with these marks.
+    ///
+    /// # Arguments
+    ///
+    /// * `edit` - Whether the function can change the argument.
+    /// * `fill` - Whether the function sets it before it reads it.
+    ///
+    /// # Returns
+    ///
+    /// The mode.
+    pub fn of(edit: bool, fill: bool) -> ParamMode
+    {
+        tern!(fill, ParamMode::Fill, tern!(edit, ParamMode::Edit, ParamMode::Plain))
+    }
 }
 
 /// A function kind: the parameters and the result of a function value. A
@@ -123,6 +163,13 @@ impl FnKind
     /// One flag for each parameter.
     pub fn edits(&self) -> Vec<bool> { self.params.iter().map(|p| p.edit).collect() }
 
+    /// Whether the function sets each parameter before it reads it.
+    ///
+    /// # Returns
+    ///
+    /// One flag for each parameter.
+    pub fn fills(&self) -> Vec<bool> { self.params.iter().map(|p| p.fill).collect() }
+
     /// The prepositions of the parameters, when each has one.
     ///
     /// # Returns
@@ -180,7 +227,19 @@ impl FnKind
         ret_if!(self == want, true);
         let phrased = want.start.is_some() || want.end.is_some();
         let given = phrased || want.params.iter().any(|p| p.preposition.is_some());
-        !given && std::ptr::eq(self.without_words(), want.without_words())
+        let (mine, theirs) =
+            tern!(given, (self, want), (self.without_words(), want.without_words()));
+        // A function that sets an argument fits a kind that wants it set
+        // first, but a function that reads it fits no kind that leaves it
+        // unset.
+        let param = |(m, w): (&FnParam, &FnParam)| {
+            let words = m.preposition == w.preposition;
+            m.kind == w.kind && m.edit == w.edit && words && (m.fill || !w.fill)
+        };
+        let phrases = (mine.start, mine.end) == (theirs.start, theirs.end);
+        let same = mine.ret == theirs.ret && phrases;
+        let count = mine.params.len() == theirs.params.len();
+        same && count && mine.params.iter().zip(&theirs.params).all(param)
     }
 
     /// The short name of the kind: `fn(<param>, …) -> <result>`.
@@ -195,7 +254,7 @@ impl FnKind
     pub fn spell(&self, full: bool) -> String
     {
         let param = |p: &FnParam| {
-            let edit = tern!(p.edit, "mut ", "");
+            let edit: &str = ParamMode::of(p.edit, p.fill).into();
             let preposition = p.preposition.map_or(String::new(), |m| format!("({m})"));
             format!("{edit}{}{preposition}", p.kind.spell_inner(full))
         };
@@ -211,8 +270,9 @@ impl FnKind
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FnText<'a>
 {
-    /// Each parameter: whether `mut` marks it, its kind text and its mark.
-    pub params: Vec<(bool, &'a str, Option<&'a str>)>,
+    /// Each parameter: how it passes its argument, its kind text and its
+    /// preposition.
+    pub params: Vec<(ParamMode, &'a str, Option<&'a str>)>,
     /// The result kind text.
     pub ret: Option<&'a str>,
     /// The phrases inside their braces, `ဖိုင် … စာကို`, when written.
@@ -382,9 +442,13 @@ fn matching_close(text: &str) -> Option<usize>
 /// # Returns
 ///
 /// Whether `mut` marks it, the kind text and the mark.
-fn split_param(text: &str) -> (bool, &str, Option<&str>)
+fn split_param(text: &str) -> (ParamMode, &str, Option<&str>)
 {
-    let (edit, text) = text.strip_prefix("mut ").map_or((false, text), |t| (true, t));
+    let marked = [ParamMode::Edit, ParamMode::Fill].into_iter().find_map(|m| {
+        let prefix: &str = m.into();
+        text.strip_prefix(prefix).map(|t| (m, t))
+    });
+    let (edit, text) = marked.unwrap_or((ParamMode::Plain, text));
     let Some(open) = mark_open(text)
     else
     {
@@ -424,9 +488,10 @@ fn mark_open(text: &str) -> Option<usize>
 /// The name.
 pub fn join_fn(parts: &FnText<'_>) -> String
 {
-    let param = |(edit, kind, preposition): &(bool, &str, Option<&str>)| {
+    let param = |(mode, kind, preposition): &(ParamMode, &str, Option<&str>)| {
         let preposition = preposition.map_or(String::new(), |m| format!("({m})"));
-        format!("{}{kind}{preposition}", tern!(*edit, "mut ", ""))
+        let mode: &str = (*mode).into();
+        format!("{mode}{kind}{preposition}")
     };
     let params: Vec<String> = parts.params.iter().map(param).collect();
     let ret = parts.ret.map_or(String::new(), |r| format!("{ARROW}{r}"));
@@ -455,7 +520,8 @@ pub fn parse_fn_with(
         let kind = read(kind)?;
         params.push(FnParam {
             kind,
-            edit: *edit,
+            edit: *edit != ParamMode::Plain,
+            fill: *edit == ParamMode::Fill,
             preposition: preposition.map(Name::new),
         });
     }

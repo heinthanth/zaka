@@ -298,6 +298,10 @@ pub(crate) struct FnSig
     /// Whether the function can change each parameter.
     #[builder(default)]
     pub edits: Vec<bool>,
+    /// Whether the function sets each parameter before it reads it,
+    /// `ဒေတာ ထည့်ပေးရန်`.
+    #[builder(default)]
+    pub fills: Vec<bool>,
     /// The result kind; `None` for a function without a result, and a
     /// result kind ([`DataKind::fallible`]) for a function that can fail.
     pub ret: Option<DataKind>,

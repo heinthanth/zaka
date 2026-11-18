@@ -42,8 +42,11 @@ list can hold functions to pick from. The Learn book starts with
 
 ## The kind
 
-A function kind repeats the header of a function, with `သော` ("that") in front of
-`လုပ်ဆောင်ချက် အမျိုးအစား` ("function kind"), which closes each form:
+A function kind repeats the header of a function: the clauses after `သည်` in the same
+order, with no block opener, the last one ending in `သော` ("that") in front of
+`လုပ်ဆောင်ချက် အမျိုးအစား` ("function kind"), which closes each form. `သည့်` is the same
+word as `သော` there: `လက်ခံသည့်`, `ပြန်ပေးသည့်` and `သုံးသည့်` read as `လက်ခံသော`,
+`ပြန်ပေးသော` and `သုံးသော`.
 
 | Parameters | Result | Written |
 | --- | --- | --- |
@@ -54,7 +57,7 @@ A function kind repeats the header of a function, with `သော` ("that") in f
 
 - The parameters are written as in a [header](functions.md#parameters), with no names:
   each is `<kind> တစ်<word> ကို`, then its markers, and with two or more each ends in
-  `လည်းကောင်း`: `(<kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<preposition>" ကို သုံး၍] [လည်းကောင်း] … လက်ခံပြီး <kind> တစ်<word> ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)`.
+  `လည်းကောင်း`: `(<kind> တစ်<word> ကို [ဒေတာ ပြောင်းလဲရန် | ဒေတာ ထည့်ပေးရန်] [အပိုင်အနေဖြင့်] [ဝိဘတ် "<preposition>" ကို သုံး၍] [လည်းကောင်း] … လက်ခံပြီး <kind> တစ်<word> ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား)`.
 - Each parameter and the result count their kind with its measure word, as in a header:
   `ကိန်းပြည့် တစ်ခု`, `စာလုံး တစ်လုံး`, a struct with the classifier it declares. A missing
   word is ZK0234; another word is the warning ZK0509, wherever the function kind stands:
@@ -70,10 +73,12 @@ A function kind repeats the header of a function, with `သော` ("that") in f
   `(အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံးသော လုပ်ဆောင်ချက် အမျိုးအစား)`. Two or more parameters
   of a kind with phrases each need a preposition (ZK0259).
 - `ဒေတာ ပြောင်းလဲရန်` after `ကို` lets the function change the argument, as in a
-  [header](functions.md#changed-parameters). A function kind takes that marker alone:
-  `ဒေတာ ထည့်ပေးရန်` in one is ZK0243. A function whose parameter is
-  [filled](functions.md#filled-parameters) fits a kind with `ဒေတာ ပြောင်းလဲရန်` there, and a
-  call through the value sets its argument first, as for each changed parameter.
+  [header](functions.md#changed-parameters): a call through the value sets the argument
+  first. `ဒေတာ ထည့်ပေးရန်` marks a [filled](functions.md#filled-parameters) parameter, as in a
+  header: a call through the value needs no value for the argument, and the argument is
+  set after the call. A function with a filled parameter fits a kind with either marker
+  there; a function with a changed parameter fits no kind with `ဒေတာ ထည့်ပေးရန်`, since it
+  can read the argument before it sets it (ZK0401).
 - A result can be a [result kind](error-handling.md#result-kinds), as in a header. A
   function kind can be the good side of a result kind, in parentheses:
   `(<function kind>) သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု`.
@@ -83,9 +88,10 @@ A function kind repeats the header of a function, with `သော` ("that") in f
   and `လုပ်ဆောင်ချက် အမျိုးအစား တစ်ခု` for the kind with neither parameters nor result.
 
 Messages write a function kind as `fn(<parameters>) -> <result>`, each parameter as its
-short name with `mut ` in front of a changed one and its preposition after it, and the
+short name with `mut ` in front of a changed one, `out ` in front of a filled one and its
+preposition after it, and the
 phrases in braces after `fn`, the arguments as `…`:
-`fn(isize, isize) -> bool`, `fn(text(ကို), text(သို့))`, `fn()`,
+`fn(isize, isize) -> bool`, `fn(text(ကို), text(သို့))`, `fn()`, `fn(out isize)`,
 `fn{ဖိုင် … စာကို}(text(ထဲမှ)) -> text`. Inside another short
 name, such as a list of function values, it stands in parentheses: `(fn(isize))[]`. See
 [Short names for kinds](../reference/errors.md#short-names-for-kinds).

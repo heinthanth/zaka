@@ -1499,15 +1499,6 @@ en = "set \"%{n}\" before each return, or mark it \"ဒေတာ ပြောင
 [codes.ZK0725.explain]
 en = """A parameter marked `ဒေတာ ထည့်ပေးရန်` hands the function a place of the caller to fill: the caller need not set it, and counts it as set after the call. So the function must set the whole of it on each path before it returns, and cannot read it before it sets it (ZK0722). A parameter whose value the function reads first is `ဒေတာ ပြောင်းလဲရန်`, which the caller sets before the call."""
 
-[codes.ZK0243.title]
-en = "a filled parameter in a function kind"
-[codes.ZK0243.message]
-en = "a parameter of a function kind cannot be marked \"ဒေတာ ထည့်ပေးရန်\""
-[codes.ZK0243.help]
-en = "mark it \"ဒေတာ ပြောင်းလဲရန်\"; a function that fills the parameter still fits the kind"
-[codes.ZK0243.explain]
-en = """A call through a function value runs whichever function the value holds, so it cannot count on the place being filled: the caller sets it first. A function kind therefore takes `ဒေတာ ပြောင်းလဲရန်` alone, and a function whose parameter is `ဒေတာ ထည့်ပေးရန်` fits such a kind."""
-
 [codes.ZK0244.title]
 en = "nesting too deep"
 [codes.ZK0244.message]

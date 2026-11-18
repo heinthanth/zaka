@@ -660,21 +660,6 @@ pub fn bad_preposition(span: Span, preposition: &str) -> Diagnostic
     .with_help(t!("codes.ZK0241.help"))
 }
 
-/// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind.
-///
-/// # Arguments
-///
-/// * `span` - The mark.
-///
-/// # Returns
-///
-/// The `ZK0243` diagnostic.
-pub fn fill_in_fn_kind(span: Span) -> Diagnostic
-{
-    Diagnostic::new(Code::FillInFnKind, t!("codes.ZK0243.message"), span)
-        .with_help(t!("codes.ZK0243.help"))
-}
-
 /// Expressions or blocks nest deeper than the parser follows.
 ///
 /// # Arguments

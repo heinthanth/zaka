@@ -619,9 +619,13 @@ prelude (`std_module_at`), and the whole prelude is then not read beside it.
 The compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` heads three declarations:
 
 - a kind, `Stmt::BuiltinKind` (`parse_builtin_kind`): a name, `စာရင်း` or `ဇယား`, `သည်`, the
-  kind parameters in the word form, then the mark, `[အများသုံး]` and `ဒေတာအမျိုးအစား ဖြစ်သည်`;
+  mark, `[အများသုံး]` and `ဒေတာအမျိုးအစား`, then `ဖြစ်သည်`, or `ဖြစ်၍`, the kind parameters in the
+  word form and `၎င်းကို` before the written-as hint; kind parameters before the mark are
+  ZK0201;
 - a trait, after `ဟူသည့်`, with `[အများသုံး]` after the mark;
-- a function, `FnDecl.builtin` (`parse_builtin_fn`), with no block.
+- a function, `FnDecl.builtin` (`parse_builtin_fn`), with no block: the mark comes right
+  after `သည်`, then `လုပ်ဆောင်ချက်ဖြစ်၍`, the kind parameters in the word form with
+  `၎င်းသည်`, the phrases and the parameters.
 
 The names of the marked functions (`prelude_builtins`) take no prepositions in the table of
 preposition calls. The clause engine reads them as verbs (`verb_at`): `<name> မည်` of `ပြသ`,

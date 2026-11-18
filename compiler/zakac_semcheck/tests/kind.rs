@@ -339,3 +339,21 @@ fn function_kinds_with_phrases_round_trip()
     assert!(phrased.fits(plain), "a kind with no words takes a function with phrases");
     assert!(!plain.fits(phrased), "a kind with phrases wants them");
 }
+
+/// A filled parameter writes `out` in the short name. A function that sets
+/// an argument fits a kind that wants it set first, and not the reverse.
+#[test]
+fn filled_parameters_fit_changed_ones_alone()
+{
+    do_for!(name in ["fn(out isize)", "fn(mut isize, out text) -> bool"], assert_eq!(k(name).name(), name));
+    let (out, mutable) = (k("fn(out isize)"), k("fn(mut isize)"));
+    let (out, mutable) = (out.as_fn().unwrap(), mutable.as_fn().unwrap());
+    assert!(
+        out.fits(mutable),
+        "a function that sets the place fits a kind that changes it"
+    );
+    assert!(
+        !mutable.fits(out),
+        "a function that reads the place fits no kind that leaves it unset"
+    );
+}

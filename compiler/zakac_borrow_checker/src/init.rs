@@ -511,20 +511,30 @@ impl<'c, 'm> Run<'c, 'm>
             Stmt::Drop { .. } => (),
             Stmt::Call { func, args, span, .. } =>
             {
-                self.call_args(*func, args, facts);
-                self.write_fills(*func, args, facts);
+                let filled = self.filled_params(*func, args.len());
+                self.call_args(&filled, args, facts);
+                self.write_fills(&filled, args, facts);
                 do_if!(Some(*func) == self.ctx.start, self.keep_start(facts));
                 do_if!(
                     Some(*func) != self.ctx.start,
                     self.call(Some(*func), *span, facts)
                 );
             }
+            Stmt::CallValue { callee, args, span } =>
+            {
+                let filled = value_fills(callee, args.len());
+                self.read_expr(callee, facts);
+                self.call_args(&filled, args, facts);
+                self.fill_args(callee, facts);
+                do_for!(a in args, self.fill_args(a, facts));
+                self.write_fills(&filled, args, facts);
+                self.call(None, *span, facts);
+            }
             _ =>
             {
                 do_for!(e in stmt_exprs(s), self.read_expr(e, facts));
                 do_for!(e in stmt_exprs(s), self.fill_args(e, facts));
                 do_if!(let Some((place, span)) = dest_slot(s), self.read(place, Part::Whole, span, facts));
-                do_if!(let Stmt::CallValue { span, .. } = s, self.call(None, *span, facts));
             }
         }
     }
@@ -569,21 +579,36 @@ impl<'c, 'm> Run<'c, 'm>
         param.is_some_and(|s| s.unset.is_some())
     }
 
+    /// Whether each parameter of a function is marked `ဒေတာ ထည့်ပေးရန်`.
+    ///
+    /// # Arguments
+    ///
+    /// * `func` - The function.
+    /// * `count` - The number of arguments of the call.
+    ///
+    /// # Returns
+    ///
+    /// One flag for each argument.
+    fn filled_params(&self, func: u32, count: usize) -> Vec<bool>
+    {
+        (0..count).map(|at| self.fills_param(func, at)).collect()
+    }
+
     /// Read the arguments of a call. An argument for a parameter marked
     /// `ဒေတာ ထည့်ပေးရန်` is the place the callee fills: it reads nothing but
     /// the cell number of its address.
     ///
     /// # Arguments
     ///
-    /// * `func` - The function.
+    /// * `filled` - Whether each parameter is marked `ဒေတာ ထည့်ပေးရန်`.
     /// * `args` - The arguments.
     /// * `facts` - The facts.
-    fn call_args(&mut self, func: u32, args: &'m [Expr], facts: &Facts)
+    fn call_args(&mut self, filled: &[bool], args: &'m [Expr], facts: &Facts)
     {
         for (at, a) in args.iter().enumerate()
         {
-            let filled =
-                arg_place(a, &self.fills).filter(|_| self.fills_param(func, at));
+            let marked = filled.get(at).copied().unwrap_or(false);
+            let filled = arg_place(a, &self.fills).filter(|_| marked);
             match filled
             {
                 Some((_, _, index)) =>
@@ -600,13 +625,13 @@ impl<'c, 'm> Run<'c, 'm>
     ///
     /// # Arguments
     ///
-    /// * `func` - The function.
+    /// * `filled` - Whether each parameter is marked `ဒေတာ ထည့်ပေးရန်`.
     /// * `args` - The arguments.
     /// * `facts` - The facts, changed in place.
-    fn write_fills(&self, func: u32, args: &[Expr], facts: &mut Facts)
+    fn write_fills(&self, filled: &[bool], args: &[Expr], facts: &mut Facts)
     {
-        let filled =
-            args.iter().enumerate().filter(|(at, _)| self.fills_param(func, *at));
+        let marked = |at: &usize| filled.get(*at).copied().unwrap_or(false);
+        let filled = args.iter().enumerate().filter(|(at, _)| marked(at));
         let places = filled.filter_map(|(_, a)| arg_place(a, &self.fills));
         places.for_each(|(place, part, _)| write(facts, place, part));
     }
@@ -621,9 +646,18 @@ impl<'c, 'm> Run<'c, 'm>
     {
         let mut calls = Vec::new();
         each_expr(e, &mut |sub| {
-            do_if!(let ExprNode::Call { func, args, .. } = &sub.node, calls.push((*func, args)));
+            let filled = match &sub.node
+            {
+                ExprNode::Call { func, args, .. } =>
+                {
+                    self.filled_params(*func, args.len())
+                }
+                ExprNode::CallValue { callee, args } => value_fills(callee, args.len()),
+                _ => return,
+            };
+            do_if!(let ExprNode::Call { args, .. } | ExprNode::CallValue { args, .. } = &sub.node, calls.push((filled, args)));
         });
-        do_for!((func, args) in calls, self.write_fills(func, args, facts));
+        do_for!((filled, args) in calls, self.write_fills(&filled, args, facts));
     }
 
     /// Report each parameter marked `ဒေတာ ထည့်ပေးရန်` that a return can leave
@@ -723,9 +757,15 @@ impl<'c, 'm> Run<'c, 'm>
                     Some(*func) != self.ctx.start,
                     self.call(Some(*func), e.span, facts)
                 );
-                return self.call_args(*func, args, facts);
+                let filled = self.filled_params(*func, args.len());
+                return self.call_args(&filled, args, facts);
             }
-            ExprNode::CallValue { .. } => self.call(None, e.span, facts),
+            ExprNode::CallValue { callee, args } =>
+            {
+                self.call(None, e.span, facts);
+                self.read_expr(callee, facts);
+                return self.call_args(&value_fills(callee, args.len()), args, facts);
+            }
             _ => (),
         }
         do_for!(sub in sub_exprs(e), self.read_expr(sub, facts));
@@ -1329,4 +1369,21 @@ fn is_read_of(e: &Expr, var: Place) -> bool
         ExprNode::Read(place) => *place == var,
         _ => false,
     }
+}
+
+/// Whether each parameter of the function a value calls is marked
+/// `ဒေတာ ထည့်ပေးရန်` in the kind of the value.
+///
+/// # Arguments
+///
+/// * `callee` - The function value.
+/// * `count` - The number of arguments of the call.
+///
+/// # Returns
+///
+/// One flag for each argument.
+fn value_fills(callee: &Expr, count: usize) -> Vec<bool>
+{
+    let fills = callee.kind.as_fn().map(|f| f.fills()).unwrap_or_default();
+    (0..count).map(|at| fills.get(at).copied().unwrap_or(false)).collect()
 }

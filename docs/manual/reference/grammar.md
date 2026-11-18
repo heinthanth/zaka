@@ -465,7 +465,7 @@ kind-phrases = ( start-phrase | end-phrase ) "ကို"
              | start-phrase "နှင့်" end-phrase "တို့ကို" ;
 sig-params   = sig-param [ "လည်းကောင်း" ]
              | sig-param "လည်းကောင်း" sig-param "လည်းကောင်း" { sig-param "လည်းကောင်း" } ;
-sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
+sig-param    = listed-kind "ကို" [ "ဒေတာ ပြောင်းလဲရန်" | "ဒေတာ ထည့်ပေးရန်" ] [ "အပိုင်အနေဖြင့်" ] [ preposition ] ;
 
 slot-kind    = kind count-word
              | struct-count ;                     (* လူတစ်ယောက် *)
@@ -488,7 +488,8 @@ listed-kind  = slot-kind ;                        (* in a list: a function kind 
   a declaration, a result, a conversion, an alias. In a list of parameters or fields, and
   among the parameters of another function kind, it stands in parentheses (ZK0239). The
   result of a function kind is bare `လုပ်ဆောင်ချက် အမျိုးအစား` or a kind in parentheses.
-  `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind is ZK0243.
+  `လက်ခံသည့်`, `ပြန်ပေးသည့်` and `သုံးသည့်` are the same words as `လက်ခံသော`, `ပြန်ပေးသော`
+  and `သုံးသော`.
 
 See [Kinds and values](../language/kinds.md),
 [Measure words](../language/kinds.md#measure-words), [Lists](../language/lists.md#list-kinds),

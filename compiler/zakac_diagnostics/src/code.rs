@@ -151,9 +151,6 @@ FnKindNeedsParens = ("ZK0239", Level::Error),
 NestedAlias = ("ZK0240", Level::Error),
 /// The preposition string of a parameter is not one word a preposition can be.
 BadPreposition = ("ZK0241", Level::Error),
-/// `ဒေတာ ထည့်ပေးရန်` on a parameter of a function kind, where a call through
-/// the value cannot know the place is filled.
-FillInFnKind = ("ZK0243", Level::Error),
 /// Expressions or blocks nest deeper than the parser follows.
 NestingTooDeep = ("ZK0244", Level::Error),
 /// A list of two or more items in words does not join its last item with

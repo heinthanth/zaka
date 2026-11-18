@@ -6,6 +6,7 @@
 //! its written part, a whole vanna at a time, so the `မှ` of `မှတ်` remains.
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::LazyLock;
 
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
@@ -57,8 +58,14 @@ pub struct Spoken
 /// `သော` and `သည့်` give one spoken spelling in `တဲ့`: it reads as the word in
 /// `သော` and also stands for the other.
 pub static SPOKEN: LazyLock<Vec<Spoken>> = LazyLock::new(|| {
-    let all: Vec<Spoken> =
-        RESERVED.iter().filter_map(|(w, kw)| spoken_of(w, *kw)).collect();
+    // Two written spellings of one word, such as `သုံးသော` and `သုံးသည့်`, give
+    // one spoken spelling; the first in the table keeps it.
+    let mut seen = HashSet::new();
+    let all: Vec<Spoken> = RESERVED
+        .iter()
+        .filter_map(|(w, kw)| spoken_of(w, *kw))
+        .filter(|s| seen.insert((s.spoken.clone(), s.kw)))
+        .collect();
     let rival = |s: &Spoken| all.iter().find(|o| o.spoken == s.spoken && o.kw != s.kw);
     let keep = |s: &Spoken| {
         let Some(other) = rival(s)

@@ -96,6 +96,30 @@ fn a_filled_argument_is_set_by_the_call()
     assert_eq!(codes(changed), [Code::ReadUnset]);
 }
 
+/// A call through a value whose kind marks a parameter `ဒေတာ ထည့်ပေးရန်`
+/// needs no value for it, and sets it; through a kind with
+/// `ဒေတာ ပြောင်းလဲရန်`, the value comes first.
+#[test]
+fn a_function_value_fills_as_its_kind_tells()
+{
+    let call = |mark: &str| {
+        format!(
+            "ပေး ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ကိန်းရှင် ဖ သည် (ကိန်းပြည့် တစ်ခု ကို ဒေတာ {mark} လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပေး \
+             ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။
+ကိန်းရှင် လ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ဖ ဟူသော လုပ်ဆောင်ချက်ကို လ ဖြင့် လုပ်ဆောင်မည်။
+လ ကို ပြသမည်။"
+        )
+    };
+    assert_eq!(codes(&call("ထည့်ပေးရန်")), []);
+    assert_eq!(codes(&call("ပြောင်းလဲရန်")), [Code::ReadUnset]);
+}
+
 /// Inside the function, a parameter marked `ဒေတာ ထည့်ပေးရန်` starts unset: a
 /// read before a write is ZK0722, and a path that returns without setting it
 /// is ZK0725.

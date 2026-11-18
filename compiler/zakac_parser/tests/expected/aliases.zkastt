@@ -126,6 +126,7 @@ program:
         sig:
           params:
           - edit: false
+            fill: false
             owned: false
             kind:
               base: int
@@ -172,6 +173,7 @@ program:
         sig:
           params:
           - edit: false
+            fill: false
             owned: false
             kind:
               base: int
@@ -192,6 +194,7 @@ program:
               lo: 1165
               hi: 1221
           - edit: false
+            fill: false
             owned: false
             kind:
               base: int

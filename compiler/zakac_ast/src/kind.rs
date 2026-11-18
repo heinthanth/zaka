@@ -68,6 +68,12 @@ pub struct SigParam
     #[builder(default)]
     #[serde(default)]
     pub edit: bool,
+    /// Whether `ဒေတာ ထည့်ပေးရန်` marks it: the function writes the caller's
+    /// place before it reads it, so the caller need not set it. It marks
+    /// [`SigParam::edit`] too.
+    #[builder(default)]
+    #[serde(default)]
+    pub fill: bool,
     /// Whether `အပိုင်အနေဖြင့်` marks it: the function takes over the block the
     /// pointer holds.
     #[builder(default)]
@@ -456,6 +462,7 @@ fn same_sig(a: &FnSig, b: &FnSig) -> bool
     let word = |p: &SigParam| p.preposition.as_ref().map(|m| m.name);
     let param = |l: &SigParam, r: &SigParam| {
         l.edit == r.edit
+            && l.fill == r.fill
             && l.owned == r.owned
             && word(l) == word(r)
             && l.kind.same_as(&r.kind)

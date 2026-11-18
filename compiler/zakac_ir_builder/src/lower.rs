@@ -314,7 +314,7 @@ fn value_sig(f: &FnKind) -> Sig
         index: u32::MAX,
         params,
         edits: f.edits(),
-        fills: Vec::new(),
+        fills: f.fills(),
         owned: Vec::new(),
         ret,
         foreign: None,
