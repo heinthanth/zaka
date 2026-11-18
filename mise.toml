@@ -56,7 +56,7 @@ description = "Run the tests"
 env = { WASI_SDK_PATH = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}" }
 
 [tasks."test:compiler"]
-run = "cargo nextest run -p 'zakac*' -p zaka_vm -p zaka_host"
+run = "cargo nextest run -p 'zakac*' -p zaka_vm -p zaka_host --features zakac_codegen_target_native/disasm"
 description = "Run the tests of the compiler and the VM, not the web crates"
 env = { WASI_SDK_PATH = "{{ exec(command='mise where github:WebAssembly/wasi-sdk') }}" }
 

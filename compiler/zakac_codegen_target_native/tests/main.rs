@@ -2,6 +2,8 @@
 
 mod common;
 mod debug_info;
+#[cfg(feature = "disasm")]
+mod disasm;
 mod ffi_lib;
 mod forms;
 mod permissions;

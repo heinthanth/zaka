@@ -6,6 +6,8 @@ pub mod aot;
 mod blob;
 pub mod cli;
 pub mod debug;
+#[cfg(feature = "disasm")]
+pub mod disasm;
 pub mod emit;
 mod exprs;
 mod ffi;

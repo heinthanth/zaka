@@ -74,6 +74,7 @@ thanks to all of these projects.
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
+| [iced-x86](https://github.com/icedland/iced) | 1.22.0 | MIT |
 | [imbl](https://github.com/jneem/imbl) | 7.0.2 | MPL-2.0+ |
 | [js-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [leptos](https://github.com/leptos-rs/leptos) | 0.8.22 | MIT |
@@ -96,6 +97,7 @@ thanks to all of these projects.
 | [libloading](https://github.com/nagisa/rust_libloading/) | 0.9.0 | ISC |
 | [lsp-server](https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server) | 0.10.0 | MIT OR Apache-2.0 |
 | [num_enum](https://github.com/illicitonion/num_enum) | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
+| [object](https://github.com/gimli-rs/object) | 0.40.0 | Apache-2.0 OR MIT |
 | [postcard](https://github.com/jamesmunns/postcard) | 1.1.3 | MIT OR Apache-2.0 |
 | [pulldown-cmark](https://github.com/raphlinus/pulldown-cmark) | 0.13.5 | MIT |
 | [pulldown-cmark-escape](https://github.com/raphlinus/pulldown-cmark) | 0.11.0 | MIT |
@@ -127,5 +129,7 @@ thanks to all of these projects.
 | [web-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [web-time](https://github.com/daxpedda/web-time) | 1.1.0 | MIT OR Apache-2.0 |
 | [xxhash-rust](https://github.com/DoumanAsh/xxhash-rust) | 0.8.19 | BSL-1.0 |
+| [yaxpeax-arch](https://git.iximeow.net/yaxpeax-arch/) | 0.3.3 | 0BSD |
+| [yaxpeax-arm](http://git.iximeow.net/yaxpeax-arm/) | 0.5.0 | 0BSD |
 
 <!-- end: projects -->

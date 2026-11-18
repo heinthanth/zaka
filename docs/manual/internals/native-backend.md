@@ -38,12 +38,15 @@ leaves to its own runtime header (`zaka_target_c_runtime.h`) and the C compiler,
 | `blob.rs` | `Blob`, data set out as C sets out a struct, with the addresses of other data and functions as relocations |
 | `jit.rs` | the JIT module: each runtime function from `zaka_runtime::exports()`, each C function from its lib, then the run |
 | `aot.rs` | the object module for the triple of the target, and the CLIF text |
+| `debug.rs` | the DWARF line table of an object: a row for the code of each statement, a subprogram with the Zaka name of each function |
+| `disasm.rs` | with the feature `disasm`, the listing of the machine code of an object (x86-64 through iced-x86, aarch64 through yaxpeax-arm), each function under its Zaka name and each call to the runtime named |
 | `main.rs` | the test program: `zakac run` with the JIT in place, so a stop ends a child process |
 
 The crate has the feature `jit`, which `zakac` turns on: it pulls in `cranelift-jit`,
 `cranelift-native`, `libloading` and the runtime, which a build for the browser cannot
 take. With the feature off, the crate lowers and writes objects alone, and the explorer
-uses it so to show the CLIF of a program.
+uses it so to show the CLIF of a program. The feature `disasm`, which the explorer turns on,
+adds the listing of the machine code of the object beside the CLIF.
 
 ## Values in CLIF
 

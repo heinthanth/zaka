@@ -40,6 +40,7 @@ use zakac_ir_builder::fold::fold;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::LowerOptions;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::shown_name;
 use zakac_ir_builder::lower::lower;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
@@ -828,8 +829,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
                 &target,
                 true,
             );
-            let file = made
-                .map(|o| vec![CFile::builder().name("main.clif").text(o.clif).build()]);
+            let file = made.map(|o| native_files(m, o));
             (None, Some(file))
         }
         Some(m) =>
@@ -1303,4 +1303,30 @@ fn diag_row(unit: &Unit, phase: Phase, diag: &Diagnostic) -> DiagRow
         .labels(diag.labels.iter().filter_map(label).collect())
         .pieces(diagnostic_pieces(unit.sm, diag, Carets::Mirror))
         .build()
+}
+
+/// The files the native output shows: the CLIF text, then the listing of the
+/// machine code for a CPU that has one, each function under its Zaka name.
+///
+/// # Arguments
+///
+/// * `module` - The IR, whose functions name the code.
+/// * `made` - The object and its CLIF text.
+///
+/// # Returns
+///
+/// The files.
+fn native_files(
+    module: &Module, made: zakac_codegen_target_native::aot::Object,
+) -> Vec<CFile>
+{
+    let name_of = |raw: &str| {
+        let index = raw.strip_prefix("zk_f").and_then(|n| n.parse::<usize>().ok());
+        let func = index.and_then(|n| module.funcs.get(n));
+        func.map_or_else(|| raw.to_string(), |f| shown_name(&f.name).to_string())
+    };
+    let listed = zakac_codegen_target_native::disasm::listing(&made.octets, &name_of);
+    let clif = CFile::builder().name("main.clif").text(made.clif).build();
+    let machine = listed.map(|text| CFile::builder().name("main.s").text(text).build());
+    std::iter::once(clif).chain(machine).collect()
 }
