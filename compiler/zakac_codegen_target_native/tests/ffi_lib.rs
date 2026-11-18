@@ -46,6 +46,11 @@ fn build_lib(cc: &str, dir: &Path) -> PathBuf
     let lib = dir.join(name);
     let mut cmd = Command::new(cc);
     cmd.args(["-shared", "-fPIC", "-o"]).arg(&lib).arg(c_inputs().join("ffi_lib.c"));
+    // MSVC links the lib through an import lib beside it.
+    if cfg!(windows)
+    {
+        cmd.arg(format!("-Wl,--out-implib,{}", lib.with_extension("lib").display()));
+    }
     let built = cmd.output().unwrap();
     let errors = String::from_utf8_lossy(&built.stderr);
     assert!(built.status.success(), "the test lib did not build:\n{errors}");

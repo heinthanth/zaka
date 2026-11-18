@@ -6792,6 +6792,7 @@ dependencies = [
  "cargo-build",
  "cbindgen",
  "etcetera",
+ "find-msvc-tools",
  "rust-i18n",
  "strum",
  "tempfile",

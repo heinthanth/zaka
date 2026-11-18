@@ -29,6 +29,10 @@ zakac_semcheck = { workspace = true }
 zakac_session = { workspace = true }
 zakac_span = { workspace = true }
 
+
+[target.'cfg(windows)'.dependencies]
+find-msvc-tools = { workspace = true }
+
 [dev-dependencies]
 tempfile = { workspace = true }
 zaka_runtime = { workspace = true }

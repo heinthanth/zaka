@@ -105,12 +105,14 @@ pub fn run_aot(
     grants: &zaka_host::Grants,
 ) -> Option<Run>
 {
-    use zakac_codegen_target_c::driver::write_cache;
+    use zakac_codegen_target_c::driver::write_cache_for;
     use zakac_codegen_target_c::options::TargetCOptions;
     use zakac_codegen_target_c::toolchain;
     use zakac_codegen_target_c::toolchain::BuildPlan;
+    use zakac_codegen_target_c::toolchain::Dialect;
 
-    let cc = toolchain::find_cc(None).ok()?;
+    let dialect = Dialect::of(test_abi());
+    let cc = toolchain::find_cc_for(None, dialect).ok()?;
     let (sm, program) = checked(path, overflow);
     let program = &program;
     let target = native_target();
@@ -125,15 +127,15 @@ pub fn run_aot(
     );
     let made = made.unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let dir = tempfile::tempdir().unwrap();
-    let lib = write_cache(dir.path(), &[]).unwrap();
-    let obj = dir.path().join("main.o");
+    let lib = write_cache_for(dir.path(), &[], test_abi()).unwrap();
+    let obj = dir.path().join(format!("main.{}", dialect.object()));
     std::fs::write(&obj, &made.octets).unwrap();
     let sources: Vec<PathBuf> = std::iter::once(obj).chain(lib).collect();
     let exe = dir.path().join(format!("program{}", std::env::consts::EXE_SUFFIX));
-    let libs = zakac_codegen_target_c::ffi::link_libs(&program.foreign);
+    let libs = zakac_codegen_target_c::ffi::link_libs_for(&program.foreign, dialect);
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(&cc).sources(&sources).out(&exe)
-        .checks(target_options.checks).sanitizers(false).libs(&libs).build();
+        .checks(target_options.checks).sanitizers(false).libs(&libs).abi(test_abi()).build();
     let built = toolchain::build(&plan).unwrap();
     let errors: Vec<_> =
         built.outputs.iter().map(|o| String::from_utf8_lossy(&o.stderr)).collect();
@@ -165,7 +167,21 @@ pub fn run_aot(
 pub fn native_target() -> zakac_ast::target::Target
 {
     let host = zakac_ast::target::Target::host();
-    zakac_ast::target::Target { output: zakac_ast::target::BuildTarget::Native, ..host }
+    let output = zakac_ast::target::BuildTarget::Native;
+    zakac_ast::target::Target { output, abi: test_abi(), ..host }
+}
+
+/// The ABI the executables of the tests are for: `ZAKA_TEST_ABI` (`gnu` or
+/// `msvc`), else the compiler's own, so a Windows host runs the suite once for
+/// each ABI. The JIT runs in the process, with the ABI of the compiler.
+///
+/// # Returns
+///
+/// The ABI.
+pub fn test_abi() -> zakac_ast::target::TargetAbi
+{
+    let given = std::env::var("ZAKA_TEST_ABI").ok().and_then(|v| v.parse().ok());
+    given.unwrap_or_else(zakac_codegen_target_c::driver::host_abi)
 }
 
 /// Load a program for the native target and run the checks: the source map

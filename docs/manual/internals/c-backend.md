@@ -22,15 +22,15 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 | File | Job |
 | --- | --- |
 | `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--backend c` |
-| `driver.rs` | the phases, then `emit`; the cache folder; the two runtime headers, embedded with `include_str!`, and the runtime lib, `RUNTIME_LIB`, embedded with `include_bytes!`; `native_libs`, the OS libs the lib needs; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
+| `driver.rs` | the phases, then `emit`; the cache folder; the two runtime headers, embedded with `include_str!`, and the runtime lib of each ABI it carries, embedded with `include_bytes!`: `runtime_lib(abi)` gives its octets, its file name and the OS libs it needs (`RuntimeLib::native_libs`); `write_cache_for` writes the one of the ABI of the build; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
 | `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c`, and the program table `zk_the_program` in `zaka_kinds.c` |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
 | `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
 | `callbacks.rs` | `zaka_callback.c`: its head (`CALLBACK_HEAD`: `zaka_runtime.h`), the scalar C kinds the bridges name (`zk_ck_<name>`, `scalar_kinds`), then a bridge and a `zk_cb_native_shape` (`zk_cbs_<n>`) for each function kind that goes to C |
-| `toolchain.rs` | finding the compiler, the flags, the compiles of the `.c` files (started at once) and the link, which takes the other inputs, the runtime lib among them, unchanged |
-| `build.rs` | builds `zaka_runtime` as a static lib for the target of the build (see [The runtime](#the-runtime)) |
+| `toolchain.rs` | finding the compiler (`find_cc_for`: for MSVC, `cl` or `clang-cl` on the PATH, else the `cl` of Visual Studio through `find-msvc-tools`, with the variables of its Developer Prompt in `Tool::env`), the flags of each `Dialect` (GNU or MSVC, as data in `Flags`), the compiles of the `.c` files (started at once) and the link, which takes the other inputs, the runtime lib among them, unchanged; `msvc_link` puts the options of the linker after `/link` |
+| `build.rs` | builds `zaka_runtime` as a static lib for the target of the build, and on Windows for the other ABI too (see [The runtime](#the-runtime)) |
 | `runtime/` | the two hand-written C11 headers: `zaka_target_c_runtime.h` and `zaka_c_sugars.h` |
 
 A function or a global goes into the module file of the source file its span starts in.
@@ -148,10 +148,14 @@ pointer. The C the compiler writes names each field of a shared struct
 The `build.rs` of the crate runs a cargo of its own: `cargo rustc -p zaka_runtime --lib
 --crate-type staticlib --profile zaka-runtime --target <target>`, into a target folder in
 `OUT_DIR`, with `--print native-static-libs` for the OS libs the lib needs. The
-`zaka-runtime` profile builds for release with `panic = "abort"`. The lib is stripped
-(`strip -S`) and `include_bytes!` puts it into `zakac`; `driver::write_cache` writes it
+`zaka-runtime` profile builds for release with `panic = "abort"`. A GNU lib is stripped
+(`strip -S`) and `include_bytes!` puts it into `zakac`; `driver::write_cache_for` writes it
 into the cache folder of each build, and the link puts it after the objects. A build for
-`wasm32` (the explorer) gets a blank lib.
+`wasm32` (the explorer) gets a blank lib. A Windows build makes the lib of the other ABI
+as well (`other_windows`: `x86_64-pc-windows-gnu` and `-msvc` swapped), named as that ABI
+names it (`zaka_runtime.lib` for MSVC, `libzaka_runtime.a` for GNU); when it cannot (the
+Rust target of the toolchain or the C tools of that ABI are missing) the build warns and
+carries a blank lib, and `write_cache_for` refuses that ABI (`RuntimeNotCarried`).
 
 `zaka_checks.h` defines one `ZK_CHECK_<NAME>` as 1 or 0 for each run-time check
 (`RunCheck` in `options.rs`: `DIVIDE`, `SHIFT`, `BOUNDS`, `TEXT`, `STEP`, `DEPTH`, `NULL`,

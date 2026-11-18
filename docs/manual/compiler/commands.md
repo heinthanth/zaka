@@ -135,7 +135,7 @@ These options belong to `semcheck` and the stages after it, and to `run`.
 | `--target-bits <BITS>` | `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
 | `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos` or `linux` |
 | `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
-| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple` or `wasm`; left out, `apple` on macOS, `gnu` on Linux, and on Windows the ABI `zakac` was built for. The VM, `--jit` and an executable take the host's ABI alone |
+| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple` or `wasm`; left out, `apple` on macOS, `gnu` on Linux, and on Windows the ABI `zakac` was built for. The VM and `--jit` take the ABI of `zakac` alone; an executable on Windows takes `gnu` or `msvc` ([Native programs](native.md#windows)) |
 | `--lint-allow <NAME>`, `--lint-warn <NAME>`, `--lint-error <NAME>` | | set the level of a lint group or code, as below; the front end reads the groups `naturalness` and `spoken` |
 
 These belong to `irgen` and the stages after it, and to `run`:
@@ -327,7 +327,8 @@ The ops are listed in [Instructions](../vm/instructions.md).
 
 `--backend c` writes a C file for each module of the program, then compiles and links
 them with a C compiler; `--emit c` stops after the C files. The C is plain C11, so GCC,
-Clang, MinGW and `zig cc` each build it, on Windows too, with no Visual Studio.
+Clang, MinGW and `zig cc` each build it, and so does MSVC on Windows (`--target-abi msvc`,
+see [Native programs](native.md#windows)).
 [Native programs](native.md) tells what the executable checks, and where its output
 differs from the VM.
 
@@ -336,12 +337,12 @@ differs from the VM.
 | `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
 | `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
 | `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
-| `--cache <DIR>` | the cache of the user | the folder for the C files, the objects and the runtime lib (`libzaka_runtime.a`, which `zakac` carries inside it and writes there); when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
-| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc` | the C compiler, with the words before its flags |
+| `--cache <DIR>` | the cache of the user | the folder for the C files, the objects and the runtime lib (`libzaka_runtime.a`, or `zaka_runtime.lib` for MSVC, which `zakac` carries inside it and writes there); when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
+| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc`; for `--target-abi msvc`, `cl`, `clang-cl`, then the `cl` of Visual Studio | the C compiler, with the words before its flags |
 | `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
-| `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` |
+| `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC) |
 | `--allow-read[=<PATHS>]`, `--allow-write[=<PATHS>]`, `--allow-env[=<NAMES>]`, `--allow-ffi`, `-A`, `--no-permission-prompt` | none | the rights the executable holds, written into it, as `zakac run` grants them to a run; the executable asks for a right it lacks on a terminal, as the VM does; see [Permissions](../vm/running.md#permissions) |
 
 Each run-time check is one kind of stop. A level sets each check: `none` turns all of
@@ -371,7 +372,8 @@ $ zakac build --backend c --checks=+null age.zaka
 Integer overflow is not one of these: `--overflow` picks it.
 
 The flags reach the C compiler in this order: `-std=c11`, the default flags, `CFLAGS`,
-then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. A later
+then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. MSVC takes the same order in its own form: `/std:c11` and
+its default flags, then `X.lib` for each lib, and the options of the linker after `/link`. A later
 flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
 silences warnings wherever it stands, so warnings need `--no-default-flags`.
 
@@ -394,8 +396,9 @@ there is no C to compile.
 - `--emit obj` writes the object file alone, and `--emit clif` the Cranelift IR of each
   function, for reading.
 - The CPU is `x86_64`, `aarch64` or `riscv64`; the others stop the build with an error.
-- An executable is linked for the host alone. `--emit obj` and `--emit clif` take another
-  `--target-os`, `--target-arch` or `--target-abi`, to link the object there.
+- An executable is linked for the OS and the CPU of the host alone, with either ABI on
+  Windows. `--emit obj` and `--emit clif` take another `--target-os`, `--target-arch` or
+  `--target-abi`, to link the object there.
 - The `sanitizers` check has no effect: Cranelift code holds no marks for them.
 
 ```console

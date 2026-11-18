@@ -27,6 +27,7 @@ use crate::callbacks::shape_name;
 use crate::callbacks::shape_ref;
 use crate::kinds::c_kind;
 use crate::kinds::is_blob;
+use crate::toolchain::Dialect;
 
 /// The C file of the wrappers.
 pub const FFI_SOURCE: &str = "zaka_ffi.c";
@@ -136,11 +137,24 @@ pub fn wrapper_proto(def: &ForeignFn, call: &FfiCall, n: u32, platform: u16) -> 
 /// # Returns
 ///
 /// The flags, in the order the libs first appear.
-pub fn link_libs(fns: &[ForeignFn]) -> Vec<String>
+pub fn link_libs(fns: &[ForeignFn]) -> Vec<String> { link_libs_for(fns, Dialect::Gnu) }
+
+/// [`link_libs`] in the flag form of a dialect: `X.lib` for MSVC, with no run
+/// path.
+///
+/// # Arguments
+///
+/// * `fns` - The C functions of the module.
+/// * `dialect` - The flag form.
+///
+/// # Returns
+///
+/// The flags, in the order the libs first appear.
+pub fn link_libs_for(fns: &[ForeignFn], dialect: Dialect) -> Vec<String>
 {
     let mut flags: Vec<String> = Vec::new();
     let names = fns.iter().map(|f| f.lib.as_str()).filter(|l| !LINKED.contains(l));
-    let each = names.flat_map(lib_flags);
+    let each = names.flat_map(|l| lib_flags(l, dialect));
     each.for_each(|f| tern!(flags.contains(&f), (), flags.push(f)));
     flags
 }
@@ -150,16 +164,22 @@ pub fn link_libs(fns: &[ForeignFn]) -> Vec<String>
 /// # Arguments
 ///
 /// * `lib` - The lib, as the program writes it: a name or a path.
+/// * `dialect` - The flag form.
 ///
 /// # Returns
 ///
 /// The flags.
-fn lib_flags(lib: &str) -> Vec<String>
+fn lib_flags(lib: &str, dialect: Dialect) -> Vec<String>
 {
     ret_if!(
         !is_lib_path(lib),
-        vec![format!("-l{}", lib.strip_prefix("lib").unwrap_or(lib))]
+        vec![dialect.lib(lib.strip_prefix("lib").unwrap_or(lib))]
     );
+    // MSVC links a DLL through its import lib, the `.lib` of the same name
+    // beside it; the run still opens the DLL.
+    let dll = Path::new(lib).extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
+    let import = Path::new(lib).with_extension("lib").to_string_lossy().into_owned();
+    ret_if!(dialect == Dialect::Msvc && dll, vec![import]);
     let folder = Path::new(lib).parent().map(|f| f.to_string_lossy().into_owned());
     let run_path = folder.filter(|f| !f.is_empty() && !cfg!(windows));
     let run_path = run_path.map(|f| format!("-Wl,-rpath,{f}"));
@@ -539,6 +559,9 @@ mod tests
             def("user32", "c", vec![], None),
         ];
         assert_eq!(link_libs(&fns), ["-lsqlite3", "-luser32"]);
+        assert_eq!(link_libs_for(&fns, Dialect::Msvc), ["sqlite3.lib", "user32.lib"]);
+        let dll = [def("C:/x/zk.dll", "f", vec![], None)];
+        assert_eq!(link_libs_for(&dll, Dialect::Msvc), ["C:/x/zk.lib"]);
         let path = [def("/opt/x/libfoo.so", "f", vec![], None)];
         let run = tern!(cfg!(windows), vec![], vec!["-Wl,-rpath,/opt/x".to_string()]);
         let want: Vec<String> =

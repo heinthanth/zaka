@@ -33,6 +33,7 @@ use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_reporter::render::write_diagnostics;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::cli::target_from;
@@ -44,9 +45,9 @@ use zakac_span::source_map::SourceMap;
 
 use crate::driver::default_cache;
 use crate::driver::translate;
-use crate::driver::write_cache;
+use crate::driver::write_cache_for;
 use crate::emit::CFile;
-use crate::ffi::link_libs;
+use crate::ffi::link_libs_for;
 use crate::options::Emit;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
@@ -420,7 +421,8 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let out = with_exe(out);
     let files = files.unwrap();
     let folded = translated.borrowchecked.lowered.folded.as_ref();
-    let libs = folded.map(|m| link_libs(&m.foreign)).unwrap_or_default();
+    let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
+    let libs = folded.map(|m| link_libs_for(&m.foreign, dialect)).unwrap_or_default();
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(target.checks).emit(emit)
         .files(&files).libs(&libs).build();
@@ -441,9 +443,10 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 /// The error, or `None` for the host.
 fn other_host(target: &zakac_ast::target::Target) -> Option<Error>
 {
-    ret_if!(target.is_host(), None);
-    let host = zakac_ast::target::Target::host().shown();
-    Some(Error::CForOtherHost { target: target.shown(), host })
+    let host = zakac_ast::target::Target::host();
+    let same = (target.os, target.arch) == (host.os, host.arch);
+    ret_if!(same && crate::driver::runtime_lib(target.abi).is_some(), None);
+    Some(Error::CForOtherHost { target: target.shown(), host: host.shown() })
 }
 
 /// The path of the input: its file, or `main.zaka` in the working folder
@@ -516,11 +519,12 @@ fn build(
     matches: &ArgMatches, io: &mut CommandIO<'_>, info: &CommandInfo, job: Job<'_>,
 ) -> zakac_host_errors::Result<ExitCode>
 {
-    let sources = write_cache(job.cache, job.files)?;
+    let abi = target_from(matches, BuildTarget::C).abi;
+    let sources = write_cache_for(job.cache, job.files, abi)?;
     ret_if!(job.emit == Emit::C, Ok(ExitCode::Success));
     #[rustfmt::skip]
     let link = Link::builder().cache(job.cache).out(job.out).checks(job.checks).sources(&sources)
-        .libs(job.libs).build();
+        .libs(job.libs).abi(abi).build();
     build_and_link(matches, io, info, link)
 }
 
@@ -539,6 +543,9 @@ pub struct Link<'a>
     pub sources: &'a [PathBuf],
     /// The link flag of each lib the C functions of the program come from.
     pub libs: &'a [String],
+    /// The ABI of the executable; this compiler's own when left out.
+    #[builder(default = crate::driver::host_abi())]
+    pub abi: zakac_ast::target::TargetAbi,
 }
 
 /// Compile C files and link them with objects and libs into an executable,
@@ -563,10 +570,12 @@ pub fn build_and_link(
     // A `--cc` from a config file is a default, so `CC` wins over it.
     let on_line = matches.value_source(CC_ARG) == Some(ValueSource::CommandLine);
     let env_cc = std::env::var_os("CC").is_some_and(|v| !v.is_empty());
-    let cc = toolchain::find_cc(tern!(on_line || !env_cc, arg(CC_ARG), None))?;
+    let dialect = toolchain::Dialect::of(job.abi);
+    let chosen = tern!(on_line || !env_cc, arg(CC_ARG), None);
+    let cc = toolchain::find_cc_for(chosen, dialect)?;
     let linker = arg(LINKER_ARG).map(toolchain::named).transpose()?;
     let mem = job.checks.has(RunCheck::Sanitizers);
-    let sanitizers = mem && toolchain::has_sanitizers(&cc, job.cache);
+    let sanitizers = mem && toolchain::has_sanitizers(&cc, job.cache, dialect);
     if mem && !sanitizers
     {
         let warning = format_command_error(info, t!("target_c.no_sanitizers"));
@@ -578,11 +587,16 @@ pub fn build_and_link(
     let plan = BuildPlan::builder().cc(&cc).maybe_linker(linker.as_ref())
         .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
-        .ldflags(&ldflags).libs(job.libs).build();
+        .ldflags(&ldflags).libs(job.libs).abi(job.abi).build();
     let built = toolchain::build(&plan)?;
+    // `cl` writes the name of each file it compiles, and its errors, to
+    // standard output, so a step of MSVC that succeeds shows none of it.
+    let quiet = |o: &std::process::Output| {
+        dialect == toolchain::Dialect::Msvc && o.status.success()
+    };
     for output in &built.outputs
     {
-        let _ = io.stderr.write_all(&output.stdout);
+        do_if!(!quiet(output), _ = io.stderr.write_all(&output.stdout));
         let _ = io.stderr.write_all(&output.stderr);
     }
     ret_if!(let Some(cc) = built.failed, Err(Error::CCompilerFailed { cc }));

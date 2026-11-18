@@ -16,7 +16,7 @@ use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_codegen_target_c::driver::write_cache;
+use zakac_codegen_target_c::driver::write_cache_for;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::toolchain;
 use zakac_codegen_target_c::toolchain::BuildPlan;
@@ -26,6 +26,7 @@ use zakac_codegen_target_vm::options::EmitOptions;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::load;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::source_map::SourceMap;
 
@@ -46,8 +47,11 @@ include!("inputs/ffi_programs.rs");
 /// # Returns
 ///
 /// The path of the lib.
-fn build_lib(cc: &Tool, dir: &Path) -> PathBuf
+fn build_lib(dir: &Path) -> PathBuf
 {
+    // The lib is plain C for each ABI, so the GNU compiler builds it, with the
+    // import lib MSVC links it through.
+    let cc = toolchain::find_cc(None).expect("a GNU C compiler builds the test lib");
     let name = format!(
         "{}zktest{}",
         std::env::consts::DLL_PREFIX,
@@ -57,6 +61,10 @@ fn build_lib(cc: &Tool, dir: &Path) -> PathBuf
     let source = root().join("tests/inputs/ffi_lib.c");
     let mut cmd = Command::new(&cc.program);
     cmd.args(&cc.lead).args(["-shared", "-fPIC", "-o"]).arg(&lib).arg(source);
+    if cfg!(windows)
+    {
+        cmd.arg(format!("-Wl,--out-implib,{}", lib.with_extension("lib").display()));
+    }
     // macOS finds a linked lib through the name the lib gives itself.
     if cfg!(target_os = "macos")
     {
@@ -152,20 +160,23 @@ fn native_run(cc: &Tool, path: &Path, lib: &Path) -> Output
 {
     let files = c_files(path, OverflowMode::Stop, Checks::Default).unwrap();
     let dir = tempfile::tempdir().unwrap();
-    let sources = write_cache(dir.path(), &files).unwrap();
+    let abi = crate::common::test_abi();
+    let sources = write_cache_for(dir.path(), &files, abi).unwrap();
     let folder = lib.parent().unwrap();
     // Windows finds a lib in the folder of the executable or on the PATH, so
     // the executable goes beside the lib.
     let exe = folder.join(format!("program{}", std::env::consts::EXE_SUFFIX));
     let folder = folder.display();
-    let mut libs = vec![lib.display().to_string()];
+    let msvc = toolchain::Dialect::of(abi) == toolchain::Dialect::Msvc;
+    let linked = tern!(msvc, lib.with_extension("lib"), lib.to_path_buf());
+    let mut libs = vec![linked.display().to_string()];
     if !cfg!(windows)
     {
         libs.push(format!("-Wl,-rpath,{folder}"));
     }
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(cc).sources(&sources).out(&exe)
-        .checks(Checks::Default).sanitizers(false).libs(&libs).build();
+        .checks(Checks::Default).sanitizers(false).libs(&libs).abi(abi).build();
     let built = toolchain::build(&plan).unwrap();
     let errors: Vec<_> =
         built.outputs.iter().map(|o| String::from_utf8_lossy(&o.stderr)).collect();
@@ -183,7 +194,7 @@ fn a_program_calls_a_lib_of_its_own_on_both_targets()
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let path = dir.path().join("main.zaka");
     let text = PROGRAM.replace("{LIB}", &lib.display().to_string().replace('\\', "/"));
     std::fs::write(&path, text).unwrap();
@@ -196,13 +207,13 @@ fn a_program_calls_a_lib_of_its_own_on_both_targets()
 #[test]
 fn a_closed_handle_stops_the_run()
 {
-    let Some(cc) = cc()
+    let Some(_cc) = cc()
     else
     {
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let path = dir.path().join("main.zaka");
     let text = CLOSED.replace("{LIB}", &lib.display().to_string().replace('\\', "/"));
     std::fs::write(&path, text).unwrap();
@@ -223,7 +234,7 @@ fn null_for_a_plain_handle_result_stops_the_run_on_both_targets()
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let path = write_program(dir.path(), &lib, NULL_HANDLE);
     let (out, ran) = vm_run(&path);
     let trap = ran.expect_err("NULL for a plain handle stops the run");
@@ -271,7 +282,7 @@ fn callbacks_take_text_structs_and_handles_on_both_targets()
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let path = write_program(dir.path(), &lib, &format!("{CALLED_BACK}{CALLS_BACK}"));
     assert_eq!(run_in_vm(&path), WANT_CALLED_BACK, "in the VM");
     assert_eq!(run_native(&cc, &path, &lib), WANT_CALLED_BACK, "as an executable");
@@ -288,7 +299,7 @@ fn null_for_plain_text_stops_the_run_on_both_targets()
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let path = write_program(dir.path(), &lib, &format!("{CALLED_BACK}{NULL_TEXT}"));
     let (out, ran) = vm_run(&path);
     let trap = ran.expect_err("NULL for plain text stops the run");
@@ -315,7 +326,7 @@ fn null_for_a_plain_handle_parameter_stops_the_run_on_both_targets()
         return;
     };
     let dir = tempfile::tempdir().unwrap();
-    let lib = build_lib(&cc, dir.path());
+    let lib = build_lib(dir.path());
     let text = format!("{CALLED_BACK}{NULL_HANDLE_ARG}");
     let path = write_program(dir.path(), &lib, &text);
     let (out, ran) = vm_run(&path);

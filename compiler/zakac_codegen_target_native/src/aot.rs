@@ -9,6 +9,7 @@ use cranelift_object::ObjectBuilder;
 use cranelift_object::ObjectModule;
 use zaka_host::Grants;
 use zakac_ast::target::Target;
+use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
 use zakac_codegen_target_c::options::TargetCOptions;
@@ -36,11 +37,12 @@ fn triple(target: &Target) -> String
         TargetArch::Riscv64 => "riscv64gc",
         _ => "x86_64",
     };
-    let rest = match target.os
+    let rest = match (target.os, target.abi)
     {
-        TargetOs::Macos => "apple-darwin",
-        TargetOs::Linux => "unknown-linux-gnu",
-        TargetOs::Windows => "pc-windows-gnu",
+        (TargetOs::Macos, _) => "apple-darwin",
+        (TargetOs::Linux, _) => "unknown-linux-gnu",
+        (TargetOs::Windows, TargetAbi::Msvc) => "pc-windows-msvc",
+        (TargetOs::Windows, _) => "pc-windows-gnu",
     };
     format!("{arch}-{rest}")
 }

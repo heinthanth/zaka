@@ -60,6 +60,9 @@ en = "the native target cannot build %{what} at present"
 [errors.arch_not_for_native]
 en = "the native target builds for x86_64, aarch64 and riscv64, not for %{arch}: give --backend c, or --backend vm"
 
+[errors.runtime_not_carried]
+en = "this zakac carries no runtime lib for the ABI %{abi}: build zakac on Windows with the Rust target and the C tools of that ABI, or give another --target-abi"
+
 [errors.native_for_other_host]
 en = "the native target links for this host, %{host}, not for %{target}: give --emit obj to write the object file and link it there"
 

@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Child;
@@ -6,39 +7,147 @@ use std::process::Output;
 use std::process::Stdio;
 
 use bon::Builder;
+use zakac_ast::target::TargetAbi;
 use zakac_host_errors::Error;
 use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
-use crate::driver::native_libs;
+use crate::driver::host_abi;
+use crate::driver::runtime_lib;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
 
-/// The compilers tried, in order, when neither `--cc` nor `CC` names one.
-/// Each is a program and the words that come before the C flags.
-const SEARCHED: &[&[&str]] = &[&["cc"], &["gcc"], &["clang"], &["zig", "cc"]];
+/// The flag form a C toolchain takes: the GNU form of gcc, Clang and `zig cc`,
+/// or the form of MSVC's `cl` and `clang-cl`. The ABI of the target picks it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Dialect
+{
+    /// `-std=c11 -c x.c -o x.o`, `-lX`.
+    #[default]
+    Gnu,
+    /// `/std:c11 /c x.c /Fox.obj`, `X.lib`, link options after `/link`.
+    Msvc,
+}
 
-/// The flag the generated C is written for: C11. A later `-std` from the
-/// user replaces it.
-const STD_FLAG: &str = "-std=c11";
+/// The flags of a dialect, as data.
+struct Flags
+{
+    /// The compilers tried, in order, when neither `--cc` nor `CC` names one.
+    /// Each is a program and the words that come before the C flags.
+    searched: &'static [&'static [&'static str]],
+    /// The flag the generated C is written for: C11. A later standard flag
+    /// from the user replaces it.
+    std: &'static str,
+    /// The flags the C target adds unless `--no-default-flags` leaves them
+    /// out. GNU: the optimizer, no warnings about the generated code, and no
+    /// fused mul-add (one rounding for a product and a sum), since the VM
+    /// rounds after each float operation; GCC skips the `#pragma STDC
+    /// FP_CONTRACT OFF` the runtime holds, so the flag remains. MSVC: the same,
+    /// with `/fp:precise` (no contraction), the source read as UTF-8, and the
+    /// C runtime of a DLL, as the runtime lib of Rust links it. The user flags
+    /// come after them, so a later `-O3` replaces `-O2`.
+    defaults: &'static [&'static str],
+    /// What each link needs: libm for `fmod` and kin, which the UCRT of MSVC
+    /// holds.
+    link_libs: &'static [&'static str],
+    /// The flags of the mem checks: the address and undefined-behavior
+    /// sanitizers, the address one alone for MSVC. Both the compile and the
+    /// link need them.
+    sanitize: &'static [&'static str],
+    /// The flag that compiles a file to an object and stops.
+    to_object: &'static str,
+    /// The extension of an object.
+    object: &'static str,
+}
 
-/// The flags the C target adds unless `--no-default-flags` leaves them out:
-/// the optimizer, no warnings about the generated code, and no fused mul-add
-/// (one rounding for a product and a sum), since the VM rounds after each
-/// float operation; GCC skips the `#pragma STDC FP_CONTRACT OFF` the runtime
-/// holds, so the flag remains. The user flags come after them, so a later `-O3`
-/// or `-ffp-contract=fast` replaces them; `-w` holds wherever it stands, so
-/// warnings need `--no-default-flags`.
-const DEFAULT_FLAGS: &[&str] = &["-O2", "-w", "-ffp-contract=off"];
+/// The flags of GCC, Clang and `zig cc`.
+const GNU: Flags = Flags {
+    searched: &[&["cc"], &["gcc"], &["clang"], &["zig", "cc"]],
+    std: "-std=c11",
+    defaults: &["-O2", "-w", "-ffp-contract=off"],
+    link_libs: &["-lm"],
+    sanitize: &["-g", "-fsanitize=address,undefined"],
+    to_object: "-c",
+    object: "o",
+};
 
-/// What each link needs: libm, for `fmod` and kin.
-const LINK_LIBS: &[&str] = &["-lm"];
+/// The flags of MSVC's `cl` and of `clang-cl`.
+const MSVC: Flags = Flags {
+    searched: &[&["cl"], &["clang-cl"]],
+    std: "/std:c11",
+    defaults: &["/nologo", "/O2", "/w", "/fp:precise", "/utf-8", "/MD"],
+    link_libs: &[],
+    sanitize: &["/fsanitize=address"],
+    to_object: "/c",
+    object: "obj",
+};
 
-/// The flags of the mem checks: the address and undefined-behavior
-/// sanitizers. Both the compile and the link need them.
-const SANITIZE_FLAGS: &[&str] = &["-g", "-fsanitize=address,undefined"];
+impl Dialect
+{
+    /// The dialect of the toolchain of an ABI.
+    ///
+    /// # Arguments
+    ///
+    /// * `abi` - The ABI of the target.
+    ///
+    /// # Returns
+    ///
+    /// MSVC for the ABI of MSVC, else GNU.
+    pub fn of(abi: TargetAbi) -> Dialect
+    {
+        tern!(abi == TargetAbi::Msvc, Dialect::Msvc, Dialect::Gnu)
+    }
+
+    /// The flags of the dialect.
+    ///
+    /// # Returns
+    ///
+    /// The flags.
+    fn flags(self) -> &'static Flags { tern!(self == Dialect::Msvc, &MSVC, &GNU) }
+
+    /// The extension of an object, `o` or `obj`.
+    ///
+    /// # Returns
+    ///
+    /// The extension.
+    pub fn object(self) -> &'static str { self.flags().object }
+
+    /// The words that write a file: `-o <path>`, or the one word of MSVC,
+    /// `/Fo<path>` for an object and `/Fe<path>` for an executable.
+    ///
+    /// # Arguments
+    ///
+    /// * `exe` - Whether the file is an executable.
+    /// * `path` - The file.
+    ///
+    /// # Returns
+    ///
+    /// The words.
+    fn out(self, exe: bool, path: &Path) -> Vec<OsString>
+    {
+        ret_if!(self == Dialect::Gnu, vec!["-o".into(), path.into()]);
+        let mut word = OsString::from(tern!(exe, "/Fe", "/Fo"));
+        word.push(path);
+        vec![word]
+    }
+
+    /// The link flag of a lib a program names: `-lX`, or `X.lib` for MSVC.
+    ///
+    /// # Arguments
+    ///
+    /// * `stem` - The name of the lib with no `lib` in front.
+    ///
+    /// # Returns
+    ///
+    /// The flag.
+    pub fn lib(self, stem: &str) -> String
+    {
+        tern!(self == Dialect::Msvc, format!("{stem}.lib"), format!("-l{stem}"))
+    }
+}
 
 /// The variable of the user's C flags.
 pub const CFLAGS: &str = "CFLAGS";
@@ -55,6 +164,10 @@ pub struct Tool
     /// The words that come before the flags.
     #[builder(default)]
     pub lead: Vec<String>,
+    /// The variables the tool runs with, such as the `INCLUDE`, `LIB` and
+    /// `PATH` of an MSVC found outside a Developer Prompt.
+    #[builder(default)]
+    pub env: Vec<(OsString, OsString)>,
 }
 
 impl Tool
@@ -79,7 +192,7 @@ impl Tool
     pub fn command(&self) -> Command
     {
         let mut cmd = Command::new(&self.program);
-        cmd.args(&self.lead);
+        cmd.args(&self.lead).envs(self.env.iter().map(|(k, v)| (k, v)));
         cmd
     }
 }
@@ -97,10 +210,57 @@ impl Tool
 /// the PATH.
 pub fn find_cc(chosen: Option<&str>) -> zakac_host_errors::Result<Tool>
 {
+    find_cc_for(chosen, Dialect::Gnu)
+}
+
+/// Find the C compiler of a dialect: `--cc`, then `CC`, then the compilers
+/// of the dialect on the PATH; for MSVC, then the `cl` that Visual Studio
+/// installed, with the variables of its Developer Prompt.
+///
+/// # Arguments
+///
+/// * `chosen` - The compiler `--cc` names, words split on white space.
+/// * `dialect` - The dialect.
+///
+/// # Returns
+///
+/// The compiler, or the error when the one named is missing or none is
+/// found.
+pub fn find_cc_for(
+    chosen: Option<&str>, dialect: Dialect,
+) -> zakac_host_errors::Result<Tool>
+{
     let env = std::env::var("CC").ok().filter(|v| !v.trim().is_empty());
     ret_if!(let Some(words) = chosen.map(str::to_owned).or(env), named(&words));
-    SEARCHED.iter().find_map(|words| from_words(words)).ok_or(Error::NoCCompiler)
+    let searched = dialect.flags().searched.iter();
+    let on_path = searched.clone().find_map(|words| from_words(words));
+    let installed = || tern!(dialect == Dialect::Msvc, installed_cl(), None);
+    on_path.or_else(installed).ok_or(Error::NoCCompiler)
 }
+
+/// The `cl` of the newest Visual Studio with the C++ tools, with the
+/// variables its Developer Prompt sets.
+///
+/// # Returns
+///
+/// The tool, or `None` with no such Visual Studio.
+#[cfg(windows)]
+fn installed_cl() -> Option<Tool>
+{
+    let arch = tern!(cfg!(target_arch = "aarch64"), "aarch64", "x86_64");
+    let found =
+        find_msvc_tools::find_tool(&format!("{arch}-pc-windows-msvc"), "cl.exe")?;
+    let env = found.env().into_iter().cloned().collect();
+    Some(Tool::builder().program(found.path().to_path_buf()).env(env).build())
+}
+
+/// The `cl` of Visual Studio: none off Windows.
+///
+/// # Returns
+///
+/// `None`.
+#[cfg(not(windows))]
+fn installed_cl() -> Option<Tool> { None }
 
 /// A tool from the words of an option or a variable.
 ///
@@ -178,17 +338,18 @@ pub fn env_flags(name: &str) -> Vec<String>
 ///
 /// * `cc` - The compiler.
 /// * `cache` - The cache folder.
+/// * `dialect` - The flag form of the compiler.
 ///
 /// # Returns
 ///
 /// `true` when the build succeeds.
-pub fn has_sanitizers(cc: &Tool, cache: &Path) -> bool
+pub fn has_sanitizers(cc: &Tool, cache: &Path, dialect: Dialect) -> bool
 {
     let src = cache.join("zk_probe.c");
     ret_if!(std::fs::write(&src, "int main(void) { return 0; }\n").is_err(), false);
     let exe = cache.join(format!("zk_probe{}", std::env::consts::EXE_SUFFIX));
     let mut cmd = cc.command();
-    cmd.args(SANITIZE_FLAGS).arg(&src).arg("-o").arg(&exe);
+    cmd.args(dialect.flags().sanitize).arg(&src).args(dialect.out(true, &exe));
     cmd.output().is_ok_and(|o| o.status.success())
 }
 
@@ -221,6 +382,10 @@ pub struct BuildPlan<'a>
     /// The link flag of each lib the C functions of the program come from.
     #[builder(default)]
     pub libs: &'a [String],
+    /// The ABI of the executable, which picks the flag form and the OS libs of
+    /// the runtime lib; this compiler's own when left out.
+    #[builder(default = host_abi())]
+    pub abi: TargetAbi,
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -255,14 +420,15 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     let libs = plan.sources.iter().filter(|s| !is_c(s)).cloned();
     // shortcut: each compile starts at once, with no cap; cap them at the core
     // count if programs reach hundreds of files.
+    let object = Dialect::of(plan.abi).object();
     let started = sources
         .iter()
-        .map(|s| start(plan.cc, compile_command(plan, s, &s.with_extension("o"))));
+        .map(|s| start(plan.cc, compile_command(plan, s, &s.with_extension(object))));
     let started = started.collect::<zakac_host_errors::Result<Vec<Child>>>()?;
     let finished = started.into_iter().map(|child| finish(plan.cc, child));
     let mut outputs = finished.collect::<zakac_host_errors::Result<Vec<Output>>>()?;
     ret_if!(outputs.iter().any(|o| !o.status.success()), Ok(failed(outputs, plan.cc)));
-    let objects = sources.iter().map(|s| s.with_extension("o")).chain(libs);
+    let objects = sources.iter().map(|s| s.with_extension(object)).chain(libs);
     let objects: Vec<PathBuf> = objects.collect();
     let linker = plan.linker.unwrap_or(plan.cc);
     let output = run(linker, link_command(plan, linker, &objects))?;
@@ -285,8 +451,10 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 /// The command.
 fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Command
 {
+    let dialect = Dialect::of(plan.abi);
     let mut cmd = plan.cc.command();
-    cmd.args(compile_flags(plan)).arg("-c").arg(source).arg("-o").arg(object);
+    cmd.args(compile_flags(plan)).arg(dialect.flags().to_object).arg(source);
+    cmd.args(dialect.out(false, object));
     cmd
 }
 
@@ -301,11 +469,12 @@ fn compile_command(plan: &BuildPlan<'_>, source: &Path, object: &Path) -> Comman
 /// The flags.
 fn compile_flags(plan: &BuildPlan<'_>) -> Vec<String>
 {
-    let mut flags = vec![STD_FLAG.to_owned()];
+    let table = Dialect::of(plan.abi).flags();
+    let mut flags = vec![table.std.to_owned()];
     let words = |list: &[&str]| list.iter().map(|f| f.to_string()).collect::<Vec<_>>();
-    do_if!(plan.defaults, flags.extend(words(DEFAULT_FLAGS)));
+    do_if!(plan.defaults, flags.extend(words(table.defaults)));
     let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
-    do_if!(sanitized, flags.extend(words(SANITIZE_FLAGS)));
+    do_if!(sanitized, flags.extend(words(table.sanitize)));
     flags.extend(plan.cflags.iter().cloned());
     flags
 }
@@ -354,18 +523,54 @@ fn finish(tool: &Tool, child: Child) -> zakac_host_errors::Result<Output>
 /// The command.
 fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Command
 {
+    let dialect = Dialect::of(plan.abi);
+    let table = dialect.flags();
     let mut cmd = linker.command();
-    if plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers
-    {
-        cmd.args(SANITIZE_FLAGS);
-    }
+    let sanitized = plan.checks.has(RunCheck::Sanitizers) && plan.sanitizers;
+    do_if!(sanitized, _ = cmd.args(table.sanitize));
+    let os_libs: Vec<&str> =
+        runtime_lib(plan.abi).map(|r| r.native_libs().collect()).unwrap_or_default();
+    ret_if!(dialect == Dialect::Msvc, msvc_link(plan, cmd, objects, &os_libs));
     cmd.args(objects)
-        .arg("-o")
-        .arg(plan.out)
-        .args(LINK_LIBS)
-        .args(native_libs())
+        .args(dialect.out(true, plan.out))
+        .args(table.link_libs)
+        .args(os_libs)
         .args(plan.libs)
         .args(plan.ldflags);
+    cmd
+}
+
+/// The rest of a link of MSVC: the objects and the libs, the executable, then
+/// the options of the linker after `/link` (the `/defaultlib:` rustc asks for
+/// and the user's link flags). A `link.exe` or `lld-link` given as the linker
+/// takes each word itself, and `/OUT:` for the executable.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `cmd` - The command so far.
+/// * `objects` - The objects and the runtime lib.
+/// * `os_libs` - The OS libs of the runtime lib.
+///
+/// # Returns
+///
+/// The command.
+fn msvc_link(
+    plan: &BuildPlan<'_>, mut cmd: Command, objects: &[PathBuf], os_libs: &[&str],
+) -> Command
+{
+    let is_option = |w: &&&str| w.starts_with('/');
+    let (options, libs): (Vec<&&str>, Vec<&&str>) = os_libs.iter().partition(is_option);
+    let stem = |t: &Tool| t.program.file_stem().map(|s| s.to_ascii_lowercase());
+    let linker = plan.linker.and_then(stem);
+    let link_exe = linker.is_some_and(|s| s == "link" || s == "lld-link");
+    cmd.args(objects).args(libs).args(plan.libs);
+    let mut out = OsString::from("/OUT:");
+    out.push(plan.out);
+    do_if!(link_exe, _ = cmd.arg("/NOLOGO").arg(out));
+    let cl_out = Dialect::Msvc.out(true, plan.out);
+    do_if!(!link_exe, _ = cmd.arg("/nologo").args(cl_out).args(["/link", "/NOLOGO"]));
+    cmd.args(options).args(plan.ldflags);
     cmd
 }
 

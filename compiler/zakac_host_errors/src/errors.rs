@@ -105,6 +105,11 @@ pub enum Error
     {
         arch: String
     },
+    #[error("{}", t!("errors.runtime_not_carried", abi = abi))]
+    RuntimeNotCarried
+    {
+        abi: String
+    },
     #[error("{}", t!("errors.native_for_other_host", target = target, host = host))]
     NativeForOtherHost
     {

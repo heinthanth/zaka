@@ -10,6 +10,7 @@ use std::process::Command;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 /// The profile of the runtime lib: release, with a panic that aborts.
 const PROFILE: &str = "zaka-runtime";
@@ -24,6 +25,8 @@ fn main()
     let target = std::env::var("TARGET").expect("cargo sets TARGET");
     let lib = out.join("libzaka_runtime.a");
     let libs = out.join("native-libs.txt");
+    let (other_lib, other_libs) =
+        (out.join("zaka_runtime-other"), out.join("native-libs-other.txt"));
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     for watched in ["compiler/zaka_runtime", "compiler/zaka_host/src", "Cargo.lock"]
     {
@@ -31,12 +34,62 @@ fn main()
     }
     write_header(&root.join("compiler/zaka_runtime"), &out.join("zaka_runtime.h"));
     // The explorer builds this crate for the browser, which links no program.
-    ret_if!(
-        target.starts_with("wasm32"),
-        [lib, libs].iter().for_each(|f| write(f, b""))
-    );
+    let blank = [&lib, &libs, &other_lib, &other_libs];
+    ret_if!(target.starts_with("wasm32"), blank.iter().for_each(|f| write(f, b"")));
     let printed = build_runtime(&root, &out.join("zaka_runtime-target"), &target, &lib);
+    let printed =
+        printed.unwrap_or_else(|e| panic!("the runtime lib did not build:\n{e}"));
     write(&libs, native_libs(&printed).as_bytes());
+    // A Windows host carries the runtime of the other ABI too, so
+    // `--target-abi` picks either; a host that cannot build it carries
+    // none.
+    let other =
+        other_windows(&target).map(|t| (t, out.join("zaka_runtime-other-target")));
+    let built = other.map(|(t, dir)| (t, build_runtime(&root, &dir, t, &other_lib)));
+    match built
+    {
+        Some((_, Ok(printed))) => write(&other_libs, native_libs(&printed).as_bytes()),
+        Some((t, Err(_))) =>
+        {
+            println!("cargo:warning=no runtime lib for {t}: `rustup target add {t}`");
+            [&other_lib, &other_libs].iter().for_each(|f| write(f, b""));
+        }
+        None => [&other_lib, &other_libs].iter().for_each(|f| write(f, b"")),
+    }
+}
+
+/// The Windows target of the other ABI, for a Windows target.
+///
+/// # Arguments
+///
+/// * `target` - The target triple.
+///
+/// # Returns
+///
+/// The triple with `gnu` and `msvc` swapped, or `None` off Windows.
+fn other_windows(target: &str) -> Option<&'static str>
+{
+    match target
+    {
+        "x86_64-pc-windows-gnu" => Some("x86_64-pc-windows-msvc"),
+        "x86_64-pc-windows-msvc" => Some("x86_64-pc-windows-gnu"),
+        _ => None,
+    }
+}
+
+/// The file name a staticlib of the runtime takes for a target: MSVC names it
+/// `zaka_runtime.lib`, the others `libzaka_runtime.a`.
+///
+/// # Arguments
+///
+/// * `target` - The target triple.
+///
+/// # Returns
+///
+/// The file name.
+fn lib_file(target: &str) -> &'static str
+{
+    tern!(target.ends_with("-msvc"), "zaka_runtime.lib", "libzaka_runtime.a")
 }
 
 /// Write the C header of the runtime from its Rust: the functions, the
@@ -98,8 +151,11 @@ fn first_paragraphs(text: &str) -> String
 ///
 /// # Returns
 ///
-/// What the nested build wrote to standard error, which holds the link list.
-fn build_runtime(root: &Path, target_dir: &Path, target: &str, lib: &Path) -> String
+/// What the nested build wrote to standard error, which holds the link list,
+/// or all of it when the build failed.
+fn build_runtime(
+    root: &Path, target_dir: &Path, target: &str, lib: &Path,
+) -> Result<String, String>
 {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
     let mut cmd = Command::new(cargo);
@@ -122,12 +178,14 @@ fn build_runtime(root: &Path, target_dir: &Path, target: &str, lib: &Path) -> St
     do_if!(floor, _ = cmd.env("MACOSX_DEPLOYMENT_TARGET", MACOS_FLOOR));
     let output = cmd.output().expect("cargo runs");
     let printed = String::from_utf8_lossy(&output.stderr).into_owned();
-    assert!(output.status.success(), "the runtime lib did not build:\n{printed}");
-    let built = target_dir.join(target).join(PROFILE).join("libzaka_runtime.a");
+    ret_if!(!output.status.success(), Err(printed));
+    let built = target_dir.join(target).join(PROFILE).join(lib_file(target));
     std::fs::copy(&built, lib).expect("the runtime lib is readable");
-    // Debug info is most of the lib; a host with no `strip` keeps it.
-    let _ = Command::new("strip").arg("-S").arg(lib).status();
-    printed
+    // Debug info is most of the lib; a host with no `strip` keeps it, and the
+    // `strip` of GNU leaves an MSVC lib alone.
+    let gnu = !target.ends_with("-msvc");
+    do_if!(gnu, _ = Command::new("strip").arg("-S").arg(lib).status());
+    Ok(printed)
 }
 
 /// The link list that rustc printed for the lib, one flag a line.

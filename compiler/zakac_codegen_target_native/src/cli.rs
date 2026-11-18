@@ -195,9 +195,10 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     use zakac_codegen_target_c::cli::target_options;
     use zakac_codegen_target_c::cli::with_exe;
     use zakac_codegen_target_c::driver::default_cache;
-    use zakac_codegen_target_c::driver::write_cache;
-    use zakac_codegen_target_c::ffi::link_libs;
+    use zakac_codegen_target_c::driver::write_cache_for;
+    use zakac_codegen_target_c::ffi::link_libs_for;
     use zakac_codegen_target_c::options::RunCheck;
+    use zakac_codegen_target_c::toolchain::Dialect;
 
     let info = CommandInfo::new("zakac build", env!("CARGO_PKG_VERSION"));
     let arg = |name: &str| matches.get_one::<String>(name).map(String::as_str);
@@ -289,14 +290,15 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             // Cranelift code holds no sanitizer marks, so the link leaves them
             // out.
             let checks = options.checks.with(RunCheck::Sanitizers, false);
-            write_cache(&cache, &[]).and_then(|lib| {
-                let obj = cache.join("main.o");
+            let dialect = Dialect::of(target.abi);
+            write_cache_for(&cache, &[], target.abi).and_then(|lib| {
+                let obj = cache.join(format!("main.{}", dialect.object()));
                 written(obj.clone(), &made.octets)?;
                 let sources: Vec<PathBuf> = std::iter::once(obj).chain(lib).collect();
-                let libs = link_libs(&program.foreign);
+                let libs = link_libs_for(&program.foreign, dialect);
                 #[rustfmt::skip]
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
-                    .sources(&sources).libs(&libs).build();
+                    .sources(&sources).libs(&libs).abi(target.abi).build();
                 build_and_link(matches, io, &info, link)
             })
         }
@@ -320,7 +322,10 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 /// The error, or `None` for the host.
 fn native_other_host(target: &Target) -> Option<Error>
 {
-    ret_if!(target.is_host(), None);
+    let host = Target::host();
+    let same = (target.os, target.arch) == (host.os, host.arch);
+    let carried = zakac_codegen_target_c::driver::runtime_lib(target.abi).is_some();
+    ret_if!(same && carried, None);
     Some(Error::NativeForOtherHost {
         target: target.shown(),
         host: Target::host().shown(),

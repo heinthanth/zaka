@@ -119,10 +119,12 @@ the runtime under its C name: the runtime is linked into `zakac`, so the code ca
 in place. The program runs on the thread of `zakac`; a stop ends `zakac`.
 
 The AOT path builds an `ObjectModule` for the triple of the target: `x86_64`, `aarch64` or
-`riscv64` on Windows, macOS or Linux, as position-independent code. `build_main` writes
-`main.o` into the cache folder, beside the runtime lib, and links both through the C
-toolchain of the C target (`build_and_link`), with no C to compile. An executable is
-linked for the host alone; `--emit obj` and `--emit clif` take another target.
+`riscv64` on Windows (`pc-windows-gnu`, or `pc-windows-msvc` for the ABI of MSVC), macOS
+or Linux, as position-independent code. `build_main` writes `main.o` (`main.obj` for
+MSVC) into the cache folder, beside the runtime lib of the ABI, and links both through
+the C toolchain of the C target (`build_and_link`), with no C to compile. An executable is
+linked for the OS and the CPU of the host, and an ABI whose runtime lib `zakac` carries;
+`--emit obj` and `--emit clif` take another target.
 
 ## Tests
 

@@ -123,10 +123,12 @@ The target is the host the compiler runs on: its OS, its CPU, the bit count of
 - A program that holds a compile-time conditional or names a fact is settled for its
   target, and its ops for the VM record it: the VM refuses to run them on another OS
   or CPU, with a message that names both.
-- The C target builds an executable for the host alone: for another target it writes
-  the C files (`--emit c`), to build there.
-- The native target, too, links an executable for the host alone: for another target it
-  writes the object file (`--emit obj`) or the Cranelift IR (`--emit clif`).
+- The C target builds an executable for the OS and the CPU of the host alone, with
+  either ABI on Windows ([Native programs](../compiler/native.md#windows)): for another
+  target it writes the C files (`--emit c`), to build there.
+- The native target, too, links an executable for the OS and the CPU of the host alone:
+  for another target it writes the object file (`--emit obj`) or the Cranelift IR
+  (`--emit clif`).
 - The explorer settles a program for Linux on x86-64.
 
 ## Comptime functions

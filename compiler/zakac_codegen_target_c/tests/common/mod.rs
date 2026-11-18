@@ -7,12 +7,13 @@ use std::process::Stdio;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_codegen_target_c::driver::translate;
-use zakac_codegen_target_c::driver::write_cache;
+use zakac_codegen_target_c::driver::write_cache_for;
 use zakac_codegen_target_c::emit::CFile;
 use zakac_codegen_target_c::options::Checks;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_codegen_target_c::toolchain;
 use zakac_codegen_target_c::toolchain::BuildPlan;
+use zakac_codegen_target_c::toolchain::Dialect;
 use zakac_codegen_target_c::toolchain::Tool;
 use zakac_diagnostics::has_errors;
 use zakac_host_errors::Error;
@@ -28,6 +29,19 @@ pub fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 /// The repo samples folder.
 pub fn samples() -> PathBuf { root().join("../../samples") }
 
+/// The ABI the native builds of the tests are for: `ZAKA_TEST_ABI` (`gnu` or
+/// `msvc`), else the compiler's own, so a Windows host runs the suite once for
+/// each ABI.
+///
+/// # Returns
+///
+/// The ABI.
+pub fn test_abi() -> zakac_ast::target::TargetAbi
+{
+    let given = std::env::var("ZAKA_TEST_ABI").ok().and_then(|v| v.parse().ok());
+    given.unwrap_or_else(zakac_codegen_target_c::driver::host_abi)
+}
+
 /// The C compiler on this host, or `None`; a test with no compiler notes it
 /// and passes, so a developer host without one keeps passing. When
 /// `ZAKA_REQUIRE_CC` is `1`, as on CI, a host with no compiler fails instead.
@@ -37,7 +51,7 @@ pub fn samples() -> PathBuf { root().join("../../samples") }
 /// The compiler.
 pub fn cc() -> Option<Tool>
 {
-    let found = toolchain::find_cc(None).ok();
+    let found = toolchain::find_cc_for(None, Dialect::of(test_abi())).ok();
     if found.is_none()
     {
         let required = std::env::var("ZAKA_REQUIRE_CC").is_ok_and(|v| v == "1");
@@ -153,11 +167,11 @@ pub struct Run
 pub fn compile_and_run(cc: &Tool, files: &[CFile], checks: Checks) -> Run
 {
     let dir = tempfile::tempdir().unwrap();
-    let sources = write_cache(dir.path(), files).unwrap();
+    let sources = write_cache_for(dir.path(), files, test_abi()).unwrap();
     let exe = dir.path().join(format!("program{}", std::env::consts::EXE_SUFFIX));
     #[rustfmt::skip]
     let plan = BuildPlan::builder().cc(cc).sources(&sources).out(&exe).checks(checks)
-        .sanitizers(false).build();
+        .sanitizers(false).abi(test_abi()).build();
     let built = toolchain::build(&plan).unwrap();
     let errors: Vec<_> =
         built.outputs.iter().map(|o| String::from_utf8_lossy(&o.stderr)).collect();

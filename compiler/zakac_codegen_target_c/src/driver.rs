@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use etcetera::BaseStrategy;
+use zakac_ast::target::Target;
+use zakac_ast::target::TargetAbi;
 use zakac_borrow_checker::artifact::Borrowchecked;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_diagnostics::Diagnostic;
@@ -13,6 +15,7 @@ use zakac_host_errors::errors::IOErrorContext;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_parser::load::Loaded;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::hash::SourceFileHash;
@@ -32,26 +35,86 @@ pub const RUNTIME: &[(&str, &str)] = &[
 
 /// The runtime lib (`zaka_runtime`) built for the target of this compiler;
 /// blank in a build for the browser.
-pub const RUNTIME_LIB: &[u8] =
+const RUNTIME_LIB: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/libzaka_runtime.a"));
-
-/// The file name of the runtime lib in the cache.
-pub const RUNTIME_LIB_NAME: &str = "libzaka_runtime.a";
 
 /// The OS libs the runtime lib needs at link time, one flag a line.
 const NATIVE_LIBS: &str = include_str!(concat!(env!("OUT_DIR"), "/native-libs.txt"));
 
-/// The OS libs the runtime lib needs at link time, as `-l` flags.
+/// The runtime lib of the other Windows ABI, which a Windows compiler carries
+/// when its build could make it; blank elsewhere.
+const OTHER_LIB: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/zaka_runtime-other"));
+
+/// The OS libs of the runtime lib of the other Windows ABI.
+const OTHER_LIBS: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/native-libs-other.txt"));
+
+/// The runtime lib of one ABI, as this compiler carries it.
+#[derive(Debug, Clone, Copy)]
+pub struct RuntimeLib
+{
+    /// The octets of the lib.
+    pub octets: &'static [u8],
+    /// Its file name in the cache: `zaka_runtime.lib` for MSVC, else
+    /// `libzaka_runtime.a`.
+    pub name: &'static str,
+    /// The OS libs it needs at link time, one flag a line, as rustc prints
+    /// them.
+    libs: &'static str,
+}
+
+impl RuntimeLib
+{
+    /// The OS libs the lib needs at link time: `-l` flags, or the `.lib`
+    /// files and `/defaultlib:` flags of MSVC.
+    ///
+    /// # Returns
+    ///
+    /// The flags.
+    pub fn native_libs(&self) -> impl Iterator<Item = &'static str>
+    {
+        // The C compiler links libc (libSystem on macOS) on its own, and the
+        // link adds libm, so the list leaves them out.
+        const LINKED: &[&str] = &["-lc", "-lSystem", "-lm"];
+        self.libs.lines().filter(|l| !LINKED.contains(l))
+    }
+}
+
+/// The ABI this compiler was built for, whose runtime lib each build of it
+/// carries.
 ///
 /// # Returns
 ///
-/// The flags.
-pub fn native_libs() -> impl Iterator<Item = &'static str>
+/// The ABI.
+pub fn host_abi() -> TargetAbi { Target::host().abi }
+
+/// The runtime lib of an ABI.
+///
+/// # Arguments
+///
+/// * `abi` - The ABI.
+///
+/// # Returns
+///
+/// The lib, or `None` for an ABI this compiler carries no runtime of.
+pub fn runtime_lib(abi: TargetAbi) -> Option<RuntimeLib>
 {
-    // The C compiler links libc (libSystem on macOS) on its own, and the link
-    // adds libm, so the list leaves them out.
-    const LINKED: &[&str] = &["-lc", "-lSystem", "-lm"];
-    NATIVE_LIBS.lines().filter(|l| !LINKED.contains(l))
+    let name = tern!(abi == TargetAbi::Msvc, "zaka_runtime.lib", "libzaka_runtime.a");
+    let other = match host_abi()
+    {
+        TargetAbi::Gnu if cfg!(windows) => TargetAbi::Msvc,
+        TargetAbi::Msvc => TargetAbi::Gnu,
+        _ => host_abi(),
+    };
+    let (octets, libs) = match abi
+    {
+        a if a == host_abi() => (RUNTIME_LIB, NATIVE_LIBS),
+        a if a == other => (OTHER_LIB, OTHER_LIBS),
+        _ => return None,
+    };
+    ret_if!(octets.is_empty() && !RUNTIME_LIB.is_empty(), None);
+    Some(RuntimeLib { octets, name, libs })
 }
 
 /// The output of the phases up to the C text.
@@ -165,7 +228,8 @@ fn user_cache(full: &Path) -> Option<PathBuf>
     Some(base.join("zakac").join(folder).join(format!("{stem}-{short}")))
 }
 
-/// Write the generated files and the runtime into the cache folder.
+/// Write the generated files and the runtime of this compiler's own ABI into
+/// the cache folder.
 ///
 /// # Arguments
 ///
@@ -180,6 +244,28 @@ pub fn write_cache(
     dir: &Path, files: &[CFile],
 ) -> zakac_host_errors::Result<Vec<PathBuf>>
 {
+    write_cache_for(dir, files, host_abi())
+}
+
+/// Write the generated files and the runtime of an ABI into the cache folder.
+///
+/// # Arguments
+///
+/// * `dir` - The cache folder; it is made when missing.
+/// * `files` - The generated files.
+/// * `abi` - The ABI of the executable.
+///
+/// # Returns
+///
+/// The paths of the C files to compile, then the runtime lib to link, or the
+/// error of a write or of an ABI this compiler carries no runtime of.
+pub fn write_cache_for(
+    dir: &Path, files: &[CFile], abi: TargetAbi,
+) -> zakac_host_errors::Result<Vec<PathBuf>>
+{
+    let abi_name: &'static str = abi.into();
+    let runtime =
+        runtime_lib(abi).ok_or(Error::RuntimeNotCarried { abi: abi_name.into() })?;
     let fail = |path: &Path| {
         let path = path.to_path_buf();
         move |e| Error::from_io(e, IOErrorContext::new(path, IOErrorAction::Write))
@@ -196,9 +282,9 @@ pub fn write_cache(
             sources.push(path);
         }
     }
-    let lib = dir.join(RUNTIME_LIB_NAME);
-    let same = std::fs::read(&lib).is_ok_and(|old| old == RUNTIME_LIB);
-    do_if!(!same, std::fs::write(&lib, RUNTIME_LIB).map_err(fail(&lib))?);
+    let lib = dir.join(runtime.name);
+    let same = std::fs::read(&lib).is_ok_and(|old| old == runtime.octets);
+    do_if!(!same, std::fs::write(&lib, runtime.octets).map_err(fail(&lib))?);
     sources.push(lib);
     Ok(sources)
 }

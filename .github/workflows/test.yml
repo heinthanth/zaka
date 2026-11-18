@@ -15,27 +15,38 @@ concurrency:
 
 jobs:
   test:
-    name: Run the tests (${{ matrix.os }})
+    name: Run the tests (${{ matrix.os }}${{ matrix.host && format(', {0} host', matrix.host) || '' }})
     runs-on: ${{ matrix.os }}
     env:
       # A host with no C compiler fails the native build tests; it does not skip them.
       ZAKA_REQUIRE_CC: "1"
     strategy:
       fail-fast: false
+      # Windows runs twice: zakac built with the GNU host and with the MSVC
+      # host. Each carries the runtime lib of both ABIs and tests both.
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+            host: gnu
+            other: msvc
+          - os: windows-latest
+            host: msvc
+            other: gnu
     steps:
       - uses: actions/checkout@v4
 
-      # Windows builds with the GNU host: the C and native targets link with
-      # MinGW, and the runtime lib they carry is built for that host.
+      # On Windows the toolchain of the host, and the target of the other ABI,
+      # whose runtime lib zakac carries too.
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || 'stable' }}
+          toolchain: ${{ matrix.host && format('stable-x86_64-pc-windows-{0}', matrix.host) || 'stable' }}
+          targets: ${{ matrix.other && format('x86_64-pc-windows-{0}', matrix.other) || '' }}
 
-      # windows-latest has no gcc on the PATH: MinGW from MSYS2 gives the C
-      # target a compiler, and no Visual Studio is involved. The runtime lib
-      # carries its own libffi on each host.
+      # windows-latest has no gcc on the PATH: MinGW from MSYS2 gives the GNU
+      # ABI a compiler, and the Visual Studio of the runner gives MSVC its `cl`.
+      # The runtime lib carries its own libffi on each host.
       - name: Install MinGW (Windows)
         if: runner.os == 'Windows'
         id: msys2
@@ -84,3 +95,14 @@ jobs:
           $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
           Get-Command sh, make, cp, gcc | Format-Table Name, Source -AutoSize
           cargo nextest run --workspace --locked --no-fail-fast
+
+      # The executables of the other ABI: the C and native suites again.
+      - name: Run the native tests for the other ABI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ZAKA_TEST_ABI: ${{ matrix.other }}
+        run: |
+          $kept = ($env:PATH -split ';') | Where-Object { $_ -notlike '*\Git\*' }
+          $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
+          cargo nextest run -p zakac_codegen_target_c -p zakac_codegen_target_native --locked --no-fail-fast

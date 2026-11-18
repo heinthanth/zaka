@@ -24,13 +24,36 @@ what a native program keeps from the VM, and what it does not.
 
 A C compiler on the PATH; the native target uses it to link alone. The build takes the one `--cc` names, else `CC`, else the first
 of `cc`, `gcc`, `clang` and `zig cc`. The C it writes is plain C11, so GCC, Clang and `zig cc`
-each build it. On Windows, a MinGW toolchain such as llvm-mingw or w64devkit, or Zig, builds
-it with no Visual Studio.
+each build it. Windows takes either of two ABIs, MinGW or MSVC: see [Windows](#windows).
 
 The runtime, `zaka_runtime`, is a Rust lib that `zakac` carries inside it, built for the
 host: the build writes it into the cache and links it, so no Rust toolchain is needed.
 Neither target needs a libffi of the host: the runtime carries its own, closures to C
 included.
+
+## Windows
+
+A Windows executable is built for one of two ABIs, which `--target-abi` picks:
+
+| ABI | Toolchain | Flags |
+| --- | --- | --- |
+| `gnu` | MinGW: the gcc or Clang of MSYS2 UCRT64, llvm-mingw, w64devkit, or `zig cc` | as on the other hosts |
+| `msvc` | Visual Studio, or its Build Tools, with "Desktop development with C++": `cl` or `clang-cl` | `/std:c11 /nologo /O2 /w /fp:precise /utf-8 /MD`; a lib is `X.lib`, and the options of the linker follow `/link` |
+
+Left out, the ABI is the one `zakac` itself was built for. `zakac` on Windows carries the
+runtime lib of both ABIs (`libzaka_runtime.a` and `zaka_runtime.lib`) when its own build
+could make both, and an ABI it carries none of is refused with the target to add. For
+`msvc`, `--cc` and `CC` win, then `cl` and `clang-cl` on the PATH (a Developer Prompt),
+then the `cl` of the newest Visual Studio with the C++ tools, which the build finds and
+runs with the variables of its Developer Prompt. A `--linker` of `link` or `lld-link`
+takes `/OUT:` and each option itself; another links as `cl` does.
+
+- MSVC links a DLL through its import lib: a lib the program names as a path to a `.dll`
+  links the `.lib` of the same name beside it, and the program opens the `.dll` when it
+  runs. MinGW writes one with `-Wl,--out-implib,<name>.lib`.
+- `--checks +sanitizers` under `msvc` adds the address sanitizer alone
+  (`/fsanitize=address`).
+- `zakac run` and `zakac run --jit` run inside `zakac`, so a run takes the ABI of `zakac`.
 
 Floats print as the VM prints them, digit for digit, on each host: the runtime works out
 the digits from the bits of the float, with no print from libc.
