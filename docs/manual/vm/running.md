@@ -163,14 +163,16 @@ options of the VM:
 
 The same command is built as a program of its own, `zaka_vm`, with the same options.
 
-`--jit` runs the program with no VM: [Cranelift](../compiler/native.md#cranelift) lowers
-it to machine code of the host, and `zakac` runs that code as a native executable runs.
-It keeps `--max-depth`, `--max-heap`, the rights and the arguments, and leaves out the
-other options of the table, which belong to the VM. The `zaka_vm` program carries no
-Cranelift: it takes `--jit` and runs the VM.
+`zakac run` of a source file runs it with no VM: [Cranelift](../compiler/native.md#cranelift)
+lowers it to machine code of the host, and `zakac` runs that code as a native executable
+runs. It keeps `--max-depth`, `--max-heap`, the rights and the arguments. `--vm`, an
+artifact, standard input, or one of the other options of the table, which belong to the
+VM, runs the program on the VM; so does a program Cranelift cannot build at present
+([Commands](../compiler/commands.md#run) lists each case). The `zaka_vm` program carries
+no Cranelift and runs each program on the VM.
 
 ```console
-$ zakac run --jit hello.zaka
+$ zakac run --vm hello.zaka
 ```
 
 ## Printing

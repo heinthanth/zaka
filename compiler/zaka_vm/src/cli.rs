@@ -13,6 +13,7 @@ use zakac_cli_common::clap::Arg;
 use zakac_cli_common::clap::ArgAction;
 use zakac_cli_common::clap::ArgMatches;
 use zakac_cli_common::clap::crate_name;
+use zakac_cli_common::clap::parser::ValueSource;
 use zakac_cli_common::clap::value_parser;
 use zakac_cli_common::clap_utils::CommandInfo;
 use zakac_cli_common::clap_utils::report_command_error;
@@ -44,6 +45,7 @@ use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::cli::target_from;
 use zakac_semcheck::open_chains::load_settled;
@@ -77,10 +79,17 @@ const FRAMES_ARG: &str = "frames";
 const LEAKS_ARG: &str = "leaks";
 /// The id of the flag that runs the program as native code, with the JIT.
 const JIT_ARG: &str = "jit";
+/// The id of the flag that runs the program on the VM.
+const VM_ARG: &str = "vm";
+/// The flags of the VM alone: a run that names one runs on the VM.
+const VM_ONLY_ARGS: &[&str] =
+    &[MAX_STEPS_ARG, MAX_STACK_ARG, FRAMES_ARG, LEAKS_ARG, "results", "scratch"];
 
 /// What runs a program with the JIT: the matches of `zakac run`, the
-/// streams, the rights of the run, and the arguments of the start block.
-pub type JitRunner = fn(&ArgMatches, &mut CommandIO<'_>, Gate, Vec<String>) -> ExitCode;
+/// streams, the rights of the run, and the arguments of the start block. It
+/// gives `None` when the JIT cannot run the program, so the VM runs it.
+pub type JitRunner =
+    fn(&ArgMatches, &mut CommandIO<'_>, Gate, Vec<String>) -> Option<ExitCode>;
 
 /// The JIT, which `zakac` installs; the VM crate holds no native code of its
 /// own.
@@ -142,6 +151,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .action(ArgAction::SetTrue);
     let jit =
         Arg::new(JIT_ARG).long("jit").help(t!("vm.jit")).action(ArgAction::SetTrue);
+    let vm = Arg::new(VM_ARG).long("vm").help(t!("vm.vm")).action(ArgAction::SetTrue);
     let args = Arg::new(ARGS_ARG)
         .value_name("ARGS")
         .help(t!("vm.args"))
@@ -151,7 +161,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
     let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
     let cmd = attach_grant_args(cmd, Granted::Run);
-    cmd.arg(leaks).arg(jit).arg(args).about(t!("vm.about"))
+    cmd.arg(leaks).arg(jit).arg(vm).arg(args).about(t!("vm.about"))
 }
 
 impl Command for ZakaVm
@@ -254,6 +264,28 @@ struct Loaded
     diagnostics: Vec<Diagnostic>,
 }
 
+/// Whether a run goes to the JIT: with `--jit`, which wins over `--vm`, or
+/// with neither `--vm` nor a flag of the VM alone for a source file. An
+/// artifact holds ops of the VM, and standard input cannot be read again when
+/// the JIT gives the program back to the VM.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// `true` for the JIT.
+fn wants_jit(matches: &ArgMatches) -> bool
+{
+    ret_true!(matches.get_flag(JIT_ARG));
+    let given = |id: &&str| matches.value_source(id) == Some(ValueSource::CommandLine);
+    let vm_flag = VM_ONLY_ARGS.iter().any(given);
+    let input = matches.get_one::<String>("input").map(std::path::Path::new);
+    let source = input.is_some_and(|p| p.extension().is_some_and(|e| e == "zaka"));
+    source && !vm_flag && !matches.get_flag(VM_ARG)
+}
+
 /// Load the program, run it and write its output to stdout. A source file
 /// is compiled first; a codegen artifact, raw or text, runs as it is.
 ///
@@ -268,8 +300,10 @@ struct Loaded
 fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 {
     let cmd_info = CommandInfo::new(ZakaVm::name(), ZakaVm::version());
-    let jit = JIT_RUNNER.get().filter(|_| matches.get_flag(JIT_ARG));
-    ret_if!(let Some(run) = jit, run(matches, io, run_gate(matches), run_args(matches)));
+    let jit = JIT_RUNNER.get().filter(|_| wants_jit(matches));
+    let ran =
+        jit.and_then(|run| run(matches, io, run_gate(matches), run_args(matches)));
+    ret_if!(let Some(code) = ran, code);
     let input = Input::from(matches.get_one::<String>("input").map(|s| s.as_str()));
     let mut source_map = SourceMap::new();
     let loaded = load(matches, &input, io, &mut source_map);

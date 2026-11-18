@@ -467,7 +467,8 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--max-stack <OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
-| `--jit` | off | run the program through Cranelift, as code of the host, in place of the VM; see below |
+| `--jit` | off | run the program through Cranelift, and report a program it cannot build; see below |
+| `--vm` | off | run the program on the VM; `--jit` wins over it |
 | `--allow-read[=<PATHS>]` | none | let the program read files, list folders and tell what a path holds: each path, or those under the paths of a comma list; see [Permissions](../vm/running.md#permissions) |
 | `--allow-write[=<PATHS>]` | none | let it write, add to, remove and move files and make folders |
 | `--allow-env[=<NAMES>]` | none | let it read variables of the environment, and give the start block the environment: each variable, or those named |
@@ -511,16 +512,28 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
-`--jit` lowers the program as `build --backend native` does, with the output fact
-`"native"`, and runs it in the `zakac` process. It runs as a native executable runs, with
-the checks of the `default` level: `--max-depth` and `--max-heap` set its limits (no heap
-cap when `--max-heap` is left out), the rights come from the flags above, and the
-arguments from `--`. `--max-steps`, `--max-stack`, `--frames`, `--leaks`, `--results` and
-`--scratch` belong to the VM and change nothing under `--jit`. The CPU must be `x86_64`,
-`aarch64` or `riscv64`.
+`zakac run` of a source file runs it through Cranelift: it lowers the program as `build
+--backend native` does, with the output fact `"native"`, and runs it in the `zakac` process,
+as a native executable runs, with the checks of the `default` level. `--max-depth` and
+`--max-heap` set its limits, as for the VM; the rights come from the flags above, and the
+arguments from `--`. The VM runs the program instead when one of these holds:
+
+- `--vm` is given;
+- the input is an artifact (`.zkc` or `.zkct`) or standard input;
+- a flag of the VM alone is given: `--max-steps`, `--max-stack`, `--frames`, `--leaks`,
+  `--results` or `--scratch`;
+- the CPU of the host is not one Cranelift builds for (`x86_64`, `aarch64`, `riscv64`),
+  `--target-bits` is not the width of an address of the host, or the program holds a
+  construct the native target does not build at present.
+
+`--jit` asks for Cranelift alone: a program it cannot build is an error, and `--max-heap`
+caps the heap when given and not otherwise. The `zaka_vm` program carries no Cranelift and runs each
+program on the VM.
 
 ```console
-$ zakac run --jit age.zaka
+$ zakac run age.zaka
+၂၀
+$ zakac run --vm --max-steps 1000 age.zaka
 ၂၀
 ```
 

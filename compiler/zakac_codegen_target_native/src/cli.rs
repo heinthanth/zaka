@@ -65,8 +65,11 @@ pub fn arch_error(target: &Target) -> Option<Error>
 #[cfg(feature = "jit")]
 pub fn run_jit(
     matches: &ArgMatches, io: &mut CommandIO<'_>, gate: Gate, args: Vec<String>,
-) -> ExitCode
+) -> Option<ExitCode>
 {
+    // With no `--jit`, a program the JIT cannot run goes to the VM, which
+    // checks it again and writes each diagnostic.
+    let asked = matches.get_flag("jit");
     let info = CommandInfo::new("zakac run", env!("CARGO_PKG_VERSION"));
     let input = Input::from(matches.get_one::<String>("input").map(String::as_str));
     let mut source_map = SourceMap::new();
@@ -76,10 +79,20 @@ pub fn run_jit(
         io.stdin,
         &mut source_map,
     );
-    ret_if!(let Err(error) = source, report_command_error(io, &info, error));
+    ret_if!(let Err(error) = source, Some(report_command_error(io, &info, error)));
     let target = target_from(matches, BuildTarget::Native);
-    ret_if!(let Some(error) = arch_error(&target), report_command_error(io, &info, error));
-    ret_if!(let Some(error) = other_host(&target), report_command_error(io, &info, error));
+    // Native code holds the addresses of the host: platform kinds of another
+    // width would size and place each value wrong.
+    let bits = semcheck_options(matches).platform_bits;
+    let host_bits = usize::BITS as u16;
+    let width = (bits != host_bits).then(|| Error::NotForNative {
+        what: format!("--target-bits {bits} on a host of {host_bits} bits"),
+    });
+    let refused = arch_error(&target).or_else(|| other_host(&target)).or(width);
+    if let Some(error) = refused
+    {
+        return asked.then(|| report_command_error(io, &info, error));
+    }
     let semcheck = semcheck_options(matches);
     let source = source.unwrap();
     let loaded = zakac_semcheck::open_chains::load_settled(
@@ -89,7 +102,7 @@ pub fn run_jit(
         &target,
         &semcheck,
     );
-    ret_if!(let Err(error) = loaded, report_command_error(io, &info, error));
+    ret_if!(let Err(error) = loaded, Some(report_command_error(io, &info, error)));
     let mem = borrow_check_options(matches);
     let checked = zakac_borrow_checker::artifact::run_loaded(
         loaded.unwrap(),
@@ -98,12 +111,13 @@ pub fn run_jit(
         &mem,
     );
     let shown = checked_fixes(matches, &source, target.clone(), &checked.diagnostics);
-    let _ = write_diagnostics(io.stderr, &source_map, &shown);
-    ret_if!(has_errors(&checked.diagnostics), ExitCode::Failure);
-    let Some(program) = checked.lowered.folded.as_ref()
+    let errors = has_errors(&checked.diagnostics);
+    let program = checked.lowered.folded.as_ref().filter(|_| !errors);
+    let Some(program) = program
     else
     {
-        return ExitCode::Failure;
+        let _ = write_diagnostics(io.stderr, &source_map, &shown);
+        return Some(ExitCode::Failure);
     };
     let explicit =
         |id: &str| matches.value_source(id) == Some(ValueSource::CommandLine);
@@ -114,16 +128,22 @@ pub fn run_jit(
         .ok()
         .flatten()
         .copied()
-        .filter(|_| explicit("max_heap"));
+        .filter(|_| explicit("max_heap") || !asked);
     let release = matches.try_get_one::<bool>("release").ok().flatten() == Some(&true);
     #[rustfmt::skip]
     let options = TargetCOptions::builder().overflow(mem.overflow).platform_bits(semcheck.platform_bits)
         .max_depth(max_depth).max_heap(max_heap.unwrap_or(0)).debug_info(!release).build();
-    match crate::jit::run(program, source_map.files(), options, gate, &args)
+    let grants = zaka_host::Grants::default();
+    let lowered = crate::jit::lower(program, source_map.files(), options, &grants);
+    let lowered = match lowered
     {
-        Ok(status) => ExitCode::from((status & 0xff) as u8),
-        Err(error) => report_command_error(io, &info, error),
-    }
+        Ok(lowered) => lowered,
+        Err(_) if !asked => return None,
+        Err(error) => return Some(report_command_error(io, &info, error)),
+    };
+    let _ = write_diagnostics(io.stderr, &source_map, &shown);
+    let status = crate::jit::run_lowered(lowered, gate, &args);
+    Some(ExitCode::from((status & 0xff) as u8))
 }
 
 #[cfg(feature = "jit")]

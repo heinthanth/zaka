@@ -66,7 +66,23 @@ pub fn run(
     args: &[String],
 ) -> Result<i32, Error>
 {
-    let (m, lowered) = lower(program, files, options, &Grants::default())?;
+    Ok(run_lowered(lower(program, files, options, &Grants::default())?, gate, args))
+}
+
+/// Run a program the JIT lowered.
+///
+/// # Arguments
+///
+/// * `lowered` - The module, its code final, and what the lowering gave.
+/// * `gate` - The rights of the run.
+/// * `args` - The arguments of the start block.
+///
+/// # Returns
+///
+/// The exit status.
+pub fn run_lowered(lowered: (JITModule, Lowered), gate: Gate, args: &[String]) -> i32
+{
+    let (m, lowered) = lowered;
     let code = m.get_finalized_function(lowered.main);
     zaka_runtime::set_gate(gate);
     let argv = c_list(args.iter().cloned());
@@ -78,7 +94,7 @@ pub fn run(
     let main_fn: MainFn = unsafe { std::mem::transmute::<*const u8, MainFn>(code) };
     let status = main_fn(args.len() as i32, argv.1.as_ptr(), envp.1.as_ptr());
     drop((argv, envp));
-    Ok(status)
+    status
 }
 
 /// Lower a program into code and data of this process, set to run.
