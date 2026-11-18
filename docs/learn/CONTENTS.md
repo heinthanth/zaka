@@ -77,6 +77,7 @@
   - [What a duplicate costs](forms/costs.md)
 - [Unsafe Zaka](pointers/README.md)
   - [Calling C](functions/c.md)
+  - [A lib for C](functions/c-lib.md)
   - [The heap](pointers/heap.md)
   - [Pointer arithmetic](pointers/arithmetic.md)
   - [Growing and shrinking](pointers/resizing.md)

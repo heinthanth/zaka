@@ -230,6 +230,17 @@ impl<M: Module> Shared<'_, M>
         id
     }
 
+    /// The linkage of a bridge: a C lib gives each one to the wrappers of its
+    /// C file.
+    ///
+    /// # Returns
+    ///
+    /// The linkage.
+    fn bridge_linkage(&self) -> Linkage
+    {
+        tern!(self.options.lib, Linkage::Export, Linkage::Local)
+    }
+
     /// The native shape of a function kind C calls back, made on its first
     /// use with its bridge, which is defined once each function is lowered.
     ///
@@ -250,7 +261,7 @@ impl<M: Module> Shared<'_, M>
         let n = self.cb_shapes.len();
         let bridge = self
             .m
-            .declare_function(&format!("zk_cbb_{n}"), Linkage::Local, &sig)
+            .declare_function(&format!("zk_cbb_{n}"), self.bridge_linkage(), &sig)
             .expect("a bridge");
         let (params, ret) = fn_shape(f);
         let ret_id = self.ckind(ret);

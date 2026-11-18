@@ -277,7 +277,7 @@ $ zakac build [--backend vm|c|native] [--emit WHAT] [options] [INPUT]
 | --- | --- | --- | --- |
 | `vm` (the default) | the ops of the VM, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
 | `c` | an executable, through C and a C compiler; or a C lib | `bin` (default), `c`, `lib` | `<name>` beside the source (`<name>.exe` on Windows); for `lib`, `lib<name>.a`, the shared lib and `<name>.h` |
-| `native` | an executable, through Cranelift and the linker of a C compiler | `bin` (default), `obj`, `clif` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif` |
+| `native` | an executable, through Cranelift and the linker of a C compiler; or a C lib | `bin` (default), `obj`, `clif`, `lib` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif`; for `lib`, as for the C target |
 
 A source read from standard input writes the ops to standard output. Each target
 takes all the compile options above, and the options of its own; an option of another
@@ -387,8 +387,10 @@ $ CFLAGS=-O3 zakac build --backend c --linker 'clang -fuse-ld=lld' age.zaka
 
 #### A C lib
 
-`--emit lib` builds a C lib of the functions marked `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော`,
-for C, Rust and each language that calls C. The program needs no start block, and a
+`--emit lib` builds a C lib of the functions marked `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော`
+([Functions C can call](../language/functions.md#functions-c-can-call)), for C, Rust and
+each language that calls C; `--backend native --emit lib` builds the same lib from
+Cranelift code, with the wrappers in C beside it. The program needs no start block, and a
 program with none of those functions is an error. The build writes three files in one
 folder, named after the input or the last part of `-o`:
 
@@ -411,6 +413,12 @@ lists.
 $ zakac build --backend c --emit lib -o out/mathlib mathlib.zaka
 $ cc -Iout main.c out/libmathlib.a -liconv -lm -o main
 ```
+
+The shared lib of macOS names itself `@rpath/lib<name>.dylib`, so a program finds it
+through its run path (`-Wl,-rpath,<folder>`). Beside the shared lib, the linker of macOS
+takes it for `-l<name>`: give the static lib as a path, or keep it in a folder of its
+own, as a Rust build does with `-L <folder> -l static=<name>`. See
+[A lib for C](../../learn/functions/c-lib.md).
 
 ### The native target
 

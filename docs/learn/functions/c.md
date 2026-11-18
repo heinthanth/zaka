@@ -396,4 +396,4 @@ A C function can also take or give an address, a pointer into the program's stor
 - Declare `labs` from `"libc"` over 64-bit integers and call it with a negative number.
 - Declare `sqrt` from `"libm"` over decimal numbers and print the square root of 2.0.
 
-Next: [The heap](../pointers/heap.md).
+Next: [A lib for C](c-lib.md).

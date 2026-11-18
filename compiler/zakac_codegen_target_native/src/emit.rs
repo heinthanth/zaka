@@ -19,8 +19,12 @@ use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_codegen_target_c::descriptors::Descriptors;
 use zakac_codegen_target_c::descriptors::KindRow;
+use zakac_codegen_target_c::emit::PROGRAM_TABLE;
 use zakac_codegen_target_c::emit::site_mark;
 use zakac_codegen_target_c::emit::table_texts;
+use zakac_codegen_target_c::exports::EXPORT_KINDS;
+use zakac_codegen_target_c::exports::Export;
+use zakac_codegen_target_c::exports::exported;
 use zakac_codegen_target_c::kinds::is_blob;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_host_errors::Error;
@@ -53,6 +57,10 @@ pub struct Lowered
     pub table: DataId,
     /// Each kind descriptor, `zk_kind`, beside the row it was written from.
     pub descrs: Vec<(DataId, KindRow)>,
+    /// In a C lib, the index of the bridge `zk_cbb_<n>` of each function that
+    /// code outside can call, in the order of `exported`.
+    #[builder(default)]
+    pub export_shapes: Vec<usize>,
 }
 
 /// State shared across the functions of a program.
@@ -420,23 +428,31 @@ pub fn emit<M: Module>(
             define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.func(n as u32, f));
         clif.push_str(&text);
     }
-    let main_sig = {
-        let mut sig = s.m.make_signature();
-        sig.params.extend([
-            AbiParam::new(types::I32),
-            AbiParam::new(ptr),
-            AbiParam::new(ptr),
-        ]);
-        sig.returns.push(AbiParam::new(types::I32));
-        sig
-    };
+    // A C lib has no `main`: `zk_lib_init` sets the globals on its first call,
+    // and the wrappers find the table by its name.
+    let lib = options.lib;
+    let mut main_sig = s.m.make_signature();
+    if !lib
+    {
+        let words = [AbiParam::new(types::I32), AbiParam::new(ptr), AbiParam::new(ptr)];
+        main_sig.params.extend(words);
+        main_sig.returns.push(AbiParam::new(types::I32));
+    }
+    let main_name = tern!(lib, "zk_lib_init", main_name);
     let main =
         s.m.declare_function(main_name, Linkage::Export, &main_sig)
             .map_err(module_error)?;
-    let table = s.anon(false);
-    let text =
-        define_fn(&mut s, &mut fctx, main, main_sig, want_clif, |g| g.main(table));
+    let named = |s: &mut Shared<'_, M>| {
+        s.m.declare_data(PROGRAM_TABLE, Linkage::Export, false, false)
+    };
+    let table = tern!(lib, named(&mut s).map_err(module_error)?, s.anon(false));
+    let text = define_fn(&mut s, &mut fctx, main, main_sig, want_clif, |g| {
+        tern!(lib, g.lib_init(), g.main(table))
+    });
     clif.push_str(&text);
+    let exports = tern!(lib, exported(module), Vec::new());
+    let made = exports.iter().map(|e| s.cb_shape(e.kind));
+    do_if!(made.collect::<Vec<_>>().contains(&None), s.missing(EXPORT_KINDS));
     // A bridge can make the shape of another function kind as it is lowered.
     let mut done = 0;
     while done < s.cb_shapes.len()
@@ -454,7 +470,12 @@ pub fn emit<M: Module>(
     define_table(&mut s, table, grants).map_err(module_error)?;
     let rows = s.descr.rows(s.platform());
     let descrs = s.descr_ids.iter().copied().zip(rows).collect();
-    Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs).build())
+    let shape_of =
+        |e: &Export<'_>| s.cb_shapes.iter().position(|(k, _, _)| *k == e.kind);
+    let export_shapes = exports.iter().filter_map(shape_of).collect();
+    #[rustfmt::skip]
+    return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
+        .export_shapes(export_shapes).build());
 }
 
 /// The error of a module, as the error of the build.
@@ -500,8 +521,12 @@ fn declare_program<M: Module>(s: &mut Shared<'_, M>)
     }
     for n in 0..s.module.funcs.len()
     {
+        // The wrappers of a C lib call each function C can call through its
+        // record.
+        let called = s.options.lib && s.module.funcs[n].c_name.is_some();
+        let linkage = tern!(called, Linkage::Export, Linkage::Local);
         let id =
-            s.m.declare_data(&format!("zk_r{n}"), Linkage::Local, false, false)
+            s.m.declare_data(&format!("zk_r{n}"), linkage, false, false)
                 .expect("a record");
         let mut blob = Blob::new();
         blob.ptr(Some(Target::Func(s.funcs[n])));

@@ -12,8 +12,11 @@
 
 use std::fmt::Write;
 
+use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::Place;
+use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::fn_kind::FnKind;
@@ -26,6 +29,11 @@ use crate::emit::PROGRAM_TABLE;
 use crate::emit::comment;
 use crate::emit::record_name;
 use crate::kinds::c_kind;
+
+/// The construct a build cannot make when a function that code outside can
+/// call has kinds no bridge passes.
+pub const EXPORT_KINDS: &str =
+    "a function that code outside can call whose kinds no bridge passes";
 
 /// One function that code outside can call.
 pub struct Export<'a>
@@ -61,6 +69,55 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
             kind: kind_of(func),
         })
         .collect()
+}
+
+/// The statements `zk_lib_init` of a lib runs: the top-level statements,
+/// which set the globals, with no drop of them at the end, since the globals
+/// live as long as the lib.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// The statements.
+pub fn init_stmts(module: &Module) -> &[Stmt]
+{
+    let main = &module.main;
+    let global_drop =
+        |s: &&Stmt| matches!(s, Stmt::Drop { dest: Dest::Slot(Place::Global(_)), .. });
+    let dropped = main.iter().rev().take_while(global_drop).count();
+    &main[..main.len() - dropped]
+}
+
+/// The C file of a lib whose code Cranelift wrote: the glue and the
+/// wrappers, which call the bridges and the records the object gives.
+///
+/// # Arguments
+///
+/// * `exports` - The functions that code outside can call.
+/// * `shapes` - The index of the bridge of each one's kind.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The C text.
+pub fn native_glue(exports: &[Export<'_>], shapes: &[usize], platform: u16) -> String
+{
+    let mut out = "/* The wrappers of a lib whose code Cranelift wrote. */\n#include \
+                   <stdint.h>\n\n#include \"zaka_runtime.h\"\n\n"
+        .to_string();
+    let mut bridges = shapes.to_vec();
+    bridges.sort_unstable();
+    bridges.dedup();
+    bridges.iter().for_each(|n| {
+        _ = writeln!(
+            out,
+            "void zk_cbb_{n}(void *zk_ret, void **zk_args, uint8_t *zk_rec);"
+        )
+    });
+    out + &lib_source(exports, shapes, platform)
 }
 
 /// The function kind of a function, from the kinds of its parameters and

@@ -60,6 +60,9 @@ pub struct Object
     pub octets: Vec<u8>,
     /// The CLIF text of each function.
     pub clif: String,
+    /// In a C lib, the index of the bridge of each function that code
+    /// outside can call.
+    pub export_shapes: Vec<usize>,
 }
 
 /// The Cranelift flags of both the JIT and AOT: code tuned for speed, and a
@@ -109,5 +112,5 @@ pub fn object(
     let mut m = ObjectModule::new(builder.map_err(module_error)?);
     let lowered = emit(&mut m, program, files, options, grants, "main", want_clif)?;
     let octets = m.finish().emit().map_err(module_error)?;
-    Ok(Object { octets, clif: lowered.clif })
+    Ok(Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes })
 }

@@ -15,9 +15,6 @@ en = "The folder for the generated C (default: zakac/<folder>/<input>-<hash> in 
 [target_c.emit]
 en = "What to make: an executable (bin), the C files alone (c), or a C lib of the functions that code outside can call (lib): a static lib, a shared lib and a header (default: bin)."
 
-[target_c.export_kinds]
-en = "a function that code outside can call whose parameter or result kinds the bridge cannot pass"
-
 [target_c.checks]
 en = "The run-time checks of the executable: a level (none, default, mem), then checks to add (+name) or drop (-name): divide, shift, bounds, text, step, depth, null, overlap, sanitizers."
 

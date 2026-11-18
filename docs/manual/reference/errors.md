@@ -279,8 +279,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0486 | `ဇယားအလွတ်` or `[:]` with no ဇယား kind from its place | [Tables](../language/tables.md#literals) |
 | ZK0487 | a warning: a ဇယား kind whose index kind holds a decimal number, which rounding can split into two rows | [Index kinds](../language/tables.md#index-kinds) |
 | ZK0489 | a comptime function whose result is no value a constant can hold | [Compile time](../language/compile-time.md#comptime-functions) |
-| ZK0490 | a function that code outside can call is generic, stands inside a function, has no statements, or takes or gives back a block as its own | [Functions](../language/functions.md) |
-| ZK0491 | the C name of a function that code outside can call is `main`, starts with `zk_` or `ZK_`, or names a C function or another such function | [Functions](../language/functions.md) |
+| ZK0490 | a function that code outside can call is generic, stands inside a function, has no statements, or takes or gives back a block as its own | [Functions C can call](../language/functions.md#functions-c-can-call) |
+| ZK0491 | the C name of a function that code outside can call is `main`, starts with `zk_` or `ZK_`, or names a C function or another such function | [Functions C can call](../language/functions.md#functions-c-can-call) |
 
 ### ZK05: natural Zaka (warnings)
 

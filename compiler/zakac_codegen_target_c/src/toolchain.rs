@@ -653,6 +653,13 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
         runtime_lib(plan.abi).map(|r| r.native_libs().collect()).unwrap_or_default();
     ret_if!(dialect == Dialect::Msvc, msvc_link(plan, cmd, objects, &os_libs));
     do_if!(plan.archive.is_some(), _ = cmd.arg("-shared"));
+    // A program finds a shared lib of macOS through its run path, not through
+    // the path the build wrote it to.
+    let file = plan.out.file_name().map(|n| n.to_string_lossy().into_owned());
+    let apple = plan.archive.is_some() && plan.abi == TargetAbi::Apple;
+    do_if!(let Some(file) = file.filter(|_| apple), {
+        cmd.arg(format!("-Wl,-install_name,@rpath/{file}"));
+    });
     cmd.args(objects)
         .args(dialect.out(true, plan.out))
         .args(table.link_libs)

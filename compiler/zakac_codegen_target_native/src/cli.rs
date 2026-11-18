@@ -157,6 +157,9 @@ pub enum Emit
     Obj,
     /// The CLIF text of each function.
     Clif,
+    /// A C lib: a static lib, a shared lib and a header, of the functions
+    /// that code outside can call.
+    Lib,
 }
 
 /// The words of `--emit` the native target takes.
@@ -164,7 +167,7 @@ pub enum Emit
 /// # Returns
 ///
 /// The words.
-pub fn emit_words() -> Vec<&'static str> { vec!["bin", "obj", "clif"] }
+pub fn emit_words() -> Vec<&'static str> { vec!["bin", "obj", "clif", "lib"] }
 
 /// Build a program with the native target: checked as the C target checks it,
 /// with the output fact `"native"`, lowered to an object file for the target,
@@ -184,7 +187,16 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 
     use zakac_cli_common::grants::Granted;
     use zakac_cli_common::grants::grants_from;
+    use zakac_codegen_target_c::cli::LibFiles;
     use zakac_codegen_target_c::cli::Link;
+    use zakac_codegen_target_c::cli::static_links;
+    use zakac_codegen_target_c::emit::CFile;
+    use zakac_codegen_target_c::exports::header;
+    use zakac_codegen_target_c::exports::native_glue;
+    use zakac_semcheck::semcheck::SemcheckOptions;
+
+    /// The C file of the wrappers of a lib.
+    const LIB_GLUE: &str = "zaka_lib.c";
     use zakac_codegen_target_c::cli::build_and_link;
     use zakac_codegen_target_c::cli::input_path;
     use zakac_codegen_target_c::cli::target_options;
@@ -201,8 +213,10 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
         Some("obj") => Emit::Obj,
         Some("clif") => Emit::Clif,
+        Some("lib") => Emit::Lib,
         _ => Emit::Bin,
     };
+    let lib = emit == Emit::Lib;
     let input = Input::from(arg("input"));
     let mut source_map = SourceMap::new();
     let source = load_artifact::<Arc<SourceFile>>(
@@ -214,9 +228,13 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ret_if!(let Err(error) = source, report_command_error(io, &info, error));
     let target = target_from(matches, BuildTarget::Native);
     ret_if!(let Some(error) = arch_error(&target), report_command_error(io, &info, error));
-    let cross = native_other_host(&target).filter(|_| emit == Emit::Bin);
+    let cross =
+        native_other_host(&target).filter(|_| matches!(emit, Emit::Bin | Emit::Lib));
     ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
-    let semcheck = semcheck_options(matches);
+    let wasi = target.os == zakac_ast::target::TargetOs::Wasi;
+    ret_if!(lib && wasi, report_command_error(io, &info, Error::LibOnWasi));
+    // A lib has no start block: its functions start the runtime.
+    let semcheck = SemcheckOptions { as_module: lib, ..semcheck_options(matches) };
     let source = source.unwrap();
     let loaded = zakac_semcheck::open_chains::load_settled(
         &source,
@@ -241,9 +259,15 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
         return ExitCode::Failure;
     };
+    let exports = zakac_codegen_target_c::exports::exported(program);
+    ret_if!(
+        lib && exports.is_empty(),
+        report_command_error(io, &info, Error::LibWithNoExports)
+    );
     let options = TargetCOptions {
         overflow: mem.overflow,
         platform_bits: semcheck.platform_bits,
+        lib,
         ..target_options(matches)
     };
     let grants = grants_from(matches, Granted::Run);
@@ -277,25 +301,47 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             written(out("clif"), made.clif.as_bytes()).map(|_| ExitCode::Success)
         }
         Emit::Obj => written(out("o"), &made.octets).map(|_| ExitCode::Success),
-        Emit::Bin =>
+        Emit::Bin | Emit::Lib =>
         {
             let cache =
                 arg("cache").map_or_else(|| default_cache(&stem), PathBuf::from);
-            let exe = with_exe(out(""));
             // Cranelift code holds no sanitizer marks, so the link leaves them
             // out.
             let checks = options.checks.with(RunCheck::Sanitizers, false);
             let dialect = Dialect::of(target.abi);
-            write_cache_for(&cache, &[], target.abi).and_then(|lib| {
-                let obj = cache.join(format!("main.{}", dialect.object()));
-                written(obj.clone(), &made.octets)?;
-                let sources: Vec<PathBuf> = std::iter::once(obj).chain(lib).collect();
-                let libs = link_libs_for(&program.foreign, dialect);
-                #[rustfmt::skip]
+            let libs = link_libs_for(&program.foreign, dialect);
+            let files = lib.then(|| LibFiles::of(&out(""), target.clone()));
+            let exe =
+                files.as_ref().map_or_else(|| with_exe(out("")), |f| f.shared.clone());
+            // The wrappers of a lib are C, which the C toolchain builds beside
+            // the object.
+            let platform = options.platform_bits;
+            let glue = files.as_ref().map(|_| {
+                let text = native_glue(&exports, &made.export_shapes, platform);
+                CFile::builder().name(LIB_GLUE).text(text).build()
+            });
+            let built =
+                write_cache_for(&cache, glue.as_slice(), target.abi).and_then(|lib| {
+                    let obj = cache.join(format!("main.{}", dialect.object()));
+                    written(obj.clone(), &made.octets)?;
+                    let sources: Vec<PathBuf> =
+                        std::iter::once(obj).chain(lib).collect();
+                    #[rustfmt::skip]
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
-                    .sources(&sources).libs(&libs).abi(target.abi).build();
-                build_and_link(matches, io, &info, link)
-            })
+                    .sources(&sources).libs(&libs).abi(target.abi)
+                    .maybe_archive(files.as_ref().map(|f| f.archive.as_path())).build();
+                    build_and_link(matches, io, &info, link)
+                });
+            let Some(f) =
+                files.filter(|_| built.as_ref().is_ok_and(|c| *c == ExitCode::Success))
+            else
+            {
+                return built
+                    .unwrap_or_else(|error| report_command_error(io, &info, error));
+            };
+            let links = static_links(target.abi, dialect, &libs);
+            let text = header(&exports, platform, &f.name, &links);
+            written(f.header, text.as_bytes()).map(|_| ExitCode::Success)
         }
     };
     match done

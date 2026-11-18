@@ -22,6 +22,7 @@ use cranelift_frontend::FunctionBuilderContext;
 use cranelift_module::DataId;
 use cranelift_module::FuncId;
 use cranelift_module::Module;
+use zakac_codegen_target_c::exports::init_stmts;
 use zakac_codegen_target_c::kinds::is_blob;
 use zakac_codegen_target_c::options::RunCheck;
 use zakac_ir_builder::ir::Func;
@@ -714,6 +715,16 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
         }
         self.block(&module.main);
         self.finish_main(None, None);
+    }
+
+    /// Lower `zk_lib_init` of a C lib: the top-level statements, which set the
+    /// globals, with no drop of them at the end, since the globals live as
+    /// long as the lib.
+    pub fn lib_init(&mut self)
+    {
+        self.block(init_stmts(self.s.module));
+        ret_if!(!self.live);
+        self.b.ins().return_(&[]);
     }
 
     /// End the main function: write out what is buffered, and give the exit

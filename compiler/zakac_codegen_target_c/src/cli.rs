@@ -556,16 +556,16 @@ struct Job<'a>
 
 /// The files a C lib build writes, in one folder: the static lib, the shared
 /// lib and the header.
-struct LibFiles
+pub struct LibFiles
 {
     /// The name of the lib, with no `lib` in front and no extension.
-    name: String,
+    pub name: String,
     /// The static lib: `lib<name>.a`, or `<name>.lib` for MSVC.
-    archive: PathBuf,
+    pub archive: PathBuf,
     /// The shared lib: `lib<name>.so`, `lib<name>.dylib`, or `<name>.dll`.
-    shared: PathBuf,
+    pub shared: PathBuf,
     /// The header, `<name>.h`.
-    header: PathBuf,
+    pub header: PathBuf,
 }
 
 impl LibFiles
@@ -580,7 +580,7 @@ impl LibFiles
     /// # Returns
     ///
     /// The files.
-    fn of(base: &Path, target: zakac_ast::target::Target) -> LibFiles
+    pub fn of(base: &Path, target: zakac_ast::target::Target) -> LibFiles
     {
         let name = base.file_stem().map(|s| s.to_string_lossy().into_owned());
         let name = name.unwrap_or_else(|| "zaka".into());
@@ -611,7 +611,7 @@ impl LibFiles
 /// # Returns
 ///
 /// The link flags.
-fn static_links(
+pub fn static_links(
     abi: zakac_ast::target::TargetAbi, dialect: toolchain::Dialect, libs: &[String],
 ) -> Vec<String>
 {

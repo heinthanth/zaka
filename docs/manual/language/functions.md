@@ -1591,6 +1591,75 @@ back, and that lies in no block, passes back to C as it is, but the VM cannot re
 through it. C can call back into the program through a function value of a kind that
 crosses (see [Callbacks](#c-functions)).
 
+## Functions C can call
+
+A text and `အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော` right after `သည်` mark a function that code
+outside can call: `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍`, then the
+parameters, the result and the statements of a head with statements. The program calls
+it as each other function; `zakac build --emit lib` gives it to C under the C name (see
+[Commands](../compiler/commands.md#build)). The text is required: the phrase with no text
+before it is ZK0201.
+
+```zaka
+ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် "add_numbers" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+က ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က + ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၂ နှင့် ၄၀ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၄၂
+```
+
+The rules:
+
+- The C name is a C name (ZK0337). It is not `main` and does not start with `zk_` or
+  `ZK_`, which the runtime keeps; no C function the program calls and no other such
+  function has it (ZK0491).
+- The function stands at the top level with statements of its own, takes no kind
+  parameters, and has no `အပိုင်အနေဖြင့်` on a parameter or its result (ZK0490).
+- Its kinds are those C passes to a function value it calls back
+  ([Callbacks](#c-functions)): a parameter is a number, a character, true or false, an
+  address, text (a `const char *`; NULL stops the call), a handle of a kind from outside,
+  or an optional of text or of a handle (NULL holds no data); a plain struct is not taken
+  for now. The result is a number, a character, true or false, or an address (ZK0465).
+  `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်` are ZK0466.
+
+```zaka-error ZK0491
+ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် "zk_add" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```zaka-error ZK0465
+ပဲ့တင် ဟူသော လုပ်ဆောင်ချက် သည် "echo_text" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+က ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+In the lib, each such function returns an `int32_t` status and gives its result through
+a last parameter, an address it writes unless it is NULL: the function above is
+`int32_t add_numbers(int32_t, int32_t, int32_t *)` in C. The status is `ZK_OK` (0), `1 +`
+the number of the trap the call stopped on, with its text from `zk_last_trap()`, or
+`ZK_STOPPED` (-1) for each call after a trap, since a trap can leave the heap and the
+globals half written. The first call starts the runtime and sets the globals; the text a
+call prints goes out before it returns. A lib runs on one thread.
+
 ## Recursion
 
 A function can call itself, at once or through other functions. Nothing marks a function
@@ -2130,6 +2199,8 @@ error[ZK0441]: the result of the start block is "text", but it must be an intege
 | ZK0465 | a parameter or a result of a C function with a kind C cannot take |
 | ZK0466 | `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` on a parameter of a C function that is no list of numbers and no struct that crosses |
 | ZK0467 | `အပိုင်အနေဖြင့်` on a result that is no text from a C function |
+| ZK0490 | a function C can call that is generic, stands inside a function, has no statements, or takes or gives back a block as its own |
+| ZK0491 | the C name of a function C can call that is `main`, starts with `zk_` or `ZK_`, or is taken |
 | ZK0468 | a call of an unsafe function, a C one included, outside unsafe code |
 | ZK0470 | `အပိုင်အနေဖြင့်` on a parameter or a result that holds no pointer |
 | ZK0472 | a C function not declared `စိတ်မချရသော` |

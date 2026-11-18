@@ -9,7 +9,6 @@ use zaka_host::Grants;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
-use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
@@ -44,7 +43,9 @@ use crate::descriptors::FN_TAIL;
 use crate::descriptors::GOOD_BARE;
 use crate::descriptors::GOOD_TEXT;
 use crate::descriptors::NO_DATA_TEXT;
+use crate::exports::EXPORT_KINDS;
 use crate::exports::exported;
+use crate::exports::init_stmts;
 use crate::exports::lib_source;
 use crate::ffi::FFI_SOURCE;
 use crate::ffi::FfiCall;
@@ -219,7 +220,7 @@ pub fn emit(
     let exports = exported(module);
     let shapes: Vec<Option<usize>> =
         exports.iter().map(|e| shared.cb_shape(e.kind)).collect();
-    do_if!(shapes.contains(&None), _ = shared.missing(t!("target_c.export_kinds")));
+    do_if!(shapes.contains(&None), _ = shared.missing(EXPORT_KINDS));
     let shapes: Vec<usize> = shapes.into_iter().flatten().collect();
     // A closure can go to a C function that takes a function value.
     let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
@@ -1126,13 +1127,7 @@ impl<'s, 'm> FnGen<'s, 'm>
     /// The C text of `main.c`.
     fn lib_init(mut self) -> String
     {
-        let main = &self.shared.module.main;
-        let global_drop = |s: &Stmt| {
-            matches!(s, Stmt::Drop { dest: Dest::Slot(Place::Global(_)), .. })
-        };
-        let kept =
-            main.len() - main.iter().rev().take_while(|s| global_drop(s)).count();
-        self.block(&main[..kept]);
+        self.block(init_stmts(self.shared.module));
         format!(
             "#include \"{KINDS_HEADER}\"\n\nvoid zk_lib_init(void)\n{{\n{}}}\n",
             self.out
