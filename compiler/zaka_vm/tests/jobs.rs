@@ -404,3 +404,27 @@ fn a_field_of_an_object_jobs_share_is_reached_inside_a_lock_block_alone()
     let value = program("ကိန်းရှင် ဂ သည် ၅ ဖြစ်ပါစေ။\nဂ ကို ခေတ္တယူ၍ ဂ ကို ပြသမည်။");
     assert_eq!(codes(&value), [Code::OutsideLock]);
 }
+
+#[test]
+fn jobs_add_to_an_atomic_number_with_no_lock()
+{
+    let text = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../zakac_codegen_target_c/tests/inputs/atomics.zaka"
+    ))
+    .unwrap();
+    assert_eq!(output(&text), "၁၉၈၀\n၄\n");
+}
+
+#[test]
+fn a_set_of_an_atomic_number_that_reads_it_is_reported()
+{
+    let read_write = program(
+        "ကိန်းရှင် ဒေသ သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။\nဒေသ ကို ဒေသ + ၁ \
+         ဟု ထားမည်။",
+    );
+    assert_eq!(codes(&read_write), [Code::AtomicReadWrite]);
+    let narrow =
+        program("ကိန်းရှင် ဒေသ သည် အက်တမ်မစ် ဖြစ်သော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။");
+    assert!(codes(&narrow).contains(&Code::KindMismatch), "{:?}", codes(&narrow));
+}

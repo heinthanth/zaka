@@ -157,3 +157,24 @@ fn lock_blocks_keep_the_changes_of_two_threads_apart()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "၂၀၀၀\n၂၀၀၀\n");
 }
+
+/// Two threads add to one atomic number with no lock in an AOT build, and
+/// lose no add.
+#[test]
+fn atomic_adds_of_two_threads_lose_nothing()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    let run = crate::common::run_aot(
+        &c_inputs().join("atomics.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let Some(run) = run
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
+}

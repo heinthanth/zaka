@@ -644,6 +644,10 @@ the core. The compiler mark outside the core is ZK0349.
   `check_lock` checks a lock block (its name holds an object) and keeps the name in
   `held_locks` while it checks the block; `check_locked_field`, from `infer_field`,
   reports a field of a marked object whose name no lock around holds (ZK0499).
+  An atomic number reads as its integer (`read_kind` in `infer_name` and `infer_field`),
+  needs no lock, and takes `ပေါင်းထည့်` and `နုတ်ယူ` (`atomic_call`); `check_atomic_set`
+  reports a set that reads the number it sets (ZK0727), and `check_atomic_kind` an atomic
+  number of a narrow kind (ZK0401).
 
 ## Comptime calls
 

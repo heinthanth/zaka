@@ -16,9 +16,12 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
+use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::heap::zk_threads_begin;
 use crate::program::ZkKind;
@@ -372,6 +375,27 @@ pub extern "C" fn zk_unlock(obj: *mut u8)
     ret_if!(st.locks[at].depth > 0);
     st.locks.remove(at);
     changed(&mut st);
+}
+
+/// Add a value to an atomic number of the platform width, or subtract it,
+/// in one step no other thread can split; the result wraps.
+///
+/// # Arguments
+///
+/// * `at` - The address of the number.
+/// * `v` - The value.
+/// * `sub` - 1 to subtract the value.
+#[unsafe(export_name = stamped!("atomic_add"))]
+pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
+{
+    // SAFETY: the number is a word of the program, aligned as its kind, which
+    // each thread changes with atomic ops alone.
+    let n = unsafe { AtomicIsize::from_ptr(at) };
+    _ = tern!(
+        sub != 0,
+        n.fetch_sub(v, Ordering::SeqCst),
+        n.fetch_add(v, Ordering::SeqCst)
+    );
 }
 
 /// Make a channel.

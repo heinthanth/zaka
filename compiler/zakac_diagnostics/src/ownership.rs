@@ -347,3 +347,19 @@ pub fn global_in_job(span: Span, func: &str, global: &str) -> Diagnostic
     Diagnostic::new(Code::GlobalInJob, msg, span)
         .with_help(t!("codes.ZK0726.help", g = global))
 }
+
+/// A set of an atomic number whose value reads the same number, which loses
+/// the change another job makes between the read and the write.
+///
+/// # Arguments
+///
+/// * `span` - The number set.
+///
+/// # Returns
+///
+/// The `ZK0727` diagnostic.
+pub fn atomic_read_write(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0727.message");
+    Diagnostic::new(Code::AtomicReadWrite, msg, span).with_help(t!("codes.ZK0727.help"))
+}

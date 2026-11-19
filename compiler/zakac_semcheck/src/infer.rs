@@ -234,7 +234,7 @@ impl Checker
         if let Some(binding) = self.scopes.lookup(&n.name)
         {
             self.refer(&n.name, n.span, binding.home());
-            return binding.kind;
+            return binding.kind.map(DataKind::read_kind);
         }
         self.report(self.with_hidden(rd::undeclared_name(n.span, &n.name), &n.name));
         None

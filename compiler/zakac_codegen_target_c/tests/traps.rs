@@ -225,3 +225,19 @@ fn lock_blocks_keep_the_changes_of_two_threads_apart()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "၂၀၀၀\n၂၀၀၀\n");
 }
+
+/// Two threads add to one atomic number with no lock, and lose no add.
+#[test]
+fn atomic_adds_of_two_threads_lose_nothing()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/atomics.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
+}

@@ -16,8 +16,10 @@ use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::kind::DataKind;
+use crate::kind::Width;
 use crate::list::KindUse;
 use crate::semcheck::Checker;
+use crate::task::ATOMIC_WORD;
 
 impl Checker
 {
@@ -30,6 +32,7 @@ impl Checker
     /// * `written` - The kind phrase.
     pub(crate) fn check_table_kinds(&mut self, written: &Kind)
     {
+        self.check_atomic_kind(written);
         if let Some(t) = written.table.as_deref()
         {
             let index = DataKind::from_ast(&t.index, &self.structs);
@@ -41,6 +44,29 @@ impl Checker
         let sides: Vec<&Kind> =
             parts.into_iter().flat_map(|p| p.ok.iter().chain(&p.err)).collect();
         do_for!(k in sides, self.check_table_kinds(k));
+    }
+
+    /// Report an atomic number of a kind that is no integer of the platform
+    /// width (ZK0401): its adds and subtractions are one machine word.
+    ///
+    /// # Arguments
+    ///
+    /// * `written` - The kind phrase.
+    fn check_atomic_kind(&mut self, written: &Kind)
+    {
+        let atomic =
+            written.name.as_ref().is_some_and(|n| n.name.as_str() == ATOMIC_WORD);
+        let Some(inner) = written.args.first().filter(|_| atomic)
+        else
+        {
+            return;
+        };
+        let kind = DataKind::from_ast(inner, &self.structs);
+        let word = kind.int_kind().is_some_and(|i| i.width == Width::Platform);
+        do_if!(
+            !word,
+            self.report(kd::kind_mismatch(inner.span, "isize or usize", &kind.name()))
+        );
     }
 
     /// Check an index kind.

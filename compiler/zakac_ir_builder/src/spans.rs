@@ -212,7 +212,8 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(callee, w);
             w.span(span);
         }
-        Stmt::Store { addr, value, span } =>
+        Stmt::Store { addr, value, span }
+        | Stmt::AtomicAdd { addr, value, span, .. } =>
         {
             expr(addr, w);
             expr(value, w);

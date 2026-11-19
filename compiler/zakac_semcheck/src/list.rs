@@ -343,8 +343,10 @@ impl Checker
             self.report(rd::unknown_field(field.span, &s.name, &field.name))
         );
         self.refer_field(&s.name, field);
-        self.check_locked_field(&n.base, base, field);
-        found
+        // An atomic field needs no lock block.
+        let atomic = found.is_some_and(|k| k.read_kind() != k);
+        do_if!(!atomic, self.check_locked_field(&n.base, base, field));
+        found.map(DataKind::read_kind)
     }
 
     /// Whether `x ၏ f` is a call of `f`: a generic `f`, or a plain one that

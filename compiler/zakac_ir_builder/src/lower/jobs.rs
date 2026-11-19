@@ -1,6 +1,8 @@
 //! Jobs: a call that runs in parallel becomes a spawn of the function it
 //! calls, and a call of the core's `စောင့်` on a job becomes a wait for it.
 
+use zakac_semcheck::jobs::ATOMIC_ADD;
+use zakac_semcheck::jobs::ATOMIC_SUB;
 use zakac_semcheck::jobs::CLOSE;
 use zakac_semcheck::jobs::SEND;
 use zakac_semcheck::jobs::WAIT;
@@ -61,7 +63,7 @@ impl Lowerer<'_>
             return None;
         };
         ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
-        self.kind_of(job).as_task().filter(|t| !t.pipe).map(|_| job)
+        self.kind_of(job).as_task().filter(|t| t.is_job()).map(|_| job)
     }
 
     /// Lower a wait for a job whose value is read.
@@ -122,6 +124,60 @@ impl Lowerer<'_>
             }
             _ => None,
         }
+    }
+
+    /// Lower an add to an atomic number, or a subtraction: a call of the core's
+    /// `ပေါင်းထည့်` or `နုတ်ယူ` whose first argument is an atomic number.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The statement, or `None` for a call that is neither.
+    pub(super) fn atomic_stmt(&mut self, n: &st::CallStmt) -> Option<Stmt>
+    {
+        let name = n.callee.name.as_str();
+        let sub = name == ATOMIC_SUB;
+        ret_if!(n.place.is_some() || (name != ATOMIC_ADD && !sub), None);
+        let [target, value] = n.args.as_slice()
+        else
+        {
+            return None;
+        };
+        let int = self.kind_of(target);
+        ret_if!(int.int_kind().is_none() || !self.holds_atomic(target), None);
+        let addr = node_expr(DataKind::OPAQUE, self.addr_of(target), target.span());
+        let value = self.owned(value, int);
+        Some(Stmt::AtomicAdd { addr, value, sub, span: n.span })
+    }
+
+    /// Whether a place holds an atomic number: a variable, or a field.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The place.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn holds_atomic(&mut self, e: &ast::Expr) -> bool
+    {
+        // The address of a field forgets that it holds an atomic number, so a
+        // field is found through the struct of its base.
+        let held = match e
+        {
+            ast::Expr::Group(g) => return self.holds_atomic(&g.inner),
+            ast::Expr::Field(f) =>
+            {
+                let shape = self.kind_of(&f.base).object_struct();
+                shape.and_then(|s| s.field(&f.field.name)).map(|(_, k)| k)
+            }
+            ast::Expr::Name(n) => Some(self.slot_kind(self.lookup(&n.name))),
+            _ => None,
+        };
+        held.and_then(DataKind::as_task).is_some_and(|t| t.atomic)
     }
 
     /// Whether a value is a channel.

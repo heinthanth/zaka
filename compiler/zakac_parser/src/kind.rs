@@ -1,3 +1,5 @@
+use zakac_ast::expr::Ident;
+use zakac_ast::jobs::ATOMIC_WORDS;
 use zakac_ast::jobs::PIPE_KIND;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
@@ -210,6 +212,10 @@ impl Parser<'_>
     /// The token count, or `None` when no kind starts there.
     pub(crate) fn kind_len_at(&self, at: usize, form: FnForm) -> Option<usize>
     {
+        ret_if!(
+            self.at_atomic_words(at),
+            self.kind_len_at(at + 2, form).map(|n| n + 2)
+        );
         ret_if!(let Some(len) = self.word_generic_kind_len(at), Some(len));
         let levels = |core: usize| core + self.scan_suffixes(at + core, true).0;
         ret_if!(let Some(core) = self.fn_head_at(at, form), Some(levels(core)));
@@ -461,6 +467,19 @@ impl Parser<'_>
     pub(crate) fn parse_kind_with(&mut self, form: FnForm) -> PResult<Kind>
     {
         let start = self.peek().span;
+        // `အက်တမ်မစ် ဖြစ်သော <kind>`: an atomic number of an integer kind.
+        if self.at_atomic_words(0)
+        {
+            let first = self.bump();
+            self.bump();
+            let inner = self.parse_kind_with(form)?;
+            let name = Ident::builder().name(ATOMIC_WORDS[0]).span(first.span).build();
+            let span = start.to(&inner.span);
+            #[rustfmt::skip]
+            let kind = Kind::builder().base(BaseKind::Named).name(name).args(vec![inner])
+                .span(span).build();
+            return Ok(kind);
+        }
         // `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့် <name>`: the kind arguments of a
         // generic kind come first in the word form.
         if self.word_generic_kind_len(0).is_some()
@@ -662,6 +681,21 @@ impl Parser<'_>
         }
         kind.span = start.to(&self.prev_span());
         Ok(())
+    }
+
+    /// Whether the words of an atomic number kind stand `n` tokens ahead:
+    /// `အက်တမ်မစ် ဖြစ်သော`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if both stand there.
+    fn at_atomic_words(&self, n: usize) -> bool
+    {
+        self.is_word_at(n, ATOMIC_WORDS[0]) && self.is_word_at(n + 1, ATOMIC_WORDS[1])
     }
 
     /// The hint of the channel kind after the room of a bounded channel,

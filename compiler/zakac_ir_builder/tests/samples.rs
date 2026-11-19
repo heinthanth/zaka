@@ -127,7 +127,7 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             {
                 [dst, count, value].into_iter().for_each(|e| expr_places(e, out))
             }
-            Stmt::Store { addr, value, .. } =>
+            Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
             {
                 expr_places(addr, out);
                 expr_places(value, out);

@@ -780,6 +780,10 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   break and a next round give them back too. The VM keeps `Jobs::locks`, found through the
   block of the object, which each job that holds it shares; a lock another job holds
   parks with `Waits::Lock`, and a trap of the holder marks it broken.
+- **Atomic numbers.** An atomic number is a kind of `task.rs` (`%atomic(isize)`), held as
+  its platform-sized integer; `read_kind` gives the integer a read and a slot load take.
+  `Stmt::AtomicAdd { addr, value, sub }` (from `ပေါင်းထည့်` and `နုတ်ယူ`, `atomic_stmt`)
+  is the op `atomic_add`, one op on the VM, `zk_atomic_add` (`AtomicIsize`) in native code.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

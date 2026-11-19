@@ -1118,6 +1118,7 @@ impl Lowerer<'_>
             st::Stmt::Call(n) if n.parallel => self.spawn_stmt(n),
             st::Stmt::Call(n) if let Some(wait) = self.wait_stmt(n) => out.push(wait),
             st::Stmt::Call(n) if let Some(pipe) = self.pipe_stmt(n) => out.push(pipe),
+            st::Stmt::Call(n) if let Some(add) = self.atomic_stmt(n) => out.push(add),
             st::Stmt::Call(n) =>
             {
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
@@ -4287,6 +4288,8 @@ fn coerce_lowered(lowered: Expr, want: DataKind, platform: u16) -> Expr
 {
     let want = want.repr();
     ret_if!(lowered.kind == want, lowered);
+    // An integer goes into an atomic number of its kind as it is.
+    ret_if!(want.read_kind() == lowered.kind, lowered);
     let span = lowered.span;
     let plain = lowered.kind.fallible_parts().is_none();
     if let Some(wrap) = Fault::of_kind(want).filter(|f| plain && f.ok.is_some())

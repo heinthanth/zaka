@@ -10,7 +10,9 @@ use zakac_ast::stmt::LockStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_expr;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::ownership as od;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -29,6 +31,50 @@ pub const SEND: &str = "ပို့";
 
 /// The verb of the core that closes a channel.
 pub const CLOSE: &str = "ပိတ်";
+
+/// The verb of the core that adds to an atomic number.
+pub const ATOMIC_ADD: &str = "ပေါင်းထည့်";
+
+/// The verb of the core that subtracts from an atomic number.
+pub const ATOMIC_SUB: &str = "နုတ်ယူ";
+
+/// Finds a read of one place inside a value.
+struct SamePlace
+{
+    /// The place, as [`place_text`] writes it.
+    place: Option<String>,
+    /// Whether a read of it came.
+    found: bool,
+}
+
+impl Visitor for SamePlace
+{
+    fn visit_expr(&mut self, e: &Expr)
+    {
+        self.found |= self.place.is_some() && place_text(e) == self.place;
+        walk_expr(self, e);
+    }
+}
+
+/// A place as text: a name, or a field of a name, `<name>.<field>`.
+///
+/// # Arguments
+///
+/// * `e` - The place.
+///
+/// # Returns
+///
+/// The text, or `None` for another value.
+fn place_text(e: &Expr) -> Option<String>
+{
+    match e
+    {
+        Expr::Group(g) => place_text(&g.inner),
+        Expr::Name(n) => Some(n.name.to_string()),
+        Expr::Field(f) => Some(format!("{}.{}", place_text(&f.base)?, f.field.name)),
+        _ => None,
+    }
+}
 
 impl Checker
 {
@@ -80,7 +126,7 @@ impl Checker
             return None;
         };
         ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
-        let task = self.infer(job, None)?.as_task().filter(|t| !t.pipe)?;
+        let task = self.infer(job, None)?.as_task().filter(|t| t.is_job())?;
         Some(task.of)
     }
 
@@ -306,6 +352,78 @@ impl Checker
         ret_if!(!kind.is_box() || !shared);
         let held = result_var(base).is_some_and(|n| self.held_locks.contains(&n));
         do_if!(!held, self.report(kd::outside_lock(field.span, &field.name, false)));
+    }
+
+    /// An add to an atomic number, `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်`, or a
+    /// subtraction, `<atomic> ထဲမှ <value> ကို နုတ်ယူမည်`: a call of the core's
+    /// `ပေါင်းထည့်` or `နုတ်ယူ` on an atomic number.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The name at the call.
+    /// * `place` - The value a call on a value names, or `None`.
+    /// * `args` - The arguments.
+    ///
+    /// # Returns
+    ///
+    /// `Some(None)`, for neither gives a value, or `None` for a call that is
+    /// neither.
+    pub(crate) fn atomic_call(
+        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr],
+    ) -> Option<Option<DataKind>>
+    {
+        let name = callee.name.as_str();
+        ret_if!(place.is_some() || (name != ATOMIC_ADD && name != ATOMIC_SUB), None);
+        let [target, value] = args
+        else
+        {
+            return None;
+        };
+        let int = self.atomic_place(target)?;
+        self.infer(target, None);
+        self.expect_kind(value, Some(int));
+        Some(None)
+    }
+
+    /// The integer kind of an atomic number a place holds: a variable or a
+    /// field of one.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The place.
+    ///
+    /// # Returns
+    ///
+    /// The integer kind, or `None` for a place that holds no atomic number.
+    pub(crate) fn atomic_place(&mut self, e: &Expr) -> Option<DataKind>
+    {
+        let held = match e
+        {
+            Expr::Group(g) => return self.atomic_place(&g.inner),
+            Expr::Name(n) => self.scopes.lookup(&n.name)?.kind?,
+            Expr::Field(f) =>
+            {
+                let base = self.infer(&f.base, None)?;
+                base.object_struct()?.field(&f.field.name)?.1
+            }
+            _ => return None,
+        };
+        held.as_task().filter(|t| t.atomic).and_then(|t| t.of)
+    }
+
+    /// Report a set of an atomic number whose value reads the same number: a
+    /// job between the read and the write would lose its change (ZK0727).
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The place set.
+    /// * `value` - The value.
+    pub(crate) fn check_atomic_set(&mut self, target: &Expr, value: &Expr)
+    {
+        ret_if!(self.atomic_place(target).is_none());
+        let mut reads = SamePlace { place: place_text(target), found: false };
+        reads.visit_expr(value);
+        do_if!(reads.found, self.report(od::atomic_read_write(target.span())));
     }
 
     /// Report a kind that jobs cannot use, where a value of it goes to a job

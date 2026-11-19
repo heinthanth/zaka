@@ -1416,6 +1416,16 @@ impl Machine
             Op::PipeReceive(kind) => self.pipe_receive(kind),
             Op::PipeClose => self.pipe_close(),
             Op::Lock => self.lock(),
+            Op::AtomicAdd(kind, sub) =>
+            {
+                let v = self.pop()?;
+                let at = self.pop_ptr("atomic_add")?;
+                let old = self.mem.load(at, kind)?;
+                let op = tern!(sub, InfixOp::Sub, InfixOp::Add);
+                let platform = self.module.platform_bits;
+                let new = infix_wrapping(op, old, v, platform).map_err(eval_trap)?;
+                self.mem.store(at, new)
+            }
             Op::Unlock => self.unlock(),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),

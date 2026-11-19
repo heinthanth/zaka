@@ -425,6 +425,10 @@ pub enum Op
     Lock,
     /// Pop the address of a shared object and give back its lock once.
     Unlock,
+    /// Pop a value and the address of an atomic number of this integer kind,
+    /// and add the value to the number, or subtract it when the flag is set,
+    /// in one op; the result wraps.
+    AtomicAdd(DataKind, bool),
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -681,6 +685,10 @@ impl Op
             Op::Wait(kind) => kind.map(|k| k.name()).unwrap_or_default(),
             Op::PipeNew(room) => room.map(|r| r.to_string()).unwrap_or_default(),
             Op::PipeSend(kind) | Op::PipeReceive(kind) => kind.name(),
+            Op::AtomicAdd(kind, sub) =>
+            {
+                format!("{}{}", if sub { "sub " } else { "" }, kind.name())
+            }
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::Foreign(f) => format!("c{f}"),

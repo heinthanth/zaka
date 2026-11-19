@@ -97,6 +97,11 @@ impl ToSexpr for Stmt
             Stmt::Call { name, args, .. } => call_sexpr(name, args),
             Stmt::CallValue { callee, args, .. } => call_value_sexpr(callee, args),
             Stmt::Foreign { func, args, .. } => foreign_sexpr(*func, args),
+            Stmt::AtomicAdd { addr, value, sub, .. } =>
+            {
+                let head = tern!(*sub, "atomic_sub", "atomic_add");
+                list(head, [addr.to_sexpr(), value.to_sexpr()])
+            }
             Stmt::Store { addr, value, .. } =>
             {
                 list("store", [addr.to_sexpr(), value.to_sexpr()])

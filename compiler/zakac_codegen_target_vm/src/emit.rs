@@ -692,7 +692,7 @@ impl<'s> FuncGen<'s>
     /// * `place` - The slot.
     fn load(&mut self, place: Place)
     {
-        let kind = self.slot_at(place).kind;
+        let kind = self.slot_at(place).kind.read_kind();
         self.addr_of(place);
         do_if!(!kind.is_aggregate(), self.op(Op::Load(kind)));
     }
@@ -705,7 +705,7 @@ impl<'s> FuncGen<'s>
     /// * `value` - Pushes the value.
     fn store(&mut self, place: Place, value: impl FnOnce(&mut Self))
     {
-        let kind = self.slot_at(place).kind;
+        let kind = self.slot_at(place).kind.read_kind();
         self.addr_of(place);
         value(self);
         self.op(Op::Store(kind));
@@ -1013,6 +1013,12 @@ impl<'s> FuncGen<'s>
             {
                 self.expr(obj);
                 self.op(Op::Lock);
+            }
+            Stmt::AtomicAdd { addr, value, sub, .. } =>
+            {
+                self.expr(addr);
+                self.expr(value);
+                self.op(Op::AtomicAdd(value.kind, *sub));
             }
             Stmt::Unlock { obj, .. } =>
             {

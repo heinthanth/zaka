@@ -550,6 +550,19 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Add a value to an atomic number, or subtract it, in one step no
+    /// other job can split; the result wraps.
+    AtomicAdd
+    {
+        /// The address of the number.
+        addr: Expr,
+        /// The value, of the integer kind of the number.
+        value: Expr,
+        /// `true` to subtract the value.
+        sub: bool,
+        /// Source region.
+        span: Span,
+    },
     /// Work of the ring collector: run it now, pause it, resume it, or set
     /// its threshold.
     Rings
@@ -758,6 +771,7 @@ impl Stmt
             | Stmt::Close { span, .. }
             | Stmt::Lock { span, .. }
             | Stmt::Unlock { span, .. }
+            | Stmt::AtomicAdd { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }

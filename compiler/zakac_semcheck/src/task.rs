@@ -27,8 +27,27 @@ pub const JOB_WORD: &str = "အပြိုင်လုပ်ငန်း";
 /// The name of the channel kind in phrases.
 pub const PIPE_WORD: &str = "ဒေတာလမ်းကြောင်း";
 
-/// Whether a name in a kind phrase is the job or the channel kind, in the
-/// spelling the compiler keeps.
+/// The start of the name of an atomic number kind: `%atomic(<kind>)`.
+pub const ATOMIC: &str = "%atomic";
+
+/// The word of an atomic number kind, `အက်တမ်မစ် ဖြစ်သော <kind>`, a term of
+/// computer science.
+pub const ATOMIC_WORD: &str = zakac_ast::jobs::ATOMIC_WORDS[0];
+
+/// Which of the kinds of this file a kind is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Flavor
+{
+    /// A job.
+    Job,
+    /// A channel.
+    Pipe,
+    /// An atomic number.
+    Atomic,
+}
+
+/// Whether a name in a kind phrase is the job, the channel or the atomic
+/// number kind, in the spelling the compiler keeps.
 ///
 /// # Arguments
 ///
@@ -36,20 +55,23 @@ pub const PIPE_WORD: &str = "ဒေတာလမ်းကြောင်း";
 ///
 /// # Returns
 ///
-/// `Some(true)` for the channel kind, `Some(false)` for the job kind, `None`
-/// for another name.
-pub fn task_word(name: &str) -> Option<bool>
+/// The kind, or `None` for another name.
+pub fn task_word(name: &str) -> Option<Flavor>
 {
-    ret_if!(name == canonical(PIPE_WORD), Some(true));
-    tern!(name == JOB_WORD, Some(false), None)
+    ret_if!(name == canonical(PIPE_WORD), Some(Flavor::Pipe));
+    ret_if!(name == ATOMIC_WORD, Some(Flavor::Atomic));
+    tern!(name == JOB_WORD, Some(Flavor::Job), None)
 }
 
 /// A job or a channel kind.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct TaskKind
 {
-    /// `true` for a channel, `false` for a job.
+    /// `true` for a channel.
     pub pipe: bool,
+    /// `true` for an atomic number: a platform-sized integer whose adds and
+    /// subtractions jobs make at once lose no change.
+    pub atomic: bool,
     /// The kind a channel carries, or the kind the function of a job gives
     /// back; `None` for a job whose function gives nothing.
     pub of: Option<DataKind>,
@@ -65,6 +87,13 @@ impl TaskKind
     ///
     /// The signature.
     pub fn sig(&self) -> &str { &self.sig }
+
+    /// Whether the kind is a job.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a job.
+    pub fn is_job(&self) -> bool { !self.pipe && !self.atomic }
 }
 
 /// The kinds made so far, under their signatures.
@@ -82,13 +111,45 @@ static MADE: OnceLock<Mutex<HashMap<String, &'static TaskKind>>> = OnceLock::new
 /// The kind.
 pub fn make(pipe: bool, of: Option<DataKind>) -> &'static TaskKind
 {
-    let head = tern!(pipe, PIPE, JOB);
+    made(tern!(pipe, Flavor::Pipe, Flavor::Job), of)
+}
+
+/// The atomic number kind of an integer kind, made once.
+///
+/// # Arguments
+///
+/// * `of` - The integer kind, of the platform width.
+///
+/// # Returns
+///
+/// The kind.
+pub fn make_atomic(of: DataKind) -> &'static TaskKind { made(Flavor::Atomic, Some(of)) }
+
+/// A kind of this file, made once.
+///
+/// # Arguments
+///
+/// * `flavor` - Which kind.
+/// * `of` - The kind it carries, gives back or holds.
+///
+/// # Returns
+///
+/// The kind.
+fn made(flavor: Flavor, of: Option<DataKind>) -> &'static TaskKind
+{
+    let (pipe, atomic) = (flavor == Flavor::Pipe, flavor == Flavor::Atomic);
+    let head = match flavor
+    {
+        Flavor::Job => JOB,
+        Flavor::Pipe => PIPE,
+        Flavor::Atomic => ATOMIC,
+    };
     let inner = of.map(|k| k.sig_name()).unwrap_or_default();
     let sig = format!("{head}({inner})");
     let made = MADE.get_or_init(Mutex::default);
     let mut made = made.lock().unwrap_or_else(PoisonError::into_inner);
     let fresh = || -> &'static TaskKind {
-        Box::leak(Box::new(TaskKind { pipe, of, sig: sig.clone() }))
+        Box::leak(Box::new(TaskKind { pipe, atomic, of, sig: sig.clone() }))
     };
     made.entry(sig.clone()).or_insert_with(fresh)
 }
@@ -104,11 +165,10 @@ pub fn make(pipe: bool, of: Option<DataKind>) -> &'static TaskKind
 /// The kind, or `None` for a text that is no such signature.
 pub fn parse_sig(text: &str) -> Option<&'static TaskKind>
 {
-    let (pipe, rest) = text
-        .strip_prefix(PIPE)
-        .map(|r| (true, r))
-        .or_else(|| text.strip_prefix(JOB).map(|r| (false, r)))?;
+    let heads = [(PIPE, Flavor::Pipe), (ATOMIC, Flavor::Atomic), (JOB, Flavor::Job)];
+    let (flavor, rest) =
+        heads.iter().find_map(|(h, f)| text.strip_prefix(h).map(|r| (*f, r)))?;
     let inner = rest.strip_prefix('(')?.strip_suffix(')')?;
-    ret_if!(inner.is_empty() && !pipe, Some(make(false, None)));
-    Some(make(pipe, Some(DataKind::parse(inner)?)))
+    ret_if!(inner.is_empty() && flavor == Flavor::Job, Some(make(false, None)));
+    Some(made(flavor, Some(DataKind::parse(inner)?)))
 }

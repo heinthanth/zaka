@@ -62,6 +62,7 @@ for `စာရင်း`, and `@` after the name of a shared object kind.
 | `optional isize` | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, an [optional kind](../language/optionals.md) |
 | `job(isize)`, `job()` | `ကိန်းပြည့် ပြန်ပေးမည့် အပြိုင်လုပ်ငန်း`, `အပြိုင်လုပ်ငန်း`: a [job](../language/jobs.md#the-job-kind) |
 | `pipe(text)` | `စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း`, a [channel](../language/jobs.md#channels) |
+| `atomic(isize)` | `အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့်`, an [atomic number](../language/jobs.md#atomic-numbers) |
 
 ## Codes
 
@@ -362,3 +363,4 @@ Zaka](../language/unsafe.md).
 | ZK0724 | a call of a function that reads a global that can be unset at the call | [Globals and calls](../language/statements.md#globals-and-calls) |
 | ZK0725 | a return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset | [Filled parameters](../language/functions.md#filled-parameters) |
 | ZK0726 | a function a job runs, itself or through a function it calls, reaches a variable at the top of a file | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
+| ZK0727 | a set of an atomic number whose value reads the same number | [Atomic numbers](../language/jobs.md#atomic-numbers) |

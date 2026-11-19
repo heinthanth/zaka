@@ -109,6 +109,14 @@ impl<M: Module> FnGen<'_, '_, M>
                 let o = self.expr(obj);
                 self.rt("zk_lock", &[ptr], &[], &[o]);
             }
+            Stmt::AtomicAdd { addr, value, sub, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let a = self.expr(addr);
+                let v = self.expr(value);
+                let sub = self.b.ins().iconst(types::I32, i64::from(*sub));
+                self.rt("zk_atomic_add", &[ptr, ptr, types::I32], &[], &[a, v, sub]);
+            }
             Stmt::Unlock { obj, .. } =>
             {
                 let ptr = self.s.ptr;

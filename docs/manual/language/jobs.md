@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, objects jobs share and their locks, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
+description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, objects jobs share and their locks, atomic numbers, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
 ---
 
 # Jobs
@@ -188,6 +188,53 @@ itself: each job that holds it reaches one set of fields. A lock block holds its
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဘဏ် သည် အကောင့်(လက်ကျန်: ၀) ဖြစ်ပါစေ။
 ဘဏ် ၏ လက်ကျန် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## Atomic numbers
+
+An atomic number (`အက်တမ်မစ်`, a term of computer science) is an integer that jobs add to
+and subtract from at once with no lock and lose no change:
+
+| Form | What it does |
+| --- | --- |
+| `အက်တမ်မစ် ဖြစ်သော <kind>` | the kind of an atomic number; `<kind>` is `ကိန်းပြည့်` or `လက္ခဏာမဲ့ ကိန်းပြည့်`, of the platform width, ZK0401 for another |
+| `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်။` | adds the value in one step no other job can split |
+| `<atomic> ထဲမှ <value> ကို နုတ်ယူမည်။` | subtracts the value in one step |
+
+- A read of an atomic number is a plain read, of its integer kind, and a set is a plain
+  set. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, is
+  ZK0727: a job could change the number between the read and the write.
+- An add and a subtraction wrap past the range of the kind, with no stop.
+- A field of an object jobs share that holds an atomic number is read, set and added to
+  outside a lock block.
+
+```zaka
+ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ကြိမ် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ရေ ဟူသော လုပ်ဆောင်ချက် သည် ရေတွက် ဟူသော ကောင်တာ တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ ရေတွက် ၏ ကြိမ် ထဲသို့ ၁ ကို ပေါင်းထည့်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရေတွက် သည် ကောင်တာ(ကြိမ်: ၀) ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ရေ ဟူသော လုပ်ဆောင်ချက်ကို ရေတွက် ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ရေ ဟူသော လုပ်ဆောင်ချက်ကို ရေတွက် ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+က ကို စောင့်မည်။
+ခ ကို စောင့်မည်။
+ရေတွက် ၏ ကြိမ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂၀၀
+```
+
+```zaka-error ZK0727
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကြိမ် သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+ကြိမ် ကို ကြိမ် + ၁ ဟု ထားမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

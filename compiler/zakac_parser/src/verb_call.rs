@@ -52,11 +52,17 @@ const SEND: &str = "ပို့";
 /// `ပိတ်`: close a channel; its calls remain calls.
 const CLOSE: &str = "ပိတ်";
 
+/// `ပေါင်းထည့်`: add to an atomic number; its calls remain calls.
+const ATOMIC_ADD: &str = "ပေါင်းထည့်";
+
+/// `နုတ်ယူ`: subtract from an atomic number; its calls remain calls.
+const ATOMIC_SUB: &str = "နုတ်ယူ";
+
 /// The verbs of the core whose calls read as the sentences their heads spell;
-/// the parser turns the call statements of each but the verbs of jobs and
-/// channels into their statements.
-pub(crate) const VERB_FNS: [&str; 8] =
-    [PRINT, ADD, DUP, REMOVE, REPLACE, WAIT, SEND, CLOSE];
+/// the parser turns the call statements of each but the verbs of jobs,
+/// channels and atomic numbers into their statements.
+pub(crate) const VERB_FNS: [&str; 10] =
+    [PRINT, ADD, DUP, REMOVE, REPLACE, WAIT, SEND, CLOSE, ATOMIC_ADD, ATOMIC_SUB];
 
 /// The sentence a call of a verb of the core writes.
 #[derive(Debug, Clone, Copy, PartialEq)]

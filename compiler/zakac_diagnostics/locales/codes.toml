@@ -1553,6 +1553,15 @@ en = "pass \"%{g}\" to the job as an argument, or make it a constant"
 [codes.ZK0726.explain]
 en = """A variable at the top of a file belongs to the main thread. A function that a job runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the job as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`."""
 
+[codes.ZK0727.title]
+en = "a read and a write of one atomic number"
+[codes.ZK0727.message]
+en = "this statement reads an atomic number and writes it, so a job that changes it between the two loses its change"
+[codes.ZK0727.help]
+en = "add with \"<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်\", or subtract with \"<atomic> ထဲမှ <value> ကို နုတ်ယူမည်\", in one step"
+[codes.ZK0727.explain]
+en = """An atomic number, `အက်တမ်မစ် ဖြစ်သော <kind>`, is read and set as a plain number. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, runs in two steps: another job can change the number between the read and the write, and that change is lost. `ပေါင်းထည့်` and `နုတ်ယူ` add and subtract in one step no job can split."""
+
 [codes.ZK0497.title]
 en = "a job of no declared function"
 [codes.ZK0497.message]

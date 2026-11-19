@@ -720,6 +720,8 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   argument loop stops before it (`call_word_at`), and the call node gets `parallel`.
   Before `ရလဒ်` and `ရလဒ်ကောင်း`, `glued.rs` splits the short ends too
   (`ENDS_BEFORE_RESULT`), so `စောင့်သော ရလဒ်` reads as the call `စောင့်` and its end.
+- `အက်တမ်မစ် ဖြစ်သော <kind>` is read at the start of a kind as the named kind
+  `အက်တမ်မစ်` with one argument (`at_atomic_words` in `kind.rs`).
 - A lock block, `<name> ကို (ခေတ္တ|ခဏ)ယူ၍ <block>`, is `Stmt::Lock` (`at_lock` and
   `parse_lock` in `jobs.rs`), found before the statement is read as a clause.
 - The words of channels are no reserved words. `data_reads` reads `<x> မှ ရရှိသော ဒေတာ` as

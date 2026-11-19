@@ -399,6 +399,11 @@ impl Folder
                 self.drop_value(callee);
                 do_for!(a in args, self.drop_value(a));
             }
+            Stmt::AtomicAdd { addr, value, .. } =>
+            {
+                self.drop_value(addr);
+                self.drop_value(value);
+            }
             Stmt::Store { addr, value, .. } =>
             {
                 self.drop_value(addr);

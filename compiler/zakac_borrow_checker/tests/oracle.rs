@@ -137,7 +137,10 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_expr(callee) || args.iter().any(raw_expr)
         }
-        Stmt::Store { addr, value, .. } => raw_expr(addr) || raw_expr(value),
+        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+        {
+            raw_expr(addr) || raw_expr(value)
+        }
         Stmt::Blit { src, dst, count, .. } =>
         {
             [src, dst, count].into_iter().any(raw_expr)

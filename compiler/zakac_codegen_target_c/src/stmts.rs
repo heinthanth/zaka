@@ -78,6 +78,15 @@ impl FnGen<'_, '_>
                 let o = self.expr(obj);
                 self.line(&format!("zk_lock({o});"));
             }
+            Stmt::AtomicAdd { addr, value, sub, .. } =>
+            {
+                let texts = self.operands(&[addr, value]);
+                let sub = i32::from(*sub);
+                self.line(&format!(
+                    "zk_atomic_add({}, (intptr_t)({}), {sub});",
+                    texts[0], texts[1]
+                ));
+            }
             Stmt::Unlock { obj, .. } =>
             {
                 let o = self.expr(obj);

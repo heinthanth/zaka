@@ -108,7 +108,10 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         {
             std::iter::once(callee).chain(args).collect()
         }
-        Stmt::Store { addr, value, .. } => vec![addr, value],
+        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+        {
+            vec![addr, value]
+        }
         Stmt::Leave { value, .. } => vec![value],
         Stmt::CStore { base, value, .. } => vec![base, value],
         Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],
@@ -275,7 +278,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         {
             std::iter::once(callee).chain(args.iter_mut()).collect()
         }
-        Stmt::Store { addr, value, .. } => vec![addr, value],
+        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+        {
+            vec![addr, value]
+        }
         Stmt::Leave { value, .. } => vec![value],
         Stmt::CStore { base, value, .. } => vec![base, value],
         Stmt::Blit { src, dst, count, .. } => vec![src, dst, count],

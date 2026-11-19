@@ -564,7 +564,12 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
 /// The phrase, or `None` when the carried kind has none.
 fn task_ast(t: &TaskKind, span: Span) -> Option<Kind>
 {
-    let word = tern!(t.pipe, canonical(PIPE_WORD).into_owned(), JOB_WORD.to_string());
+    let word = match (t.pipe, t.atomic)
+    {
+        (true, _) => canonical(PIPE_WORD).into_owned(),
+        (_, true) => crate::task::ATOMIC_WORD.to_string(),
+        _ => JOB_WORD.to_string(),
+    };
     let args = match t.of
     {
         Some(of) => vec![kind_ast(of, span)?],

@@ -26,6 +26,7 @@ use crate::structs::StructKind;
 use crate::structs::StructTable;
 use crate::structs::parse_sig;
 use crate::task;
+use crate::task::ATOMIC;
 use crate::task::JOB;
 use crate::task::PIPE;
 use crate::task::TaskKind;
@@ -1065,7 +1066,7 @@ impl DataKind
     fn gap_in(self, inside: &mut Vec<&'static StructKind>) -> Option<InitialGap>
     {
         ret_if!(self.is_fn(), Some(InitialGap::Function));
-        ret_if!(let Some(t) = self.as_task(), tern!(t.pipe, None, Some(InitialGap::Job)));
+        ret_if!(let Some(t) = self.as_task(), tern!(t.is_job(), Some(InitialGap::Job), None));
         ret_if!(self.as_external().is_some(), Some(InitialGap::Handle));
         ret_if!(self.is_optional(), None);
         if let Some(e) = self.as_enum()
@@ -1570,6 +1571,18 @@ impl DataKind
         }
     }
 
+    /// The kind a read of a place of this kind gives: an atomic number reads
+    /// as its integer; each other kind as it is.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn read_kind(self) -> DataKind
+    {
+        let atomic = self.as_task().filter(|t| t.atomic).and_then(|t| t.of);
+        atomic.unwrap_or(self)
+    }
+
     /// Whether a value of this kind converts to `target` on its own, with no
     /// loss of data.
     ///
@@ -1590,6 +1603,8 @@ impl DataKind
     pub fn widens_to(self, target: DataKind, platform: u16) -> bool
     {
         ret_true!(self == target);
+        // An integer goes into an atomic number of its kind, as a set does.
+        ret_true!(target.as_task().is_some_and(|t| t.atomic && t.of == Some(self)));
         match (self, target)
         {
             (DataKind::Int(a), DataKind::Int(b)) => int_widens(a, b, platform),
@@ -1772,10 +1787,21 @@ impl DataKind
 fn task_of(kind: &Kind, structs: &StructTable) -> Option<DataKind>
 {
     ret_if!(kind.base != BaseKind::Named, None);
-    let pipe = task::task_word(kind.name.as_ref()?.name.as_str())?;
+    let flavor = task::task_word(kind.name.as_ref()?.name.as_str())?;
     let of = kind.args.first().map(|a| DataKind::from_ast(a, structs));
-    ret_if!(pipe && of.is_none(), None);
-    Some(DataKind::Task(task::make(pipe, of)))
+    let made = match flavor
+    {
+        task::Flavor::Job => task::make(false, of),
+        task::Flavor::Pipe => task::make(true, Some(of?)),
+        // An atomic number is an integer of the platform width.
+        task::Flavor::Atomic =>
+        {
+            let int =
+                of.filter(|k| k.int_kind().is_some_and(|i| i.width == Width::Platform));
+            task::make_atomic(int?)
+        }
+    };
+    Some(DataKind::Task(made))
 }
 
 /// The short name of a job or channel kind, as messages write it:
@@ -1791,7 +1817,13 @@ fn task_of(kind: &Kind, structs: &StructTable) -> Option<DataKind>
 fn task_name(t: &TaskKind) -> String
 {
     let of = t.of.map(|k| k.name()).unwrap_or_default();
-    format!("{}({of})", tern!(t.pipe, "pipe", "job"))
+    let head = match (t.pipe, t.atomic)
+    {
+        (true, _) => "pipe",
+        (_, true) => "atomic",
+        _ => "job",
+    };
+    format!("{head}({of})")
 }
 
 fn named_base(kind: &Kind, structs: &StructTable) -> Base
@@ -1877,7 +1909,7 @@ fn parse_base(name: &str) -> Option<DataKind>
     ret_if!(is_fn_text(name), parse_fn_with(unwrap_parens(name), &mut DataKind::parse));
     ret_if!(name == "ptr", Some(DataKind::OPAQUE));
     ret_if!(
-        name.starts_with(JOB) || name.starts_with(PIPE),
+        name.starts_with(JOB) || name.starts_with(PIPE) || name.starts_with(ATOMIC),
         task::parse_sig(name).map(DataKind::Task)
     );
     ret_if!(name == "rawptr", Some(DataKind::OPAQUE.with_outer_raw()));

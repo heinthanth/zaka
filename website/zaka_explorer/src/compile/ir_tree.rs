@@ -239,6 +239,11 @@ impl IrTree<'_>
             {
                 self.node("send", blank, span, vec![self.expr(pipe), self.expr(value)])
             }
+            Stmt::AtomicAdd { addr, value, sub, .. } =>
+            {
+                let label = tern!(*sub, "atomic_sub", "atomic_add");
+                self.node(label, blank, span, vec![self.expr(addr), self.expr(value)])
+            }
             Stmt::Lock { obj, .. } =>
             {
                 self.node("lock", blank, span, vec![self.expr(obj)])

@@ -1032,6 +1032,7 @@ impl Checker
     {
         ret_if!(let Some(ret) = self.wait_call(callee, place, args), Some(ret));
         ret_if!(let Some(ret) = self.pipe_call(callee, place, args), Some(ret));
+        ret_if!(let Some(ret) = self.atomic_call(callee, place, args), Some(ret));
         let expect = self.call_expect.take();
         let templates =
             tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
@@ -2229,6 +2230,7 @@ impl Visitor for Checker
         ret_if!(let Expr::Field(f) = &n.target && self.c_field_write(f, &n.value));
         let want = self.place_kind(&n.target);
         self.expect_kind(&n.value, want);
+        self.check_atomic_set(&n.target, &n.value);
     }
 
     fn visit_alloc(&mut self, n: &AllocStmt)
