@@ -490,6 +490,7 @@ program:
             place: null
             args: []
             pass: false
+            parallel: false
             using: null
             prepositions: []
             phrases:
@@ -538,6 +539,7 @@ program:
                       lo: 2400
                       hi: 2403
                 pass: false
+                parallel: false
                 using: null
                 prepositions: []
                 phrases:

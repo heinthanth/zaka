@@ -49,8 +49,10 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         {
             vec![lhs.as_ref(), rhs.as_ref()]
         }
+        ExprNode::Wait(operand) => vec![operand.as_ref()],
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
+        | ExprNode::Spawn { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().collect(),
         ExprNode::CallValue { callee, args } =>
@@ -84,6 +86,7 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
+        Stmt::Wait { job, .. } => vec![job],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {
@@ -206,7 +209,9 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         {
             vec![lhs.as_mut(), rhs.as_mut()]
         }
-        ExprNode::Call { args, .. }
+        ExprNode::Wait(operand) => vec![operand.as_mut()],
+        ExprNode::Spawn { args, .. }
+        | ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter_mut().collect(),
@@ -240,6 +245,7 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
+        Stmt::Wait { job, .. } => vec![job],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {

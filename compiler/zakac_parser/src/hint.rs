@@ -22,6 +22,7 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex_at;
 use zakac_lexer::reserved::LIST_NAME;
 use zakac_lexer::reserved::TABLE_NAME;
+use zakac_lexer::spelling::canonical;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -157,7 +158,11 @@ pub(crate) fn hint_fault(
     ret_if!(let Some(p) = first, Some(HintFault::First(p.to_string())));
     let missing = given.iter().find(|p| count(p) == 0);
     ret_if!(let Some(p) = missing, Some(HintFault::Missing(p.to_string())));
-    let last = words.last() == Some(&name) && count(name) == 1;
+    // The name compares in the spelling the compiler keeps: `ဒေတာ` in a name
+    // reads as `အချက်အလက်`.
+    let names = words.iter().filter(|w| canonical(w) == canonical(name)).count();
+    let last =
+        words.last().is_some_and(|w| canonical(w) == canonical(name)) && names == 1;
     ret_if!(!last, Some(HintFault::Last));
     let slot = |w: &&str| given.contains(w);
     let meet = words.windows(2).find(|pair| slot(&pair[0]) && slot(&pair[1]));

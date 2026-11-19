@@ -13,6 +13,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex_at;
+use zakac_lexer::phrases::join_phrases;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::LexOutput;
@@ -20,6 +21,7 @@ use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
@@ -47,6 +49,10 @@ const ENDS: &[&str] = &[
     "ပါ",
 ];
 
+/// The ends that can be glued to a function name when `ရလဒ်` or
+/// `ရလဒ်ကောင်း` stands apart after them, as in `စောင့်သော ရလဒ်`.
+const ENDS_BEFORE_RESULT: &[&str] = &["မည့်", "မယ့်", "သည့်", "တဲ့", "သော"];
+
 /// The tokens of a file with each glued call end split off the function
 /// name it follows, where the name is not being declared.
 ///
@@ -68,12 +74,17 @@ pub(crate) fn split_glued(
     let tokens = &lexed.tokens;
     let split = |at: usize| -> Vec<Token> {
         let tok = &tokens[at];
+        let next = tokens.get(at + 1).map(|t| t.kind);
+        let result = matches!(next, Some(TokenKind::Kw(Kw::Result | Kw::GoodResult)));
+        let ends = tern!(result, [ENDS, ENDS_BEFORE_RESULT].concat(), ENDS.to_vec());
         let parts = (!declared_at(tokens, at))
-            .then(|| glued_parts(text, base, tok, functions))
+            .then(|| glued_parts(text, base, tok, functions, &ends))
             .flatten();
         parts.map_or_else(|| vec![*tok], |parts| split_token(tok, parts))
     };
-    out.tokens = (0..tokens.len()).flat_map(split).collect();
+    let split: Vec<Token> = (0..tokens.len()).flat_map(split).collect();
+    // An end split off before `ရလဒ်` joins it as the one word they make.
+    out.tokens = join_phrases(split);
     out
 }
 
@@ -91,12 +102,13 @@ type Glued = (Option<(Kw, usize)>, usize, &'static str);
 /// * `base` - Absolute position of `text`.
 /// * `tok` - The token.
 /// * `functions` - The functions the file sees.
+/// * `ends` - The call ends that can stand glued here.
 ///
 /// # Returns
 ///
 /// The parts, or `None` for a token that is no glued call.
 fn glued_parts(
-    text: &str, base: Pos, tok: &Token, functions: &Functions,
+    text: &str, base: Pos, tok: &Token, functions: &Functions, ends: &[&'static str],
 ) -> Option<Glued>
 {
     ret_if!(tok.kind != TokenKind::Ident, None);
@@ -111,7 +123,7 @@ fn glued_parts(
     };
     let fits =
         |end: &str| word.strip_suffix(end).filter(|s| !s.is_empty()).and_then(lead);
-    let end = ENDS.iter().find(|end| fits(end).is_some())?;
+    let end = ends.iter().find(|end| fits(end).is_some())?;
     let front = fits(end)?;
     let lead_len = front.map_or(0, |(_, len)| len);
     Some((front, word.len() - end.len() - lead_len, end))
@@ -213,7 +225,7 @@ pub(crate) fn clash_warnings(
             continue;
         }
         let word = &text[(tok.span.lo - base) as usize..(tok.span.hi - base) as usize];
-        if let Some((front, stem, end)) = glued_parts(text, base, tok, functions)
+        if let Some((front, stem, end)) = glued_parts(text, base, tok, functions, ENDS)
         {
             let lead = front.map_or(0, |(_, len)| len);
             let name = &word[lead..lead + stem];
@@ -260,7 +272,7 @@ pub(crate) fn glued_spoken(
     let tokens = &lexed.tokens;
     let end_diags = |at: usize| {
         let tok = &tokens[at];
-        let (front, stem, end) = glued_parts(text, base, tok, functions)?;
+        let (front, stem, end) = glued_parts(text, base, tok, functions, ENDS)?;
         let at = tok.span.lo + front.map_or(0, |(_, len)| len) + stem;
         Some(lex_at(end, at, &LexerOptions::default()).diagnostics)
     };

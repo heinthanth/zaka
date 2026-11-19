@@ -221,7 +221,7 @@ fn op_row(unit: &Unit, place: Place, marks: &BTreeMap<u32, usize>, at: OpAt) -> 
     let note = comment(op, place.module, func);
     let target = match op
     {
-        Op::Call(f) | Op::FnAddr(f) | Op::Closure { func: f, .. } =>
+        Op::Call(f) | Op::Spawn(f) | Op::FnAddr(f) | Op::Closure { func: f, .. } =>
         {
             place.starts.get(f as usize)
         }

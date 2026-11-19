@@ -169,6 +169,14 @@ pub enum TrapKind
     /// C called a closure after the call that gave it ended, with no leave
     /// from `ခေါ်ဆိုခွင့် ပြုမည်`, or after that leave was taken back.
     ClosureEscape,
+    /// A wait for a job that stopped at a trap.
+    JobTrapped
+    {
+        /// The number of the job.
+        job: u64,
+    },
+    /// Each job waits for another, and none can go on.
+    Deadlock,
     /// A C function was called in a build of the VM that cannot call C,
     /// such as the one in the browser.
     ForeignCall
@@ -340,6 +348,8 @@ impl fmt::Display for TrapKind
             TrapKind::ClosedHandle => t!("vm.trap.closed_handle"),
             TrapKind::NullFromC => t!("vm.trap.null_from_c"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
+            TrapKind::JobTrapped { job } => t!("vm.trap.job_trapped", job = job),
+            TrapKind::Deadlock => t!("vm.trap.deadlock"),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::PermissionDenied { right, subject } =>
             {
@@ -425,6 +435,8 @@ impl TrapKind
             | TrapKind::ClosedHandle
             | TrapKind::NullFromC
             | TrapKind::ClosureEscape
+            | TrapKind::JobTrapped { .. }
+            | TrapKind::Deadlock
             | TrapKind::ForeignCall { .. }
             | TrapKind::PermissionDenied { .. }
             | TrapKind::ForeignLink { .. }

@@ -27,6 +27,16 @@
 /// reached through an index of the kind K.
 ဇယား သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်၍ ယေဘုယျဒေတာအမျိုးအစား K နှင့် ယေဘုယျဒေတာအမျိုးအစား V တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် K ဖြင့် ညွှန်းသော V ဇယားဟု ရေးသားနိုင်သည်။
 
+/// အပြိုင်လုပ်ငန်း: a job on another thread, written `A ပြန်ပေးမည့် အပြိုင်လုပ်ငန်း`
+/// when its function gives back an A, and `အပြိုင်လုပ်ငန်း` alone when it gives
+/// nothing; starting a function in parallel makes one.
+အပြိုင်လုပ်ငန်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်၍ ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် A ပြန်ပေးမည့် အပြိုင်လုပ်ငန်းဟု ရေးသားနိုင်သည်။
+
+/// ဒေတာလမ်းကြောင်း: a channel between threads, written `A ပို့နိုင်သော
+/// ဒေတာလမ်းကြောင်း`: values of the kind A go in at one end and come out at the
+/// other, in the order they went in.
+ဒေတာလမ်းကြောင်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်၍ ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် A ပို့နိုင်သော ဒေတာလမ်းကြောင်းဟု ရေးသားနိုင်သည်။
+
 // ── The target ──
 // The compiler gives each of these the value of the target it builds for,
 // and `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် …` reads them before the program runs.

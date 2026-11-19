@@ -77,7 +77,9 @@ fn raw_expr(e: &Expr) -> bool
         {
             raw_expr(lhs) || raw_expr(rhs)
         }
+        ExprNode::Wait(job) => raw_expr(job),
         ExprNode::Call { args, .. }
+        | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().any(raw_expr),
@@ -100,7 +102,7 @@ fn raw_stmt(s: &Stmt) -> bool
 {
     match s
     {
-        Stmt::Set { value, .. } => raw_expr(value),
+        Stmt::Set { value, .. } | Stmt::Wait { job: value, .. } => raw_expr(value),
         Stmt::Print { value: PrintValue::Expr(e), .. }
         | Stmt::Halt { value: Some(e), .. }
         | Stmt::Rings { octets: Some(e), .. } => raw_expr(e),

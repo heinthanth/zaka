@@ -1180,6 +1180,8 @@ pub enum NoInitial<'a>
     Result,
     /// A part inside the kind has none; the name of the part.
     Part(&'a str),
+    /// A job, which starting a function on another thread alone makes.
+    Job,
 }
 
 /// `ကနဦးတန်ဖိုး` for a kind that has none.
@@ -1202,6 +1204,7 @@ pub fn no_initial_value(span: Span, kind: &str, why: NoInitial<'_>) -> Diagnosti
         NoInitial::Member(e) => t!("codes.ZK0479.member", e = e),
         NoInitial::Result => t!("codes.ZK0479.result"),
         NoInitial::Part(p) => t!("codes.ZK0479.part", p = p),
+        NoInitial::Job => t!("codes.ZK0479.job"),
     };
     let msg = t!("codes.ZK0479.message", k = kind, r = reason);
     Diagnostic::new(Code::NoInitialValue, msg, span).with_help(t!("codes.ZK0479.help"))
@@ -1385,6 +1388,22 @@ pub fn jobs_mark_on_value(span: Span, name: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0493.message", n = name);
     Diagnostic::new(Code::JobsMarkOnValue, msg, span).with_help(t!("codes.ZK0493.help"))
+}
+
+/// A value of a kind jobs cannot use goes to a job, or comes back from one.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - The name of its kind.
+///
+/// # Returns
+///
+/// The `ZK0494` diagnostic.
+pub fn not_for_jobs(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0494.message", k = kind);
+    Diagnostic::new(Code::NotForJobs, msg, span).with_help(t!("codes.ZK0494.help"))
 }
 
 /// A comptime function gives a kind that a constant cannot hold.

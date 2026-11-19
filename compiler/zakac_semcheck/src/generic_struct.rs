@@ -281,7 +281,7 @@ impl Leftovers<'_>
     /// * `args` - Its kinds.
     fn report(&mut self, ident: &Ident, args: &[Kind])
     {
-        ret_if!(args.is_empty());
+        ret_if!(args.is_empty() || crate::task::task_word(&ident.name).is_some());
         let Some(template) = self.templates.get(&ident.name)
         else
         {

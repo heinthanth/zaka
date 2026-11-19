@@ -137,6 +137,11 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(value, w);
             w.span(span);
         }
+        Stmt::Wait { job, span, .. } =>
+        {
+            expr(job, w);
+            w.span(span);
+        }
         Stmt::Halt { value, span, .. } | Stmt::Rings { octets: value, span, .. } =>
         {
             do_if!(let Some(v) = value, expr(v, w));
@@ -325,12 +330,14 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
             expr(rhs, w);
         }
         ExprNode::Call { args, .. }
+        | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) =>
         {
             do_for!(a in args, expr(a, w))
         }
+        ExprNode::Wait(job) => expr(job, w),
         ExprNode::CallValue { callee, args } =>
         {
             do_for!(a in args, expr(a, w));

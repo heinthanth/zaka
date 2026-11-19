@@ -21,6 +21,7 @@
   - [Enumerations](language/enums.md)
   - [Kind aliases](language/aliases.md)
   - [Generics and traits](language/generics.md)
+  - [Jobs](language/jobs.md)
   - [Compile time](language/compile-time.md)
   - [The core](language/core.md)
   - [Modules](language/modules.md)

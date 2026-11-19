@@ -761,9 +761,16 @@ impl Parser<'_>
     fn parse_call_expr(&mut self) -> PResult<Expr>
     {
         let (start, callee, place, args) = self.parse_call_head()?;
-        let end = self.expect_one_of(&[Kw::CallResult, Kw::CallGoodResult])?;
+        let parallel = self.parallel_end() == Some(false);
+        do_if!(parallel, (0..2).for_each(|_| _ = self.bump()));
+        let end = tern!(
+            parallel,
+            self.bump(),
+            self.expect_one_of(&[Kw::CallResult, Kw::CallGoodResult])?
+        );
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
-        let call = self.call_expr(start.to(&end.span), callee, args, pass);
+        let mut call = self.call_expr(start.to(&end.span), callee, args, pass);
+        do_if!(let Expr::Call(node) = &mut call, node.parallel = parallel);
         Ok(with_place(call, place))
     }
 
@@ -1038,7 +1045,8 @@ impl Parser<'_>
     fn parse_call_args(&mut self) -> PResult<Args>
     {
         let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
-        ret_if!(ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
+        let parallel = self.parallel_end().is_some();
+        ret_if!(parallel || ends.iter().any(|kw| self.at(*kw)), Ok(Args::default()));
         let args = self.parse_word_list(Self::parse_expr)?;
         let with = args.len() == 1 && self.at_with_before_call();
         ret_if!(with, self.advance(), Ok(args));

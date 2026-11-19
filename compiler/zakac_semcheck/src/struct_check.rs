@@ -248,8 +248,10 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
         !kind.args.is_empty(),
         kind.args.iter().find_map(|k| unknown_name(k, names))
     );
+    // A job or a channel kind is the compiler's, with or without its kind.
     let name = kind.name.as_ref()?;
     ret_if!(names.contains(name.name.as_str()), None);
+    ret_if!(crate::task::task_word(&name.name).is_some(), None);
     Some(rd::unknown_kind_name(name.span, &name.name))
 }
 

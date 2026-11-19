@@ -146,6 +146,18 @@ impl Block
     fn holds(&self, addr: u64) -> bool { addr >= self.start && addr < self.end() }
 }
 
+/// A stack region: the room of the calls of one job.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct StackRange
+{
+    /// The start of the region.
+    pub lo: u64,
+    /// The end of the region.
+    pub hi: u64,
+    /// The lowest address the next stack block can take.
+    pub top: u64,
+}
+
 /// The checked address space of the machine: blocks in a flat space, a
 /// reserved region at the bottom, static data, a stack region that calls
 /// take and give back in order, then the heap. Red zones keep blocks apart
@@ -478,6 +490,44 @@ impl Mem
         self.stack_hi = lo.saturating_add(max.min(half));
         self.top = lo;
         self.next = self.stack_hi;
+    }
+
+    /// Take a stack region of its own for a job, out of the fresh room past
+    /// the heap blocks made so far.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The octets of the region.
+    ///
+    /// # Returns
+    ///
+    /// The region, its top at its start, or `None` when the address space
+    /// has no room for it.
+    pub fn take_region(&mut self, size: u64) -> Option<StackRange>
+    {
+        // shortcut: the region of a job that ends is never handed out again;
+        // reuse it if programs start jobs by the million.
+        let lo = self.fresh_start(size)?;
+        Some(StackRange { lo, hi: lo + size, top: lo })
+    }
+
+    /// Make another stack region the one calls take blocks from, as the
+    /// scheduler moves from one job to the next.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` - The region to use from now on.
+    ///
+    /// # Returns
+    ///
+    /// The region used so far.
+    pub fn swap_stack(&mut self, range: StackRange) -> StackRange
+    {
+        let old = StackRange { lo: self.stack_lo, hi: self.stack_hi, top: self.top };
+        self.stack_lo = range.lo;
+        self.stack_hi = range.hi;
+        self.top = range.top;
+        old
     }
 
     /// The lowest address the next stack block can take; a call keeps it

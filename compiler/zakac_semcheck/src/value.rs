@@ -13,6 +13,7 @@ use crate::const_op::LogicOp;
 use crate::const_op::PrefixOp;
 use crate::kind::DataKind;
 use crate::kind::IntKind;
+use crate::kind::Width;
 
 /// Run `$code` with `$f` naming the Rust float of `$bits` bits: `f32` for 32
 /// bits, `f64` for 64. Rust floats round to nearest, ties to even, as the
@@ -166,6 +167,11 @@ impl Value
             DataKind::Bool => Value::Bool(false),
             // A value of an enumeration starts at its first member.
             DataKind::Enum(e) => e.first().scalar().unwrap_or(Value::NULL),
+            // A job or a channel starts as the number of none.
+            DataKind::Task(_) =>
+            {
+                Value::Int { kind: IntKind::new(false, Width::Platform), raw: 0 }
+            }
             // A list, a struct or a slice is no single value; its slot is
             // cleared to zero octets instead, the default of each cell or
             // field, and a slice of no cells.
@@ -845,6 +851,10 @@ pub fn from_raw(kind: DataKind, raw: &[u8], platform: u16) -> Result<Value, RawE
         {
             tern!(pattern <= 1, Ok(Value::Bool(pattern == 1)), Err(RawError::BadValue))
         }
+        DataKind::Task(_) =>
+        {
+            Ok(Value::int(IntKind::new(false, Width::Platform), pattern, platform))
+        }
         DataKind::Ptr(_) | DataKind::Null | DataKind::Fn(_) =>
         {
             Ok(Value::Ptr(pattern as u64))
@@ -990,6 +1000,7 @@ impl FromStr for Value
             DataKind::Bool => head.parse::<bool>().ok().map(Value::Bool),
             DataKind::Ptr(_) | DataKind::Null => read_address(head).map(Value::Ptr),
             DataKind::Fn(_)
+            | DataKind::Task(_)
             | DataKind::List(_)
             | DataKind::Struct(_)
             | DataKind::Seq(_)

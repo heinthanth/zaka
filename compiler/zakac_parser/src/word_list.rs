@@ -9,7 +9,6 @@ use zakac_rust_sugars::tern;
 use crate::describe::kw_text;
 use crate::parser::PResult;
 use crate::parser::Parser;
-use crate::parser::kw_of;
 
 /// Whether a scan for the end of a list in words stops at a token: a
 /// particle, `၏` or the full stop, which no item holds. `နှင့်` joins the
@@ -250,10 +249,7 @@ impl Parser<'_>
     /// `true` if it does.
     pub(crate) fn at_with_before_call(&self) -> bool
     {
-        let call_word = matches!(
-            kw_of(&self.peek_n(1)),
-            Some(Kw::WillDo | Kw::CallResult | Kw::CallGoodResult)
-        );
+        let call_word = self.call_word_at(1);
         self.at(Kw::Hnint) && call_word
     }
 

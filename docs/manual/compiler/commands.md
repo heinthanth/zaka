@@ -510,6 +510,7 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--max-heap <OCTETS>` | `268435456` | the most live heap octets before an allocation fails |
 | `--max-stack <OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
+| `--trap <MODE>` | `unwind` | what a trap in a [job](../language/jobs.md#a-trap-in-a-job) does: `unwind` ends that job alone, and `abort` stops the whole program |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
 | `--jit` | off | run the program through Cranelift, and report a program it cannot build; see below |
 | `--vm` | off | run the program on the VM; `--jit` wins over it |

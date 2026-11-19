@@ -15,6 +15,9 @@ en = "The most live heap octets before an allocation fails."
 [vm.frames]
 en = "Where variables sit: checked gives each its own block, so a read past one traps; packed puts the locals of a call next to each other, as C does."
 
+[vm.trap_mode]
+en = "What a trap in a job does: unwind ends that job alone, and a wait for it traps in turn; abort stops the whole program."
+
 [vm.max_stack]
 en = "The most octets of the stack region, where the locals of each call live."
 
@@ -68,6 +71,15 @@ en = "more than %{depth} nested calls"
 
 [vm.trap.step_limit]
 en = "stopped after %{steps} ops"
+
+[vm.trap.job_trapped]
+en = "the job %{job} this waits for stopped at a trap"
+
+[vm.trap.deadlock]
+en = "each job waits for another; none can go on"
+
+[vm.trap.job_stopped]
+en = "job %{job} stopped"
 
 [vm.trap.step_not_positive]
 en = "counted loop step is not positive"

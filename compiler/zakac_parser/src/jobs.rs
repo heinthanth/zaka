@@ -8,6 +8,7 @@ use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::parser::Parser;
@@ -70,8 +71,64 @@ pub(crate) fn past_marks(
     at
 }
 
+/// The word before the call end that runs a call as a job.
+pub(crate) const PARALLEL: &str = "အပြိုင်";
+
+/// The word after `လုပ်ဆောင်သော` in the expression that gives the job.
+pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
+
 impl Parser<'_>
 {
+    /// Whether the end of a parallel call stands at the cursor:
+    /// `အပြိုင် လုပ်ဆောင်မည်` (a statement) or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` (the
+    /// expression of the job).
+    ///
+    /// # Returns
+    ///
+    /// `Some(true)` for the statement, `Some(false)` for the expression,
+    /// `None` when neither stands there.
+    pub(crate) fn parallel_end(&self) -> Option<bool> { self.parallel_end_at(0) }
+
+    /// [`Parser::parallel_end`] from the token `at` ahead on.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `Some(true)` for the statement, `Some(false)` for the expression,
+    /// `None` when neither stands there.
+    pub(crate) fn parallel_end_at(&self, at: usize) -> Option<bool>
+    {
+        let word = |n: usize, text: &str| {
+            let tok = self.peek_n(at + n);
+            tok.kind == TokenKind::Ident && self.text_of(tok.span) == text
+        };
+        ret_if!(!word(0, PARALLEL), None);
+        let next = self.peek_n(at + 1).kind;
+        ret_if!(next == TokenKind::Kw(Kw::WillDo), Some(true));
+        (next == TokenKind::Kw(Kw::CallHead) && word(2, JOB_NOUN)).then_some(false)
+    }
+
+    /// Whether the end of a long call stands `n` tokens ahead: `လုပ်ဆောင်မည်`,
+    /// `လုပ်ဆောင်သော ရလဒ်`, `လုပ်ဆောင်သော ရလဒ်ကောင်း`, or the end of a parallel call.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn call_word_at(&self, n: usize) -> bool
+    {
+        let ends = [Kw::WillDo, Kw::CallResult, Kw::CallGoodResult];
+        let kw = self.peek_n(n).kind;
+        ends.iter().any(|e| kw == TokenKind::Kw(*e))
+            || self.parallel_end_at(n).is_some()
+    }
+
     /// The tokens the phrase takes from the token `n` ahead on.
     ///
     /// # Arguments

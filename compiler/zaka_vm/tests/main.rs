@@ -6,6 +6,7 @@ mod common;
 mod comptime_fns;
 mod heap;
 mod host;
+mod jobs;
 mod machine;
 mod mem;
 mod permissions;

@@ -1349,6 +1349,8 @@ en = "\"%{k}\" has no initial value: %{r}"
 en = "a function value has none"
 [codes.ZK0479.handle]
 en = "a handle comes from C alone"
+[codes.ZK0479.job]
+en = "a job comes from starting a function in parallel alone"
 [codes.ZK0479.member]
 en = "no member of \"%{e}\" is marked \"ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်\""
 [codes.ZK0479.result]
@@ -1503,6 +1505,15 @@ en = "\"%{n}\" is no shared object: jobs use its values as they are, so `အပ�
 en = "remove the mark, or add `မျှဝေနိုင်သော` after it to make each value an object that jobs share"
 [codes.ZK0493.explain]
 en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` makes the objects of a shared struct ones that jobs on other threads can use, with a lock. A plain struct is a value: a job that gets one gets a copy as soon as either side writes it, so jobs use it with no mark and no lock, and the mark on it changes nothing."""
+
+[codes.ZK0494.title]
+en = "a value jobs cannot use"
+[codes.ZK0494.message]
+en = "a value of %{k} goes to a job on another thread here, or comes back from one, and jobs cannot use %{k}"
+[codes.ZK0494.help]
+en = "pass a value, or mark the struct of the object `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`; a plain shared object, a function value and a pointer cannot go"
+[codes.ZK0494.explain]
+en = """A job runs on another thread. A value that goes to it, as an argument, or comes back from it, as the result its function gives back, must be one jobs can use: a number, a character, true or false, text, a list, a struct, an optional, a result or a table of such kinds, or an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`. Two threads would change a plain shared object at once with no lock, and a closure can hold such an object, so neither can go."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"

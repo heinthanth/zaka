@@ -42,9 +42,14 @@ const REMOVE: &str = "ဖျက်";
 /// `အစားထိုး`: replace a part of text.
 const REPLACE: &str = "အစားထိုး";
 
-/// The verbs of the core whose call statements the parser turns into their
+/// `စောင့်`: wait for a job; its calls remain calls, which semcheck and the
+/// lowering serve.
+const WAIT: &str = "စောင့်";
+
+/// The verbs of the core whose calls read as the sentences their heads spell;
+/// the parser turns the call statements of each but `စောင့်` into their
 /// statements.
-pub(crate) const VERB_FNS: [&str; 5] = [PRINT, ADD, DUP, REMOVE, REPLACE];
+pub(crate) const VERB_FNS: [&str; 6] = [PRINT, ADD, DUP, REMOVE, REPLACE, WAIT];
 
 /// The sentence a call of a verb of the core writes.
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -394,6 +394,15 @@ pub enum Op
     /// Work of the ring collector: run it now, pause it, resume it, or pop a
     /// `usize` and make it the octets in the buffer that run a collection.
     Rings(RingsAct),
+    /// Start a job that calls the function at this index, its arguments on
+    /// the stack as [`Op::Call`] takes them, and push the `usize` that names
+    /// the job. The job runs in its own turns, from its own stack.
+    Spawn(u32),
+    /// Pop a `usize` that names a job and wait for its end: the job's result
+    /// of this kind is pushed, or goes to the slot under the name for a list
+    /// or struct result, whose address remains. A job that stopped at a trap
+    /// stops the waiter too.
+    Wait(Option<DataKind>),
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -643,10 +652,11 @@ impl Op
             Op::GlobalAddr(n) => format!("g{n}"),
             Op::Convert(kind) => kind.name(),
             Op::Jump(t) | Op::JumpIfFalse(t) | Op::JumpIfTrue(t) => format!("@{t}"),
-            Op::Call(f) | Op::FnAddr(f) | Op::Closure { func: f, .. } =>
-            {
-                format!("f{f}")
-            }
+            Op::Call(f)
+            | Op::Spawn(f)
+            | Op::FnAddr(f)
+            | Op::Closure { func: f, .. } => format!("f{f}"),
+            Op::Wait(kind) => kind.map(|k| k.name()).unwrap_or_default(),
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::Foreign(f) => format!("c{f}"),

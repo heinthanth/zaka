@@ -62,6 +62,9 @@ use crate::trap::hex;
 
 mod collector;
 mod deep;
+mod jobs;
+
+pub use jobs::TrapMode;
 mod table;
 
 /// The kind of a pointer difference.
@@ -105,6 +108,9 @@ pub struct RunOptions
     /// the run ends; the machine itself keeps no list.
     #[builder(default)]
     pub leaks: bool,
+    /// What a job does when it traps.
+    #[builder(default)]
+    pub trap: TrapMode,
 }
 
 impl Default for RunOptions
@@ -524,6 +530,9 @@ pub struct Machine
     /// program has few kinds of block, so a list serves.
     #[builder(default)]
     ring_kinds: Vec<(DataKind, bool)>,
+    /// The jobs the program started, and their turns.
+    #[builder(default)]
+    jobs: jobs::Jobs,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -771,10 +780,14 @@ impl Machine
     pub fn step(&mut self) -> &State
     {
         ret_if!(!self.running(), &self.state);
-        let ran = self.fetch();
+        let ran = self.fetch().and_then(|()| self.take_turns());
         self.state = match ran
         {
-            Err(kind) => State::Trapped(self.trap(kind)),
+            Err(kind) =>
+            {
+                let trap = self.trap(kind);
+                self.job_trapped(trap)
+            }
             Ok(()) if self.frames.is_empty() => State::Finished,
             Ok(()) if self.waiting => State::Waiting,
             Ok(()) => State::Running,
@@ -942,12 +955,21 @@ impl Machine
     pub fn exit_code(&self) -> Option<u8>
     {
         ret_if!(self.state != State::Finished, None);
+        ret_if!(self.jobs.lost_trap(), Some(1));
         let g = self.module.host.exit? as usize;
         let value =
             self.mem.load(*self.globals.get(g)?, self.module.globals.get(g)?.kind);
         let raw = tern!(let Ok(Value::Int { raw, .. }) = value, raw, 0);
         Some((raw & 0xFF) as u8)
     }
+
+    /// The traps that ended jobs while the program went on, each with the
+    /// number of its job.
+    ///
+    /// # Returns
+    ///
+    /// The traps, in job order.
+    pub fn job_traps(&self) -> Vec<(usize, &Trap)> { self.jobs.traps() }
 
     /// Put a plain list of texts in a global, each text and the list in a
     /// heap block of its own.
@@ -1386,6 +1408,8 @@ impl Machine
             Op::JumpIfFalse(t) => self.branch(t, false),
             Op::JumpIfTrue(t) => self.branch(t, true),
             Op::Call(f) => self.enter(f),
+            Op::Spawn(f) => self.spawn(f),
+            Op::Wait(kind) => self.wait(kind),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),
             Op::Closure { func, record } => self.closure(func, record),
@@ -2069,6 +2093,7 @@ impl Machine
     /// `Ok`, or a trap when there is no call.
     fn leave(&mut self) -> Step
     {
+        ret_if!(self.park_at_end(), Ok(()));
         let frame = self.frames.pop().ok_or_else(|| malformed("no call"))?;
         let ret = self.module.funcs.get(frame.func as usize).and_then(|f| f.ret);
         do_if!(let Some(kind) = ret.filter(|k| k.is_aggregate()), self.dup_result(kind)?);
@@ -2076,9 +2101,10 @@ impl Machine
         self.slots -= frame.locals.len();
         // The program has ended: C can call nothing more, so each leave ends;
         // then free each ring left, so no block remains held.
-        do_if!(self.frames.is_empty(), self.end_leaves()?);
-        do_if!(self.frames.is_empty(), self.collect_rings()?);
-        Ok(())
+        ret_if!(!self.frames.is_empty() || !self.jobs.on_main(), Ok(()));
+        self.drop_job_results()?;
+        self.end_leaves()?;
+        self.collect_rings()
     }
 
     /// Duplicate a list or struct result into the caller's slot, the address

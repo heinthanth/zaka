@@ -91,7 +91,7 @@ fn fits(op: Op, module: &Module, func: &Func) -> bool
         {
             below(t, func.code.len())
         }
-        Op::Call(f) => below(f, module.funcs.len()),
+        Op::Call(f) | Op::Spawn(f) => below(f, module.funcs.len()),
         Op::PrintText(t) | Op::Text(t) => below(t, module.texts.len()),
         Op::Format(f) => module.formats.get(f as usize).is_some_and(|args| {
             args.iter().all(

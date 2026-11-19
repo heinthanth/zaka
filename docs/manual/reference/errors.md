@@ -283,6 +283,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0491 | the C name of a function or a struct that code outside can use is `main`, starts with `zk_` or `ZK_`, or names a C function or another such function or struct | [Functions C can call](../language/functions.md#functions-c-can-call) |
 | ZK0492 | a function that code outside can call passes a struct to C that has no C name | [Functions C can call](../language/functions.md#functions-c-can-call) |
 | ZK0493 | the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` on a struct that is no shared object, where it changes nothing (warning) | [Objects jobs can use](../language/objects.md#objects-jobs-can-use) |
+| ZK0494 | a value goes to a job, or comes back from one, of a kind jobs on other threads cannot use, such as a plain shared object | [Values that go to a job](../language/jobs.md#values-that-go-to-a-job) |
 
 ### ZK05: natural Zaka (warnings)
 

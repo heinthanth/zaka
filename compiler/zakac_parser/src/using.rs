@@ -1022,6 +1022,8 @@ impl Parser<'_>
             (false, Mode::Stmt) => &[Kw::Will, Kw::UsedResult, Kw::UsedGoodResult],
             (false, Mode::Expr) => &[Kw::UsedResult, Kw::UsedGoodResult],
         };
+        let parallel = self.parallel_end().filter(|_| long);
+        ret_if!(let Some(stmt) = parallel, self.finish_parallel(parts, stmt, mode));
         // A call that ends a statement, where a value goes, is ZK0204.
         let stmt_end = mode == Mode::Expr
             && matches!(kw_of(&self.peek()), Some(Kw::Will | Kw::WillDo));
@@ -1043,6 +1045,49 @@ impl Parser<'_>
         node.using = using;
         node.prepositions = prepositions;
         node.phrases = phrases;
+        Ok(Head::Expr(call))
+    }
+
+    /// End a long call that runs as a job: `အပြိုင် လုပ်ဆောင်မည်။`, a statement,
+    /// or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`, the expression whose value is the job.
+    ///
+    /// # Arguments
+    ///
+    /// * `parts` - What the call holds so far.
+    /// * `stmt` - Whether the statement form stands at the cursor.
+    /// * `mode` - Whether the call can be a statement.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn finish_parallel(
+        &mut self, parts: CallParts, stmt: bool, mode: Mode,
+    ) -> PResult<Head>
+    {
+        let verb = parts.callee.span.to(&self.peek_n(1).span);
+        ret_if!(
+            stmt && mode == Mode::Expr,
+            Err(diag::stmt_verb_in_expr(verb, self.text_of(verb)))
+        );
+        self.bump();
+        if stmt
+        {
+            self.bump();
+            let mut node = self.finish_call_stmt(parts)?;
+            do_if!(let Stmt::Call(call) = &mut node, call.parallel = true);
+            return Ok(Head::Stmt(Box::new(node)));
+        }
+        self.bump();
+        let end = self.bump();
+        let CallParts { start, callee, place, args, using, prepositions, phrases } =
+            parts;
+        let call = self.call_expr(start.to(&end.span), callee, args, false);
+        let mut call = crate::notation::with_place(call, place);
+        extract!(Expr::Call(node) = &mut call);
+        node.using = using;
+        node.prepositions = prepositions;
+        node.phrases = phrases;
+        node.parallel = true;
         Ok(Head::Expr(call))
     }
 }

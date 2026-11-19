@@ -627,6 +627,13 @@ the core. The compiler mark outside the core is ZK0349.
   (`name_foreign`). A generic function imported beside plain functions of its name takes a
   call that no plain one fits (`plain_or_generic`).
 
+- **Jobs.** A call with `parallel` set gives `DataKind::Task`, the job kind of what its
+  function gives back (`start_job` in `jobs.rs`); each argument and the result must have
+  the trait of the kinds jobs can use (`goes_to_job`, ZK0494). `task.rs` makes the job
+  and channel kinds once for each carried kind, with the signatures `%job(<kind>)` and
+  `%pipe(<kind>)`; their phrases come from the written-as hints of the core. A call of
+  the core's `စောင့်` on one job (`wait_call`) gives the kind of the job's result.
+
 ## Comptime calls
 
 A call of a comptime function (`FnDecl.comptime`, `FnSig.comptime`) in a spot that needs

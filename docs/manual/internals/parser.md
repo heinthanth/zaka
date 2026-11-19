@@ -715,6 +715,11 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   reserved words the clause engine reads through its verb rows: `ပေါင်းလဒ်` and the others,
   `စားသော စားလဒ်` and the joined phrases of the lexer, and the shifts, whose
   `ဘယ်သို့|ညာသို့ <distance> ဘစ်` fills `Slot::Bit` (`push_shift`).
+- A long call whose end is `အပြိုင် လုပ်ဆောင်မည်` or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`
+  runs as a [job](../language/jobs.md): `parallel_end` in `jobs.rs` finds the end, the
+  argument loop stops before it (`call_word_at`), and the call node gets `parallel`.
+  Before `ရလဒ်` and `ရလဒ်ကောင်း`, `glued.rs` splits the short ends too
+  (`ENDS_BEFORE_RESULT`), so `စောင့်သော ရလဒ်` reads as the call `စောင့်` and its end.
 - `x ၏ f(a)` joins the sign-form call to the operand before `၏` (`method_of`); `x ၏ f` remains
   a field read, which the check turns into a call when no field fits.
 

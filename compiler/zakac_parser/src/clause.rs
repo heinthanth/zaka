@@ -476,10 +476,7 @@ impl Parser<'_>
         ret_if!(!self.in_word_list, false);
         ret_if!(self.at(Kw::Hnint), true);
         let lone = stack.len() == 1 && stack[0].slot.is_none();
-        let call_word = matches!(
-            kw_of(&self.peek_n(1)),
-            Some(Kw::WillDo | Kw::CallResult | Kw::CallGoodResult)
-        );
+        let call_word = self.call_word_at(1);
         lone && self.at(Kw::Hpjint) && call_word
     }
 

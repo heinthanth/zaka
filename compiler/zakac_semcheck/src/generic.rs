@@ -36,6 +36,7 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::Label;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
+use zakac_lexer::spelling::canonical;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
@@ -52,6 +53,9 @@ use crate::scope::FnSigs;
 use crate::scope::Written;
 use crate::scope::overload_name;
 use crate::semcheck::Checker;
+use crate::task::JOB_WORD;
+use crate::task::PIPE_WORD;
+use crate::task::TaskKind;
 
 /// The generic functions and structs of a program, under their names.
 #[derive(Debug, Clone, Default)]
@@ -394,6 +398,14 @@ impl Binder<'_>
             return self.bind(&table.value, value);
         }
         ret_if!(let Some(parts) = pattern.parts.as_deref(), self.bind_parts(parts, actual));
+        // A job or a channel kind binds the kind it carries.
+        let task = pattern.name.as_ref().and_then(|n| crate::task::task_word(&n.name));
+        if task.is_some() && pattern.base == BaseKind::Named
+        {
+            let of = actual.as_task().and_then(|t| t.of);
+            let pair = pattern.args.first().zip(of);
+            return pair.map_or(Some(()), |(want, of)| self.bind(want, of));
+        }
         ret_if!(!pattern.args.is_empty(), self.bind_args(pattern, actual));
         let named = pattern.base == BaseKind::Named;
         let name = pattern.name.as_ref().map(|n| n.name);
@@ -534,8 +546,33 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
         DataKind::Struct(_) => struct_ast(kind, span),
         DataKind::Enum(e) => Some(named(&e.name, span)),
         DataKind::Fn(f) => fn_ast(f, span),
+        DataKind::Task(t) => task_ast(t, span),
         _ => None,
     }
+}
+
+/// [`kind_ast`] for a job or a channel kind: the name the core declares, with
+/// the kind it carries as its kind.
+///
+/// # Arguments
+///
+/// * `t` - The kind.
+/// * `span` - The span the phrase takes.
+///
+/// # Returns
+///
+/// The phrase, or `None` when the carried kind has none.
+fn task_ast(t: &TaskKind, span: Span) -> Option<Kind>
+{
+    let word = tern!(t.pipe, canonical(PIPE_WORD).into_owned(), JOB_WORD.to_string());
+    let args = match t.of
+    {
+        Some(of) => vec![kind_ast(of, span)?],
+        None => Vec::new(),
+    };
+    let mut kind = named(&word, span);
+    kind.args = args;
+    Some(kind)
 }
 
 /// [`kind_ast`] for a function kind: each parameter with its prepositions, and

@@ -349,6 +349,7 @@ impl Folder
                 self.drop_value(value);
             }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
+            Stmt::Wait { job, .. } => self.drop_value(job),
             Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
             {
                 do_if!(let Some(v) = value, _ = self.expr(v));
@@ -513,10 +514,16 @@ impl Folder
                 (v.and_then(|v| value::convert(v, e.kind, self.platform).ok()), None)
             }
             ExprNode::Call { args, .. }
+            | ExprNode::Spawn { args, .. }
             | ExprNode::Host { args, .. }
             | ExprNode::Foreign { args, .. } =>
             {
                 do_for!(a in args.iter_mut(), self.drop_value(a));
+                (None, None)
+            }
+            ExprNode::Wait(job) =>
+            {
+                self.drop_value(job);
                 (None, None)
             }
             ExprNode::CallValue { callee, args } =>

@@ -619,6 +619,11 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
+    /// `true` for `... အပြိုင် လုပ်ဆောင်မည်`: the call runs as a job on another
+    /// thread, and the statement goes on at once.
+    #[builder(default)]
+    #[serde(default)]
+    pub parallel: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
     pub using: Option<UsingParticle>,

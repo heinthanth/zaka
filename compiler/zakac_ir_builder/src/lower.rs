@@ -66,6 +66,7 @@ use crate::ir::fn_shape;
 use crate::ir::fresh_text;
 use crate::value::Value;
 
+mod jobs;
 mod nested;
 mod table;
 
@@ -1094,6 +1095,8 @@ impl Lowerer<'_>
                 self.pending = 0;
                 self.checked_call(&n.callee, n.place.as_deref(), &n.args, n.span);
             }
+            st::Stmt::Call(n) if n.parallel => self.spawn_stmt(n),
+            st::Stmt::Call(n) if let Some(wait) = self.wait_stmt(n) => out.push(wait),
             st::Stmt::Call(n) =>
             {
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
@@ -3237,6 +3240,8 @@ impl Lowerer<'_>
     /// The operation.
     fn call_node(&mut self, n: &ast::CallExpr, kind: DataKind) -> ExprNode
     {
+        ret_if!(n.parallel, self.spawn_node(&n.callee, n.place.as_deref(), &n.args));
+        ret_if!(let Some(wait) = self.wait_node(n), wait);
         let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
         let args = self.lower_args(&n.args, &sig);
         ret_if!(self.post.is_empty(), target.node(args));

@@ -678,6 +678,7 @@ impl Checker
             InitialGap::Member(e) => NoInitial::Member(&e.name),
             InitialGap::Result => NoInitial::Result,
             InitialGap::Part(p) => NoInitial::Part(p),
+            InitialGap::Job => NoInitial::Job,
         };
         self.report(kd::no_initial_value(span, &kind.name(), why));
         None
@@ -851,6 +852,9 @@ impl Checker
             Written::of(&n.prepositions, &n.phrases),
             n.span,
         )?;
+        // A call that runs as a job gives the job, of the kind its function
+        // gives back, or of none.
+        ret_if!(n.parallel, Some(self.start_job(&n.args, ret, n.span)));
         self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.

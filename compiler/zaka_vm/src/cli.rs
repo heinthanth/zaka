@@ -58,6 +58,7 @@ use zakac_span::source_map::SourceMap;
 
 use crate::asker::TermAsker;
 use crate::machine::HostData;
+use crate::machine::Machine;
 use crate::machine::RunOptions;
 use crate::machine::run_in;
 use crate::trap::Backtrace;
@@ -75,6 +76,8 @@ const MAX_HEAP_ARG: &str = "max_heap";
 const MAX_STACK_ARG: &str = "max_stack";
 /// The flag for how variables sit in the address space.
 const FRAMES_ARG: &str = "frames";
+/// The flag for what a trap in a job does.
+const TRAP_ARG: &str = "trap";
 /// The flag that lists the heap blocks left unfreed.
 const LEAKS_ARG: &str = "leaks";
 /// The id of the flag that runs the program as native code, with the JIT.
@@ -145,6 +148,12 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .help(t!("vm.frames"))
         .value_parser(["checked", "packed"])
         .default_value("checked");
+    let trap = Arg::new(TRAP_ARG)
+        .long("trap")
+        .value_name("MODE")
+        .help(t!("vm.trap_mode"))
+        .value_parser(["unwind", "abort"])
+        .default_value("unwind");
     let leaks = Arg::new(LEAKS_ARG)
         .long("leaks")
         .help(t!("vm.leaks"))
@@ -159,7 +168,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .last(true);
     let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
     let cmd = attach_codegen_args(cmd);
-    let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames);
+    let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames).arg(trap);
     let cmd = attach_grant_args(cmd, Granted::Run);
     cmd.arg(leaks).arg(jit).arg(vm).arg(args).about(t!("vm.about"))
 }
@@ -329,6 +338,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let gate = run_gate(matches);
     let (machine, result) =
         run_in(&module, &mut *io.stdout, &options, &host, world, gate);
+    write_job_traps(io, &cmd_info, &machine, &source_map);
     let Err(trap) = result
     else
     {
@@ -341,6 +351,27 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         Error::RuntimeTrap { msg: trap.report(&source_map, backtrace()) },
     );
     ExitCode::Failure
+}
+
+/// Report each trap that ended a job while the program went on.
+///
+/// # Arguments
+///
+/// * `io` - The standard streams.
+/// * `cmd_info` - The command, for the report.
+/// * `machine` - The machine where the run stopped.
+/// * `source_map` - The source map.
+fn write_job_traps(
+    io: &mut CommandIO<'_>, cmd_info: &CommandInfo, machine: &Machine,
+    source_map: &SourceMap,
+)
+{
+    for (job, trap) in machine.job_traps()
+    {
+        let head = t!("vm.trap.job_stopped", job = job);
+        let msg = format!("{head}: {}", trap.report(source_map, backtrace()));
+        let _ = report_command_error(io, cmd_info, Error::RuntimeTrap { msg });
+    }
 }
 
 /// The arguments of the start block: the name of the program, then each
@@ -427,9 +458,11 @@ fn run_options(matches: &ArgMatches) -> RunOptions
     let frames = matches.get_one::<String>(FRAMES_ARG);
     let frames = frames.and_then(|f| f.parse().ok()).unwrap_or_default();
     let leaks = matches.get_flag(LEAKS_ARG);
+    let trap = matches.get_one::<String>(TRAP_ARG);
+    let trap = trap.and_then(|t| t.parse().ok()).unwrap_or_default();
     #[rustfmt::skip]
     let options = RunOptions::builder().max_depth(depth).maybe_max_steps(steps)
-        .max_heap(heap).max_stack(stack).frames(frames).leaks(leaks).build();
+        .max_heap(heap).max_stack(stack).frames(frames).leaks(leaks).trap(trap).build();
     options
 }
 

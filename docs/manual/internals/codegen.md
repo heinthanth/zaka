@@ -83,7 +83,7 @@ A statement is one of nineteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, `CallValue { callee, args }` (a call through a function
+`Convert { implicit }`, `Call`, `Spawn { func, name, args }` (a call that starts a [job](../language/jobs.md), whose value is the `usize` that names it), `Wait(job)` (a wait for a job that gives its result; with the result dropped, the statement `Stmt::Wait { job, kind, span }`), `CallValue { callee, args }` (a call through a function
 value: the value first, then the arguments), `FnAddr { func, name }` (the function value of
 `func`, written `(fn_addr name)`), `Closure { func, name, record }` (the closure of a nested function with captures, made where it is declared: `func` is its thunk, and `record` the address of the record in a hidden slot, which moves to a counted heap block), `Host { func, args }` (the one statement of an external
 function: its result variable takes what the host function `func` gives for the
@@ -753,6 +753,20 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   own, and each list in one more, so the drops at the end of `main` give them back.
   `exit_code` reads the global `host.exit` once the run has finished, and keeps its
   lowest 8 bits. A run with no host leaves both lists blank.
+- **Jobs.** `machine/jobs.rs` runs the [jobs](../language/jobs.md) as green threads. The
+  running job keeps its operand stack, calls and count of locals in the fields of the
+  machine; each other job keeps them in its row of `Jobs`, with its stack region
+  (`Mem::take_region`, swapped in through `Mem::swap_stack`). `spawn f` takes a region of
+  `max_stack` octets past the heap, puts the slot of a list or struct result at its
+  bottom and a duplicate of each list, struct or text argument that the job holds (`keep_arg`), and
+  enters `f`; then the spawner goes on. `take_turns` runs after each op: a job whose calls
+  ended keeps its result (`end_job`), and a job that ended, parked, or ran its 100 ops
+  gives the turn to the next job that can run, in order (`next_turn`); with none, the
+  trap `Deadlock`. `wait` on a job still running pushes the number back, steps the
+  program counter back one op and parks, so the op runs again on a later turn. The last
+  `ret` of `main` parks likewise while a job runs (`park_at_end`). A trap in a job
+  under `TrapMode::Unwind` ends that job alone (`job_trapped`), and a later wait for it
+  is the trap `JobTrapped`; `exit_code` is 1 when a trap ended a job that no wait saw.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

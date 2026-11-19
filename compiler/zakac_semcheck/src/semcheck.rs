@@ -1018,6 +1018,7 @@ impl Checker
         args: &[Expr], written: Written<'_>, span: Span,
     ) -> Option<Option<DataKind>>
     {
+        ret_if!(let Some(ret) = self.wait_call(callee, place, args), Some(ret));
         let expect = self.call_expect.take();
         let templates =
             tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
@@ -2559,7 +2560,13 @@ impl Visitor for Checker
             Written::of(&n.prepositions, &n.phrases),
             n.span,
         );
-        do_if!(let Some(ret) = ret, self.check_pass(&n.callee, ret, n.pass, true, n.span));
+        let Some(ret) = ret
+        else
+        {
+            return;
+        };
+        ret_if!(n.parallel, _ = self.start_job(&n.args, ret, n.span));
+        self.check_pass(&n.callee, ret, n.pass, true, n.span);
     }
 
     fn visit_struct(&mut self, n: &StructDecl)

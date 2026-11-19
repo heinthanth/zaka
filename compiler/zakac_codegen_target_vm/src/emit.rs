@@ -638,7 +638,10 @@ impl<'s> FuncGen<'s>
         let name = match &e.node
         {
             ExprNode::Format(_) => "%text",
-            ExprNode::Call { .. } | ExprNode::CallValue { .. } => "%ret",
+            ExprNode::Call { .. } | ExprNode::CallValue { .. } | ExprNode::Wait(_) =>
+            {
+                "%ret"
+            }
             ExprNode::List(_) | ExprNode::Own { .. } => "%list",
             _ => "",
         };
@@ -655,6 +658,7 @@ impl<'s> FuncGen<'s>
             {
                 self.call_into(Some(at), Target::Value(callee), args)
             }
+            ExprNode::Wait(job) => self.wait_into(Some(at), job, e.kind),
             ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
             ExprNode::CField { .. } => self.c_field_at(at, e),
             ExprNode::Own { .. } =>
@@ -989,6 +993,7 @@ impl<'s> FuncGen<'s>
                 self.set_block(*place, value)
             }
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
+            Stmt::Wait { job, kind, .. } => self.wait_stmt(job, *kind),
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 let fresh = self.read_operand(&stored(e));
@@ -1690,6 +1695,17 @@ impl<'s> FuncGen<'s>
                 );
             }
             ExprNode::Call { func, args, .. } => self.call(Target::Fn(*func), args),
+            ExprNode::Spawn { func, args, .. } =>
+            {
+                do_for!(a in args, self.expr(a));
+                self.op(Op::Spawn(*func));
+            }
+            ExprNode::Wait(job) =>
+            {
+                let slot = e.kind.is_aggregate();
+                let slot = slot.then(|| Op::LocalAddr(self.temp("%ret", e.kind)));
+                self.wait_into(slot, job, e.kind);
+            }
             ExprNode::CallValue { callee, args } =>
             {
                 self.call(Target::Value(callee), args)
@@ -1988,6 +2004,46 @@ impl<'s> FuncGen<'s>
         );
         do_if!(ret.is_some(), self.op(Op::Pop));
         do_if!(let Some((n, kind)) = slot, self.drop_local(n, kind));
+    }
+
+    /// Generate a wait for a job: a list or struct result goes to a slot,
+    /// whose address remains on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The op that pushes the address of the slot, for a list or
+    ///   struct result.
+    /// * `job` - The job.
+    /// * `kind` - The result kind.
+    fn wait_into(&mut self, slot: Option<Op>, job: &Expr, kind: DataKind)
+    {
+        do_if!(let Some(op) = slot, self.op(op));
+        self.expr(job);
+        self.op(Op::Wait(Some(kind)));
+    }
+
+    /// Generate a wait for a job whose result is dropped: the result goes
+    /// to a slot that is dropped after the wait.
+    ///
+    /// # Arguments
+    ///
+    /// * `job` - The job.
+    /// * `kind` - The result kind, or `None` for a job that gives nothing.
+    fn wait_stmt(&mut self, job: &Expr, kind: Option<DataKind>)
+    {
+        let Some(kind) = kind
+        else
+        {
+            self.expr(job);
+            return self.op(Op::Wait(None));
+        };
+        let n = self.temp("%ret", kind);
+        let at = Op::LocalAddr(n);
+        let block = kind.is_aggregate();
+        do_if!(!block, self.op(at));
+        self.wait_into(block.then_some(at), job, kind);
+        self.op(tern!(block, Op::Pop, Op::Store(kind)));
+        self.drop_local(n, kind);
     }
 
     /// The result kind of what a call runs.

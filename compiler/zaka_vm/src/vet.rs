@@ -714,6 +714,8 @@ impl Paths<'_, '_>
             Op::Jump(_) => Ok(effect(&[], None)),
             Op::JumpIfFalse(_) | Op::JumpIfTrue(_) => Ok(effect(&[Class::Bool], None)),
             Op::Call(f) => self.call(f),
+            Op::Spawn(f) => self.spawn(f),
+            Op::Wait(kind) => Ok(call_effect(vec![I], kind)),
             Op::FnAddr(f) => Ok(effect(&[], Some(Class::Fn(vet.callee(f)?.ret)))),
             Op::CallValue(n) => self.call_value(n as usize, stack),
             Op::Closure { func, record } =>
@@ -897,6 +899,24 @@ impl Paths<'_, '_>
         let params = callee.locals.iter().take(callee.params as usize);
         let takes: Vec<Class> = params.rev().map(|s| arg_class(s.kind)).collect();
         Ok(call_effect(takes, callee.ret))
+    }
+
+    /// The effect of the start of a job: the arguments go, as for a call,
+    /// and the name of the job comes.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function the job calls.
+    ///
+    /// # Returns
+    ///
+    /// The effect, or the reason of the fault.
+    fn spawn(&self, f: u32) -> Fault<Effect>
+    {
+        let callee = self.vet.callee(f)?;
+        let params = callee.locals.iter().take(callee.params as usize);
+        let takes: Vec<Class> = params.rev().map(|s| arg_class(s.kind)).collect();
+        Ok(effect(&takes, Some(I)))
     }
 
     /// The effect of a call through a function value: the value sits under

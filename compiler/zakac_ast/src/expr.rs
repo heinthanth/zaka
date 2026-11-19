@@ -839,6 +839,11 @@ pub struct CallExpr
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
+    /// `true` for `... အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`: the call runs as a job on
+    /// another thread, and the value is the job.
+    #[builder(default)]
+    #[serde(default)]
+    pub parallel: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
     pub using: Option<UsingParticle>,

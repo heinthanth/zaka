@@ -504,6 +504,16 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Wait for a job to end, and drop what its function gave back.
+    Wait
+    {
+        /// The job.
+        job: Expr,
+        /// The kind its function gives back, or `None`.
+        kind: Option<DataKind>,
+        /// Source region.
+        span: Span,
+    },
     /// Work of the ring collector: run it now, pause it, resume it, or set
     /// its threshold.
     Rings
@@ -707,6 +717,7 @@ impl Stmt
             | Stmt::Drop { span, .. }
             | Stmt::Halt { span, .. }
             | Stmt::Rings { span, .. }
+            | Stmt::Wait { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
@@ -816,6 +827,19 @@ pub enum ExprNode
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
     },
+    /// Start a job on another thread that calls a function with the
+    /// arguments; the value is the number of the job.
+    Spawn
+    {
+        /// Index into [`Module::funcs`].
+        func: u32,
+        /// The function name.
+        name: String,
+        /// The arguments, each of its parameter's kind.
+        args: Vec<Expr>,
+    },
+    /// Wait for a job to end; the value is what its function gave back.
+    Wait(Box<Expr>),
     /// A call of the function a function value holds. The value is read
     /// first, then the arguments run; a value of the zero word stops the
     /// program.
@@ -1088,6 +1112,7 @@ pub fn fresh_text(e: &Expr) -> bool
         ExprNode::Format(_)
             | ExprNode::Call { .. }
             | ExprNode::CallValue { .. }
+            | ExprNode::Wait(_)
             | ExprNode::List(_)
             | ExprNode::CField { .. }
     );
