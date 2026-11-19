@@ -8,7 +8,8 @@ description: Work that runs side to side with the rest of the program: starting 
 A job (`အပြိုင်လုပ်ငန်း`) runs a function side to side with the rest of the program. The
 program starts it with a call that ends in `အပြိုင်`, goes on with its own work, and waits
 for the result when it needs it. Each job reaches the same heap: a value that goes to a job
-is not copied until one side writes it.
+is not copied until one side writes it. The Learn book starts in small steps with
+[Jobs](../../learn/jobs/README.md).
 
 ```zaka
 စုပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် ဂဏန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
