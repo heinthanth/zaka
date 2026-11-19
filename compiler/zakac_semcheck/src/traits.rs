@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use zakac_ast::expr::Ident;
+use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::FnDecl;
@@ -24,6 +25,8 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::generic::in_core;
@@ -32,6 +35,7 @@ use crate::kind::DataKind;
 use crate::ops::Want;
 use crate::scope::FnSig;
 use crate::semcheck::Checker;
+use crate::structs::StructKind;
 
 /// The built-in trait of the kinds that take `+ - * /`: the numbers.
 pub const NUMBER_LIKE: &str = "နံပါတ်နှင့်တူသော";
@@ -153,6 +157,69 @@ fn builtin(name: &str, kind: DataKind) -> Option<bool>
     }
 }
 
+impl Checker
+{
+    /// Whether jobs on other threads can use values of a kind: numbers,
+    /// characters, true and false, text, and lists, structs, optionals,
+    /// results and tables made of such kinds, and the objects of a struct
+    /// marked `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` whose fields jobs can use. A
+    /// plain shared object, a function value, a pointer and a handle of a kind
+    /// from outside cannot go.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// `true` when jobs can use it.
+    pub(crate) fn usable_in_jobs(&self, kind: DataKind) -> bool
+    {
+        self.jobs_walk(kind, &mut Vec::new())
+    }
+
+    /// [`Checker::usable_in_jobs`], with the kinds the walk is inside, so a
+    /// kind that holds itself ends.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    /// * `seen` - The kinds on the path here.
+    ///
+    /// # Returns
+    ///
+    /// `true` when jobs can use it.
+    fn jobs_walk(&self, kind: DataKind, seen: &mut Vec<DataKind>) -> bool
+    {
+        let kind = kind.repr();
+        ret_true!(seen.contains(&kind));
+        seen.push(kind);
+        let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
+        ret_false!(shared);
+        let cell = kind.cell_kind().filter(|_| !kind.is_text());
+        ret_false!(kind.is_box() && !cell.is_some_and(|c| self.marked_for_jobs(c)));
+        ret_false!(!cell.is_none_or(|c| self.jobs_walk(c, seen)));
+        kind.as_struct()
+            .is_none_or(|s| s.fields().iter().all(|(_, k)| self.jobs_walk(*k, seen)))
+    }
+
+    /// Whether the struct an object holds carries the mark of jobs.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The kind inside the box of the object.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a marked struct, or an instance of one.
+    fn marked_for_jobs(&self, cell: DataKind) -> bool
+    {
+        let name =
+            |s: &StructKind| s.name.split('<').next().unwrap_or_default().to_string();
+        cell.as_struct().is_some_and(|s| self.jobs.contains(&name(s)))
+    }
+}
+
 /// A function a trait names, for one kind: its name, parameter kinds and
 /// result kind.
 struct Wanted
@@ -227,7 +294,12 @@ impl Checker
         let Some(decl) = decl
         else
         {
-            let known = builtin(&ident.name, kind);
+            let jobs = ident.name.as_str() == USABLE_IN_JOBS;
+            let known = tern!(
+                jobs,
+                Some(self.usable_in_jobs(kind)),
+                builtin(&ident.name, kind)
+            );
             do_if!(
                 known.is_none(),
                 self.report(rd::unknown_trait(ident.span, &ident.name))

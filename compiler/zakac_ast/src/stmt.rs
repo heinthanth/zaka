@@ -851,6 +851,11 @@ pub struct StructDecl
     #[builder(default)]
     #[serde(default)]
     pub shared: bool,
+    /// `true` when `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` marks it: jobs on other
+    /// threads can use its objects, which a lock guards.
+    #[builder(default)]
+    #[serde(default)]
+    pub jobs: bool,
     /// `true` for a kind that comes from outside the program,
     /// `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: each value is a handle to a struct C
     /// keeps, which copies share, and the fields, when written, are C's.

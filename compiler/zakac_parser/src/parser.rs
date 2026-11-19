@@ -42,6 +42,7 @@ use crate::glued::split_glued;
 use crate::heap::HEAP_FNS;
 use crate::hint::Hint;
 use crate::hint::declared_hints;
+use crate::jobs::past_marks;
 use crate::load::CORE_SOURCE;
 use crate::stmt::FN_MARKS;
 use crate::using::CallWords;
@@ -405,7 +406,9 @@ pub(crate) fn kw_of(tok: &Token) -> Option<Kw>
 /// # Returns
 ///
 /// `true` for such a name.
-fn declares_kind(tokens: &[Token], at: usize) -> bool
+fn declares_kind(
+    tokens: &[Token], at: usize, text_of: &dyn Fn(&Token) -> String,
+) -> bool
 {
     let kw = |n: usize| match tokens.get(n).map(|t| t.kind)
     {
@@ -419,9 +422,10 @@ fn declares_kind(tokens: &[Token], at: usize) -> bool
     let alias = at > 0 && kw(at - 1) == Some(Kw::DataKindOpen);
     ret_true!(alias && matches!(kw(next), Some(Kw::Ko | Kw::Thi)));
     ret_false!(kw(next) != Some(Kw::Called));
-    let marks = [Kw::Export, Kw::Shareable];
-    let word = (next + 1..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));
-    matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
+    matches!(
+        kw(past_marks(tokens, next + 1, text_of)),
+        Some(Kw::StructWord | Kw::EnumWord)
+    )
 }
 
 /// Whether a token is a number.
@@ -567,7 +571,11 @@ impl<'t> Parser<'t>
         #[rustfmt::skip]
         let mut parser = Parser::builder().cur(cur).text(text).base(base).strings(&lexed.strings).build();
         let decls: Vec<usize> = (0..lexed.tokens.len())
-            .filter(|at| declares_kind(&lexed.tokens, *at))
+            .filter(|at| {
+                declares_kind(&lexed.tokens, *at, &|t: &Token| {
+                    parser.text_of(t.span).to_string()
+                })
+            })
             .collect();
         let names: Vec<&str> =
             decls.iter().map(|at| parser.text_of(lexed.tokens[*at].span)).collect();

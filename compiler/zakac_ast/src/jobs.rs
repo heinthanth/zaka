@@ -1,0 +1,11 @@
+//! The phrase that marks a shared object as one jobs on other threads can
+//! use, and names the trait of each kind such jobs can use. Neither word is
+//! reserved: the parser reads them through their text where the phrase can
+//! stand, so each stays free to name a variable.
+
+/// The two words of the phrase, in order.
+pub const JOBS_WORDS: [&str; 2] = ["အပြိုင်လုပ်ငန်းများတွင်", "အသုံးပြုနိုင်သော"];
+
+/// The name of the built-in trait of the kinds jobs can use: the two words
+/// with a space between them.
+pub const USABLE_IN_JOBS: &str = "အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော";

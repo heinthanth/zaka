@@ -1,6 +1,7 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::Phrases;
+use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
@@ -38,6 +39,7 @@ use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
+use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -51,6 +53,7 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
+use crate::jobs::past_marks;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
@@ -1342,11 +1345,10 @@ impl Parser<'_>
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
         let next = 1 + self.angle_len(1).unwrap_or(0);
         ret_if!(!named || kw_of(&self.peek_n(next)) != Some(Kw::Called), false);
-        let marks = [Kw::Export, Kw::Shareable];
-        let word = (next + 1..)
-            .map(|n| kw_of(&self.peek_n(n)))
-            .find(|kw| !kw.is_some_and(|kw| marks.contains(&kw)));
-        matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
+        let rest = self.cur.rest();
+        let word =
+            past_marks(rest, next + 1, &|t: &Token| self.text_of(t.span).to_string());
+        matches!(rest.get(word).and_then(kw_of), Some(Kw::StructWord | Kw::EnumWord))
     }
 
     /// Parse a struct or an enumeration declaration that opens with
@@ -1363,6 +1365,7 @@ impl Parser<'_>
         let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
         let exported = self.eat(Kw::Export);
+        let jobs = self.eat_jobs_phrase();
         let shared = self.eat(Kw::Shareable);
         let word = tern!(
             shared,
@@ -1383,10 +1386,19 @@ impl Parser<'_>
                 let mark = tern!(n.external, OUTSIDE_MARK, USABLE_MARK);
                 let clash = diag::mark_clash(n.name.span, SHARED_MARK, mark);
                 do_if!(shared && marked, self.diags.push(clash));
+                let clash = diag::mark_clash(n.name.span, USABLE_IN_JOBS, mark);
+                do_if!(jobs && marked, self.diags.push(clash));
                 n.exported = exported;
                 n.shared |= shared;
+                n.jobs = jobs;
             }
-            Stmt::Enum(n) => n.exported = exported,
+            Stmt::Enum(n) =>
+            {
+                let word = kw_text(Kw::EnumWord);
+                let clash = diag::mark_clash(n.name.span, USABLE_IN_JOBS, &word);
+                do_if!(jobs, self.diags.push(clash));
+                n.exported = exported;
+            }
             _ => (),
         }
         Ok(stmt)

@@ -1,4 +1,5 @@
 pub mod expr;
+pub mod jobs;
 pub mod kind;
 pub mod name;
 pub mod s_expr;

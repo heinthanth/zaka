@@ -524,6 +524,8 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
         DataKind::Bool => Some(plain(BaseKind::Bool)),
         DataKind::Seq(s) if s.text => Some(plain(BaseKind::Text)),
         DataKind::Seq(s) if !s.boxed => wrapped(s.cell, Wrap::List(Cells::Inferred)),
+        // A shared struct names its object, the box of the struct.
+        DataKind::Seq(s) if s.cell.as_struct().is_some() => struct_ast(s.cell, span),
         DataKind::List(l) => wrapped(l.cell, Wrap::List(Cells::Fixed(l.len))),
         DataKind::Ptr(_) if kind.is_owner_ptr() && !kind.is_opaque() =>
         {

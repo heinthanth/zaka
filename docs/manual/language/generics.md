@@ -563,8 +563,10 @@ functions, which its operators then call.
 | `နှိုင်းယှဉ်နိုင်သော` | the numbers and the characters, and each kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | each kind, as `==` and `!=` take two values of one kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | each kind but a handle of a kind from outside, as `ပြသမည်` prints |
+| `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` | the kinds jobs on other threads can use: numbers, characters, true and false, text, and lists, structs, optionals, results and tables of such kinds, and the [objects jobs can use](objects.md#objects-jobs-can-use); not a plain shared object, a function value, a pointer or a handle of a kind from outside |
 
-A trait the program declares with one of these names hides the built-in one.
+A trait the program declares with one of these names hides the built-in one. The last
+trait has two words; the core declares none of it, and its words remain free names.
 
 ## Generics in modules
 

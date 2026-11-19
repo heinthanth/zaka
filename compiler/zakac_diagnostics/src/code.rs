@@ -489,6 +489,9 @@ CNameTaken = ("ZK0491", Level::Error),
 /// A function that code outside can call passes a struct to C that has no
 /// C name.
 StructNeedsCName = ("ZK0492", Level::Error),
+/// The mark of objects jobs can use stands on a struct that is no shared
+/// object: its values go to jobs as they are, so the mark changes nothing.
+JobsMarkOnValue = ("ZK0493", Level::Warning),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

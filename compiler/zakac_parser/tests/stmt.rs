@@ -1234,3 +1234,17 @@ fn verbs_of_the_core_read_as_sentence_calls()
                အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးပါပြီ။\n၁ သို့ ထည့် မည်။";
     assert_eq!(stmts(own)[1].to_sexpr(), "(call ထည့် 1)");
 }
+
+/// The mark of objects jobs can use goes with a shared struct alone: on an
+/// enumeration, or with a kind from outside, it is ZK0263.
+#[test]
+fn the_mark_of_jobs_clashes_with_an_enumeration_and_c()
+{
+    let jobs = "အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော";
+    let ok = format!("pt ဟူသော {jobs} မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
+    assert_eq!(codes(&ok), []);
+    let enumeration = format!("အရောင် ဟူသော {jobs} ဒေတာအမျိုးအစားကွဲတွင် နီ နှင့် ပြာ တို့ပါဝင်သည်။");
+    assert_eq!(codes(&enumeration), [Code::MarkClash]);
+    let outside = format!("pt ဟူသော {jobs} ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။");
+    assert_eq!(codes(&outside), [Code::MarkClash]);
+}

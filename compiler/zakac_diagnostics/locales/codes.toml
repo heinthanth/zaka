@@ -1495,6 +1495,15 @@ en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည
 [codes.ZK0492.explain]
 en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
 
+[codes.ZK0493.title]
+en = "the mark of jobs on a value"
+[codes.ZK0493.message]
+en = "\"%{n}\" is no shared object: jobs use its values as they are, so `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` adds no lock"
+[codes.ZK0493.help]
+en = "remove the mark, or add `မျှဝေနိုင်သော` after it to make each value an object that jobs share"
+[codes.ZK0493.explain]
+en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` makes the objects of a shared struct ones that jobs on other threads can use, with a lock. A plain struct is a value: a job that gets one gets a copy as soon as either side writes it, so jobs use it with no mark and no lock, and the mark on it changes nothing."""
+
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
 [codes.ZK0725.message]

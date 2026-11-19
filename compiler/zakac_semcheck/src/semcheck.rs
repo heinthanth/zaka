@@ -534,6 +534,7 @@ fn check_once(
     diags.extend(private_in_exports(program, &homes));
     diags.extend(start_rules(program, !options.as_module));
     diags.extend(core_twins(program));
+    diags.extend(jobs_on_values(program));
     let c_structs = c_structs(program, &mut diags);
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
@@ -541,7 +542,7 @@ fn check_once(
         .diags(diags).platform(options.platform_bits).no_unsafe(options.no_unsafe)
         .as_module(options.as_module).c_structs(c_structs)
         .known(known).open_structs(open_structs(program)).decls(decls)
-        .classifiers(struct_classifiers(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
+        .classifiers(struct_classifiers(program)).jobs(jobs_structs(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
         .uses(instances.uses.clone()).root_unit(program.units.len().saturating_sub(1) as u32)
         .core_units((0..program.units.len() as u32).filter(|u| generic::in_core(program, *u)).collect())
         .traits(traits(program)).inheriting(inheriting(program)).build();
@@ -564,6 +565,53 @@ fn check_once(
     let asked = Instances { fns: checker.wanted, structs: checker.struct_wanted, uses: checker.uses };
     #[rustfmt::skip]
     return (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured, asked, checker.op_calls, (checker.sites.take(), checker.blocked.take()));
+}
+
+/// The shared structs marked as usable in jobs.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// Their names.
+fn jobs_structs(program: &Program) -> HashSet<String>
+{
+    let marked = |s: &&StructDecl| s.jobs && s.shared;
+    let structs = program.stmts.iter().filter_map(as_struct_decl).filter(marked);
+    structs.map(|s| s.name.name.to_string()).collect()
+}
+
+/// A warning for each plain struct that carries the mark of jobs, which
+/// changes nothing on a value (ZK0493).
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The warnings.
+fn jobs_on_values(program: &Program) -> Vec<Diagnostic>
+{
+    let plain = |s: &&StructDecl| s.jobs && !s.shared;
+    let structs = program.stmts.iter().filter_map(as_struct_decl).filter(plain);
+    structs.map(|s| kd::jobs_mark_on_value(s.name.span, &s.name.name)).collect()
+}
+
+/// The struct a statement declares.
+///
+/// # Arguments
+///
+/// * `stmt` - The statement.
+///
+/// # Returns
+///
+/// The declaration, or `None`.
+fn as_struct_decl(stmt: &Stmt) -> Option<&StructDecl>
+{
+    tern!(let Stmt::Struct(s) = stmt, Some(s), None)
 }
 
 /// The function whose block is being checked.
@@ -593,6 +641,10 @@ pub(crate) struct Checker
     /// `ခု`.
     #[builder(default)]
     pub classifiers: HashMap<String, String>,
+    /// The shared structs marked `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`, whose
+    /// objects jobs on other threads can use.
+    #[builder(default)]
+    pub jobs: HashSet<String>,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
     /// The function each call of an overloaded or generic name chose.

@@ -1371,6 +1371,22 @@ pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::DecimalIndex, msg, span).with_help(t!("codes.ZK0487.help"))
 }
 
+/// The mark of objects jobs can use on a struct that is no shared object.
+///
+/// # Arguments
+///
+/// * `span` - The name of the struct.
+/// * `name` - The struct name.
+///
+/// # Returns
+///
+/// The `ZK0493` warning.
+pub fn jobs_mark_on_value(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0493.message", n = name);
+    Diagnostic::new(Code::JobsMarkOnValue, msg, span).with_help(t!("codes.ZK0493.help"))
+}
+
 /// A comptime function gives a kind that a constant cannot hold.
 ///
 /// # Arguments

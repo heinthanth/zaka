@@ -137,6 +137,34 @@ The rules:
 အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု၊ ကလေးများ ဟူသော အဆစ် စာရင်း တစ်ခု နှင့် မိဘ ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
 ```
 
+## Objects jobs can use
+
+A shared struct with the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` before
+`မျှဝေနိုင်သော` makes objects that jobs on other threads can use, which a lock guards. The
+words read apart or glued (`အပြိုင်လုပ်ငန်းများတွင်အသုံးပြုနိုင်သော`); neither is a reserved
+word.
+
+```zaka-file
+// account.zaka
+အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+```
+
+- The same phrase names the built-in trait of the kinds jobs can use
+  ([Built-in traits](generics.md#built-in-traits)): an object of a struct with the mark
+  has it when jobs can use each of its fields, and a plain shared object lacks it.
+- A value needs no mark: a job that gets a plain struct, a list or text gets a duplicate as
+  soon as either side writes it. The mark on a plain struct changes nothing, ZK0493.
+- The mark goes with a shared struct alone: on an enumeration, or with a C name or
+  `ပြင်ပမှ လာသော`, it is ZK0263.
+
+```zaka-warning ZK0493
+အမှတ် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အမှတ်(x: ၁) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
 ## An object that can be missing
 
 A variable, a field or a cell of an object kind holds an object at each point: no NULL stands in

@@ -41,6 +41,7 @@ program:
       classifier: null
       exported: false
       shared: false
+      jobs: false
       external: false
       c_name: null
       builtin: false
