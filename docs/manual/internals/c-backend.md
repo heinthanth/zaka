@@ -217,7 +217,7 @@ times more` and past 16 lines to `... N calls more`; `full` lists each call; `0`
 `main` is left out). With the checks of depth and debug info both off, the pair counts nothing.
 
 `--max-heap` counts in the runtime: a counted block adds the size of its cells when it is made,
-and a raw block (`zk_alloc`, `zk_realloc`, `zk_free`) adds the size the allocator gives
+and a raw block (`zk_alloc`, `zk_realloc`, `zk_raw_free`) adds the size the allocator gives
 (`malloc_size` on macOS, `malloc_usable_size` on Linux, `_msize` on Windows; another host counts
 no raw block). A counted block past the cap stops the run with the trap `no heap room for N
 octets`; a raw allocation past it gives NULL; a resize past it stops the run. A block that C

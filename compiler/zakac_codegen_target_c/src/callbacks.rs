@@ -11,6 +11,7 @@ use zakac_ir_builder::ir::fn_shape;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::fn_kind::FnKind;
+use zakac_semcheck::foreign::exchanged;
 use zakac_semcheck::foreign::is_c_handle_result;
 use zakac_semcheck::foreign::is_c_text_result;
 use zakac_semcheck::kind::DataKind;
@@ -112,6 +113,9 @@ pub enum Crossing
     /// The address of a struct C keeps, as an optional of a new handle;
     /// NULL holds no data.
     OptHandle,
+    /// A struct in its C form, with text and lists in it, which the runtime
+    /// reads into a new value: a function a lib gives C takes it.
+    Rich,
 }
 
 /// How a parameter kind crosses from C into a function of the program.
@@ -132,8 +136,28 @@ pub fn crossing(kind: DataKind, platform: u16) -> Option<Crossing>
     ret_if!(kind.as_external().is_some(), Some(Crossing::Handle));
     ret_if!(is_c_handle_result(kind), Some(Crossing::OptHandle));
     let plain = is_plain_struct(kind);
-    ret_if!(plain, struct_fits(kind, platform).then_some(Crossing::Struct));
+    ret_if!(plain && struct_fits(kind, platform), Some(Crossing::Struct));
+    ret_if!(plain, exchanged(kind, platform).then_some(Crossing::Rich));
     ffi_kind(kind, platform).map(|_| Crossing::AsIs)
+}
+
+/// Whether a result goes to C in its C form, which the runtime writes: text,
+/// a plain list, or a struct with text or lists in it. A function a lib gives
+/// C gives such a result.
+///
+/// # Arguments
+///
+/// * `kind` - The result kind.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// `true` for such a result.
+pub fn in_c_form(kind: DataKind, platform: u16) -> bool
+{
+    let direct =
+        matches!(crossing(kind, platform), Some(Crossing::Struct | Crossing::AsIs));
+    exchanged(kind, platform) && !direct
 }
 
 /// Whether a kind is a struct of the program: no result and no optional,
@@ -230,7 +254,9 @@ pub fn fits(f: &FnKind, platform: u16) -> bool
 {
     let (params, ret) = fn_shape(f);
     let whole = |k: DataKind| crossing(k, platform) == Some(Crossing::Struct);
-    let ret_fits = ret.is_none_or(|k| ffi_kind(k, platform).is_some() || whole(k));
+    let ret_fits = ret.is_none_or(|k| {
+        ffi_kind(k, platform).is_some() || whole(k) || in_c_form(k, platform)
+    });
     ret_fits && params.iter().all(|k| crossing(*k, platform).is_some())
 }
 
@@ -255,8 +281,8 @@ pub fn as_is(f: &FnKind, platform: u16) -> bool
 }
 
 /// The kinds whose descriptors the bridge of a function kind names: each
-/// parameter the bridge makes, to lend it and drop it, and the cells of the
-/// box of each handle, to make it.
+/// parameter the bridge makes, to lend it and drop it, the cells of the box
+/// of each handle, to make it, and a result in its C form, to write it.
 ///
 /// # Arguments
 ///
@@ -268,13 +294,14 @@ pub fn as_is(f: &FnKind, platform: u16) -> bool
 /// The kinds.
 pub(crate) fn bridge_kinds(f: &FnKind, platform: u16) -> Vec<DataKind>
 {
-    let (params, _) = fn_shape(f);
+    let (params, ret) = fn_shape(f);
     let made = |k: &DataKind| {
         let c = crossing(*k, platform);
         !matches!(c, None | Some(Crossing::AsIs | Crossing::Struct))
     };
     let each = params.into_iter().filter(made);
-    each.flat_map(|k| std::iter::once(k).chain(box_list(k))).collect()
+    let each = each.flat_map(|k| std::iter::once(k).chain(box_list(k)));
+    each.chain(ret.filter(|k| in_c_form(*k, platform))).collect()
 }
 
 /// The libffi kind of a kind a closure takes or gives.
@@ -522,8 +549,11 @@ impl Bridge<'_>
     {
         let (params, ret) = fn_shape(f);
         // A struct result goes to a slot the caller gives first: the place
-        // libffi or the wrapper of a lib wants the result.
+        // libffi or the wrapper of a lib wants the result. A result in its C
+        // form goes to a slot of the bridge, which the runtime then writes in
+        // that form.
         let slot = ret.filter(|k| is_blob(*k));
+        let c_form = ret.filter(|k| in_c_form(*k, self.platform));
         let given = ret.filter(|_| slot.is_none());
         let r = given.map_or_else(|| "void".into(), |k| self.held(k));
         let lead = slot.map(|_| "unsigned char *".to_string());
@@ -537,7 +567,19 @@ impl Bridge<'_>
         let mut drops = String::new();
         do_unused(&mut steps, params.is_empty(), "zk_args");
         let each = params.iter().enumerate();
-        let into = slot.map(|_| "(unsigned char *)zk_ret".to_string());
+        let into = slot.map(|_| {
+            tern!(
+                c_form.is_some(),
+                "zk_rv".to_string(),
+                "(unsigned char *)zk_ret".to_string()
+            )
+        });
+        if let Some(k) = c_form
+        {
+            let (size, align) = (k.size(self.platform).max(1), k.align(self.platform));
+            let _ =
+                writeln!(steps, "    _Alignas({align}) unsigned char zk_rv[{size}];");
+        }
         let made = each.map(|(i, k)| self.arg(i, *k, descr, &mut steps, &mut drops));
         let made: Vec<String> = made.collect();
         let args: Vec<String> = into.into_iter().chain(made).collect();
@@ -549,9 +591,15 @@ impl Bridge<'_>
             args.join(", ")
         );
         steps.push_str("    zk_code zk_c = zk_fn_code(zk_rec);\n");
+        let back = c_form.map(|k| descr.of(k)).map_or_else(String::new, |d| {
+            format!(
+                "    zk_to_c(zk_rv, {d}, (uint8_t *)zk_ret);\n    zk_drop(zk_rv, \
+                 {d});\n"
+            )
+        });
         let _ = match given
         {
-            None if slot.is_some() => write!(steps, "    {call};\n{drops}"),
+            None if slot.is_some() => write!(steps, "    {call};\n{drops}{back}"),
             None => write!(steps, "    (void)zk_ret;\n    {call};\n{drops}"),
             Some(k) =>
             {
@@ -560,9 +608,16 @@ impl Bridge<'_>
         };
         let listed: Vec<String> = params.iter().map(|k| self.param_ffi(*k)).collect();
         let listed = tern!(listed.is_empty(), "NULL".to_string(), listed.join(", "));
+        // A result in its C form goes to a lib alone, never through libffi;
+        // its kind here is a word.
         let ret_ffi = ret.map_or_else(
             || "zk_ck_void".into(),
-            |k| ffi_kind(k, self.platform).unwrap_or_else(|| self.struct_name(k)),
+            |k| match ffi_kind(k, self.platform)
+            {
+                Some(t) => t,
+                None if in_c_form(k, self.platform) => "zk_ck_ptr".into(),
+                None => self.struct_name(k),
+            },
         );
         let name = kind.name().replace("*/", "* /");
         format!(
@@ -614,9 +669,11 @@ impl Bridge<'_>
             (format!("zk_args[{i}]"), format!("*(const char **)zk_args[{i}]"));
         let ok_at = kind.as_struct().map_or(0, |s| s.offset(1, self.platform));
         let cells = box_list(kind).map(|k| descr.of(k)).unwrap_or_default();
+        let d = descr.of(kind);
         let fill = match crossing
         {
             Crossing::Struct => format!("memcpy(zk_v{i}, {at}, {size});"),
+            Crossing::Rich => format!("zk_from_c({at}, {d}, zk_v{i});"),
             Crossing::Text => format!("zk_text_of_c(zk_v{i}, {chars});"),
             Crossing::OptText =>
             {
@@ -627,7 +684,6 @@ impl Bridge<'_>
         };
         let _ = writeln!(steps, "    {fill}");
         ret_if!(crossing == Crossing::Struct, format!("zk_v{i}"));
-        let d = descr.of(kind);
         steps.push_str(&slot(&format!("zk_l{i}")));
         let _ = writeln!(
             steps,

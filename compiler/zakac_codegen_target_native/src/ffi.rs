@@ -18,6 +18,7 @@ use zakac_codegen_target_c::callbacks::box_list;
 use zakac_codegen_target_c::callbacks::cells;
 use zakac_codegen_target_c::callbacks::crossing;
 use zakac_codegen_target_c::callbacks::fits;
+use zakac_codegen_target_c::callbacks::in_c_form;
 use zakac_codegen_target_c::kinds::is_blob;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::fn_shape;
@@ -520,10 +521,14 @@ impl<M: Module> FnGen<'_, '_, M>
         };
         let (params, ret) = fn_shape(f);
         // A struct result goes to the slot C gave, first, as the function
-        // takes the slot of a struct result.
+        // takes the slot of a struct result. A result in its C form goes to a
+        // slot of the bridge, which the runtime then writes in that form.
         let slot = ret.filter(|k| is_blob(*k));
+        let c_form = ret.filter(|k| in_c_form(*k, self.s.platform()));
+        let own = c_form.map(|k| self.temp(k));
         let mut drops = Vec::new();
-        let mut vals: Vec<Value> = slot.map(|_| ret_at).into_iter().collect();
+        let into = slot.map(|_| own.unwrap_or(ret_at));
+        let mut vals: Vec<Value> = into.into_iter().collect();
         for (i, k) in params.iter().enumerate()
         {
             let at = self.b.ins().load(
@@ -562,6 +567,13 @@ impl<M: Module> FnGen<'_, '_, M>
         for (at, k) in drops
         {
             self.drop_at(at, k);
+        }
+        if let (Some(k), Some(own)) = (c_form, own)
+        {
+            let ptr = self.s.ptr;
+            let d = self.descr(k);
+            self.rt("zk_to_c", &[ptr, ptr, ptr], &[], &[own, d, ret_at]);
+            self.drop_at(own, k);
         }
         do_if!(let Some((k, r)) = result, self.bridge_result(ret_at, r, k));
         self.b.ins().return_(&[]);
@@ -606,6 +618,11 @@ impl<M: Module> FnGen<'_, '_, M>
             Crossing::Text =>
             {
                 _ = self.rt("zk_text_of_c", &[ptr, ptr], &[], &[v, chars])
+            }
+            Crossing::Rich =>
+            {
+                let d = self.descr(kind);
+                _ = self.rt("zk_from_c", &[ptr, ptr, ptr], &[], &[at, d, v])
             }
             Crossing::OptText =>
             {

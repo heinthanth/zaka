@@ -412,7 +412,8 @@ trap can leave the heap and the globals half written; `zk_last_trap()` gives the
 that trap, and `zk_lib_reset()` starts the lib again. The first call starts the runtime
 and sets the globals. Text comes in as a
 `const char *`; an address or a handle as a `void *`; a struct whole, as the header
-declares it. Threads can call the lib, one call at a time. A program that links the static lib
+declares it. Text a function gives back is a `char *`, a plain list `zk_list_<cell>`,
+and C frees each with `zk_free`. Threads can call the lib, one call at a time. A program that links the static lib
 links the OS libs of the runtime with it, which the comment at the top of the header
 lists.
 

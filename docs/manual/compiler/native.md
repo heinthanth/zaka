@@ -115,7 +115,7 @@ does in C. A debug build, the default, still keeps the list of calls in progress
 `--max-heap <OCTETS>` caps the heap, as the VM's flag of that name does (default 0, no cap).
 The executable counts the heap octets it holds: a counted block (text, a plain list, a box,
 a closure record) at the size of its cells, and a raw block of unsafe code (`zk_alloc`,
-`zk_realloc`, and `zk_free` for the free statement) at the size the allocator gives
+`zk_realloc`, and `zk_raw_free` for the free statement) at the size the allocator gives
 (`malloc_size` on macOS, `malloc_usable_size` on Linux, `_msize` on Windows; a raw block on
 another host is not counted). A counted block past the cap stops the run with the VM's
 message, `the program stopped: no heap room for N octets`; a raw allocation past the cap

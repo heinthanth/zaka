@@ -409,7 +409,7 @@ pub extern "C" fn zk_alloc(count: u64, stride: usize) -> *mut u8
 ///
 /// * `p` - The block, or NULL.
 #[unsafe(no_mangle)]
-pub extern "C" fn zk_free(p: *mut c_void)
+pub extern "C" fn zk_raw_free(p: *mut c_void)
 {
     ret_if!(p.is_null());
     heap_give(raw_size(p.cast()));

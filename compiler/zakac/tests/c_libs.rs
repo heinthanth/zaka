@@ -19,6 +19,10 @@ no result 0
 greet 0 4
 manhattan 0 7
 mirror 0 4 3
+echo 0 hi!
+echo with no out 0
+squares 0 2 7 49
+older 0 Ann Jr 31
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \

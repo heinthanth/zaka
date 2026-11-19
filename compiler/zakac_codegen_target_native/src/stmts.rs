@@ -622,7 +622,7 @@ impl<M: Module> FnGen<'_, '_, M>
         let ptr = self.s.ptr;
         let at = self.pointer_at(dest);
         let p = self.load(ptr, at);
-        self.rt("zk_free", &[ptr], &[], &[p]);
+        self.rt("zk_raw_free", &[ptr], &[], &[p]);
         let null = self.word(0);
         self.store(null, at);
     }

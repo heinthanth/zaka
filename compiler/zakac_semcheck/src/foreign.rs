@@ -2,6 +2,8 @@
 //! name, and C takes each parameter and gives the result as a whole value.
 
 pub use zakac_ast::stmt::is_lib_path;
+use zakac_rust_sugars::ret_false;
+use zakac_rust_sugars::ret_true;
 
 use crate::kind::DataKind;
 
@@ -154,6 +156,68 @@ pub fn is_callback(kind: DataKind, platform: u16) -> bool
 pub fn callback_result(kind: DataKind, platform: u16) -> bool
 {
     !kind.is_borrow() && crosses(kind, platform)
+}
+
+/// Whether a lib can give a value of the kind to C or take it from C in its
+/// C form: a kind [`crosses`] takes; text, as a `char *`; a plain list of
+/// numbers, as `{ ptr, count }`; a counted list of these; or a struct of
+/// these. The lib allocates what it gives, and C frees it with `zk_free`.
+///
+/// # Arguments
+///
+/// * `kind` - The kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+pub fn exchanged(kind: DataKind, platform: u16) -> bool
+{
+    ret_true!(kind.is_text());
+    ret_false!(kind.fallible_parts().is_some() || kind.is_borrow());
+    let numbers = |cell: DataKind| !cell.is_struct() && crosses(cell, platform);
+    match kind
+    {
+        DataKind::Seq(s) => !s.boxed && numbers(s.cell),
+        DataKind::List(l) => exchanged(l.cell, platform),
+        DataKind::Struct(s) => s.fields().iter().all(|(_, k)| exchanged(*k, platform)),
+        _ => crosses(kind, platform),
+    }
+}
+
+/// Whether a function that code outside can call can take a value of the
+/// kind: each kind a function value C calls back takes, or a struct C gives
+/// in its C form, see [`exchanged`].
+///
+/// # Arguments
+///
+/// * `kind` - The parameter kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+pub fn export_param(kind: DataKind, platform: u16) -> bool
+{
+    let whole = kind.is_struct() && exchanged(kind, platform);
+    whole || callback_param(kind, platform)
+}
+
+/// Whether a function that code outside can call can give a value of the
+/// kind as its result: each kind a function value C calls back gives, or a
+/// kind the lib gives in its C form, see [`exchanged`].
+///
+/// # Arguments
+///
+/// * `kind` - The result kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+pub fn export_result(kind: DataKind, platform: u16) -> bool
+{
+    callback_result(kind, platform) || exchanged(kind, platform)
 }
 
 /// Whether a C name is one the runtime keeps for itself: `main`, or one that

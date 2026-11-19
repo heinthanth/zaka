@@ -18,6 +18,7 @@ use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::fn_kind::FnKind;
@@ -28,6 +29,7 @@ use zakac_semcheck::kind::DataKind;
 use crate::callbacks::Crossing;
 use crate::callbacks::cells;
 use crate::callbacks::crossing;
+use crate::callbacks::in_c_form;
 use crate::emit::PROGRAM_TABLE;
 use crate::emit::comment;
 use crate::emit::record_name;
@@ -78,7 +80,7 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 }
 
 /// The names a shared lib gives to C: the name of each function that code
-/// outside can call, `zk_last_trap` and `zk_lib_reset`.
+/// outside can call, `zk_free`, `zk_last_trap` and `zk_lib_reset`.
 ///
 /// # Arguments
 ///
@@ -90,7 +92,8 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 pub fn api_names(exports: &[Export<'_>]) -> Vec<String>
 {
     let names = exports.iter().map(|e| e.c_name.to_string());
-    names.chain(["zk_last_trap".to_string(), "zk_lib_reset".to_string()]).collect()
+    let lib = ["zk_free", "zk_last_trap", "zk_lib_reset"].map(String::from);
+    names.chain(lib).collect()
 }
 
 /// The statements `zk_lib_init` of a lib runs: the top-level statements,
@@ -182,6 +185,8 @@ struct CKinds
     platform: u16,
     /// The structs, each after the structs of its fields.
     structs: Vec<DataKind>,
+    /// The cell kind of each plain list, which C takes as `{ ptr, count }`.
+    lists: Vec<DataKind>,
     /// The C name of each struct, under the struct name.
     c_names: BTreeMap<String, String>,
 }
@@ -201,38 +206,36 @@ impl CKinds
     fn of(exports: &[Export<'_>], platform: u16) -> CKinds
     {
         let c_names = exports.first().map(|e| e.c_structs.clone()).unwrap_or_default();
-        let mut kinds = CKinds { platform, structs: Vec::new(), c_names };
+        let mut kinds =
+            CKinds { platform, structs: Vec::new(), lists: Vec::new(), c_names };
         let each = exports
             .iter()
             .flat_map(|e| param_kinds(e.func).into_iter().chain(e.func.ret));
-        let whole = |k: &DataKind| crossing(*k, platform) == Some(Crossing::Struct);
-        let structs: Vec<DataKind> = each.filter(whole).collect();
-        structs.into_iter().for_each(|k| kinds.note(k));
+        let each: Vec<DataKind> = each.collect();
+        each.into_iter().for_each(|k| kinds.note(k));
         kinds
     }
 
-    /// Note a struct, after the structs of its fields.
+    /// Note the struct or the plain list a kind is, after the structs and the
+    /// lists of its fields; another kind needs no declaration.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The struct.
+    /// * `kind` - The kind.
     fn note(&mut self, kind: DataKind)
     {
-        ret_if!(self.structs.contains(&kind));
-        let Some(s) = kind.as_struct()
-        else
-        {
-            return;
-        };
-        let inner = s.fields().iter().map(|(_, k)| cells(*k).0);
-        let inner: Vec<DataKind> = inner.filter(|k| k.as_struct().is_some()).collect();
-        inner.into_iter().for_each(|k| self.note(k));
-        self.structs.push(kind);
+        let cell = cells(kind).0;
+        let list = cell.as_seq().map(|s| s.cell);
+        do_if!(let Some(c) = list.filter(|c| !self.lists.contains(c)), self.lists.push(c));
+        let plain = cell.is_struct() && cell.fallible_parts().is_none();
+        ret_if!(!plain || self.structs.contains(&cell));
+        let fields = cell.as_struct().map(|s| s.fields().to_vec()).unwrap_or_default();
+        fields.into_iter().for_each(|(_, k)| self.note(k));
+        self.structs.push(cell);
     }
 
-    /// The C kind of a value a wrapper takes or gives: `const char *` for
-    /// text, `void *` for an address or a handle, the name of a struct, else
-    /// the C scalar.
+    /// The C kind of a value a wrapper takes: `const char *` for text,
+    /// else as [`Self::c_given`] gives.
     ///
     /// # Arguments
     ///
@@ -245,7 +248,25 @@ impl CKinds
     {
         let crossed = crossing(kind, self.platform);
         let text = matches!(crossed, Some(Crossing::Text | Crossing::OptText));
-        ret_if!(text, "const char *".into());
+        tern!(text, "const char *".into(), self.c_given(kind))
+    }
+
+    /// The C kind of a value a wrapper gives, or of a field: `char *` for
+    /// text the caller frees, `zk_list_<cell>` for a plain list, `void *` for
+    /// an address or a handle, the name of a struct, else the C scalar.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// The C kind.
+    fn c_given(&self, kind: DataKind) -> String
+    {
+        let crossed = crossing(kind, self.platform);
+        ret_if!(kind.is_text() || crossed == Some(Crossing::OptText), "char *".into());
+        ret_if!(let Some(s) = kind.as_seq(), self.list_name(s.cell));
         let handle = matches!(crossed, Some(Crossing::Handle | Crossing::OptHandle));
         let address = matches!(kind.repr(), DataKind::Ptr(_) | DataKind::Null);
         ret_if!(handle || address, "void *".into());
@@ -293,14 +314,15 @@ impl CKinds
             fields.for_each(|(i, (name, k))| out.push_str(&self.field(i, name, *k)));
             let name = self.struct_name(at);
             let _ = writeln!(out, "}} {name};");
-            let size = kind.size(self.platform);
+            let size = self.c_form(*kind).0;
             let _ = writeln!(
                 out,
                 "ZK_LIB_ASSERT(sizeof({name}) == {size}, \"the C size of {name} \
                  differs from its Zaka size\");"
             );
         }
-        tern!(out.is_empty(), out, format!("{ASSERT_MACRO}{out}"))
+        let out = tern!(out.is_empty(), out, format!("{ASSERT_MACRO}{out}"));
+        self.list_decls() + &out
     }
 
     /// The C line of one field of a struct.
@@ -319,7 +341,78 @@ impl CKinds
         let named = tern!(is_c_name(name), name.to_string(), format!("f{i}"));
         let (cell, count) = cells(kind);
         let named = tern!(kind.as_list().is_some(), format!("{named}[{count}]"), named);
-        format!("    {};\n", declared(&self.c_side(cell), &named))
+        format!("    {};\n", declared(&self.c_given(cell), &named))
+    }
+
+    /// The C name of the form of a plain list of a cell kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The cell kind.
+    ///
+    /// # Returns
+    ///
+    /// The name, such as `zk_list_int32_t`.
+    fn list_name(&self, cell: DataKind) -> String
+    {
+        let c = c_kind(cell, self.platform).unwrap_or_else(|| "int".into());
+        format!("zk_list_{}", c.replace(' ', "_"))
+    }
+
+    /// The C form of each plain list: a pointer to its cells and their count,
+    /// each declared once, as two libs can declare the same.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    fn list_decls(&self) -> String
+    {
+        let decl = |cell: &DataKind| {
+            let name = self.list_name(*cell);
+            let guard = name.to_uppercase();
+            let c = c_kind(*cell, self.platform).unwrap_or_else(|| "int".into());
+            format!(
+                "\n#ifndef {guard}\n#define {guard}\n/* A plain list of {c}: its \
+                 cells, which the caller frees with zk_free(list.ptr), and their \
+                 count. */\ntypedef struct\n{{\n    {c} *ptr;\n    size_t count;\n}} \
+                 {name};\n#endif\n"
+            )
+        };
+        self.lists.iter().map(decl).collect()
+    }
+
+    /// The size of the C form of a kind, as the runtime writes it and C reads
+    /// it.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// The size and the alignment, in octets.
+    fn c_form(&self, kind: DataKind) -> (u32, u32)
+    {
+        let word = u32::from(self.platform / 8);
+        ret_if!(kind.is_text(), (word, word));
+        ret_if!(kind.as_seq().is_some(), (2 * word, word));
+        if let Some(l) = kind.as_list()
+        {
+            let (size, align) = self.c_form(l.cell);
+            return (size * l.len, align);
+        }
+        let Some(s) = kind.as_struct()
+        else
+        {
+            return (kind.size(self.platform), kind.align(self.platform));
+        };
+        let (mut end, mut widest) = (0u32, 1u32);
+        for (_, k) in s.fields()
+        {
+            let (size, align) = self.c_form(*k);
+            (end, widest) = (end.next_multiple_of(align) + size, widest.max(align));
+        }
+        (end.next_multiple_of(widest), widest)
     }
 }
 
@@ -361,7 +454,7 @@ fn c_params(func: &Func, kinds: &CKinds) -> String
     let each = param_kinds(func).into_iter().enumerate();
     let mut params: Vec<String> =
         each.map(|(i, k)| declared(&kinds.c_side(k), &format!("zk_p{i}"))).collect();
-    let out = func.ret.map(|r| declared(&kinds.c_side(r), "*zk_out"));
+    let out = func.ret.map(|r| declared(&kinds.c_given(r), "*zk_out"));
     params.extend(out);
     tern!(params.is_empty(), "void".into(), params.join(", "))
 }
@@ -515,6 +608,13 @@ static int32_t zk_lib_stop(jmp_buf *outer)
  * @return The text, or NULL while no call stopped on a trap.
  */
 ZK_LIB_EXPORT const char *zk_last_trap(void) { return zk_trap_text(); }
+
+/**
+ * Free text or the cells of a list the lib gave back.
+ *
+ * @param p The `char *` or the `ptr` of a list; NULL frees nothing.
+ */
+ZK_LIB_EXPORT void zk_free(void *p) { zk_raw_free(p); }
 ";
 
 /// The C text a lib adds to `zaka_callback.c`: the glue, then a wrapper for
@@ -559,10 +659,14 @@ fn wrapper(e: &Export<'_>, shape: usize, kinds: &CKinds) -> String
     let count = e.func.params as usize;
     let args: Vec<String> = (0..count).map(|i| format!("&zk_p{i}")).collect();
     let args = tern!(args.is_empty(), "NULL".into(), args.join(", "));
-    // A struct result comes whole into a local of its C kind; each other
-    // result comes as a word of the union.
-    let whole = e.func.ret.filter(|r| kinds.structs.contains(r));
-    let held = whole.map_or_else(|| "zk_lib_result".into(), |r| kinds.c_side(r));
+    // A struct result, or a result in its C form, comes whole into a local
+    // of its C kind; each other result comes as a word of the union. The
+    // runtime writes no C form for a caller with no out pointer.
+    let c_form = e.func.ret.filter(|r| in_c_form(*r, kinds.platform));
+    let whole = e.func.ret.filter(|r| kinds.structs.contains(r) || c_form.is_some());
+    let held = whole.map_or_else(|| "zk_lib_result".into(), |r| kinds.c_given(r));
+    let into =
+        tern!(c_form.is_some(), "zk_out != NULL ? (void *)&zk_r : NULL", "&zk_r");
     let out = e.func.ret.map_or_else(String::new, |r| {
         let (c, m) = (kinds.c_side(r), result_member(r));
         let value = tern!(whole.is_some(), "zk_r".into(), format!("({c})zk_r.{m}"));
@@ -574,7 +678,7 @@ fn wrapper(e: &Export<'_>, shape: usize, kinds: &CKinds) -> String
          jmp_buf *zk_outer = zk_lib_at;\n    RET_IF(zk_lib_state == 2, \
          zk_lib_end(zk_outer, ZK_STOPPED));\n    if (setjmp(zk_here) != 0)\n        \
          return zk_lib_stop(zk_outer);\n    ZK_LIB_NO_UNWIND(zk_here);\n    zk_lib_at \
-         = &zk_here;\n    zk_lib_begin();\n    zk_cbb_{shape}(&zk_r, zk_args, \
+         = &zk_here;\n    zk_lib_begin();\n    zk_cbb_{shape}({into}, zk_args, \
          (uint8_t *)&{});\n    zk_flush();\n{out}    return zk_lib_end(zk_outer, \
          ZK_OK);\n}}\n",
         comment(&e.func.name),
@@ -610,14 +714,15 @@ pub fn header(
         "/* The functions of the Zaka lib {name} that C can call, as zakac wrote \
          them.\n * A program that links the static lib links with it:{links} \
          */\n#ifndef ZAKA_LIB_{guard}_H\n#define ZAKA_LIB_{guard}_H\n\n#include \
-         <stdint.h>\n\n#ifdef __cplusplus\nextern \"C\" {{\n#endif\n\n/** The status \
-         of a call that went through. A trap gives 1 + the id of the trap. \
-         */\n#define ZK_OK 0\n/** The status of each call after a call stopped on a \
-         trap. */\n#define ZK_STOPPED (-1)\n\n/**\n * The text of the trap the lib \
-         stopped on.\n *\n * @return The text, or NULL while no call stopped on a \
-         trap.\n */\nconst char *zk_last_trap(void);\n\n/**\n * Start the lib again \
-         after a trap stopped it: the next call starts it and sets its globals \
-         again.\n */\nvoid zk_lib_reset(void);\n"
+         <stddef.h>\n#include <stdint.h>\n\n#ifdef __cplusplus\nextern \"C\" \
+         {{\n#endif\n\n/** The status of a call that went through. A trap gives 1 + \
+         the id of the trap. */\n#define ZK_OK 0\n/** The status of each call after a \
+         call stopped on a trap. */\n#define ZK_STOPPED (-1)\n\n/**\n * The text of \
+         the trap the lib stopped on.\n *\n * @return The text, or NULL while no call \
+         stopped on a trap.\n */\nconst char *zk_last_trap(void);\n\n/**\n * Free \
+         text or the cells of a list the lib gave back.\n */\nvoid zk_free(void \
+         *p);\n\n/**\n * Start the lib again after a trap stopped it: the next call \
+         starts it and sets its globals again.\n */\nvoid zk_lib_reset(void);\n"
     );
     let kinds = CKinds::of(exports, platform);
     out.push_str(&kinds.struct_decls());

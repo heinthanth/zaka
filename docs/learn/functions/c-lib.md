@@ -136,9 +136,10 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 ## Limits
 
 - A function C can call takes integers, decimal numbers, true and false, characters,
-  addresses, text, handles, optionals of text or handles, and plain structs of these; it
-  gives back one of the numbers, a character, true or false, an address, or a plain
-  struct, through its out pointer (ZK0465).
+  addresses, text, handles, optionals of text or handles, and structs of numbers, text
+  and lists of numbers; it gives back one of these, text, or a plain list of numbers,
+  through its out pointer (ZK0465). Text it gives back is a `char *`, a list is a
+  `zk_list_<cell>` (`ptr` and `count`), and C frees each with `zk_free`.
 - A struct it takes or gives back needs a C name, which the header declares it under
   (ZK0492):
   `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`.

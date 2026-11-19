@@ -618,7 +618,7 @@ impl FnGen<'_, '_>
     fn free(&mut self, dest: &Dest)
     {
         let (read, write, close) = self.pointer_at(dest);
-        self.line(&format!("zk_free({read});"));
+        self.line(&format!("zk_raw_free({read});"));
         self.line(&format!("{write}NULL{close}"));
     }
 

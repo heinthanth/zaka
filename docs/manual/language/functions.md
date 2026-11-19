@@ -1628,10 +1628,17 @@ The rules:
 - Its kinds are those C passes to a function value it calls back
   ([Callbacks](#c-functions)): a parameter is a number, a character, true or false, an
   address, text (a `const char *`; NULL stops the call), a handle of a kind from outside,
-  an optional of text or of a handle (NULL holds no data), or a plain struct of such
-  fields, passed whole. The result is a number, a character, true or false, an
-  address, or such a plain struct, which the lib writes whole through the out pointer
-  (ZK0465).
+  an optional of text or of a handle (NULL holds no data), a plain struct of such
+  fields, passed whole, or a struct in its C form (below). The result is a number, a
+  character, true or false, an address, a plain struct, or a value in its C form, which
+  the lib writes through the out pointer (ZK0465).
+- A value in its C form: text is a `char *`, a plain list of numbers is
+  `zk_list_<cell>`, the C struct `{ <cell> *ptr; size_t count; }`, a counted list holds
+  its cells in a row, and a struct holds the C forms of its fields. A parameter of such
+  a struct comes from C and the lib copies what it points at. The lib allocates a
+  result, and C frees each `char *` and each `ptr` with `zk_free`; for a NULL out
+  pointer the lib makes no C form. A list of text, or a plain list of
+  structs, has no C form (ZK0465).
   `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်` are ZK0466.
 - Each struct a parameter or the result passes has a C name (ZK0492): that struct and
   each struct among its fields. The mark `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော
@@ -1700,10 +1707,10 @@ point ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသ�
 ```
 
 ```zaka-error ZK0465
-ပဲ့တင် ဟူသော လုပ်ဆောင်ချက် သည် "echo_text" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+စာများ ဟူသော လုပ်ဆောင်ချက် သည် "texts" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
 က ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
-က ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
+[က] ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
