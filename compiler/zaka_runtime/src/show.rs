@@ -45,7 +45,7 @@ use crate::seqs::zk_own;
 use crate::seqs::zk_seq_base;
 use crate::seqs::zk_seq_len;
 use crate::seqs::zk_seq_put;
-use crate::traps::stop;
+use crate::traps::stop_owned;
 use crate::traps::trap;
 use crate::traps::zk_plain_trap;
 
@@ -1028,7 +1028,7 @@ fn push_table(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
 pub extern "C" fn zk_not_good(p: *const u8, k: *const ZkKind) -> !
 {
     let value = shown(p, repr(kind(k)) as *const ZkKind);
-    stop(trap::NOT_GOOD, &[("e", &value)])
+    stop_owned(trap::NOT_GOOD, vec![("e".to_string(), value)])
 }
 
 /// Stop the run: a result with no value that failed was read as good.

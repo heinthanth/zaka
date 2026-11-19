@@ -139,8 +139,9 @@ pub fn is_callback(kind: DataKind, platform: u16) -> bool
 }
 
 /// Whether C can take a value of the kind from a function of Zaka it calls:
-/// an integer of up to 64 bits, an `f32` or `f64`, a boolean or an address
-/// that is no borrow.
+/// an integer of up to 64 bits, an `f32` or `f64`, a boolean, an address that
+/// is no borrow, or a plain struct of such fields, which goes to the place C
+/// gives for it.
 ///
 /// # Arguments
 ///
@@ -152,25 +153,7 @@ pub fn is_callback(kind: DataKind, platform: u16) -> bool
 /// `true` if it can.
 pub fn callback_result(kind: DataKind, platform: u16) -> bool
 {
-    !kind.is_borrow() && !kind.is_struct() && crosses(kind, platform)
-}
-
-/// Whether a function that code outside can call can give a value of the
-/// kind as its result: each kind a function value C calls back gives, or a
-/// plain struct of such fields, which the lib writes through the out pointer.
-///
-/// # Arguments
-///
-/// * `kind` - The result kind.
-/// * `platform` - Bit count of the platform-sized integer kinds.
-///
-/// # Returns
-///
-/// `true` if it can.
-pub fn export_result(kind: DataKind, platform: u16) -> bool
-{
-    let whole = kind.is_struct() && !kind.is_borrow() && crosses(kind, platform);
-    whole || callback_result(kind, platform)
+    !kind.is_borrow() && crosses(kind, platform)
 }
 
 /// Whether a C name is one the runtime keeps for itself: `main`, or one that

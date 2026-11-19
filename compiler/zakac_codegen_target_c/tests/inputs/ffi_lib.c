@@ -176,6 +176,18 @@ int32_t point_call(int32_t (*f)(zk_point))
     return f(p);
 }
 
+/**
+ * Have a function make a point, given back as a value.
+ *
+ * @param f The function.
+ * @return a * 10 + b of the point f gave back.
+ */
+int32_t made_point_call(zk_point (*f)(int32_t))
+{
+    zk_point p = f(5);
+    return p.a * 10 + p.b;
+}
+
 /** A line: a point, two marks and a weight, which C passes as a value. */
 typedef struct
 {

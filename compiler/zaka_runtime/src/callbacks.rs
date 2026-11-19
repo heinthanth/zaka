@@ -352,3 +352,7 @@ pub extern "C" fn zk_cb_opt_handle(
     unsafe { *out = 1 };
     zk_cb_handle(at(out, ok_at), addr, list)
 }
+
+/// End each lend of a closure to a C call, for a reset of a C lib: a trap
+/// inside a call that lent closures left them lent.
+pub(crate) fn end_lends() { LENDS.lock().unwrap_or_else(|e| e.into_inner()).clear(); }

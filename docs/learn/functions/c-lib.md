@@ -64,6 +64,7 @@ The header declares each function under its name in C:
 #define ZK_STOPPED (-1)
 
 const char *zk_last_trap(void);
+void zk_lib_reset(void);
 
 int32_t add_numbers(int32_t zk_p0, int32_t zk_p1, int32_t *zk_out);
 ```
@@ -73,7 +74,8 @@ last parameter, which can be NULL when the caller has no use for it. The status 
 `ZK_OK` when the call went through. When the call stopped, as a division with zero as
 divisor stops a program, the status is 1 more than the number of the stop, `zk_last_trap()` gives its
 text, and the program that called goes on. The lib stops with it: each later call gives
-`ZK_STOPPED`, since the stop can leave the lib half done.
+`ZK_STOPPED`, since the stop can leave the lib half done, until `zk_lib_reset()` starts it
+again from the start.
 
 The first call starts the lib: it sets the globals of the program. Text a function takes
 comes in as a `const char *`, and what the function prints comes out at the end of each

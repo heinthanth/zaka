@@ -23,7 +23,7 @@ use crate::program::prog;
 use crate::program::row;
 use crate::program::text;
 use crate::traps::fill;
-use crate::traps::stop;
+use crate::traps::stop_owned;
 use crate::traps::trap;
 
 /// The gate of the run: set from a JIT before the program starts, else made
@@ -193,8 +193,12 @@ fn what(right: Right, subject: &str) -> Vec<u8>
 /// * `subject` - The C name, or blank for the environment.
 pub fn permission_trap(right: Right, subject: &str) -> !
 {
-    let flag = row(prog().flag_text, number_of(right));
-    stop(trap::PERMISSION, &[("what", &what(right, subject)), ("flag", flag)])
+    let flag = row(prog().flag_text, number_of(right)).to_vec();
+    let what = what(right, subject);
+    stop_owned(
+        trap::PERMISSION,
+        vec![("what".to_string(), what), ("flag".to_string(), flag)],
+    )
 }
 
 /// Asks the person at the terminal, with the texts of the build.

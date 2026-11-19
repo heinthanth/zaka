@@ -1,5 +1,5 @@
-/* Calls the lib of mathlib.zaka: a sum, text in, a struct, a trap, then a call
-   after it. */
+/* Calls the lib of mathlib.zaka: a sum, text in, a struct, a trap, a call
+   after it, then a call after a reset. */
 #include <stdio.h>
 
 #include "mathlib.h"
@@ -30,5 +30,9 @@ int main(void)
     printf("trap %s\n", zk_last_trap());
     status = add_numbers(1, 1, &sum);
     printf("after %d\n", status);
+    zk_lib_reset();
+    printf("trap after reset %s\n", zk_last_trap() == NULL ? "none" : "some");
+    status = add_numbers(1, 2, &sum);
+    printf("reset %d %d\n", status, sum);
     return 0;
 }

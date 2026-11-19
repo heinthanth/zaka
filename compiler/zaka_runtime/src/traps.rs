@@ -5,7 +5,10 @@ use std::ffi::CString;
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::io::Write;
+use std::mem::ManuallyDrop;
+use std::sync::Mutex;
 use std::sync::OnceLock;
+use std::sync::PoisonError;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -104,8 +107,8 @@ static NAME: OnceLock<Vec<u8>> = OnceLock::new();
 static LEAVE: OnceLock<extern "C" fn(i32)> = OnceLock::new();
 
 /// The text of the trap a C lib stopped on: the trap line with its place,
-/// with no name of an executable and no backtrace.
-static LAST: OnceLock<CString> = OnceLock::new();
+/// with no name of an executable and no backtrace; none after a reset.
+static LAST: Mutex<Option<CString>> = Mutex::new(None);
 
 /// Make each trap leave through `leave`, in place of the end of the run: a C
 /// lib sets it on its first call.
@@ -125,7 +128,9 @@ pub extern "C" fn zk_on_trap(leave: extern "C" fn(i32)) { _ = LEAVE.set(leave); 
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_trap_text() -> *const c_char
 {
-    LAST.get().map_or(std::ptr::null(), |t| t.as_ptr())
+    // The text remains in place until a reset or the next trap replaces it.
+    let last = LAST.lock().unwrap_or_else(PoisonError::into_inner);
+    last.as_ref().map_or(std::ptr::null(), |t| t.as_ptr())
 }
 
 /// Keep the name of the executable for trap lines.
@@ -353,6 +358,41 @@ pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
     leave_call(leave, trap, said)
 }
 
+/// Stop the run, as [`stop`] does, with the values its trap line names
+/// handed over: a jump back to the wrapper of a C lib skips the drops of each
+/// frame it leaves, so the caller keeps nothing that needs one, and these
+/// values are left to leak.
+///
+/// # Arguments
+///
+/// * `trap` - The trap.
+/// * `pairs` - Each name of its template and its value.
+pub fn stop_owned(trap: i32, pairs: Vec<(String, Vec<u8>)>) -> !
+{
+    let pairs = ManuallyDrop::new(pairs);
+    let each = pairs.iter().map(|(n, v)| (n.as_str(), v.as_slice()));
+    let borrowed: ManuallyDrop<Vec<(&str, &[u8])>> = ManuallyDrop::new(each.collect());
+    stop(trap, &borrowed)
+}
+
+/// A name of a trap template and its value as text.
+///
+/// # Arguments
+///
+/// * `name` - The name.
+/// * `value` - The value.
+///
+/// # Returns
+///
+/// The pair, owned.
+pub fn named(name: &str, value: impl ToString) -> (String, Vec<u8>)
+{
+    (name.to_string(), value.to_string().into_bytes())
+}
+
+/// Forget the trap a C lib stopped on, for a reset.
+pub fn forget_trap() { *LAST.lock().unwrap_or_else(PoisonError::into_inner) = None; }
+
 /// End the run on a trap: write the trap line after the name of the
 /// executable, then the backtrace, and leave with status 1.
 ///
@@ -399,8 +439,8 @@ fn stop_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
 /// Leave the call of a C lib that stopped on a trap: keep its text, then
 /// jump back to the wrapper of the call. Nothing of this frame needs a drop
 /// when `leave` runs, since the jump skips the drops of each frame it leaves;
-/// a frame of the runtime between the trap and here leaks what it holds, and
-/// the lib remains stopped after it.
+/// each function on the path here hands its values to [`stop_owned`] for the
+/// same reason, and holds no lock.
 ///
 /// # Arguments
 ///
@@ -410,7 +450,7 @@ fn stop_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
 fn leave_call(leave: extern "C" fn(i32), trap: i32, said: Vec<u8>) -> !
 {
     let kept = CString::new(said).unwrap_or_default();
-    _ = LAST.set(kept);
+    *LAST.lock().unwrap_or_else(PoisonError::into_inner) = Some(kept);
     leave(trap);
     std::process::abort()
 }
@@ -428,8 +468,10 @@ pub extern "C" fn zk_zero_divisor() -> ! { stop(trap::ZERO_DIVISOR, &[]) }
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_shift_too_far(distance: u64, bits: u32) -> !
 {
-    let (d, b) = (distance.to_string(), bits.to_string());
-    stop(trap::SHIFT_TOO_FAR, &[("distance", d.as_bytes()), ("bits", b.as_bytes())])
+    stop_owned(
+        trap::SHIFT_TOO_FAR,
+        vec![named("distance", distance), named("bits", bits)],
+    )
 }
 
 /// Stop the run: the step of a counted loop was not positive.
@@ -452,8 +494,7 @@ pub extern "C" fn zk_overflow(op: *const c_char, kind: *const c_char) -> !
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_too_deep() -> !
 {
-    let depth = prog().max_depth.to_string();
-    stop(trap::TOO_DEEP, &[("depth", depth.as_bytes())])
+    stop_owned(trap::TOO_DEEP, vec![named("depth", prog().max_depth)])
 }
 
 /// Stop the run with a trap that names a number and its range.
@@ -467,8 +508,7 @@ pub extern "C" fn zk_too_deep() -> !
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_range_trap(trap: i32, index: i64, lo: i64, hi: i64) -> !
 {
-    let (i, l, h) = (index.to_string(), lo.to_string(), hi.to_string());
-    stop(trap, &[("index", i.as_bytes()), ("lo", l.as_bytes()), ("hi", h.as_bytes())])
+    stop_owned(trap, vec![named("index", index), named("lo", lo), named("hi", hi)])
 }
 
 /// Stop the run with a trap that names nothing.
@@ -494,15 +534,10 @@ pub extern "C" fn zk_nums_trap(
 ) -> !
 {
     let count = n.max(0) as usize;
+    let label = |i: usize| String::from_utf8_lossy(row(names, i)).into_owned();
     // SAFETY: the caller hands `n` names and `n` numbers.
-    let values: Vec<String> =
-        (0..count).map(|i| unsafe { *nums.add(i) }.to_string()).collect();
-    let labels: Vec<String> = (0..count)
-        .map(|i| String::from_utf8_lossy(row(names, i)).into_owned())
-        .collect();
-    let pairs: Vec<(&str, &[u8])> =
-        labels.iter().zip(&values).map(|(k, v)| (k.as_str(), v.as_bytes())).collect();
-    stop(trap, &pairs)
+    let pair = |i: usize| named(&label(i), unsafe { *nums.add(i) });
+    stop_owned(trap, (0..count).map(pair).collect())
 }
 
 /// Stop the run with a trap that names an address.
@@ -514,8 +549,7 @@ pub extern "C" fn zk_nums_trap(
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_addr_trap(trap: i32, addr: *const c_void) -> !
 {
-    let text = format!("{:#x}", addr as usize);
-    stop(trap, &[("addr", text.as_bytes())])
+    stop_owned(trap, vec![named("addr", format!("{:#x}", addr as usize))])
 }
 
 /// Stop the run with a trap that names a text.
@@ -549,6 +583,5 @@ pub extern "C" fn zk_null_deref(addr: *const c_void) -> !
 #[unsafe(no_mangle)]
 pub extern "C" fn zk_out_of_mem(size: u64) -> !
 {
-    let n = size.to_string();
-    stop(trap::OUT_OF_MEM, &[("size", n.as_bytes())])
+    stop_owned(trap::OUT_OF_MEM, vec![named("size", size)])
 }

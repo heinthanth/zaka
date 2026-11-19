@@ -28,6 +28,8 @@ divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                         at mathlib.zaka:10:1)
 after -1
+trap after reset none
+reset 0 3
 ";
 
 /// Run a command and assert that it succeeded.
@@ -110,6 +112,7 @@ fn exported_names(path: &Path) -> Vec<String>
 /// * `cc` - The C compiler.
 /// * `dialect` - Its flag form.
 /// * `dir` - The folder of the lib and the header.
+/// * `driver` - The C file of the driver.
 /// * `libs` - The libs and the flags of the link.
 /// * `exe` - The executable to write.
 ///
@@ -117,20 +120,15 @@ fn exported_names(path: &Path) -> Vec<String>
 ///
 /// The command.
 fn driver_cmd(
-    cc: &Tool, dialect: Dialect, dir: &Path, libs: &[OsString], exe: &Path,
+    cc: &Tool, dialect: Dialect, dir: &Path, driver: &Path, libs: &[OsString],
+    exe: &Path,
 ) -> Command
 {
-    let driver = root().join("tests/inputs/libs/driver.c");
     let mut cmd = cc.command();
     cmd.current_dir(dir);
     if dialect == Dialect::Gnu
     {
-        cmd.args(["-std=c11", "-I"])
-            .arg(dir)
-            .arg(&driver)
-            .args(libs)
-            .arg("-o")
-            .arg(exe);
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(driver).args(libs).arg("-o").arg(exe);
         return cmd;
     }
     let option = |l: &&OsString| l.to_string_lossy().starts_with('/');
@@ -138,11 +136,7 @@ fn driver_cmd(
         libs.iter().partition(option);
     let mut named = OsString::from("/Fe");
     named.push(exe);
-    cmd.args(["/nologo", "/std:c11", "/I"])
-        .arg(dir)
-        .arg(&driver)
-        .args(files)
-        .arg(named);
+    cmd.args(["/nologo", "/std:c11", "/I"]).arg(dir).arg(driver).args(files).arg(named);
     cmd.arg("/link").args(options);
     cmd
 }
@@ -157,10 +151,55 @@ fn driver_cmd(
 /// * `name` - The name of the executable.
 fn check_driver(cc: &Tool, dir: &Path, libs: &[OsString], name: &str)
 {
+    let output = run_driver(cc, dir, "driver.c", libs, name);
+    assert_eq!(output, EXPECTED, "{name}");
+}
+
+/// Build a driver of `inputs/libs` with the libs given and run it.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `dir` - The folder of the lib.
+/// * `file` - The C file of the driver.
+/// * `libs` - The libs and the flags of the link.
+/// * `name` - The name of the executable.
+///
+/// # Returns
+///
+/// What it printed.
+fn run_driver(
+    cc: &Tool, dir: &Path, file: &str, libs: &[OsString], name: &str,
+) -> String
+{
     let exe = dir.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    let driver = root().join("tests/inputs/libs").join(file);
     let dialect = Dialect::of(test_abi());
-    ran(&mut driver_cmd(cc, dialect, dir, libs, &exe), &format!("the link of {name}"));
-    assert_eq!(ran(&mut Command::new(&exe), name), EXPECTED, "{name}");
+    let mut link = driver_cmd(cc, dialect, dir, &driver, libs, &exe);
+    ran(&mut link, &format!("the link of {name}"));
+    ran(&mut Command::new(&exe), name)
+}
+
+/// The static lib of the test and what a program that links it needs.
+///
+/// # Arguments
+///
+/// * `dir` - The folder of the lib.
+///
+/// # Returns
+///
+/// The lib, then the libs and the flags of the link.
+fn static_libs(dir: &Path) -> Vec<OsString>
+{
+    let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
+    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
+    let os_libs = os_libs.unwrap_or_default().into_iter().map(OsString::from);
+    let archive = dir.join(tern!(msvc, "mathlib.lib", "libmathlib.a"));
+    // pthreads, which the threads driver uses, need the flag on each OS but
+    // Windows; a program of one thread links the same with it.
+    let gnu = (!msvc).then(|| ["-lm", "-pthread"].map(OsString::from));
+    let gnu = gnu.into_iter().flatten().filter(|f| !cfg!(windows) || f != "-pthread");
+    std::iter::once(archive.into()).chain(os_libs).chain(gnu).collect()
 }
 
 #[test]
@@ -188,16 +227,11 @@ fn a_c_program_calls_a_zaka_lib()
         "manhattan",
         "mirror",
         "zk_last_trap",
+        "zk_lib_reset",
     ];
     assert_eq!(names, api);
     let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
-    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
-    let os_libs = os_libs.unwrap_or_default().into_iter().map(OsString::from);
-    let archive = dir.join(tern!(msvc, "mathlib.lib", "libmathlib.a"));
-    let libm = (!msvc).then(|| OsString::from("-lm"));
-    let static_libs: Vec<OsString> =
-        std::iter::once(archive.into()).chain(os_libs).chain(libm).collect();
-    check_driver(&cc, dir, &static_libs, "static_driver");
+    check_driver(&cc, dir, &static_libs(dir), "static_driver");
     // Windows finds a DLL beside the executable; GNU links the DLL itself, MSVC
     // its import lib.
     let shared_libs: Vec<OsString> = match (cfg!(windows), msvc)
@@ -213,7 +247,6 @@ fn a_c_program_calls_a_zaka_lib()
     check_driver(&cc, dir, &shared_libs, "shared_driver");
 }
 
-#[cfg(unix)]
 #[test]
 fn threads_call_a_zaka_lib_one_at_a_time()
 {
@@ -225,17 +258,7 @@ fn threads_call_a_zaka_lib_one_at_a_time()
     let dir = tempfile::tempdir().unwrap();
     let dir = dir.path();
     build_lib(dir);
-    let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
-    let exe = dir.join("threads");
-    let mut link = cc.command();
-    link.args(["-std=c11", "-pthread", "-I"])
-        .arg(dir)
-        .arg(root().join("tests/inputs/libs/threads.c"))
-        .arg(dir.join("libmathlib.a"))
-        .args(os_libs.unwrap_or_default())
-        .args(["-lm", "-o"])
-        .arg(&exe);
-    ran(&mut link, "the link of the threads driver");
+    let output = run_driver(&cc, dir, "threads.c", &static_libs(dir), "threads");
     // Eight threads count the digits of 0 to 1999, three octets each.
-    assert_eq!(ran(&mut Command::new(&exe), "the threads driver"), "165360\n");
+    assert_eq!(output, "165360\n");
 }

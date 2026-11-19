@@ -296,3 +296,7 @@ pub extern "C" fn zk_char_of(negative: i32, v: u64) -> u32
         u32::try_from(v).ok().filter(|_| negative == 0).and_then(char::from_u32);
     scalar.map_or(0xfffd, u32::from)
 }
+
+/// Send the output to the standard output again, for a reset of a C lib: a
+/// trap while text went to a buffer left it there.
+pub(crate) fn reset_sink() { INTO.store(std::ptr::null_mut(), Ordering::Relaxed); }

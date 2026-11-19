@@ -826,16 +826,19 @@ mod with_ffi
         /// * `func` - The index of the function.
         /// * `args` - The arguments.
         /// * `gives` - Whether it gives a result.
+        /// * `slot` - Where a struct result goes, which the call takes under
+        ///   its arguments.
         ///
         /// # Returns
         ///
-        /// The result, or `None`.
+        /// The result, or `None` for no result or a result in the slot.
         fn run_callback(
-            &mut self, func: u32, args: Vec<Value>, gives: bool,
+            &mut self, func: u32, args: Vec<Value>, gives: bool, slot: Option<u64>,
         ) -> Option<Value>
         {
             ret_if!(self.callbacks.trap.is_some(), None);
             let depth = self.frames.len();
+            do_if!(let Some(slot) = slot, self.stack.push(Value::Ptr(slot)));
             do_for!(v in args, self.stack.push(v));
             let mut ran = self.enter(func);
             while ran.is_ok() && self.frames.len() > depth
@@ -847,7 +850,9 @@ mod with_ffi
                 self.callbacks.trap = Some(trap);
                 return None;
             }
-            tern!(gives, self.stack.pop(), None)
+            // A struct result is in the slot; its address remains on the stack.
+            let given = tern!(gives || slot.is_some(), self.stack.pop(), None);
+            tern!(slot.is_none(), given, None)
         }
 
         /// The value of an argument C passes to a callback, from its native
@@ -1020,6 +1025,37 @@ mod with_ffi
             }
         }
 
+        /// Write the struct a callback gave in its slot where C wants it, each
+        /// address made native. A trap waits in [`Callbacks`] and C reads the
+        /// zeros there from the start.
+        ///
+        /// # Arguments
+        ///
+        /// * `slot` - The slot of the struct.
+        /// * `kind` - The struct kind.
+        /// * `result` - Where C wants it, with room for the struct.
+        fn struct_result(&mut self, slot: u64, kind: DataKind, result: *mut u8)
+        {
+            ret_if!(self.callbacks.trap.is_some());
+            let size = u64::from(kind.size(self.module.platform_bits));
+            let raw = self.mem.octets(slot, size);
+            let written = raw.and_then(|mut raw| {
+                self.write_native(kind, &mut raw, 0)?;
+                Ok(raw)
+            });
+            let raw = match written
+            {
+                Ok(raw) => raw,
+                Err(trap) =>
+                {
+                    self.callbacks.trap.get_or_insert(trap);
+                    return;
+                }
+            };
+            // SAFETY: libffi gives room for the struct of a struct result.
+            unsafe { std::ptr::copy_nonoverlapping(raw.as_ptr(), result, raw.len()) };
+        }
+
         /// The octets of text or a text view: its first word is the address of
         /// the octets, its second their count.
         ///
@@ -1104,11 +1140,14 @@ mod with_ffi
     /// * `args` - The address of each argument.
     /// * `data` - The function and its machine.
     unsafe extern "C" fn call_back(
-        _cif: &ffi_cif, result: &mut u64, args: *const *const c_void,
+        _cif: &ffi_cif, result: &mut u8, args: *const *const c_void,
         data: &CallbackData,
     )
     {
-        *result = 0;
+        let result: *mut u8 = result;
+        // SAFETY: libffi gives room for a whole word, or for the struct of a
+        // struct result.
+        unsafe { result.cast::<u64>().write_unaligned(0) };
         if std::thread::current().id() != data.thread
         {
             eprintln!("{}", t!("vm.callback_thread"));
@@ -1148,7 +1187,17 @@ mod with_ffi
                 return;
             }
         };
-        let out = machine.run_callback(data.func, values, data.ret.is_some());
+        // A struct result goes to a slot of the VM, which the call fills.
+        let whole = data.ret.filter(|k| k.is_aggregate());
+        let size = whole.map_or(0, |k| u64::from(k.size(platform)));
+        let slot = whole.and_then(|_| machine.mem.alloc(size, Origin::Heap, 0));
+        do_if!(let Some(slot) = slot, temps.push((slot, DataKind::OPAQUE)));
+        let out = machine.run_callback(data.func, values, data.ret.is_some(), slot);
+        if let (Some(slot), Some(kind)) = (slot, whole)
+        {
+            machine.struct_result(slot, kind, result);
+            return machine.drop_temps(temps);
+        }
         machine.drop_temps(temps);
         let Some((value, kind)) = out.zip(data.ret)
         else
@@ -1166,7 +1215,8 @@ mod with_ffi
         let mut word = [tern!(negative, 0xff, 0); 8];
         let n = raw.len().min(8);
         word[..n].copy_from_slice(&raw[..n]);
-        *result = u64::from_le_bytes(word);
+        // SAFETY: libffi gives room for a whole word.
+        unsafe { result.cast::<u64>().write_unaligned(u64::from_le_bytes(word)) };
     }
 
     /// Call `each` with the offset of each address a value of the kind holds:

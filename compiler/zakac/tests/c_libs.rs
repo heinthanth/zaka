@@ -24,6 +24,8 @@ divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                       at mathlib.zaka:10:1)
 after -1
+trap after reset none
+reset 0 3
 ";
 
 /// What the Rust driver prints.

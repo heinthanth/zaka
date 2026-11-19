@@ -222,7 +222,8 @@ pub fn row<'a>(list: *const *const c_char, n: usize) -> &'a [u8]
 /// build keeps the calls.
 pub fn make_frames()
 {
-    ret_if!(!tracks());
+    // SAFETY: one thread starts the run; a C lib that starts again keeps them.
+    ret_if!(!tracks() || !unsafe { zk_frames }.is_null());
     let count = prog().max_depth as usize + 1;
     let frames = vec![ZkFrame::default(); count].into_boxed_slice();
     // SAFETY: one thread runs the program; the frames live to its end.

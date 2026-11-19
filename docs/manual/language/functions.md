@@ -1274,8 +1274,9 @@ heap.
 ### Callbacks
 
 A parameter of a function kind crosses to C as a pointer to a function. The result of the
-kind is an integer up to 64 bits, a `၃၂ ဘစ် ဒဿမကိန်း`, a `ဒဿမကိန်း`, a `မှန်မှားတန်ဖိုး` or a
-pointer, or the kind gives back nothing. Each parameter of the kind is one of these, or:
+kind is an integer up to 64 bits, a `၃၂ ဘစ် ဒဿမကိန်း`, a `ဒဿမကိန်း`, a `မှန်မှားတန်ဖိုး`, a
+pointer, or a plain struct of these, which C gets as a whole value; or the kind gives back
+nothing. Each parameter of the kind is one of these, or:
 
 | Parameter | What C passes | What the function gets |
 | --- | --- | --- |
@@ -1714,8 +1715,10 @@ a last parameter, an address it writes unless it is NULL: the function above is
 `int32_t add_numbers(int32_t, int32_t, int32_t *)` in C. The status is `ZK_OK` (0), `1 +`
 the number of the trap the call stopped on, with its text from `zk_last_trap()`, or
 `ZK_STOPPED` (-1) for each call after a trap, since a trap can leave the heap and the
-globals half written. The first call starts the runtime and sets the globals; the text a
-call prints goes out before it returns. Threads can call the lib: one call runs at a
+globals half written. `zk_lib_reset()` starts the lib again: the next call starts the
+runtime and sets the globals again, and the blocks the stopped lib held remain out of reach.
+The first call starts the runtime and sets the globals; the text a call prints goes out
+before it returns. Threads can call the lib: one call runs at a
 time, and a call from another thread waits until it ends. C that a call calls can call
 the lib again on the same thread.
 

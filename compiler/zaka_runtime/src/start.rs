@@ -14,6 +14,7 @@ use zakac_rust_sugars::ret_if;
 use crate::out::flush_out;
 use crate::program::ZkProgram;
 use crate::program::make_frames;
+use crate::program::zk_depth;
 use crate::program::zk_prog;
 use crate::traps::set_name;
 
@@ -73,6 +74,23 @@ pub extern "C" fn zk_lib_unlock()
     ret_if!(held.1 > 0);
     held.0 = None;
     FREED.notify_one();
+}
+
+/// Clear what a trap leaves half done, so a C lib can start again: the depth
+/// of the calls, the count of the heap, the closures lent to C calls, the
+/// buffer the output goes to, the queues of the drops and the text of the
+/// trap. The blocks of the heap from before remain, out of reach.
+#[unsafe(no_mangle)]
+pub extern "C" fn zk_runtime_reset()
+{
+    // SAFETY: the lib holds its lock, so no call runs.
+    unsafe { zk_depth = 0 };
+    crate::heap::reset_count();
+    #[cfg(not(target_os = "wasi"))]
+    crate::callbacks::end_lends();
+    crate::out::reset_sink();
+    crate::seqs::reset_drops();
+    crate::traps::forget_trap();
 }
 
 /// Write out what is buffered, as a C lib does at the end of each call.

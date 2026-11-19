@@ -1153,7 +1153,7 @@ impl Checker
             do_if!(stuck, self.report(kd::kind_not_across_c(p.span, &kind.name())));
             do_if!(!stuck, self.check_c_struct(kind, p.span));
         }
-        let fits = |k: &DataKind| foreign::export_result(*k, platform);
+        let fits = |k: &DataKind| foreign::callback_result(*k, platform);
         let bad_ret = ret.filter(|k| !fits(k));
         do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
         do_if!(let Some(k) = ret.filter(fits), self.check_c_struct(k, n.name.span));

@@ -37,7 +37,8 @@ use crate::program::BOUNDS_BIT;
 use crate::program::TEXT_BIT;
 use crate::program::ZkKind;
 use crate::program::check_on;
-use crate::traps::stop;
+use crate::traps::named;
+use crate::traps::stop_owned;
 use crate::traps::trap;
 use crate::traps::zk_addr_trap;
 use crate::traps::zk_out_of_mem;
@@ -1097,14 +1098,12 @@ pub extern "C" fn zk_make_slice(
     let bounded = limit != usize::MAX;
     if check_on(BOUNDS_BIT) && bounded && (end < start || end > limit as u64)
     {
-        let nums = [
-            (len as i64).to_string(),
-            (start as i64).to_string(),
-            (limit as i64).to_string(),
+        let nums = vec![
+            named("len", len as i64),
+            named("start", start as i64),
+            named("limit", limit as i64),
         ];
-        #[rustfmt::skip]
-        stop(trap::SLICE_OUT_OF_RANGE, &[("len", nums[0].as_bytes()),
-            ("start", nums[1].as_bytes()), ("limit", nums[2].as_bytes())]);
+        stop_owned(trap::SLICE_OUT_OF_RANGE, nums);
     }
     let edges = check_on(TEXT_BIT) && text != 0 && bounded && !base.is_null();
     do_if!(edges && start < limit as u64, edge_check(base, start as usize));
@@ -1514,11 +1513,9 @@ fn span(p: *const u8, start: i64, end: i64, chars: i32) -> (usize, usize)
     let (lo, hi) = (pick(start), pick(end));
     if check_on(BOUNDS_BIT) && hi < lo
     {
-        let (a, b) = (
-            (lo as i64 + i64::from(chars)).to_string(),
-            (hi as i64 + i64::from(chars)).to_string(),
-        );
-        stop(trap::END_BEFORE_START, &[("start", a.as_bytes()), ("end", b.as_bytes())]);
+        let start = named("start", lo as i64 + i64::from(chars));
+        let end = named("end", hi as i64 + i64::from(chars));
+        stop_owned(trap::END_BEFORE_START, vec![start, end]);
     }
     ret_if!(in_chars, (char_start(s, lo), char_start(s, hi + 1)));
     let base = zk_seq_base(p);
@@ -1653,4 +1650,13 @@ pub extern "C" fn zk_char_at_octet(p: *const u8, index: u64) -> u32
 pub extern "C" fn zk_text_eq(a: *const u8, b: *const u8) -> i32
 {
     i32::from(octets(a) == octets(b))
+}
+
+/// Clear the queues of the drops, for a reset of a C lib: a trap inside a
+/// drop left them half done, and the blocks in them remain, out of reach.
+pub(crate) fn reset_drops()
+{
+    FREEING.store(std::ptr::null_mut(), Ordering::Relaxed);
+    DRAINING.store(false, Ordering::Relaxed);
+    _ = (CANDIDATES.take(), DEEP_TODO.take(), DEEP_SEEN.take());
 }

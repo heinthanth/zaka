@@ -78,7 +78,7 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 }
 
 /// The names a shared lib gives to C: the name of each function that code
-/// outside can call, and `zk_last_trap`.
+/// outside can call, `zk_last_trap` and `zk_lib_reset`.
 ///
 /// # Arguments
 ///
@@ -90,7 +90,7 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 pub fn api_names(exports: &[Export<'_>]) -> Vec<String>
 {
     let names = exports.iter().map(|e| e.c_name.to_string());
-    names.chain(["zk_last_trap".to_string()]).collect()
+    names.chain(["zk_last_trap".to_string(), "zk_lib_reset".to_string()]).collect()
 }
 
 /// The statements `zk_lib_init` of a lib runs: the top-level statements,
@@ -291,9 +291,16 @@ impl CKinds
             let _ = write!(out, "\n/* {} */\ntypedef struct\n{{\n", comment(&s.name));
             let fields = s.fields().iter().enumerate();
             fields.for_each(|(i, (name, k))| out.push_str(&self.field(i, name, *k)));
-            let _ = writeln!(out, "}} {};", self.struct_name(at));
+            let name = self.struct_name(at);
+            let _ = writeln!(out, "}} {name};");
+            let size = kind.size(self.platform);
+            let _ = writeln!(
+                out,
+                "ZK_LIB_ASSERT(sizeof({name}) == {size}, \"the C size of {name} \
+                 differs from its Zaka size\");"
+            );
         }
-        out
+        tern!(out.is_empty(), out, format!("{ASSERT_MACRO}{out}"))
     }
 
     /// The C line of one field of a struct.
@@ -374,6 +381,17 @@ fn declared(kind: &str, name: &str) -> String
     tern!(kind.ends_with('*'), format!("{kind}{name}"), format!("{kind} {name}"))
 }
 
+/// The check of a size a C file and a C++ file both read.
+const ASSERT_MACRO: &str = "
+#ifndef ZK_LIB_ASSERT
+#ifdef __cplusplus
+#define ZK_LIB_ASSERT(c, m) static_assert(c, m)
+#else
+#define ZK_LIB_ASSERT(c, m) _Static_assert(c, m)
+#endif
+#endif
+";
+
 /// The glue of a lib, which the wrappers share: the start of the runtime on
 /// the first call, the jump back to the wrapper on a trap, and the text of
 /// that trap.
@@ -396,11 +414,10 @@ const GLUE: &str = "
 #define ZK_STOPPED (-1)
 
 /* A longjmp of 64-bit Windows unwinds each frame it leaves, through the unwind
-   tables. With no frame in its buffer the jump restores the registers alone, as
-   it does on each other OS, and skips no handler of the frames between, which
-   hold none; ZK_LIB_UNWIND keeps the unwinding, through the tables the code of
-   Cranelift and of C gives. */
-#if defined(_WIN64) && !defined(ZK_LIB_UNWIND)
+   tables the code of C, of Cranelift and of the runtime gives. ZK_LIB_PLAIN_JUMP
+   clears the frame in the buffer, so the jump restores the registers alone, as
+   it does on each other OS. */
+#if defined(_WIN64) && defined(ZK_LIB_PLAIN_JUMP)
 #define ZK_LIB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
 #define ZK_LIB_NO_UNWIND(buf) ((void)(buf))
@@ -464,6 +481,19 @@ static int32_t zk_lib_end(jmp_buf *outer, int32_t status)
     zk_lib_at = outer;
     zk_lib_unlock();
     return status;
+}
+
+/**
+ * Start the lib again after a trap stopped it: the next call starts the
+ * runtime and sets the globals again. The blocks of the heap from before
+ * remain, out of reach. A call in progress must not reset the lib.
+ */
+ZK_LIB_EXPORT void zk_lib_reset(void)
+{
+    zk_lib_lock();
+    zk_runtime_reset();
+    zk_lib_state = 0;
+    zk_lib_unlock();
 }
 
 /**
@@ -585,7 +615,9 @@ pub fn header(
          */\n#define ZK_OK 0\n/** The status of each call after a call stopped on a \
          trap. */\n#define ZK_STOPPED (-1)\n\n/**\n * The text of the trap the lib \
          stopped on.\n *\n * @return The text, or NULL while no call stopped on a \
-         trap.\n */\nconst char *zk_last_trap(void);\n"
+         trap.\n */\nconst char *zk_last_trap(void);\n\n/**\n * Start the lib again \
+         after a trap stopped it: the next call starts it and sets its globals \
+         again.\n */\nvoid zk_lib_reset(void);\n"
     );
     let kinds = CKinds::of(exports, platform);
     out.push_str(&kinds.struct_decls());

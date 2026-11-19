@@ -402,14 +402,15 @@ folder, named after the input or the last part of `-o`:
 | File | What it holds |
 | --- | --- |
 | `lib<name>.a` (`<name>.lib` for MSVC) | the static lib: the objects of the program with the runtime lib inside it |
-| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions and `zk_last_trap` alone; MSVC writes its import lib as `<name>.dll.lib` |
-| `<name>.h` | the declaration of each function under its C name, of each struct those functions take under its C name, and of `zk_last_trap` |
+| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap` and `zk_lib_reset` alone; MSVC writes its import lib as `<name>.dll.lib` |
+| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, and of `zk_last_trap` and `zk_lib_reset` |
 
 Each function returns an `int32_t` status and gives its result through a last
 parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
 of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap, since a
 trap can leave the heap and the globals half written; `zk_last_trap()` gives the text of
-that trap. The first call starts the runtime and sets the globals. Text comes in as a
+that trap, and `zk_lib_reset()` starts the lib again. The first call starts the runtime
+and sets the globals. Text comes in as a
 `const char *`; an address or a handle as a `void *`; a struct whole, as the header
 declares it. Threads can call the lib, one call at a time. A program that links the static lib
 links the OS libs of the runtime with it, which the comment at the top of the header

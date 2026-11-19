@@ -235,8 +235,9 @@ pub fn fits(f: &FnKind, platform: u16) -> bool
 }
 
 /// Whether C can call the code of a function of a function kind with no
-/// bridge: each parameter crosses as it is. A closure takes the bridge in
-/// each case, which hands the thunk its record.
+/// bridge: each parameter crosses as it is, and the result is no struct,
+/// which the code takes a slot for first. A closure takes the bridge in each
+/// case, which hands the thunk its record.
 ///
 /// # Arguments
 ///
@@ -248,8 +249,9 @@ pub fn fits(f: &FnKind, platform: u16) -> bool
 /// `true` when it can.
 pub fn as_is(f: &FnKind, platform: u16) -> bool
 {
-    let (params, _) = fn_shape(f);
-    params.iter().all(|k| crossing(*k, platform) == Some(Crossing::AsIs))
+    let (params, ret) = fn_shape(f);
+    let slot = ret.is_some_and(is_blob);
+    !slot && params.iter().all(|k| crossing(*k, platform) == Some(Crossing::AsIs))
 }
 
 /// The kinds whose descriptors the bridge of a function kind names: each

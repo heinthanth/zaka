@@ -739,3 +739,7 @@ pub extern "C" fn zk_fn_release(f: ZkFn)
 ///
 /// The kind.
 pub fn record_kind(f: ZkFn) -> *const ZkKind { fn_kind(f) }
+
+/// Count no live block, for a reset of a C lib: the blocks of before remain,
+/// out of reach, and count against no limit.
+pub(crate) fn reset_count() { HEAP_LIVE.store(0, Ordering::Relaxed); }
