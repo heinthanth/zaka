@@ -69,21 +69,8 @@ one of these verbs:
 | `နေသရွေ့` | while loop | none: it follows the condition |
 | `မှ ... အထိ ... အနေဖြင့်` | counted loop | `မှ` after the first bound, `အထိ` after the second |
 
-Each statement verb ends in `မည်` ("will"). The older spellings that end in `ပါ`, such
-as `ပြသပါ` and `ထားပါ`, are ZK0110, whose help line gives the `မည်` form; the compiler
-reads the verb as meant and goes on. The declaration `ဖြစ်ပါစေ` ("let it be") and the
-closers keep their own spellings.
-
-```zaka-error ZK0110
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁ ကို ပြသပါ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0110]: "ပြသပါ" ends in ပါ; a statement ends in မည်
-help: write "ပြသမည်"
-```
+Each statement verb ends in `မည်` ("will"). The declaration `ဖြစ်ပါစေ` ("let it be")
+and the closers keep their own spellings.
 
 A sentence that ends in another word is ZK0203, with a help line that lists the verbs.
 A verb of the grammar, such as `ထားမည်`, that finds a missing or wrong particle on an
@@ -686,7 +673,6 @@ error[ZK0468]: a heap statement needs unsafe code
 
 | Code | Raised when |
 | --- | --- |
-| ZK0110 | a statement verb that ends in `ပါ` in place of `မည်` |
 | ZK0201 | a token is not the one expected, often a missing `။` |
 | ZK0203 | a sentence ends in no statement verb |
 | ZK0205, ZK0206, ZK0209 | a verb has too few operands, a wrong particle, or a surplus |

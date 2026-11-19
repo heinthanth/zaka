@@ -1,8 +1,6 @@
 use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment;
-use zakac_diagnostics::Code;
 use zakac_lexer::ident::is_ident;
-use zakac_lexer::reserved::OLD_ENDINGS;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::reserved::split_reserved;
@@ -377,23 +375,4 @@ fn called_before_a_function_kind_keeps_apart()
     assert_eq!(kind, [Kw::Called, Kw::FnKind]);
     assert_eq!(kw_alone("ဖ ဟူသော လုပ်ဆောင်ချက်"), [Kw::FnValue]);
     assert_eq!(kw_alone("ဖ မည့် လုပ်ဆောင်ချက်ကို"), [Kw::FnValue, Kw::Ko]);
-}
-
-#[test]
-fn an_old_ending_is_reported_and_read_as_the_new_verb()
-{
-    for (old, new, kw) in OLD_ENDINGS
-    {
-        let (out, _) = common::lex_text(old);
-        assert_eq!(out.diagnostics.len(), 1, "{old}");
-        assert_eq!(out.diagnostics[0].code, Code::OldEnding, "{old}");
-        assert_eq!(common::kws(old), [*kw], "{old}");
-        let (out, _) = common::lex_text(new);
-        assert!(out.diagnostics.is_empty(), "{new}");
-        // A verb of a function the core declares lexes as a name, which the
-        // parser reads as the function and `မည်`.
-        let declared = new.strip_suffix("မည်").and_then(builtin_verb) == Some(*kw);
-        do_if!(declared, assert_eq!(out.tokens[0].kind, TokenKind::Ident, "{new}"));
-        do_if!(!declared, assert_eq!(common::kws(new), [*kw], "{new}"));
-    }
 }

@@ -17,6 +17,7 @@ use zakac_span::pos::Pos;
 use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
 
+use crate::aliases::mark_of;
 use crate::classifiers::mark_classifiers;
 use crate::ident::is_ident;
 use crate::number::lex_number;
@@ -25,10 +26,8 @@ use crate::phrases::join_named_phrases;
 use crate::phrases::join_phrases;
 use crate::reserved::AMONG;
 use crate::reserved::NOTE_MARKER;
-use crate::reserved::OLD_ENDINGS;
 use crate::reserved::lookup;
 use crate::reserved::split_reserved;
-use crate::spoken::SPOKEN_EI;
 use crate::spoken::spoken;
 use crate::spoken::spoken_twin;
 use crate::text::Scan;
@@ -186,7 +185,7 @@ impl Driver<'_, '_>
         let found = spoken(text);
         let other = found.and_then(|s| s.also).map(|(_, w)| w);
         let written = found.map(|s| s.written);
-        let written = written.or_else(|| (text == SPOKEN_EI).then_some("၏"));
+        let written = written.or_else(|| mark_of(text));
         if let Some(written) = written
         {
             self.out.diagnostics.push(spoken_form(span, text, written, other));
@@ -545,23 +544,6 @@ impl Driver<'_, '_>
         end
     }
 
-    /// Report a statement verb in its old `ပါ` spelling (ZK0110).
-    ///
-    /// # Arguments
-    ///
-    /// * `idx` - Index of the current word.
-    ///
-    /// # Returns
-    ///
-    /// The word the old spelling stands for, or `None` for another word.
-    fn old_ending(&mut self, idx: usize) -> Option<Kw>
-    {
-        let word = self.words[idx];
-        let (old, new, kw) = OLD_ENDINGS.iter().find(|(old, ..)| *old == word.text)?;
-        self.out.diagnostics.push(diag::old_ending(word.span, old, new));
-        Some(*kw)
-    }
-
     /// Lex a reserved word, or a word made of reserved words.
     ///
     /// # Arguments
@@ -574,14 +556,13 @@ impl Driver<'_, '_>
     fn lex_reserved(&mut self, idx: usize) -> Option<usize>
     {
         let word = self.words[idx];
-        let ei = word.text == SPOKEN_EI;
+        let ei = mark_of(word.text) == Some("၏");
         ret_if!(
             ei,
             self.push(TokenKind::Punct(Punct::Ei), word.span, word.joined),
             self.note_form(word.span),
             Some(idx + 1)
         );
-        ret_if!(let Some(kw) = self.old_ending(idx), self.push_kw(kw, word.span, word.joined), Some(idx + 1));
         ret_if!(let Some(kw) = lookup(word.text), self.push_kw(kw, word.span, word.joined), self.note_form(word.span), Some(idx + 1));
         let pieces = split_reserved(&word)?;
         #[rustfmt::skip]

@@ -239,6 +239,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မင်မိုရီ", Kw::Mem),
     ("ဘိုက်စာ", Kw::Octets),
     ("ခုစာ", Kw::Items),
+    ("လုံးစာ", Kw::Items),
     ("နေရာယူ၍", Kw::TakeSpace),
     ("တွင်", Kw::At),
     ("ရှိ", Kw::Located),
@@ -258,6 +259,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("အရှေ့တွင်", Kw::Before),
     ("ဆက်ထားသည့်", Kw::Joined),
     ("ခုမြောက်", Kw::Ordinal),
+    ("လုံးမြောက်", Kw::Ordinal),
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
@@ -318,24 +320,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("လည်းကောင်း", Kw::AsWellAs),
     ("မှတ်ယူနိုင်ပါသည်", Kw::CanRegard),
     ("မှတ်ယူနိုင်ပြီး", Kw::CanRegardAnd),
-];
-
-/// Statement verbs in the `ပါ` spelling statements had before the verbs ended
-/// in `မည်`: each old spelling, its new one, and the word it stands for. The
-/// lexer reports each with ZK0110 and reads it as the new word, so parsing
-/// goes on.
-#[rustfmt::skip]
-pub static OLD_ENDINGS: &[(&str, &str, Kw)] = &[
-    ("လုပ်ဆောင်ပါ", "လုပ်ဆောင်မည်", Kw::WillDo),
-    ("ပြသပါ", "ပြသမည်", Kw::Print),
-    ("ထားပါ", "ထားမည်", Kw::Assign),
-    ("ပြန်ပေးပါ", "ပြန်ပေးမည်", Kw::WillReturn),
-    ("ရပ်ပါ", "ရပ်မည်", Kw::Stop),
-    ("ကျော်ပါ", "ကျော်မည်", Kw::Skip),
-    ("ထည့်သွင်းပါ", "ထည့်သွင်းမည်", Kw::Import),
-    ("ထည့်ပါ", "ထည့်မည်", Kw::Add),
-    ("ဖျက်ပါ", "ဖျက်မည်", Kw::Remove),
-    ("အစားထိုးပါ", "အစားထိုးမည်", Kw::Replace),
 ];
 
 /// Each written spelling of each reserved word as a map, built on first use;

@@ -396,7 +396,7 @@ each spelling is plain Zaka, and each is reserved.
 | `သော`, `သည့်` | the end of `သုံးသော`, `လက်ခံသော` and `ပြန်ပေးသော` | `သုံးသည့်` |
 | `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး`, `ပြီးပါပြီ` | the closer of a block | |
 | `မင်မိုရီ`, `မှတ်ဉာဏ်` | "storage" | |
-| `ခု`, `လုံး` | in `ခုစာ` and `ခုမြောက်` | `လုံးမြောက်` |
+| `တွင်`, `၌` | "at", "in"; `၌` is the literary form | `ထဲ၌`, `ဤနေရာ၌` |
 
 The spelling a word takes tells nothing; its place does. `ဖြစ်၍` (or `ဖြစ်ပြီး`,
 `ဖြစ်ကာ`) after the kind of a declaration starts its value when `တန်ဖိုးသည်` follows, and

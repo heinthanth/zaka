@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use zakac_lexer::aliases::ALIASES;
 use zakac_lexer::aliases::WRITTEN;
 use zakac_lexer::reserved::RESERVED;
+use zakac_lexer::reserved::lookup;
 use zakac_lexer::token::Kw;
 use zakac_rust_sugars::do_for;
 
@@ -48,8 +49,8 @@ fn each_word_a_row_names_is_a_reserved_word()
     let reserved = |w: &str| RESERVED.iter().any(|(r, _)| *r == w);
     for row in ALIASES
     {
-        let named = row.within.iter().chain(row.except);
-        do_for!(w in named, assert!(reserved(w), "{w} in the row of {:?}", row.parts));
+        let named = row.swaps_within.iter().chain(row.except);
+        do_for!(w in named, assert!(reserved(w), "{w} in the row of {}", row.base));
     }
 }
 
@@ -59,7 +60,25 @@ fn each_part_of_a_row_stands_in_a_reserved_word()
     for row in ALIASES
     {
         let found = |p: &&str| WRITTEN.iter().any(|w| w.text.contains(*p));
-        let first = row.parts.first().copied().unwrap_or_default();
-        assert!(found(&first), "{first} of the row of {:?}", row.parts);
+        assert!(found(&row.base), "the row of {}", row.base);
     }
+}
+
+#[test]
+fn spoken_parts_of_several_vannas_read_as_their_word()
+{
+    let pairs = [
+        ("ဒါမှမဟုတ်", Kw::Or),
+        ("ဒါမှမဟုတ်ဘဲ", Kw::ElseIf),
+        ("ဒါမှမဟုတ်ရင်", Kw::Else),
+        ("စိတ်မချရပေမယ့်", Kw::UnsafeThough),
+        ("ရှိစေအောင်", Kw::ToHave),
+        ("ရှိစေဖို့", Kw::ToHave),
+        ("ပြောင်းလဲဖို့", Kw::ToChange),
+        ("ဖြစ်၏", Kw::Is),
+    ];
+    do_for!((w, kw) in pairs, assert_eq!(lookup(w), Some(kw), "{w}"));
+    // `မဟုတ်လျှင်` is "if not", `၏` alone is "of", and `အောင်` is no spoken
+    // form of each `ရန်`.
+    do_for!(w in ["မဟုတ်လျှင်", "၏", "ပြောင်းလဲအောင်"], assert_eq!(lookup(w), None, "{w}"));
 }

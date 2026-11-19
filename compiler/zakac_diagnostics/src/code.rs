@@ -69,8 +69,6 @@ BadCharLength = ("ZK0107", Level::Error),
 UnterminatedRawIdentifier = ("ZK0108", Level::Error),
 /// A raw identifier has nothing between its braces.
 BlankRawIdentifier = ("ZK0109", Level::Error),
-/// A statement verb ends in `ပါ`; statements end in `မည်`.
-OldEnding = ("ZK0110", Level::Error),
 
 // parser: ZK02xx
 /// A token does not fit the grammar at this point.

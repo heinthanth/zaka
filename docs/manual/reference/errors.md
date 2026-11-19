@@ -79,7 +79,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0107 | a character literal with more than one character | [Characters](../../learn/values/characters.md) |
 | ZK0108 | a name in braces with no closing brace on its line | [Names](../../learn/variables/names.md) |
 | ZK0109 | a name in braces with nothing between them | [Names](../../learn/variables/names.md) |
-| ZK0110 | a statement verb that ends in `ပါ`; statements end in `မည်` | [Sentences](../../learn/sentences/README.md) |
 
 ### ZK02: reading the sentences
 

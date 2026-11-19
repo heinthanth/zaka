@@ -99,10 +99,7 @@ objects](../language/objects.md).
 | `ထဲသို့ … ကို အကုန်ကူးထည့်မည်` | "will duplicate all of … into": a deep duplicate, which duplicates each shared object it reaches once | [Values and objects](../language/objects.md) |
 | `အကုန်` | "all": before the verb `ကူးထည့်` it makes the duplicate deep, `အကုန်ကူးထည့်မည်` or `အကုန် ကူးထည့် မည်`; reserved, so it cannot name a variable | [Values and objects](../language/objects.md) |
 
-Each statement verb ends in `မည်`. The older spellings that end in `ပါ` (`ပြသပါ`, `ထားပါ`,
-`ပြန်ပေးပါ`, `လုပ်ဆောင်ပါ`, `ရပ်ပါ`, `ကျော်ပါ`, `ထည့်သွင်းပါ`, `ထည့်ပါ`, `ဖျက်ပါ`,
-`အစားထိုးပါ`) are no words of the language: the lexer reports ZK0110, with the `မည်` spelling
-in its help line, and reads on as if the `မည်` spelling stood there.
+Each statement verb ends in `မည်`.
 
 ## Blocks and control flow
 

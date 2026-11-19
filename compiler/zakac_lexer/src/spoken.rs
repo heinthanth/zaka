@@ -12,11 +12,10 @@ use std::sync::LazyLock;
 
 use crate::aliases::WRITTEN;
 use crate::aliases::Written;
-use crate::aliases::spoken_spelling;
+use crate::aliases::mark_of;
+use crate::aliases::marks;
+use crate::aliases::spoken_spellings;
 use crate::token::Kw;
-
-/// The spoken form of `၏`, which is a mark and no reserved word.
-pub const SPOKEN_EI: &str = "ရဲ့";
 
 /// One spoken spelling.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,12 +41,17 @@ pub static SPOKEN: LazyLock<Vec<Spoken>> = LazyLock::new(|| {
     // one spoken spelling; the first keeps it.
     let mut seen = HashSet::new();
     let made = |w: &'static Written| {
-        let spoken = spoken_spelling(&w.text, w.first)?;
-        Some(Spoken { spoken, kw: w.kw, written: w.text.as_str(), also: None })
+        let each = spoken_spellings(&w.text, w.first).into_iter();
+        each.map(|spoken| Spoken {
+            spoken,
+            kw: w.kw,
+            written: w.text.as_str(),
+            also: None,
+        })
     };
     let all: Vec<Spoken> = WRITTEN
         .iter()
-        .filter_map(made)
+        .flat_map(made)
         .filter(|s| seen.insert((s.spoken.clone(), s.kw)))
         .collect();
     let rival = |s: &Spoken| all.iter().find(|o| o.spoken == s.spoken && o.kw != s.kw);
@@ -73,7 +77,7 @@ static BY_WRITTEN: LazyLock<HashMap<&'static str, &'static str>> =
         let also = |s: &'static Spoken| s.also.map(|(_, w)| (w, s.spoken.as_str()));
         let words = SPOKEN.iter().map(|s| (s.written, s.spoken.as_str()));
         let words = words.chain(SPOKEN.iter().filter_map(also));
-        words.chain([("၏", SPOKEN_EI)]).collect()
+        words.chain(marks()).collect()
     });
 
 /// The spoken spelling a word is.
@@ -118,7 +122,7 @@ pub fn spoken_twin(text: &str) -> Option<&'static str> { BY_WRITTEN.get(text).co
 /// The written spelling.
 pub fn written_form(text: &str) -> &str
 {
-    let ei = (text == SPOKEN_EI).then_some("၏");
+    let ei = mark_of(text);
     let written = spoken(text).map_or(text, |s| s.written);
     let first = FIRST.get(written).copied();
     first.or(ei).unwrap_or(written)

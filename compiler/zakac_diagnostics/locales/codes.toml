@@ -69,16 +69,6 @@ en = "raw identifier between braces is blank"
 [codes.ZK0109.explain]
 en = """Two braces with nothing between them do not name a variable. A raw identifier needs at least one character between the braces."""
 
-[codes.ZK0110.title]
-en = "old statement ending"
-[codes.ZK0110.message]
-en = "\"%{old}\" ends in ပါ; a statement ends in မည်"
-[codes.ZK0110.explain]
-en = """Each statement verb ends in မည်: ထားမည်, ပြသမည်, လုပ်ဆောင်မည်, ထည့်မည်, ပြန်ပေးမည်, ရပ်မည်, ကျော်မည် and the rest. The ending ပါ was the spelling of an earlier version. The declaration ဖြစ်ပါစေ and the closers ပြီးဆုံးပါပြီး keep their ပါ."""
-
-[lexer.help_new_ending]
-en = "write \"%{new}\""
-
 # --------------------------------------------------------------- parser ZK02xx
 
 [parser.help_split]

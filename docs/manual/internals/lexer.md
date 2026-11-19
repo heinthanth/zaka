@@ -242,15 +242,6 @@ words of a struct or an enumeration), and the statement verbs end in
 `မည်` (`ပြသမည်` is `Print`, `လုပ်ဆောင်မည်` is `WillDo`, `ပြန်ပေးမည်` is `WillReturn`, and so
 on). `မိတ္တူ` is no reserved word: the parser reads it after `၏` alone.
 
-### Old endings
-
-A statement verb once ended in `ပါ`. `OLD_ENDINGS` lists each old spelling with its `မည်`
-spelling and its `Kw` (`ပြသပါ` → `ပြသမည်`, `Print`). `old_ending`, the first step of
-`lex_reserved`, looks a whole word up in that list: it reports ZK0110, whose help line
-gives the `မည်` spelling, and pushes the `Kw` of the new spelling, so the parser reads the
-sentence as if it were written right and reports nothing more. The declaration verb
-`ဖြစ်ပါစေ` and the closers keep their `ပါ`, and so do the particles a comparison takes.
-
 ### Spoken spellings
 
 `spoken.rs` gives each reserved word its spoken spelling: `SPOKEN_PARTS` maps a written
@@ -519,7 +510,6 @@ what was decoded, and lexing goes on, so one bad line does not hide the next.
 | ZK0107 | a char literal that holds zero or several chars |
 | ZK0108 | a raw identifier is not closed |
 | ZK0109 | a raw identifier is blank |
-| ZK0110 | a statement verb in its old spelling, ending in `ပါ`; the token of the `မည်` spelling is made all the same |
 
 For `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ဘစ် ဖြစ်ပါစေ။`, `zakac lex` prints the message and still
 writes the tokens of the line:
