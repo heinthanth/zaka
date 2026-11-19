@@ -71,7 +71,7 @@ fn a_nested_function_c_cannot_call_is_zk0490()
 fn point(name: &str, c_name: Option<&str>) -> String
 {
     let mark = c_name.map_or("တွင်".to_string(), |c| {
-        format!("သည် \"{c}\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင်")
+        format!("သည် \"{c}\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်")
     });
     format!(
         "{name} ဟူသော ဒေတာအစုအဝေး{mark} x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် \
@@ -99,4 +99,13 @@ fn struct_c_names_are_checked()
     let clash = point("pt", Some("twice"))
         + &export("က", "twice", &one(int), int, "က ကို ပြန်ပေးမည်။");
     assert_eq!(codes(&clash), [Code::CNameTaken]);
+}
+
+#[test]
+fn a_struct_result_needs_a_c_name_too()
+{
+    let back = "x အနေဖြင့် ၁ နှင့် y အနေဖြင့် ၂ ရှိသော pt တစ်ခု ကို ပြန်ပေးမည်။";
+    let call = export("ပေး", "make_point", &one("ကိန်းပြည့်"), "pt", back);
+    ok(&(point("pt", Some("point")) + &call));
+    assert_eq!(codes(&(point("pt", None) + &call)), [Code::StructNeedsCName]);
 }

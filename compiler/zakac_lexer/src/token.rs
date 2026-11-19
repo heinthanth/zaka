@@ -258,8 +258,6 @@ pub enum Kw
     /// `အပိုင်အနေဖြင့်`, before `ပြန်ပေးမည်` in the result clause of a C
     /// function whose text the program takes over
     AsOwned,
-    /// `ဖြစ်ပြီး`, `ဖြစ်ကာ`
-    Being,
     /// `ပြီးလျှင်`
     WhenDone,
     /// `ဘယ်သို့`
@@ -310,7 +308,9 @@ pub enum Kw
     NotLess,
     /// `မဟုတ်`
     Not,
-    /// `ဖြစ်၍`
+    /// `ဖြစ်၍`, `ဖြစ်ပြီး` or `ဖြစ်ကာ`: logical "and", and the joint of a
+    /// clause that goes on, as the value clause or the loop condition of a
+    /// declaration
     And,
     /// `သို့မဟုတ်`
     Or,
@@ -382,8 +382,8 @@ pub enum Kw
     /// `ခေါ်ဆိုနိုင်သော`, "that can be called": the last piece of
     /// `ပြင်ပမှ ခေါ်ဆိုနိုင်သော`
     Callable,
-    /// `ယူသုံးနိုင်ပြီး`, "that can be taken up, and": the last piece of
-    /// `ပြင်ပမှ ယူသုံးနိုင်ပြီး`
+    /// `ယူသုံးနိုင်သော`, "that can be taken up": the last piece of
+    /// `ပြင်ပမှ ယူသုံးနိုင်သော`
     Usable,
     /// `အမည်ဖြင့်`, "under the name": follows the C name of a function that
     /// code outside can call
@@ -450,7 +450,7 @@ pub enum Kw
     /// `ပြင်ပ မှ ခေါ်ဆိုနိုင်သော`, "that outside code can call": marks a function
     /// that a lib the build writes gives to C and to other languages
     CallableOutside,
-    /// `ပြင်ပ မှ ယူသုံးနိုင်ပြီး`, "that outside code can take up, and": marks a
+    /// `ပြင်ပ မှ ယူသုံးနိုင်သော`, "that outside code can take up": marks a
     /// struct that a lib the build writes gives to C under a C name
     UsableOutside,
     /// `သည့် ရလဒ်ကောင်း`: the short call expression that passes a failure on
@@ -879,7 +879,6 @@ impl Kw
                 | Kw::To
                 | Kw::Step
                 | Kw::CountAs
-                | Kw::Being
                 | Kw::WhenDone
                 | Kw::Bit
                 | Kw::ListOf

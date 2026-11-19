@@ -135,9 +135,11 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 
 - A function C can call takes integers, decimal numbers, true and false, characters,
   addresses, text, handles, optionals of text or handles, and plain structs of these; it
-  gives back one of the numbers, a character, true or false, or an address (ZK0465).
-- A struct it takes needs a C name, which the header declares it under (ZK0492):
-  `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် ...`.
+  gives back one of the numbers, a character, true or false, an address, or a plain
+  struct, through its out pointer (ZK0465).
+- A struct it takes or gives back needs a C name, which the header declares it under
+  (ZK0492):
+  `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`.
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
 - Threads can call a lib, but one call runs at a time; the others wait.

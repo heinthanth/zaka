@@ -1010,3 +1010,21 @@ pub fn import_clash(span: Span, name: &str, first: &str, second: &str) -> Diagno
     Diagnostic::new(Code::ImportClash, msg, span)
         .with_help(t!("codes.ZK0262.help", n = name))
 }
+
+/// A struct carries two marks, or a mark and kind parameters, that do not go
+/// together.
+///
+/// # Arguments
+///
+/// * `span` - The struct name.
+/// * `first` - The first mark.
+/// * `second` - The mark or the clause it does not go with.
+///
+/// # Returns
+///
+/// The `ZK0263` diagnostic.
+pub fn mark_clash(span: Span, first: &str, second: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0263.message", a = first, b = second);
+    Diagnostic::new(Code::MarkClash, msg, span).with_help(t!("codes.ZK0263.help"))
+}

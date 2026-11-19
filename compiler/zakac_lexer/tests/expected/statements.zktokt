@@ -725,7 +725,7 @@ tokens:
   particle: none
   joined: false
 - kind:
-    kw: being
+    kw: and
   span:
     lo: 1635
     hi: 1659

@@ -214,7 +214,6 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Accepting
         | Kw::OnFail
         | Kw::PassFault
-        | Kw::Being
         | Kw::WhenDone
         | Kw::Function
         | Kw::Program

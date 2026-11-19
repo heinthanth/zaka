@@ -120,7 +120,10 @@ impl Parser<'_>
     fn counted_head(&mut self) -> PResult<DeclHead>
     {
         let kind = self.parse_slot_kind()?;
-        let init = tern!(self.at(Kw::And), Some(self.parse_value_clause()?), None);
+        // `ဖြစ်၍ တန်ဖိုးသည်` starts the value; `ဖြစ်၍` before another word starts
+        // the condition of a loop.
+        let valued = self.at(Kw::And) && kw_of(&self.peek_n(1)) == Some(Kw::Value);
+        let init = tern!(valued, Some(self.parse_value_clause()?), None);
         Ok(DeclHead::builder().kind(kind).maybe_init(init).build())
     }
 

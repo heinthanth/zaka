@@ -2,42 +2,21 @@
 //! `ထဲမှာ` for `ထဲတွင်`. Each lexes as its written word; the lint decides
 //! whether a program can use them (ZK0510).
 //!
-//! The spellings come from [`RESERVED`]: each spoken part takes the place of
-//! its written part, a whole vanna at a time, so the `မှ` of `မှတ်` remains.
+//! The spellings come from the spoken rows of
+//! [`ALIASES`](crate::aliases::ALIASES), applied to each written spelling of
+//! [`WRITTEN`].
 
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
-use zakac_burmese_segmenter::segmenter::SegmenterOptions;
-use zakac_burmese_segmenter::segmenter::segment;
-
-use crate::reserved::RESERVED;
+use crate::aliases::WRITTEN;
+use crate::aliases::Written;
+use crate::aliases::spoken_spelling;
 use crate::token::Kw;
-
-/// Each written vanna with its spoken form.
-#[rustfmt::skip]
-pub static SPOKEN_PARTS: &[(&str, &str)] = &[
-    ("မည်", "မယ်"),
-    ("မည့်", "မယ့်"),
-    ("သည်", "တယ်"),
-    ("သည့်", "တဲ့"),
-    ("သော", "တဲ့"),
-    ("တွင်", "မှာ"),
-    ("လျှင်", "ရင်"),
-    ("ဟု", "လို့"),
-    ("မှ", "ကနေ"),
-    ("နှင့်", "နဲ့"),
-    ("ဤ", "ဒီ"),
-];
 
 /// The spoken form of `၏`, which is a mark and no reserved word.
 pub const SPOKEN_EI: &str = "ရဲ့";
-
-/// Reserved words in which a written part is no particle, so each has no
-/// spoken spelling: the `မည်` and `သည်` of `မည်သည်ကိုမှ` ask "which", and the
-/// `မည်` of `အမည်ဖြင့်` is the end of `အမည်`, "name".
-const NO_SPOKEN: &[&str] = &["မည်သည်ကိုမှ", "အမည်ဖြင့်"];
 
 /// One spoken spelling.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,16 +34,20 @@ pub struct Spoken
     pub also: Option<(Kw, &'static str)>,
 }
 
-/// Each spoken spelling, in the order of [`RESERVED`]. Two written words in
+/// Each spoken spelling, in the order of [`WRITTEN`]. Two written words in
 /// `သော` and `သည့်` give one spoken spelling in `တဲ့`: it reads as the word in
 /// `သော` and also stands for the other.
 pub static SPOKEN: LazyLock<Vec<Spoken>> = LazyLock::new(|| {
     // Two written spellings of one word, such as `သုံးသော` and `သုံးသည့်`, give
-    // one spoken spelling; the first in the table keeps it.
+    // one spoken spelling; the first keeps it.
     let mut seen = HashSet::new();
-    let all: Vec<Spoken> = RESERVED
+    let made = |w: &'static Written| {
+        let spoken = spoken_spelling(&w.text, w.first)?;
+        Some(Spoken { spoken, kw: w.kw, written: w.text.as_str(), also: None })
+    };
+    let all: Vec<Spoken> = WRITTEN
         .iter()
-        .filter_map(|(w, kw)| spoken_of(w, *kw))
+        .filter_map(made)
         .filter(|s| seen.insert((s.spoken.clone(), s.kw)))
         .collect();
     let rival = |s: &Spoken| all.iter().find(|o| o.spoken == s.spoken && o.kw != s.kw);
@@ -92,28 +75,6 @@ static BY_WRITTEN: LazyLock<HashMap<&'static str, &'static str>> =
         let words = words.chain(SPOKEN.iter().filter_map(also));
         words.chain([("၏", SPOKEN_EI)]).collect()
     });
-
-/// The spoken spelling of a written word.
-///
-/// # Arguments
-///
-/// * `written` - The written word.
-/// * `kw` - The reserved word it is.
-///
-/// # Returns
-///
-/// The spelling, or `None` when the word has no spoken part or is one of
-/// [`NO_SPOKEN`].
-fn spoken_of(written: &'static str, kw: Kw) -> Option<Spoken>
-{
-    (!NO_SPOKEN.contains(&written)).then_some(())?;
-    let vannas = segment(written, &SegmenterOptions::default());
-    let part = |s: &str| SPOKEN_PARTS.iter().find(|(w, _)| *w == s).map(|(_, sp)| *sp);
-    let swapped = vannas.iter().any(|t| part(t.lexeme).is_some());
-    swapped.then_some(())?;
-    let spoken = vannas.iter().map(|t| part(t.lexeme).unwrap_or(t.lexeme)).collect();
-    Some(Spoken { spoken, kw, written, also: None })
-}
 
 /// The spoken spelling a word is.
 ///
@@ -144,13 +105,9 @@ pub fn longest() -> usize { SPOKEN.iter().map(|s| s.spoken.len()).max().unwrap_o
 /// The spoken spelling, or `None` for a word that has none.
 pub fn spoken_twin(text: &str) -> Option<&'static str> { BY_WRITTEN.get(text).copied() }
 
-/// The second spellings of reserved words, each with the spelling a
-/// preposition or a phrase is written in: `မှတ်ဉာဏ်` reads as `မင်မိုရီ`.
-const SYNONYMS: &[(&str, &str)] = &[("မှတ်ဉာဏ်", "မင်မိုရီ")];
-
-/// The written spelling of a word: the written word a spoken spelling stands
-/// for, `၏` for `ရဲ့`, the first spelling of a reserved word with two, and
-/// each other word as it is.
+/// The written spelling of a word: the first spelling of the reserved word
+/// a spoken or a second written spelling stands for, `၏` for `ရဲ့`, and each
+/// other word as it is.
 ///
 /// # Arguments
 ///
@@ -162,7 +119,11 @@ const SYNONYMS: &[(&str, &str)] = &[("မှတ်ဉာဏ်", "မင်မ�
 pub fn written_form(text: &str) -> &str
 {
     let ei = (text == SPOKEN_EI).then_some("၏");
-    let twin =
-        SYNONYMS.iter().find(|(second, _)| *second == text).map(|(_, first)| *first);
-    spoken(text).map(|s| s.written).or(ei).or(twin).unwrap_or(text)
+    let written = spoken(text).map_or(text, |s| s.written);
+    let first = FIRST.get(written).copied();
+    first.or(ei).unwrap_or(written)
 }
+
+/// The first spelling of each written spelling of a reserved word.
+static FIRST: LazyLock<HashMap<&'static str, &'static str>> =
+    LazyLock::new(|| WRITTEN.iter().map(|w| (w.text.as_str(), w.first)).collect());

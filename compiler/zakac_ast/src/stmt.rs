@@ -823,10 +823,15 @@ pub struct StructDecl
     #[serde(default)]
     pub external: bool,
     /// The C name a lib the build writes gives the struct,
-    /// `သည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင်`; a function that
-    /// code outside can call takes a struct with one alone.
+    /// `သည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍`; a function
+    /// that code outside can call takes a struct with one alone.
     #[serde(default)]
     pub c_name: Option<StrArg>,
+    /// `true` when `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` marks it: the compiler
+    /// gives it, in the core.
+    #[builder(default)]
+    #[serde(default)]
+    pub builtin: bool,
     /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
     /// order, each kind parameter among them a slot; none when not written.
     #[builder(default)]

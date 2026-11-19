@@ -31,16 +31,16 @@ and a file can declare a kind of its own under one of them. A word glued from th
 | `ပါ`, `ပါသည်` | polite endings | [Particles](../../learn/sentences/particles.md) |
 | `တို့ကို`, `တို့ဖြင့်` | close a list of arguments | [Parameters](../../learn/functions/parameters.md) |
 | `လက်ခံပြီး` | "accepting ... and" | [Parameters](../../learn/functions/parameters.md) |
-| `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function; with a text of a lib in place of `ပြင်ပ` (`"libm" မှလာသော`), a C function; before `ဒေတာအစုအဝေး` in `<name> ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေး`, a kind from outside the program, whose declaration ends in `ဖြစ်သည်` or in `တွင် <fields> တို့ပါဝင်သည်` | [Functions](../language/functions.md), [C functions](../language/functions.md) |
+| `ပြင်ပမှလာသော` (`ပြင်ပ`, `မှ`, `လာသော`) | "coming from outside": marks an external function; with a text of a lib in place of `ပြင်ပ` (`"libm" မှလာသော`), a C function; in `<name> ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး`, a kind from outside the program, whose declaration ends in `ဖြစ်သည်` or in `ဖြစ်၍ ၎င်းတွင် <fields> တို့ပါဝင်သည်` | [Functions](../language/functions.md), [Marks after the head](../language/structs.md#marks-after-the-head) |
 | `ပြင်ပမှ ခေါ်ဆိုနိုင်သော` (`ပြင်ပ`, `မှ`, `ခေါ်ဆိုနိုင်သော`) | "that code outside can call": after `"<C name>" အမည်ဖြင့်` ("under the name"), marks a function that the lib a build writes gives to C under that C name | [Functions C can call](../language/functions.md#functions-c-can-call), [A lib for C](../../learn/functions/c-lib.md) |
-| `ပြင်ပမှ ယူသုံးနိုင်ပြီး` (`ပြင်ပ`, `မှ`, `ယူသုံးနိုင်ပြီး`) | "that code outside can take up, and": after `"<C name>" အမည်ဖြင့်`, between `ဒေတာအစုအဝေးသည်` and `၎င်းတွင်`, marks a struct that the lib a build writes gives to C under that C name | [Functions C can call](../language/functions.md#functions-c-can-call) |
+| `ပြင်ပမှ ယူသုံးနိုင်သော` (`ပြင်ပ`, `မှ`, `ယူသုံးနိုင်သော`) | "that code outside can take up": after `"<C name>" အမည်ဖြင့်`, in `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍`, marks a struct that the lib a build writes gives to C under that C name | [Marks after the head](../language/structs.md#marks-after-the-head) |
 | `အခြားတန်ဖိုးများနှင့်အတူ` (`အခြားတန်ဖိုးများ`, `နှင့်အတူ`) | "together with other values": `... လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး` ends the parameters of a C function that takes more arguments than it names, as a C `...` does | [C functions](../language/functions.md) |
 | `အပိုင်အနေဖြင့်` | "as its own": after `ကို` in a parameter, after `ဒေတာ ပြောင်းလဲရန်` when both stand, a pointer parameter the function takes over; in `<kind> တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်`, a pointer result the caller takes over, or the string a C function hands over, which Zaka frees with libc's `free` | [Unsafe Zaka](../language/unsafe.md), [Functions](../language/functions.md) |
 | `လုပ်ဆောင်ချက်တစ်ခု` | "a function", in the header of an external function | [Functions](../language/functions.md) |
 | `သုံး၍` | "using": after `ကို` or `တို့ကို`, closes the arguments of a call written before its function; in `ဝိဘတ် "<preposition>" ကို သုံး၍`, closes the preposition of a parameter, and in a function head it closes the phrases | [Parameters](../../learn/functions/parameters.md#arguments-first) |
 | `ထဲသို့` | "into", after the list or the text in `l ထဲသို့ v ကို ထည့်မည်` | [Adding and removing cells](../../learn/lists/growing.md) |
 | `မှ`, `အထိ`, `စီ`, `အနေဖြင့်` | "from", "up to", "each", "as" | [Counted loops](../../learn/control-flow/counted-loops.md) |
-| `ဖြစ်ကာ`, `ဖြစ်ပြီး` | "being ... and" | [Generic loops](../../learn/control-flow/generic-loops.md) |
+| `ဖြစ်ကာ`, `ဖြစ်ပြီး` | spellings of `ဖြစ်၍`: join the setup of a generic loop to its condition | [Generic loops](../../learn/control-flow/generic-loops.md) |
 | `ပြီးလျှင်` | "when done" | [Generic loops](../../learn/control-flow/generic-loops.md) |
 | `ဘစ်` | "bit" | [Integers](../../learn/values/integers.md), [Bitwise operators](../../learn/operators/bitwise.md) |
 
@@ -63,7 +63,7 @@ and a file can declare a kind of its own under one of them. A word glued from th
 | `သည့် ရလဒ်ကောင်း` | "the good result that ...": the short call passes a failure on | `?` after a call | [Functions](../language/functions.md) |
 | `မည့် ရလဒ်`, `သော ရလဒ်` (`မည့်`, `သော`) | the same as `သည့် ရလဒ်`, each with a `ရလဒ်ကောင်း` form; each end can be glued to a function the file sees, `ဖတ်သည့်ရလဒ်` | | [Functions](../language/functions.md#arguments-first) |
 | `လုပ်ဆောင်သော ရလဒ်ကောင်း` | "good result of running": the call passes a failure on | `?` after a call | [Errors and results](../../learn/error-handling/README.md) |
-| `ဖြစ်၍` | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
+| `ဖြစ်၍` (`ဖြစ်ပြီး`, `ဖြစ်ကာ`) | "and"; also joins the kind and the value in a declaration | `&&` | [Logic](../../learn/operators/logic.md), [Variables](../../learn/variables/README.md) |
 | `သို့မဟုတ်` | "or" | `\|\|` | [Logic](../../learn/operators/logic.md) |
 | `မဟုတ်` | "not" | `!` | [Logic](../../learn/operators/logic.md) |
 | `အနုတ်` | "minus" | `-` (in front) | [Arithmetic](../../learn/operators/arithmetic.md) |
@@ -315,6 +315,13 @@ words: a name a program declares hides the core's.
 | `ပြန်လည်` | "again": the first word of `ပြန်လည် မျှဝေမည်` | [Modules](../language/modules.md#sharing-imported-names) |
 | `မျှဝေမည်` | "will share": ends a share, after `ပြန်လည်` | [Modules](../language/modules.md#sharing-imported-names) |
 
+## Second spellings
+
+Some parts of the reserved words have second spellings that mean the same, such as the
+ends `၍`, `ပြီး` and `ကာ` of a verb: `လက်ခံပြီး`, `လက်ခံ၍` and `လက်ခံကာ` are one word.
+Each spelling is reserved. [Words](../language/words.md#second-spellings) lists the
+parts.
+
 ## Spoken spellings
 
 Each reserved word below also reads in its spoken spelling, which is reserved too. A
@@ -376,6 +383,7 @@ program uses the spoken spellings once it allows them (ZK0510); see
 | `တို့ပါတဲ့` | `တို့ပါသော` |
 | `ပါတဲ့` | `ပါသော` |
 | `ကနေစ၍` | `မှစ၍` |
+| `ကနေစပြီး`, `ကနေစကာ` | `မှစပြီး`, `မှစကာ` |
 | `ညွှန်းတဲ့` | `ညွှန်းသော` |
 | `အစားထိုးအသုံးပြုတဲ့` | `အစားထိုးအသုံးပြုသည့်` |
 | `ပါဝင်ရမယ်` | `ပါဝင်ရမည်` |

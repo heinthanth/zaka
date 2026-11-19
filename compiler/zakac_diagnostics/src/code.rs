@@ -193,6 +193,9 @@ AmbiguousCall = ("ZK0260", Level::Error),
 ShareNotImported = ("ZK0261", Level::Error),
 /// A name two whole imports bring from two files is used.
 ImportClash = ("ZK0262", Level::Error),
+/// A struct carries two marks, or a mark and kind parameters, that do not
+/// go together.
+MarkClash = ("ZK0263", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

@@ -387,6 +387,15 @@ fn the_compiler_mark_outside_the_core_is_zk0349()
     assert_eq!(codes(marked, "၁ ကို ပြသမည်။"), [Code::BuiltinOutsideCore]);
 }
 
+/// The compiler mark of a struct belongs to the core too.
+#[test]
+fn a_struct_the_compiler_gives_outside_the_core_is_zk0349()
+{
+    let marked = "အမှတ် ဟူသော ဒေတာအစုအဝေးသည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအစုအဝေး ဖြစ်၍ \
+                  ၎င်းတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\n";
+    assert_eq!(codes(marked, "၁ ကို ပြသမည်။"), [Code::BuiltinOutsideCore]);
+}
+
 /// An operator on two values of a struct calls the function of the struct
 /// it stands for; `!=` and `>=` negate it, and a struct with no `ညီမညီစစ်`
 /// compares one field at a time.

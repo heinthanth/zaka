@@ -169,7 +169,7 @@ fn is_preposition_word(tok: &Token) -> bool
 }
 
 /// Whether a reserved word closes a sentence or a part of it: `သည်`, `ပါ`,
-/// `ဖြစ်ကာ`, `ပြီးလျှင်` or `လက်ခံပြီး`.
+/// `ဖြစ်၍` (`ဖြစ်ကာ`), `ပြီးလျှင်` or `လက်ခံပြီး`.
 ///
 /// # Arguments
 ///
@@ -180,7 +180,7 @@ fn is_preposition_word(tok: &Token) -> bool
 /// `true` for a closer.
 fn is_closer(kw: Kw) -> bool
 {
-    matches!(kw, Kw::Thi | Kw::Pa | Kw::Being | Kw::WhenDone | Kw::Accepting)
+    matches!(kw, Kw::Thi | Kw::Pa | Kw::And | Kw::WhenDone | Kw::Accepting)
 }
 
 /// Whether a reserved word cannot stand in a preposition: a call end, a closer,

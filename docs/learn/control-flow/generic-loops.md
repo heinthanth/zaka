@@ -37,7 +37,7 @@ The first line starts like a [declaration](../variables/README.md). `ဖြစ�
 | inner part | the statements in the block | each round |
 | update | `ပြီးလျှင် ...` ("when done, ...") | after each round |
 
-`ဖြစ်ပြီး` works in place of `ဖြစ်ကာ`, and the setup can give the
+`ဖြစ်ပြီး` or `ဖြစ်၍` works in place of `ဖြစ်ကာ`, and the setup can give the
 [value with its kind](../variables/README.md#a-value-with-its-kind):
 `ကိန်းရှင် ကိန်း သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပြီး ...`.
 

@@ -384,6 +384,28 @@ parentheses, so the `နှင့်` of the list is never read as part of it. L
 ကခဂ
 ```
 
+## Second spellings
+
+Some parts of the reserved words have a second spelling, or a third, that means the
+same. A reserved word written with one of them reads as the word written with another;
+each spelling is plain Zaka, and each is reserved.
+
+| Parts | Where | Example |
+| --- | --- | --- |
+| `၍`, `ပြီး`, `ကာ` | the end of a verb that the sentence goes on from; not `အကယ်၍`, nor the closer `ပြီးဆုံးပါပြီး` | `လက်ခံပြီး`, `လက်ခံ၍`, `လက်ခံကာ`; `ဖြစ်၍`, `ဖြစ်ပြီး`, `ဖြစ်ကာ` |
+| `သော`, `သည့်` | the end of `သုံးသော`, `လက်ခံသော` and `ပြန်ပေးသော` | `သုံးသည့်` |
+| `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး`, `ပြီးပါပြီ` | the closer of a block | |
+| `မင်မိုရီ`, `မှတ်ဉာဏ်` | "storage" | |
+| `ခု`, `လုံး` | in `ခုစာ` and `ခုမြောက်` | `လုံးမြောက်` |
+
+The spelling a word takes tells nothing; its place does. `ဖြစ်၍` (or `ဖြစ်ပြီး`,
+`ဖြစ်ကာ`) after the kind of a declaration starts its value when `တန်ဖိုးသည်` follows, and
+the condition of a [generic loop](../../learn/control-flow/generic-loops.md) when another
+word follows; between two conditions it is "and".
+
+`ဒေတာ` and `အချက်အလက်` are one word in names too (see [Names](#names)). The spoken
+spellings of the parts, such as `မယ်` for `မည်`, are in [Spoken Burmese](spoken.md).
+
 ## Reserved words
 
 The words that Zaka gives a meaning to cannot be used as names. [Reserved

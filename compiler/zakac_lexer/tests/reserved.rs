@@ -145,10 +145,13 @@ fn spoken_endings_read_as_their_written_words()
 }
 
 #[test]
-fn both_loop_links_lex_as_one_word()
+fn each_then_ending_lexes_as_one_word()
 {
-    assert_eq!(lookup("ဖြစ်ပြီး"), Some(Kw::Being));
-    assert_eq!(lookup("ဖြစ်ကာ"), Some(Kw::Being));
+    do_for!(w in ["ဖြစ်၍", "ဖြစ်ပြီး", "ဖြစ်ကာ"], assert_eq!(lookup(w), Some(Kw::And), "{w}"));
+    let accepting = ["လက်ခံပြီး", "လက်ခံ၍", "လက်ခံကာ"];
+    do_for!(w in accepting, assert_eq!(lookup(w), Some(Kw::Accepting), "{w}"));
+    // `အကယ်၍` ("if") has no verb, so it keeps its one spelling.
+    assert_eq!(lookup("အကယ်ပြီး"), None);
 }
 
 #[test]

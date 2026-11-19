@@ -1501,9 +1501,9 @@ en = "a struct C knows no name for"
 [codes.ZK0492.message]
 en = "the struct \"%{n}\" crosses to C here, so it needs a C name"
 [codes.ZK0492.help]
-en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည် \"<C name>\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် ...`"
+en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည် \"<C name>\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`"
 [codes.ZK0492.explain]
-en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
+en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
@@ -1682,6 +1682,15 @@ en = "\"%{n}\" is not imported in this file, so it cannot be shared again"
 en = "import \"%{n}\" first, or mark its declaration with \"အများသုံး\""
 [codes.ZK0261.explain]
 en = """A sentence ending in \"အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်\" passes names this file imports on to the files that import it. A name the file declares itself is exported with the mark \"အများသုံး\" on its declaration instead."""
+
+[codes.ZK0263.title]
+en = "marks that do not go together"
+[codes.ZK0263.message]
+en = "a struct cannot be both \"%{a}\" and \"%{b}\""
+[codes.ZK0263.help]
+en = "drop one of the two"
+[codes.ZK0263.explain]
+en = """Some marks of a struct do not go together. A struct that a lib gives to C, `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, cannot be generic, since a C header cannot declare a generic struct, nor `မျှဝေနိုင်သော`, since C passes the struct whole. A kind from outside, `ပြင်ပမှ လာသော`, is one struct of C, so it is not generic either, and each of its values is a shared one, so `မျှဝေနိုင်သော` adds nothing."""
 
 [codes.ZK0262.title]
 en = "name from two whole imports"

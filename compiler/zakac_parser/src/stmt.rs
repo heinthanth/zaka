@@ -87,6 +87,32 @@ const ONE_THING: &str = "တစ်ခု";
 /// marks it: its C name.
 const C_NAME_HEAD: &str = "\"<C name>\" အမည်ဖြင့်";
 
+/// The mark of a struct that a lib gives to C.
+const USABLE_MARK: &str = "ပြင်ပမှ ယူသုံးနိုင်သော";
+
+/// The mark of a kind from outside the program.
+const OUTSIDE_MARK: &str = "ပြင်ပမှ လာသော";
+
+/// The mark of a struct whose values copies share.
+const SHARED_MARK: &str = "မျှဝေနိုင်သော";
+
+/// The first word of the kind parameters in words.
+const GENERIC_MARK: &str = "ယေဘုယျဒေတာအမျိုးအစား";
+
+/// The mark of a struct, after `ဒေတာအစုအဝေးသည်`.
+#[derive(Debug, Clone, PartialEq)]
+enum StructMark
+{
+    /// No mark.
+    None,
+    /// `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, with the C name.
+    CName(StrArg),
+    /// `ပြင်ပမှ လာသော`: a kind from outside the program.
+    External,
+    /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော`: a struct the compiler gives.
+    Builtin,
+}
+
 /// The direction a counted-loop word names.
 ///
 /// # Arguments
@@ -798,12 +824,12 @@ impl Parser<'_>
             (None, Some(init)) => self.note_preposition_addr(&name.name, init),
             (None, None) => (),
         }
-        if self.at(Kw::Being)
+        if self.at(Kw::And)
         {
             ret_if!(is_const, Err(diag::const_loop(word.span)));
             return self.parse_generic_tail(word.span, name, head);
         }
-        self.expect_one_of(&[Kw::Let, Kw::Being])?;
+        self.expect_one_of(&[Kw::Let, Kw::And])?;
         let stop = self.expect_stop()?;
         let span = word.span.to(&stop.span);
         #[rustfmt::skip]
@@ -884,8 +910,8 @@ impl Parser<'_>
         self.parse_clause_expr()
     }
 
-    /// Parse `ဖြစ်ပြီး|ဖြစ်ကာ <cond> နေသရွေ့ <block>` after the header of a generic
-    /// loop. The block can end with a `ပြီးလျှင်` update.
+    /// Parse `ဖြစ်၍|ဖြစ်ပြီး|ဖြစ်ကာ <cond> နေသရွေ့ <block>` after the header of a
+    /// generic loop. The block can end with a `ပြီးလျှင်` update.
     ///
     /// # Arguments
     ///
@@ -1303,8 +1329,8 @@ impl Parser<'_>
     pub(crate) fn at_fn_decl(&self) -> bool { fn_head_at(self.cur.rest()).is_some() }
 
     /// Whether a struct or an enumeration declaration starts here:
-    /// `<name> ဟူသော`, then the marks `အများသုံး`, `မျှဝေနိုင်သော` or
-    /// `ပြင်ပမှ လာသော`, then `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ`.
+    /// `<name> ဟူသော`, then the marks `အများသုံး` or `မျှဝေနိုင်သော`, then
+    /// `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ`.
     ///
     /// # Returns
     ///
@@ -1314,7 +1340,7 @@ impl Parser<'_>
         let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
         let next = 1 + self.angle_len(1).unwrap_or(0);
         ret_if!(!named || kw_of(&self.peek_n(next)) != Some(Kw::Called), false);
-        let marks = [Kw::Export, Kw::Shareable, Kw::External];
+        let marks = [Kw::Export, Kw::Shareable];
         let word = (next + 1..)
             .map(|n| kw_of(&self.peek_n(n)))
             .find(|kw| !kw.is_some_and(|kw| marks.contains(&kw)));
@@ -1334,25 +1360,27 @@ impl Parser<'_>
         let name = self.parse_ident()?;
         let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
-        // `အများသုံး` stands after `ပြင်ပမှ လာသော`, right before the noun.
-        let external = self.eat(Kw::External);
         let exported = self.eat(Kw::Export);
-        let shared = !external && self.eat(Kw::Shareable);
+        let shared = self.eat(Kw::Shareable);
         let word = tern!(
-            external || shared,
+            shared,
             self.expect(Kw::StructWord)?,
             self.expect_one_of(&[Kw::StructWord, Kw::EnumWord])?
         );
         let mut stmt = match kw_of(&word)
         {
             Some(Kw::EnumWord) => self.parse_enum_decl(start, name)?,
-            _ if external => self.parse_external_kind(start, name)?,
             _ => self.parse_struct_decl(start, name, kind_params)?,
         };
         match &mut stmt
         {
             Stmt::Struct(n) =>
             {
+                // Each handle is a shared value, and C passes a struct whole.
+                let marked = n.external || n.c_name.is_some();
+                let mark = tern!(n.external, OUTSIDE_MARK, USABLE_MARK);
+                let clash = diag::mark_clash(n.name.span, SHARED_MARK, mark);
+                do_if!(shared && marked, self.diags.push(clash));
                 n.exported = exported;
                 n.shared |= shared;
             }
@@ -1363,15 +1391,21 @@ impl Parser<'_>
     }
 
     /// Parse a struct declaration after `<name> ဟူသော ... ဒေတာအစုအဝေး`:
-    /// `တွင် <field>၊ ... နှင့် <field> တို့ပါဝင်သည်။`, or with one field
-    /// `တွင် <field> ပါဝင်သည်။`; `…ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။`
-    /// at the end gives its classifier. Each field is
-    /// `<name> ဟူသော <kind> တစ်<classifier>`.
+    /// `တွင် <fields> တို့ပါဝင်သည်။`, or `သည် [<mark> ဒေတာအစုအဝေး ဖြစ်၍]
+    /// [<kind parameters>] ၎င်းတွင် <fields> တို့ပါဝင်သည်။` (with one field
+    /// `ပါဝင်သည်`). `…ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်။` at the
+    /// end gives its classifier. Each field is `<name> ဟူသော <kind>
+    /// တစ်<classifier>`. The marks: `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`
+    /// gives the struct to C under that name; `ပြင်ပမှ လာသော` makes a kind
+    /// from outside, whose fields are C's and which can end at once with
+    /// `ဖြစ်သည်။`; `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` marks a struct the
+    /// compiler gives, in the core.
     ///
     /// # Arguments
     ///
     /// * `start` - Where the declaration starts.
     /// * `name` - The struct name.
+    /// * `kind_params` - The kind parameters written in the notation form.
     ///
     /// # Returns
     ///
@@ -1381,13 +1415,19 @@ impl Parser<'_>
         &mut self, start: Span, name: Ident, mut kind_params: Vec<KindParam>,
     ) -> PResult<Stmt>
     {
-        let mut c_name = None;
-        if kind_params.is_empty() && self.eat(Kw::Thi)
+        let opened = self.eat(Kw::Thi);
+        let mark = tern!(opened, self.parse_struct_mark()?, StructMark::None);
+        let external = mark == StructMark::External;
+        ret_if!(external && self.eat(Kw::Is), self.external_kind(start, name, false));
+        do_if!(mark != StructMark::None, _ = self.expect(Kw::And)?);
+        if opened
         {
-            c_name = self.parse_struct_c_name()?;
-            do_if!(c_name.is_none(), kind_params = self.parse_word_params()?);
+            kind_params.extend(self.parse_word_params_open()?);
+            self.expect(Kw::Itself)?;
         }
+        self.check_mark_params(&name, &mark, &kind_params);
         self.expect(Kw::At)?;
+        ret_if!(external, self.external_kind(start, name, true));
         let added = self.add_kind_names(&kind_params);
         let fields = self.parse_listed_fields(true);
         self.drop_kind_names(added);
@@ -1395,36 +1435,83 @@ impl Parser<'_>
         let hint_of = Some((&name, kind_params.as_slice()));
         let (classifier, hint, span) = self.parse_decl_end(start, hint_of)?;
         do_if!(self.nested(), self.diags.push(diag::nested_struct(span)));
+        let builtin = mark == StructMark::Builtin;
+        let c_name = tern!(let StructMark::CName(c) = mark, Some(c), None);
         #[rustfmt::skip]
         let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
-            .maybe_classifier(classifier).maybe_c_name(c_name).hint(hint).span(span)
-            .build();
+            .maybe_classifier(classifier).maybe_c_name(c_name).builtin(builtin).hint(hint)
+            .span(span).build();
         Ok(Stmt::Struct(node))
     }
 
-    /// Parse the C name of a struct a lib gives to C, when one starts here
-    /// after `သည်`: `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်း`, up to the
-    /// `တွင်` before the fields. The phrase with no C name before it is an
-    /// error.
+    /// Parse the mark of a struct after `ဒေတာအစုအဝေးသည်`, with the
+    /// `ဒေတာအစုအဝေး` after it: a C name, `ပြင်ပမှ လာသော`, or the mark of a
+    /// struct the compiler gives. The phrase of a C name with no text before
+    /// it is an error.
     ///
     /// # Returns
     ///
-    /// The C name, `None` when no such head starts here, or a diagnostic.
-    fn parse_struct_c_name(&mut self) -> PResult<Option<StrArg>>
+    /// The mark, `StructMark::None` when none starts here, or a diagnostic.
+    fn parse_struct_mark(&mut self) -> PResult<StructMark>
     {
         ret_if!(self.at(Kw::UsableOutside), Err(self.err_expected(C_NAME_HEAD)));
-        let TokenKind::Str(idx) = self.peek().kind
+        let named = matches!(self.peek().kind, TokenKind::Str(_))
+            && self.peek_n(1).kind == TokenKind::Kw(Kw::UnderName);
+        let mark = match ()
+        {
+            () if named => StructMark::CName(self.parse_struct_c_name()?),
+            () if self.eat(Kw::External) => StructMark::External,
+            () if self.eat(Kw::InCompiler) =>
+            {
+                self.expect(Kw::IncludedWith)?;
+                StructMark::Builtin
+            }
+            () => return Ok(StructMark::None),
+        };
+        self.expect(Kw::StructWord)?;
+        Ok(mark)
+    }
+
+    /// Parse `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, with the text here.
+    ///
+    /// # Returns
+    ///
+    /// The C name, or a diagnostic.
+    fn parse_struct_c_name(&mut self) -> PResult<StrArg>
+    {
+        let tok = self.bump();
+        let TokenKind::Str(idx) = tok.kind
         else
         {
-            return Ok(None);
+            return Err(self.err_expected(C_NAME_HEAD));
         };
-        ret_if!(self.peek_n(1).kind != TokenKind::Kw(Kw::UnderName), Ok(None));
-        let tok = self.bump();
         self.advance();
         self.expect(Kw::UsableOutside)?;
-        self.expect(Kw::Itself)?;
         let lit = self.strings[idx as usize].clone();
-        Ok(Some(StrArg::builder().lit(lit).span(tok.span).build()))
+        Ok(StrArg::builder().lit(lit).span(tok.span).build())
+    }
+
+    /// Report a mark of a struct that does not go with kind parameters
+    /// (ZK0263): C cannot declare a generic struct, and a kind from outside is
+    /// one struct of C.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The struct name.
+    /// * `mark` - The mark.
+    /// * `kind_params` - The kind parameters.
+    fn check_mark_params(
+        &mut self, name: &Ident, mark: &StructMark, kind_params: &[KindParam],
+    )
+    {
+        let written = match mark
+        {
+            StructMark::CName(_) => USABLE_MARK,
+            StructMark::External => OUTSIDE_MARK,
+            _ => return,
+        };
+        let clash = diag::mark_clash(name.span, written, GENERIC_MARK);
+        do_if!(!kind_params.is_empty(), self.diags.push(clash));
     }
 
     /// Parse the end of a struct or an enumeration declaration after its
@@ -1450,7 +1537,7 @@ impl Parser<'_>
             [TokenKind::Kw(Kw::ContainsAnd), TokenKind::Kw(Kw::FieldsCloseAnd)];
         let named = self.cur.back(1).is_some_and(|t| and_kws.contains(&t.kind));
         let classifier = tern!(named, Some(self.parse_classifier_word()?), None);
-        let hinted = named && hint_of.is_some() && self.eat(Kw::Being);
+        let hinted = named && hint_of.is_some() && self.eat(Kw::And);
         do_if!(named && !hinted, _ = self.expect(Kw::Is)?);
         let hint = match hint_of.filter(|_| hinted)
         {
@@ -1462,23 +1549,23 @@ impl Parser<'_>
         Ok((classifier, hint, start.to(&stop.span)))
     }
 
-    /// Parse a kind that comes from outside the program, after
-    /// `<name> ဟူသော ပြင်ပမှ လာသော [အများသုံး] ဒေတာအစုအဝေး`: `ဖြစ်သည်။`, or
-    /// `တွင် <field>၊ ... နှင့် <field> တို့ပါဝင်သည်။` (one field: `ပါဝင်သည်`) with the
-    /// fields of the C struct a value points at, from its start.
+    /// Finish a kind from outside the program after its head: the fields of
+    /// the C struct a value points at, from its start, when written, then the
+    /// full stop.
     ///
     /// # Arguments
     ///
     /// * `start` - Where the declaration starts.
     /// * `name` - The kind name.
+    /// * `with_fields` - Whether `၎င်းတွင်` opened the fields.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic.
-    fn parse_external_kind(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    fn external_kind(
+        &mut self, start: Span, name: Ident, with_fields: bool,
+    ) -> PResult<Stmt>
     {
-        let with_fields =
-            self.expect_one_of(&[Kw::Is, Kw::At])?.kind == TokenKind::Kw(Kw::At);
         let fields = tern!(with_fields, self.parse_listed_fields(false)?, Vec::new());
         let stop = self.expect_stop()?;
         let span = start.to(&stop.span);

@@ -419,7 +419,7 @@ fn declares_kind(tokens: &[Token], at: usize) -> bool
     let alias = at > 0 && kw(at - 1) == Some(Kw::DataKindOpen);
     ret_true!(alias && matches!(kw(next), Some(Kw::Ko | Kw::Thi)));
     ret_false!(kw(next) != Some(Kw::Called));
-    let marks = [Kw::Export, Kw::Shareable, Kw::External];
+    let marks = [Kw::Export, Kw::Shareable];
     let word = (next + 1..).map(kw).find(|k| !k.is_some_and(|k| marks.contains(&k)));
     matches!(word.flatten(), Some(Kw::StructWord | Kw::EnumWord))
 }

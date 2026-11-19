@@ -43,6 +43,7 @@ program:
       shared: false
       external: false
       c_name: null
+      builtin: false
       hint: []
       span:
         lo: 76

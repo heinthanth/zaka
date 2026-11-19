@@ -22,6 +22,7 @@ no result 0
 မင်္ဂလာပါ Zaka
 greet 0 4
 manhattan 0 7
+mirror 0 4 3
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
@@ -179,8 +180,15 @@ fn a_c_program_calls_a_zaka_lib()
         std::env::consts::DLL_SUFFIX
     );
     let names = exported_names(&dir.join(&shared));
-    let api =
-        ["add_numbers", "digit_count", "divide", "greet", "manhattan", "zk_last_trap"];
+    let api = [
+        "add_numbers",
+        "digit_count",
+        "divide",
+        "greet",
+        "manhattan",
+        "mirror",
+        "zk_last_trap",
+    ];
     assert_eq!(names, api);
     let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
     let os_libs = runtime_lib(test_abi()).map(|r| r.native_libs().collect::<Vec<_>>());

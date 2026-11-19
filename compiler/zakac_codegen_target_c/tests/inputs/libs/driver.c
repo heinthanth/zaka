@@ -20,6 +20,9 @@ int main(void)
     int32_t length = 0;
     status = manhattan(corner, &length);
     printf("manhattan %d %d\n", status, length);
+    point flipped = {0, 0};
+    status = mirror(corner, &flipped);
+    printf("mirror %d %d %d\n", status, flipped.x, flipped.y);
     printf("trap before %s\n", zk_last_trap() == NULL ? "none" : "some");
     int64_t quotient = 0;
     status = divide(7, 0, &quotient);

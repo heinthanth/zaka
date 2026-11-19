@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
+use crate::aliases::WRITTEN;
 use crate::spelling::canonical;
 use crate::token::Kw;
 use crate::token::TokenKind;
@@ -73,8 +75,9 @@ pub static KIND_NAMES: &[&str] = &[
 /// `true` if it is in [`KIND_NAMES`].
 pub fn is_kind_name(text: &str) -> bool { KIND_NAMES.contains(&text) }
 
-/// Reserved words, in normalized spelling. Several spellings can
-/// map to one [`Kw`].
+/// Reserved words, in normalized spelling, each in its first spelling: the
+/// other spellings of a word come from [`crate::aliases::ALIASES`]. Two words
+/// can still map to one [`Kw`].
 ///
 /// Multi-word phrases are not here: their pieces are, and
 /// [`crate::phrases::join_phrases`] joins them.
@@ -99,8 +102,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("စီ", Kw::Step),
     ("အနေဖြင့်", Kw::CountAs),
     ("အပိုင်အနေဖြင့်", Kw::AsOwned),
-    ("ဖြစ်ပြီး", Kw::Being),
-    ("ဖြစ်ကာ", Kw::Being),
     ("ပြီးလျှင်", Kw::WhenDone),
     ("ဘစ်", Kw::Bit),
     ("ဘယ်သို့", Kw::ShiftLeft),
@@ -153,11 +154,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("သည့်", Kw::Which),
     ("သုံး၍", Kw::Using),
     ("သုံးသော", Kw::UsingRel),
-    ("သုံးသည့်", Kw::UsingRel),
     ("ပြင်ပ", Kw::Outside),
     ("လာသော", Kw::Coming),
     ("ခေါ်ဆိုနိုင်သော", Kw::Callable),
-    ("ယူသုံးနိုင်ပြီး", Kw::Usable),
+    ("ယူသုံးနိုင်သော", Kw::Usable),
     ("အမည်ဖြင့်", Kw::UnderName),
     ("အခြားတန်ဖိုးများ", Kw::OtherValues),
     ("နှင့်အတူ", Kw::Along),
@@ -165,15 +165,10 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("လုပ်ဆောင်ချက်တစ်ခု", Kw::OneFunction),
     ("လက်ခံမည်", Kw::WillAccept),
     ("လက်ခံသော", Kw::AcceptingRel),
-    ("လက်ခံသည့်", Kw::AcceptingRel),
     ("ပြန်ပေးသော", Kw::ReturningRel),
-    ("ပြန်ပေးသည့်", Kw::ReturningRel),
     ("လုပ်ဆောင်ကာ", Kw::DoAnd),
     ("လုပ်ဆောင်စရာများ", Kw::Tasks),
     ("ပြီးဆုံးပါပြီး", Kw::Done),
-    ("ပြီးဆုံးပါပြီ", Kw::Done),
-    ("ပြီးပါပြီး", Kw::Done),
-    ("ပြီးပါပြီ", Kw::Done),
     // statement verbs
     ("ထားမည်", Kw::Assign),
     ("ပြန်ပေးမည်", Kw::WillReturn),
@@ -242,10 +237,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မညွှန်းသော", Kw::PointsAtNo),
     ("အရွယ်အစား", Kw::SizeOf),
     ("မင်မိုရီ", Kw::Mem),
-    ("မှတ်ဉာဏ်", Kw::Mem),
     ("ဘိုက်စာ", Kw::Octets),
     ("ခုစာ", Kw::Items),
-    ("လုံးစာ", Kw::Items),
     ("နေရာယူ၍", Kw::TakeSpace),
     ("တွင်", Kw::At),
     ("ရှိ", Kw::Located),
@@ -265,7 +258,6 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("အရှေ့တွင်", Kw::Before),
     ("ဆက်ထားသည့်", Kw::Joined),
     ("ခုမြောက်", Kw::Ordinal),
-    ("လုံးမြောက်", Kw::Ordinal),
     ("ခုရှိသော", Kw::Having),
     ("ရှိသော", Kw::Having),
     ("တို့ပါသော", Kw::ListOf),
@@ -346,16 +338,20 @@ pub static OLD_ENDINGS: &[(&str, &str, Kw)] = &[
     ("အစားထိုးပါ", "အစားထိုးမည်", Kw::Replace),
 ];
 
-/// [`RESERVED`] as a map, built on first use.
-static LOOKUP: LazyLock<HashMap<&'static str, Kw>> =
-    LazyLock::new(|| RESERVED.iter().copied().collect());
+/// Each written spelling of each reserved word as a map, built on first use;
+/// a word of [`RESERVED`] wins over a spelling the aliases make.
+static LOOKUP: LazyLock<HashMap<&'static str, Kw>> = LazyLock::new(|| {
+    let mut map = HashMap::new();
+    do_for!(w in WRITTEN.iter(), _ = map.entry(w.text.as_str()).or_insert(w.kw));
+    map
+});
 
 /// The length in u8s of the longest reserved word or kind name. A spelling
 /// that [`canonical`] turns into a reserved word is no longer than it, so no
 /// piece of more pre-tokens than this is reserved.
 static LONGEST: LazyLock<usize> = LazyLock::new(|| {
     let words =
-        RESERVED.iter().map(|(text, _)| *text).chain(KIND_NAMES.iter().copied());
+        WRITTEN.iter().map(|w| w.text.as_str()).chain(KIND_NAMES.iter().copied());
     words.map(str::len).max().unwrap_or(0).max(crate::spoken::longest())
 });
 

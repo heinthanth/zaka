@@ -1,3 +1,4 @@
+pub mod aliases;
 pub mod artifact;
 pub mod classifiers;
 pub mod cli;

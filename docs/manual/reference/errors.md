@@ -140,6 +140,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0260 | a call written as a sentence whose words read as its arguments in more than one cut | [Functions](../language/functions.md#prepositions) |
 | ZK0261 | a share, `... ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`, that names a name the file does not import | [Modules](../language/modules.md#sharing-imported-names) |
 | ZK0262 | a use of a name that two whole imports bring from two files | [Modules](../language/modules.md#whole-imports) |
+| ZK0263 | a struct whose marks do not go together: a C name or `ပြင်ပမှ လာသော` with kind parameters, or `မျှဝေနိုင်သော` with either | [Structs](../language/structs.md#marks-after-the-head) |
 
 ### ZK03: names
 

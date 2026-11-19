@@ -1003,16 +1003,48 @@ fn a_leave_for_outside_code_names_its_value()
 #[test]
 fn a_kind_from_outside_parses()
 {
-    let bare = stmt("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။");
+    let bare = stmt("စက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။");
     assert_eq!(bare, "(external_struct စက\u{103a} [])");
-    let fields =
-        stmt("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
+    let fields = stmt(
+        "စက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်ပြီး ၎င်းတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် \
+         တစ်ခု ပါဝင်သည်။",
+    );
     assert_eq!(fields, "(external_struct စက\u{103a} [i32 n])");
-    // `အများသုံး` stands right before the noun, after the external mark.
-    let shown = "စက် ဟူသော ပြင်ပမှ လာသော အများသုံး ဒေတာအစုအဝေး ဖြစ်သည်။";
+    // `အများသုံး` stands before the noun, as for each struct.
+    let shown = "စက် ဟူသော အများသုံး ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။";
     assert_eq!(codes(shown), []);
     assert!(stmt(shown).contains("export"), "{}", stmt(shown));
-    assert!(!codes("စက် ဟူသော အများသုံး ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။").is_empty());
+    // The head of before, with the mark before the noun, is no head.
+    assert!(!codes("စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။").is_empty());
+}
+
+/// The marks of a struct after `ဒေတာအစုအဝေးသည်`: a C name, a struct the
+/// compiler gives, and the marks that do not go together (ZK0263).
+#[test]
+fn the_marks_of_a_struct_parse()
+{
+    let fields = "၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
+    let c = format!(
+        "pt ဟူသော ဒေတာအစုအဝေးသည် \"point\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ {fields}"
+    );
+    assert_eq!(codes(&c), []);
+    let builtin = format!(
+        "pt ဟူသော ဒေတာအစုအဝေးသည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော ဒေတာအစုအဝေး ဖြစ်ကာ {fields}"
+    );
+    assert_eq!(codes(&builtin), []);
+    let generic = "ယေဘုယျဒေတာအမျိုးအစား T ကို အစားထိုးသုံးနိုင်၍";
+    let c_generic = format!(
+        "pt ဟူသော ဒေတာအစုအဝေးသည် \"point\" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ \
+         {generic} ၎င်းတွင် x ဟူသော T တစ်ခု ပါဝင်သည်။"
+    );
+    assert_eq!(codes(&c_generic), [Code::MarkClash]);
+    let shared =
+        format!("pt ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ {fields}");
+    assert_eq!(codes(&shared), [Code::MarkClash]);
+    // The phrase of a C name needs the text before it.
+    let bare_mark =
+        format!("pt ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ {fields}");
+    assert!(!codes(&bare_mark).is_empty());
 }
 
 /// A function kind takes `ဒေတာ ထည့်ပေးရန်` as a head does, and the `သည့်`
@@ -1049,7 +1081,8 @@ fn one_member_closes_without_toh()
     let toh_one = [
         "လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။",
         "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် အနီ တို့ပါဝင်သည်။",
-        "ဖိုင် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် fd ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။",
+        "ဖိုင် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် fd ဟူသော ကိန်းပြည့် တစ်ခု \
+         တို့ပါဝင်သည်။",
     ];
     do_for!(text in toh_one, assert_eq!(codes(text), [Code::ExpectedToken], "{text}"));
     let bare_several = "အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် အနီ နှင့် အစိမ်း ပါဝင်သည်။";

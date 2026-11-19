@@ -338,6 +338,7 @@ impl Checker
             Stmt::BuiltinKind(_) => true,
             Stmt::Fn(d) => d.builtin,
             Stmt::Decl(d) => d.builtin,
+            Stmt::Struct(d) => d.builtin,
             _ => false,
         };
         let outside = marked && !in_stdlib(program, unit);

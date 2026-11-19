@@ -519,8 +519,11 @@ impl<M: Module> FnGen<'_, '_, M>
             return;
         };
         let (params, ret) = fn_shape(f);
+        // A struct result goes to the slot C gave, first, as the function
+        // takes the slot of a struct result.
+        let slot = ret.filter(|k| is_blob(*k));
         let mut drops = Vec::new();
-        let mut vals = Vec::new();
+        let mut vals: Vec<Value> = slot.map(|_| ret_at).into_iter().collect();
         for (i, k) in params.iter().enumerate()
         {
             let at = self.b.ins().load(
@@ -554,7 +557,8 @@ impl<M: Module> FnGen<'_, '_, M>
         do_if!(let Some(r) = r, self.store(r, held));
         self.jump(after);
         self.enter_block(after);
-        let result = ret.map(|k| (k, self.load(self.s.clif_of(k), held)));
+        let given = ret.filter(|_| slot.is_none());
+        let result = given.map(|k| (k, self.load(self.s.clif_of(k), held)));
         for (at, k) in drops
         {
             self.drop_at(at, k);

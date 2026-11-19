@@ -278,12 +278,12 @@ code. The [Docs](../../manual/language/functions.md#c-functions) list each kind.
 
 Some libs keep a struct of their own and give the program a pointer to it: a counter, a
 database connection. Zaka names such a struct with a kind that comes from outside, and a
-value of it is a *handle*. The declaration reads `<name> ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင်`, then lists
+value of it is a *handle*. The declaration reads `<name> ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်`, then lists
 the C fields the program wants to read, from the start of the C struct:
 
 ```zaka-file
 // counter.zaka
-ရေတွက်စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင်
+ရေတွက်စက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်
 count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် label ဟူသော စာသား တစ်ခု တို့ပါဝင်သည်။
 
 counter_open ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍

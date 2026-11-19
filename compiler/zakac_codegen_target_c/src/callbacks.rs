@@ -215,8 +215,8 @@ pub fn box_list(kind: DataKind) -> Option<DataKind>
 }
 
 /// Whether a closure of a function kind can go to C: the result is a kind
-/// libffi passes as it is, and each parameter a kind the bridge can make
-/// from what C passes.
+/// libffi passes as it is or a plain struct, which goes to the slot C gives,
+/// and each parameter a kind the bridge can make from what C passes.
 ///
 /// # Arguments
 ///
@@ -229,7 +229,8 @@ pub fn box_list(kind: DataKind) -> Option<DataKind>
 pub fn fits(f: &FnKind, platform: u16) -> bool
 {
     let (params, ret) = fn_shape(f);
-    let ret_fits = ret.is_none_or(|k| ffi_kind(k, platform).is_some());
+    let whole = |k: DataKind| crossing(k, platform) == Some(Crossing::Struct);
+    let ret_fits = ret.is_none_or(|k| ffi_kind(k, platform).is_some() || whole(k));
     ret_fits && params.iter().all(|k| crossing(*k, platform).is_some())
 }
 
@@ -351,10 +352,11 @@ pub(crate) fn cb_source(
     let each = kinds.iter().enumerate();
     let fns: Vec<(usize, DataKind, &FnKind)> =
         each.filter_map(|(n, k)| k.as_fn().map(|f| (n, *k, f))).collect();
-    let params = fns.iter().flat_map(|(_, _, f)| fn_shape(f).0);
+    let shapes = fns.iter().map(|(_, _, f)| fn_shape(f));
+    let kinds = shapes.flat_map(|(params, ret)| params.into_iter().chain(ret));
     let mut structs = Vec::new();
     let whole = |k: &DataKind| crossing(*k, platform) == Some(Crossing::Struct);
-    params.filter(whole).for_each(|k| collect_structs(k, &mut structs));
+    kinds.filter(whole).for_each(|k| collect_structs(k, &mut structs));
     let named = fns.iter().flat_map(|(_, _, f)| bridge_kinds(f, platform));
     let mut names: Vec<String> = named.map(|k| descr.of(k)).collect();
     names.sort();
@@ -408,8 +410,22 @@ impl Bridge<'_>
     /// The C text of its address, `&zk_cbst_<n>`.
     fn struct_ffi(&self, kind: DataKind) -> String
     {
+        format!("&{}", self.struct_name(kind))
+    }
+
+    /// The name of the libffi kind of a struct C passes as a value.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The struct.
+    ///
+    /// # Returns
+    ///
+    /// The C name, `zk_cbst_<n>`.
+    fn struct_name(&self, kind: DataKind) -> String
+    {
         let at = self.structs.iter().position(|s| *s == kind).unwrap_or(0);
-        format!("&zk_cbst_{at}")
+        format!("zk_cbst_{at}")
     }
 
     /// The libffi kind of a struct C passes as a value: a struct of libffi
@@ -503,8 +519,14 @@ impl Bridge<'_>
     ) -> String
     {
         let (params, ret) = fn_shape(f);
-        let r = ret.map_or_else(|| "void".into(), |k| self.held(k));
-        let mut kinds: Vec<String> = params.iter().map(|k| self.held(*k)).collect();
+        // A struct result goes to a slot the caller gives first: the place
+        // libffi or the wrapper of a lib wants the result.
+        let slot = ret.filter(|k| is_blob(*k));
+        let given = ret.filter(|_| slot.is_none());
+        let r = given.map_or_else(|| "void".into(), |k| self.held(k));
+        let lead = slot.map(|_| "unsigned char *".to_string());
+        let held = params.iter().map(|k| self.held(*k));
+        let mut kinds: Vec<String> = lead.into_iter().chain(held).collect();
         let plain = tern!(kinds.is_empty(), "void".to_string(), kinds.join(", "));
         kinds.push("unsigned char *".into());
         let (plain_cast, bound_cast) =
@@ -513,8 +535,10 @@ impl Bridge<'_>
         let mut drops = String::new();
         do_unused(&mut steps, params.is_empty(), "zk_args");
         let each = params.iter().enumerate();
-        let args: Vec<String> =
-            each.map(|(i, k)| self.arg(i, *k, descr, &mut steps, &mut drops)).collect();
+        let into = slot.map(|_| "(unsigned char *)zk_ret".to_string());
+        let made = each.map(|(i, k)| self.arg(i, *k, descr, &mut steps, &mut drops));
+        let made: Vec<String> = made.collect();
+        let args: Vec<String> = into.into_iter().chain(made).collect();
         let bound_args: Vec<String> =
             args.iter().cloned().chain(["zk_rec".to_string()]).collect();
         let call = format!(
@@ -523,8 +547,9 @@ impl Bridge<'_>
             args.join(", ")
         );
         steps.push_str("    zk_code zk_c = zk_fn_code(zk_rec);\n");
-        let _ = match ret
+        let _ = match given
         {
+            None if slot.is_some() => write!(steps, "    {call};\n{drops}"),
             None => write!(steps, "    (void)zk_ret;\n    {call};\n{drops}"),
             Some(k) =>
             {
@@ -535,7 +560,7 @@ impl Bridge<'_>
         let listed = tern!(listed.is_empty(), "NULL".to_string(), listed.join(", "));
         let ret_ffi = ret.map_or_else(
             || "zk_ck_void".into(),
-            |k| ffi_kind(k, self.platform).unwrap_or_default(),
+            |k| ffi_kind(k, self.platform).unwrap_or_else(|| self.struct_name(k)),
         );
         let name = kind.name().replace("*/", "* /");
         format!(

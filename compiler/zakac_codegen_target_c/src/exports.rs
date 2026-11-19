@@ -175,7 +175,7 @@ fn param_kinds(func: &Func) -> Vec<DataKind>
 }
 
 /// The C kinds of the values of the wrappers: the width of the platform-sized
-/// kinds, and each struct a wrapper takes, those of its fields first.
+/// kinds, and each struct a wrapper takes or gives, those of its fields first.
 struct CKinds
 {
     /// Bit count of the platform-sized kinds.
@@ -202,9 +202,11 @@ impl CKinds
     {
         let c_names = exports.first().map(|e| e.c_structs.clone()).unwrap_or_default();
         let mut kinds = CKinds { platform, structs: Vec::new(), c_names };
-        let params = exports.iter().flat_map(|e| param_kinds(e.func));
+        let each = exports
+            .iter()
+            .flat_map(|e| param_kinds(e.func).into_iter().chain(e.func.ret));
         let whole = |k: &DataKind| crossing(*k, platform) == Some(Crossing::Struct);
-        let structs: Vec<DataKind> = params.filter(whole).collect();
+        let structs: Vec<DataKind> = each.filter(whole).collect();
         structs.into_iter().for_each(|k| kinds.note(k));
         kinds
     }
@@ -527,16 +529,21 @@ fn wrapper(e: &Export<'_>, shape: usize, kinds: &CKinds) -> String
     let count = e.func.params as usize;
     let args: Vec<String> = (0..count).map(|i| format!("&zk_p{i}")).collect();
     let args = tern!(args.is_empty(), "NULL".into(), args.join(", "));
+    // A struct result comes whole into a local of its C kind; each other
+    // result comes as a word of the union.
+    let whole = e.func.ret.filter(|r| kinds.structs.contains(r));
+    let held = whole.map_or_else(|| "zk_lib_result".into(), |r| kinds.c_side(r));
     let out = e.func.ret.map_or_else(String::new, |r| {
         let (c, m) = (kinds.c_side(r), result_member(r));
-        format!("    DO_IF(zk_out != NULL, *zk_out = ({c})zk_r.{m});\n")
+        let value = tern!(whole.is_some(), "zk_r".into(), format!("({c})zk_r.{m}"));
+        format!("    DO_IF(zk_out != NULL, *zk_out = {value});\n")
     });
     format!(
         "\n/* {} */\nZK_LIB_EXPORT int32_t {}({})\n{{\n    void *zk_args[] = \
-         {{{args}}};\n    zk_lib_result zk_r;\n    jmp_buf zk_here;\n    zk_lib_lock();\n    \
+         {{{args}}};\n    {held} zk_r;\n    jmp_buf zk_here;\n    zk_lib_lock();\n    \
          jmp_buf *zk_outer = zk_lib_at;\n    RET_IF(zk_lib_state == 2, \
-         zk_lib_end(zk_outer, ZK_STOPPED));\n    if \
-         (setjmp(zk_here) != 0)\n        return zk_lib_stop(zk_outer);\n    ZK_LIB_NO_UNWIND(zk_here);\n    zk_lib_at \
+         zk_lib_end(zk_outer, ZK_STOPPED));\n    if (setjmp(zk_here) != 0)\n        \
+         return zk_lib_stop(zk_outer);\n    ZK_LIB_NO_UNWIND(zk_here);\n    zk_lib_at \
          = &zk_here;\n    zk_lib_begin();\n    zk_cbb_{shape}(&zk_r, zk_args, \
          (uint8_t *)&{});\n    zk_flush();\n{out}    return zk_lib_end(zk_outer, \
          ZK_OK);\n}}\n",

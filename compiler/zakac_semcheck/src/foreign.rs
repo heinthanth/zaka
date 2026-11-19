@@ -155,6 +155,24 @@ pub fn callback_result(kind: DataKind, platform: u16) -> bool
     !kind.is_borrow() && !kind.is_struct() && crosses(kind, platform)
 }
 
+/// Whether a function that code outside can call can give a value of the
+/// kind as its result: each kind a function value C calls back gives, or a
+/// plain struct of such fields, which the lib writes through the out pointer.
+///
+/// # Arguments
+///
+/// * `kind` - The result kind.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+pub fn export_result(kind: DataKind, platform: u16) -> bool
+{
+    let whole = kind.is_struct() && !kind.is_borrow() && crosses(kind, platform);
+    whole || callback_result(kind, platform)
+}
+
 /// Whether a C name is one the runtime keeps for itself: `main`, or one that
 /// starts with `zk_` or `ZK_`.
 ///

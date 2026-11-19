@@ -1117,8 +1117,8 @@ impl Checker
     /// (ZK0490); its C name is a C name (ZK0337) that neither the runtime,
     /// a C function nor another such function takes (ZK0491); C can give
     /// each parameter (ZK0465, ZK0466) and take the result (ZK0465), as for
-    /// a function value C calls back; and each struct a parameter passes to C
-    /// has a C name (ZK0492).
+    /// a function value C calls back, a plain struct result aside; and each
+    /// struct a parameter or the result passes to C has a C name (ZK0492).
     ///
     /// # Arguments
     ///
@@ -1153,8 +1153,10 @@ impl Checker
             do_if!(stuck, self.report(kd::kind_not_across_c(p.span, &kind.name())));
             do_if!(!stuck, self.check_c_struct(kind, p.span));
         }
-        let bad_ret = ret.filter(|k| !foreign::callback_result(*k, platform));
+        let fits = |k: &DataKind| foreign::export_result(*k, platform);
+        let bad_ret = ret.filter(|k| !fits(k));
         do_if!(let Some(k) = bad_ret, self.report(kd::kind_not_across_c(n.name.span, &k.name())));
+        do_if!(let Some(k) = ret.filter(fits), self.check_c_struct(k, n.name.span));
     }
 
     /// Report each struct that a parameter of a function code outside can

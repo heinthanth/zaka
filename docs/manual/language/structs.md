@@ -71,6 +71,35 @@ Where a kind must stand, as in a declaration, a parameter or a field, a name is 
 struct name; a name that no declaration gives is ZK0318, as in
 `ကိန်းရှင် က သည် လုပ် တစ်ခု ဖြစ်ပါစေ။`.
 
+## Marks after the head
+
+A struct can take a clause after `ဒေတာအစုအဝေးသည်`, as a function head takes its marks
+after `သည်`: a mark closed with `ဒေတာအစုအဝေး ဖြစ်၍`, then the kind parameters of a
+[generic struct](generics.md), then `၎င်းတွင်` and the fields.
+
+```text
+<name> ဟူသော [အများသုံး] [မျှဝေနိုင်သော] ဒေတာအစုအဝေးသည် [<mark> ဒေတာအစုအဝေး ဖြစ်၍] [<kind parameters>] ၎င်းတွင် <fields> တို့ပါဝင်သည်။
+```
+
+| Mark | What it makes | See |
+| --- | --- | --- |
+| `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော` | a struct that a lib gives to C under the C name | [Functions C can call](functions.md#functions-c-can-call) |
+| `ပြင်ပမှ လာသော` | a kind from outside the program: a handle to a struct C keeps, with C's fields; with no fields the head ends `ဖြစ်သည်။` | [C functions](functions.md#c-functions) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | a struct the compiler gives, in the core alone (ZK0349) | [The core](core.md) |
+
+```text
+point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+အတွဲ ဟူသော ဒေတာအစုအဝေးသည် ယေဘုယျဒေတာအမျိုးအစား K နှင့် ယေဘုယျဒေတာအမျိုးအစား V တို့ကိုအစားထိုးသုံးနိုင်၍ ၎င်းတွင် ရှေ့ ဟူသော K တစ်ခု နှင့် နောက် ဟူသော V တစ်ခု တို့ပါဝင်သည်။
+db ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။
+```
+
+`ဖြစ်၍` can be `ဖြစ်ပြီး` or `ဖြစ်ကာ` ([Second spellings](words.md#second-spellings)). A
+struct with no mark and no kind parameters writes `ဒေတာအစုအဝေးတွင်` at once.
+
+Some marks do not go together (ZK0263): a C name or `ပြင်ပမှ လာသော` with kind parameters,
+since C declares no generic struct and a kind from outside is one struct of C; and
+`မျှဝေနိုင်သော` with either, since C passes a struct whole and each handle is a shared value.
+
 ## The classifier
 
 Burmese counts things with a word that fits them: people with `ယောက်`, most other things
@@ -471,3 +500,4 @@ Zaka](unsafe.md).
 | ZK0482 | a struct literal that leaves out a field | [Struct mistakes](../../learn/structs/mistakes.md#a-field-left-out) |
 | ZK0722 | a struct read before each field is set | [Struct mistakes](../../learn/structs/mistakes.md#a-struct-read-before-each-field-is-set) |
 | ZK0509 | a kind, a struct literal or a heap size counted with a word that is not the classifier of the kind | [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-classifier) |
+| ZK0263 | a struct whose marks do not go together | [Marks after the head](#marks-after-the-head) |

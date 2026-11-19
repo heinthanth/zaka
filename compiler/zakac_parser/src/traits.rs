@@ -455,10 +455,14 @@ impl Parser<'_>
         self.expect(Kw::IncludedWith)?;
         let exported = self.eat(Kw::Export);
         self.expect(Kw::DataKindOpen)?;
-        let generic = self.eat(Kw::And);
+        // `ဖြစ်၍` starts the kind parameters, or the hint when `ရေးသားရာတွင်`
+        // follows it.
+        let joined = self.at(Kw::And);
+        let generic = joined && self.peek_n(1).kind == TokenKind::Kw(Kw::GenericKind);
+        do_if!(joined, self.advance());
         let kind_params = tern!(generic, self.parse_word_params()?, Vec::new());
         do_if!(generic, _ = self.expect(Kw::Ko)?);
-        let hinted = generic || self.eat(Kw::Being);
+        let hinted = generic || joined;
         do_if!(!hinted, _ = self.expect(Kw::Is)?);
         let hint = tern!(
             hinted,

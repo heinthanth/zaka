@@ -1294,7 +1294,7 @@ code.
 
 ```zaka-file
 // callbacks.zaka
-ဘူး ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+ဘူး ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 each_name ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 f ဟူသော (စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လက်ခံမည်။
 each_box ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libnames" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -1417,8 +1417,9 @@ x=42
 
 Some C libs keep a struct of their own and give the program a pointer to it: a database
 connection, a counter, a window. Zaka names such a struct with a *kind from outside*,
-declared with the phrase `ပြင်ပမှ လာသော ဒေတာအစုအဝေး` ("a struct that comes from
-outside"; `ပြင်ပမှလာသော ဒေတာအစုအဝေး` is the same) after its name and `ဟူသော`. A value of it is a *handle*. The
+declared with the mark `ပြင်ပမှ လာသော ဒေတာအစုအဝေး` ("a struct that comes from
+outside"; `ပြင်ပမှလာသော` is the same) after `<name> ဟူသော ဒေတာအစုအဝေးသည်` (see
+[Marks after the head](structs.md#marks-after-the-head)). A value of it is a *handle*. The
 declaration has two forms. The first names no field, so the program passes the handle
 back to C and nothing more; the second lists the fields of the C struct that the program
 reads:
@@ -1494,7 +1495,7 @@ cannot run in the book, which has no such lib, so it is shown as a file:
 
 ```zaka-file
 // counter.zaka
-ရေတွက်စက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင်
+ရေတွက်စက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်
 count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် label ဟူသော စာသား တစ်ခု တို့ပါဝင်သည်။
 
 counter_open ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -1522,7 +1523,7 @@ variables share the box; a duplicate of the struct is what Zaka cannot make, as 
 handle holds just the address.
 
 ```zaka-error ZK0473
-ပြတင်းပေါက် ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။
+ပြတင်းပေါက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ပြတင်းပေါက်() ဖြစ်ပါစေ။
@@ -1534,7 +1535,7 @@ error[ZK0473]: "ပြတင်းပေါက်" comes from outside the progra
 ```
 
 ```zaka-error ZK0474
-ရက်စွဲ ဟူသော ပြင်ပမှ လာသော ဒေတာအစုအဝေးတွင် နှစ် ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+ရက်စွဲ ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် နှစ် ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
 ပြင် ဟူသော လုပ်ဆောင်ချက် သည် ရ ဟူသော ရက်စွဲ တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ရ ၏ နှစ် ကို ၂၀၂၅ ဟု ထားမည်။
@@ -1627,17 +1628,19 @@ The rules:
   ([Callbacks](#c-functions)): a parameter is a number, a character, true or false, an
   address, text (a `const char *`; NULL stops the call), a handle of a kind from outside,
   an optional of text or of a handle (NULL holds no data), or a plain struct of such
-  fields, passed whole. The result is a number, a character, true or false, or an
-  address (ZK0465).
+  fields, passed whole. The result is a number, a character, true or false, an
+  address, or such a plain struct, which the lib writes whole through the out pointer
+  (ZK0465).
   `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်` are ZK0466.
-- Each struct a parameter passes has a C name (ZK0492): the struct of the parameter and
-  each struct among its fields. A text and `အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်း` between
-  `ဒေတာအစုအဝေးသည်` and `တွင်` give it one, and the header of the lib declares the struct
+- Each struct a parameter or the result passes has a C name (ZK0492): that struct and
+  each struct among its fields. The mark `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော
+  ဒေတာအစုအဝေး ဖြစ်၍` after `ဒေတာအစုအဝေးသည်` gives it one
+  ([Marks after the head](structs.md#marks-after-the-head)), and the header of the lib declares the struct
   under that name. The C name follows the rules of the C name of a function (ZK0337,
   ZK0491), and no two structs or functions share one.
 
 ```zaka
-point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်ပြီး ၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 
 အကွာအဝေး ဟူသော လုပ်ဆောင်ချက် သည် "manhattan" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
 က ဟူသော point တစ်ခု ကို လက်ခံပြီး
@@ -1667,6 +1670,9 @@ typedef struct
 
 int32_t manhattan(point zk_p0, int32_t *zk_out);
 ```
+
+A function that gives back such a struct, `... point တစ်ခု ကို ပြန်ပေးမည်။`, writes it
+whole through its out pointer: `int32_t mirror(point zk_p0, point *zk_out);`.
 
 ```zaka-error ZK0492
 point ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
