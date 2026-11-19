@@ -694,11 +694,12 @@ impl<'m> Flow<'m>
                 });
             }
             Stmt::Print { value: PrintValue::Expr(e), .. }
-            | Stmt::Halt { value: Some(e), .. } =>
+            | Stmt::Halt { value: Some(e), .. }
+            | Stmt::Rings { octets: Some(e), .. } =>
             {
                 self.value(e, state);
             }
-            Stmt::Halt { value: None, .. } => (),
+            Stmt::Halt { value: None, .. } | Stmt::Rings { octets: None, .. } => (),
             Stmt::Foreign { args, .. } =>
             {
                 do_for!(a in args, _ = self.value(a, state));

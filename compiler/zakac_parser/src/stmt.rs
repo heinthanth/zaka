@@ -230,6 +230,7 @@ impl Parser<'_>
         ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
         ret_if!(self.at_trait_decl(), self.parse_trait_decl());
         ret_if!(self.at_trait_block(), self.parse_trait_block());
+        ret_if!(self.at_auto_rings(), self.parse_auto_rings());
         let tok = self.peek();
         let Some(kw) = kw_of(&tok)
         else
@@ -253,6 +254,7 @@ impl Parser<'_>
             }
             Kw::BlockOpen | Kw::UnsafeBlockOpen => self.parse_block().map(Stmt::Block),
             Kw::Loop => self.parse_break(),
+            Kw::Mem if self.at_rings_collect() => self.parse_rings_collect(),
             Kw::NextIteration => self.parse_continue(),
             Kw::WillReturn | Kw::MarkSucceeded => self.parse_bare_return(),
             Kw::MarkFailed => self.parse_mark_failed(),

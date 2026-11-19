@@ -118,6 +118,9 @@ pub enum Stmt
     Resize(ResizeStmt),
     /// Release of the heap block a place points at.
     Free(FreeStmt),
+    /// A statement of the ring collector: run it now, pause it, resume it, or
+    /// set its threshold.
+    Rings(RingsStmt),
     /// The leave C gets to call a function value after the call that gave
     /// it, or the end of that leave.
     Leave(LeaveStmt),
@@ -668,6 +671,38 @@ pub struct ResizeStmt
     pub target: Expr,
     /// The new size.
     pub size: SizeArg,
+    /// Source region.
+    pub span: Span,
+}
+
+/// What a statement of the ring collector does. The number of each act is the
+/// one the runtime's `zk_rings` takes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsRefStr)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+#[repr(u8)]
+pub enum RingsAct
+{
+    /// `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။`: run the collector now.
+    Collect = 0,
+    /// `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။`: pause the collections a full
+    /// buffer runs.
+    Pause = 1,
+    /// `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။`: resume them.
+    Resume = 2,
+    /// `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို <octets> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။`:
+    /// set the octets in the buffer that run a collection.
+    Threshold = 3,
+}
+
+/// A statement of the ring collector.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct RingsStmt
+{
+    /// What it does.
+    pub act: RingsAct,
+    /// The octets of a threshold; `None` for the other acts.
+    pub octets: Option<Expr>,
     /// Source region.
     pub span: Span,
 }

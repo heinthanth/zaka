@@ -313,11 +313,12 @@ the text, `format` traps (`OutOfMem`). `drop` works on each kind that holds text
 a struct with such a field, a list of such cells, an object and a function value. A drop
 of text whose room is 0, static or moved out, frees nothing.
 
-No op runs the ring collector. A `drop` that leaves a block of an object, a closure or a
-list that can reach one with a count above 0 notes the block as a candidate. When 1,024
-candidates wait, and again at the end of the program, the VM runs trial deletion over them
-and frees each ring that nothing outside it holds. A text or a list of numbers is never a
-candidate. `zakac run --leaks` therefore lists none of these blocks.
+A `drop` that leaves a block with a count above 0 notes the block as a candidate of the ring
+collector when it can be part of a ring: the blocks its cells hold lead back to a block of
+its kind, or hold a closure. When the candidates hold 16,384 octets (or the threshold a
+`rings threshold` op set), and again at the end of the program, the VM runs trial deletion
+over them and frees each ring that nothing outside it holds. A text or a list of numbers is
+never a candidate. The `rings` op steers the collector. `zakac run --leaks` therefore lists none of these blocks.
 
 `set_char` and `add_text` write the new u8s into the block of the text when it has room,
 and else move the text to a block twice its size, 16 u8s at the least (or the new count,
@@ -345,6 +346,7 @@ write into one traps ([When a program stops](traps.md)).
 | `c_store k at o` | addr value → | write a field of kind `k` at offset `o` of the struct C keeps, from unsafe code: a number or a boolean as it is, a counted list from the block whose address is the value. A guard has checked that the handle is open |
 | `c_load k at o` | addr → value | read a field of kind `k` at offset `o` of the struct C keeps at the address on top, the address a [handle](../language/functions.md#c-functions) holds, in C's storage. A number or a boolean is pushed. For a counted list of numbers, the op pops the address of a block under it, writes the cells there, and pushes that address; for a text field, a `char *`, it does the same with the string copied up to its zero octet, as an optional of text, with no data for NULL. A guard of the wrapper has checked that the handle is open (`halt closed_handle`) |
 | `c_revoke` | fn → | take back the leave of the function value on top and the count it held; a revoke of a closure with no leave does nothing. |
+| `rings act` | [n] → | steer the ring collector: `collect` runs it now; `pause` stops the runs a full list of candidates starts, and the end of the program still collects; `resume` starts them again and collects at once when the list holds the threshold; `threshold` pops a `usize` `n` and makes `n` octets of candidates start a run, collecting at once when the list holds that much and the runs are not paused |
 | `ret` | | leave the function; a result remains on the stack |
 | `trap step_not_positive` | | stop the program: a counted loop step is zero or negative |
 | `halt cause [k]` | v → | stop the program with the trap that `cause` names: `not_good` (a good result was read from a result that holds an error) pops the value `v` of kind `k` and shows it as a print would, and for a list, a struct or text the operand is its address; when the failure holds no value, `not_good` has no `k` and no operand, and the trap shows the bare message `the result holds a failure, not a good result`; `not_fault` (an error value was read from a good result) has no `k` and no operand; `no_data` (the data was read from an optional that holds none) has no `k` and no operand; `no_row` (a statement wrote inside the value of a row of a ဇယား that no row holds) has no `k` and no operand; `closed_handle` (a handle that a C function took over was used) has no `k` and no operand; `null_from_c` (C gave NULL for a handle result written with no optional) has no `k` and no operand, and stops with the trap `null from C` |
@@ -408,6 +410,8 @@ How each value reads is in [Running a program](running.md#printing).
 | a write inside the value of a row | `row_find k` as for a read; `halt no_row` when it gives -1; then the address of the value through the rows, `own` first, as for a cell |
 | `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်` | `t; a; b; v; replace_text k`, dropped as for `add_text` |
 | the end of a text variable | `x; drop text` |
+| `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်` | `rings collect`, and `rings pause` or `rings resume` for `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်` or `ပြန်လည်စတင်မည်` |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို n ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်` | `n; rings threshold` |
 | `a ဖြစ်၍ b` (and) | `a; jump_if_false F; b; jump E; F: push မမှန်; E:` |
 | `a သို့မဟုတ် b` (or) | `a; jump_if_true T; b; jump E; T: push မှန်; E:` |
 | if and else | `cond; jump_if_false Else; then; jump End; Else: else; End:` |

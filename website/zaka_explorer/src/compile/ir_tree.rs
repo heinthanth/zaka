@@ -240,6 +240,11 @@ impl IrTree<'_>
                 let children = value.iter().map(|v| self.expr(v)).collect();
                 self.node(<&'static str>::from(cause), blank, span, children)
             }
+            Stmt::Rings { act, octets, .. } =>
+            {
+                let children = octets.iter().map(|v| self.expr(v)).collect();
+                self.node("rings", act.as_ref().to_string(), span, children)
+            }
             Stmt::If { cond, then, els, .. } =>
             {
                 let mut children =

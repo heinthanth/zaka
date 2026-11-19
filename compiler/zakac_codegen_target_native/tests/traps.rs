@@ -88,3 +88,16 @@ fn a_heap_past_the_cap_stops_the_program()
     let line = "no heap room for 4096 octets";
     stops_with(&path, &["--max-heap", "4000"], "", line);
 }
+
+/// A loop that leaves a ring behind on each round fills a small heap while the
+/// collections are paused, and fits it when each round runs the collector.
+#[test]
+fn the_ring_statements_reach_the_runtime()
+{
+    let flags = ["--max-heap", "65536"];
+    let paused = c_inputs().join("rings_paused.zaka");
+    stops_with(&paused, &flags, "", "no heap room for 40 octets");
+    let run = run_jit(&c_inputs().join("rings_collected.zaka"), &flags);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "ပြီး\n");
+}

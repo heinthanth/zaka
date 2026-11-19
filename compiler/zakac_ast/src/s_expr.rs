@@ -210,6 +210,11 @@ impl ToSexpr for Stmt
             Stmt::Alloc(s) => list("alloc", heap_parts(&s.target, &s.size)),
             Stmt::Resize(s) => list("resize", heap_parts(&s.target, &s.size)),
             Stmt::Free(s) => list("free", [s.target.to_sexpr()]),
+            Stmt::Rings(s) =>
+            {
+                let parts = s.octets.iter().map(ToSexpr::to_sexpr);
+                list(&format!("rings-{}", s.act.as_ref()), parts)
+            }
             Stmt::Leave(s) =>
             {
                 let word = tern!(s.grant, "c_leave", "c_revoke");

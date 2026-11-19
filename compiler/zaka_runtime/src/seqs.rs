@@ -7,6 +7,7 @@ use std::ffi::c_char;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicPtr;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
@@ -410,8 +411,19 @@ static DEEP_TODO: Blocks = Blocks::new();
 /// next word of each one's head points at its new block.
 static DEEP_SEEN: Blocks = Blocks::new();
 
-/// The count of blocks that wait in the buffer before a collection runs.
-const BUFFER: usize = 1024;
+/// The octets of the blocks in the buffer of the ring collector.
+static RING_WAITING: AtomicUsize = AtomicUsize::new(0);
+/// The octets in the buffer that run a collection, unless the program sets
+/// its own threshold.
+static RING_THRESHOLD: AtomicUsize = AtomicUsize::new(16 * 1024);
+/// Whether the program paused the collections a full buffer runs.
+static RING_PAUSED: AtomicBool = AtomicBool::new(false);
+/// The act of [`zk_rings`] that runs the collector now.
+const RINGS_COLLECT: u8 = 0;
+/// The act of [`zk_rings`] that pauses the collections.
+const RINGS_PAUSE: u8 = 1;
+/// The act of [`zk_rings`] that resumes them.
+const RINGS_RESUME: u8 = 2;
 
 /// Queue a block that nothing holds now.
 ///
@@ -466,8 +478,8 @@ fn drain_frees()
     }
 }
 
-/// Whether a value of a kind can hold a block that holds it back: a box, an
-/// object or a closure, at once or inside a list or a struct.
+/// Whether a value of a kind holds a box, an object or a closure, at once or
+/// inside a list or a struct: what a deep duplicate walks into.
 ///
 /// # Arguments
 ///
@@ -476,19 +488,100 @@ fn drain_frees()
 /// # Returns
 ///
 /// `true` for such a kind.
-fn can_ring(k: &ZkKind) -> bool
+fn holds_shared(k: &ZkKind) -> bool
 {
     let k = repr(k);
     match k.tag
     {
         _ if k.boxed != 0 => true,
         tag::FN => true,
-        tag::LIST | tag::SEQ => can_ring(kind(k.cell)),
+        tag::LIST | tag::SEQ => holds_shared(kind(k.cell)),
         tag::STRUCT | tag::FALLIBLE =>
         {
-            k.field_list().iter().any(|f| can_ring(kind(f.kind)))
+            k.field_list().iter().any(|f| holds_shared(kind(f.kind)))
         }
         _ => false,
+    }
+}
+
+/// Whether each kind of block can be part of a ring, worked out once: the
+/// address of the descriptor, then the answer. Each kind has one descriptor.
+static RING_KINDS: Mutex<Vec<(usize, bool)>> = Mutex::new(Vec::new());
+
+/// Whether a block whose cells are of a kind can be part of a ring: whether
+/// the blocks its cells hold a count of lead back to a block of the kind, or
+/// hold a closure, which can hold each thing. Worked out once for each kind.
+///
+/// # Arguments
+///
+/// * `k` - The kind of the cells of the block.
+///
+/// # Returns
+///
+/// `true` for such a kind.
+fn can_ring(k: *const ZkKind) -> bool
+{
+    let mut known = RING_KINDS.lock().unwrap_or_else(|e| e.into_inner());
+    let found = known.iter().find(|(at, _)| *at == k as usize).map(|(_, r)| *r);
+    ret_if!(let Some(r) = found, r);
+    let ring = reaches_itself(k);
+    known.push((k as usize, ring));
+    ring
+}
+
+/// [`can_ring`], worked out with a walk over the kinds.
+///
+/// # Arguments
+///
+/// * `start` - The kind of the cells of the block.
+///
+/// # Returns
+///
+/// `true` when the walk meets the kind again, or a closure.
+fn reaches_itself(start: *const ZkKind) -> bool
+{
+    let (mut seen, mut todo) = (vec![start], Vec::new());
+    ret_if!(!held_kinds(kind(start), &mut todo), true);
+    while let Some(k) = todo.pop()
+    {
+        ret_if!(std::ptr::eq(k, start), true);
+        do_if!(seen.iter().any(|s| std::ptr::eq(*s, k)), continue);
+        seen.push(k);
+        ret_if!(!held_kinds(kind(k), &mut todo), true);
+    }
+    false
+}
+
+/// Gather the kinds of the cells of the blocks a value holds a count of,
+/// through its fields and cells: a box or a plain list; text holds
+/// characters alone.
+///
+/// # Arguments
+///
+/// * `k` - The kind of the value.
+/// * `out` - The cell kinds found.
+///
+/// # Returns
+///
+/// `false` when the value holds a function value, whose closure can hold
+/// each thing; else `true`.
+fn held_kinds(k: &ZkKind, out: &mut Vec<*const ZkKind>) -> bool
+{
+    let k = repr(k);
+    match k.tag
+    {
+        tag::FN => false,
+        tag::SEQ =>
+        {
+            do_if!(!k.cell.is_null(), out.push(k.cell));
+            true
+        }
+        tag::LIST => held_kinds(kind(k.cell), out),
+        tag::STRUCT | tag::FALLIBLE =>
+        {
+            k.field_list().iter().all(|f| held_kinds(kind(f.kind), out))
+        }
+        _ => true,
     }
 }
 
@@ -619,6 +712,7 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
 /// itself alone: trial deletion that halts the program while it runs.
 fn collect_rings()
 {
+    RING_WAITING.store(0, Ordering::Relaxed);
     let roots = CANDIDATES.take();
     let mut live = Vec::new();
     for b in roots
@@ -644,7 +738,8 @@ fn collect_rings()
 extern "C" fn collect_at_exit() { collect_rings() }
 
 /// Note a block that a release left held: it can be part of a ring that
-/// nothing outside holds. A full buffer runs a collection.
+/// nothing outside holds. A full buffer runs a collection, unless the
+/// program paused them.
 ///
 /// # Arguments
 ///
@@ -652,13 +747,49 @@ extern "C" fn collect_at_exit() { collect_rings() }
 pub fn note_candidate(base: *mut u8)
 {
     let h = head(base);
-    ret_if!(h.buffered != 0 || h.cell.is_null() || !can_ring(kind(h.cell)));
+    ret_if!(h.buffered != 0 || h.cell.is_null() || !can_ring(h.cell));
     // The program frees each ring left as it ends, as the VM does.
     static AT_EXIT: std::sync::Once = std::sync::Once::new();
     AT_EXIT.call_once(|| at_exit(collect_at_exit));
     h.buffered = 1;
-    let full = CANDIDATES.push(base) >= BUFFER;
-    do_if!(full, collect_rings());
+    CANDIDATES.push(base);
+    let waiting = RING_WAITING.fetch_add(h.size, Ordering::Relaxed) + h.size;
+    do_if!(!RING_PAUSED.load(Ordering::Relaxed) && full(waiting), collect_rings());
+}
+
+/// Whether the octets in the buffer run a collection.
+///
+/// # Arguments
+///
+/// * `waiting` - The octets in the buffer.
+///
+/// # Returns
+///
+/// `true` at the threshold or past it.
+fn full(waiting: usize) -> bool { waiting >= RING_THRESHOLD.load(Ordering::Relaxed) }
+
+/// The work of a statement of the ring collector: run it now (`0`), pause the
+/// collections a full buffer runs (`1`), resume them (`2`), or make `octets`
+/// the octets in the buffer that run a collection (`3`). A resume, or a
+/// threshold that the buffer already holds, collects at once unless paused.
+///
+/// # Arguments
+///
+/// * `act` - What it does, numbered as the compiler numbers it.
+/// * `octets` - The threshold; unused by the other acts.
+#[unsafe(export_name = stamped!("rings"))]
+pub extern "C" fn zk_rings(act: u8, octets: u64)
+{
+    match act
+    {
+        RINGS_COLLECT => return collect_rings(),
+        RINGS_PAUSE => return RING_PAUSED.store(true, Ordering::Relaxed),
+        RINGS_RESUME => RING_PAUSED.store(false, Ordering::Relaxed),
+        _ => RING_THRESHOLD
+            .store(usize::try_from(octets).unwrap_or(usize::MAX), Ordering::Relaxed),
+    }
+    let now = full(RING_WAITING.load(Ordering::Relaxed));
+    do_if!(now && !RING_PAUSED.load(Ordering::Relaxed), collect_rings());
 }
 
 /// Let go of a text or plain list: the last holder queues its block, and one
@@ -783,7 +914,7 @@ pub extern "C" fn zk_dup_seqs(p: *mut u8, k: *const ZkKind)
 /// * `k` - Its kind.
 fn deep_block(p: *mut u8, k: &ZkKind)
 {
-    ret_if!(k.tag == tag::FN || !can_ring(k), dup_block(p, k));
+    ret_if!(k.tag == tag::FN || !holds_shared(k), dup_block(p, k));
     let base = zk_seq_base(p);
     ret_if!(base.is_null());
     let h = head(base);

@@ -12,6 +12,7 @@ use zakac_ir_builder::ir::HaltCause;
 pub use zakac_ir_builder::ir::Host;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
+use zakac_ir_builder::ir::RingsAct;
 use zakac_ir_builder::value::Value;
 use zakac_semcheck::host::HostFn;
 use zakac_semcheck::kind::DataKind;
@@ -390,6 +391,9 @@ pub enum Op
         /// The kind of the value to show, when there is one.
         kind: Option<DataKind>,
     },
+    /// Work of the ring collector: run it now, pause it, resume it, or pop a
+    /// `usize` and make it the octets in the buffer that run a collection.
+    Rings(RingsAct),
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -650,6 +654,7 @@ impl Op
             Op::StaticSeq(s) | Op::SeqAddr(s) => format!("s{s}"),
             Op::Format(f) => format!("fmt{f}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
+            Op::Rings(act) => act.as_ref().to_string(),
             Op::Wrap(op) => op.mnemonic().to_string(),
             Op::Load(kind)
             | Op::Store(kind)

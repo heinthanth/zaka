@@ -399,15 +399,61 @@ reference, and a value that is never shared needs no count change.
 Counting alone never frees objects that reach each other in a ring, since each holds a
 reference to the next. The VM and the native runtime also run a **ring collector**:
 
-- A block whose count drops but not to zero waits in a list, when its kind can hold an
-  object or a closure. Text, lists of numbers and structs of numbers never wait.
-- When 1,024 blocks wait, and again when the program ends, the collector checks whether
-  the waiting blocks are kept alive through each other alone, and frees each such group.
+- A block whose count drops but not to zero waits in a list when it can be part of a ring:
+  the blocks its fields and cells hold lead back to a block of its own kind, or hold a
+  closure. Text, lists of numbers and structs of numbers never wait, and neither does an
+  object whose fields cannot lead back to its kind, such as a server that holds a logger
+  of text alone.
+- When the waiting blocks hold 16,384 octets, and again when the program ends, the
+  collector checks whether the waiting blocks are kept alive through each other alone, and
+  frees each such group.
 - An object outside a ring is still freed the moment its last reference goes; an object
   inside a ring is freed when the collector next runs.
 
 So safe code cannot leave a block behind: `zakac run --leaks` lists nothing for a program
 with no unsafe code.
+
+### Steering the collector
+
+Four statements steer the collector, on the VM and in native code alike. Each leans on the
+reserved word `မင်မိုရီ`; its other words are no reserved words, so each of them can still
+name a variable.
+
+| Statement | What it does |
+| --- | --- |
+| `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။` | runs the collector now |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။` | pauses the runs a full list starts; blocks still wait, and the end of the program still collects |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။` | resumes the runs, and collects at once when the list filled during the pause |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` | makes `n` octets of waiting blocks start a run, a `usize`; 16,384 at first; it collects at once when the list holds that much and the runs are not paused |
+
+- A word stands glued or apart: `အရာများကို` or `အရာများ ကို`, `မင်မိုရီရှိ` or `မင်မိုရီ ရှိ`.
+- A pause suits a part of the program that must not halt for a collection, such as one frame
+  of a game; a run now suits a point where the program has time, such as the end of a level.
+- A small threshold keeps the heap small and runs the collector often; a large one runs it
+  less often and lets more rings wait.
+
+```zaka
+အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
+
+ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အဆစ်(တန်: ၁၊ နောက်: အလွတ်) ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အဆစ်(တန်: ၂၊ နောက်: က) ဖြစ်ပါစေ။
+က ၏ နောက် ကို ခ ဟု ထားမည်။                      // a ring of two nodes, left behind
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။
+၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
+မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။        // the 100 rings go now
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ၁၀၂၄ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။
+"ပြီး" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ပြီး
+```
 
 ### Printing a ring
 

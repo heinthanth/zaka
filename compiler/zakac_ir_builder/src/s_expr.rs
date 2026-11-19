@@ -64,6 +64,10 @@ impl ToSexpr for Stmt
                 let cause: &'static str = cause.into();
                 list(cause, value.iter().map(ToSexpr::to_sexpr))
             }
+            Stmt::Rings { act, octets, .. } => list(
+                &format!("rings-{}", act.as_ref()),
+                octets.iter().map(ToSexpr::to_sexpr),
+            ),
             Stmt::If { cond, then, els, .. } => if_sexpr(cond, then, els),
             Stmt::Loop { init, cond, update, block, .. } =>
             {

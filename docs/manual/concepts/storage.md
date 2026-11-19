@@ -96,10 +96,12 @@ method of PHP and CPython:
                     both reach zero, so nothing outside holds them: free both
 ```
 
-- A block waits as a candidate when a release leaves its count above zero and its kind can
-  hold an object or a closure. Text and lists of numbers never wait, so most values cost
-  nothing extra.
-- The collector runs when 1,024 blocks wait, and once more at the end of the program.
+- A block waits as a candidate when a release leaves its count above zero and it can be
+  part of a ring: the blocks its fields hold lead back to a block of its kind, or hold a
+  closure. Text and lists of numbers never wait, so most values cost nothing extra.
+- The collector runs when the waiting blocks hold 16,384 octets, and once more at the end
+  of the program. A program can run it, pause it, resume it and set that threshold
+  ([Steering the collector](../language/objects.md#when-a-block-is-freed)).
 - A block outside a ring is still freed at once. A block inside a ring is freed at the next
   run of the collector, so a file held through a ring alone closes later than one held
   through a plain name.

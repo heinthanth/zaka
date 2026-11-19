@@ -39,6 +39,7 @@ use zakac_ast::stmt::RemoveStmt;
 use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
+use zakac_ast::stmt::RingsStmt;
 use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
@@ -2181,6 +2182,11 @@ impl Visitor for Checker
     {
         self.need_unchecked(n.span, HEAP_WORK);
         self.heap_target(&n.target);
+    }
+
+    fn visit_rings(&mut self, n: &RingsStmt)
+    {
+        do_if!(let Some(octets) = &n.octets, self.expect_kind(octets, Some(DataKind::USIZE)));
     }
 
     fn visit_leave(&mut self, n: &LeaveStmt)

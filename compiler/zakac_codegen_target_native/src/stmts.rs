@@ -15,6 +15,7 @@ use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::HaltCause;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::PrintValue;
+use zakac_ir_builder::ir::RingsAct;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::ir::fresh_text;
 use zakac_rust_sugars::do_if;
@@ -122,6 +123,7 @@ impl<M: Module> FnGen<'_, '_, M>
             }
             Stmt::Store { addr, value, .. } => self.store_stmt(addr, value),
             Stmt::Halt { cause, value, .. } => self.halt(*cause, value.as_ref()),
+            Stmt::Rings { act, octets, .. } => self.rings(*act, octets.as_ref()),
             Stmt::Drop { dest, kind, .. } =>
             {
                 let at = self.dest_addr(dest);
@@ -643,6 +645,28 @@ impl<M: Module> FnGen<'_, '_, M>
         let to = self.b.ins().iadd_imm_s(b, i64::from(offset));
         let size = self.word(i64::from(self.s.size(value.kind)));
         self.rt("zk_put_block", &[ptr, ptr, ptr], &[], &[to, at, size]);
+    }
+
+    /// Lower a statement of the ring collector: a call of the runtime, with
+    /// the octets of a threshold.
+    ///
+    /// # Arguments
+    ///
+    /// * `act` - What it does.
+    /// * `octets` - The octets of a threshold; `None` for the other acts.
+    fn rings(&mut self, act: RingsAct, octets: Option<&Expr>)
+    {
+        let v = match octets
+        {
+            Some(o) =>
+            {
+                let v = self.expr(o);
+                self.as_u64(v, o.kind)
+            }
+            None => self.b.ins().iconst(types::I64, 0),
+        };
+        let act = self.b.ins().iconst(types::I8, i64::from(act as u8));
+        self.rt("zk_rings", &[types::I8, types::I64], &[], &[act, v]);
     }
 
     /// Lower a fill: one value in each cell.

@@ -72,8 +72,9 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             }
             Stmt::Leave { value: e, .. }
             | Stmt::Print { value: PrintValue::Expr(e), .. }
-            | Stmt::Halt { value: Some(e), .. } => expr_places(e, out),
-            Stmt::Halt { value: None, .. } => (),
+            | Stmt::Halt { value: Some(e), .. }
+            | Stmt::Rings { octets: Some(e), .. } => expr_places(e, out),
+            Stmt::Halt { value: None, .. } | Stmt::Rings { octets: None, .. } => (),
             Stmt::Print { value: PrintValue::Text(_), .. } => (),
             Stmt::If { cond, then, els, .. } =>
             {

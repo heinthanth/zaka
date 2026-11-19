@@ -65,6 +65,7 @@ use crate::stmt::RemoveStmt;
 use crate::stmt::ReplaceStmt;
 use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
+use crate::stmt::RingsStmt;
 use crate::stmt::ShareStmt;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
@@ -138,6 +139,7 @@ CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
 FreeStmt => "free", visit_free;
+RingsStmt => "rings", visit_rings;
 LeaveStmt => "leave", visit_leave;
 BlitStmt => "blit", visit_blit;
 FillStmt => "fill", visit_fill;
@@ -215,6 +217,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
         Stmt::Free(s) => s,
+        Stmt::Rings(s) => s,
         Stmt::Leave(s) => s,
         Stmt::Blit(s) => s,
         Stmt::Fill(s) => s,
@@ -347,6 +350,7 @@ pub trait Visitor
     fn visit_resize(&mut self, n: &ResizeStmt) { walk_resize(self, n) }
     /// Visit a heap release.
     fn visit_free(&mut self, n: &FreeStmt) { walk_free(self, n) }
+    fn visit_rings(&mut self, n: &RingsStmt) { walk_rings(self, n) }
     /// Visit a leave for C to call a function value.
     fn visit_leave(&mut self, n: &LeaveStmt) { walk_leave(self, n) }
     /// Visit a blit of cells.
@@ -482,6 +486,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
         Stmt::Free(s) => v.visit_free(s),
+        Stmt::Rings(s) => v.visit_rings(s),
         Stmt::Leave(s) => v.visit_leave(s),
         Stmt::Blit(s) => v.visit_blit(s),
         Stmt::Fill(s) => v.visit_fill(s),
@@ -682,6 +687,14 @@ pub fn walk_free<V: Visitor + ?Sized>(v: &mut V, n: &FreeStmt)
 {
     v.enter(n);
     v.visit_expr(&n.target);
+    v.leave(n);
+}
+
+/// Visit the octets of a statement of the ring collector.
+pub fn walk_rings<V: Visitor + ?Sized>(v: &mut V, n: &RingsStmt)
+{
+    v.enter(n);
+    do_if!(let Some(o) = &n.octets, v.visit_expr(o));
     v.leave(n);
 }
 
@@ -1251,6 +1264,11 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
         Stmt::Free(s) => v.visit_free_mut(s),
+        Stmt::Rings(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            do_if!(let Some(o) = &mut s.octets, v.visit_expr_mut(o));
+        }
         Stmt::Leave(s) => v.visit_leave_mut(s),
         Stmt::Blit(s) => v.visit_blit_mut(s),
         Stmt::Fill(s) => v.visit_fill_mut(s),

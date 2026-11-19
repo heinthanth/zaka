@@ -85,8 +85,11 @@ another value shares a duplicate of its own before a write; `zk_pin` marks a blo
 duplicate clones it. A drop queues the blocks it lets go (`zk_freeing`), so a long chain
 frees in a loop. `zk_deep_seqs` makes a deep duplicate, duplicating each object once (the
 head's next word maps an old block to its new one while the work runs), and
-`zk_collect_rings` runs trial deletion when 1,024 blocks wait and at the end of the run,
-as the VM does. `zk_obj_ptr` and `zk_ptr_obj` turn an object into a pointer and back,
+`zk_collect_rings` runs trial deletion when the waiting blocks hold the threshold (16,384
+octets) and at the end of the run, as the VM does; a block waits when a block of its kind
+can be part of a ring, worked out once for each descriptor. `zk_rings(act, octets)` serves
+the statements of the collector: run it now (0), pause (1), resume (2), set the threshold
+(3). `zk_obj_ptr` and `zk_ptr_obj` turn an object into a pointer and back,
 `zk_check_utf8` checks a list of u8s that becomes text. The blocks of the heap statements
 of unsafe code remain plain `zk_alloc` blocks with no head, and the two are never mixed. A
 counted list moved to the heap (`to_heap`) remains uncounted.

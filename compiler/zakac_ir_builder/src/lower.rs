@@ -1107,6 +1107,11 @@ impl Lowerer<'_>
             {
                 out.push(Stmt::Free { dest: self.dest(&n.target), span: n.span })
             }
+            st::Stmt::Rings(n) =>
+            {
+                let octets = n.octets.as_ref().map(|o| self.expr(o));
+                out.push(Stmt::Rings { act: n.act, octets, span: n.span });
+            }
             st::Stmt::Leave(n) =>
             {
                 let value = self.expr(&n.value);

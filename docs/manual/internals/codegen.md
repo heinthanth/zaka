@@ -789,10 +789,16 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   objects is deep and safe on rings (a stack of pairs), and a print shows an object that is
   still being printed as `…`.
 - **The ring collector.** Counts alone never free objects that reach each other in a ring.
-  A release that leaves a count above 0 buffers the block when its kind can reach objects,
-  closures or boxes (`can_ring`); text and lists of numbers never wait. The collector
-  (`machine/collector.rs`, `collect_rings`) runs trial deletion, as PHP and CPython do,
-  when 1,024 blocks wait and when the program ends, so `--leaks` remains clean for safe code.
+  A release that leaves a count above 0 buffers the block when a block of its kind can be
+  part of a ring (`can_ring`, worked out once for each kind): a walk over the kinds its
+  cells hold through boxes and plain lists meets the kind again, or meets a function value,
+  whose closure can hold each thing. Text, lists of numbers and an object whose fields
+  cannot lead back to its kind never wait. The collector (`machine/collector.rs`,
+  `collect_rings`) runs trial deletion, as PHP and CPython do, when the buffer holds the
+  threshold (16,384 octets, or what a `rings threshold` op set) and when the program ends,
+  so `--leaks` remains clean for safe code. A pause keeps the buffer filling and the end of
+  the program collecting. The deep duplicate keeps the wider test, `holds_shared`: it walks
+  into each object a value holds.
 - **Storage.** `Mem` is the address space: blocks of three origins (`Heap`, `Stack`,
   `Static`), each with a red zone after it, so an access just past a block never lands in
   the next one. `load`, `store` and `take` check that the address is inside a live

@@ -6,6 +6,7 @@ use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::HaltCause;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::PrintValue;
+use zakac_ir_builder::ir::RingsAct;
 use zakac_ir_builder::ir::Stmt;
 use zakac_ir_builder::ir::fresh_text;
 use zakac_rust_sugars::do_if;
@@ -90,6 +91,7 @@ impl FnGen<'_, '_>
             }
             Stmt::Store { addr, value, .. } => self.store(addr, value),
             Stmt::Halt { cause, value, .. } => self.halt(*cause, value.as_ref()),
+            Stmt::Rings { act, octets, .. } => self.rings(*act, octets.as_ref()),
             Stmt::Drop { dest, kind, .. } =>
             {
                 let at = self.dest_addr(dest);
@@ -664,6 +666,20 @@ impl FnGen<'_, '_>
             format!("zk_cb_revoke({v});")
         );
         self.line(&line);
+    }
+
+    /// Generate a statement of the ring collector: a call of the runtime, with
+    /// the octets of a threshold.
+    ///
+    /// # Arguments
+    ///
+    /// * `act` - What it does.
+    /// * `octets` - The octets of a threshold; `None` for the other acts.
+    fn rings(&mut self, act: RingsAct, octets: Option<&Expr>)
+    {
+        let v =
+            octets.map_or_else(|| "0".to_string(), |o| self.operands(&[o]).remove(0));
+        self.line(&format!("zk_rings({}, (uint64_t)({v}));", act as u8));
     }
 
     /// Generate a fill: one value in each cell.

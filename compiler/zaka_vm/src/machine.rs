@@ -19,6 +19,7 @@ use zakac_ir_builder::ir::CmpOp;
 use zakac_ir_builder::ir::HaltCause;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
+use zakac_ir_builder::ir::RingsAct;
 use zakac_ir_builder::value::EvalError;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
@@ -515,6 +516,14 @@ pub struct Machine
     /// ring collector.
     #[builder(default)]
     candidates: Vec<u64>,
+    /// What the ring collector keeps between collections: the octets that
+    /// wait, the threshold, and whether the program paused it.
+    #[builder(default)]
+    rings: collector::Rings,
+    /// Whether each kind of block can be part of a ring, worked out once; a
+    /// program has few kinds of block, so a list serves.
+    #[builder(default)]
+    ring_kinds: Vec<(DataKind, bool)>,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -1417,6 +1426,7 @@ impl Machine
             }
             Op::ListEq(kind) => self.list_eq(kind),
             Op::Halt { cause, kind } => self.halt(cause, kind),
+            Op::Rings(act) => self.rings(act),
             Op::PrintList(kind) =>
             {
                 let addr = self.pop_ptr("print_list")?;

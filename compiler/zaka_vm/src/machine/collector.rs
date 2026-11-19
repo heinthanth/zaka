@@ -11,17 +11,39 @@
 //! Each walk keeps a list of the blocks still to visit, so a long chain of
 //! objects needs no deep call stack.
 
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_true;
 
 use super::*;
 use crate::mem::Block;
 use crate::mem::Color;
 
-/// The count of blocks that wait in the buffer before a collection runs.
-const BUFFER: usize = 1024;
+/// The octets of the blocks that wait in the buffer before a collection runs,
+/// unless the program sets its own threshold.
+pub const DEFAULT_THRESHOLD: u64 = 16 * 1024;
 
-/// Whether a value of a kind can hold a block that holds the value back: a
-/// box, an object or a closure, at once or inside a list or a struct.
+/// What the ring collector keeps between collections.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rings
+{
+    /// The octets of the blocks in the buffer.
+    pub waiting: u64,
+    /// The octets in the buffer that run a collection.
+    pub threshold: u64,
+    /// Whether the program paused the collections a full buffer runs.
+    pub paused: bool,
+}
+
+impl Default for Rings
+{
+    fn default() -> Self
+    {
+        Rings { waiting: 0, threshold: DEFAULT_THRESHOLD, paused: false }
+    }
+}
+
+/// Whether a value of a kind holds a box, an object or a closure, at once or
+/// inside a list or a struct: what a deep duplicate walks into.
 ///
 /// # Arguments
 ///
@@ -30,19 +52,71 @@ const BUFFER: usize = 1024;
 /// # Returns
 ///
 /// `true` for such a kind.
-pub(crate) fn can_ring(kind: DataKind) -> bool
+pub(crate) fn holds_shared(kind: DataKind) -> bool
 {
     let kind = kind.repr();
     ret_true!(kind.is_box() || kind.is_fn());
-    ret_if!(let Some(l) = kind.as_list(), can_ring(l.cell));
-    ret_if!(let Some(s) = kind.as_seq(), can_ring(s.cell));
-    kind.as_struct().is_some_and(|s| s.fields().iter().any(|(_, k)| can_ring(*k)))
+    ret_if!(let Some(l) = kind.as_list(), holds_shared(l.cell));
+    ret_if!(let Some(s) = kind.as_seq(), holds_shared(s.cell));
+    kind.as_struct().is_some_and(|s| s.fields().iter().any(|(_, k)| holds_shared(*k)))
+}
+
+/// Whether a block whose cells are of a kind can be part of a ring: whether
+/// the blocks its cells hold a count of lead back to a block of the kind, or
+/// hold a closure, which can hold each thing.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the cells of the block.
+///
+/// # Returns
+///
+/// `true` for such a kind.
+pub(crate) fn can_ring(kind: DataKind) -> bool
+{
+    let mut seen = vec![kind];
+    let mut todo = Vec::new();
+    ret_true!(!held_kinds(kind, &mut todo));
+    while let Some(k) = todo.pop()
+    {
+        ret_true!(k == kind);
+        do_if!(seen.contains(&k), continue);
+        seen.push(k);
+        ret_true!(!held_kinds(k, &mut todo));
+    }
+    false
+}
+
+/// Gather the kinds of the cells of the blocks a value holds a count of,
+/// through its fields and cells: a box, text or a plain list.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the value.
+/// * `out` - The cell kinds found.
+///
+/// # Returns
+///
+/// `false` when the value holds a function value, whose closure can hold
+/// each thing; else `true`.
+fn held_kinds(kind: DataKind, out: &mut Vec<DataKind>) -> bool
+{
+    let kind = kind.repr();
+    ret_false!(kind.is_fn());
+    if let Some(s) = kind.as_seq()
+    {
+        out.push(s.cell);
+        return true;
+    }
+    ret_if!(let Some(l) = kind.as_list(), held_kinds(l.cell, out));
+    kind.as_struct().is_none_or(|s| s.fields().iter().all(|(_, k)| held_kinds(*k, out)))
 }
 
 impl Machine
 {
     /// Note a block that a release left held: it can be part of a ring
-    /// that nothing outside holds. A full buffer runs a collection.
+    /// that nothing outside holds. A full buffer runs a collection, unless
+    /// the program paused them.
     ///
     /// # Arguments
     ///
@@ -53,15 +127,101 @@ impl Machine
     /// `Ok`, or the trap a collection hits.
     pub(super) fn note_candidate(&mut self, block: u64) -> Step
     {
-        let Some(b) = self.mem.live_block_mut(block)
+        let Some(kind) = self.mem.live_block(block).and_then(|b| b.kind)
         else
         {
             return Ok(());
         };
-        ret_if!(b.buffered || !b.kind.is_some_and(can_ring), Ok(()));
+        ret_if!(!self.kind_can_ring(kind), Ok(()));
+        let Some(b) = self.mem.live_block_mut(block).filter(|b| !b.buffered)
+        else
+        {
+            return Ok(());
+        };
         b.buffered = true;
+        self.rings.waiting += b.len;
         self.candidates.push(block);
-        ret_if!(self.candidates.len() < BUFFER, Ok(()));
+        ret_if!(self.rings.paused || self.rings.waiting < self.rings.threshold, Ok(()));
+        self.collect_rings()
+    }
+
+    /// [`can_ring`], worked out once for each kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of the cells of a block.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a block of the kind can be part of a ring.
+    fn kind_can_ring(&mut self, kind: DataKind) -> bool
+    {
+        let known = self.ring_kinds.iter().find(|(k, _)| *k == kind).map(|(_, r)| *r);
+        ret_if!(let Some(ring) = known, ring);
+        let ring = can_ring(kind);
+        self.ring_kinds.push((kind, ring));
+        ring
+    }
+
+    /// Run an op of the ring collector.
+    ///
+    /// # Arguments
+    ///
+    /// * `act` - What it does; a threshold pops its octets.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a collection hits.
+    pub(super) fn rings(&mut self, act: RingsAct) -> Step
+    {
+        match act
+        {
+            RingsAct::Collect => self.collect_rings(),
+            RingsAct::Pause =>
+            {
+                self.pause_rings();
+                Ok(())
+            }
+            RingsAct::Resume => self.resume_rings(),
+            RingsAct::Threshold =>
+            {
+                let octets = self.pop_int("rings threshold")?;
+                self.set_ring_threshold(u64::try_from(octets).unwrap_or(u64::MAX))
+            }
+        }
+    }
+
+    /// Pause the collections a full buffer runs; the buffer still fills,
+    /// and the end of the program still collects.
+    fn pause_rings(&mut self) { self.rings.paused = true; }
+
+    /// Resume the collections a full buffer runs, and collect at once when
+    /// the buffer filled while they were paused.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a collection hits.
+    fn resume_rings(&mut self) -> Step
+    {
+        self.rings.paused = false;
+        ret_if!(self.rings.waiting < self.rings.threshold, Ok(()));
+        self.collect_rings()
+    }
+
+    /// Set the octets in the buffer that run a collection.
+    ///
+    /// # Arguments
+    ///
+    /// * `octets` - The threshold.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or the trap a collection hits, when the buffer holds that much
+    /// now.
+    fn set_ring_threshold(&mut self, octets: u64) -> Step
+    {
+        self.rings.threshold = octets;
+        ret_if!(self.rings.paused || self.rings.waiting < octets, Ok(()));
         self.collect_rings()
     }
 
@@ -73,6 +233,7 @@ impl Machine
     /// `Ok`, or the trap a free hits.
     pub(super) fn collect_rings(&mut self) -> Step
     {
+        self.rings.waiting = 0;
         let buffered = std::mem::take(&mut self.candidates);
         let mut roots = Vec::new();
         for r in buffered

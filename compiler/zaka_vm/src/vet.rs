@@ -20,6 +20,7 @@ use zakac_codegen_target_vm::bc::Func;
 use zakac_codegen_target_vm::bc::Module;
 use zakac_codegen_target_vm::bc::Op;
 use zakac_i18n::t;
+use zakac_ir_builder::ir::RingsAct;
 use zakac_ir_builder::value::Value;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -727,6 +728,8 @@ impl Paths<'_, '_>
             Op::Free | Op::CRevoke | Op::Pin => Ok(effect(&[A], None)),
             Op::PrintText(t) => vet.text(t).map(|()| effect(&[], None)),
             Op::Trap(_) => Ok(effect(&[], None)),
+            Op::Rings(RingsAct::Threshold) => Ok(effect(&[I], None)),
+            Op::Rings(_) => Ok(effect(&[], None)),
             Op::Load(kind) => self.kinded(kind, &[A], Some(class_of(kind))),
             Op::Store(kind) => self.kinded(kind, &[class_of(kind), A], None),
             Op::Take(kind) if kind.is_aggregate() =>

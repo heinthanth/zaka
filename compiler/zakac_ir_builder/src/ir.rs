@@ -7,6 +7,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::IntoStaticStr;
 use zakac_ast::stmt::CountMode;
+pub use zakac_ast::stmt::RingsAct;
 use zakac_ast::target::Target;
 pub use zakac_semcheck::const_op::CmpOp;
 pub use zakac_semcheck::const_op::InfixOp;
@@ -503,6 +504,17 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Work of the ring collector: run it now, pause it, resume it, or set
+    /// its threshold.
+    Rings
+    {
+        /// What the statement does.
+        act: RingsAct,
+        /// The octets of a threshold, a `usize`; `None` for the other acts.
+        octets: Option<Expr>,
+        /// Source region.
+        span: Span,
+    },
     /// Stop the run: a conversion read the part of a result it does not
     /// hold. The VM shows the value, when there is one, as `ပြသမည်` would.
     Halt
@@ -694,6 +706,7 @@ impl Stmt
             | Stmt::Fill { span, .. }
             | Stmt::Drop { span, .. }
             | Stmt::Halt { span, .. }
+            | Stmt::Rings { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }

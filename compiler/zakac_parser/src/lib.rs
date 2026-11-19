@@ -19,6 +19,7 @@ mod logical;
 mod notation;
 pub mod parser;
 mod recover;
+mod rings;
 mod stmt;
 mod str_lit;
 mod struct_lit;

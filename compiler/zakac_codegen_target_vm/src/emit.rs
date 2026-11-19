@@ -1069,6 +1069,11 @@ impl<'s> FuncGen<'s>
                 do_for!(e in [src, count, dst], self.expr(e));
                 self.op(tern!(*overlap, Op::MemMove(stride), Op::MemBlit(stride)));
             }
+            Stmt::Rings { act, octets, .. } =>
+            {
+                do_if!(let Some(o) = octets, self.expr(o));
+                self.op(Op::Rings(*act));
+            }
             Stmt::Fill { dst, count, value, .. } =>
             {
                 do_for!(e in [dst, value, count], self.expr(e));

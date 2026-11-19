@@ -10,6 +10,7 @@ mod machine;
 mod mem;
 mod permissions;
 mod print;
+mod rings;
 mod samples;
 mod spoken;
 mod stepping;

@@ -137,7 +137,7 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(value, w);
             w.span(span);
         }
-        Stmt::Halt { value, span, .. } =>
+        Stmt::Halt { value, span, .. } | Stmt::Rings { octets: value, span, .. } =>
         {
             do_if!(let Some(v) = value, expr(v, w));
             w.span(span);

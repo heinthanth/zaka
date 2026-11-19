@@ -1,6 +1,6 @@
 ---
 title: What a duplicate costs
-description: Where text and lists are copied, when the compiler shares or moves them instead, and what an edit of text costs.
+description: Where text and lists are copied, when the compiler shares or moves them instead, what an edit of text costs, and how a program steers the ring collector.
 ---
 
 # What a duplicate costs
@@ -123,6 +123,40 @@ its own:
 မမ!
 မမ
 ```
+
+## Rings on demand
+
+Counting frees most blocks at once; the ring collector frees the objects that hold each
+other in a ring ([Objects that point at each other](../structs/objects.md#objects-that-point-at-each-other)).
+A program can steer the collector: pause it where the program must not halt for it,
+and run it where the program has time. Here a loop leaves 100 rings behind while the
+collector rests, and one statement frees them all:
+
+```zaka
+အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
+
+ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အဆစ်(တန်: ၁၊ နောက်: အလွတ်) ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အဆစ်(တန်: ၂၊ နောက်: က) ဖြစ်ပါစေ။
+က ၏ နောက် ကို ခ ဟု ထားမည်။                      // a ring of two nodes, left behind
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။      // pause
+၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
+မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။        // free the 100 rings now
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။    // resume
+"ပြီး" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ပြီး
+```
+
+A fourth statement, `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။`,
+sets how full the list of waiting blocks gets, in octets, before the collector runs on its
+own. Docs: [When a block is freed](../../manual/language/objects.md#when-a-block-is-freed).
 
 ## Hands on
 

@@ -135,3 +135,31 @@ fn a_heap_past_the_cap_stops_the_program()
     let line = "the program stopped: no heap room for 4096 octets\n";
     assert_eq!(stop_line(&run.stderr), line, "{}", run.stderr);
 }
+
+/// A loop that leaves a ring behind on each round fills a small heap while the
+/// collections are paused, and fits it when each round runs the collector, as
+/// in the VM.
+#[test]
+fn the_ring_statements_reach_the_runtime()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let target = TargetCOptions::builder().max_heap(64 * 1024).build();
+    let run_input = |name: &str| {
+        let files = c_files_with(
+            &root().join("tests/inputs").join(name),
+            OverflowMode::Stop,
+            target,
+        );
+        compile_and_run(&cc, &files.unwrap(), Checks::Default)
+    };
+    let paused = run_input("rings_paused.zaka");
+    assert_eq!(paused.status, Some(1), "{}", paused.stderr);
+    assert!(stop_line(&paused.stderr).contains("no heap room"), "{}", paused.stderr);
+    let collected = run_input("rings_collected.zaka");
+    assert_eq!(collected.status, Some(0), "{}", collected.stderr);
+    assert_eq!(collected.stdout, "ပြီး\n");
+}

@@ -102,8 +102,9 @@ fn raw_stmt(s: &Stmt) -> bool
     {
         Stmt::Set { value, .. } => raw_expr(value),
         Stmt::Print { value: PrintValue::Expr(e), .. }
-        | Stmt::Halt { value: Some(e), .. } => raw_expr(e),
-        Stmt::Halt { value: None, .. } => false,
+        | Stmt::Halt { value: Some(e), .. }
+        | Stmt::Rings { octets: Some(e), .. } => raw_expr(e),
+        Stmt::Halt { value: None, .. } | Stmt::Rings { octets: None, .. } => false,
         Stmt::If { cond, then, els, .. } =>
         {
             raw_expr(cond) || raw_block(then) || raw_block(els)

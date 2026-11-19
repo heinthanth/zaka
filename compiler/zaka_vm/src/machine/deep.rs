@@ -6,7 +6,7 @@
 //!
 //! A list of the cells still to visit takes the place of a deep call stack.
 
-use super::collector::can_ring;
+use super::collector::holds_shared;
 use super::*;
 
 /// A value still to visit: its address and its kind.
@@ -59,7 +59,7 @@ impl Machine
         todo: &mut Vec<Visit>,
     ) -> Step
     {
-        ret_if!(kind.is_fn() || !can_ring(kind), self.dup_value(at, kind));
+        ret_if!(kind.is_fn() || !holds_shared(kind), self.dup_value(at, kind));
         let (base, count) = slice_parts(&self.mem, at)?;
         ret_if!(base == 0 || self.mem.is_frozen(base), Ok(()));
         if let Some(&dup) = copies.get(&base)

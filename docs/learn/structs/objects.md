@@ -203,6 +203,8 @@ nothing outside reaches it, and frees it. `==` and the copies follow these rings
 each ends. An object that the collector frees goes when the collector next runs, a little
 later than one that its count frees.
 
+A program can also steer the collector: [Rings on demand](../forms/costs.md#rings-on-demand).
+
 ## Hands on
 
 - Make `အကောင့်` a plain struct: remove `မျှဝေနိုင်သော`, and run the first program again.
