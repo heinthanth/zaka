@@ -495,6 +495,8 @@ JobsMarkOnValue = ("ZK0493", Level::Warning),
 /// A value goes to a job on another thread, or comes back from one, and jobs
 /// cannot use its kind.
 NotForJobs = ("ZK0494", Level::Error),
+NotAPipe = ("ZK0495", Level::Error),
+PipeDataOutside = ("ZK0496", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

@@ -76,7 +76,10 @@ en = "stopped after %{steps} ops"
 en = "the job %{job} this waits for stopped at a trap"
 
 [vm.trap.deadlock]
-en = "each job waits for another; none can go on"
+en = "each job waits; none can go on"
+
+[vm.trap.pipe_closed]
+en = "the channel %{pipe} is closed: no value can go to it, and it cannot close again"
 
 [vm.trap.job_stopped]
 en = "job %{job} stopped"

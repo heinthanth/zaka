@@ -137,9 +137,15 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(value, w);
             w.span(span);
         }
-        Stmt::Wait { job, span, .. } =>
+        Stmt::Wait { job, span, .. } | Stmt::Close { pipe: job, span } =>
         {
             expr(job, w);
+            w.span(span);
+        }
+        Stmt::Send { pipe, value, span } =>
+        {
+            expr(pipe, w);
+            expr(value, w);
             w.span(span);
         }
         Stmt::Halt { value, span, .. } | Stmt::Rings { octets: value, span, .. } =>
@@ -299,6 +305,7 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
+        | ExprNode::MakePipe(_)
         | ExprNode::BlankList => (),
         ExprNode::Format(pieces) => do_for!(e in fmt_values_mut(pieces), expr(e, w)),
         ExprNode::Chars { text, index, .. } =>
@@ -337,7 +344,7 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
         {
             do_for!(a in args, expr(a, w))
         }
-        ExprNode::Wait(job) => expr(job, w),
+        ExprNode::Wait(job) | ExprNode::Receive(job) => expr(job, w),
         ExprNode::CallValue { callee, args } =>
         {
             do_for!(a in args, expr(a, w));

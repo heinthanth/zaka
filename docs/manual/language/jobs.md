@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, how the VM takes turns, the end of the program, and what a trap in a job does.
+description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
 ---
 
 # Jobs
@@ -109,11 +109,104 @@ lacks it: two jobs would write it at once.
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
+## Channels
+
+A channel (`ဒေတာလမ်းကြောင်း`) carries values from one job to another, in the order of the
+sends. Its kind names the kind of its values, and its measure word is `ခု`:
+
+| Kind | Holds |
+| --- | --- |
+| `<kind> ပို့နိုင်သော ဒေတာလမ်းကြောင်း` | a channel of `<kind>` values, with no limit on the values that wait in it |
+| `<kind> <n> ခု ပို့နိုင်သော ဒေတာလမ်းကြောင်း` | a channel where `<n>` values wait at most; `<n>` is a whole number above zero, in digits |
+
+`ပို့ဆောင်နိုင်သော` reads the same as `ပို့နိုင်သော`. `ကနဦးတန်ဖိုး` gives a new channel, with
+the room the kind phrase of the declaration names. A channel value names its channel: a
+duplicate names the same one, so two jobs that hold it reach one queue. Its short name in
+messages is `pipe(<kind>)`, such as `pipe(text)`; the room is no part of the kind.
+
+| Form | What it does |
+| --- | --- |
+| `<pipe> ထဲသို့ <value> ကို ပို့မည်။` | sends the value; it waits while a channel with a room is full |
+| `<pipe> မှ ရရှိသော ဒေတာ` | the next value, as an optional ([Optional values](optionals.md)): it waits while the channel is open and holds none, and holds no data once the channel is closed and drained |
+| `အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိလျှင်` | takes the next value as the receive does; the branch runs when a value came, and `<pipe> ထဲမှ ဒေတာ` inside it names that value |
+| `<pipe> မှ ရရှိသော ဒေတာတိုင်းကို <name> အနေဖြင့် ယူ၍` | a loop over each value that comes, which ends once the channel is closed and drained |
+| `<pipe> ကို ပိတ်မည်။` | closes the channel: the values in it still come, then each receive gives no data |
+
+- `လက်ခံရရှိသော` reads the same as `ရရှိသော`, and `ဒေတာတိုင်း ကို` the same as `ဒေတာတိုင်းကို`.
+- The value a send takes must be of a kind jobs can use, as for an argument of a job.
+- `<pipe> ထဲမှ ဒေတာ` is no second receive: no other job can take the value between the test
+  and the read. The test stands alone as the condition of `အကယ်၍`, its channel is a name,
+  and the read stands inside its branch, ZK0496. A receive, a loop or a close of a value
+  that is no channel is ZK0495.
+- A send to a closed channel, and a second close, stop the program with the trap
+  `pipe closed`.
+
+```zaka
+ထုတ် ဟူသော လုပ်ဆောင်ချက် သည် လမ်း ဟူသော စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ လမ်း ထဲသို့ "စာကြောင်း {န}" ကို ပို့မည်။
+လမ်း ကို ပိတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် လိုင်း သည် စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို လိုင်း ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+လိုင်း မှ ရရှိသော ဒေတာတိုင်းကို စာ အနေဖြင့် ယူ၍ စာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+စာကြောင်း ၁
+စာကြောင်း ၂
+စာကြောင်း ၃
+```
+
+A channel with a room holds the sender back. Here the room is 2, so the third send waits
+for the first receive:
+
+```zaka
+ထုတ် ဟူသော လုပ်ဆောင်ချက် သည် လမ်း ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၄ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+လမ်း ထဲသို့ န ကို ပို့မည်။
+"ပို့ {န}" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လမ်း ကို ပိတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကန့် သည် ကိန်းပြည့် ၂ ခု ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို ကန့် ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ကန့် မှ ရရှိသော ဒေတာ ကို ပြသမည်။
+အကယ်၍ ကန့် ထဲတွင် ဒေတာ ရှိလျှင် "ရ {ကန့် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ကန့် မှ ရရှိသော ဒေတာတိုင်းကို တန် အနေဖြင့် ယူ၍ "ကျန် {တန်}" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ပို့ ၁
+ပို့ ၂
+ဒေတာ(၁)
+ရ ၂
+ပို့ ၃
+ပို့ ၄
+ကျန် ၃
+ကျန် ၄
+```
+
+```zaka-error ZK0496
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+လမ်း ထဲမှ ဒေတာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
 ## Turns on the VM
 
 The VM runs each job on the one thread of the VM, in turns of a fixed count of ops, in
 the order the jobs started. The order of the turns never changes, so a program prints the
-same lines each run. A wait for a job that has not ended gives the turn to the next job.
+same lines each run. A wait for a job that has not ended, a receive from an open channel
+that holds none and a send to a full one give the turn to the next job.
 Each line a print writes comes out whole.
 
 Each job gets a stack region of its own, of the size `--max-stack` gives
@@ -154,8 +247,8 @@ chooses:
   the trap `job trapped`.
 - A program whose job stopped at a trap that no wait saw ends with exit code 1.
 - A trap in the start block stops the whole program under either choice.
-- When each job waits for another and none can go on, the program stops with the trap
-  `deadlock`.
+- When each job waits, for another job or for a channel, and none can go on, the program
+  stops with the trap `deadlock`: as a receive from a channel no job sends to or closes.
 
 ## Where jobs run
 

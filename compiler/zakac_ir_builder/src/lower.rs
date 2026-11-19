@@ -627,6 +627,13 @@ struct Lowerer<'k>
     /// are still to lower.
     #[builder(default)]
     pending: usize,
+    /// The room of the channel the declaration being lowered makes, from its
+    /// kind phrase.
+    room: Option<u32>,
+    /// The channels the arms around the statement being lowered tested for
+    /// data, each with the hidden optional that holds the value that came.
+    #[builder(default)]
+    pipe_reads: Vec<(Name, Place)>,
     /// Whether an operand is being lowered as a whole into a hidden slot, so
     /// the parts inside it are left in place.
     #[builder(default)]
@@ -1097,6 +1104,7 @@ impl Lowerer<'_>
             }
             st::Stmt::Call(n) if n.parallel => self.spawn_stmt(n),
             st::Stmt::Call(n) if let Some(wait) = self.wait_stmt(n) => out.push(wait),
+            st::Stmt::Call(n) if let Some(pipe) = self.pipe_stmt(n) => out.push(pipe),
             st::Stmt::Call(n) =>
             {
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
@@ -1159,7 +1167,9 @@ impl Lowerer<'_>
     fn decl(&mut self, n: &st::DeclStmt) -> Stmt
     {
         let kind = self.declared_kind(n.kind.as_ref(), n.init.as_ref());
+        self.room = n.kind.as_ref().and_then(|k| k.room);
         let value = self.initial(n.init.as_ref(), kind, n.name.span);
+        self.room = None;
         let access = tern!(n.is_const, Access::Const, Access::Var);
         // A local a closure shares lives in a box, so it outlives this call.
         if self.is_boxed_name(&n.name.name)
@@ -1239,6 +1249,11 @@ impl Lowerer<'_>
     /// The value.
     fn initial_value(&self, kind: DataKind, span: Span) -> Expr
     {
+        // The initial value of a channel kind is a new channel.
+        if kind.as_task().is_some_and(|t| t.pipe)
+        {
+            return node_expr(kind, ExprNode::MakePipe(self.room), span);
+        }
         if kind.is_optional()
         {
             let none = Fault::of_kind(kind).expect("an optional is a fault kind");
@@ -1840,6 +1855,7 @@ impl Lowerer<'_>
     /// The condition, the statements and the arm's source region.
     fn if_arm(&mut self, arm: &st::IfArm) -> (Expr, Vec<Stmt>, Span)
     {
+        ret_if!(let Some(arm) = self.pipe_arm(arm), arm);
         let cond = self.coerce(&arm.cond, DataKind::Bool);
         (cond, self.block(&arm.block.stmts), arm.span)
     }
@@ -2033,6 +2049,7 @@ impl Lowerer<'_>
     fn each(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
     {
         ret_if!(n.part.is_row(), self.each_rows(n, out));
+        ret_if!(n.part == st::EachPart::Received, self.each_received(n, out));
         let chars = n.part == st::EachPart::Char;
         let given = self.kind_of(&n.source);
         let kind = each_list(given, chars);
@@ -2868,11 +2885,23 @@ impl Lowerer<'_>
         span: Span,
     ) -> (Place, Fault)
     {
-        let (target, sig) = self.call_target(callee, place);
-        let fault = sig.ret.and_then(Fault::of_kind);
+        // A wait for a job passes on a failure of what the job gave back.
+        let (ret, call) = match self.waited(callee, place, args)
+        {
+            Some(job) =>
+            {
+                let ret = self.kind_of(job).as_task().and_then(|t| t.of);
+                (ret, ExprNode::Wait(Box::new(self.expr(job))))
+            }
+            None =>
+            {
+                let (target, sig) = self.call_target(callee, place);
+                let args = self.lower_args(args, &sig);
+                (sig.ret, target.node(args))
+            }
+        };
+        let fault = ret.and_then(Fault::of_kind);
         let fault = fault.expect("the check found a function that can fail");
-        let args = self.lower_args(args, &sig);
-        let call = target.node(args);
         let held = self.hidden(fault.wrapper, span);
         if fault.wrapper.holds_text()
         {
@@ -2960,6 +2989,7 @@ impl Lowerer<'_>
     /// The read of the part.
     fn result_part(&mut self, op: VerbOp, value: &ast::Expr, span: Span) -> ExprNode
     {
+        ret_if!(let Some(node) = self.pipe_data(value, span), node);
         self.pending = self.pending.saturating_sub(1);
         let good = op == VerbOp::Unwrap;
         let result = self.expr(value);
@@ -4166,6 +4196,7 @@ impl Lowerer<'_>
                 octet: false,
             },
             VerbOp::BitNot => prefix_node(PrefixOp::BitNot, self.expr(value)),
+            VerbOp::Receive => ExprNode::Receive(Box::new(self.expr(value))),
             VerbOp::DupOf => self.dup_of(value, false),
             VerbOp::DeepDupOf => self.dup_of(value, true),
             VerbOp::Cast =>

@@ -514,6 +514,25 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Send a duplicate of a value to a channel; the send waits while a
+    /// channel with a room is full.
+    Send
+    {
+        /// The channel.
+        pipe: Expr,
+        /// The value, of the kind the channel carries.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Close a channel.
+    Close
+    {
+        /// The channel.
+        pipe: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Work of the ring collector: run it now, pause it, resume it, or set
     /// its threshold.
     Rings
@@ -718,6 +737,8 @@ impl Stmt
             | Stmt::Halt { span, .. }
             | Stmt::Rings { span, .. }
             | Stmt::Wait { span, .. }
+            | Stmt::Send { span, .. }
+            | Stmt::Close { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
@@ -840,6 +861,13 @@ pub enum ExprNode
     },
     /// Wait for a job to end; the value is what its function gave back.
     Wait(Box<Expr>),
+    /// A new channel, the `usize` that names it: with the most values that
+    /// wait in it, or with no limit.
+    MakePipe(Option<u32>),
+    /// The next value of a channel, as an optional: it waits while the
+    /// channel is open and holds none, and holds no data once it is closed
+    /// and drained.
+    Receive(Box<Expr>),
     /// A call of the function a function value holds. The value is read
     /// first, then the arguments run; a value of the zero word stops the
     /// program.
@@ -1113,6 +1141,7 @@ pub fn fresh_text(e: &Expr) -> bool
             | ExprNode::Call { .. }
             | ExprNode::CallValue { .. }
             | ExprNode::Wait(_)
+            | ExprNode::Receive(_)
             | ExprNode::List(_)
             | ExprNode::CField { .. }
     );

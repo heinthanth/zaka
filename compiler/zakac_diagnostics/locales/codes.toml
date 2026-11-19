@@ -1515,6 +1515,24 @@ en = "pass a value, or mark the struct of the object `အပြိုင်လ�
 [codes.ZK0494.explain]
 en = """A job runs on another thread. A value that goes to it, as an argument, or comes back from it, as the result its function gives back, must be one jobs can use: a number, a character, true or false, text, a list, a struct, an optional, a result or a table of such kinds, or an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`. Two threads would change a plain shared object at once with no lock, and a closure can hold such an object, so neither can go."""
 
+[codes.ZK0495.title]
+en = "no channel"
+[codes.ZK0495.message]
+en = "a value of %{k} stands where a channel goes, and %{k} is no channel"
+[codes.ZK0495.help]
+en = "name a channel, a value of \"<kind> ပို့နိုင်သော ဒေတာလမ်းကြောင်း\""
+[codes.ZK0495.explain]
+en = """A send (`<pipe> ထဲသို့ <value> ကို ပို့မည်`), a receive (`<pipe> မှ ရရှိသော ဒေတာ`), a close (`<pipe> ကို ပိတ်မည်`) and a loop over each value that comes (`<pipe> မှ ရရှိသော ဒေတာတိုင်းကို`) take a channel, a value of the kind `<kind> ပို့နိုင်သော ဒေတာလမ်းကြောင်း`."""
+
+[codes.ZK0496.title]
+en = "channel data outside its test"
+[codes.ZK0496.message]
+en = "a channel is tested for data as the whole condition of \"အကယ်၍\", and its data is read inside that branch alone"
+[codes.ZK0496.help]
+en = "write \"အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိလျှင်\" and read \"<pipe> ထဲမှ ဒေတာ\" inside it, or take the next value as an optional with \"<pipe> မှ ရရှိသော ဒေတာ\""
+[codes.ZK0496.explain]
+en = """The test `အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိလျှင်` takes the next value out of the channel, waiting while it is open and holds none, and its branch runs when a value came; `<pipe> ထဲမှ ဒေတာ` in that branch names the value, and is no second receive. So the test stands alone as the condition, its channel is a name, and the read stands inside the branch. Elsewhere, `<pipe> မှ ရရှိသော ဒေတာ` gives the next value as an optional."""
+
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
 [codes.ZK0725.message]

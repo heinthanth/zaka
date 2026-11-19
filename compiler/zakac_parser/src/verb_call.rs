@@ -46,10 +46,17 @@ const REPLACE: &str = "အစားထိုး";
 /// lowering serve.
 const WAIT: &str = "စောင့်";
 
+/// `ပို့`: send a value to a channel; its calls remain calls.
+const SEND: &str = "ပို့";
+
+/// `ပိတ်`: close a channel; its calls remain calls.
+const CLOSE: &str = "ပိတ်";
+
 /// The verbs of the core whose calls read as the sentences their heads spell;
-/// the parser turns the call statements of each but `စောင့်` into their
-/// statements.
-pub(crate) const VERB_FNS: [&str; 6] = [PRINT, ADD, DUP, REMOVE, REPLACE, WAIT];
+/// the parser turns the call statements of each but the verbs of jobs and
+/// channels into their statements.
+pub(crate) const VERB_FNS: [&str; 8] =
+    [PRINT, ADD, DUP, REMOVE, REPLACE, WAIT, SEND, CLOSE];
 
 /// The sentence a call of a verb of the core writes.
 #[derive(Debug, Clone, Copy, PartialEq)]

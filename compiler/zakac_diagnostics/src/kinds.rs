@@ -1406,6 +1406,39 @@ pub fn not_for_jobs(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::NotForJobs, msg, span).with_help(t!("codes.ZK0494.help"))
 }
 
+/// A send, a receive, a close or a loop over each value names a value that
+/// is no channel.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - The name of its kind.
+///
+/// # Returns
+///
+/// The `ZK0495` diagnostic.
+pub fn not_a_pipe(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0495.message", k = kind);
+    Diagnostic::new(Code::NotAPipe, msg, span).with_help(t!("codes.ZK0495.help"))
+}
+
+/// A channel is tested for data, or its data read, outside the one place
+/// for each: the whole condition of `အကယ်၍`, and the branch of that test.
+///
+/// # Arguments
+///
+/// * `span` - The test or the read.
+///
+/// # Returns
+///
+/// The `ZK0496` diagnostic.
+pub fn pipe_data_outside(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0496.message");
+    Diagnostic::new(Code::PipeDataOutside, msg, span).with_help(t!("codes.ZK0496.help"))
+}
+
 /// A comptime function gives a kind that a constant cannot hold.
 ///
 /// # Arguments

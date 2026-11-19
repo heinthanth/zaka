@@ -209,6 +209,11 @@ pub struct Kind
     #[builder(default)]
     #[serde(default)]
     pub args: Vec<Kind>,
+    /// The room of a bounded channel, `<kind> <n> ခု ပို့နိုင်သော
+    /// ဒေတာလမ်းကြောင်း`: the most values that wait in it. It is no part of the
+    /// kind; the channel a declaration makes takes it.
+    #[serde(default)]
+    pub room: Option<u32>,
     /// Source region of the whole kind phrase, the measure word left out.
     pub span: Span,
 }
@@ -228,11 +233,12 @@ impl Serialize for Kind
         let skip_word = skip && self.classifier.is_none();
         let skip_alias = skip && self.alias.is_none();
         let skip_args = skip && self.args.is_empty();
+        let skip_room = skip && self.room.is_none();
         /// The number of fields, each that can be left out included.
-        const FIELDS: usize = 12;
+        const FIELDS: usize = 13;
         let skipped = [
             skip_name, skip_parts, skip_sig, skip_table, skip_word, skip_alias,
-            skip_args,
+            skip_args, skip_room,
         ]
         .map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
@@ -275,6 +281,11 @@ impl Serialize for Kind
             skip_args,
             state.skip_field("args")?,
             state.serialize_field("args", &self.args)?
+        );
+        tern!(
+            skip_room,
+            state.skip_field("room")?,
+            state.serialize_field("room", &self.room)?
         );
         state.serialize_field("span", &self.span)?;
         state.end()

@@ -320,6 +320,7 @@ impl Parser<'_>
         let cond = self.parse_logical_rest(first, 0)?;
         let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
         ret_if!(is_while, self.parse_while_tail(cond));
+        ret_if!(self.at_receive_each(), self.parse_receive_each(cond));
         ret_if!(self.at(Kw::From), self.parse_counted_tail(cond));
         ret_if!(self.at_each_head(), self.parse_each_tail(cond));
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
@@ -695,7 +696,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The block, or a diagnostic.
-    fn parse_branch(&mut self, allow_if: bool) -> PResult<BlockStmt>
+    pub(crate) fn parse_branch(&mut self, allow_if: bool) -> PResult<BlockStmt>
     {
         ret_if!(
             self.at(Kw::BlockOpen) || self.at(Kw::UnsafeBlockOpen),

@@ -74,7 +74,13 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             | Stmt::Print { value: PrintValue::Expr(e), .. }
             | Stmt::Halt { value: Some(e), .. }
             | Stmt::Rings { octets: Some(e), .. }
-            | Stmt::Wait { job: e, .. } => expr_places(e, out),
+            | Stmt::Wait { job: e, .. }
+            | Stmt::Close { pipe: e, .. } => expr_places(e, out),
+            Stmt::Send { pipe, value, .. } =>
+            {
+                expr_places(pipe, out);
+                expr_places(value, out);
+            }
             Stmt::Halt { value: None, .. } | Stmt::Rings { octets: None, .. } => (),
             Stmt::Print { value: PrintValue::Text(_), .. } => (),
             Stmt::If { cond, then, els, .. } =>
@@ -179,6 +185,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         ExprNode::Const(_)
         | ExprNode::SizeOf(_)
         | ExprNode::BlankList
+        | ExprNode::MakePipe(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::Text(_) => (),
         ExprNode::Format(pieces) =>
@@ -215,7 +222,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Host { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().for_each(|a| expr_places(a, out)),
-        ExprNode::Wait(job) => expr_places(job, out),
+        ExprNode::Wait(job) | ExprNode::Receive(job) => expr_places(job, out),
         ExprNode::CallValue { callee, args } => std::iter::once(callee.as_ref())
             .chain(args)
             .for_each(|a| expr_places(a, out)),

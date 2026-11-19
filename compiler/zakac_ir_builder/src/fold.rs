@@ -349,7 +349,15 @@ impl Folder
                 self.drop_value(value);
             }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
-            Stmt::Wait { job, .. } => self.drop_value(job),
+            Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } =>
+            {
+                self.drop_value(job)
+            }
+            Stmt::Send { pipe, value, .. } =>
+            {
+                self.drop_value(pipe);
+                self.drop_value(value);
+            }
             Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
             {
                 do_if!(let Some(v) = value, _ = self.expr(v));
@@ -480,6 +488,7 @@ impl Folder
         {
             ExprNode::Const(v) => return Some(*v),
             ExprNode::Read(_) => return None,
+            ExprNode::MakePipe(_) => return None,
             ExprNode::Prefix { op, operand } =>
             {
                 let (op, v) = (*op, self.expr(operand));
@@ -521,7 +530,7 @@ impl Folder
                 do_for!(a in args.iter_mut(), self.drop_value(a));
                 (None, None)
             }
-            ExprNode::Wait(job) =>
+            ExprNode::Wait(job) | ExprNode::Receive(job) =>
             {
                 self.drop_value(job);
                 (None, None)

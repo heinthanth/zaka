@@ -1,3 +1,4 @@
+use zakac_ast::jobs::PIPE_KIND;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
@@ -12,6 +13,7 @@ use zakac_lexer::reserved::FLOAT_NAME;
 use zakac_lexer::reserved::INT_NAME;
 use zakac_lexer::reserved::LIST_NAME;
 use zakac_lexer::reserved::TEXT_NAME;
+use zakac_lexer::spelling::canonical;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -43,6 +45,10 @@ pub(crate) enum Suffix
     /// The part of a written-as hint after its first slot: the index of the
     /// hint.
     Hint(usize),
+    /// The room of a bounded channel, `<n> <measure word>`, then the part of
+    /// the hint of the channel kind after its first slot: the index of the
+    /// hint.
+    Room(usize),
 }
 
 /// Bit counts of integer kinds.
@@ -368,6 +374,8 @@ impl Parser<'_>
         ret_if!(list, Some((Suffix::List, ei + 1)));
         let hint = tern!(ei == 0, self.hint_level_at(n), None);
         ret_if!(let Some((idx, len)) = hint, Some((Suffix::Hint(idx), len)));
+        let room = tern!(ei == 0, self.room_hint_at(n), None);
+        ret_if!(let Some((idx, len)) = room, Some((Suffix::Room(idx), len + 2)));
         let ptr = kw_of(&self.peek_n(n + ei)) == Some(Kw::Address);
         (ptr && (ei == 1 || bare_ptr)).then_some((Suffix::Ptr, ei + 1))
     }
@@ -635,6 +643,14 @@ impl Parser<'_>
         while let Some((suffix, len)) = self.suffix_at(0, bare_ptr)
         {
             bare_ptr = suffix != Suffix::Ptr;
+            if let Suffix::Room(idx) = suffix
+            {
+                let room = self.parse_room()?;
+                *kind =
+                    self.parse_hint(idx, Some(kind.clone()), start, self.fn_form())?;
+                kind.room = Some(room);
+                continue;
+            }
             let Suffix::Hint(idx) = suffix
             else
             {
@@ -646,6 +662,40 @@ impl Parser<'_>
         }
         kind.span = start.to(&self.prev_span());
         Ok(())
+    }
+
+    /// The hint of the channel kind after the room of a bounded channel,
+    /// `<n> <measure word>`, written `n` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead the room starts.
+    ///
+    /// # Returns
+    ///
+    /// The index of the hint and the token count after the room.
+    fn room_hint_at(&self, n: usize) -> Option<(usize, usize)>
+    {
+        let room =
+            is_number(&self.peek_n(n)) && self.peek_n(n + 1).kind == TokenKind::Ident;
+        ret_if!(!room, None);
+        let (idx, len) = self.hint_level_at(n + 2)?;
+        let pipe = canonical(&self.hints[idx].name) == canonical(PIPE_KIND);
+        pipe.then_some((idx, len))
+    }
+
+    /// Parse the room of a bounded channel, `<n> <measure word>`, in digits.
+    ///
+    /// # Returns
+    ///
+    /// The room, or ZK0227 for a room that is not a whole number above zero.
+    fn parse_room(&mut self) -> PResult<u32>
+    {
+        let tok = self.bump();
+        self.bump();
+        let text = self.text_of(tok.span);
+        let room = decimal_value(text).and_then(|v| u32::try_from(v).ok());
+        room.filter(|r| *r > 0).ok_or_else(|| diag::bad_list_count(tok.span, text))
     }
 
     /// Parse the count prefixes `အကွက် <count> ခုရှိသော` that come next.

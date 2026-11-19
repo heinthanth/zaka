@@ -509,6 +509,7 @@ impl Checker
                 return self.infer_or_else(optional, fallback);
             }
             (VerbOp::RowCount, [table]) => return self.infer_row_count(table),
+            (VerbOp::Receive, [pipe]) => return self.infer_receive(pipe),
             (VerbOp::Join, pieces) => return self.infer_join(pieces),
             (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =>
             {
@@ -578,6 +579,10 @@ impl Checker
     ) -> Option<DataKind>
     {
         let kind = self.infer(value, None)?;
+        ret_if!(
+            kind.as_task().is_some_and(|t| t.pipe),
+            self.pipe_part(op, value, kind)
+        );
         let Some((ok, err)) = kind.fallible_parts()
         else
         {

@@ -645,6 +645,14 @@ pub(crate) struct Checker
     /// objects jobs on other threads can use.
     #[builder(default)]
     pub jobs: HashSet<String>,
+    /// The channel name of the test `<pipe> ထဲတွင် ဒေတာ ရှိ` that stands as the
+    /// whole condition of the arm being checked, the one place such a test
+    /// can stand.
+    pub pipe_test: Option<NodeId>,
+    /// The channels the arms around the walk tested for data, whose data
+    /// `<pipe> ထဲမှ ဒေတာ` reads.
+    #[builder(default)]
+    pub pipe_reads: Vec<Name>,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
     /// The function each call of an overloaded or generic name chose.
@@ -930,7 +938,7 @@ impl Checker
     /// # Arguments
     ///
     /// * `e` - The condition.
-    fn expect_bool(&mut self, e: &Expr)
+    pub(crate) fn expect_bool(&mut self, e: &Expr)
     {
         let found = self.infer(e, Some(DataKind::Bool));
         let bad = found.filter(|k| *k != DataKind::Bool);
@@ -1019,6 +1027,7 @@ impl Checker
     ) -> Option<Option<DataKind>>
     {
         ret_if!(let Some(ret) = self.wait_call(callee, place, args), Some(ret));
+        ret_if!(let Some(ret) = self.pipe_call(callee, place, args), Some(ret));
         let expect = self.call_expect.take();
         let templates =
             tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
@@ -1707,6 +1716,7 @@ impl Checker
         &mut self, kind: DataKind, n: &EachStmt,
     ) -> Option<(Option<DataKind>, DataKind)>
     {
+        ret_if!(n.part == EachPart::Received, self.received_var_kind(kind, n));
         ret_if!(n.part.is_row(), self.row_var_kinds(kind, n));
         let chars = n.part == EachPart::Char;
         let cell = each_list(kind, chars).cell_kind();
@@ -2344,9 +2354,11 @@ impl Visitor for Checker
         {
             self.proven = before.clone();
             self.proven.extend(ruled_out.iter().copied());
-            self.expect_bool(&arm.cond);
+            let pipe = self.check_arm_cond(&arm.cond);
             self.proven.extend(facts_when(&arm.cond, true));
+            do_if!(let Some(p) = pipe, self.pipe_reads.push(p));
             self.visit_block(&arm.block);
+            do_if!(pipe.is_some(), _ = self.pipe_reads.pop());
             ruled_out.extend(facts_when(&arm.cond, false));
         }
         self.proven = before.clone();

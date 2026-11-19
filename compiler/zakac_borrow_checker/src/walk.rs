@@ -27,6 +27,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
+        | ExprNode::MakePipe(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -49,7 +50,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         {
             vec![lhs.as_ref(), rhs.as_ref()]
         }
-        ExprNode::Wait(operand) => vec![operand.as_ref()],
+        ExprNode::Wait(operand) | ExprNode::Receive(operand) => vec![operand.as_ref()],
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
         | ExprNode::Spawn { args, .. }
@@ -86,7 +87,8 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
-        Stmt::Wait { job, .. } => vec![job],
+        Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } => vec![job],
+        Stmt::Send { pipe, value, .. } => vec![pipe, value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {
@@ -187,6 +189,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
+        | ExprNode::MakePipe(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -209,7 +212,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         {
             vec![lhs.as_mut(), rhs.as_mut()]
         }
-        ExprNode::Wait(operand) => vec![operand.as_mut()],
+        ExprNode::Wait(operand) | ExprNode::Receive(operand) => vec![operand.as_mut()],
         ExprNode::Spawn { args, .. }
         | ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
@@ -245,7 +248,8 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
-        Stmt::Wait { job, .. } => vec![job],
+        Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } => vec![job],
+        Stmt::Send { pipe, value, .. } => vec![pipe, value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {

@@ -177,6 +177,12 @@ pub enum TrapKind
     },
     /// Each job waits for another, and none can go on.
     Deadlock,
+    /// A send to a closed channel, or a second close of one.
+    PipeClosed
+    {
+        /// The number of the channel.
+        pipe: u64,
+    },
     /// A C function was called in a build of the VM that cannot call C,
     /// such as the one in the browser.
     ForeignCall
@@ -350,6 +356,7 @@ impl fmt::Display for TrapKind
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
             TrapKind::JobTrapped { job } => t!("vm.trap.job_trapped", job = job),
             TrapKind::Deadlock => t!("vm.trap.deadlock"),
+            TrapKind::PipeClosed { pipe } => t!("vm.trap.pipe_closed", pipe = pipe),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::PermissionDenied { right, subject } =>
             {
@@ -437,6 +444,7 @@ impl TrapKind
             | TrapKind::ClosureEscape
             | TrapKind::JobTrapped { .. }
             | TrapKind::Deadlock
+            | TrapKind::PipeClosed { .. }
             | TrapKind::ForeignCall { .. }
             | TrapKind::PermissionDenied { .. }
             | TrapKind::ForeignLink { .. }

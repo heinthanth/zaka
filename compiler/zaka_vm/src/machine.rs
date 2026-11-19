@@ -63,6 +63,7 @@ use crate::trap::hex;
 mod collector;
 mod deep;
 mod jobs;
+mod pipes;
 
 pub use jobs::TrapMode;
 mod table;
@@ -1410,6 +1411,10 @@ impl Machine
             Op::Call(f) => self.enter(f),
             Op::Spawn(f) => self.spawn(f),
             Op::Wait(kind) => self.wait(kind),
+            Op::PipeNew(room) => self.pipe_new(room),
+            Op::PipeSend(kind) => self.pipe_send(kind),
+            Op::PipeReceive(kind) => self.pipe_receive(kind),
+            Op::PipeClose => self.pipe_close(),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),
             Op::Closure { func, record } => self.closure(func, record),

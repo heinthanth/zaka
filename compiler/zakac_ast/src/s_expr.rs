@@ -180,6 +180,7 @@ impl ToSexpr for Stmt
                     EachPart::Char => "each_char",
                     EachPart::Index => "each_index",
                     EachPart::Row => "each_row",
+                    EachPart::Received => "each_received",
                 };
                 let place = s.place.iter().map(|p| p.name.to_string());
                 let names = place.chain([s.var.name.to_string()]);

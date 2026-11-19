@@ -219,6 +219,7 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::CharNth
         | VerbOp::Join
         | VerbOp::Row
+        | VerbOp::Receive
         | VerbOp::RowValue
         | VerbOp::OrElse
         | VerbOp::RowCount => OpClass::CellCount,

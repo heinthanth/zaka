@@ -235,6 +235,14 @@ impl IrTree<'_>
             {
                 self.node("wait", blank, span, vec![self.expr(job)])
             }
+            Stmt::Send { pipe, value, .. } =>
+            {
+                self.node("send", blank, span, vec![self.expr(pipe), self.expr(value)])
+            }
+            Stmt::Close { pipe, .. } =>
+            {
+                self.node("close", blank, span, vec![self.expr(pipe)])
+            }
             Stmt::Print { value, .. } =>
             {
                 self.node("print", blank, span, vec![self.print(value, span)])
@@ -485,6 +493,15 @@ impl IrTree<'_>
                 ("spawn", name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
             ExprNode::Wait(job) => ("wait", String::new(), vec![self.expr(job)]),
+            ExprNode::Receive(pipe) =>
+            {
+                ("receive", String::new(), vec![self.expr(pipe)])
+            }
+            ExprNode::MakePipe(room) => (
+                "make_pipe",
+                room.map(|r| r.to_string()).unwrap_or_default(),
+                Vec::new(),
+            ),
             ExprNode::CallValue { callee, args } =>
             {
                 let parts = std::iter::once(callee.as_ref()).chain(args);

@@ -633,6 +633,11 @@ the core. The compiler mark outside the core is ZK0349.
   and channel kinds once for each carried kind, with the signatures `%job(<kind>)` and
   `%pipe(<kind>)`; their phrases come from the written-as hints of the core. A call of
   the core's `စောင့်` on one job (`wait_call`) gives the kind of the job's result.
+  A call of `ပို့` or `ပိတ်` whose first argument is a channel is a send or a close
+  (`pipe_call`); a receive gives the optional of what the channel carries
+  (`infer_receive`). The test `<pipe> ထဲတွင် ဒေတာ ရှိ` is good as the whole condition of an
+  arm alone (`check_arm_cond` sets `pipe_test`), and `<pipe> ထဲမှ ဒေတာ` inside that arm
+  alone (`pipe_reads`), ZK0496; `pipe_part` serves both.
 
 ## Comptime calls
 

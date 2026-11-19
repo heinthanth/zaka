@@ -2,15 +2,25 @@
 //! whose objects jobs can use, and the name of the trait of the kinds jobs can
 //! use. Its words are read through their text, apart or glued.
 
+use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::VerbExpr;
 use zakac_ast::jobs::JOBS_WORDS;
 use zakac_ast::jobs::USABLE_IN_JOBS;
+use zakac_ast::stmt::EachPart;
+use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::Stmt;
+use zakac_ast::verb::VerbOp;
+use zakac_ast::visit::Node;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::parser::PResult;
 use crate::parser::Parser;
 
 /// The tokens the phrase takes from `at` on: 2 for the words apart, 1 for
@@ -77,6 +87,17 @@ pub(crate) const PARALLEL: &str = "အပြိုင်";
 /// The word after `လုပ်ဆောင်သော` in the expression that gives the job.
 pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
 
+/// The words after `မှ` that receive from a channel, `ရရှိသော` or
+/// `လက်ခံရရှိသော`.
+const RECEIVED: [&str; 2] = ["ရရှိသော", "လက်ခံရရှိသော"];
+
+/// The word after them in the expression of a receive.
+const DATA_WORD: &str = "ဒေတာ";
+
+/// The word after them in the loop over each value that comes, alone or
+/// glued to its `ကို`.
+const EACH_DATA: [&str; 2] = ["ဒေတာတိုင်း", "ဒေတာတိုင်းကို"];
+
 impl Parser<'_>
 {
     /// Whether the end of a parallel call stands at the cursor:
@@ -127,6 +148,93 @@ impl Parser<'_>
         let kw = self.peek_n(n).kind;
         ends.iter().any(|e| kw == TokenKind::Kw(*e))
             || self.parallel_end_at(n).is_some()
+    }
+
+    /// The token count of `မှ ရရှိသော <word>` from the token `n` ahead on,
+    /// when `<word>` is one of `words`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead `မှ` would stand.
+    /// * `words` - The words that can end it.
+    ///
+    /// # Returns
+    ///
+    /// The index of the word in `words`, or `None`.
+    fn received_at(&self, n: usize, words: &[&str]) -> Option<usize>
+    {
+        ret_if!(self.peek_n(n).kind != TokenKind::Kw(Kw::From), None);
+        ret_if!(!RECEIVED.iter().any(|w| self.is_word_at(n + 1, w)), None);
+        words.iter().position(|w| self.is_word_at(n + 2, w))
+    }
+
+    /// Whether a receive comes next: `မှ ရရှိသော ဒေတာ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_receive(&self) -> bool
+    {
+        self.received_at(0, &[DATA_WORD]).is_some()
+    }
+
+    /// Parse `မှ ရရှိသော ဒေတာ` after a channel: the next value of it.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipe` - The channel.
+    ///
+    /// # Returns
+    ///
+    /// The receive.
+    pub(crate) fn parse_receive(&mut self, pipe: Expr) -> Expr
+    {
+        do_for!(_ in 0..2, self.bump());
+        let last = self.bump();
+        let span = pipe.span().to(&last.span);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(VerbOp::Receive).args(vec![pipe])
+            .particle(last.particle).is_cmp(false).span(span).build();
+        Expr::Verb(node)
+    }
+
+    /// Whether the head of a loop over each value of a channel comes next:
+    /// `မှ ရရှိသော ဒေတာတိုင်း ကို`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_receive_each(&self) -> bool
+    {
+        let at = self.received_at(0, &EACH_DATA);
+        at == Some(1) || (at == Some(0) && self.peek_n(3).kind == TokenKind::Kw(Kw::Ko))
+    }
+
+    /// Parse `မှ ရရှိသော ဒေတာတိုင်း ကို <name> အနေဖြင့် ယူ၍ <block>` after the
+    /// channel a loop takes each value of.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipe` - The channel.
+    ///
+    /// # Returns
+    ///
+    /// The loop, or a diagnostic.
+    pub(crate) fn parse_receive_each(&mut self, pipe: Expr) -> PResult<Stmt>
+    {
+        let glued = self.received_at(0, &EACH_DATA) == Some(1);
+        do_for!(_ in 0..3, self.bump());
+        do_if!(!glued, _ = self.bump());
+        let var = self.parse_ident()?;
+        self.expect(Kw::CountAs)?;
+        self.expect(Kw::Taking)?;
+        let block = self.parse_branch(true)?;
+        let span = pipe.span().to(&block.span);
+        #[rustfmt::skip]
+        let node = EachStmt::builder().source(pipe).part(EachPart::Received).var(var)
+            .block(block).span(span).build();
+        Ok(Stmt::Each(node))
     }
 
     /// The tokens the phrase takes from the token `n` ahead on.

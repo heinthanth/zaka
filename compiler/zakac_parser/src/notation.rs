@@ -669,6 +669,11 @@ impl Parser<'_>
                 value = self.parse_row(value)?;
                 continue;
             }
+            if self.at_receive()
+            {
+                value = self.parse_receive(value);
+                continue;
+            }
             let Some(op) = self.data_read_at(0)
             else
             {

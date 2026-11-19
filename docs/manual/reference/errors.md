@@ -60,6 +60,8 @@ for `စာရင်း`, and `@` after the name of a shared object kind.
 | `isize result or text error` | `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်`, a [result kind](../language/error-handling.md) |
 | `success or text error`, `isize result or failure` | `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်`, `ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်`: `success` and `failure` stand for a side with no value |
 | `optional isize` | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, an [optional kind](../language/optionals.md) |
+| `job(isize)`, `job()` | `ကိန်းပြည့် ပြန်ပေးမည့် အပြိုင်လုပ်ငန်း`, `အပြိုင်လုပ်ငန်း`: a [job](../language/jobs.md#the-job-kind) |
+| `pipe(text)` | `စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း`, a [channel](../language/jobs.md#channels) |
 
 ## Codes
 
@@ -284,6 +286,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0492 | a function that code outside can call passes a struct to C that has no C name | [Functions C can call](../language/functions.md#functions-c-can-call) |
 | ZK0493 | the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` on a struct that is no shared object, where it changes nothing (warning) | [Objects jobs can use](../language/objects.md#objects-jobs-can-use) |
 | ZK0494 | a value goes to a job, or comes back from one, of a kind jobs on other threads cannot use, such as a plain shared object | [Values that go to a job](../language/jobs.md#values-that-go-to-a-job) |
+| ZK0495 | a receive, a loop over each value or a close of a value that is no channel | [Channels](../language/jobs.md#channels) |
+| ZK0496 | a test of a channel for data that is not the whole condition of `အကယ်၍`, or a read of its data outside the branch of that test | [Channels](../language/jobs.md#channels) |
 
 ### ZK05: natural Zaka (warnings)
 

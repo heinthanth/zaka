@@ -223,6 +223,11 @@ pub enum VerbOp
     /// `ကို ဖျက်မည်` removes. The parser builds it; no verb word stands for it.
     #[strum(serialize = "row")]
     Row,
+    /// `<pipe> မှ ရရှိသော ဒေတာ`: the next value of a channel, as an optional;
+    /// it waits while the channel is open and holds none, and gives no data
+    /// once it is closed and drained. The parser builds it.
+    #[strum(serialize = "receive")]
+    Receive,
     /// `<ဇယား> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး`: the value of a row, an
     /// optional when read, the value itself when written through. The parser
     /// builds it; no verb word stands for it.

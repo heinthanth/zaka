@@ -83,7 +83,7 @@ A statement is one of nineteen forms:
 
 An expression has its kind on each node, so no later stage has to work it out again.
 `ExprNode` has: `Const(Value)`, `Read(Place)`, `Prefix`, `Infix`, `Compare`, `Logic`,
-`Convert { implicit }`, `Call`, `Spawn { func, name, args }` (a call that starts a [job](../language/jobs.md), whose value is the `usize` that names it), `Wait(job)` (a wait for a job that gives its result; with the result dropped, the statement `Stmt::Wait { job, kind, span }`), `CallValue { callee, args }` (a call through a function
+`Convert { implicit }`, `Call`, `Spawn { func, name, args }` (a call that starts a [job](../language/jobs.md), whose value is the `usize` that names it), `Wait(job)` (a wait for a job that gives its result; with the result dropped, the statement `Stmt::Wait { job, kind, span }`), `MakePipe(room)` (a new channel, the initial value of a channel kind), `Receive(pipe)` (the next value of a channel, as an optional; the statements `Stmt::Send { pipe, value, span }` and `Stmt::Close { pipe, span }` send and close), `CallValue { callee, args }` (a call through a function
 value: the value first, then the arguments), `FnAddr { func, name }` (the function value of
 `func`, written `(fn_addr name)`), `Closure { func, name, record }` (the closure of a nested function with captures, made where it is declared: `func` is its thunk, and `record` the address of the record in a hidden slot, which moves to a counted heap block), `Host { func, args }` (the one statement of an external
 function: its result variable takes what the host function `func` gives for the
@@ -767,6 +767,13 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   `ret` of `main` parks likewise while a job runs (`park_at_end`). A trap in a job
   under `TrapMode::Unwind` ends that job alone (`job_trapped`), and a later wait for it
   is the trap `JobTrapped`; `exit_code` is 1 when a trap ended a job that no wait saw.
+- **Channels.** `machine/pipes.rs` keeps each channel in `Jobs::pipes`: a queue of heap
+  blocks, its room, the kind of its values and whether it is closed. `pipe_send` moves
+  the value into a new heap block and zeroes its slot; `pipe_receive` writes the optional
+  (`tag` 1 and the value in `some`, or zeros once closed and drained) and frees the
+  block. A full channel, or an open one that holds none, parks the job with `Waits::Send` or
+  `Waits::Receive`, which `can_go` tests. The end of the program drops the values left in
+  each queue (`drop_pipe_values`).
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

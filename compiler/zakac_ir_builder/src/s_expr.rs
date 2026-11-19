@@ -65,6 +65,11 @@ impl ToSexpr for Stmt
                 list(cause, value.iter().map(ToSexpr::to_sexpr))
             }
             Stmt::Wait { job, .. } => list("wait", [job.to_sexpr()]),
+            Stmt::Send { pipe, value, .. } =>
+            {
+                list("send", [pipe.to_sexpr(), value.to_sexpr()])
+            }
+            Stmt::Close { pipe, .. } => list("close", [pipe.to_sexpr()]),
             Stmt::Rings { act, octets, .. } => list(
                 &format!("rings-{}", act.as_ref()),
                 octets.iter().map(ToSexpr::to_sexpr),
@@ -197,6 +202,11 @@ impl ToSexpr for Expr
                 list("spawn", [call_sexpr(name, args)])
             }
             ExprNode::Wait(job) => list("wait", [job.to_sexpr()]),
+            ExprNode::Receive(pipe) => list("receive", [pipe.to_sexpr()]),
+            ExprNode::MakePipe(room) =>
+            {
+                list("make_pipe", room.iter().map(u32::to_string).collect::<Vec<_>>())
+            }
             ExprNode::CallValue { callee, args } => call_value_sexpr(callee, args),
             ExprNode::FnAddr { name, .. } => list("fn_addr", [name.clone()]),
             ExprNode::Closure { name, record, .. } =>

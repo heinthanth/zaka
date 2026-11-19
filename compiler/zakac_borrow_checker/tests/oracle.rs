@@ -50,6 +50,7 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::SizeOf(_)
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
+        | ExprNode::MakePipe(_)
         | ExprNode::BlankList => false,
         ExprNode::Format(pieces) => fmt_values(pieces).any(raw_expr),
         ExprNode::Chars { text, index, .. } =>
@@ -77,7 +78,7 @@ fn raw_expr(e: &Expr) -> bool
         {
             raw_expr(lhs) || raw_expr(rhs)
         }
-        ExprNode::Wait(job) => raw_expr(job),
+        ExprNode::Wait(job) | ExprNode::Receive(job) => raw_expr(job),
         ExprNode::Call { args, .. }
         | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }
@@ -102,7 +103,10 @@ fn raw_stmt(s: &Stmt) -> bool
 {
     match s
     {
-        Stmt::Set { value, .. } | Stmt::Wait { job: value, .. } => raw_expr(value),
+        Stmt::Set { value, .. }
+        | Stmt::Wait { job: value, .. }
+        | Stmt::Close { pipe: value, .. } => raw_expr(value),
+        Stmt::Send { pipe, value, .. } => raw_expr(pipe) || raw_expr(value),
         Stmt::Print { value: PrintValue::Expr(e), .. }
         | Stmt::Halt { value: Some(e), .. }
         | Stmt::Rings { octets: Some(e), .. } => raw_expr(e),

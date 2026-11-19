@@ -720,6 +720,12 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   argument loop stops before it (`call_word_at`), and the call node gets `parallel`.
   Before `ရလဒ်` and `ရလဒ်ကောင်း`, `glued.rs` splits the short ends too
   (`ENDS_BEFORE_RESULT`), so `စောင့်သော ရလဒ်` reads as the call `စောင့်` and its end.
+- The words of channels are no reserved words. `data_reads` reads `<x> မှ ရရှိသော ဒေတာ` as
+  `VerbOp::Receive` (`at_receive`), and the statement head `<x> မှ ရရှိသော ဒေတာတိုင်းကို` as
+  an each loop of `EachPart::Received` (`at_receive_each`), before the head of a counted
+  loop. The room of a bounded channel, `<n> <measure word>` before the hint of the channel
+  kind, is a level suffix of its own (`Suffix::Room`), kept in `Kind::room`; `HINT_TWINS`
+  lets a hint word read in a second spelling, `ပို့ဆောင်နိုင်သော` for `ပို့နိုင်သော`.
 - `x ၏ f(a)` joins the sign-form call to the operand before `၏` (`method_of`); `x ၏ f` remains
   a field read, which the check turns into a call when no field fits.
 

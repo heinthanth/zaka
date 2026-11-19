@@ -169,6 +169,11 @@ pub(crate) fn hint_fault(
     meet.map(|pair| HintFault::Meet(pair[0].to_string(), pair[1].to_string()))
 }
 
+/// The words of hints that a use can spell in a second form, each with its
+/// twin: `<kind> ပို့ဆောင်နိုင်သော ဒေတာလမ်းကြောင်း` reads as `<kind> ပို့နိုင်သော
+/// ဒေတာလမ်းကြောင်း`.
+const HINT_TWINS: [(&str, &str); 1] = [("ပို့နိုင်သော", "ပို့ဆောင်နိုင်သော")];
+
 /// The word that closes a hint, `ဟု`, which can stand glued to the name the
 /// hint ends in: `အတွဲဟု`.
 const HINT_CLOSE: &str = "ဟု";
@@ -336,6 +341,23 @@ impl Parser<'_>
         plain && self.text_of(tok.span) == word
     }
 
+    /// Whether the token `n` places ahead is a word of a hint, or a twin
+    /// spelling of it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    /// * `word` - The word the hint holds.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    fn is_hint_word_at(&self, n: usize, word: &str) -> bool
+    {
+        let twin = HINT_TWINS.iter().find(|(w, _)| *w == word);
+        self.is_word_at(n, word) || twin.is_some_and(|(_, t)| self.is_word_at(n, t))
+    }
+
     /// Read the word `word`, which must come next.
     ///
     /// # Arguments
@@ -459,7 +481,7 @@ impl Parser<'_>
         {
             n += match part
             {
-                HintPart::Word(w) => self.is_word_at(n, w).then_some(1)?,
+                HintPart::Word(w) => self.is_hint_word_at(n, w).then_some(1)?,
                 HintPart::Slot(_) => self.kind_len_at(n, form)?,
             };
         }

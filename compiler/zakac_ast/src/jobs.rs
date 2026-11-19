@@ -6,6 +6,10 @@
 /// The two words of the phrase, in order.
 pub const JOBS_WORDS: [&str; 2] = ["အပြိုင်လုပ်ငန်းများတွင်", "အသုံးပြုနိုင်သော"];
 
+/// The name of the channel kind the core declares, which the room of a
+/// bounded channel, `<kind> <n> ခု ပို့နိုင်သော ဒေတာလမ်းကြောင်း`, goes before.
+pub const PIPE_KIND: &str = "ဒေတာလမ်းကြောင်း";
+
 /// The name of the built-in trait of the kinds jobs can use: the two words
 /// with a space between them.
 pub const USABLE_IN_JOBS: &str = "အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော";

@@ -403,6 +403,22 @@ pub enum Op
     /// or struct result, whose address remains. A job that stopped at a trap
     /// stops the waiter too.
     Wait(Option<DataKind>),
+    /// Push the `usize` that names a new channel: with the most values that
+    /// wait in it, or with no limit.
+    PipeNew(Option<u32>),
+    /// Pop the address of a value of this kind and the `usize` that names a
+    /// channel, and move the value into the channel, leaving the default of
+    /// the kind in its place. The send waits while the channel is full; a
+    /// closed channel stops the program.
+    PipeSend(DataKind),
+    /// Pop the `usize` that names a channel, and write its next value, of
+    /// this kind, as an optional to the slot under it, whose address remains:
+    /// it waits while the channel is open and holds none, and writes no data
+    /// once it is closed and drained.
+    PipeReceive(DataKind),
+    /// Pop the `usize` that names a channel and close it; a second close
+    /// stops the program.
+    PipeClose,
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -657,6 +673,8 @@ impl Op
             | Op::FnAddr(f)
             | Op::Closure { func: f, .. } => format!("f{f}"),
             Op::Wait(kind) => kind.map(|k| k.name()).unwrap_or_default(),
+            Op::PipeNew(room) => room.map(|r| r.to_string()).unwrap_or_default(),
+            Op::PipeSend(kind) | Op::PipeReceive(kind) => kind.name(),
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::Foreign(f) => format!("c{f}"),
@@ -736,6 +754,7 @@ impl Op
             | Op::CRevoke
             | Op::Dup
             | Op::ResultAddr
+            | Op::PipeClose
             | Op::CharCount
             | Op::CharAt { .. }
             | Op::SetChar { .. }

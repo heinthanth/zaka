@@ -355,6 +355,9 @@ pub enum EachPart
     Index,
     /// `အတန်းတိုင်း`: each row of a ဇယား, one name taking its value.
     Row,
+    /// `မှ ရရှိသော ဒေတာတိုင်း`: each value a channel gives, until it is closed
+    /// and drained.
+    Received,
 }
 
 impl EachPart

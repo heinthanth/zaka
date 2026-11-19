@@ -638,10 +638,10 @@ impl<'s> FuncGen<'s>
         let name = match &e.node
         {
             ExprNode::Format(_) => "%text",
-            ExprNode::Call { .. } | ExprNode::CallValue { .. } | ExprNode::Wait(_) =>
-            {
-                "%ret"
-            }
+            ExprNode::Call { .. }
+            | ExprNode::CallValue { .. }
+            | ExprNode::Wait(_)
+            | ExprNode::Receive(_) => "%ret",
             ExprNode::List(_) | ExprNode::Own { .. } => "%list",
             _ => "",
         };
@@ -659,6 +659,7 @@ impl<'s> FuncGen<'s>
                 self.call_into(Some(at), Target::Value(callee), args)
             }
             ExprNode::Wait(job) => self.wait_into(Some(at), job, e.kind),
+            ExprNode::Receive(pipe) => self.receive_into(at, pipe, e.kind),
             ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
             ExprNode::CField { .. } => self.c_field_at(at, e),
             ExprNode::Own { .. } =>
@@ -994,6 +995,20 @@ impl<'s> FuncGen<'s>
             }
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
             Stmt::Wait { job, kind, .. } => self.wait_stmt(job, *kind),
+            Stmt::Send { pipe, value, .. } =>
+            {
+                let slot = self.temp("%cell", value.kind);
+                self.op(Op::LocalAddr(slot));
+                self.put(value);
+                self.expr(pipe);
+                self.op(Op::LocalAddr(slot));
+                self.op(Op::PipeSend(value.kind));
+            }
+            Stmt::Close { pipe, .. } =>
+            {
+                self.expr(pipe);
+                self.op(Op::PipeClose);
+            }
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 let fresh = self.read_operand(&stored(e));
@@ -1706,6 +1721,12 @@ impl<'s> FuncGen<'s>
                 let slot = slot.then(|| Op::LocalAddr(self.temp("%ret", e.kind)));
                 self.wait_into(slot, job, e.kind);
             }
+            ExprNode::MakePipe(room) => self.op(Op::PipeNew(*room)),
+            ExprNode::Receive(pipe) =>
+            {
+                let slot = Op::LocalAddr(self.temp("%ret", e.kind));
+                self.receive_into(slot, pipe, e.kind);
+            }
             ExprNode::CallValue { callee, args } =>
             {
                 self.call(Target::Value(callee), args)
@@ -2020,6 +2041,22 @@ impl<'s> FuncGen<'s>
         do_if!(let Some(op) = slot, self.op(op));
         self.expr(job);
         self.op(Op::Wait(Some(kind)));
+    }
+
+    /// Generate a receive from a channel: the optional goes to a slot, whose
+    /// address remains on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The op that pushes the address of the slot.
+    /// * `pipe` - The channel.
+    /// * `kind` - The optional kind.
+    fn receive_into(&mut self, slot: Op, pipe: &Expr, kind: DataKind)
+    {
+        let carried = kind.optional_data().expect("a receive gives an optional");
+        self.op(slot);
+        self.expr(pipe);
+        self.op(Op::PipeReceive(carried));
     }
 
     /// Generate a wait for a job whose result is dropped: the result goes

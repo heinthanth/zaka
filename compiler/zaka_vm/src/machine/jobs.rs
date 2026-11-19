@@ -10,6 +10,7 @@
 
 use zakac_rust_sugars::ret_false;
 
+use super::pipes::Pipe;
 use super::*;
 use crate::mem::StackRange;
 
@@ -31,7 +32,7 @@ pub enum TrapMode
 
 /// What a parked job waits for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-enum Waits
+pub(super) enum Waits
 {
     /// Nothing: the job can run.
     #[default]
@@ -40,6 +41,10 @@ enum Waits
     Job(usize),
     /// The end of each other job: the main job at the end of the program.
     Each,
+    /// A value in the channel with this number, or its close.
+    Receive(usize),
+    /// Room in the channel with this number, or its close.
+    Send(usize),
 }
 
 /// Where a job stands.
@@ -94,6 +99,8 @@ pub struct Jobs
 {
     /// Each job, main at 0; the row of the running one is out of date.
     list: Vec<Job>,
+    /// Each channel, the first under the number 1.
+    pub(super) pipes: Vec<Pipe>,
     /// The number of the running job.
     now: usize,
     /// The ops left in the turn of the running job.
@@ -102,7 +109,10 @@ pub struct Jobs
 
 impl Default for Jobs
 {
-    fn default() -> Self { Jobs { list: vec![Job::default()], now: 0, left: TURN } }
+    fn default() -> Self
+    {
+        Jobs { list: vec![Job::default()], pipes: Vec::new(), now: 0, left: TURN }
+    }
 }
 
 impl Jobs
@@ -163,7 +173,7 @@ impl Jobs
     /// # Returns
     ///
     /// `true` if it can.
-    fn ready(&self, n: usize) -> bool
+    fn can_go(&self, n: usize) -> bool
     {
         let job = &self.list[n];
         ret_false!(job.end != End::Runs);
@@ -179,6 +189,8 @@ impl Jobs
                 let ended = |(k, j): (usize, &Job)| k == n || j.end != End::Runs;
                 self.list.iter().enumerate().all(ended)
             }
+            Waits::Receive(p) => self.pipes.get(p).is_none_or(Pipe::can_receive),
+            Waits::Send(p) => self.pipes.get(p).is_none_or(Pipe::can_send),
         }
     }
 
@@ -188,21 +200,21 @@ impl Jobs
     /// # Returns
     ///
     /// The number of the job, or `None` when none can run.
-    fn next_ready(&self) -> Option<usize>
+    fn next_to_go(&self) -> Option<usize>
     {
         let count = self.list.len();
-        (1..=count).map(|k| (self.now + k) % count).find(|n| self.ready(*n))
+        (1..=count).map(|k| (self.now + k) % count).find(|n| self.can_go(*n))
     }
 }
 
 /// The kind of a job number.
-const JOB_ID: IntKind = IntKind::new(false, Width::Platform);
+pub(super) const JOB_ID: IntKind = IntKind::new(false, Width::Platform);
 
 impl Machine
 {
     /// Start a job that calls a function: its arguments leave the stack,
     /// the job enters the function at once, and the number of the job is
-    /// pushed. The job holds its own copy of each list and struct argument.
+    /// pushed. The job holds a duplicate of each list and struct argument.
     ///
     /// # Arguments
     ///
@@ -277,7 +289,7 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The address of the copy, or a trap.
+    /// The address of the duplicate, or a trap.
     fn keep_arg(&mut self, v: Value, kind: DataKind) -> Result<Value, TrapKind>
     {
         let from = v.as_ptr().ok_or_else(|| malformed("an argument is an address"))?;
@@ -287,6 +299,18 @@ impl Machine
         self.dup_value(to, kind)?;
         self.jobs.list[self.jobs.now].kept.push((to, kind));
         Ok(Value::Ptr(to))
+    }
+
+    /// Park the running job at the op that ran last, so the op runs again on
+    /// a later turn, once what the job waits for comes.
+    ///
+    /// # Arguments
+    ///
+    /// * `waits` - What it waits for.
+    pub(super) fn park(&mut self, waits: Waits)
+    {
+        do_if!(let Some(frame) = self.frames.last_mut(), frame.pc -= 1);
+        self.jobs.list[self.jobs.now].waits = waits;
     }
 
     /// Wait for a job: its result is pushed, or copied to the slot under its
@@ -308,8 +332,7 @@ impl Machine
         if self.jobs.list[n].end == End::Runs
         {
             self.push(Value::int(JOB_ID, id, self.module.platform_bits))?;
-            do_if!(let Some(frame) = self.frames.last_mut(), frame.pc -= 1);
-            self.jobs.list[self.jobs.now].waits = Waits::Job(n);
+            self.park(Waits::Job(n));
             return Ok(());
         }
         self.jobs.list[n].awaited = true;
@@ -346,7 +369,8 @@ impl Machine
     }
 
     /// Whether the main job must wait at its last return: other jobs have not
-    /// ended. It then parks at the return, which runs again once they end.
+    /// ended. It then parks at the return, which runs again once the others
+    /// end.
     ///
     /// # Returns
     ///
@@ -355,8 +379,7 @@ impl Machine
     {
         ret_false!(self.frames.len() != 1 || !self.jobs.on_main());
         ret_false!(!self.jobs.others_run());
-        do_if!(let Some(frame) = self.frames.last_mut(), frame.pc -= 1);
-        self.jobs.list[0].waits = Waits::Each;
+        self.park(Waits::Each);
         true
     }
 
@@ -369,12 +392,12 @@ impl Machine
     /// `Ok`, or `Deadlock` when no job can run.
     pub(super) fn take_turns(&mut self) -> Step
     {
-        ret_if!(self.jobs.list.len() == 1, Ok(()));
+        let parked = self.jobs.list[self.jobs.now].waits != Waits::Nothing;
+        ret_if!(self.jobs.list.len() == 1 && !parked, Ok(()));
         // The main job returned, after each other job ended: the run is over.
         ret_if!(self.frames.is_empty() && self.jobs.on_main(), Ok(()));
         let ended = self.frames.is_empty() && !self.jobs.on_main();
         do_if!(ended, self.end_job()?);
-        let parked = self.jobs.list[self.jobs.now].waits != Waits::Nothing;
         self.jobs.left = self.jobs.left.saturating_sub(1);
         ret_if!(!ended && !parked && self.jobs.left > 0, Ok(()));
         self.next_turn()
@@ -387,7 +410,7 @@ impl Machine
     /// `Ok`, or `Deadlock` when no job can run.
     fn next_turn(&mut self) -> Step
     {
-        let next = self.jobs.next_ready().ok_or(TrapKind::Deadlock)?;
+        let next = self.jobs.next_to_go().ok_or(TrapKind::Deadlock)?;
         self.jobs.list[next].waits = Waits::Nothing;
         self.jobs.left = TURN;
         self.swap_to(next);
@@ -438,7 +461,7 @@ impl Machine
     }
 
     /// Give back the calls of the running job, which stopped at a trap.
-    /// shortcut: the values its calls held are not dropped, so they stay
+    /// shortcut: the values its calls held are not dropped, so each remains
     /// held to the end; drop them on unwind if a program traps in a loop.
     fn unwind_frames(&mut self)
     {
@@ -450,7 +473,7 @@ impl Machine
     }
 
     /// Drop the list and struct results the jobs left, at the end of the
-    /// program, so no block stays held.
+    /// program, so no block remains held.
     ///
     /// # Returns
     ///
@@ -470,7 +493,8 @@ impl Machine
                 _ => None,
             })
             .collect();
-        results.into_iter().try_for_each(|(at, kind)| self.drop_value(at, kind))
+        results.into_iter().try_for_each(|(at, kind)| self.drop_value(at, kind))?;
+        self.drop_pipe_values()
     }
 
     /// Make another job the running one: park the state of the running one

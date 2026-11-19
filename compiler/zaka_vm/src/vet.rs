@@ -716,6 +716,13 @@ impl Paths<'_, '_>
             Op::Call(f) => self.call(f),
             Op::Spawn(f) => self.spawn(f),
             Op::Wait(kind) => Ok(call_effect(vec![I], kind)),
+            Op::PipeNew(_) => Ok(effect(&[], Some(I))),
+            Op::PipeSend(kind) => self.kinded(kind, &[A, I], None),
+            Op::PipeReceive(kind) =>
+            {
+                Ok(call_effect(vec![I], Some(DataKind::optional(kind))))
+            }
+            Op::PipeClose => Ok(effect(&[I], None)),
             Op::FnAddr(f) => Ok(effect(&[], Some(Class::Fn(vet.callee(f)?.ret)))),
             Op::CallValue(n) => self.call_value(n as usize, stack),
             Op::Closure { func, record } =>
