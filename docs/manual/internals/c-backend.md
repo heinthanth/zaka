@@ -79,7 +79,11 @@ cells is static and never freed.
 Each counted block (text, a plain list, a box, a closure record) starts with a head,
 `zk_head`, padded so the cells keep the alignment `malloc` gives: the count `rc`, the size,
 the kinds of its cells for the ring collector and for the drop, the next block in the
-queue of blocks to free, the collector's color and buffer bits, and the pin bit. `zk_seq_new`, `zk_seq_grow` and
+queue of blocks to free, the collector's color and buffer bits, and the pin bit. Each change
+of a count goes through `rc_add`, `rc_sub` and `rc_of` (`heap.rs`): plain ops until
+`zk_threads_begin` marks the program as one with threads, atomic ops from then on; the
+trial counts of the ring collector remain plain, since a collection runs with the other
+threads halted. `zk_seq_new`, `zk_seq_grow` and
 `zk_seq_free` make, grow and free such blocks; `zk_own` and `zk_unshare` give a block that
 another value shares a duplicate of its own before a write; `zk_pin` marks a block so each later
 duplicate clones it. A drop queues the blocks it lets go (`zk_freeing`), so a long chain

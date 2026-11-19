@@ -4,8 +4,10 @@
 
 use std::ffi::c_void;
 use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
+use std::sync::atomic::fence;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -338,6 +340,88 @@ pub fn head<'a>(base: *const u8) -> &'a mut Head
 {
     // SAFETY: each counted block starts `SEQ_HEAD` octets before its cells.
     unsafe { &mut *base.cast_mut().sub(SEQ_HEAD).cast::<Head>() }
+}
+
+/// Whether the program has started a second thread: from then on each count
+/// changes with atomic ops. The start of a thread orders the set before each
+/// op of the new thread, so the switch needs no more than that.
+static THREADED: AtomicBool = AtomicBool::new(false);
+
+/// Make each later count change atomic: the start of the first thread of the
+/// program calls this before the thread runs.
+#[unsafe(export_name = stamped!("threads_begin"))]
+pub extern "C" fn zk_threads_begin() { THREADED.store(true, Ordering::SeqCst) }
+
+/// The count of a block as an atomic, for the ops of a program with threads.
+///
+/// # Arguments
+///
+/// * `base` - The first cell of the block.
+///
+/// # Returns
+///
+/// The count.
+fn atomic_rc<'a>(base: *const u8) -> &'a AtomicUsize
+{
+    // SAFETY: each counted block starts `SEQ_HEAD` octets before its cells,
+    // and its count is a word that each thread changes with atomic ops alone
+    // once threads start.
+    unsafe {
+        let h = base.cast_mut().sub(SEQ_HEAD).cast::<Head>();
+        AtomicUsize::from_ptr(std::ptr::addr_of_mut!((*h).rc))
+    }
+}
+
+/// Add a holder to a counted block.
+///
+/// # Arguments
+///
+/// * `base` - The first cell of the block.
+pub fn rc_add(base: *const u8)
+{
+    ret_if!(
+        THREADED.load(Ordering::Relaxed),
+        _ = atomic_rc(base).fetch_add(1, Ordering::Relaxed)
+    );
+    head(base).rc += 1;
+}
+
+/// Take a holder off a counted block.
+///
+/// # Arguments
+///
+/// * `base` - The first cell of the block.
+///
+/// # Returns
+///
+/// The holders left; at 0 the caller frees the block, and each write of the
+/// other holders is seen.
+pub fn rc_sub(base: *const u8) -> usize
+{
+    if THREADED.load(Ordering::Relaxed)
+    {
+        let left = atomic_rc(base).fetch_sub(1, Ordering::Release) - 1;
+        do_if!(left == 0, fence(Ordering::Acquire));
+        return left;
+    }
+    let h = head(base);
+    h.rc -= 1;
+    h.rc
+}
+
+/// The holders of a counted block now.
+///
+/// # Arguments
+///
+/// * `base` - The first cell of the block.
+///
+/// # Returns
+///
+/// The count.
+pub fn rc_of(base: *const u8) -> usize
+{
+    ret_if!(THREADED.load(Ordering::Relaxed), atomic_rc(base).load(Ordering::Acquire));
+    head(base).rc
 }
 
 /// A new counted block of text or a plain list, with one holder.
@@ -769,7 +853,7 @@ pub extern "C" fn zk_fn_dup(f: ZkFn) -> ZkFn
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0, f);
     let rec = zk_fn_rec(f);
-    head(rec).rc += 1;
+    rc_add(rec);
     rec.cast_const().cast()
 }
 
@@ -803,9 +887,7 @@ pub fn drop_fn(at: *mut u8)
     st(at, std::ptr::null::<c_void>());
     ret_if!(!owned);
     let rec = zk_fn_rec(f);
-    let h = head(rec);
-    h.rc -= 1;
-    ret_if!(h.rc > 0, note_candidate(rec));
+    ret_if!(rc_sub(rec) > 0, note_candidate(rec));
     zk_drop(rec, fn_kind(f));
     dispose(rec);
 }
@@ -848,3 +930,56 @@ pub extern "C" fn zk_fn_release(f: ZkFn)
 ///
 /// The kind.
 pub fn record_kind(f: ZkFn) -> *const ZkKind { fn_kind(f) }
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    /// A counted block with one holder and 16 octets of cells, outside the
+    /// heap of a program, as the count helpers see it.
+    ///
+    /// # Returns
+    ///
+    /// The storage, which must outlive the block, and the first cell.
+    fn block_of_one() -> (Vec<u64>, usize)
+    {
+        let mut room = vec![0u64; (SEQ_HEAD + 16) / 8];
+        #[rustfmt::skip]
+        let h = Head { rc: 1, size: 16, cell: std::ptr::null(), drop_cell: std::ptr::null(),
+            len: 0, next: std::ptr::null_mut(), color: 0, buffered: 0, pinned: 0, owner: 0 };
+        let start = room.as_mut_ptr().cast::<u8>();
+        // SAFETY: the storage holds a head and 16 octets, aligned for a word.
+        unsafe { start.cast::<Head>().write(h) };
+        let base = start as usize + SEQ_HEAD;
+        (room, base)
+    }
+
+    #[test]
+    fn a_holder_added_and_let_go_leaves_the_count_as_it_was()
+    {
+        let (_room, base) = block_of_one();
+        let p = base as *const u8;
+        rc_add(p);
+        assert_eq!(rc_of(p), 2);
+        assert_eq!(rc_sub(p), 1);
+    }
+
+    #[test]
+    fn threads_change_one_count_with_no_update_lost()
+    {
+        let (_room, base) = block_of_one();
+        zk_threads_begin();
+        let workers: Vec<_> = (0..8)
+            .map(|_| {
+                std::thread::spawn(move || {
+                    let p = base as *const u8;
+                    (0..100_000).for_each(|_| rc_add(p));
+                    (0..99_000).for_each(|_| _ = rc_sub(p));
+                })
+            })
+            .collect();
+        workers.into_iter().for_each(|w| w.join().unwrap());
+        assert_eq!(rc_of(base as *const u8), 1 + 8 * 1000);
+    }
+}

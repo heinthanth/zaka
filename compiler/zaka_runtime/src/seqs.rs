@@ -24,6 +24,9 @@ use crate::heap::holds_record;
 use crate::heap::ld;
 use crate::heap::malloc;
 use crate::heap::move_octets;
+use crate::heap::rc_add;
+use crate::heap::rc_of;
+use crate::heap::rc_sub;
 use crate::heap::seq_grow;
 use crate::heap::seq_kind;
 use crate::heap::st;
@@ -331,6 +334,9 @@ fn text_cells(k: &ZkKind) -> *const ZkKind
 }
 
 // ---- the queue of blocks to free, and the ring collector ----
+//
+// The trial counts of the collector change the counts with plain ops: a
+// collection runs with each other thread of the program halted.
 
 /// A list of blocks that a static holds: the runtime runs on one thread, and
 /// a static, unlike a thread local, still stands while the C lib runs
@@ -809,9 +815,7 @@ fn drop_block(p: *mut u8, k: &ZkKind)
     let (base, len, owned) = (zk_seq_base(p), zk_seq_len(p), seq_room(p) > 0);
     zero(p, 3 * WORD);
     ret_if!(!owned);
-    let h = head(base);
-    h.rc -= 1;
-    ret_if!(h.rc > 0, note_candidate(base));
+    ret_if!(rc_sub(base) > 0, note_candidate(base));
     queue_free(base, text_cells(k), len);
 }
 
@@ -825,6 +829,13 @@ fn drop_block(p: *mut u8, k: &ZkKind)
 pub extern "C" fn zk_drop(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut drop_block);
+    drain_queue();
+}
+
+/// Free the queue of blocks to free, unless an outer drop of this thread is
+/// freeing it now.
+fn drain_queue()
+{
     ret_if!(DRAINING.get());
     DRAINING.set(true);
     drain_frees();
@@ -874,7 +885,7 @@ fn dup_block(p: *mut u8, k: &ZkKind)
     ret_if!(base.is_null());
     if seq_room(p) > 0 && head(base).pinned == 0
     {
-        head(base).rc += 1;
+        rc_add(base);
         return;
     }
     clone_block(p, k);
@@ -890,10 +901,14 @@ fn dup_block(p: *mut u8, k: &ZkKind)
 fn unshare(p: *mut u8, k: &ZkKind)
 {
     let base = zk_seq_base(p);
-    ret_if!(base.is_null() || head(base).rc <= 1);
+    ret_if!(base.is_null() || rc_of(base) <= 1);
+    let len = zk_seq_len(p);
     clone_block(p, k);
-    // The other holders keep the old block, so this never frees it.
-    head(base).rc -= 1;
+    // Another thread can let go of the old block meanwhile, leaving this the
+    // last holder; then this frees it.
+    ret_if!(rc_sub(base) > 0);
+    queue_free(base, text_cells(k), len);
+    drain_queue();
 }
 
 /// Duplicate each block a value holds.
@@ -924,7 +939,7 @@ fn deep_block(p: *mut u8, k: &ZkKind)
     let h = head(base);
     if !h.next.is_null()
     {
-        head(h.next).rc += 1;
+        rc_add(h.next);
         return st(p, h.next);
     }
     let count = zk_seq_len(p);
@@ -1030,7 +1045,7 @@ fn own(p: *mut u8, k: &ZkKind)
 pub extern "C" fn zk_obj_ptr(p: *const u8) -> *mut u8
 {
     let base = zk_seq_base(p);
-    do_if!(!base.is_null(), head(base).rc += 1);
+    do_if!(!base.is_null(), rc_add(base));
     base
 }
 
