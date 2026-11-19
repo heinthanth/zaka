@@ -25,6 +25,7 @@ macro_rules! stamped {
 // closure.
 #[cfg(not(target_os = "wasi"))]
 pub mod callbacks;
+pub mod ctx;
 pub mod exchange;
 #[cfg(not(target_os = "wasi"))]
 pub mod ffi;

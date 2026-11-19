@@ -13,6 +13,7 @@ use strum::IntoStaticStr;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::ctx::zk_ctx;
 use crate::libs::TrapRecord;
 use crate::out::flush_out;
 use crate::program::ZkFrame;
@@ -20,8 +21,6 @@ use crate::program::prog;
 use crate::program::row;
 use crate::program::text;
 use crate::program::tracks;
-use crate::program::zk_depth;
-use crate::program::zk_frames;
 
 /// The traps a program can stop with; the compiler writes the text of each,
 /// from its locale, into the table of the program.
@@ -155,13 +154,13 @@ pub fn fill(tmpl: &[u8], pairs: &[(&str, &[u8])]) -> Vec<u8>
 /// The frames; blank when the build keeps none.
 fn frames() -> &'static [ZkFrame]
 {
-    // SAFETY: `make_frames` made room for the depth limit plus main, and
-    // the inline `ZK_ENTER` writes within it.
+    // SAFETY: `zk_ctx` made room for the depth limit plus main, and the
+    // inline `ZK_ENTER` writes within it.
     unsafe {
-        let base = zk_frames;
-        ret_if!(base.is_null(), &[]);
-        let top = zk_depth.min(prog().max_depth);
-        std::slice::from_raw_parts(base, top as usize + 1)
+        let ctx = &*zk_ctx();
+        ret_if!(ctx.frames.is_null(), &[]);
+        let top = ctx.depth.min(prog().max_depth);
+        std::slice::from_raw_parts(ctx.frames, top as usize + 1)
     }
 }
 

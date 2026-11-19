@@ -143,7 +143,7 @@ static int32_t zk_lib_end(jmp_buf *outer, zk_lib_place was, int32_t status)
 static int32_t zk_lib_stop(jmp_buf *outer, zk_lib_place was, uint32_t depth)
 {
     zk_lib_state = 2;
-    zk_depth = depth;
+    zk_ctx()->depth = depth;
     zk_lib_unwind();
     zk_flush();
     return zk_lib_end(outer, was, zk_lib_status);
@@ -164,7 +164,7 @@ static int32_t zk_lib_guard(void (*step)(void *), void *data)
     zk_lib_lock();
     zk_lib_place zk_was = zk_lib_in();
     jmp_buf *zk_outer = (jmp_buf *)zk_lib_jump();
-    uint32_t zk_depth_was = zk_depth;
+    uint32_t zk_depth_was = zk_ctx()->depth;
     RET_IF(zk_lib_state == 2, zk_lib_end(zk_outer, zk_was, ZK_STOPPED));
     if (setjmp(zk_here) != 0) return zk_lib_stop(zk_outer, zk_was, zk_depth_was);
     ZK_LIB_NO_UNWIND(zk_here);

@@ -5,11 +5,7 @@
 use std::ffi::CStr;
 use std::ffi::c_char;
 use std::ptr::null;
-use std::ptr::null_mut;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
 
-use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 /// What a program holds of one right: each path or name, or a list.
@@ -149,17 +145,6 @@ pub(crate) const OVERLAP_BIT: u32 = 1 << 7;
 #[allow(non_upper_case_globals)]
 pub static mut zk_prog: *const ZkProgram = null();
 
-/// The count of Zaka calls in progress, which the inline `ZK_ENTER` and
-/// `ZK_LEAVE` keep.
-#[unsafe(export_name = stamped!("depth"))]
-#[allow(non_upper_case_globals)]
-pub static mut zk_depth: u32 = 0;
-
-/// The calls in progress, main at 0 and the last at `zk_depth`.
-#[unsafe(export_name = stamped!("frames"))]
-#[allow(non_upper_case_globals)]
-pub static mut zk_frames: *mut ZkFrame = null_mut();
-
 /// The table of the running program.
 ///
 /// # Returns
@@ -223,38 +208,6 @@ pub fn row<'a>(list: *const *const c_char, n: usize) -> &'a [u8]
     // SAFETY: the table holds each list with the rows its enum counts.
     text(unsafe { *list.add(n) })
 }
-
-/// Make room for the calls in progress: the depth limit plus main, when the
-/// build keeps the calls.
-pub fn make_frames()
-{
-    let count = prog().max_depth as usize + 1;
-    let room = FRAME_ROOM.load(Ordering::Relaxed);
-    // A C lib that starts again keeps its frames; a lib whose limit is
-    // deeper than those before it grows them, keeping the calls in progress.
-    ret_if!(!tracks() || count <= room);
-    let mut frames = vec![ZkFrame::default(); count].into_boxed_slice();
-    // SAFETY: the frames before hold `room` rows; one thread starts a run or
-    // a lib at a time, and the rows before live to the end of the program.
-    unsafe {
-        do_if!(
-            room > 0,
-            frames[..room].copy_from_slice(std::slice::from_raw_parts(zk_frames, room))
-        );
-        zk_frames = Box::leak(frames).as_mut_ptr();
-    }
-    FRAME_ROOM.store(count, Ordering::Relaxed);
-}
-
-/// The rows the frame table has room for.
-static FRAME_ROOM: AtomicUsize = AtomicUsize::new(0);
-
-/// The rows the frame table has room for.
-///
-/// # Returns
-///
-/// The count, 0 when the build keeps no frames.
-pub(crate) fn frame_room() -> usize { FRAME_ROOM.load(Ordering::Relaxed) }
 
 /// A field of a struct: its name, its offset in octets and its kind.
 #[repr(C)]

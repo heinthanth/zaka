@@ -11,9 +11,9 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
 
+use crate::ctx::zk_ctx;
 use crate::out::flush_out;
 use crate::program::ZkProgram;
-use crate::program::make_frames;
 use crate::program::zk_prog;
 use crate::traps::set_name;
 
@@ -30,7 +30,7 @@ pub extern "C" fn zk_start(argc: i32, argv: *mut *mut c_char, program: *const Zk
 {
     // SAFETY: `main` calls this first, on the one thread of the program.
     unsafe { zk_prog = program };
-    make_frames();
+    zk_ctx();
     ret_if!(argc <= 0 || argv.is_null());
     // SAFETY: `argv` holds `argc` NUL-ended arguments.
     let first = unsafe { *argv };

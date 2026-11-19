@@ -1097,6 +1097,7 @@ impl<'s, 'm> FnGen<'s, 'm>
     {
         let module = self.shared.module;
         self.line(&format!("zk_start(argc, argv, &{PROGRAM_TABLE});"));
+        self.line("ZK_HERE();");
         do_if!(let Some(g) = module.host.args, {
             self.line(&format!("zk_text_list({}, argc, argv);", global_name(g)));
         });
@@ -1131,6 +1132,7 @@ impl<'s, 'm> FnGen<'s, 'm>
     /// The C text of `main.c`.
     fn lib_init(mut self) -> String
     {
+        self.line("ZK_HERE();");
         self.block(init_stmts(self.shared.module));
         format!(
             "#include \"{KINDS_HEADER}\"\n\nvoid zk_lib_init(void)\n{{\n{}}}\n",

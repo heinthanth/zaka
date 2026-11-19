@@ -131,7 +131,7 @@ The C side reads the runtime through three headers:
 
 | File | Holds |
 | --- | --- |
-| `zaka_runtime.h` | written from the Rust through cbindgen at build time: a declaration of each runtime function, the structs the generated code shares with the runtime (`zk_program`, `zk_kind`, `zk_field`, `zk_site`, `zk_cb_shape`, ...), the ids of the traps, the rights and the kinds (`ZK_TRAP_*`, `ZK_RIGHT_*`, `ZK_TAG_*`), and `zk_depth`, `zk_frames`, `zk_prog` |
+| `zaka_runtime.h` | written from the Rust through cbindgen at build time: a declaration of each runtime function, the structs the generated code shares with the runtime (`zk_program`, `zk_kind`, `zk_field`, `zk_site`, `zk_cb_shape`, ...), the ids of the traps, the rights and the kinds (`ZK_TRAP_*`, `ZK_RIGHT_*`, `ZK_TAG_*`), `zk_context` and `zk_ctx()`, the calls in progress of each thread, and `zk_prog` |
 | `zaka_target_c_runtime.h` | hand-written: the inline code the generated C runs for each operation, the checked integer operations of each kind (`zk_add_i32`, `zk_div_u64`, ...), the loads and stores and the marks of the calls in progress; it includes `zaka_runtime.h` |
 | `zaka_c_sugars.h` | `RET_IF`, `DONE_IF`, `DO_IF`, `NEXT_IF`, `LEAVE_IF`, `DO_FOR` |
 
@@ -242,15 +242,18 @@ A print of an optional goes through `zk_push_fallible`, which writes `ဒေတ�
 `အလွတ်` for tag 0, with the words `zk_data_text` and `zk_no_data_text` that `emit.rs` puts in
 `zaka_kinds.c`; the null pointer prints as `zk_null_text`, the phrase `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, as in the VM; a result writes `ရလဒ်ကောင်း(...)` or `အမှားအယွင်း(...)`, as in the VM.
 
-`ZK_ENTER(f)` opens each function and `ZK_LEAVE()` closes each return: with `ZK_CHECK_DEPTH`
-on, the pair counts `zk_depth` and calls `zk_too_deep` past `ZK_MAX_DEPTH` (`--max-depth`).
+Each thread keeps its calls in progress in a `zk_context` of its own (`depth`, `frames`,
+`room`), which `zk_ctx()` gives and makes the frame table of on first use. `ZK_ENTER(f)` opens
+each function and keeps the context in the local `zk_c`; `main` and `zk_lib_init` take it
+through `ZK_HERE()`. `ZK_LEAVE()` closes each return: with `ZK_CHECK_DEPTH` on, the pair counts
+`zk_c->depth` and calls `zk_too_deep` past `ZK_MAX_DEPTH` (`--max-depth`).
 Frames are kept when the depth check is on or `ZK_DEBUG_INFO` is 1, so `--checks none` still
 names the place in a debug build: the pair then pushes and pops a row of the frame table
-`zk_frames` (one row for each call in progress: the function number and the site). `ZK_AT(site)`
+`zk_c->frames` (one row for each call in progress: the function number and the site). `ZK_AT(site)`
 comes before each statement whose site differs from the last one, and sets the site of the top
 row. The sites (file, line, column of the start of a statement) are tables in
 `zaka_kinds.c` that the program table points at; a `--release` build writes neither the
-tables nor the marks. A stop writes the function and the place, then the backtrace from `zk_frames`, with the
+tables nor the marks. A stop writes the function and the place, then the backtrace from the frames of its thread, with the
 rules of the VM (`ZAKA_BACKTRACE`: unset folds a run of one call to `... the call above, N
 times more` and past 16 lines to `... N calls more`; `full` lists each call; `0` none; the C
 `main` is left out). With the checks of depth and debug info both off, the pair counts nothing.

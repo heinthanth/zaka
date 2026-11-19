@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 use std::mem::offset_of;
 
 use zaka_runtime::callbacks::ZkCbShape;
+use zaka_runtime::ctx::ZkCtx;
 use zaka_runtime::ffi::ZkCKind;
 use zaka_runtime::ffi::ZkCbNativeShape;
 use zaka_runtime::ffi::ZkFfiShape;
@@ -74,6 +75,7 @@ fn forms() -> Vec<Form>
         ZkGrant => "zk_grant" { all, count, items }
         ZkSite => "zk_site" { file, line, col }
         ZkFrame => "zk_frame" { func, site }
+        ZkCtx => "zk_context" { depth, frames, room }
         ZkFnName => "zk_fn_name" { code, name }
         ZkFnRec => "zk_fnrec" { code, none }
         ZkField => "zk_field" { name, offset, kind }

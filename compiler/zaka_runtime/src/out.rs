@@ -1,12 +1,11 @@
 //! The output of a program: a buffer in front of stdout, the sinks that an
 //! interpolation writes into, and the print of each scalar.
 
+use std::cell::Cell;
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::io::Write;
 use std::sync::Mutex;
-use std::sync::atomic::AtomicPtr;
-use std::sync::atomic::Ordering;
 
 use zaka_host::numbers::burmese_digits;
 use zaka_host::numbers::float_text;
@@ -40,8 +39,10 @@ pub struct ZkBuf
     pub prev: *mut ZkBuf,
 }
 
-/// The sink of an interpolation; NULL while text goes to stdout.
-static INTO: AtomicPtr<ZkBuf> = AtomicPtr::new(std::ptr::null_mut());
+thread_local! {
+    /// The sink of an interpolation; NULL while text goes to stdout.
+    static INTO: Cell<*mut ZkBuf> = const { Cell::new(std::ptr::null_mut()) };
+}
 
 /// Write out what waits for stdout.
 pub fn flush_out()
@@ -64,7 +65,7 @@ pub fn flush_out()
 /// * `octets` - The octets.
 pub fn emit(octets: &[u8])
 {
-    let into = INTO.load(Ordering::Relaxed);
+    let into = INTO.get();
     if !into.is_null()
     {
         // SAFETY: the generated code keeps the buffer alive between
@@ -147,8 +148,8 @@ pub extern "C" fn zk_sink_open(buf: *mut ZkBuf)
     b.data = std::ptr::null_mut();
     b.len = 0;
     b.cap = 0;
-    b.prev = INTO.load(Ordering::Relaxed);
-    INTO.store(buf, Ordering::Relaxed);
+    b.prev = INTO.get();
+    INTO.set(buf);
 }
 
 /// Send what the print functions write back to the sink before, and keep the
@@ -161,10 +162,10 @@ pub extern "C" fn zk_sink_open(buf: *mut ZkBuf)
 #[unsafe(export_name = stamped!("sink_close"))]
 pub extern "C" fn zk_sink_close(slot: *mut u8)
 {
-    let buf = INTO.load(Ordering::Relaxed);
+    let buf = INTO.get();
     // SAFETY: a close follows its open, so the sink is the open buffer.
     let b = unsafe { &mut *buf };
-    INTO.store(b.prev, Ordering::Relaxed);
+    INTO.set(b.prev);
     let block = match b.len
     {
         0 => std::ptr::null_mut(),
@@ -302,7 +303,7 @@ pub extern "C" fn zk_char_of(negative: i32, v: u64) -> u32
 /// # Returns
 ///
 /// The buffer an interpolation builds, or NULL for stdout.
-pub(crate) fn sink() -> *mut ZkBuf { INTO.load(Ordering::Relaxed) }
+pub(crate) fn sink() -> *mut ZkBuf { INTO.get() }
 
 /// Send the output where it went when a call of a C lib began: a trap while
 /// text went to a buffer left it there.
@@ -310,4 +311,4 @@ pub(crate) fn sink() -> *mut ZkBuf { INTO.load(Ordering::Relaxed) }
 /// # Arguments
 ///
 /// * `to` - The sink, from [`sink`].
-pub(crate) fn set_sink(to: *mut ZkBuf) { INTO.store(to, Ordering::Relaxed) }
+pub(crate) fn set_sink(to: *mut ZkBuf) { INTO.set(to) }

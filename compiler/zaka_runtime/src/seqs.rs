@@ -3,10 +3,10 @@
 //! and own the blocks a value holds, the ring collector, and the edits of
 //! cells and characters.
 
+use std::cell::Cell;
 use std::ffi::c_char;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicPtr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
@@ -398,11 +398,15 @@ impl Blocks
     }
 }
 
-/// The blocks let go and still to free; the outermost drop frees them in a
-/// loop, so a long chain needs no deep call stack.
-static FREEING: AtomicPtr<u8> = AtomicPtr::new(std::ptr::null_mut());
-/// Whether a drop is freeing the queue, so an inner drop just queues.
-static DRAINING: AtomicBool = AtomicBool::new(false);
+thread_local! {
+    /// The blocks let go and still to free; the outermost drop frees them in a
+    /// loop, so a long chain needs no deep call stack.
+    static FREEING: Cell<*mut u8> = const { Cell::new(std::ptr::null_mut()) };
+}
+thread_local! {
+    /// Whether a drop is freeing the queue, so an inner drop just queues.
+    static DRAINING: Cell<bool> = const { Cell::new(false) };
+}
 /// The blocks a release left held that can be part of a ring.
 static CANDIDATES: Blocks = Blocks::new();
 /// The new blocks whose cells the deep duplicate still visits.
@@ -437,8 +441,8 @@ fn queue_free(base: *mut u8, cell: *const ZkKind, len: usize)
     let h = head(base);
     h.drop_cell = cell;
     h.len = len;
-    h.next = FREEING.load(Ordering::Relaxed);
-    FREEING.store(base, Ordering::Relaxed);
+    h.next = FREEING.get();
+    FREEING.set(base);
 }
 
 /// Free a block that nothing holds; one in the buffer of the ring collector
@@ -464,10 +468,10 @@ fn drain_frees()
 {
     loop
     {
-        let base = FREEING.load(Ordering::Relaxed);
+        let base = FREEING.get();
         ret_if!(base.is_null());
         let h = head(base);
-        FREEING.store(h.next, Ordering::Relaxed);
+        FREEING.set(h.next);
         let (cell, len) = (h.drop_cell, h.len);
         if !cell.is_null()
         {
@@ -821,10 +825,10 @@ fn drop_block(p: *mut u8, k: &ZkKind)
 pub extern "C" fn zk_drop(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut drop_block);
-    ret_if!(DRAINING.load(Ordering::Relaxed));
-    DRAINING.store(true, Ordering::Relaxed);
+    ret_if!(DRAINING.get());
+    DRAINING.set(true);
     drain_frees();
-    DRAINING.store(false, Ordering::Relaxed);
+    DRAINING.set(false);
 }
 
 // ---- sharing ----
@@ -1816,28 +1820,6 @@ pub(crate) struct DropMark
     deep_seen: usize,
 }
 
-/// The drop that frees the queue, as it stands: the head of the queue and
-/// whether a drop is freeing it.
-///
-/// # Returns
-///
-/// The head, as an address, and the flag.
-pub(crate) fn drain_state() -> (usize, bool)
-{
-    (FREEING.load(Ordering::Relaxed) as usize, DRAINING.load(Ordering::Relaxed))
-}
-
-/// Put back the drop that frees the queue, as [`drain_state`] gave it.
-///
-/// # Arguments
-///
-/// * `state` - The head of the queue and the flag.
-pub(crate) fn set_drain_state(state: (usize, bool))
-{
-    FREEING.store(state.0 as *mut u8, Ordering::Relaxed);
-    DRAINING.store(state.1, Ordering::Relaxed);
-}
-
 /// Where the queues of the drops stand now.
 ///
 /// # Returns
@@ -1846,8 +1828,8 @@ pub(crate) fn set_drain_state(state: (usize, bool))
 pub(crate) fn drop_mark() -> DropMark
 {
     #[rustfmt::skip]
-    let mark = DropMark { freeing: FREEING.load(Ordering::Relaxed) as usize,
-        draining: DRAINING.load(Ordering::Relaxed), candidates: CANDIDATES.len(),
+    let mark = DropMark { freeing: FREEING.get() as usize,
+        draining: DRAINING.get(), candidates: CANDIDATES.len(),
         deep_todo: DEEP_TODO.len(), deep_seen: DEEP_SEEN.len() };
     mark
 }
@@ -1860,8 +1842,8 @@ pub(crate) fn drop_mark() -> DropMark
 /// * `mark` - Where the queues stood.
 pub(crate) fn back_to(mark: DropMark)
 {
-    FREEING.store(mark.freeing as *mut u8, Ordering::Relaxed);
-    DRAINING.store(mark.draining, Ordering::Relaxed);
+    FREEING.set(mark.freeing as *mut u8);
+    DRAINING.set(mark.draining);
     CANDIDATES.truncate(mark.candidates);
     DEEP_TODO.truncate(mark.deep_todo);
     DEEP_SEEN.truncate(mark.deep_seen);

@@ -600,7 +600,7 @@ fn wrapper(e: &Export<'_>, shape: usize, kinds: &CKinds) -> String
         "\n/* {} */\nZK_LIB_EXPORT int32_t {}({})\n{{\n    void *zk_args[] = \
          {{{args}}};\n    {held} zk_r;\n    jmp_buf zk_here;\n    zk_lib_lock();\n    \
          zk_lib_place zk_was = zk_lib_in();\n    jmp_buf *zk_outer = (jmp_buf \
-         *)zk_lib_jump();\n    uint32_t zk_depth_was = zk_depth;\n    \
+         *)zk_lib_jump();\n    uint32_t zk_depth_was = zk_ctx()->depth;\n    \
          RET_IF(zk_lib_state == 2, zk_lib_end(zk_outer, zk_was, ZK_STOPPED));\n    if \
          (setjmp(zk_here) != 0)\n        return zk_lib_stop(zk_outer, zk_was, \
          zk_depth_was);\n    ZK_LIB_NO_UNWIND(zk_here);\n    \

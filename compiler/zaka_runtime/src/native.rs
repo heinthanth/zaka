@@ -4,13 +4,12 @@
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::ctx::zk_ctx;
 use crate::program::DEPTH_BIT;
 use crate::program::ZkFrame;
 use crate::program::check_on;
 use crate::program::prog;
 use crate::program::tracks;
-use crate::program::zk_depth;
-use crate::program::zk_frames;
 use crate::traps::zk_too_deep;
 
 /// Note a call as it starts: count it, stop the run past the depth limit, and
@@ -24,15 +23,15 @@ use crate::traps::zk_too_deep;
 pub extern "C" fn zk_enter_call(func: u32)
 {
     ret_if!(!tracks());
-    // SAFETY: one thread runs the program, and the frames hold the depth
-    // limit plus main.
+    // SAFETY: the context of the thread lives as long as the thread, and its
+    // frames hold the depth limit plus main.
     unsafe {
-        zk_depth += 1;
-        let depth = zk_depth;
+        let ctx = &mut *zk_ctx();
+        ctx.depth += 1;
         let limit = prog().max_depth;
-        do_if!(depth > limit && check_on(DEPTH_BIT), zk_too_deep());
-        ret_if!(depth > limit);
-        *zk_frames.add(depth as usize) = ZkFrame { func, site: 0 };
+        do_if!(ctx.depth > limit && check_on(DEPTH_BIT), zk_too_deep());
+        ret_if!(ctx.depth > limit);
+        *ctx.frames.add(ctx.depth as usize) = ZkFrame { func, site: 0 };
     }
 }
 
@@ -41,8 +40,8 @@ pub extern "C" fn zk_enter_call(func: u32)
 pub extern "C" fn zk_leave_call()
 {
     ret_if!(!tracks());
-    // SAFETY: one thread runs the program.
-    unsafe { zk_depth -= 1 };
+    // SAFETY: the context of the thread lives as long as the thread.
+    unsafe { (*zk_ctx()).depth -= 1 };
 }
 
 /// Note the site of the statement that runs, in a build with debug info.
@@ -54,12 +53,12 @@ pub extern "C" fn zk_leave_call()
 pub extern "C" fn zk_at_site(site: u32)
 {
     ret_if!(prog().debug_info == 0);
-    // SAFETY: one thread runs the program, and the frames hold the depth
-    // limit plus main.
+    // SAFETY: the context of the thread lives as long as the thread, and its
+    // frames hold the depth limit plus main.
     unsafe {
-        let depth = zk_depth;
-        ret_if!(depth > prog().max_depth || zk_frames.is_null());
-        (*zk_frames.add(depth as usize)).site = site;
+        let ctx = &mut *zk_ctx();
+        ret_if!(ctx.depth > prog().max_depth || ctx.frames.is_null());
+        (*ctx.frames.add(ctx.depth as usize)).site = site;
     }
 }
 

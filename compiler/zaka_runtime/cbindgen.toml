@@ -34,6 +34,7 @@ include = ["ZkTrap", "ZkRight", "ZkTag", "ZkFnRec"]
 "ZkGrant" = "zk_grant"
 "ZkSite" = "zk_site"
 "ZkFrame" = "zk_frame"
+"ZkCtx" = "zk_context"
 "ZkFnName" = "zk_fn_name"
 "ZkFnRec" = "zk_fnrec"
 "ZkField" = "zk_field"

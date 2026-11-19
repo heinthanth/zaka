@@ -35,33 +35,45 @@ _Static_assert(sizeof(size_t) == sizeof(void *), "a word holds an address and a 
 #define ZK_TRACK (ZK_CHECK_DEPTH || ZK_DEBUG_INFO)
 
 /**
- * Note a call as it starts: count it, stop the run past the depth limit, and
- * keep its function; a call past the limit with no depth check is counted
- * but not kept.
+ * Note a call as it starts on the calls in progress of its thread: count it,
+ * stop the run past the depth limit, and keep its function; a call past the
+ * limit with no depth check is counted but not kept.
  *
  * @param func The number of its function, as zk_frame counts them.
+ * @return The calls in progress of the thread.
  */
-static inline void zk_enter(uint32_t func)
+static inline zk_context *zk_enter(uint32_t func)
 {
-    zk_depth++;
-    if (ZK_CHECK_DEPTH && zk_depth > ZK_MAX_DEPTH) zk_too_deep();
-    if (zk_depth > ZK_MAX_DEPTH) return;
-    zk_frames[zk_depth].func = func;
-    zk_frames[zk_depth].site = 0;
+    zk_context *c = zk_ctx();
+    c->depth++;
+    if (ZK_CHECK_DEPTH && c->depth > ZK_MAX_DEPTH) zk_too_deep();
+    if (c->depth > ZK_MAX_DEPTH) return c;
+    c->frames[c->depth].func = func;
+    c->frames[c->depth].site = 0;
+    return c;
 }
 
 /**
- * Note a call as it starts, when the calls are kept.
+ * Note a call as it starts, when the calls are kept, and keep the calls in
+ * progress of the thread in the local zk_c, which ZK_LEAVE and ZK_AT read.
  *
  * @param F The number of its function, as zk_frame counts them.
  */
 /* clang-format off */
-#define ZK_ENTER(F) do { if (ZK_TRACK) zk_enter(F); } while (0)
+#define ZK_ENTER(F) zk_context *const zk_c = ZK_TRACK ? zk_enter(F) : NULL; (void)zk_c
+/* clang-format on */
+
+/**
+ * Keep the calls in progress of the thread in the local zk_c, for the code of
+ * main and of the start of a lib, which no ZK_ENTER opens.
+ */
+/* clang-format off */
+#define ZK_HERE() zk_context *const zk_c = ZK_TRACK ? zk_ctx() : NULL; (void)zk_c
 /* clang-format on */
 
 /** Note a call as it returns. */
 /* clang-format off */
-#define ZK_LEAVE() do { if (ZK_TRACK) zk_depth--; } while (0)
+#define ZK_LEAVE() do { if (ZK_TRACK) zk_c->depth--; } while (0)
 /* clang-format on */
 
 /**
@@ -70,7 +82,7 @@ static inline void zk_enter(uint32_t func)
  * @param S The index of the site in the sites of the program table.
  */
 /* clang-format off */
-#define ZK_AT(S) do { if (ZK_DEBUG_INFO && zk_depth <= ZK_MAX_DEPTH) zk_frames[zk_depth].site = (S); } while (0)
+#define ZK_AT(S) do { if (ZK_DEBUG_INFO && zk_c->depth <= ZK_MAX_DEPTH) zk_c->frames[zk_c->depth].site = (S); } while (0)
 /* clang-format on */
 
 #if ZK_CHECK_NULL
