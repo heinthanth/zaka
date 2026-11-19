@@ -593,7 +593,7 @@ fn global_writes(module: &Module) -> Vec<BTreeSet<u32>>
 /// # Returns
 ///
 /// The places.
-fn written_places(s: &Stmt) -> Vec<Place>
+pub(crate) fn written_places(s: &Stmt) -> Vec<Place>
 {
     match s
     {

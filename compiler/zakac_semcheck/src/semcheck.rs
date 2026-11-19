@@ -2577,6 +2577,7 @@ impl Visitor for Checker
         {
             return;
         };
+        do_if!(n.parallel, self.check_job_callee(&n.callee, place));
         ret_if!(n.parallel, _ = self.start_job(&n.args, ret, n.span));
         self.check_pass(&n.callee, ret, n.pass, true, n.span);
     }

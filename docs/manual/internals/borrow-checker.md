@@ -299,6 +299,11 @@ Each file of `checks/` owns some codes. All of them work on a `Flow` and the `St
 | `bounds.rs` | ZK0710, ZK0712 | an offset or cell number proven outside its block; a pointer difference between different blocks |
 | `lists.rs` | | the facts of a list of pointers, one fact for all its cells |
 
+`jobs.rs`, outside `checks/` and the flow, raises ZK0726 once the lint levels are set, so it
+remains an error at each level: it finds the functions a spawn starts in, walks their callees
+(`callees`, through function values to each function whose address the module takes), and
+reports the first read, address or write of a global that is no constant in each one.
+
 The drop that the compiler writes at the end of a scope (`Stmt::Drop`) does not run the
 bad-free rule of `static_rules.rs`: it frees no block a variable holds, since a range of a
 counted list on the stack owns none, so `week ၏ အကွက် ၂ မှစ၍ ၂ ကွက်` no longer warns ZK0702 at

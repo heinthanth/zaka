@@ -33,6 +33,7 @@ pub mod fixes;
 mod flow;
 mod init;
 mod interval;
+mod jobs;
 mod last_use;
 mod liveness;
 mod narrow;
@@ -112,6 +113,9 @@ pub fn borrow_check(
     diagnostics.retain(|d| !(null(d) && unset_at.iter().any(|s| s.overlaps(&d.span))));
     diagnostics.extend(unset);
     let mut diagnostics = downgrade(diagnostics, options, &module.unsafe_spans);
+    // A mutable global reached from a job is an error at each level of the
+    // check: threads would reach it at once.
+    diagnostics.extend(jobs::check_jobs(module));
     diagnostics.sort_by_key(|d| d.span.lo);
     BorrowCheckOutput::builder().diagnostics(diagnostics).digests(digests).build()
 }

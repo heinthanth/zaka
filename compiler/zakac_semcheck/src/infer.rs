@@ -859,7 +859,11 @@ impl Checker
         )?;
         // A call that runs as a job gives the job, of the kind its function
         // gives back, or of none.
-        ret_if!(n.parallel, Some(self.start_job(&n.args, ret, n.span)));
+        if n.parallel
+        {
+            self.check_job_callee(&n.callee, place);
+            return Some(self.start_job(&n.args, ret, n.span));
+        }
         self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good
         // result.

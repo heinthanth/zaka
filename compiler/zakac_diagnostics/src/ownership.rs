@@ -328,3 +328,22 @@ pub fn fill_unset_at_return(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::FillUnsetAtReturn, msg, span)
         .with_help(t!("codes.ZK0725.help", n = name))
 }
+
+/// A function a job runs, itself or through a function it calls, reaches a
+/// mutable global, which belongs to the main thread.
+///
+/// # Arguments
+///
+/// * `span` - The use of the global.
+/// * `func` - The function that uses it.
+/// * `global` - The global.
+///
+/// # Returns
+///
+/// The `ZK0726` diagnostic.
+pub fn global_in_job(span: Span, func: &str, global: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0726.message", f = func, g = global);
+    Diagnostic::new(Code::GlobalInJob, msg, span)
+        .with_help(t!("codes.ZK0726.help", g = global))
+}

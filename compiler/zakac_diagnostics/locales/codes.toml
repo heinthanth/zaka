@@ -1533,6 +1533,33 @@ en = "write \"အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိ�
 [codes.ZK0496.explain]
 en = """The test `အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိလျှင်` takes the next value out of the channel, waiting while it is open and holds none, and its branch runs when a value came; `<pipe> ထဲမှ ဒေတာ` in that branch names the value, and is no second receive. So the test stands alone as the condition, its channel is a name, and the read stands inside the branch. Elsewhere, `<pipe> မှ ရရှိသော ဒေတာ` gives the next value as an optional."""
 
+[codes.ZK0726.title]
+en = "a global in a job"
+[codes.ZK0726.message]
+en = "\"%{f}\" runs in a job, and reaches the global \"%{g}\", which belongs to the main thread"
+[codes.ZK0726.help]
+en = "pass \"%{g}\" to the job as an argument, or make it a constant"
+[codes.ZK0726.explain]
+en = """A variable at the top of a file belongs to the main thread. A function that a job runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the job as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`."""
+
+[codes.ZK0497.title]
+en = "a job of no declared function"
+[codes.ZK0497.message]
+en = "a job runs a function the program declares in Zaka, and \"%{n}\" is a function value, a closure or a C function"
+[codes.ZK0497.help]
+en = "declare a function that takes the values the job needs and makes the call, and run that function as the job"
+[codes.ZK0497.explain]
+en = """A job starts in a function the program declares, at the top of a file or inside a function with no captures. A function value or a closure can hold a shared object that two threads would change at once, and a C function runs outside the checks of Zaka; so a job runs none of them at its start. A function the job calls can still call them."""
+
+[codes.ZK0498.title]
+en = "a job that changes the caller's variables"
+[codes.ZK0498.message]
+en = "\"%{n}\" changes or fills a parameter, and a job cannot reach a variable of the caller"
+[codes.ZK0498.help]
+en = "pass the values to the job, and take what it makes back through its wait or a channel"
+[codes.ZK0498.explain]
+en = """A parameter marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` reaches a variable of the caller. A job goes on after the call that starts it, side to side with the caller, so the two would reach that variable at once. A job gets its own duplicate of each argument instead, and gives back what it makes through its result or a channel."""
+
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"
 [codes.ZK0725.message]

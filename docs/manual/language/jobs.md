@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
+description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
 ---
 
 # Jobs
@@ -106,6 +106,34 @@ lacks it: two jobs would write it at once.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် အကောင့်(လက်ကျန်: ၅) ဖြစ်ပါစေ။
 ကြည့် ဟူသော လုပ်ဆောင်ချက်ကို ခ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## What a job can reach
+
+A job runs side to side with the rest of the program, so it reaches no variable another
+thread can change:
+
+- A job starts in a function the program declares in Zaka: at the top of a file, or inside
+  a function with no captures. A function value, a closure and a C function are ZK0497;
+  the function can call them.
+- The function changes no parameter: one marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်`
+  would reach a variable of the caller, ZK0498. The job gets a duplicate of each argument
+  and gives back what it makes through its result or a channel.
+- A variable at the top of a file belongs to the main thread. The function a job runs,
+  and each function it calls, through function values too, reads and writes none of
+  them, ZK0726; constants are free to read.
+
+```zaka-error ZK0726
+ကိန်းရှင် ရေ သည် ၀ ဖြစ်ပါစေ။
+
+တိုး ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ရေ ကို ရေ + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

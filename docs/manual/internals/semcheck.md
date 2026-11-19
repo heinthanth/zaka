@@ -638,6 +638,9 @@ the core. The compiler mark outside the core is ZK0349.
   (`infer_receive`). The test `<pipe> ထဲတွင် ဒေတာ ရှိ` is good as the whole condition of an
   arm alone (`check_arm_cond` sets `pipe_test`), and `<pipe> ထဲမှ ဒေတာ` inside that arm
   alone (`pipe_reads`), ZK0496; `pipe_part` serves both.
+  `check_job_callee` takes the function a job starts in from the call's choice: no
+  function value, closure or C function (ZK0497), and no parameter it changes or fills
+  (ZK0498).
 
 ## Comptime calls
 

@@ -497,6 +497,8 @@ JobsMarkOnValue = ("ZK0493", Level::Warning),
 NotForJobs = ("ZK0494", Level::Error),
 NotAPipe = ("ZK0495", Level::Error),
 PipeDataOutside = ("ZK0496", Level::Error),
+JobOfNoDeclaredFn = ("ZK0497", Level::Error),
+JobChangesArgs = ("ZK0498", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.
@@ -585,7 +587,10 @@ ReadUnsetDoubt = ("ZK0723", Level::Warning),
 /// A call of a function that reads a global that can be unset at the call.
 GlobalUnsetAtCall = ("ZK0724", Level::Error),
 /// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
-FillUnsetAtReturn = ("ZK0725", Level::Error) }
+FillUnsetAtReturn = ("ZK0725", Level::Error),
+/// A function a job runs reaches a mutable global, which belongs to the main
+/// thread.
+GlobalInJob = ("ZK0726", Level::Error) }
 
 /// Each code with the address of the page that teaches it, which the build
 /// script reads from the error page of the manual.

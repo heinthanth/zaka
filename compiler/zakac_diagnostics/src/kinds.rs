@@ -1439,6 +1439,41 @@ pub fn pipe_data_outside(span: Span) -> Diagnostic
     Diagnostic::new(Code::PipeDataOutside, msg, span).with_help(t!("codes.ZK0496.help"))
 }
 
+/// A call that runs as a job calls no function the program declares in
+/// Zaka: a function value, a closure or a C function.
+///
+/// # Arguments
+///
+/// * `span` - The name at the call.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0497` diagnostic.
+pub fn job_of_no_declared_fn(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0497.message", n = name);
+    Diagnostic::new(Code::JobOfNoDeclaredFn, msg, span)
+        .with_help(t!("codes.ZK0497.help"))
+}
+
+/// A call that runs as a job calls a function that changes or fills a
+/// parameter, a variable of the caller.
+///
+/// # Arguments
+///
+/// * `span` - The name at the call.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0498` diagnostic.
+pub fn job_changes_args(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0498.message", n = name);
+    Diagnostic::new(Code::JobChangesArgs, msg, span).with_help(t!("codes.ZK0498.help"))
+}
+
 /// A comptime function gives a kind that a constant cannot hold.
 ///
 /// # Arguments

@@ -246,6 +246,30 @@ impl Checker
         tern!(op == VerbOp::Unwrap, carried, Some(DataKind::Bool))
     }
 
+    /// Report the function a call that runs as a job starts in when it is no
+    /// function the program declares in Zaka (ZK0497), or when it changes or
+    /// fills a parameter (ZK0498).
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The name at the call.
+    /// * `place` - The value a call on a value names, or `None`.
+    pub(crate) fn check_job_callee(&mut self, callee: &Ident, place: Option<&Expr>)
+    {
+        let name = callee.name.as_str();
+        let sigs = self.fns.get(&callee.name).filter(|_| place.is_none());
+        let chosen = self.chosen.get(&(self.top, callee.span)).copied();
+        let sig = sigs.and_then(|s| {
+            let one = s.first().filter(|_| s.len() == 1);
+            s.iter().find(|f| Some(f.inner) == chosen).or(one).cloned()
+        });
+        let plain =
+            sigs.is_some() && !sig.as_ref().is_some_and(|s| s.external || s.closure);
+        ret_if!(!plain, self.report(kd::job_of_no_declared_fn(callee.span, name)));
+        let changes = sig.is_some_and(|s| s.edits.iter().chain(&s.fills).any(|e| *e));
+        do_if!(changes, self.report(kd::job_changes_args(callee.span, name)));
+    }
+
     /// Report a kind that jobs cannot use, where a value of it goes to a job
     /// or comes back from one.
     ///

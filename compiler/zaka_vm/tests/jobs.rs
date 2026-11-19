@@ -291,3 +291,57 @@ fn a_receive_from_a_value_that_is_no_channel_is_reported()
     let text = program("ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။\nက မှ ရရှိသော ဒေတာ ကို ပြသမည်။");
     assert_eq!(codes(&text), [Code::NotAPipe]);
 }
+
+/// A global, a constant, a function that writes the global, one that reads
+/// the constant, one that calls the writer, and one that changes its
+/// parameter.
+const REACH: &str = "ကိန်းရှင် ရေ သည် ၀ ဖြစ်ပါစေ။
+ကိန်းသေ အများ သည် ၁၀ ဖြစ်ပါစေ။
+
+တိုး ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ရေ ကို ရေ + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+အများ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ခေါ် ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပြင် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို က + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+/// [`REACH`], then a start block of these lines.
+fn reaching(lines: &str) -> String
+{
+    format!("{REACH}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{lines}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n")
+}
+
+#[test]
+fn a_job_reads_a_constant_and_no_global()
+{
+    let constant = reaching("ဖတ် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။");
+    assert_eq!(codes(&constant), []);
+    let global = reaching("ခေါ် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။");
+    assert_eq!(codes(&global), [Code::GlobalInJob]);
+}
+
+#[test]
+fn a_job_starts_in_a_declared_function_that_changes_no_parameter()
+{
+    let value = reaching(
+        "ကိန်းရှင် ဖ သည် ဖတ် ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\nဖ ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။",
+    );
+    assert_eq!(codes(&value), [Code::JobOfNoDeclaredFn]);
+    let changes =
+        reaching("ကိန်းရှင် ဂ သည် ၁ ဖြစ်ပါစေ။\nပြင် ဟူသော လုပ်ဆောင်ချက်ကို ဂ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။");
+    assert_eq!(codes(&changes), [Code::JobChangesArgs]);
+}

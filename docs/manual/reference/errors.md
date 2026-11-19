@@ -288,6 +288,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0494 | a value goes to a job, or comes back from one, of a kind jobs on other threads cannot use, such as a plain shared object | [Values that go to a job](../language/jobs.md#values-that-go-to-a-job) |
 | ZK0495 | a receive, a loop over each value or a close of a value that is no channel | [Channels](../language/jobs.md#channels) |
 | ZK0496 | a test of a channel for data that is not the whole condition of `အကယ်၍`, or a read of its data outside the branch of that test | [Channels](../language/jobs.md#channels) |
+| ZK0497 | a job starts in a function value, a closure or a C function, not a function the program declares in Zaka | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
+| ZK0498 | a job starts in a function that changes or fills a parameter | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
 
 ### ZK05: natural Zaka (warnings)
 
@@ -358,3 +360,4 @@ Zaka](../language/unsafe.md).
 | ZK0723 | a warning: a read of a counted list whose cells the check cannot prove set | [Set before read](../language/statements.md#set-before-read), [Static data and counted lists](../../learn/forms/counted-lists.md#filling-the-cells-one-at-a-time) |
 | ZK0724 | a call of a function that reads a global that can be unset at the call | [Globals and calls](../language/statements.md#globals-and-calls) |
 | ZK0725 | a return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset | [Filled parameters](../language/functions.md#filled-parameters) |
+| ZK0726 | a function a job runs, itself or through a function it calls, reaches a variable at the top of a file | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
