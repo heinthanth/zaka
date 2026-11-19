@@ -96,8 +96,50 @@ pub fn give_runtime_lib(path: &Path, abi: TargetAbi) -> zakac_host_errors::Resul
     let name = tern!(abi == TargetAbi::Msvc, "zaka_runtime.lib", "libzaka_runtime.a");
     let octets: &'static [u8] = Box::leak(octets.into_boxed_slice());
     let libs: &'static str = Box::leak(libs.unwrap_or_default().into_boxed_str());
+    do_if!(let Some(prefix) = prefix_in(octets), _ = GIVEN_PREFIX.set(prefix));
     _ = GIVEN_LIB.set(RuntimeLib { octets, name, libs });
     Ok(())
+}
+
+/// The prefix of the names a runtime lib links its functions under, which
+/// `--runtime-lib` gave: a lib from other sources, or from another build of
+/// `zakac`, names them with its own hash.
+static GIVEN_PREFIX: OnceLock<String> = OnceLock::new();
+
+/// The prefix of the names of the runtime a build links with: the one of the
+/// lib `--runtime-lib` gave, or else the one of the runtime `zakac` carries.
+///
+/// # Returns
+///
+/// The prefix, in place of `zk_`.
+pub fn runtime_prefix() -> &'static str
+{
+    GIVEN_PREFIX.get().map_or(crate::RUNTIME_PREFIX, String::as_str)
+}
+
+/// The prefix of the names a runtime lib links under, read off the name of
+/// `zk_seq_new` among its names.
+///
+/// # Arguments
+///
+/// * `octets` - The lib.
+///
+/// # Returns
+///
+/// The prefix, or `None` for a lib with no such name.
+pub fn prefix_in(octets: &[u8]) -> Option<String>
+{
+    const START: &[u8] = b"zk_rt_";
+    const END: &[u8] = b"seq_new";
+    let word = |at: usize| {
+        let len = octets[at..]
+            .iter()
+            .take_while(|c| c.is_ascii_alphanumeric() || **c == b'_');
+        &octets[at..at + len.count()]
+    };
+    let starts = octets.windows(START.len()).enumerate().filter(|(_, w)| *w == START);
+    let name = starts.map(|(at, _)| word(at)).find(|n| n.ends_with(END))?;
+    String::from_utf8(name[..name.len() - END.len()].to_vec()).ok()
 }
 
 /// Whether `--runtime-lib` gave a runtime lib for another target.
@@ -336,6 +378,9 @@ pub fn write_cache_for(
     for (name, text) in RUNTIME.iter().copied().chain(generated)
     {
         let path = dir.join(name);
+        // The header maps each name to the names of the runtime the build
+        // links with.
+        let text = text.replace(crate::RUNTIME_PREFIX, runtime_prefix());
         std::fs::write(&path, text).map_err(fail(&path))?;
         if name.ends_with(".c")
         {

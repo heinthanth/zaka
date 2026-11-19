@@ -75,14 +75,6 @@ pub extern "C" fn zk_lib_unlock()
     FREED.notify_one();
 }
 
-/// How often the thread in a call of a C lib holds the lock of the libs: 1
-/// for a reset alone, more for a call in progress around it.
-///
-/// # Returns
-///
-/// The count.
-pub(crate) fn holds() -> u32 { HELD.lock().unwrap_or_else(PoisonError::into_inner).1 }
-
 /// Write out what is buffered, as a C lib does at the end of each call.
 #[unsafe(export_name = stamped!("flush"))]
 pub extern "C" fn zk_flush() { flush_out(); }

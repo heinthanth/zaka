@@ -7,9 +7,13 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use zakac_codegen_target_c::driver::host_abi;
+use zakac_codegen_target_c::driver::prefix_in;
 use zakac_codegen_target_c::driver::runtime_lib;
 use zakac_codegen_target_c::toolchain::Dialect;
+use zakac_codegen_target_c::toolchain::Tool;
 use zakac_codegen_target_c::toolchain::find_cc_for;
+use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 
 /// What the C driver prints.
 const FROM_C: &str = "\
@@ -80,6 +84,9 @@ fn ran(cmd: &mut Command, what: &str) -> String
 const TWO_LIBS: &str = "\
 add 0 42
 twice 0 42
+half 1 twicelib
+မင်္ဂလာပါ Zaka
+greet 0 4
 divide 1
 traps math none
 latest mathlib
@@ -93,7 +100,7 @@ reset 0 3
 ///
 /// * `dir` - The folder.
 /// * `backend` - The backend, `c` or `native`.
-fn build_lib(dir: &Path, backend: &str) { build_named(dir, backend, "mathlib") }
+fn build_lib(dir: &Path, backend: &str) { build_named(dir, backend, "mathlib", &[]) }
 
 /// Build the lib of `<name>.zaka` of the inputs with a backend into a folder.
 ///
@@ -102,42 +109,100 @@ fn build_lib(dir: &Path, backend: &str) { build_named(dir, backend, "mathlib") }
 /// * `dir` - The folder.
 /// * `backend` - The backend, `c` or `native`.
 /// * `name` - The name of the lib and of its file.
-fn build_named(dir: &Path, backend: &str, name: &str)
+/// * `flags` - More flags of the build.
+fn build_named(dir: &Path, backend: &str, name: &str, flags: &[&str])
 {
     let file = format!("{name}.zaka");
-    std::fs::copy(c_inputs().join(&file), dir.join(&file)).unwrap();
+    do_if!(!dir.join(&file).exists(), {
+        std::fs::copy(c_inputs().join(&file), dir.join(&file)).unwrap();
+    });
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
     // The trap names the file as the build was given it.
     cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1");
     cmd.args(["build", "--backend", backend, "--emit", "lib", "--cache"]);
-    cmd.arg(format!("cache_{name}")).args(["-o", name, &file]);
+    cmd.arg(format!("cache_{name}")).args(flags).args(["-o", name, &file]);
     ran(&mut cmd, &format!("the build of {name} with the {backend} backend"));
 }
 
-/// Link the C driver with the static lib in a folder, and run it.
+/// The file of a static lib of a folder, as the toolchain of the host names
+/// it: `lib<name>.a`, or `<name>.lib` for MSVC.
 ///
 /// # Arguments
 ///
-/// * `dir` - The folder of the lib.
-/// * `os_libs` - The OS libs of the runtime.
+/// * `name` - The name of the lib.
 ///
 /// # Returns
 ///
-/// What it printed.
-fn run_c_driver(dir: &Path, os_libs: &[&str]) -> String
+/// The file name.
+fn static_file(name: &str) -> String
 {
-    let cc = find_cc_for(None, Dialect::Gnu).expect("a C compiler");
+    match Dialect::of(host_abi())
+    {
+        Dialect::Msvc => format!("{name}.lib"),
+        Dialect::Gnu => format!("lib{name}.a"),
+    }
+}
+
+/// The C compiler of the host, or `None` when the host has none.
+///
+/// # Returns
+///
+/// The compiler.
+fn host_cc() -> Option<Tool>
+{
+    let cc = find_cc_for(None, Dialect::of(host_abi())).ok();
+    do_if!(cc.is_none(), eprintln!("the C lib tests need a C compiler"));
+    cc
+}
+
+/// The OS libs the runtime of the host needs.
+///
+/// # Returns
+///
+/// The flags.
+fn os_libs() -> Vec<&'static str>
+{
+    let libs = runtime_lib(host_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
+    libs.unwrap_or_default()
+}
+
+/// Link a C program of the inputs with static libs of a folder, in the form of
+/// the toolchain of the host, and run it: GNU flags, or those of MSVC's `cl`,
+/// with the options of the linker after `/link`.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `dir` - The folder of the libs and their headers.
+/// * `source` - The C file of the inputs.
+/// * `libs` - The names of the libs.
+///
+/// # Returns
+///
+/// What the program printed.
+fn run_c_program(cc: &Tool, dir: &Path, source: &str, libs: &[&str]) -> String
+{
+    let stem = source.trim_end_matches(".c");
+    let exe = dir.join(format!("{stem}{}", std::env::consts::EXE_SUFFIX));
+    let archives = libs.iter().map(|l| dir.join(static_file(l)));
     let mut cmd = cc.command();
-    cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("driver.c"));
-    cmd.arg(dir.join("libmathlib.a")).args(os_libs).arg("-lm");
-    cmd.arg("-o").arg(dir.join(format!("c_driver{}", std::env::consts::EXE_SUFFIX)));
-    ran(&mut cmd, "the link of the C driver");
-    ran(
-        &mut Command::new(
-            dir.join(format!("c_driver{}", std::env::consts::EXE_SUFFIX)),
-        ),
-        "the C driver",
-    )
+    cmd.current_dir(dir);
+    if Dialect::of(host_abi()) == Dialect::Gnu
+    {
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join(source));
+        cmd.args(archives).args(os_libs()).arg("-lm").arg("-o").arg(&exe);
+        ran(&mut cmd, &format!("the link of {source}"));
+        return ran(&mut Command::new(&exe), source);
+    }
+    let os = os_libs();
+    let (options, files): (Vec<&str>, Vec<&str>) =
+        os.iter().partition(|l| l.starts_with('/'));
+    let mut named = std::ffi::OsString::from("/Fe");
+    named.push(&exe);
+    cmd.args(["/nologo", "/std:c11", "/I"]).arg(dir).arg(c_inputs().join(source));
+    cmd.args(archives).args(files).arg(named).arg("/link").args(options);
+    ran(&mut cmd, &format!("the link of {source}"));
+    ran(&mut Command::new(&exe), source)
 }
 
 /// Build the Rust driver with the static lib in a folder, and run it.
@@ -145,12 +210,11 @@ fn run_c_driver(dir: &Path, os_libs: &[&str]) -> String
 /// # Arguments
 ///
 /// * `dir` - The folder of the lib.
-/// * `os_libs` - The OS libs of the runtime.
 ///
 /// # Returns
 ///
 /// What it printed.
-fn run_rust_driver(dir: &Path, os_libs: &[&str]) -> String
+fn run_rust_driver(dir: &Path) -> String
 {
     let rustc = std::env::var_os("RUSTC").unwrap_or("rustc".into());
     let source =
@@ -160,7 +224,8 @@ fn run_rust_driver(dir: &Path, os_libs: &[&str]) -> String
     // linker of macOS would take the shared one for `-l mathlib`.
     let alone = dir.join("static");
     std::fs::create_dir_all(&alone).unwrap();
-    std::fs::copy(dir.join("libmathlib.a"), alone.join("libmathlib.a")).unwrap();
+    let file = static_file("mathlib");
+    std::fs::copy(dir.join(&file), alone.join(&file)).unwrap();
     cmd.args(["--edition", "2024"]).arg(source).arg("-L").arg(&alone);
     cmd.args(["-l", "static=mathlib"]);
     let flag = |f: &&str| match f.strip_prefix("-l")
@@ -168,40 +233,28 @@ fn run_rust_driver(dir: &Path, os_libs: &[&str]) -> String
         Some(name) => ["-l".to_string(), name.to_string()],
         None => ["-C".to_string(), format!("link-arg={f}")],
     };
-    cmd.args(os_libs.iter().flat_map(flag));
-    cmd.arg("-o").arg(dir.join(format!("rust_driver{}", std::env::consts::EXE_SUFFIX)));
+    cmd.args(os_libs().iter().flat_map(flag));
+    let exe = dir.join(format!("rust_driver{}", std::env::consts::EXE_SUFFIX));
+    cmd.arg("-o").arg(&exe);
     ran(&mut cmd, "the build of the Rust driver");
-    ran(
-        &mut Command::new(
-            dir.join(format!("rust_driver{}", std::env::consts::EXE_SUFFIX)),
-        ),
-        "the Rust driver",
-    )
+    ran(&mut Command::new(&exe), "the Rust driver")
 }
 
 #[test]
 fn c_and_rust_call_a_zaka_lib_of_each_backend()
 {
-    // shortcut: the drivers build with GNU flags; an MSVC host checks the lib
-    // through a hand check until the drivers have a form of `cl`.
-    let gnu = Dialect::of(host_abi()) == Dialect::Gnu;
-    if !gnu || find_cc_for(None, Dialect::Gnu).is_err()
+    let Some(cc) = host_cc()
+    else
     {
-        eprintln!("the C lib test needs a GNU C toolchain");
         return;
-    }
-    let os_libs = runtime_lib(host_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
-    let os_libs = os_libs.unwrap_or_default();
+    };
     for backend in ["c", "native"]
     {
         let dir = tempfile::tempdir().unwrap();
         build_lib(dir.path(), backend);
-        assert_eq!(
-            run_c_driver(dir.path(), &os_libs),
-            FROM_C,
-            "the {backend} lib from C"
-        );
-        let from_rust = run_rust_driver(dir.path(), &os_libs);
+        let from_c = run_c_program(&cc, dir.path(), "driver.c", &["mathlib"]);
+        assert_eq!(from_c, FROM_C, "the {backend} lib from C");
+        let from_rust = run_rust_driver(dir.path());
         assert_eq!(from_rust, FROM_RUST, "the {backend} lib from Rust");
     }
 }
@@ -209,29 +262,146 @@ fn c_and_rust_call_a_zaka_lib_of_each_backend()
 #[test]
 fn two_zaka_libs_link_into_one_c_program()
 {
-    // shortcut: the driver builds with GNU flags, as in the test above.
-    let gnu = Dialect::of(host_abi()) == Dialect::Gnu;
-    if !gnu || find_cc_for(None, Dialect::Gnu).is_err()
+    let Some(cc) = host_cc()
+    else
     {
-        eprintln!("the C lib test needs a GNU C toolchain");
         return;
-    }
-    let os_libs = runtime_lib(host_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
-    let os_libs = os_libs.unwrap_or_default();
-    let cc = find_cc_for(None, Dialect::Gnu).expect("a C compiler");
+    };
     for backend in ["c", "native"]
     {
         let dir = tempfile::tempdir().unwrap();
         let dir = dir.path();
-        build_named(dir, backend, "mathlib");
-        build_named(dir, backend, "twicelib");
-        let exe = dir.join(format!("two_libs{}", std::env::consts::EXE_SUFFIX));
-        let mut cmd = cc.command();
-        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("two_libs.c"));
-        cmd.arg(dir.join("libmathlib.a")).arg(dir.join("libtwicelib.a"));
-        cmd.args(&os_libs).arg("-lm").arg("-o").arg(&exe);
-        ran(&mut cmd, "the link of two libs");
-        let printed = ran(&mut Command::new(&exe), "the program of two libs");
+        build_named(dir, backend, "mathlib", &[]);
+        build_named(dir, backend, "twicelib", &[]);
+        let printed = run_c_program(&cc, dir, "two_libs.c", &["mathlib", "twicelib"]);
         assert_eq!(printed, TWO_LIBS, "two libs of the {backend} backend");
+    }
+}
+
+/// What the C program that links two libs with a heap cap each prints.
+const HEAP_LIBS: &str = "\
+a 0 65536
+b 0 65536
+a again 1 out_of_mem
+";
+
+#[test]
+fn each_lib_counts_its_heap_under_its_own_cap()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    let template = std::fs::read_to_string(c_inputs().join("heaplib.zaka")).unwrap();
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        for name in ["heapa", "heapb"]
+        {
+            let source = template.replace("fill_NAME", &format!("fill_{}", &name[4..]));
+            std::fs::write(dir.join(format!("{name}.zaka")), source).unwrap();
+            build_named(dir, backend, name, &["--max-heap", "800000"]);
+        }
+        let printed = run_c_program(&cc, dir, "heap_libs.c", &["heapa", "heapb"]);
+        assert_eq!(printed, HEAP_LIBS, "two capped libs of the {backend} backend");
+    }
+}
+
+/// The triple of the host, as rustc names it.
+///
+/// # Returns
+///
+/// The triple.
+fn host_triple() -> String
+{
+    let rustc = std::env::var_os("RUSTC").unwrap_or("rustc".into());
+    let told = ran(Command::new(rustc).arg("-vV"), "rustc -vV");
+    let host = told.lines().find_map(|l| l.strip_prefix("host: "));
+    host.expect("rustc names its host").trim().to_string()
+}
+
+/// A runtime lib built from the sources of the one `zakac` carries with a salt
+/// in its hash, so its names differ, as those of a lib from another build of
+/// `zakac` do: built once into `target/zaka-salted-runtime`, then reused, and
+/// put with its `native-libs.txt` into a folder.
+///
+/// # Arguments
+///
+/// * `dir` - The folder.
+///
+/// # Returns
+///
+/// The lib.
+fn salted_runtime(dir: &Path) -> PathBuf
+{
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let (triple, target) = (host_triple(), root.join("target/zaka-salted-runtime"));
+    let mut cmd = Command::new(std::env::var_os("CARGO").unwrap_or("cargo".into()));
+    cmd.current_dir(&root).env("ZAKA_RUNTIME_SALT", "a second build");
+    // Rust derives the link names of each crate from its metadata, as the
+    // build of `zakac` sets it for its own runtime.
+    cmd.env("RUSTFLAGS", "-C metadata=zk-rt-a-second-build");
+    cmd.args(["rustc", "-p", "zaka_runtime", "--lib", "--crate-type", "staticlib"]);
+    cmd.args(["--profile", "zaka-runtime", "--target", &triple, "--target-dir"]);
+    cmd.arg(&target).args(["--", "--print", "native-static-libs"]);
+    // The flags of the outer build are not the lib's.
+    let outer = |name: &String| name.starts_with("CARGO_") && name != "CARGO_HOME";
+    let names = std::env::vars().map(|(name, _)| name).filter(outer);
+    names.for_each(|name| _ = cmd.env_remove(name));
+    do_if!(triple.contains("apple"), _ = cmd.env("MACOSX_DEPLOYMENT_TARGET", "11.0"));
+    let out = cmd.output().unwrap();
+    let told = String::from_utf8_lossy(&out.stderr).into_owned();
+    assert!(out.status.success(), "the salted runtime did not build:\n{told}");
+    let line = told.lines().find_map(|l| l.split("native-static-libs: ").nth(1));
+    let libs: String =
+        line.unwrap_or("").split_whitespace().map(|f| format!("{f}\n")).collect();
+    let salted = dir.join("salted");
+    std::fs::create_dir_all(&salted).unwrap();
+    std::fs::write(salted.join("native-libs.txt"), libs).unwrap();
+    let file =
+        tern!(triple.ends_with("-msvc"), "zaka_runtime.lib", "libzaka_runtime.a");
+    let lib = salted.join(file);
+    std::fs::copy(target.join(&triple).join("zaka-runtime").join(file), &lib).unwrap();
+    lib
+}
+
+/// The prefix of the runtime names a static lib of a folder links with.
+///
+/// # Arguments
+///
+/// * `dir` - The folder.
+/// * `name` - The name of the lib.
+///
+/// # Returns
+///
+/// The prefix.
+fn runtime_of(dir: &Path, name: &str) -> String
+{
+    let octets = std::fs::read(dir.join(static_file(name))).unwrap();
+    prefix_in(&octets).expect("the lib holds the runtime")
+}
+
+#[test]
+fn libs_of_two_runtime_builds_link_into_one_program()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let dir = dir.path();
+    let salted = salted_runtime(dir);
+    let salted = salted.to_string_lossy().into_owned();
+    for backend in ["c", "native"]
+    {
+        build_named(dir, backend, "mathlib", &[]);
+        build_named(dir, backend, "twicelib", &["--runtime-lib", &salted]);
+        let (math, twice) = (runtime_of(dir, "mathlib"), runtime_of(dir, "twicelib"));
+        assert_ne!(math, twice, "two builds of the runtime name their functions apart");
+        let printed = run_c_program(&cc, dir, "two_libs.c", &["mathlib", "twicelib"]);
+        assert_eq!(printed, TWO_LIBS, "two runtimes with the {backend} backend");
     }
 }

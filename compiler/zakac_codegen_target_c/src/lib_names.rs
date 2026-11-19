@@ -115,6 +115,14 @@ impl LibNames
     /// The name.
     pub fn reset(&self) -> String { format!("zk_reset_{}", self.name) }
 
+    /// The name of the function that frees what the lib gave back, with the C
+    /// runtime the lib was built with.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    pub fn free(&self) -> String { format!("zk_free_from_{}", self.name) }
+
     /// The name of the function that gives the last trap of the lib.
     ///
     /// # Returns
@@ -148,10 +156,11 @@ impl LibNames
         });
         // The glue names the functions C calls for the lib alone, and the lib.
         let (reset, last, name) = (self.reset(), self.last_trap(), &self.name);
+        let free = self.free();
         let _ = write!(
             header,
             "#define zk_lib_reset {reset}\n#define zk_lib_last_trap {last}\n#define \
-             ZK_LIB_NAME \"{name}\"\n#endif\n"
+             zk_lib_free {free}\n#define ZK_LIB_NAME \"{name}\"\n#endif\n"
         );
         let include = format!("#include \"{NAMES_HEADER}\"\n");
         let sources = files.iter_mut().filter(|f| f.name.ends_with(".c"));

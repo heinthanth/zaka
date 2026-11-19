@@ -162,10 +162,13 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
 - Threads can call a lib, but one call runs at a time; the others wait.
-- Several Zaka libs link into one program. Each keeps its own names, and a stop stops its
-  own lib alone; `zk_free` and `zk_last_trap()`, the last stop of each lib, serve them
-  all. The name in `zk_reset_<name>` is the name of the files of the lib, or
-  `--lib-name`, which takes ASCII letters, digits and `_`.
+- Several Zaka libs link into one program, from one build of `zakac` or from several.
+  Each keeps its own names and its own `--max-heap`, and a stop stops its own lib alone;
+  `zk_free` and `zk_last_trap()`, the last stop of each lib, serve them all. The name in
+  `zk_reset_<name>` is the name of the files of the lib, or `--lib-name`, which takes
+  ASCII letters, digits and `_`.
+- On Windows a lib of GNU and a lib of MSVC each have their own C runtime: a program that
+  loads both frees what each gave back with `zk_free_from_<name>()` of that lib.
 
 ## Hands on
 

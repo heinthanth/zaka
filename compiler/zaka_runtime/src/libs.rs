@@ -15,18 +15,18 @@ use std::ptr::null_mut;
 use std::sync::Mutex;
 use std::sync::PoisonError;
 use std::sync::atomic::AtomicPtr;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zaka_host::Gate;
 use zakac_rust_sugars::do_if;
-use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
-use crate::heap::zk_raw_free;
 use crate::program::ZkProgram;
 use crate::program::make_frames;
 use crate::program::zk_depth;
 use crate::program::zk_prog;
+use crate::seqs::DropMark;
 
 /// A C lib the runtime serves.
 pub struct ZkLib
@@ -43,7 +43,27 @@ pub struct ZkLib
     pub(crate) gate: Mutex<Option<Gate>>,
     /// The trap it stopped on last.
     last: Mutex<Option<Box<TrapRecord>>>,
+    /// The heap octets its calls hold, which its `--max-heap` caps.
+    pub(crate) heap: AtomicUsize,
 }
+
+/// What a trap inside a call of a lib can leave half done, as the call found
+/// it.
+struct Mark
+{
+    /// The count of closures lent to C calls.
+    lends: usize,
+    /// The sink of the output, as an address.
+    sink: usize,
+    /// The queues of the drops.
+    drops: DropMark,
+}
+
+/// A mark for each call of a lib in progress, the innermost last.
+static MARKS: Mutex<Vec<Mark>> = Mutex::new(Vec::new());
+
+/// The slot of each lib this runtime serves, each once.
+static SLOTS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
 
 /// The lib a wrapper found when it entered its own, for the return.
 #[repr(C)]
@@ -169,9 +189,6 @@ fn c_text(mut raw: Vec<u8>) -> CString
 /// The lib whose call is in progress, or NULL outside each lib.
 static CURRENT: AtomicPtr<ZkLib> = AtomicPtr::new(null_mut());
 
-/// The trap a lib of this runtime stopped on last, or NULL.
-static LATEST: AtomicPtr<ZkTrapInfo> = AtomicPtr::new(null_mut());
-
 /// The lib whose call is in progress.
 ///
 /// # Returns
@@ -217,11 +234,24 @@ pub(crate) fn keep_trap(record: Box<TrapRecord>)
     {
         return;
     };
-    let info = (&raw const record.info).cast_mut();
+    let info = &raw const record.info;
     let mut last = lib.last.lock().unwrap_or_else(PoisonError::into_inner);
     let old = last.replace(record);
     forget_latest(old.as_deref());
-    LATEST.store(info, Ordering::Release);
+    // SAFETY: each slot is a global of the glue of a lib.
+    each_slot(|slot| unsafe { *slot = info });
+}
+
+/// Run a step on each slot of the last trap: one when the linker kept one for
+/// each lib, one for each lib when its compiler cannot share it.
+///
+/// # Arguments
+///
+/// * `step` - The step.
+fn each_slot(step: impl Fn(*mut *const ZkTrapInfo))
+{
+    let slots = SLOTS.lock().unwrap_or_else(PoisonError::into_inner);
+    slots.iter().for_each(|s| step(*s as *mut *const ZkTrapInfo));
 }
 
 /// Clear the latest trap of the runtime when it is `old`, which is freed.
@@ -236,8 +266,9 @@ fn forget_latest(old: Option<&TrapRecord>)
     {
         return;
     };
-    let gone = (&raw const old.info).cast_mut();
-    _ = LATEST.compare_exchange(gone, null_mut(), Ordering::AcqRel, Ordering::Acquire);
+    let gone = &raw const old.info;
+    // SAFETY: each slot is a global of the glue of a lib.
+    each_slot(|slot| unsafe { do_if!(*slot == gone, *slot = null()) });
 }
 
 /// Make the record of a C lib, on its first call: the lib lives as long as
@@ -249,6 +280,7 @@ fn forget_latest(old: Option<&TrapRecord>)
 /// * `leave` - The function that jumps back to the wrapper of its call in
 ///   progress; it takes the trap and does not return.
 /// * `name` - Its name.
+/// * `slot` - The slot of the last trap of each lib, `zk_trap_slot_v1`.
 ///
 /// # Returns
 ///
@@ -256,13 +288,17 @@ fn forget_latest(old: Option<&TrapRecord>)
 #[unsafe(export_name = stamped!("lib_open"))]
 pub extern "C" fn zk_lib_open(
     program: *const ZkProgram, leave: extern "C" fn(i32), name: *const c_char,
+    slot: *mut *const ZkTrapInfo,
 ) -> *mut ZkLib
 {
     // SAFETY: the glue of the lib hands its name as a NUL-ended text.
     let name = unsafe { CStr::from_ptr(name) }.to_owned();
+    let mut slots = SLOTS.lock().unwrap_or_else(PoisonError::into_inner);
+    do_if!(!slots.contains(&(slot as usize)), slots.push(slot as usize));
+    drop(slots);
     #[rustfmt::skip]
     let lib = Box::new(ZkLib { prog: program, leave, name, base: Cell::new(0),
-        gate: Mutex::new(None), last: Mutex::new(None) });
+        gate: Mutex::new(None), last: Mutex::new(None), heap: AtomicUsize::new(0) });
     let lib = Box::into_raw(lib);
     let was = zk_lib_enter(lib);
     make_frames();
@@ -286,6 +322,7 @@ pub extern "C" fn zk_lib_enter(lib: *mut ZkLib) -> ZkLibPlace
     let (prog, depth) = unsafe { (zk_prog, zk_depth) };
     let was = ZkLibPlace { lib: CURRENT.load(Ordering::Acquire), prog, base: base() };
     CURRENT.store(lib, Ordering::Release);
+    MARKS.lock().unwrap_or_else(PoisonError::into_inner).push(mark());
     // SAFETY: the glue hands the lib `zk_lib_open` made.
     let lib = unsafe { &*lib };
     lib.base.set(depth);
@@ -302,6 +339,7 @@ pub extern "C" fn zk_lib_enter(lib: *mut ZkLib) -> ZkLibPlace
 #[unsafe(export_name = stamped!("lib_return"))]
 pub extern "C" fn zk_lib_return(was: ZkLibPlace)
 {
+    MARKS.lock().unwrap_or_else(PoisonError::into_inner).pop();
     CURRENT.store(was.lib, Ordering::Release);
     // Outside each lib the table of the last lib remains, for `zk_free` from C,
     // which counts the heap against its cap.
@@ -332,18 +370,21 @@ pub extern "C" fn zk_lib_trap(lib: *const ZkLib) -> *const ZkTrapInfo
     last.as_ref().map_or(null(), |r| &raw const r.info)
 }
 
-/// The trap a lib of this runtime stopped on last: each static lib of a
-/// program built with the same `zakac` shares the runtime.
+/// The trap a lib of the program stopped on last: each lib writes its traps
+/// to the slot it shares with the others, whichever build of `zakac` made it.
 ///
 /// # Returns
 ///
 /// The trap, or NULL while no lib stopped on one.
 #[unsafe(export_name = stamped!("last_trap"))]
-pub extern "C" fn zk_last_trap() -> *const ZkTrapInfo { LATEST.load(Ordering::Acquire) }
+pub extern "C" fn zk_last_trap() -> *const ZkTrapInfo
+{
+    let slots = SLOTS.lock().unwrap_or_else(PoisonError::into_inner);
+    // SAFETY: each slot is a global of the glue of a lib.
+    slots.first().map_or(null(), |s| unsafe { *(*s as *const *const ZkTrapInfo) })
+}
 
-/// Forget the trap of a lib, for its reset; with no call in progress, clear
-/// too what the trap left half done: the closures lent to C calls, the
-/// buffer the output goes to and the queues of the drops.
+/// Forget the trap of a lib, for its reset.
 ///
 /// # Arguments
 ///
@@ -359,12 +400,38 @@ pub extern "C" fn zk_lib_forget(lib: *const ZkLib)
     };
     let old = lib.last.lock().unwrap_or_else(PoisonError::into_inner).take();
     forget_latest(old.as_deref());
-    // The reset holds the lock once; a deeper hold is a call in progress.
-    ret_if!(crate::start::holds() > 1);
+}
+
+/// What a trap inside a call can leave half done, as it stands now.
+///
+/// # Returns
+///
+/// The mark.
+fn mark() -> Mark
+{
     #[cfg(not(target_os = "wasi"))]
-    crate::callbacks::end_lends();
-    crate::out::reset_sink();
-    crate::seqs::reset_drops();
+    let lends = crate::callbacks::lends();
+    #[cfg(target_os = "wasi")]
+    let lends = 0;
+    Mark { lends, sink: crate::out::sink() as usize, drops: crate::seqs::drop_mark() }
+}
+
+/// Put back what the call of a lib that a trap ended found as it began: the
+/// closures it lent to C calls, the sink of the output and the queues of the
+/// drops. The calls around it keep theirs.
+#[unsafe(export_name = stamped!("lib_unwind"))]
+pub extern "C" fn zk_lib_unwind()
+{
+    let marks = MARKS.lock().unwrap_or_else(PoisonError::into_inner);
+    let Some(mark) = marks.last()
+    else
+    {
+        return;
+    };
+    #[cfg(not(target_os = "wasi"))]
+    crate::callbacks::end_lends_from(mark.lends);
+    crate::out::set_sink(mark.sink as *mut crate::out::ZkBuf);
+    crate::seqs::back_to(mark.drops);
 }
 
 /// Free text or the cells of a list a lib gave back.
@@ -373,4 +440,8 @@ pub extern "C" fn zk_lib_forget(lib: *const ZkLib)
 ///
 /// * `p` - The `char *` or the `ptr` of a list; NULL frees nothing.
 #[unsafe(export_name = stamped!("free"))]
-pub extern "C" fn zk_free(p: *mut c_void) { zk_raw_free(p) }
+pub extern "C" fn zk_free(p: *mut c_void)
+{
+    // SAFETY: the block came from the C allocator, outside each count.
+    unsafe { crate::heap::free(p) }
+}

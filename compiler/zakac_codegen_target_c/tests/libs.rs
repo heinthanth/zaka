@@ -235,6 +235,7 @@ fn a_c_program_calls_a_zaka_lib()
         "mirror",
         "older",
         "squares",
+        "zk_free_from_mathlib",
         "zk_last_trap_from_mathlib",
         "zk_reset_mathlib",
     ];
@@ -318,7 +319,13 @@ fn each_name_a_lib_links_under_is_its_own_or_the_runtime_s()
     let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
     let lib = tern!(msvc, "mathlib.lib", "libmathlib.a");
     let names = defined_zk_names(&dir.join(lib));
-    let api = ["zk_reset_mathlib", "zk_last_trap_from_mathlib"];
+    // The slot of the last trap is the one name each lib shares on purpose.
+    let api = [
+        "zk_reset_mathlib",
+        "zk_last_trap_from_mathlib",
+        "zk_free_from_mathlib",
+        "zk_trap_slot_v1",
+    ];
     let runtime = zakac_codegen_target_c::RUNTIME_PREFIX;
     let foreign: Vec<&String> = names
         .iter()

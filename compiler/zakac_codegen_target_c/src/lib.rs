@@ -30,5 +30,6 @@ pub const RUNTIME_PREFIX: &str = env!("ZK_NAME_PREFIX");
 /// The linked name.
 pub fn linked_name(plain: &str) -> String
 {
-    format!("{RUNTIME_PREFIX}{}", plain.strip_prefix("zk_").unwrap_or(plain))
+    let prefix = crate::driver::runtime_prefix();
+    format!("{prefix}{}", plain.strip_prefix("zk_").unwrap_or(plain))
 }

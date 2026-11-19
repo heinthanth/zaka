@@ -353,6 +353,20 @@ pub extern "C" fn zk_cb_opt_handle(
     zk_cb_handle(at(out, ok_at), addr, list)
 }
 
-/// End each lend of a closure to a C call, for a reset of a C lib: a trap
-/// inside a call that lent closures left them lent.
-pub(crate) fn end_lends() { LENDS.lock().unwrap_or_else(|e| e.into_inner()).clear(); }
+/// The count of closures lent now.
+///
+/// # Returns
+///
+/// The count.
+pub(crate) fn lends() -> usize { LENDS.lock().unwrap_or_else(|e| e.into_inner()).len() }
+
+/// End each lend past the first `n`: a trap inside a call of a C lib that lent
+/// closures left them lent.
+///
+/// # Arguments
+///
+/// * `n` - The count of lends that remain.
+pub(crate) fn end_lends_from(n: usize)
+{
+    LENDS.lock().unwrap_or_else(|e| e.into_inner()).truncate(n);
+}

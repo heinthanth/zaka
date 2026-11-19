@@ -368,6 +368,23 @@ impl Blocks
         list.pop().map(|b| b as *mut u8)
     }
 
+    /// The count of blocks.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn len(&self) -> usize { self.0.lock().unwrap_or_else(|e| e.into_inner()).len() }
+
+    /// Drop the blocks past the first `n`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The count of blocks that remain.
+    fn truncate(&self, n: usize)
+    {
+        self.0.lock().unwrap_or_else(|e| e.into_inner()).truncate(n);
+    }
+
     /// Take each block off.
     ///
     /// # Returns
@@ -1652,11 +1669,47 @@ pub extern "C" fn zk_text_eq(a: *const u8, b: *const u8) -> i32
     i32::from(octets(a) == octets(b))
 }
 
-/// Clear the queues of the drops, for a reset of a C lib: a trap inside a
-/// drop left them half done, and the blocks in them remain, out of reach.
-pub(crate) fn reset_drops()
+/// Where the queues of the drops stood when a call of a C lib began.
+#[derive(Clone, Copy)]
+pub(crate) struct DropMark
 {
-    FREEING.store(std::ptr::null_mut(), Ordering::Relaxed);
-    DRAINING.store(false, Ordering::Relaxed);
-    _ = (CANDIDATES.take(), DEEP_TODO.take(), DEEP_SEEN.take());
+    /// The head of the queue of blocks to free, as an address.
+    freeing: usize,
+    /// Whether a drop was freeing the queue.
+    draining: bool,
+    /// The count of blocks that could be part of a ring.
+    candidates: usize,
+    /// The count of new blocks the deep duplicate still visited.
+    deep_todo: usize,
+    /// The count of old objects the deep duplicate gave a new block.
+    deep_seen: usize,
+}
+
+/// Where the queues of the drops stand now.
+///
+/// # Returns
+///
+/// The mark.
+pub(crate) fn drop_mark() -> DropMark
+{
+    #[rustfmt::skip]
+    let mark = DropMark { freeing: FREEING.load(Ordering::Relaxed) as usize,
+        draining: DRAINING.load(Ordering::Relaxed), candidates: CANDIDATES.len(),
+        deep_todo: DEEP_TODO.len(), deep_seen: DEEP_SEEN.len() };
+    mark
+}
+
+/// Put the queues of the drops back where a call of a C lib found them: a
+/// trap inside the call left them half done.
+///
+/// # Arguments
+///
+/// * `mark` - Where the queues stood.
+pub(crate) fn back_to(mark: DropMark)
+{
+    FREEING.store(mark.freeing as *mut u8, Ordering::Relaxed);
+    DRAINING.store(mark.draining, Ordering::Relaxed);
+    CANDIDATES.truncate(mark.candidates);
+    DEEP_TODO.truncate(mark.deep_todo);
+    DEEP_SEEN.truncate(mark.deep_seen);
 }

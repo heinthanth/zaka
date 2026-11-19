@@ -8,6 +8,8 @@
 
 int main(void)
 {
+    /* The lib writes its prints itself, so C prints at once too. */
+    setvbuf(stdout, NULL, _IONBF, 0);
     int32_t sum = 0;
     int32_t doubled = 0;
     int64_t quotient = 0;
@@ -17,6 +19,15 @@ int main(void)
     printf("add %d %d\n", status, sum);
     status = twice(21, &doubled);
     printf("twice %d %d\n", status, doubled);
+    /* A trap while text goes to a buffer: the print of the other lib after it
+       still reaches stdout. */
+    char *half = NULL;
+    status = half_text(1, 0, &half);
+    printf("half %d %s\n", status != 0, zk_last_trap()->lib);
+    zk_reset_twicelib();
+    uint64_t length = 0;
+    status = greet("Zaka", &length);
+    printf("greet %d %u\n", status, (unsigned)length);
     printf("divide %d\n", divide(7, 0, &quotient));
     printf("traps %s %s\n", zk_last_trap_from_mathlib() != NULL ? "math" : "none",
            zk_last_trap_from_twicelib() != NULL ? "twice" : "none");

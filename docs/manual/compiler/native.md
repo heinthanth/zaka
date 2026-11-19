@@ -166,7 +166,8 @@ backtrace line is a function name with no place.
 it is told otherwise. A build for another OS or CPU takes a runtime lib built for that target and a C
 compiler for it. `mise run runtime:cross-build <triple>` builds the lib with the Rust target of
 that triple (`rustup target add <triple>`), and writes `native-libs.txt` beside it, the OS
-libs the lib needs:
+libs the lib needs. The build reads the names the lib links its functions under off the
+lib itself, so a lib built from other sources than those of `zakac` serves too:
 
 ```console
 $ mise run runtime:cross-build x86_64-unknown-linux-gnu

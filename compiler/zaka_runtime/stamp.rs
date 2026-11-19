@@ -34,7 +34,10 @@ fn runtime_prefix(compiler: &std::path::Path) -> String
         let name = name.to_string_lossy().replace('\\', "/").into_bytes();
         [name, std::fs::read(file).expect("a source file is readable")].concat()
     });
-    let all: Vec<u8> = manifest.bytes().chain(each).collect();
+    // A salt gives a second build of the same sources names of its own, as a
+    // test of libs from two builds of `zakac` wants.
+    let salt = std::env::var("ZAKA_RUNTIME_SALT").unwrap_or_default().into_bytes();
+    let all: Vec<u8> = manifest.bytes().chain(each).chain(salt).collect();
     let hash = xxhash_rust::xxh3::xxh3_64(&all) as u32;
     format!("zk_rt_{}_{hash:08x}_", version.replace('.', "_"))
 }

@@ -12,6 +12,7 @@ fn main()
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=../zaka_host/src");
     println!("cargo:rerun-if-changed=stamp.rs");
+    println!("cargo:rerun-if-env-changed=ZAKA_RUNTIME_SALT");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets it");
     let prefix = runtime_prefix(&Path::new(&manifest).join(".."));
     println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");

@@ -3,11 +3,13 @@
 //! blocks of unsafe code, and function values.
 
 use std::ffi::c_void;
+use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::program::NULL_BIT;
 use crate::program::OVERLAP_BIT;
@@ -24,8 +26,10 @@ use crate::traps::zk_out_of_mem;
 use crate::traps::zk_plain_trap;
 
 unsafe extern "C" {
-    pub safe fn malloc(size: usize) -> *mut c_void;
-    pub safe fn calloc(count: usize, size: usize) -> *mut c_void;
+    #[link_name = "malloc"]
+    fn c_malloc(size: usize) -> *mut c_void;
+    #[link_name = "calloc"]
+    fn c_calloc(count: usize, size: usize) -> *mut c_void;
     pub fn realloc(p: *mut c_void, size: usize) -> *mut c_void;
     pub fn free(p: *mut c_void);
     fn atexit(f: extern "C" fn()) -> i32;
@@ -35,6 +39,37 @@ unsafe extern "C" {
     fn malloc_usable_size(p: *mut c_void) -> usize;
     #[cfg(windows)]
     fn _msize(p: *mut c_void) -> usize;
+}
+
+/// A block of the C allocator, or NULL when no room is left.
+///
+/// # Arguments
+///
+/// * `size` - The octets.
+///
+/// # Returns
+///
+/// The block.
+pub fn malloc(size: usize) -> *mut c_void
+{
+    // SAFETY: malloc takes each size and gives NULL for one it cannot hold.
+    unsafe { c_malloc(size) }
+}
+
+/// A block of the C allocator with each octet 0, or NULL when no room is left.
+///
+/// # Arguments
+///
+/// * `count` - The count of cells.
+/// * `size` - The octets of a cell.
+///
+/// # Returns
+///
+/// The block.
+pub fn calloc(count: usize, size: usize) -> *mut c_void
+{
+    // SAFETY: calloc checks the product and gives NULL for one it cannot hold.
+    unsafe { c_calloc(count, size) }
 }
 
 /// The octets of a word: an address or a count.
@@ -107,27 +142,90 @@ static HEAP_LIVE: AtomicUsize = AtomicUsize::new(0);
 /// # Returns
 ///
 /// `true` when the octets fit and are counted.
-pub fn heap_take(size: usize) -> bool
+pub fn heap_take(size: usize) -> bool { take_into(heap_owner(), size) }
+
+/// The count a new block counts in: the count of the C lib whose call runs,
+/// each lib under its own `--max-heap`, or else the count of the program.
+///
+/// # Returns
+///
+/// The count, as an address; 0 when no cap counts.
+pub fn heap_owner() -> usize
 {
-    let cap = prog().max_heap;
-    ret_if!(cap == 0, true);
-    let live = HEAP_LIVE.load(Ordering::Relaxed) as u64;
-    ret_if!(size as u64 > cap || live > cap - size as u64, false);
-    HEAP_LIVE.fetch_add(size, Ordering::Relaxed);
-    true
+    ret_if!(prog().max_heap == 0, 0);
+    let count = crate::libs::current().map_or(&HEAP_LIVE, |l| &l.heap);
+    (&raw const *count) as usize
 }
 
-/// Give back octets the program held; a block C made and the program frees
-/// was never counted, so the count stops at 0.
+/// Count octets in a count, under the cap of `--max-heap`.
 ///
 /// # Arguments
 ///
+/// * `owner` - The count, as [`heap_owner`] gives it; 0 counts nothing.
 /// * `size` - The octets.
-pub fn heap_give(size: usize)
+///
+/// # Returns
+///
+/// `true` when the octets fit and are counted.
+pub fn take_into(owner: usize, size: usize) -> bool
 {
-    ret_if!(prog().max_heap == 0);
-    let live = HEAP_LIVE.load(Ordering::Relaxed);
-    HEAP_LIVE.store(live.saturating_sub(size), Ordering::Relaxed);
+    ret_if!(owner == 0, true);
+    let cap = prog().max_heap;
+    // SAFETY: a count lives as long as the program.
+    let count = unsafe { &*(owner as *const AtomicUsize) };
+    let fits = |live: usize| {
+        let fit = size as u64 <= cap && live as u64 <= cap - size as u64;
+        fit.then(|| live + size)
+    };
+    count.try_update(Ordering::Relaxed, Ordering::Relaxed, fits).is_ok()
+}
+
+/// Give octets back to the count that held them.
+///
+/// # Arguments
+///
+/// * `owner` - The count, as [`heap_owner`] gave it; 0 counts nothing.
+/// * `size` - The octets.
+pub fn give_back(owner: usize, size: usize)
+{
+    ret_if!(owner == 0);
+    // SAFETY: a count lives as long as the program.
+    let count = unsafe { &*(owner as *const AtomicUsize) };
+    let less = |live: usize| Some(live.saturating_sub(size));
+    _ = count.try_update(Ordering::Relaxed, Ordering::Relaxed, less);
+}
+
+/// The raw blocks of unsafe code that count in the count of a C lib, each with
+/// that count; a raw block of the program counts in the count of the program.
+static RAW_OWNERS: Mutex<Vec<(usize, usize)>> = Mutex::new(Vec::new());
+
+/// The count a raw block counts in, taken off the list of raw blocks.
+///
+/// # Arguments
+///
+/// * `p` - The block.
+///
+/// # Returns
+///
+/// The count, as an address; 0 when no cap counts.
+fn raw_owner(p: *const u8) -> usize
+{
+    ret_if!(prog().max_heap == 0, 0);
+    let mut owners = RAW_OWNERS.lock().unwrap_or_else(|e| e.into_inner());
+    let at = owners.iter().position(|(b, _)| *b == p as usize);
+    at.map_or((&raw const HEAP_LIVE) as usize, |i| owners.swap_remove(i).1)
+}
+
+/// Note the count a raw block counts in, when it is the count of a C lib.
+///
+/// # Arguments
+///
+/// * `p` - The block.
+/// * `owner` - The count.
+fn note_raw(p: *const u8, owner: usize)
+{
+    ret_if!(owner == 0 || owner == (&raw const HEAP_LIVE) as usize);
+    RAW_OWNERS.lock().unwrap_or_else(|e| e.into_inner()).push((p as usize, owner));
 }
 
 /// The size the allocator gave a raw block, so `--max-heap` can give it back
@@ -217,6 +315,10 @@ pub struct Head
     /// Whether an address of one of its cells was taken: the block is never
     /// shared again, so a duplicate copies it.
     pub pinned: u8,
+    /// The count of heap octets the block counts in, as an address: the count
+    /// of the C lib whose call made it, or of the program; 0 when no
+    /// `--max-heap` caps it.
+    pub owner: usize,
 }
 
 /// The octets in front of the cells of a counted block: the head, padded so
@@ -250,14 +352,15 @@ pub fn head<'a>(base: *const u8) -> &'a mut Head
 #[unsafe(export_name = stamped!("seq_new"))]
 pub extern "C" fn zk_seq_new(size: usize) -> *mut u8
 {
-    do_if!(!heap_take(size), zk_out_of_mem(size as u64));
+    let owner = heap_owner();
+    do_if!(!take_into(owner, size), zk_out_of_mem(size as u64));
     let p = malloc(SEQ_HEAD + size).cast::<u8>();
     do_if!(p.is_null(), zk_out_of_mem(size as u64));
     // SAFETY: the block holds a head, then the cells.
     let base = unsafe { p.add(SEQ_HEAD) };
     #[rustfmt::skip]
     let fresh = Head { rc: 1, size, cell: std::ptr::null(), drop_cell: std::ptr::null(), len: 0,
-        next: std::ptr::null_mut(), color: 0, buffered: 0, pinned: 0 };
+        next: std::ptr::null_mut(), color: 0, buffered: 0, pinned: 0, owner };
     // SAFETY: the head lies in front of the cells.
     unsafe { p.cast::<Head>().write(fresh) };
     base
@@ -276,9 +379,9 @@ pub extern "C" fn zk_seq_new(size: usize) -> *mut u8
 pub fn seq_grow(base: *mut u8, size: usize) -> *mut u8
 {
     ret_if!(base.is_null(), zk_seq_new(size));
-    let old = head(base).size;
-    do_if!(size > old && !heap_take(size - old), zk_out_of_mem(size as u64));
-    do_if!(size < old, heap_give(old - size));
+    let (old, owner) = (head(base).size, head(base).owner);
+    do_if!(size > old && !take_into(owner, size - old), zk_out_of_mem(size as u64));
+    do_if!(size < old, give_back(owner, old - size));
     // SAFETY: the block came from `zk_seq_new`.
     let p = unsafe { realloc(base.sub(SEQ_HEAD).cast(), SEQ_HEAD + size) }.cast::<u8>();
     do_if!(p.is_null(), zk_out_of_mem(size as u64));
@@ -306,7 +409,7 @@ pub fn seq_kind(base: *mut u8, cell: *const ZkKind) { head(base).cell = cell }
 pub extern "C" fn zk_seq_free(base: *mut u8)
 {
     ret_if!(base.is_null());
-    heap_give(head(base).size);
+    give_back(head(base).owner, head(base).size);
     // SAFETY: the block came from `zk_seq_new`.
     unsafe { free(base.sub(SEQ_HEAD).cast()) }
 }
@@ -396,7 +499,11 @@ pub extern "C" fn zk_alloc(count: u64, stride: usize) -> *mut u8
         return std::ptr::null_mut();
     };
     let p = calloc(size.max(1), 1).cast::<u8>();
-    ret_if!(p.is_null() || heap_take(raw_size(p)), p);
+    ret_if!(p.is_null(), p);
+    let owner = heap_owner();
+    let fits = take_into(owner, raw_size(p));
+    do_if!(fits, note_raw(p, owner));
+    ret_if!(fits, p);
     // Past the cap of --max-heap the program gets no block, as from malloc.
     // SAFETY: `p` came from calloc.
     unsafe { free(p.cast()) };
@@ -412,7 +519,7 @@ pub extern "C" fn zk_alloc(count: u64, stride: usize) -> *mut u8
 pub extern "C" fn zk_raw_free(p: *mut c_void)
 {
     ret_if!(p.is_null());
-    heap_give(raw_size(p.cast()));
+    give_back(raw_owner(p.cast()), raw_size(p.cast()));
     // SAFETY: `p` came from the C allocator.
     unsafe { free(p) }
 }
@@ -437,10 +544,12 @@ pub extern "C" fn zk_realloc(p: *mut u8, count: u64, stride: usize) -> *mut u8
         zk_out_of_mem(u64::MAX)
     };
     let old = raw_size(p);
+    let owner = tern!(p.is_null(), heap_owner(), raw_owner(p));
     let moved = grow(p, size);
     let now = raw_size(moved);
-    do_if!(now > old && !heap_take(now - old), zk_out_of_mem(now as u64));
-    do_if!(now < old, heap_give(old - now));
+    do_if!(now > old && !take_into(owner, now - old), zk_out_of_mem(now as u64));
+    do_if!(now < old, give_back(owner, old - now));
+    note_raw(moved, owner);
     moved
 }
 

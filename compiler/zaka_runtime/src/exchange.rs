@@ -17,7 +17,6 @@ use crate::heap::WORD;
 use crate::heap::ld;
 use crate::heap::move_octets;
 use crate::heap::st;
-use crate::heap::zk_alloc;
 use crate::heap::zk_seq_new;
 use crate::host::zk_text_of_c;
 use crate::program::ZkKind;
@@ -218,7 +217,8 @@ fn seq_to_c(from: *const u8, k: &ZkKind, to: *mut u8)
 fn c_block(size: usize) -> *mut u8
 {
     ret_if!(size == 0, std::ptr::null_mut());
-    let block = zk_alloc(size as u64, 1);
+    // C owns the block, so it counts against no cap of `--max-heap`.
+    let block = crate::heap::calloc(size, 1).cast::<u8>();
     do_if!(block.is_null(), zk_out_of_mem(size as u64));
     block
 }

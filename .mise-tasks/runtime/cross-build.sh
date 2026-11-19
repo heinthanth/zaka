@@ -13,6 +13,13 @@ triple="$usage_triple"
 out="target/runtime/$triple"
 mkdir -p "$out"
 
+# Rust derives the link names of each crate from its metadata, not its
+# sources: a checksum of the sources joins the metadata, so a runtime from
+# other sources never clashes with this one in a program.
+sum=$(find compiler/zaka_runtime/src compiler/zaka_host/src -name '*.rs' | sort | \
+  xargs cat | cksum | cut -d' ' -f1)
+
+RUSTFLAGS="-C metadata=zk-rt-$sum" \
 cargo rustc -p zaka_runtime --lib --crate-type staticlib --profile zaka-runtime \
   --target "$triple" -- --print native-static-libs 2> "$out/build.log" \
   || { cat "$out/build.log"; exit 1; }

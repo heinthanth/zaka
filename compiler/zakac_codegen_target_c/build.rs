@@ -26,6 +26,7 @@ const MACOS_FLOOR: &str = "11.0";
 fn main()
 {
     cargo_build::rerun_if_changed!("locales");
+    println!("cargo:rerun-if-env-changed=ZAKA_RUNTIME_SALT");
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"));
     let target = std::env::var("TARGET").expect("cargo sets TARGET");
     let lib = out.join("libzaka_runtime.a");
@@ -268,6 +269,12 @@ fn build_runtime(
     };
     let names = std::env::vars().map(|(name, _)| name).filter(outer);
     do_for!(name in names, cmd.env_remove(&name));
+    // Rust derives the link names of each crate from its metadata, not its
+    // sources: two builds of the runtime from other sources would clash in one
+    // program, so the prefix of the build, a hash of its sources, joins the
+    // metadata of each crate of the lib.
+    let prefix = runtime_prefix(&root.join("compiler"));
+    cmd.env("RUSTFLAGS", format!("-C metadata={prefix}"));
     let floor = target.contains("apple")
         && std::env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none();
     do_if!(floor, _ = cmd.env("MACOSX_DEPLOYMENT_TARGET", MACOS_FLOOR));

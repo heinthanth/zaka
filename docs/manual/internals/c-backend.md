@@ -144,7 +144,22 @@ build scripts of the runtime and of this crate both include). The Rust writes
 plain `no_mangle` in its place, and the build script puts a `#define zk_alloc
 zk_rt_..._alloc` for each name before the declarations, so the C keeps the plain names.
 `RUNTIME_PREFIX` and `linked_name` give the prefix to Cranelift, and the table of exports
-of the JIT carries the linked names.
+of the JIT carries the linked names. A lib `--runtime-lib` gives brings its own prefix:
+`driver::prefix_in` reads it off the name of `zk_seq_new` in the lib, and
+`runtime_prefix` serves it to `linked_name` and to the header written into the cache. Each
+nested build of the runtime sets `RUSTFLAGS=-C metadata=<prefix>`, since Rust derives the
+link names of each crate from its metadata, not its sources: two runtimes of other sources
+in one program would clash on them. `ZAKA_RUNTIME_SALT` joins the hash, for a test of two
+builds.
+
+The runtime keeps a record of each C lib it serves (`zaka_runtime/src/libs.rs`): its table,
+the jump back to its wrapper, its gate, its last trap and its heap count. Each wrapper
+enters its lib (`zk_lib_enter`, which also pushes a mark of the lends, the sink of the
+output and the drop queues) and returns to the lib around it; a trap puts the mark back
+(`zk_lib_unwind`). Each lib's glue defines `zk_trap_slot_v1` weak (`selectany` on Windows),
+so the linker keeps one for the program, and each runtime writes each trap to the slot of
+each lib it serves. A counted block records the count it counts in (`Head::owner`), a raw
+block of a lib with a cap goes in `RAW_OWNERS`, and a block the lib gives C counts in none.
 
 `zaka_runtime/cbindgen.toml` sets out `zaka_runtime.h`: the C names of the Rust structs
 (`ZkProgram` is `zk_program`), the enum members with the name of their enum in front

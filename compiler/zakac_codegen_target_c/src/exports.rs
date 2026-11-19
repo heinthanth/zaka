@@ -81,8 +81,9 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 }
 
 /// The names a shared lib gives to C: the name of each function that code
-/// outside can call, the reset and the last trap of the lib, and `zk_free` and
-/// `zk_last_trap` of the runtime, under the names the runtime links them with.
+/// outside can call, the reset, the last trap and the free of the lib, and
+/// `zk_free` and `zk_last_trap` of the runtime, under the names the runtime
+/// links them with.
 ///
 /// # Arguments
 ///
@@ -96,7 +97,8 @@ pub fn api_names(exports: &[Export<'_>], names: &LibNames) -> Vec<String>
 {
     let each = exports.iter().map(|e| e.c_name.to_string());
     let runtime = ["zk_free", "zk_last_trap"].map(crate::linked_name);
-    each.chain([names.reset(), names.last_trap()]).chain(runtime).collect()
+    let lib = [names.reset(), names.last_trap(), names.free()];
+    each.chain(lib).chain(runtime).collect()
 }
 
 /// The statements `zk_lib_init` of a lib runs: the top-level statements,
@@ -592,10 +594,15 @@ pub fn header(
          {{\n#endif\n{}\n/**\n * The trap the lib {name} stopped on last.\n *\n * \
          @return The trap, or NULL while it stopped on none.\n */\nconst zk_trap \
          *{}(void);\n\n/**\n * Start the lib {name} again after a trap stopped it: \
-         the next call sets its globals again.\n */\nvoid {}(void);\n",
+         the next call sets its globals again.\n */\nvoid {}(void);\n\n/**\n * Free \
+         text or the cells of a list the lib {name} gave back, with the C runtime the \
+         lib was built with; on Windows, where a lib of GNU and a lib of MSVC each \
+         have their own, the one to use.\n *\n * @param p The `char *` or the `ptr` \
+         of a list; NULL frees nothing.\n */\nvoid {}(void *p);\n",
         shared_part(),
         names.last_trap(),
-        names.reset()
+        names.reset(),
+        names.free()
     );
     let kinds = CKinds::of(exports, platform);
     out.push_str(&kinds.struct_decls());

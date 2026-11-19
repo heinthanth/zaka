@@ -297,6 +297,17 @@ pub extern "C" fn zk_char_of(negative: i32, v: u64) -> u32
     scalar.map_or(0xfffd, u32::from)
 }
 
-/// Send the output to the standard output again, for a reset of a C lib: a
-/// trap while text went to a buffer left it there.
-pub(crate) fn reset_sink() { INTO.store(std::ptr::null_mut(), Ordering::Relaxed); }
+/// The sink of the output now.
+///
+/// # Returns
+///
+/// The buffer an interpolation builds, or NULL for stdout.
+pub(crate) fn sink() -> *mut ZkBuf { INTO.load(Ordering::Relaxed) }
+
+/// Send the output where it went when a call of a C lib began: a trap while
+/// text went to a buffer left it there.
+///
+/// # Arguments
+///
+/// * `to` - The sink, from [`sink`].
+pub(crate) fn set_sink(to: *mut ZkBuf) { INTO.store(to, Ordering::Relaxed) }

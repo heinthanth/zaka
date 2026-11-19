@@ -49,6 +49,18 @@ typedef union
 extern const zk_program zk_the_program;
 void zk_lib_init(void);
 
+/* The last trap of each Zaka lib of the program. Each lib defines it, the
+   linker keeps one, and the runtime of each build of zakac writes its traps
+   there, so zk_last_trap sees each lib. A compiler with no weak definitions
+   gives each lib its own. */
+#if defined(_WIN32)
+__declspec(selectany) const zk_trap_info *zk_trap_slot_v1 = NULL;
+#elif defined(__GNUC__)
+__attribute__((weak)) const zk_trap_info *zk_trap_slot_v1 = NULL;
+#else
+static const zk_trap_info *zk_trap_slot_v1 = NULL;
+#endif
+
 /* The state of the lib, which a call reads and writes once zk_lib_lock lets it
    in, one thread at a time. */
 /* The record the runtime keeps of the lib, from its first call. */
@@ -81,7 +93,8 @@ static zk_lib_place zk_lib_in(void)
 {
     DO_IF(
         zk_lib_self == NULL,
-        zk_lib_self = zk_lib_open(&zk_the_program, zk_lib_leave, ZK_LIB_NAME)
+        zk_lib_self =
+            zk_lib_open(&zk_the_program, zk_lib_leave, ZK_LIB_NAME, &zk_trap_slot_v1)
     );
     return zk_lib_enter(zk_lib_self);
 }
@@ -115,8 +128,9 @@ static int32_t zk_lib_end(jmp_buf *outer, zk_lib_place was, int32_t status)
 }
 
 /**
- * End a call that stopped on a trap: the depth of the calls goes back to where
- * the call began, and the lib remains stopped.
+ * End a call that stopped on a trap: the depth of the calls, the closures lent
+ * to C calls, the sink of the output and the queues of the drops go back to
+ * where the call found them, and the lib remains stopped.
  *
  * @param outer The jump target of the call around this one, or NULL.
  * @param was The lib around the call.
@@ -127,6 +141,7 @@ static int32_t zk_lib_stop(jmp_buf *outer, zk_lib_place was, uint32_t depth)
 {
     zk_lib_state = 2;
     zk_depth = depth;
+    zk_lib_unwind();
     zk_flush();
     return zk_lib_end(outer, was, zk_lib_status);
 }
@@ -152,5 +167,14 @@ ZK_LIB_EXPORT const zk_trap_info *zk_lib_last_trap(void)
 {
     return zk_lib_trap(zk_lib_self);
 }
+
+/**
+ * Free text or the cells of a list the lib gave back, with the C runtime the
+ * lib was built with: on Windows a lib of GNU and a lib of MSVC each have
+ * their own.
+ *
+ * @param p The `char *` or the `ptr` of a list; NULL frees nothing.
+ */
+ZK_LIB_EXPORT void zk_lib_free(void *p) { zk_free(p); }
 
 #endif

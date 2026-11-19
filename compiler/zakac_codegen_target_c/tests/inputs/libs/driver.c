@@ -37,7 +37,7 @@ int main(void)
     person grown = {NULL, 0};
     status = older(given, &grown);
     printf("older %d %s %d\n", status, grown.name, grown.age);
-    zk_free(grown.name);
+    zk_free_from_mathlib(grown.name);
     printf("trap before %s\n", zk_last_trap() == NULL ? "none" : "some");
     int64_t quotient = 0;
     status = divide(7, 0, &quotient);
