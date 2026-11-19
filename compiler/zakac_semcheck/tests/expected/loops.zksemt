@@ -303,6 +303,7 @@ program:
               span:
                 lo: 801
                 hi: 1346
+            parallel: false
             span:
               lo: 707
               hi: 1346
@@ -362,6 +363,7 @@ program:
               span:
                 lo: 1449
                 hi: 1496
+            parallel: false
             span:
               lo: 1347
               hi: 1496

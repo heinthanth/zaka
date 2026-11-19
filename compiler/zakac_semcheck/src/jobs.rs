@@ -4,15 +4,25 @@
 
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::NameExpr;
 use zakac_ast::name::Name;
+use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::LockStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
+use zakac_ast::visit::walk_add;
+use zakac_ast::visit::walk_assign;
+use zakac_ast::visit::walk_counted;
+use zakac_ast::visit::walk_decl;
+use zakac_ast::visit::walk_each;
 use zakac_ast::visit::walk_expr;
+use zakac_ast::visit::walk_remove;
+use zakac_ast::visit::walk_replace;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
+use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -20,7 +30,9 @@ use zakac_span::span::Span;
 
 use crate::kind::DataKind;
 use crate::proof::result_var;
+use crate::scope::FnSig;
 use crate::semcheck::Checker;
+use crate::semcheck::each_list;
 use crate::task;
 
 /// The verb of the core that waits for a job.
@@ -72,6 +84,114 @@ fn place_text(e: &Expr) -> Option<String>
         Expr::Group(g) => place_text(&g.inner),
         Expr::Name(n) => Some(n.name.to_string()),
         Expr::Field(f) => Some(format!("{}.{}", place_text(&f.base)?, f.field.name)),
+        _ => None,
+    }
+}
+
+/// Finds the writes of a round of a parallel loop to variables from outside
+/// the loop.
+struct RoundWrites
+{
+    /// The variable of the number of the round.
+    number: Option<Name>,
+    /// The variables the round declares.
+    inner: Vec<Name>,
+    /// Each write outside, with the name it writes.
+    outside: Vec<(Span, String)>,
+}
+
+impl RoundWrites
+{
+    /// Note a write of a place, unless it is a variable of the round or the
+    /// cell of the round's own number.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The place written.
+    fn write(&mut self, place: &Expr)
+    {
+        let own_cell = match place
+        {
+            Expr::Index(n) =>
+            {
+                matches!(n.index.as_ref(), Expr::Name(i) if Some(i.name) == self.number)
+            }
+            _ => false,
+        };
+        let root = root_name(place);
+        let inner = root.as_ref().is_some_and(|(n, _)| self.inner.contains(n));
+        let Some((name, span)) = root.filter(|_| !own_cell && !inner)
+        else
+        {
+            return;
+        };
+        self.outside.push((span, name.to_string()));
+    }
+}
+
+impl Visitor for RoundWrites
+{
+    fn visit_decl(&mut self, n: &zakac_ast::stmt::DeclStmt)
+    {
+        self.inner.push(n.name.name);
+        walk_decl(self, n);
+    }
+
+    fn visit_counted(&mut self, n: &zakac_ast::stmt::CountedStmt)
+    {
+        self.inner.push(n.var.name);
+        walk_counted(self, n);
+    }
+
+    fn visit_each(&mut self, n: &EachStmt)
+    {
+        self.inner.push(n.var.name);
+        do_if!(let Some(p) = &n.place, self.inner.push(p.name));
+        walk_each(self, n);
+    }
+
+    fn visit_assign(&mut self, n: &zakac_ast::stmt::AssignStmt)
+    {
+        self.write(&n.target);
+        walk_assign(self, n);
+    }
+
+    fn visit_add(&mut self, n: &zakac_ast::stmt::AddStmt)
+    {
+        self.write(&n.list);
+        walk_add(self, n);
+    }
+
+    fn visit_remove(&mut self, n: &zakac_ast::stmt::RemoveStmt)
+    {
+        self.write(&n.list);
+        walk_remove(self, n);
+    }
+
+    fn visit_replace(&mut self, n: &zakac_ast::stmt::ReplaceStmt)
+    {
+        self.write(&n.text);
+        walk_replace(self, n);
+    }
+}
+
+/// The variable at the root of a place, through fields and cells.
+///
+/// # Arguments
+///
+/// * `place` - The place.
+///
+/// # Returns
+///
+/// The name and its span, or `None` for no place.
+fn root_name(place: &Expr) -> Option<(Name, Span)>
+{
+    match place
+    {
+        Expr::Group(g) => root_name(&g.inner),
+        Expr::Name(n) => Some((n.name, n.span)),
+        Expr::Field(f) => root_name(&f.base),
+        Expr::Index(i) => root_name(&i.list),
         _ => None,
     }
 }
@@ -424,6 +544,76 @@ impl Checker
         let mut reads = SamePlace { place: place_text(target), found: false };
         reads.visit_expr(value);
         do_if!(reads.found, self.report(od::atomic_read_write(target.span())));
+    }
+
+    /// Infer a parallel map, `<list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက်
+    /// ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ`: a plain list of what the function gives
+    /// back. The function is one the program declares, of one parameter the
+    /// cells fit, as for a job.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The list.
+    /// * `f` - The name of the function.
+    ///
+    /// # Returns
+    ///
+    /// The plain list kind, or `None` after an error.
+    pub(crate) fn infer_par_map(
+        &mut self, list: &Expr, f: &NameExpr,
+    ) -> Option<DataKind>
+    {
+        let kind = self.infer(list, None)?;
+        let cell = each_list(kind, false).cell_kind();
+        let Some(cell) = cell
+        else
+        {
+            self.report(kd::each_source_wrong(list.span(), &kind.name()));
+            return None;
+        };
+        let callee = Ident::builder().name(f.name.as_str()).span(f.span).build();
+        let sigs = self.fns.get(&f.name).cloned().unwrap_or_default();
+        let fits = |s: &&FnSig| {
+            s.params.len() == 1 && cell.widens_to(s.params[0], self.platform)
+        };
+        let found: Vec<&FnSig> = sigs.iter().filter(fits).collect();
+        let [sig] = found.as_slice()
+        else
+        {
+            let list = sigs
+                .iter()
+                .map(|s| {
+                    s.params.iter().map(|k| k.name()).collect::<Vec<_>>().join(", ")
+                })
+                .collect::<Vec<_>>()
+                .join(" / ");
+            self.report(rd::no_overload_fits(f.span, &f.name, &list));
+            return None;
+        };
+        self.refer(&f.name, f.span, sig.decl);
+        self.check_job_callee(&callee, None);
+        self.goes_to_job(cell, list.span());
+        let ret = sig.ret?;
+        self.goes_to_job(ret, f.span);
+        Some(DataKind::seq_of(ret))
+    }
+
+    /// Report each write of a round of a parallel loop to a variable from
+    /// outside the loop, but the cell of the round's own number (ZK0728).
+    ///
+    /// # Arguments
+    ///
+    /// * `number` - The variable of the number of the round, if the loop has
+    ///   one.
+    /// * `block` - The block of the round.
+    pub(crate) fn check_round(&mut self, number: Option<Name>, block: &BlockStmt)
+    {
+        let mut walk = RoundWrites { number, inner: Vec::new(), outside: Vec::new() };
+        walk.visit_block(block);
+        let found = std::mem::take(&mut walk.outside);
+        found
+            .into_iter()
+            .for_each(|(span, n)| self.report(od::round_writes_outside(span, &n)));
     }
 
     /// Report a kind that jobs cannot use, where a value of it goes to a job

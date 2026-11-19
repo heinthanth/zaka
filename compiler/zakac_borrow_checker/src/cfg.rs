@@ -339,7 +339,14 @@ mod tests
     /// A loop with its init and update lists.
     fn looped(init: Vec<Stmt>, block: Vec<Stmt>, update: Vec<Stmt>) -> Stmt
     {
-        Stmt::Loop { init, cond: cond(), update, block, span: Span::default() }
+        Stmt::Loop {
+            init,
+            cond: cond(),
+            update,
+            block,
+            span: Span::default(),
+            par: None,
+        }
     }
 
     /// A counted loop.

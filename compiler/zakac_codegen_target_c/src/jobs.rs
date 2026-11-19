@@ -7,6 +7,8 @@ use std::fmt::Write;
 
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::ParMap;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
 use crate::emit::FnGen;
@@ -116,7 +118,7 @@ pub fn parts(module: &Module, f: u32) -> Vec<Option<DataKind>>
 /// The C text.
 pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
 {
-    if shared.spawned.is_empty()
+    if shared.spawned.is_empty() && shared.mapped.is_empty()
     {
         return None;
     }
@@ -124,7 +126,59 @@ pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
         format!("#include \"{KINDS_HEADER}\"\n#include <setjmp.h>\n\n{GUARD}");
     let spawned: Vec<u32> = shared.spawned.iter().copied().collect();
     spawned.into_iter().for_each(|f| out.push_str(&step(shared, f)));
+    let mapped: Vec<u32> = shared.mapped.iter().copied().collect();
+    mapped.into_iter().for_each(|f| out.push_str(&map_step(shared, f)));
     Some(out)
+}
+
+/// The step of a parallel map through a function: it lends the cell to the
+/// function, as a call does, and writes the result.
+///
+/// # Arguments
+///
+/// * `shared` - The state shared across functions.
+/// * `f` - The function.
+///
+/// # Returns
+///
+/// The C text.
+fn map_step(shared: &mut Shared<'_>, f: u32) -> String
+{
+    let kinds = parts(shared.module, f);
+    let (ret, param) = (kinds[0], kinds[1].expect("a map takes one parameter"));
+    let size = shared.size(param);
+    let put = format!(
+        "    _Alignas(16) uint8_t zk_l[{size}];\n    zk_put_block(zk_l, zk_c, \
+         {size});\n"
+    );
+    let lend = match (is_blob(param), param.holds_text())
+    {
+        (true, true) =>
+        {
+            format!("{put}    zk_lend_seqs(zk_l, {});\n", shared.descr.of(param))
+        }
+        (true, false) => put,
+        _ => String::new(),
+    };
+    let arg = tern!(
+        is_blob(param),
+        "zk_l".to_string(),
+        format!("zk_ld_{}(zk_c)", shared.mem(param))
+    );
+    let call = match ret
+    {
+        Some(k) if is_blob(k) => format!("    {}(zk_o, {arg});\n", func_name(f)),
+        Some(k) =>
+        {
+            format!("    zk_st_{}(zk_o, {}({arg}));\n", shared.mem(k), func_name(f))
+        }
+        None => format!("    {}({arg});\n", func_name(f)),
+    };
+    let name = shared.module.funcs[f as usize].name.replace("*/", "* /");
+    format!(
+        "\n/** The step of a parallel map through `{name}`. */\nvoid \
+         zk_map_step_{f}(uint8_t *zk_c, uint8_t *zk_o)\n{{\n{lend}{call}}}\n"
+    )
 }
 
 /// The step of a job that calls a function: it calls the function with the
@@ -198,7 +252,7 @@ pub fn native_jobs_glue() -> String
 /// The C text, blank for a program that starts no job.
 pub(crate) fn declarations(shared: &Shared<'_>) -> String
 {
-    if shared.spawned.is_empty()
+    if shared.spawned.is_empty() && shared.mapped.is_empty()
     {
         return String::new();
     }
@@ -210,11 +264,33 @@ pub(crate) fn declarations(shared: &Shared<'_>) -> String
         .spawned
         .iter()
         .for_each(|f| _ = writeln!(out, "void zk_job_step_{f}(void *zk_d);"));
+    let steps = shared.mapped.iter();
+    steps.for_each(|f| {
+        _ = writeln!(out, "void zk_map_step_{f}(uint8_t *zk_c, uint8_t *zk_o);")
+    });
     out
 }
 
 impl FnGen<'_, '_>
 {
+    /// Write a parallel map that runs its rounds at once, in place of its
+    /// loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The map.
+    pub(crate) fn par_map(&mut self, p: &ParMap)
+    {
+        self.shared.mapped.insert(p.func);
+        let (src, out) = (self.place(p.src), self.place(p.out));
+        let (sk, ok) =
+            (self.shared.descr.of(p.src_kind), self.shared.descr.of(p.out_kind));
+        self.line(&format!(
+            "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{});",
+            p.func
+        ));
+    }
+
     /// The C text of a spawn: a data block that each argument moves into,
     /// handed to the runtime with the step of the function.
     ///

@@ -593,7 +593,10 @@ FillUnsetAtReturn = ("ZK0725", Level::Error),
 /// thread.
 GlobalInJob = ("ZK0726", Level::Error),
 /// A set of an atomic number whose value reads the same number.
-AtomicReadWrite = ("ZK0727", Level::Error) }
+AtomicReadWrite = ("ZK0727", Level::Error),
+/// A round of a parallel loop writes a variable outside the cell of its own
+/// number.
+RoundWritesOutside = ("ZK0728", Level::Error) }
 
 /// Each code with the address of the page that teaches it, which the build
 /// script reads from the error page of the manual.

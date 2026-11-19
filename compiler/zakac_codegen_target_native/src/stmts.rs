@@ -125,6 +125,7 @@ impl<M: Module> FnGen<'_, '_, M>
             }
             Stmt::Print { value, .. } => self.print(value),
             Stmt::If { cond, then, els, .. } => self.if_stmt(cond, then, els),
+            Stmt::Loop { par: Some(p), .. } => self.par_map(p),
             Stmt::Loop { init, cond, update, block, .. } =>
             {
                 self.loop_stmt(init, cond, update, block)

@@ -800,6 +800,7 @@ program:
               span:
                 lo: 3451
                 hi: 3571
+            parallel: false
             span:
               lo: 3375
               hi: 3571

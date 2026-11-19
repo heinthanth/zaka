@@ -428,3 +428,38 @@ fn a_set_of_an_atomic_number_that_reads_it_is_reported()
         program("ကိန်းရှင် ဒေသ သည် အက်တမ်မစ် ဖြစ်သော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။");
     assert!(codes(&narrow).contains(&Code::KindMismatch), "{:?}", codes(&narrow));
 }
+
+#[test]
+fn a_parallel_map_gives_a_list_in_the_order_of_the_cells()
+{
+    let text = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../zakac_codegen_target_c/tests/inputs/par_map.zaka"
+    ))
+    .unwrap();
+    let mut out = Vec::new();
+    let (machine, result) = run_and_keep(
+        &compile(&text),
+        &mut out,
+        &RunOptions::default(),
+        &HostData::default(),
+    );
+    assert!(result.is_ok(), "{result:?}");
+    assert_eq!(String::from_utf8(out).unwrap(), "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+    assert_eq!(machine.leaks(), Vec::new());
+}
+
+#[test]
+fn a_round_of_a_parallel_loop_writes_the_cell_of_its_own_number_alone()
+{
+    let own = program(
+        "ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို i * i ဟု ထားမည်။
+ထွက် ကို ပြသမည်။",
+    );
+    assert_eq!(output(&own), "[၀၊ ၁၊ ၄၊ ၉၊ ၁၆]\n");
+    let outside = program(
+        "ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။\n၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ စု ကို စု + i ဟု ထားမည်။",
+    );
+    assert_eq!(codes(&outside), [Code::RoundWritesOutside]);
+}

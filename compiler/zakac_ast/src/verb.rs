@@ -228,6 +228,12 @@ pub enum VerbOp
     /// once it is closed and drained. The parser builds it.
     #[strum(serialize = "receive")]
     Receive,
+    /// `<list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက် ဖြင့် အပြိုင်
+    /// လုပ်ဆောင်သော ရလဒ်များ`: a new plain list of what the function gives back
+    /// for each cell, in the order of the cells. The arguments are the list
+    /// and the name of the function. The parser builds it.
+    #[strum(serialize = "par_map")]
+    ParMap,
     /// `<ဇယား> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး`: the value of a row, an
     /// optional when read, the value itself when written through. The parser
     /// builds it; no verb word stands for it.

@@ -60,7 +60,7 @@ a command, such as `ပြသမည်`, forms a *statement*. The compiler reads
 | [Values and objects](objects.md) | values that are copied, shared objects, an object that can be missing, kinds no program can build, equal contents and one object, shallow and deep copies, counting and the ring collector |
 | [Enumerations](enums.md) | declaring an enumeration, its members and their values, and the switch |
 | [Kind aliases](aliases.md) | a second name for a kind: the alias sentence and where the name can stand |
-| [Jobs](jobs.md) | work side to side with the rest of the program: starting a job, the job kind, waiting, the values that can go to a job, what a job can reach, objects jobs share and lock blocks, atomic numbers, channels, turns, and traps in a job |
+| [Jobs](jobs.md) | work side to side with the rest of the program: starting a job, the job kind, waiting, the values that can go to a job, what a job can reach, objects jobs share and lock blocks, atomic numbers, parallel loops and maps, channels, turns, and traps in a job |
 | [Modules](modules.md) | a program in several files: the export mark, the import sentence and names across files |
 | [Natural wording](naturalness.md) | which particle and which ending read well, and the warnings for the others |
 | [Unsafe Zaka](unsafe.md) | unsafe code, the pointer kind, the heap, owned markers and the checks on unsafe code |

@@ -438,7 +438,7 @@ impl Lowerer<'_>
             parts = Some((init, cond, block, update, after));
         });
         let (init, cond, block, update, after) = parts.expect("the scope ran");
-        out.push(Stmt::Loop { init, cond, update, block, span: n.span });
+        out.push(Stmt::Loop { init, cond, update, block, span: n.span, par: None });
         out.extend(after);
     }
 

@@ -6,9 +6,11 @@ use zakac_semcheck::jobs::ATOMIC_SUB;
 use zakac_semcheck::jobs::CLOSE;
 use zakac_semcheck::jobs::SEND;
 use zakac_semcheck::jobs::WAIT;
+use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::task;
 
 use super::*;
+use crate::ir::ParMap;
 
 impl Lowerer<'_>
 {
@@ -329,7 +331,84 @@ impl Lowerer<'_>
             update: Vec::new(),
             block: round,
             span,
+            par: None,
         });
+    }
+
+    /// Lower a parallel map: a plain list in a hidden slot, which a loop fills
+    /// with what the function gives back for each cell, in the order of the
+    /// cells. The VM runs the loop; a native build runs the rounds at once,
+    /// through the mark on the loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The map.
+    /// * `kind` - The kind of the plain list it gives.
+    ///
+    /// # Returns
+    ///
+    /// The read of the plain list.
+    pub(super) fn par_map(&mut self, n: &ast::VerbExpr, kind: DataKind) -> ExprNode
+    {
+        let span = n.span;
+        let [list, ast::Expr::Name(f)] = n.args.as_slice()
+        else
+        {
+            unreachable!("the parser gives a map its list and its function")
+        };
+        let given = self.kind_of(list);
+        let list_kind = each_list(given, false);
+        let source = tern!(
+            list_kind == given,
+            self.owned(list, list_kind),
+            self.through(list, list_kind)
+        );
+        let src = self.spill(source);
+        let res = self.spill(node_expr(kind, ExprNode::BlankList, span));
+        let (ExprNode::Read(each), ExprNode::Read(out)) = (src.node, res.node)
+        else
+        {
+            unreachable!("a spill gives a read of a hidden slot")
+        };
+        let sig =
+            self.sigs.get(&f.name).cloned().expect("the check found the function");
+        let at = self.hidden(DataKind::USIZE, span);
+        self.pre.push(Stmt::Set { place: at, value: self.usize_const(0, span), span });
+        let count = self.each_count(each, list_kind, span);
+        let at_read = read(at, DataKind::USIZE, span);
+        let cond = node_expr(
+            DataKind::Bool,
+            compare_node(CmpOp::Lt, at_read.clone(), count),
+            span,
+        );
+        let (value, _) = each_cell(each, list_kind, at, span);
+        let arg = coerce_lowered(value, sig.params[0], self.platform);
+        let ret = kind.cell_kind().expect("a map gives a plain list");
+        let call = ExprNode::Call {
+            func: sig.index,
+            name: f.name.to_string(),
+            args: vec![arg],
+        };
+        let value = node_expr(ret, call, span);
+        let add = Stmt::AddCell { dest: Dest::Slot(out), kind, value, span };
+        let one = self.usize_const(1, span);
+        let next =
+            node_expr(DataKind::USIZE, infix_node(InfixOp::Add, at_read, one), span);
+        let update = vec![Stmt::Set { place: at, value: next, span }];
+        // A native build runs the rounds at once when the cells go to the
+        // function as each is.
+        let as_is = list_kind.cell_kind() == sig.params.first().copied();
+        let par = ParMap {
+            src: each,
+            out,
+            func: sig.index,
+            src_kind: list_kind,
+            out_kind: kind,
+        };
+        let par = as_is.then(|| Box::new(par));
+        #[rustfmt::skip]
+        self.pre.push(Stmt::Loop { init: Vec::new(), cond, update, block: vec![add], span, par });
+        ExprNode::Read(out)
     }
 
     /// Lower a lock block: the lock is taken, the block runs, and each exit

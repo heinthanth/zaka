@@ -1562,6 +1562,15 @@ en = "add with \"<atomic> ထဲသို့ <value> ကို ပေါင်�
 [codes.ZK0727.explain]
 en = """An atomic number, `အက်တမ်မစ် ဖြစ်သော <kind>`, is read and set as a plain number. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, runs in two steps: another job can change the number between the read and the write, and that change is lost. `ပေါင်းထည့်` and `နုတ်ယူ` add and subtract in one step no job can split."""
 
+[codes.ZK0728.title]
+en = "a round that writes outside its cell"
+[codes.ZK0728.message]
+en = "a round of a parallel loop writes \"%{n}\", a variable from outside the loop, and each round writes the cell of its own number alone"
+[codes.ZK0728.help]
+en = "write \"<list> ၏ အကွက် <number> ...\" with the number of the round, keep a value in a variable of the round, or drop \"အပြိုင်\""
+[codes.ZK0728.explain]
+en = """The rounds of a parallel loop, `အပြိုင် ရေတွက်၍` or `အပြိုင် ယူ၍`, can run at once, so no round writes what another reads or writes. A round reads each variable from outside the loop, writes the variables it declares, and writes one cell of a list from outside: the cell of its own number, `<list> ၏ အကွက် <number>`, where `<number>` is the variable of the loop (the number of the cell in an each loop with two names)."""
+
 [codes.ZK0497.title]
 en = "a job of no declared function"
 [codes.ZK0497.message]

@@ -196,6 +196,24 @@ pub struct Slot
     pub unset: Option<Span>,
 }
 
+/// A parallel map that a native build runs at once: each cell of the plain
+/// list in `src` goes, lent, to the function, and its result goes to the end
+/// of the plain list in `out`, in the order of the cells.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ParMap
+{
+    /// The hidden slot of the plain list the map reads.
+    pub src: Place,
+    /// The hidden slot of the plain list it fills, blank before.
+    pub out: Place,
+    /// The function, whose one parameter is of the cell kind.
+    pub func: u32,
+    /// The kind of the plain list it reads.
+    pub src_kind: DataKind,
+    /// The kind of the plain list it fills.
+    pub out_kind: DataKind,
+}
+
 /// Where a slot lives. Written `g0` for a global and `l0` for a local of the
 /// current function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -334,6 +352,10 @@ pub enum Stmt
         block: Vec<Stmt>,
         /// Source region.
         span: Span,
+        /// For the loop of a parallel map, what a native build runs in its
+        /// place: the rounds at once; the VM runs the loop.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        par: Option<Box<ParMap>>,
     },
     /// Counted loop: `var` runs from `from` to `to`, both included.
     Counted

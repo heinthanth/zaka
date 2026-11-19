@@ -175,6 +175,7 @@ program:
               span:
                 lo: 833
                 hi: 953
+            parallel: false
             span:
               lo: 757
               hi: 953

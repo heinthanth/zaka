@@ -4,6 +4,7 @@
 
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::jobs::JOBS_WORDS;
 use zakac_ast::jobs::USABLE_IN_JOBS;
@@ -14,6 +15,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
@@ -91,6 +93,9 @@ pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
 /// The words that take the lock of an object after its `ကို`, glued to `ယူ၍`
 /// or apart from it.
 const LOCK_WORDS: [&str; 2] = ["ခေတ္တ", "ခဏ"];
+
+/// The word that ends a parallel map, after `လုပ်ဆောင်သော`.
+const MAP_RESULTS: &str = "ရလဒ်များ";
 
 /// The words after `မှ` that receive from a channel, `ရရှိသော` or
 /// `လက်ခံရရှိသော`.
@@ -171,6 +176,71 @@ impl Parser<'_>
         ret_if!(self.peek_n(n).kind != TokenKind::Kw(Kw::From), None);
         ret_if!(!RECEIVED.iter().any(|w| self.is_word_at(n + 1, w)), None);
         words.iter().position(|w| self.is_word_at(n + 2, w))
+    }
+
+    /// Move past `အပြိုင်` when it comes next, the mark of a parallel loop
+    /// before `ရေတွက်၍` or `ယူ၍`.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it came.
+    pub(crate) fn eat_parallel(&mut self) -> bool
+    {
+        let next = self.peek_n(1).kind;
+        let loop_word = matches!(
+            next,
+            TokenKind::Kw(Kw::Taking | Kw::Counting | Kw::Increasing | Kw::Decreasing)
+        );
+        ret_if!(!self.is_word_at(0, PARALLEL) || !loop_word, false);
+        self.bump();
+        true
+    }
+
+    /// Whether a parallel map comes next: `၏ အကွက်တိုင်း ကို <fn> ဟူသော
+    /// လုပ်ဆောင်ချက် ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_par_map(&self) -> bool
+    {
+        let kw = |n: usize, k: Kw| self.peek_n(n).kind == TokenKind::Kw(k);
+        self.peek().kind == TokenKind::Punct(Punct::Ei)
+            && kw(1, Kw::EachCell)
+            && kw(2, Kw::Ko)
+            && self.peek_n(3).kind == TokenKind::Ident
+            && kw(4, Kw::FnValue)
+            && kw(5, Kw::Hpjint)
+            && self.is_word_at(6, PARALLEL)
+            && kw(7, Kw::CallHead)
+            && self.is_word_at(8, MAP_RESULTS)
+    }
+
+    /// Parse a parallel map after the list it maps.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The list.
+    ///
+    /// # Returns
+    ///
+    /// The map, or a diagnostic.
+    pub(crate) fn parse_par_map(&mut self, list: Expr) -> PResult<Expr>
+    {
+        do_for!(_ in 0..3, _ = self.bump());
+        let func = self.parse_ident()?;
+        do_for!(_ in 0..4, _ = self.bump());
+        let last = self.bump();
+        let span = list.span().to(&last.span);
+        let id = self.new_id();
+        let fn_id = self.new_id();
+        let name = Expr::Name(
+            NameExpr::builder().id(fn_id).name(func.name).span(func.span).build(),
+        );
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(VerbOp::ParMap).args(vec![list, name])
+            .particle(last.particle).is_cmp(false).span(span).build();
+        Ok(Expr::Verb(node))
     }
 
     /// Whether a receive comes next: `မှ ရရှိသော ဒေတာ`.

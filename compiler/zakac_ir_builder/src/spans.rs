@@ -179,7 +179,7 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             stmts(els, w);
             w.span(span);
         }
-        Stmt::Loop { init, cond, update, block, span } =>
+        Stmt::Loop { init, cond, update, block, span, .. } =>
         {
             stmts(init, w);
             expr(cond, w);

@@ -314,6 +314,11 @@ pub struct CountedStmt
     pub mode: CountMode,
     /// The loop block.
     pub block: BlockStmt,
+    /// `true` for `အပြိုင် ရေတွက်၍`: each round writes the cell of its own
+    /// number alone, so the rounds can run at once.
+    #[builder(default)]
+    #[serde(default)]
+    pub parallel: bool,
     /// Source region.
     pub span: Span,
 }
@@ -340,6 +345,11 @@ pub struct EachStmt
     pub var: Ident,
     /// The loop block.
     pub block: BlockStmt,
+    /// `true` for `အပြိုင် ယူ၍`: each round writes the cell of its own number
+    /// alone, so the rounds can run at once.
+    #[builder(default)]
+    #[serde(default)]
+    pub parallel: bool,
     /// Source region.
     pub span: Span,
 }

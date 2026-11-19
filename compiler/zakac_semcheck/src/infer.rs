@@ -510,6 +510,10 @@ impl Checker
             }
             (VerbOp::RowCount, [table]) => return self.infer_row_count(table),
             (VerbOp::Receive, [pipe]) => return self.infer_receive(pipe),
+            (VerbOp::ParMap, [list, Expr::Name(f)]) =>
+            {
+                return self.infer_par_map(list, f);
+            }
             (VerbOp::Join, pieces) => return self.infer_join(pieces),
             (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =>
             {

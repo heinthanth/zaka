@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, objects jobs share and their locks, atomic numbers, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
+description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, objects jobs share and their locks, atomic numbers, parallel loops and maps, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
 ---
 
 # Jobs
@@ -328,6 +328,72 @@ for the first receive:
 ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 လမ်း ထဲမှ ဒေတာ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## Parallel loops and maps
+
+A loop marked `အပြိုင်` before its last word lets its rounds run at once:
+
+```text
+<from> မှ <to> အထိ <name> အနေဖြင့် အပြိုင် ရေတွက်၍ <stmt>
+<list> ၏ အကွက်တိုင်း ကို <name> အနေဖြင့် အပြိုင် ယူ၍ <stmt>
+<list> ၏ အကွက်တိုင်း ကို <number> နှင့် <name> အနေဖြင့် အပြိုင် ယူ၍ <stmt>
+```
+
+Each has the block form too. A round reads each variable from outside the loop, writes
+the variables it declares, and writes one cell of a list from outside: the cell of its
+own number, `<list> ၏ အကွက် <number>`. Each other write from a round is ZK0728. In this
+build the rounds run in order on each backend; the rule makes them safe to spread across
+threads.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို i * i ဟု ထားမည်။
+ထွက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၀၊ ၁၊ ၄၊ ၉၊ ၁၆]
+```
+
+```zaka-error ZK0728
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ စု ကို စု + i ဟု ထားမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+A parallel map is an expression: a new plain list of what a function gives back for each
+cell, in the order of the cells.
+
+```text
+<list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက် ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ
+```
+
+- The function takes one parameter that the cells fit, and follows the rules of the
+  function a job starts in ([What a job can reach](#what-a-job-can-reach)): the cells and
+  its result are of kinds jobs can use.
+- A native program runs the rounds on threads, one for each core of the host, when the
+  cells are of the kind of the parameter; the VM runs them in order. A trap in a round
+  stops the program.
+
+```zaka
+စကားလုံးရေ ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+စာ ၏ စာလုံးအရေအတွက် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စာများ သည် ["က"၊ "ခဂ"၊ "ဃငစ"] ဖြစ်ပါစေ။
+ကိန်းရှင် ရေများ သည် စာများ ၏ အကွက်တိုင်း ကို စကားလုံးရေ ဟူသော လုပ်ဆောင်ချက် ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ ဖြစ်ပါစေ။
+ရေများ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+[၁၊ ၂၊ ၃]
 ```
 
 ## Turns on the VM

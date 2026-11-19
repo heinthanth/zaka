@@ -1,6 +1,6 @@
 //! The globals rule of jobs: a mutable global belongs to the main thread, so
-//! a function a job runs, itself or through each function it calls, reads
-//! and writes none (ZK0726). Constants are free to read.
+//! a function a job or a parallel map runs, itself or through each function it
+//! calls, reads and writes none (ZK0726). Constants are free to read.
 
 use std::collections::BTreeSet;
 
@@ -13,6 +13,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -41,7 +42,7 @@ pub(crate) fn check_jobs(module: &Module) -> Vec<Diagnostic>
     reached.into_iter().filter_map(|f| global_use(module, f)).collect()
 }
 
-/// The functions some call starts a job in.
+/// The functions some call starts a job in, and those a parallel map runs.
 ///
 /// # Arguments
 ///
@@ -61,13 +62,16 @@ fn spawned_fns(module: &Module) -> BTreeSet<u32>
         };
         found.insert(*func);
     };
+    let mut maps = BTreeSet::new();
     for f in &module.funcs
     {
-        each_stmt(
-            &f.block,
-            &mut |s| do_for!(e in stmt_exprs(s), each_expr(e, &mut note)),
-        );
+        each_stmt(&f.block, &mut |s| {
+            // A parallel map runs its function on other threads too.
+            do_if!(let Stmt::Loop { par: Some(p), .. } = s, _ = maps.insert(p.func));
+            do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+        });
     }
+    found.extend(maps);
     found
 }
 

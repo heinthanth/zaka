@@ -178,3 +178,27 @@ fn atomic_adds_of_two_threads_lose_nothing()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
 }
+
+/// A parallel map runs its rounds on threads in an AOT build and through the
+/// JIT, and gives its results in the order of the cells.
+#[test]
+fn a_parallel_map_runs_its_rounds_on_threads()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let path = c_inputs().join("par_map.zaka");
+    let jit = run_jit(&path, &[]);
+    assert_eq!(
+        (jit.status, jit.stdout.as_str()),
+        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n"),
+        "{}",
+        jit.stderr
+    );
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+}

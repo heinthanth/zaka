@@ -364,3 +364,4 @@ Zaka](../language/unsafe.md).
 | ZK0725 | a return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset | [Filled parameters](../language/functions.md#filled-parameters) |
 | ZK0726 | a function a job runs, itself or through a function it calls, reaches a variable at the top of a file | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
 | ZK0727 | a set of an atomic number whose value reads the same number | [Atomic numbers](../language/jobs.md#atomic-numbers) |
+| ZK0728 | a round of a parallel loop writes a variable from outside the loop, other than the cell of its own number | [Parallel loops and maps](../language/jobs.md#parallel-loops-and-maps) |

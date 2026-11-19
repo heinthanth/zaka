@@ -648,6 +648,10 @@ the core. The compiler mark outside the core is ZK0349.
   needs no lock, and takes `ပေါင်းထည့်` and `နုတ်ယူ` (`atomic_call`); `check_atomic_set`
   reports a set that reads the number it sets (ZK0727), and `check_atomic_kind` an atomic
   number of a narrow kind (ZK0401).
+  A parallel map (`infer_par_map`) takes a function of one parameter the cells fit and
+  gives a plain list of its result; `check_round` walks the block of a parallel loop and
+  reports each write to a variable from outside it but the cell of the round's own
+  number (ZK0728).
 
 ## Comptime calls
 

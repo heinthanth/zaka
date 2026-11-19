@@ -815,6 +815,7 @@ program:
                   span:
                     lo: 3169
                     hi: 4264
+                parallel: false
                 span:
                   lo: 3078
                   hi: 4264

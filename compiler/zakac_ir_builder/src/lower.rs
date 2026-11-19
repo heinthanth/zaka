@@ -1886,7 +1886,14 @@ impl Lowerer<'_>
     fn while_stmt(&mut self, n: &st::WhileStmt) -> Stmt
     {
         let (cond, block) = self.loop_parts(&n.cond, &n.block.stmts, n.span);
-        Stmt::Loop { init: Vec::new(), cond, update: Vec::new(), block, span: n.span }
+        Stmt::Loop {
+            init: Vec::new(),
+            cond,
+            update: Vec::new(),
+            block,
+            span: n.span,
+            par: None,
+        }
     }
 
     /// The test and the round of a loop. A test that needs statements first,
@@ -2047,7 +2054,14 @@ impl Lowerer<'_>
             parts = Some((set, cond, block, update, after));
         });
         let (set, cond, block, update, after) = parts.expect("the scope ran");
-        out.push(Stmt::Loop { init: vec![set], cond, update, block, span: n.span });
+        out.push(Stmt::Loop {
+            init: vec![set],
+            cond,
+            update,
+            block,
+            span: n.span,
+            par: None,
+        });
         out.extend(after);
     }
 
@@ -2101,7 +2115,7 @@ impl Lowerer<'_>
             parts = Some((init, cond, block, update, after));
         });
         let (init, cond, block, update, after) = parts.expect("the scope ran");
-        out.push(Stmt::Loop { init, cond, update, block, span: n.span });
+        out.push(Stmt::Loop { init, cond, update, block, span: n.span, par: None });
         out.extend(after);
     }
 
@@ -4181,6 +4195,7 @@ impl Lowerer<'_>
         }
         ret_if!(n.op == VerbOp::RowValue, self.row_value(n, kind));
         ret_if!(n.op == VerbOp::OrElse, self.or_else(n, kind));
+        ret_if!(n.op == VerbOp::ParMap, self.par_map(n, kind));
         if let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) = (n.op, args)
         {
             let (text, index) = (self.expr(text), self.expr(index));
@@ -4259,6 +4274,7 @@ impl Lowerer<'_>
             | VerbOp::Row
             | VerbOp::RowValue
             | VerbOp::OrElse
+            | VerbOp::ParMap
             | VerbOp::RemoveRow =>
             {
                 panic!("verb {} is no one-operand value", n.op.as_ref())

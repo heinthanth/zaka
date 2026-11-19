@@ -2430,6 +2430,7 @@ impl Visitor for Checker
 
     fn visit_counted(&mut self, n: &CountedStmt)
     {
+        do_if!(n.parallel, self.check_round(Some(n.var.name), &n.block));
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
@@ -2444,6 +2445,10 @@ impl Visitor for Checker
 
     fn visit_each(&mut self, n: &EachStmt)
     {
+        do_if!(
+            n.parallel,
+            self.check_round(n.place.as_ref().map(|p| p.name), &n.block)
+        );
         let kinds = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
         do_if!(let Some(place) = &n.place, self.declare(place, kinds.and_then(|(p, _)| p), Access::Var));

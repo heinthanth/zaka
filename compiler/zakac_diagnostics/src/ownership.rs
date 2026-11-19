@@ -363,3 +363,21 @@ pub fn atomic_read_write(span: Span) -> Diagnostic
     let msg = t!("codes.ZK0727.message");
     Diagnostic::new(Code::AtomicReadWrite, msg, span).with_help(t!("codes.ZK0727.help"))
 }
+
+/// A round of a parallel loop writes a variable from outside the loop, other
+/// than the cell of its own number.
+///
+/// # Arguments
+///
+/// * `span` - The write.
+/// * `name` - The variable.
+///
+/// # Returns
+///
+/// The `ZK0728` diagnostic.
+pub fn round_writes_outside(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0728.message", n = name);
+    Diagnostic::new(Code::RoundWritesOutside, msg, span)
+        .with_help(t!("codes.ZK0728.help"))
+}

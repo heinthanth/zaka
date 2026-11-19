@@ -220,6 +220,7 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::Join
         | VerbOp::Row
         | VerbOp::Receive
+        | VerbOp::ParMap
         | VerbOp::RowValue
         | VerbOp::OrElse
         | VerbOp::RowCount => OpClass::CellCount,

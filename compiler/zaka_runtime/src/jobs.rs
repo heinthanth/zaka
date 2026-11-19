@@ -17,6 +17,7 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
 use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
@@ -26,8 +27,10 @@ use zakac_rust_sugars::tern;
 use crate::heap::zk_threads_begin;
 use crate::program::ZkKind;
 use crate::seqs::kind;
+use crate::seqs::zk_add_cell;
 use crate::seqs::zk_drop;
 use crate::seqs::zk_seq_base;
+use crate::seqs::zk_seq_len;
 use crate::traps::named;
 use crate::traps::stop;
 use crate::traps::stop_owned;
@@ -398,6 +401,63 @@ pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
     );
 }
 
+/// The step of a parallel map: it takes the address of a cell and the address
+/// the result goes to.
+pub type ZkMapStep = extern "C" fn(*mut u8, *mut u8);
+
+/// The count of parallel maps whose rounds run now.
+static MAPS: AtomicUsize = AtomicUsize::new(0);
+
+/// Run a parallel map: each cell of a plain list goes to the step, the rounds
+/// spread over threads, and each result goes to the end of another plain
+/// list, in the order of the cells. A trap in a round stops the program.
+///
+/// # Arguments
+///
+/// * `src` - The plain list the map reads.
+/// * `src_kind` - Its kind.
+/// * `out` - The plain list the map fills, blank before.
+/// * `out_kind` - Its kind.
+/// * `step` - The step the compiler writes for the function.
+#[unsafe(export_name = stamped!("par_map"))]
+pub extern "C" fn zk_par_map(
+    src: *mut u8, src_kind: *const ZkKind, out: *mut u8, out_kind: *const ZkKind,
+    step: ZkMapStep,
+)
+{
+    let (base, n) = (zk_seq_base(src) as usize, zk_seq_len(src));
+    let cell = kind(kind(src_kind).cell).size;
+    let ret = kind(kind(out_kind).cell).size;
+    let mut results = vec![0u8; (n * ret).max(1)];
+    let at = results.as_mut_ptr() as usize;
+    let workers =
+        std::thread::available_parallelism().map_or(1, usize::from).clamp(1, n.max(1));
+    let per = n.div_ceil(workers).max(1);
+    zk_threads_begin();
+    MAPS.fetch_add(1, Ordering::SeqCst);
+    let round = move |lo: usize| {
+        let hi = (lo + per).min(n);
+        (lo..hi).for_each(|i| {
+            step((base + i * cell) as *mut u8, (at + i * ret) as *mut u8)
+        });
+    };
+    std::thread::scope(|s| {
+        for lo in (0..n).step_by(per)
+        {
+            let made = std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn_scoped(s, move || round(lo));
+            // A thread the host cannot make runs its rounds here.
+            do_if!(made.is_err(), round(lo));
+        }
+    });
+    MAPS.fetch_sub(1, Ordering::SeqCst);
+    let start = results.as_mut_ptr();
+    // SAFETY: each result is `ret` octets of `results`, which the add moves
+    // out.
+    (0..n).for_each(|i| zk_add_cell(out, out_kind, unsafe { start.add(i * ret) }));
+}
+
 /// Make a channel.
 ///
 /// # Arguments
@@ -546,10 +606,14 @@ pub(crate) fn end() -> bool
     lost
 }
 
-/// Whether a job thread other than this one can run, so the ring collector
-/// waits: it walks the counts with plain ops.
+/// Whether a job thread other than this one can run, or the rounds of a
+/// parallel map, so the ring collector waits: it walks the counts with plain
+/// ops.
 ///
 /// # Returns
 ///
 /// `true` while a job runs.
-pub(crate) fn jobs_run() -> bool { state().jobs.iter().any(|j| j.end == End::Runs) }
+pub(crate) fn jobs_run() -> bool
+{
+    MAPS.load(Ordering::SeqCst) > 0 || state().jobs.iter().any(|j| j.end == End::Runs)
+}

@@ -131,6 +131,8 @@ pub struct Shared<'m, M: Module>
     pub unwinds: Vec<FnUnwind>,
     /// The step of each function a job runs, under the function.
     pub steps: Vec<(u32, FuncId)>,
+    /// The step of each function a parallel map runs, under the function.
+    pub map_steps: Vec<(u32, FuncId)>,
     /// Whether the code runs in this process, which has no C compiler for
     /// the guard of a job.
     pub jit: bool,
@@ -446,7 +448,7 @@ pub fn emit<M: Module>(
         runtime: HashMap::new(), funcs: Vec::new(), globals: Vec::new(), records: Vec::new(),
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
-        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(),
+        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(), map_steps: Vec::new(),
         jit: main_name == "zk_main" };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
@@ -495,6 +497,15 @@ pub fn emit<M: Module>(
             define_fn(&mut s, &mut fctx, bridge, sig, want_clif, |g| g.bridge(kind));
         clif.push_str(&text);
         done += 1;
+    }
+    // A map step calls its function alone, so each is lowered once.
+    let maps = s.map_steps.clone();
+    for (f, id) in maps
+    {
+        let mut sig = s.m.make_signature();
+        sig.params.extend([AbiParam::new(ptr), AbiParam::new(ptr)]);
+        let text = define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.map_step(f));
+        clif.push_str(&text);
     }
     // A step can start no job of its own, so each is lowered once.
     let steps = s.steps.clone();

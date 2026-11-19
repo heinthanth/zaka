@@ -784,6 +784,13 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   its platform-sized integer; `read_kind` gives the integer a read and a slot load take.
   `Stmt::AtomicAdd { addr, value, sub }` (from `ပေါင်းထည့်` and `နုတ်ယူ`, `atomic_stmt`)
   is the op `atomic_add`, one op on the VM, `zk_atomic_add` (`AtomicIsize`) in native code.
+- **Parallel maps.** The lowering (`par_map`) fills a hidden plain list in a loop of
+  calls, and marks the loop with `ParMap` (`Stmt::Loop::par`) when the cells are of the
+  kind of the parameter. The VM runs the loop; the C and native targets call
+  `zk_par_map` in its place with a step of the function (`zk_map_step_<f>`), which lends
+  the cell and writes the result. The runtime spreads the rounds over scoped threads and
+  then adds each result in the order of the cells. A parallel loop lowers as its plain
+  loop.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`
