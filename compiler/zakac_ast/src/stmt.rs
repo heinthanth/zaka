@@ -100,6 +100,9 @@ pub enum Stmt
     Counted(CountedStmt),
     /// `l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ ...`
     Each(EachStmt),
+    /// `<obj> ကို ခေတ္တယူ၍ ...`: a block that holds the lock of an object jobs
+    /// share.
+    Lock(LockStmt),
     /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
     /// `ကွင်းဆက် ကို ရပ်မည်။`
@@ -336,6 +339,20 @@ pub struct EachStmt
     /// value of a row.
     pub var: Ident,
     /// The loop block.
+    pub block: BlockStmt,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A lock block, `<obj> ကို (ခေတ္တ|ခဏ)ယူ၍ <block>`: the block runs while the
+/// job holds the lock of the object, and each field of an object jobs share
+/// is read and written inside one.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct LockStmt
+{
+    /// The object.
+    pub obj: Ident,
+    /// The block.
     pub block: BlockStmt,
     /// Source region.
     pub span: Span,

@@ -290,6 +290,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0496 | a test of a channel for data that is not the whole condition of `အကယ်၍`, or a read of its data outside the branch of that test | [Channels](../language/jobs.md#channels) |
 | ZK0497 | a job starts in a function value, a closure or a C function, not a function the program declares in Zaka | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
 | ZK0498 | a job starts in a function that changes or fills a parameter | [What a job can reach](../language/jobs.md#what-a-job-can-reach) |
+| ZK0499 | a field of an object jobs share is read or written outside a lock block of it, or a lock block names a value that is no shared object | [Objects jobs share](../language/jobs.md#objects-jobs-share) |
 
 ### ZK05: natural Zaka (warnings)
 

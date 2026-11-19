@@ -45,6 +45,8 @@ pub(super) enum Waits
     Receive(usize),
     /// Room in the channel with this number, or its close.
     Send(usize),
+    /// The lock of the object at this address.
+    Lock(u64),
 }
 
 /// Where a job stands.
@@ -89,6 +91,20 @@ struct Job
     awaited: bool,
 }
 
+/// A lock of a shared object that a job holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Held
+{
+    /// The address of the object.
+    obj: u64,
+    /// The number of the job that holds it.
+    owner: usize,
+    /// The count of times the job took it.
+    depth: u32,
+    /// Whether its holder stopped at a trap, so it never comes back.
+    broken: bool,
+}
+
 /// The jobs of a program and their turns.
 #[derive(Debug, Clone)]
 pub struct Jobs
@@ -97,6 +113,8 @@ pub struct Jobs
     list: Vec<Job>,
     /// Each channel, the first under the number 1.
     pub(super) pipes: Vec<Pipe>,
+    /// Each lock a job holds, or that a job held when it stopped at a trap.
+    locks: Vec<Held>,
     /// The number of the running job.
     now: usize,
     /// The ops left in the turn of the running job.
@@ -107,7 +125,10 @@ impl Default for Jobs
 {
     fn default() -> Self
     {
-        Jobs { list: vec![Job::default()], pipes: Vec::new(), now: 0, left: TURN }
+        #[rustfmt::skip]
+        let jobs = Jobs { list: vec![Job::default()], pipes: Vec::new(), locks: Vec::new(),
+            now: 0, left: TURN };
+        jobs
     }
 }
 
@@ -186,6 +207,7 @@ impl Jobs
                 self.list.iter().enumerate().all(ended)
             }
             Waits::Receive(p) => self.pipes.get(p).is_none_or(Pipe::can_receive),
+            Waits::Lock(obj) => self.locks.iter().all(|h| h.obj != obj || h.broken),
             Waits::Send(p) => self.pipes.get(p).is_none_or(Pipe::can_send),
         }
     }
@@ -339,6 +361,70 @@ impl Machine
         }
     }
 
+    /// Take the lock of the shared object whose variable the stack pops: a
+    /// lock another job holds parks the job, and the op runs again on a later
+    /// turn.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `LockBroken` for a lock whose holder stopped at a trap.
+    pub(super) fn lock(&mut self) -> Step
+    {
+        let (at, obj) = self.lock_block("lock")?;
+        let now = self.jobs.now;
+        let held = self.jobs.locks.iter_mut().find(|h| h.obj == obj);
+        let Some(held) = held
+        else
+        {
+            self.jobs.locks.push(Held { obj, owner: now, depth: 1, broken: false });
+            return Ok(());
+        };
+        ret_if!(held.broken, Err(TrapKind::LockBroken));
+        if held.owner == now
+        {
+            held.depth += 1;
+            return Ok(());
+        }
+        self.push(Value::Ptr(at))?;
+        self.park(Waits::Lock(obj));
+        Ok(())
+    }
+
+    /// Give back the lock of the shared object whose variable the stack pops,
+    /// once.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap for a lock the job does not hold.
+    pub(super) fn unlock(&mut self) -> Step
+    {
+        let (_, obj) = self.lock_block("unlock")?;
+        let now = self.jobs.now;
+        let at = self.jobs.locks.iter().position(|h| h.obj == obj && h.owner == now);
+        let at =
+            at.ok_or_else(|| malformed("unlock of a lock the job does not hold"))?;
+        self.jobs.locks[at].depth -= 1;
+        do_if!(self.jobs.locks[at].depth == 0, _ = self.jobs.locks.remove(at));
+        Ok(())
+    }
+
+    /// Pop the variable of a shared object and find the block of the object:
+    /// which names its lock, the same in each job that holds the object.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The name of the op, for the trap text.
+    ///
+    /// # Returns
+    ///
+    /// The address of the variable and of the block, or a trap.
+    fn lock_block(&mut self, op: &str) -> Result<(u64, u64), TrapKind>
+    {
+        let at = self.pop_ptr(op)?;
+        let (base, _) = slice_parts(&self.mem, at)?;
+        Ok((at, base))
+    }
+
     /// Give the waiter the result of a job that returned.
     ///
     /// # Arguments
@@ -446,6 +532,12 @@ impl Machine
         ret_if!(whole, State::Trapped(trap));
         let now = self.jobs.now;
         self.jobs.list[now].end = End::Trapped(Box::new(trap));
+        // The locks it held remain taken, broken: a later lock of each traps.
+        self.jobs
+            .locks
+            .iter_mut()
+            .filter(|h| h.owner == now)
+            .for_each(|h| h.broken = true);
         self.unwind_frames();
         match self.next_turn()
         {

@@ -105,7 +105,9 @@ fn raw_stmt(s: &Stmt) -> bool
     {
         Stmt::Set { value, .. }
         | Stmt::Wait { job: value, .. }
-        | Stmt::Close { pipe: value, .. } => raw_expr(value),
+        | Stmt::Close { pipe: value, .. }
+        | Stmt::Lock { obj: value, .. }
+        | Stmt::Unlock { obj: value, .. } => raw_expr(value),
         Stmt::Send { pipe, value, .. } => raw_expr(pipe) || raw_expr(value),
         Stmt::Print { value: PrintValue::Expr(e), .. }
         | Stmt::Halt { value: Some(e), .. }

@@ -533,6 +533,23 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Take the lock of a shared object: it waits while another job holds it;
+    /// a lock that a job held when it stopped at a trap stops the program.
+    Lock
+    {
+        /// The object.
+        obj: Expr,
+        /// Source region.
+        span: Span,
+    },
+    /// Give back the lock of a shared object.
+    Unlock
+    {
+        /// The object.
+        obj: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Work of the ring collector: run it now, pause it, resume it, or set
     /// its threshold.
     Rings
@@ -739,6 +756,8 @@ impl Stmt
             | Stmt::Wait { span, .. }
             | Stmt::Send { span, .. }
             | Stmt::Close { span, .. }
+            | Stmt::Lock { span, .. }
+            | Stmt::Unlock { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }

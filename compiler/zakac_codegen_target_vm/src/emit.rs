@@ -1009,6 +1009,16 @@ impl<'s> FuncGen<'s>
                 self.expr(pipe);
                 self.op(Op::PipeClose);
             }
+            Stmt::Lock { obj, .. } =>
+            {
+                self.expr(obj);
+                self.op(Op::Lock);
+            }
+            Stmt::Unlock { obj, .. } =>
+            {
+                self.expr(obj);
+                self.op(Op::Unlock);
+            }
             Stmt::Print { value: PrintValue::Expr(e), .. } =>
             {
                 let fresh = self.read_operand(&stored(e));

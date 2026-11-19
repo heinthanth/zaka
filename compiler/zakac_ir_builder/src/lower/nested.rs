@@ -239,6 +239,7 @@ impl Lowerer<'_>
             pre_init: std::mem::take(&mut self.pre_init),
             pending: std::mem::take(&mut self.pending),
             spilling: std::mem::take(&mut self.spilling),
+            locks: std::mem::take(&mut self.locks),
         }
     }
 
@@ -251,6 +252,7 @@ impl Lowerer<'_>
     {
         self.scopes = a.scopes;
         self.drops = a.drops;
+        self.locks = a.locks;
         self.loops = a.loops;
         self.pre = a.pre;
         self.pre_init = a.pre_init;
@@ -480,6 +482,8 @@ pub(super) struct Aside
     pending: usize,
     /// Whether an operand is being lowered into a hidden slot.
     spilling: bool,
+    /// The locks the blocks around hold.
+    locks: Vec<(usize, Expr)>,
 }
 
 impl Lowerer<'_>

@@ -1533,6 +1533,17 @@ en = "write \"အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိ�
 [codes.ZK0496.explain]
 en = """The test `အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှိလျှင်` takes the next value out of the channel, waiting while it is open and holds none, and its branch runs when a value came; `<pipe> ထဲမှ ဒေတာ` in that branch names the value, and is no second receive. So the test stands alone as the condition, its channel is a name, and the read stands inside the branch. Elsewhere, `<pipe> မှ ရရှိသော ဒေတာ` gives the next value as an optional."""
 
+[codes.ZK0499.title]
+en = "a field outside its lock"
+[codes.ZK0499.message]
+en = "the field \"%{n}\" of an object jobs share is read or written outside a lock block of the object"
+[codes.ZK0499.no_object]
+en = "a lock block takes a shared object, and \"%{n}\" holds none"
+[codes.ZK0499.help]
+en = "write the access inside \"<obj> ကို ခေတ္တယူ၍ ...\", which holds the lock of the object"
+[codes.ZK0499.explain]
+en = """An object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` can go to jobs on other threads, so two of them could change a field at once. Its fields are read and written inside a lock block, `<obj> ကို ခေတ္တယူ၍ <block>`, which one job at a time holds: another job that takes the lock of the same object waits until the block ends. A lock block takes a name that holds a shared object."""
+
 [codes.ZK0726.title]
 en = "a global in a job"
 [codes.ZK0726.message]

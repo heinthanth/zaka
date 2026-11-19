@@ -81,6 +81,9 @@ en = "each job waits; none can go on"
 [vm.trap.pipe_closed]
 en = "the channel %{pipe} is closed: no value can go to it, and it cannot close again"
 
+[vm.trap.lock_broken]
+en = "the lock of this object is broken: the job that held it stopped at a trap"
+
 [vm.trap.job_stopped]
 en = "job %{job} stopped"
 

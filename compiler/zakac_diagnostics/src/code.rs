@@ -499,6 +499,7 @@ NotAPipe = ("ZK0495", Level::Error),
 PipeDataOutside = ("ZK0496", Level::Error),
 JobOfNoDeclaredFn = ("ZK0497", Level::Error),
 JobChangesArgs = ("ZK0498", Level::Error),
+OutsideLock = ("ZK0499", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
 /// A verb before an attached `လျှင်` or `နေသရွေ့` carries a particle.

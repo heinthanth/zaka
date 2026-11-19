@@ -343,6 +343,7 @@ impl Checker
             self.report(rd::unknown_field(field.span, &s.name, &field.name))
         );
         self.refer_field(&s.name, field);
+        self.check_locked_field(&n.base, base, field);
         found
     }
 

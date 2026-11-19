@@ -345,3 +345,62 @@ fn a_job_starts_in_a_declared_function_that_changes_no_parameter()
         reaching("ကိန်းရှင် ဂ သည် ၁ ဖြစ်ပါစေ။\nပြင် ဟူသော လုပ်ဆောင်ချက်ကို ဂ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။");
     assert_eq!(codes(&changes), [Code::JobChangesArgs]);
 }
+
+#[test]
+fn a_lock_block_keeps_the_changes_of_two_jobs_apart()
+{
+    let text = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../zakac_codegen_target_c/tests/inputs/locks.zaka"
+    ))
+    .unwrap();
+    assert_eq!(output(&text), "၂၀၀၀\n၂၀၀၀\n");
+}
+
+/// A struct jobs share, and a function that divides its field inside a lock
+/// block.
+const SPLIT: &str = "အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
+                     လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ခွဲ ဟူသော လုပ်ဆောင်ချက် သည် ဘဏ် ဟူသော အကောင့် တစ်ခု ကို လည်းကောင်း က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဘဏ် ကို ခေတ္တယူ၍ ဘဏ် ၏ လက်ကျန် ကို (ဘဏ် ၏ လက်ကျန်) / က ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn a_lock_whose_holder_trapped_stops_the_next_job_that_takes_it()
+{
+    let text = format!(
+        "{SPLIT}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘဏ် သည် အကောင့်(လက်ကျန်: ၁၀) ဖြစ်ပါစေ။
+ခွဲ ဟူသော လုပ်ဆောင်ချက်ကို ဘဏ် နှင့် ၀ တို့ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ခွဲ ဟူသော လုပ်ဆောင်ချက်ကို ဘဏ် နှင့် ၂ တို့ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+    );
+    let mut out = Vec::new();
+    let (machine, result) = run_and_keep(
+        &compile(&text),
+        &mut out,
+        &RunOptions::default(),
+        &HostData::default(),
+    );
+    assert!(result.is_ok(), "{result:?}");
+    let kinds: Vec<&TrapKind> =
+        machine.job_traps().iter().map(|(_, t)| &t.kind).collect();
+    assert_eq!(kinds, [&TrapKind::ZeroDivisor, &TrapKind::LockBroken]);
+}
+
+#[test]
+fn a_field_of_an_object_jobs_share_is_reached_inside_a_lock_block_alone()
+{
+    let outside = format!(
+        "{SPLIT}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘဏ် သည် အကောင့်(လက်ကျန်: ၁၀) ဖြစ်ပါစေ။
+ဘဏ် ၏ လက်ကျန် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
+    );
+    assert_eq!(codes(&outside), [Code::OutsideLock]);
+    let value = program("ကိန်းရှင် ဂ သည် ၅ ဖြစ်ပါစေ။\nဂ ကို ခေတ္တယူ၍ ဂ ကို ပြသမည်။");
+    assert_eq!(codes(&value), [Code::OutsideLock]);
+}

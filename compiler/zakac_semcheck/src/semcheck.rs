@@ -32,6 +32,7 @@ use zakac_ast::stmt::IfArm;
 use zakac_ast::stmt::IfStmt;
 use zakac_ast::stmt::ImportStmt;
 use zakac_ast::stmt::LeaveStmt;
+use zakac_ast::stmt::LockStmt;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::PrintStmt;
 use zakac_ast::stmt::Program;
@@ -653,6 +654,9 @@ pub(crate) struct Checker
     /// `<pipe> ထဲမှ ဒေတာ` reads.
     #[builder(default)]
     pub pipe_reads: Vec<Name>,
+    /// The objects whose lock the blocks around the walk hold.
+    #[builder(default)]
+    pub held_locks: Vec<Name>,
     /// The functions the current file declares or imports.
     pub fns: FnSigs,
     /// The function each call of an overloaded or generic name chose.
@@ -2433,6 +2437,8 @@ impl Visitor for Checker
         });
         self.scopes.pop();
     }
+
+    fn visit_lock(&mut self, n: &LockStmt) { self.check_lock(n) }
 
     fn visit_each(&mut self, n: &EachStmt)
     {

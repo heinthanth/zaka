@@ -24,6 +24,7 @@ use crate::heap::zk_threads_begin;
 use crate::program::ZkKind;
 use crate::seqs::kind;
 use crate::seqs::zk_drop;
+use crate::seqs::zk_seq_base;
 use crate::traps::named;
 use crate::traps::stop;
 use crate::traps::stop_owned;
@@ -74,9 +75,24 @@ struct Pipe
     closed: bool,
 }
 
+/// A lock of a shared object that a thread holds.
+struct Held
+{
+    /// The address of the object.
+    obj: usize,
+    /// The number of the job that holds it, 0 for the main thread.
+    owner: usize,
+    /// The count of times the job took it.
+    depth: u32,
+    /// Whether its holder stopped at a trap, so it never comes back.
+    broken: bool,
+}
+
 /// The state of the jobs and channels.
 struct State
 {
+    /// Each lock a thread holds, or that a job held when it stopped at a trap.
+    locks: Vec<Held>,
     /// Each job; the job a program holds as `n` is at `n - 1`.
     jobs: Vec<Job>,
     /// Each channel, as the jobs are numbered.
@@ -93,6 +109,7 @@ struct State
 
 /// The state of the jobs and channels.
 static STATE: Mutex<State> = Mutex::new(State {
+    locks: Vec::new(),
     jobs: Vec::new(),
     pipes: Vec::new(),
     running: 1,
@@ -110,6 +127,8 @@ thread_local! {
     static LEAVE: Cell<Option<(extern "C" fn(i32), usize)>> = const { Cell::new(None) };
     /// The trap that ended the job of this thread.
     static TRAPPED: Cell<i32> = const { Cell::new(0) };
+    /// The number of the job of this thread, 0 for the main thread.
+    static JOB: Cell<usize> = const { Cell::new(0) };
 }
 
 /// The state, locked.
@@ -263,10 +282,13 @@ fn run_job(
 )
 {
     do_if!(!abort, LEAVE.set(Some((jump, n))));
+    JOB.set(n);
     let status = guard(step, data as *mut c_void);
     LEAVE.set(None);
     let mut st = state();
     st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
+    // The locks a job held when it stopped remain taken, broken.
+    st.locks.iter_mut().filter(|h| h.owner == n).for_each(|h| h.broken = true);
     st.running -= 1;
     changed(&mut st);
 }
@@ -298,6 +320,58 @@ pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
     ret_if!(job.end == End::Done, job.data as *mut u8);
     drop(st);
     stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+}
+
+/// Take the lock of a shared object: the thread waits while another holds
+/// it, and takes once more a lock it holds.
+///
+/// # Arguments
+///
+/// * `obj` - The variable that holds the object.
+#[unsafe(export_name = stamped!("lock"))]
+pub extern "C" fn zk_lock(obj: *mut u8)
+{
+    // The block of the object names the lock, which each job that
+    // holds the object shares; the variable differs from job to job.
+    let (obj, me) = (zk_seq_base(obj) as usize, JOB.get());
+    let free =
+        |s: &State| s.locks.iter().all(|h| h.obj != obj || h.owner == me || h.broken);
+    let mut st = wait_until(state(), free);
+    let held = st.locks.iter_mut().find(|h| h.obj == obj);
+    let Some(held) = held
+    else
+    {
+        st.locks.push(Held { obj, owner: me, depth: 1, broken: false });
+        return;
+    };
+    if held.broken
+    {
+        drop(st);
+        stop(trap::LOCK_BROKEN, &[]);
+    }
+    held.depth += 1;
+}
+
+/// Give back the lock of a shared object once.
+///
+/// # Arguments
+///
+/// * `obj` - The variable that holds the object.
+#[unsafe(export_name = stamped!("unlock"))]
+pub extern "C" fn zk_unlock(obj: *mut u8)
+{
+    let (obj, me) = (zk_seq_base(obj) as usize, JOB.get());
+    let mut st = state();
+    let at = st.locks.iter().position(|h| h.obj == obj && h.owner == me);
+    let Some(at) = at
+    else
+    {
+        return;
+    };
+    st.locks[at].depth -= 1;
+    ret_if!(st.locks[at].depth > 0);
+    st.locks.remove(at);
+    changed(&mut st);
 }
 
 /// Make a channel.

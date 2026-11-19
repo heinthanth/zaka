@@ -239,6 +239,14 @@ impl IrTree<'_>
             {
                 self.node("send", blank, span, vec![self.expr(pipe), self.expr(value)])
             }
+            Stmt::Lock { obj, .. } =>
+            {
+                self.node("lock", blank, span, vec![self.expr(obj)])
+            }
+            Stmt::Unlock { obj, .. } =>
+            {
+                self.node("unlock", blank, span, vec![self.expr(obj)])
+            }
             Stmt::Close { pipe, .. } =>
             {
                 self.node("close", blank, span, vec![self.expr(pipe)])

@@ -1415,6 +1415,8 @@ impl Machine
             Op::PipeSend(kind) => self.pipe_send(kind),
             Op::PipeReceive(kind) => self.pipe_receive(kind),
             Op::PipeClose => self.pipe_close(),
+            Op::Lock => self.lock(),
+            Op::Unlock => self.unlock(),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),
             Op::Closure { func, record } => self.closure(func, record),

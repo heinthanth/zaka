@@ -63,6 +63,7 @@ pub enum ZkTrap
     PipeClosed,
     /// The head of the line of a trap that ended a job alone.
     JobStopped,
+    LockBroken,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -103,6 +104,7 @@ pub(crate) mod trap
     pub(crate) const DEADLOCK: i32 = ZkTrap::Deadlock as i32;
     pub(crate) const PIPE_CLOSED: i32 = ZkTrap::PipeClosed as i32;
     pub(crate) const JOB_STOPPED: i32 = ZkTrap::JobStopped as i32;
+    pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.

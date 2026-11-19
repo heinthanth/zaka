@@ -1,6 +1,6 @@
 ---
 title: Jobs
-description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
+description: Work that runs side to side with the rest of the program: starting a job, the job kind, waiting for its result, the values that can go to a job, what a job can reach, objects jobs share and their locks, channels between jobs, how the VM takes turns, the end of the program, and what a trap in a job does.
 ---
 
 # Jobs
@@ -134,6 +134,60 @@ thread can change:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 တိုး ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+## Objects jobs share
+
+An object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`
+([Objects jobs can use](objects.md#objects-jobs-can-use)) goes to a job as the object
+itself: each job that holds it reaches one set of fields. A lock block holds its lock:
+
+```text
+<obj> ကို (ခေတ္တ|ခဏ)ယူ၍ <stmt>
+<obj> ကို (ခေတ္တ|ခဏ)ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+<block>
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+```
+
+- Each field of such an object is read and written inside a lock block of it, ZK0499. A
+  job that takes a lock another job holds waits until that block ends.
+- `<obj>` is a name that holds a shared object; another value is ZK0499 too. `ယူ၍` reads
+  glued (`ခေတ္တယူ၍`) or apart, and neither `ခေတ္တ` nor `ခဏ` is a reserved word.
+- A job that holds a lock can take it again, as a call inside the block does. Each exit
+  from the block gives the lock back: its end, a `ပြန်ပေးမည်`, a break or a next round.
+- A job that stops at a trap while it holds a lock leaves the lock broken: the next lock
+  of the object stops its job with the trap `lock broken`.
+- Two jobs that each wait for a lock the other holds stop with the trap `deadlock`.
+
+```zaka
+အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ထည့်ငွေ ဟူသော လုပ်ဆောင်ချက် သည် ဘဏ် ဟူသော အကောင့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ ဘဏ် ကို ခဏယူ၍ ဘဏ် ၏ လက်ကျန် ကို (ဘဏ် ၏ လက်ကျန်) + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘဏ် သည် အကောင့်(လက်ကျန်: ၀) ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ထည့်ငွေ ဟူသော လုပ်ဆောင်ချက်ကို ဘဏ် ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ထည့်ငွေ ဟူသော လုပ်ဆောင်ချက်ကို ဘဏ် ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+က ကို စောင့်မည်။
+ခ ကို စောင့်မည်။
+ဘဏ် ကို ခေတ္တယူ၍ ဘဏ် ၏ လက်ကျန် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂၀၀
+```
+
+```zaka-error ZK0499
+အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘဏ် သည် အကောင့်(လက်ကျန်: ၀) ဖြစ်ပါစေ။
+ဘဏ် ၏ လက်ကျန် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -277,6 +331,8 @@ chooses:
 - A trap in the start block stops the whole program under either choice.
 - When each job waits, for another job or for a channel, and none can go on, the program
   stops with the trap `deadlock`: as a receive from a channel no job sends to or closes.
+- A job that stops at a trap while it holds a lock leaves the lock broken ([Objects jobs
+  share](#objects-jobs-share)).
 
 ## Where jobs run
 

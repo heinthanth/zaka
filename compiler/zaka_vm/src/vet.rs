@@ -723,6 +723,7 @@ impl Paths<'_, '_>
                 Ok(call_effect(vec![I], Some(DataKind::optional(kind))))
             }
             Op::PipeClose => Ok(effect(&[I], None)),
+            Op::Lock | Op::Unlock => Ok(effect(&[A], None)),
             Op::FnAddr(f) => Ok(effect(&[], Some(Class::Fn(vet.callee(f)?.ret)))),
             Op::CallValue(n) => self.call_value(n as usize, stack),
             Op::Closure { func, record } =>

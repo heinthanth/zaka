@@ -87,7 +87,10 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
-        Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } => vec![job],
+        Stmt::Wait { job, .. }
+        | Stmt::Close { pipe: job, .. }
+        | Stmt::Lock { obj: job, .. }
+        | Stmt::Unlock { obj: job, .. } => vec![job],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
@@ -248,7 +251,10 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
     match s
     {
         Stmt::Set { value, .. } => vec![value],
-        Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } => vec![job],
+        Stmt::Wait { job, .. }
+        | Stmt::Close { pipe: job, .. }
+        | Stmt::Lock { obj: job, .. }
+        | Stmt::Unlock { obj: job, .. } => vec![job],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>

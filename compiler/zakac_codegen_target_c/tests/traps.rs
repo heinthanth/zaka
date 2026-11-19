@@ -209,3 +209,19 @@ fn a_wait_no_job_can_end_stops_the_program()
     let path = root().join("tests/inputs/deadlock.zaka");
     stops_with(&path, "", "each job waits; none can go on");
 }
+
+/// Two jobs change one shared object inside lock blocks, and lose no change.
+#[test]
+fn lock_blocks_keep_the_changes_of_two_threads_apart()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/locks.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၂၀၀၀\n၂၀၀၀\n");
+}

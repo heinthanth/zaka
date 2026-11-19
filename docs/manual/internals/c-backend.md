@@ -304,6 +304,10 @@ missing row is `ZK_TRAP_NO_ROW`.
   and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
   job. `collect_rings` waits while a job runs; the lists of the deep duplicate are each
   thread's own.
+- `zk_lock` and `zk_unlock` find each lock through the block of the object (`zk_seq_base` of
+  the variable): a lock another thread holds waits through the same deadlock check, a
+  thread takes again a lock it holds, and a job that stops at a trap leaves its locks
+  broken (`LockBroken`).
 
 ## C functions
 

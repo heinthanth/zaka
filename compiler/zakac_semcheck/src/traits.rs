@@ -212,7 +212,7 @@ impl Checker
     /// # Returns
     ///
     /// `true` for a marked struct, or an instance of one.
-    fn marked_for_jobs(&self, cell: DataKind) -> bool
+    pub(crate) fn marked_for_jobs(&self, cell: DataKind) -> bool
     {
         let name =
             |s: &StructKind| s.name.split('<').next().unwrap_or_default().to_string();

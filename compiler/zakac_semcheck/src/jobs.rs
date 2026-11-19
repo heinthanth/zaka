@@ -6,8 +6,10 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::LockStmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
+use zakac_ast::visit::Visitor;
 use zakac_diagnostics::kinds as kd;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -268,6 +270,42 @@ impl Checker
         ret_if!(!plain, self.report(kd::job_of_no_declared_fn(callee.span, name)));
         let changes = sig.is_some_and(|s| s.edits.iter().chain(&s.fills).any(|e| *e));
         do_if!(changes, self.report(kd::job_changes_args(callee.span, name)));
+    }
+
+    /// Check a lock block: its name holds a shared object, and the fields of
+    /// that object can be reached inside it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The block.
+    pub(crate) fn check_lock(&mut self, n: &LockStmt)
+    {
+        let binding = self.scopes.lookup(&n.obj.name);
+        do_if!(let Some(b) = &binding, self.refer(&n.obj.name, n.obj.span, b.home()));
+        let object =
+            binding.and_then(|b| b.kind).is_some_and(|k| k.as_object().is_some());
+        do_if!(!object, self.report(kd::outside_lock(n.obj.span, &n.obj.name, true)));
+        self.held_locks.push(n.obj.name);
+        self.visit_block(&n.block);
+        self.held_locks.pop();
+    }
+
+    /// Report a field of an object jobs share that is reached outside a lock
+    /// block of the object.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The object.
+    /// * `kind` - Its kind.
+    /// * `field` - The field.
+    pub(crate) fn check_locked_field(
+        &mut self, base: &Expr, kind: DataKind, field: &Ident,
+    )
+    {
+        let shared = kind.cell_kind().is_some_and(|c| self.marked_for_jobs(c));
+        ret_if!(!kind.is_box() || !shared);
+        let held = result_var(base).is_some_and(|n| self.held_locks.contains(&n));
+        do_if!(!held, self.report(kd::outside_lock(field.span, &field.name, false)));
     }
 
     /// Report a kind that jobs cannot use, where a value of it goes to a job

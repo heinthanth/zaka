@@ -774,6 +774,12 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   block. A full channel, or an open one that holds none, parks the job with `Waits::Send` or
   `Waits::Receive`, which `can_go` tests. The end of the program drops the values left in
   each queue (`drop_pipe_values`).
+- **Locks.** The lowering turns a lock block into `Stmt::Lock`, the block, and
+  `Stmt::Unlock`: `Lowerer::locks` holds each open lock with the drop scope it belongs to,
+  and `drops_from` gives back the locks of each scope after its drops, so a return, a
+  break and a next round give them back too. The VM keeps `Jobs::locks`, found through the
+  block of the object, which each job that holds it shares; a lock another job holds
+  parks with `Waits::Lock`, and a trap of the holder marks it broken.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

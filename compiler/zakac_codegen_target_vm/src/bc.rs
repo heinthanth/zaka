@@ -419,6 +419,12 @@ pub enum Op
     /// Pop the `usize` that names a channel and close it; a second close
     /// stops the program.
     PipeClose,
+    /// Pop the address of a shared object and take its lock: the job waits
+    /// while another holds it, and a lock whose holder stopped at a trap stops
+    /// the program. A job that holds the lock takes it once more.
+    Lock,
+    /// Pop the address of a shared object and give back its lock once.
+    Unlock,
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -755,6 +761,8 @@ impl Op
             | Op::Dup
             | Op::ResultAddr
             | Op::PipeClose
+            | Op::Lock
+            | Op::Unlock
             | Op::CharCount
             | Op::CharAt { .. }
             | Op::SetChar { .. }

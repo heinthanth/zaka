@@ -136,3 +136,24 @@ fn jobs_run_on_threads_in_an_aot_build()
     let jit = run_jit(&c_inputs().join("jobs.zaka"), &[]);
     assert!(jit.stderr.contains("a job"), "{}", jit.stderr);
 }
+
+/// Two jobs change one shared object inside lock blocks in an AOT build, and
+/// lose no change.
+#[test]
+fn lock_blocks_keep_the_changes_of_two_threads_apart()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    let run = crate::common::run_aot(
+        &c_inputs().join("locks.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let Some(run) = run
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၂၀၀၀\n၂၀၀၀\n");
+}

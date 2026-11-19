@@ -1474,6 +1474,28 @@ pub fn job_changes_args(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::JobChangesArgs, msg, span).with_help(t!("codes.ZK0498.help"))
 }
 
+/// A field of an object jobs share is read or written outside a lock block
+/// of the object, or a lock block names a value that is no shared object.
+///
+/// # Arguments
+///
+/// * `span` - The field or the value.
+/// * `name` - The field, or the value.
+/// * `lock` - `true` for a lock block of a value that is no shared object.
+///
+/// # Returns
+///
+/// The `ZK0499` diagnostic.
+pub fn outside_lock(span: Span, name: &str, lock: bool) -> Diagnostic
+{
+    let msg = match lock
+    {
+        true => t!("codes.ZK0499.no_object", n = name),
+        false => t!("codes.ZK0499.message", n = name),
+    };
+    Diagnostic::new(Code::OutsideLock, msg, span).with_help(t!("codes.ZK0499.help"))
+}
+
 /// A comptime function gives a kind that a constant cannot hold.
 ///
 /// # Arguments

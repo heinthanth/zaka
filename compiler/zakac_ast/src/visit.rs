@@ -58,6 +58,7 @@ use crate::stmt::IfArm;
 use crate::stmt::IfStmt;
 use crate::stmt::ImportStmt;
 use crate::stmt::LeaveStmt;
+use crate::stmt::LockStmt;
 use crate::stmt::Param;
 use crate::stmt::PrintStmt;
 use crate::stmt::Program;
@@ -129,6 +130,7 @@ IfArm => "if_arm", visit_if_arm;
 WhileStmt => "while", visit_while;
 CountedStmt => "counted", visit_counted;
 EachStmt => "each", visit_each;
+LockStmt => "lock", visit_lock;
 GenericStmt => "generic", visit_generic;
 BreakStmt => "break", visit_break;
 ContinueStmt => "continue", visit_continue;
@@ -208,6 +210,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::While(s) => s,
         Stmt::Counted(s) => s,
         Stmt::Each(s) => s,
+        Stmt::Lock(s) => s,
         Stmt::Generic(s) => s,
         Stmt::Break(s) => s,
         Stmt::Continue(s) => s,
@@ -330,6 +333,8 @@ pub trait Visitor
     fn visit_counted(&mut self, n: &CountedStmt) { walk_counted(self, n) }
     /// Visit an each-cell or each-character loop.
     fn visit_each(&mut self, n: &EachStmt) { walk_each(self, n) }
+    /// Visit a lock block.
+    fn visit_lock(&mut self, n: &LockStmt) { walk_lock(self, n) }
     /// Visit a generic loop.
     fn visit_generic(&mut self, n: &GenericStmt) { walk_generic(self, n) }
     /// Visit a break statement.
@@ -477,6 +482,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::While(s) => v.visit_while(s),
         Stmt::Counted(s) => v.visit_counted(s),
         Stmt::Each(s) => v.visit_each(s),
+        Stmt::Lock(s) => v.visit_lock(s),
         Stmt::Generic(s) => v.visit_generic(s),
         Stmt::Break(s) => v.visit_break(s),
         Stmt::Continue(s) => v.visit_continue(s),
@@ -581,6 +587,15 @@ pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
     v.visit_expr(&n.source);
     do_if!(let Some(place) = &n.place, v.visit_ident(place));
     v.visit_ident(&n.var);
+    v.visit_block(&n.block);
+    v.leave(n);
+}
+
+/// Visit the object and the block of a lock block.
+pub fn walk_lock<V: Visitor + ?Sized>(v: &mut V, n: &LockStmt)
+{
+    v.enter(n);
+    v.visit_ident(&n.obj);
     v.visit_block(&n.block);
     v.leave(n);
 }
@@ -1255,6 +1270,12 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::While(s) => walk_while_mut(v, s),
         Stmt::Counted(s) => walk_counted_mut(v, s),
         Stmt::Each(s) => walk_each_mut(v, s),
+        Stmt::Lock(s) =>
+        {
+            v.visit_span_mut(&mut s.span);
+            v.visit_ident_mut(&mut s.obj);
+            v.visit_block_mut(&mut s.block);
+        }
         Stmt::Generic(s) => walk_generic_mut(v, s),
         Stmt::Break(s) => v.visit_span_mut(&mut s.span),
         Stmt::Continue(s) => v.visit_span_mut(&mut s.span),

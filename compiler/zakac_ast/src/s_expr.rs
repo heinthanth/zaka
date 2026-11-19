@@ -187,6 +187,7 @@ impl ToSexpr for Stmt
                 list(head, names.chain([s.source.to_sexpr(), s.block.to_sexpr()]))
             }
             Stmt::Generic(s) => generic_sexpr(s),
+            Stmt::Lock(s) => list("lock", [s.obj.name.to_string(), s.block.to_sexpr()]),
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),
             Stmt::Fn(s) =>

@@ -9,6 +9,7 @@ use zakac_ast::jobs::JOBS_WORDS;
 use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
+use zakac_ast::stmt::LockStmt;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
@@ -86,6 +87,10 @@ pub(crate) const PARALLEL: &str = "အပြိုင်";
 
 /// The word after `လုပ်ဆောင်သော` in the expression that gives the job.
 pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
+
+/// The words that take the lock of an object after its `ကို`, glued to `ယူ၍`
+/// or apart from it.
+const LOCK_WORDS: [&str; 2] = ["ခေတ္တ", "ခဏ"];
 
 /// The words after `မှ` that receive from a channel, `ရရှိသော` or
 /// `လက်ခံရရှိသော`.
@@ -211,7 +216,7 @@ impl Parser<'_>
         at == Some(1) || (at == Some(0) && self.peek_n(3).kind == TokenKind::Kw(Kw::Ko))
     }
 
-    /// Parse `မှ ရရှိသော ဒေတာတိုင်း ကို <name> အနေဖြင့် ယူ၍ <block>` after the
+    /// Parse `မှ ရရှိသော ဒေတာတိုင်း ကို <name> အနေဖြင့် ယူ၍ <block>` after the
     /// channel a loop takes each value of.
     ///
     /// # Arguments
@@ -235,6 +240,44 @@ impl Parser<'_>
         let node = EachStmt::builder().source(pipe).part(EachPart::Received).var(var)
             .block(block).span(span).build();
         Ok(Stmt::Each(node))
+    }
+
+    /// The token count of the head of a lock block at the cursor:
+    /// `<obj> ကို (ခေတ္တ|ခဏ)ယူ၍`, the last word glued or apart.
+    ///
+    /// # Returns
+    ///
+    /// The count, or `None` when no head stands there.
+    fn lock_head(&self) -> Option<usize>
+    {
+        ret_if!(self.peek().kind != TokenKind::Ident, None);
+        ret_if!(self.peek_n(1).kind != TokenKind::Kw(Kw::Ko), None);
+        let glued = LOCK_WORDS.iter().any(|w| self.is_word_at(2, &format!("{w}ယူ၍")));
+        ret_if!(glued, Some(3));
+        let apart = LOCK_WORDS.iter().any(|w| self.is_word_at(2, w));
+        (apart && self.peek_n(3).kind == TokenKind::Kw(Kw::Taking)).then_some(4)
+    }
+
+    /// Whether a lock block starts at the cursor.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_lock(&self) -> bool { self.lock_head().is_some() }
+
+    /// Parse a lock block: `<obj> ကို (ခေတ္တ|ခဏ)ယူ၍ <stmt>`, or with a block.
+    ///
+    /// # Returns
+    ///
+    /// The block, or a diagnostic.
+    pub(crate) fn parse_lock(&mut self) -> PResult<Stmt>
+    {
+        let head = self.lock_head().unwrap_or(3);
+        let obj = self.parse_ident()?;
+        do_for!(_ in 1..head, _ = self.bump());
+        let block = self.parse_branch(true)?;
+        let span = obj.span.to(&block.span);
+        Ok(Stmt::Lock(LockStmt::builder().obj(obj).block(block).span(span).build()))
     }
 
     /// The tokens the phrase takes from the token `n` ahead on.

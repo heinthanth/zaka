@@ -276,6 +276,27 @@ impl Lowerer<'_>
         });
     }
 
+    /// Lower a lock block: the lock is taken, the block runs, and each exit
+    /// of it gives the lock back, after the drops of the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The block.
+    /// * `out` - The list the statements go to.
+    pub(super) fn lock_stmt(&mut self, n: &st::LockStmt, out: &mut Vec<Stmt>)
+    {
+        let obj = self.read_value(&n.obj);
+        out.push(Stmt::Lock { obj: obj.clone(), span: n.span });
+        self.scoped(|l| {
+            let depth = l.drops.len() - 1;
+            l.locks.push((depth, obj));
+            l.scoped_stmts(&n.block.stmts, out);
+            let leaves = out.last().is_some_and(leaves_scope);
+            do_if!(!leaves, out.extend(l.drops_from(depth, n.span)));
+            l.locks.pop();
+        });
+    }
+
     /// Lower a wait for a job as a statement, its result dropped.
     ///
     /// # Arguments

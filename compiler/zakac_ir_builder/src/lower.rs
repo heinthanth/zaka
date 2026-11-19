@@ -634,6 +634,10 @@ struct Lowerer<'k>
     /// data, each with the hidden optional that holds the value that came.
     #[builder(default)]
     pipe_reads: Vec<(Name, Place)>,
+    /// The objects whose lock the blocks around the statement being lowered
+    /// hold, each with the drop scope that gives it back.
+    #[builder(default)]
+    locks: Vec<(usize, Expr)>,
     /// Whether an operand is being lowered as a whole into a hidden slot, so
     /// the parts inside it are left in place.
     #[builder(default)]
@@ -749,8 +753,15 @@ impl Lowerer<'_>
     /// The drop statements.
     fn drops_from(&self, depth: usize, span: Span) -> Vec<Stmt>
     {
-        let places = self.drops.iter().skip(depth).rev().flat_map(|s| s.iter().rev());
-        places.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span)).collect()
+        // Each scope drops its places, then gives back the locks it holds.
+        let scope = |s: usize| {
+            let drops = self.drops[s].iter().rev();
+            let drops =
+                drops.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span));
+            let held = self.locks.iter().rev().filter(move |(t, _)| *t == s);
+            drops.chain(held.map(|(_, obj)| Stmt::Unlock { obj: obj.clone(), span }))
+        };
+        (depth..self.drops.len()).rev().flat_map(scope).collect()
     }
 
     /// The statements that leave a function from scope `depth` on: each
@@ -908,6 +919,7 @@ impl Lowerer<'_>
             self.saved.push(top.unwrap_or_default());
             self.scopes.push(HashMap::new());
             self.drops = vec![Vec::new()];
+            self.locks.clear();
         }
         self.sigs = self.unit_sigs[unit as usize].clone();
         self.unit = unit;
@@ -1084,6 +1096,7 @@ impl Lowerer<'_>
             st::Stmt::Counted(n) => out.push(self.counted(n)),
             st::Stmt::Generic(n) => self.generic(n, out),
             st::Stmt::Each(n) => self.each(n, out),
+            st::Stmt::Lock(n) => self.lock_stmt(n, out),
             st::Stmt::Break(n) =>
             {
                 out.extend(self.loop_drops(n.span));

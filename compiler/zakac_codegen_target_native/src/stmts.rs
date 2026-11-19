@@ -103,6 +103,18 @@ impl<M: Module> FnGen<'_, '_, M>
                 let p = self.expr(pipe);
                 self.rt("zk_pipe_close", &[ptr], &[], &[p]);
             }
+            Stmt::Lock { obj, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let o = self.expr(obj);
+                self.rt("zk_lock", &[ptr], &[], &[o]);
+            }
+            Stmt::Unlock { obj, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let o = self.expr(obj);
+                self.rt("zk_unlock", &[ptr], &[], &[o]);
+            }
             Stmt::Print { value, .. } => self.print(value),
             Stmt::If { cond, then, els, .. } => self.if_stmt(cond, then, els),
             Stmt::Loop { init, cond, update, block, .. } =>

@@ -863,6 +863,7 @@ pub fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_DEADLOCK", t!("target_c.trap.deadlock")),
         ("ZK_TRAP_PIPE_CLOSED", t!("target_c.trap.pipe_closed")),
         ("ZK_TRAP_JOB_STOPPED", t!("target_c.trap.job_stopped")),
+        ("ZK_TRAP_LOCK_BROKEN", t!("target_c.trap.lock_broken")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }

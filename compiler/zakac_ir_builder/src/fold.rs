@@ -349,10 +349,10 @@ impl Folder
                 self.drop_value(value);
             }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
-            Stmt::Wait { job, .. } | Stmt::Close { pipe: job, .. } =>
-            {
-                self.drop_value(job)
-            }
+            Stmt::Wait { job, .. }
+            | Stmt::Close { pipe: job, .. }
+            | Stmt::Lock { obj: job, .. }
+            | Stmt::Unlock { obj: job, .. } => self.drop_value(job),
             Stmt::Send { pipe, value, .. } =>
             {
                 self.drop_value(pipe);

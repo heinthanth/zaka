@@ -154,6 +154,8 @@ word.
   has it when jobs can use each of its fields, and a plain shared object lacks it.
 - A value needs no mark: a job that gets a plain struct, a list or text gets a duplicate as
   soon as either side writes it. The mark on a plain struct changes nothing, ZK0493.
+- Each field of an object with the mark is read and written inside a lock block of it,
+  `<obj> ကို ခေတ္တယူ၍ <block>`, ZK0499 ([Objects jobs share](jobs.md#objects-jobs-share)).
 - The mark goes with a shared struct alone: on an enumeration, or with a C name or
   `ပြင်ပမှ လာသော`, it is ZK0263.
 

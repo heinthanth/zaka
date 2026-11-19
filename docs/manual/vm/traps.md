@@ -52,6 +52,7 @@ would refuse numerous programs of this page.
 | closure escape | C calls a closure while no C call that was given it runs and C has no leave to call it | `C called a closure after the call that gave it ended, and C has no leave to call it; give one with "ခေါ်ဆိုခွင့် ပြုမည်"` |
 | null from C | C gives NULL where its declaration promised a plain value: a handle result, or a text or handle parameter of a function of the program that C calls | `C gave NULL where its declaration promised a value; declare the result or the parameter as an optional, "T ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်", when C can give NULL` |
 | job trapped | a wait finds that its job stopped at a trap, under `--trap unwind` ([A trap in a job](../language/jobs.md#a-trap-in-a-job)) | `the job N this waits for stopped at a trap` |
+| lock broken | a lock block takes the lock of an object whose holder stopped at a trap ([Objects jobs share](../language/jobs.md#objects-jobs-share)) | `the lock of this object is broken: the job that held it stopped at a trap` |
 | pipe closed | a send goes to a closed [channel](../language/jobs.md#channels), or a close finds one closed | `the channel N is closed: no value can go to it, and it cannot close again` |
 | deadlock | each job waits, for another job or a channel, and none can go on | `each job waits; none can go on` |
 | no cell to remove | a remove of the last cell finds a list with no cells | `the list holds no cells, so it has no last cell to remove` |

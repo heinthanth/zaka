@@ -137,7 +137,10 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(value, w);
             w.span(span);
         }
-        Stmt::Wait { job, span, .. } | Stmt::Close { pipe: job, span } =>
+        Stmt::Wait { job, span, .. }
+        | Stmt::Close { pipe: job, span }
+        | Stmt::Lock { obj: job, span }
+        | Stmt::Unlock { obj: job, span } =>
         {
             expr(job, w);
             w.span(span);

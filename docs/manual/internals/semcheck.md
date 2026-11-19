@@ -641,6 +641,9 @@ the core. The compiler mark outside the core is ZK0349.
   `check_job_callee` takes the function a job starts in from the call's choice: no
   function value, closure or C function (ZK0497), and no parameter it changes or fills
   (ZK0498).
+  `check_lock` checks a lock block (its name holds an object) and keeps the name in
+  `held_locks` while it checks the block; `check_locked_field`, from `infer_field`,
+  reports a field of a marked object whose name no lock around holds (ZK0499).
 
 ## Comptime calls
 

@@ -275,6 +275,7 @@ pub(crate) fn returns_on_each_path(stmts: &[Stmt], full: &HashSet<Span>) -> bool
     {
         Stmt::Return(_) => true,
         Stmt::Block(b) => gives(b),
+        Stmt::Lock(n) => gives(&n.block),
         Stmt::If(n) =>
         {
             n.else_block.as_ref().is_some_and(gives)
@@ -331,6 +332,7 @@ fn breaks_out(stmts: &[Stmt]) -> bool
     {
         Stmt::Break(_) => true,
         Stmt::Block(b) => block(b),
+        Stmt::Lock(n) => block(&n.block),
         Stmt::If(n) =>
         {
             n.arms.iter().any(|a| block(&a.block))
