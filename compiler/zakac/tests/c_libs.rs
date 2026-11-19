@@ -408,3 +408,75 @@ fn libs_of_two_runtime_builds_link_into_one_program()
         assert_eq!(printed, TWO_LIBS, "two runtimes with the {backend} backend");
     }
 }
+
+/// What the C program that calls threadlib.zaka prints.
+#[cfg(unix)]
+const THREAD_CALLS: &str = "\
+thread 0 1
+thread 0 20
+fail 0 2
+trap zero_divisor in ပျက်
+after -1
+reset 0 1
+";
+
+/// Run a program, and fail when it runs past a deadline: a lib that keeps
+/// its lock while it waits in C would hang.
+///
+/// # Arguments
+///
+/// * `exe` - The program.
+///
+/// # Returns
+///
+/// What it printed.
+#[cfg(unix)]
+fn ran_in_time(exe: &Path) -> String
+{
+    use std::time::Duration;
+    use std::time::Instant;
+
+    let mut child =
+        Command::new(exe).stdout(std::process::Stdio::piped()).spawn().unwrap();
+    let deadline = Instant::now() + Duration::from_secs(60);
+    while child.try_wait().unwrap().is_none()
+    {
+        do_if!(Instant::now() > deadline, {
+            _ = child.kill();
+            panic!("{} ran past its deadline", exe.display());
+        });
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let out = child.wait_with_output().unwrap();
+    assert!(out.status.success(), "{} failed", exe.display());
+    String::from_utf8(out.stdout).unwrap()
+}
+
+#[cfg(unix)]
+#[test]
+fn a_call_that_waits_in_c_lets_another_thread_into_the_lib()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "threadlib", &["--allow-ffi"]);
+        let exe = dir.join("thread_calls");
+        let mut cmd = cc.command();
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("thread_calls.c"));
+        cmd.arg(dir.join(static_file("threadlib")))
+            .args(os_libs())
+            .args(["-lm", "-pthread"]);
+        ran(cmd.arg("-o").arg(&exe), "the link of thread_calls.c");
+        assert_eq!(
+            ran_in_time(&exe),
+            THREAD_CALLS,
+            "threads with the {backend} backend"
+        );
+    }
+}

@@ -55,6 +55,16 @@ const PRELUDE: &str = "\
 
 /** libc's free, for a string C hands over. */
 void free(void *p);
+
+/* In a C lib, a call to C lets other threads into the libs while it runs, and
+   takes the lib back once C returns; a program runs on one thread. */
+#if defined(ZK_LIB)
+#define ZK_LIB_LET_GO() zk_lib_let_go()
+#define ZK_LIB_TAKE_BACK() zk_lib_take_back()
+#else
+#define ZK_LIB_LET_GO() ((void)0)
+#define ZK_LIB_TAKE_BACK() ((void)0)
+#endif
 ";
 
 /// The copy a wrapper makes of a struct or a result C passes as a value,
@@ -443,11 +453,14 @@ impl Names<'_>
         // The count of lends is read before the unpacking lends a closure.
         let at = out.find("{\n").map_or(0, |i| i + 2);
         do_if!(lends, out.insert_str(at, "    size_t zk_lent = zk_cb_lent();\n"));
+        // In a C lib other threads go into the libs while C runs.
+        out.push_str("    ZK_LIB_LET_GO();\n");
         let _ = match &ret
         {
             Some(r) => writeln!(out, "    {r} zk_r = {call_text};"),
             None => writeln!(out, "    {call_text};"),
         };
+        out.push_str("    ZK_LIB_TAKE_BACK();\n");
         do_if!(lends, out.push_str("    zk_cb_end(zk_lent);\n"));
         // A string C gives back can point into a duplicate of a text
         // argument, so the text of the result is taken before those are freed.

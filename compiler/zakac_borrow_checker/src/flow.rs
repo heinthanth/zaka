@@ -699,7 +699,11 @@ impl<'m> Flow<'m>
                 self.value(e, state);
             }
             Stmt::Halt { value: None, .. } => (),
-            Stmt::Foreign { args, .. } => do_for!(a in args, _ = self.value(a, state)),
+            Stmt::Foreign { args, .. } =>
+            {
+                do_for!(a in args, _ = self.value(a, state));
+                self.forget_globals(state);
+            }
             Stmt::Call { func, args, span, .. } =>
             {
                 self.call(&[*func], args, *span, state)
@@ -1286,6 +1290,10 @@ impl<'m> Flow<'m>
                 // each one whole; both give a value that holds blocks of their
                 // own.
                 do_for!(a in args, _ = self.value(a, state));
+                do_if!(
+                    matches!(e.node, ExprNode::Foreign { .. }),
+                    self.forget_globals(state)
+                );
                 SlotState::unknown(e.kind, Roots::new())
             }
             ExprNode::List(cells) =>
@@ -1724,6 +1732,24 @@ impl<'m> Flow<'m>
             do_if!(had || given.contains(&place), self.mark_given(place, state));
         }
         forget_extents(&resized, state);
+    }
+
+    /// What a call to C does to the facts of the globals: C can call back each
+    /// function of the program, and in a C lib another thread runs calls while
+    /// it waits, so each global can change, as after a call that writes each.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - The facts, changed in place.
+    fn forget_globals(&mut self, state: &mut State)
+    {
+        let globals: Vec<Place> = self.named.iter().copied().collect();
+        for place in globals
+        {
+            let had = state.ptr(place).is_some_and(|info| info.state.shares_given());
+            self.reset(place, state);
+            do_if!(had, self.mark_given(place, state));
+        }
     }
 
     /// Run the closures the arguments of a call can hold, as the callee can:

@@ -249,6 +249,13 @@ pub fn make_frames()
 /// The rows the frame table has room for.
 static FRAME_ROOM: AtomicUsize = AtomicUsize::new(0);
 
+/// The rows the frame table has room for.
+///
+/// # Returns
+///
+/// The count, 0 when the build keeps no frames.
+pub(crate) fn frame_room() -> usize { FRAME_ROOM.load(Ordering::Relaxed) }
+
 /// A field of a struct: its name, its offset in octets and its kind.
 #[repr(C)]
 pub struct ZkField

@@ -163,7 +163,9 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
   `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`.
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
-- Threads can call a lib, but one call runs at a time; the others wait.
+- Threads can call a lib, but one call runs at a time; the others wait, until it ends or
+  waits in a C function. C can call a function of the program from each thread, built
+  with `--allow-ffi` for the C functions it calls.
 - Several Zaka libs link into one program, from one build of `zakac` or from several.
   Each keeps its own names and its own `--max-heap`, and a stop stops its own lib alone;
   `zk_free` and `zk_last_trap()`, the last stop of each lib, serve them all. The name in

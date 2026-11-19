@@ -332,7 +332,22 @@ lent to the call; a leave statement is `zk_cb_leave(value, zk_cb_shape_of(&shape
 and keeps them for the run. Each closure gets one libffi
 closure, found again from the octets of its record, and its code is never freed, so a late
 call from C stops the run with `ZK_TRAP_CLOSURE_ESCAPE` and never runs freed code; a call
-on another thread aborts with a message.
+on another thread aborts a program with a message. In a C lib, `run_in_lib` takes the call
+instead: on a thread with calls parked in C it takes them back, runs the bridge and lets go
+again; on another thread it runs the bridge through the guard of the lib (`zk_lib_guard`
+of the glue, which `zk_lib_open` takes), whose `setjmp` catches a trap, and C gets zeros. A
+function C calls goes through the bridge in a lib even when it could go as it is
+(`options.lib` in `emit`, `serves_libs` in `zk_cb_code`), so no call skips the lock.
+
+A call to C in a lib lets go of the lock (`ZK_LIB_LET_GO` in each wrapper of
+`zaka_ffi.c`, which `ZK_LIB` of `zaka_lib_names.h` turns on, and `zk_ffi_call` for
+Cranelift code): `zk_lib_let_go` writes out the output, parks what the calls of the thread
+hold of the runtime in a thread-local list (`Parked`: the depth, the rows of the frame
+table, the lib, the table, the base, the jump target, the marks, the lends, the sink and
+the drop that frees the queue), clears them for the next thread, and lets go of the lock
+at each depth it held. `zk_lib_take_back` waits for the lock and puts them back. The jump
+target of a trap lives in the runtime (`zk_lib_jump`, `zk_lib_jump_set`), not in the
+glue, since a thread that waits in C lets others into the same lib.
 
 A function kind whose parameters each cross as written (`as_is`: numbers, booleans and
 addresses) lets a plain function reach C as its own code. Each other kind a C declaration

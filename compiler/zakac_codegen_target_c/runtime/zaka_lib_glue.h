@@ -63,10 +63,10 @@ static const zk_trap_info *zk_trap_slot_v1 = NULL;
 
 /* The state of the lib, which a call reads and writes once zk_lib_lock lets it
    in, one thread at a time. */
-/* The record the runtime keeps of the lib, from its first call. */
+/* The record the runtime keeps of the lib, from its first call. Where a trap
+   leaves to, the wrapper of the call in progress, the runtime keeps for each
+   thread (zk_lib_jump), since a thread that waits in C lets others in. */
 static zk_lib *zk_lib_self;
-/* Where a trap leaves to: the wrapper of the call in progress. */
-static jmp_buf *zk_lib_at;
 /* 0 before the first call, 1 while the lib runs, 2 once a trap stopped it. */
 static int zk_lib_state;
 /* The status of the trap that stopped the lib: 1 + the id of the trap. */
@@ -80,8 +80,10 @@ static int32_t zk_lib_status;
 _Noreturn static void zk_lib_leave(int32_t trap)
 {
     zk_lib_status = trap + 1;
-    longjmp(*zk_lib_at, 1);
+    longjmp(*(jmp_buf *)zk_lib_jump(), 1);
 }
+
+static int32_t zk_lib_guard(void (*step)(void *), void *data);
 
 /**
  * Enter the lib for a call, after the runtime makes its record on the first
@@ -93,8 +95,9 @@ static zk_lib_place zk_lib_in(void)
 {
     DO_IF(
         zk_lib_self == NULL,
-        zk_lib_self =
-            zk_lib_open(&zk_the_program, zk_lib_leave, ZK_LIB_NAME, &zk_trap_slot_v1)
+        zk_lib_self = zk_lib_open(
+            &zk_the_program, zk_lib_leave, ZK_LIB_NAME, &zk_trap_slot_v1, zk_lib_guard
+        )
     );
     return zk_lib_enter(zk_lib_self);
 }
@@ -121,7 +124,7 @@ static void zk_lib_begin(void)
  */
 static int32_t zk_lib_end(jmp_buf *outer, zk_lib_place was, int32_t status)
 {
-    zk_lib_at = outer;
+    zk_lib_jump_set(outer);
     zk_lib_return(was);
     zk_lib_unlock();
     return status;
@@ -144,6 +147,32 @@ static int32_t zk_lib_stop(jmp_buf *outer, zk_lib_place was, uint32_t depth)
     zk_lib_unwind();
     zk_flush();
     return zk_lib_end(outer, was, zk_lib_status);
+}
+
+/**
+ * Run a step as a call of the lib, for C that calls a function of the program
+ * on a thread with no call of a lib in progress: the lock, the start of the
+ * globals, and a jump back here for a trap, which stops the lib.
+ *
+ * @param step The step.
+ * @param data What the step takes.
+ * @return The status of the call.
+ */
+static int32_t zk_lib_guard(void (*step)(void *), void *data)
+{
+    jmp_buf zk_here;
+    zk_lib_lock();
+    zk_lib_place zk_was = zk_lib_in();
+    jmp_buf *zk_outer = (jmp_buf *)zk_lib_jump();
+    uint32_t zk_depth_was = zk_depth;
+    RET_IF(zk_lib_state == 2, zk_lib_end(zk_outer, zk_was, ZK_STOPPED));
+    if (setjmp(zk_here) != 0) return zk_lib_stop(zk_outer, zk_was, zk_depth_was);
+    ZK_LIB_NO_UNWIND(zk_here);
+    zk_lib_jump_set(&zk_here);
+    zk_lib_begin();
+    step(data);
+    zk_flush();
+    return zk_lib_end(zk_outer, zk_was, ZK_OK);
 }
 
 /**

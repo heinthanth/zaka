@@ -82,6 +82,7 @@ fn moves_in(
 {
     let cfg = build_cfg(routine.block, routine.span);
     let taken = taken_fns(module);
+    let all_globals: BTreeSet<u32> = (0..module.globals.len() as u32).collect();
     let live = live_out_of(&cfg, module, routine, DataKind::holds_text);
     let lent = lent_in(routine.block);
     let mut verdicts: HashMap<DupAt, bool> = HashMap::new();
@@ -90,7 +91,7 @@ fn moves_in(
         let exprs = node_exprs(&node.kind);
         let mut read = Vec::new();
         do_for!(e in &exprs, reads(e, &mut read));
-        let written = call_writes(&node.kind, &exprs, writes, &taken);
+        let written = call_writes(&node.kind, &exprs, writes, &taken, &all_globals);
         let mut judge = |e: &Expr| {
             let Some(place) = dup_of(e)
             else
@@ -117,12 +118,14 @@ fn moves_in(
 /// * `kind` - What the node runs.
 /// * `exprs` - The expressions it runs.
 /// * `writes` - The globals each function writes, at each depth.
+/// * `all_globals` - Each global of the module.
 ///
 /// # Returns
 ///
 /// The global numbers.
 fn call_writes(
     kind: &NodeKind, exprs: &[&Expr], writes: &[BTreeSet<u32>], taken: &BTreeSet<u32>,
+    all_globals: &BTreeSet<u32>,
 ) -> BTreeSet<u32>
 {
     let mut called = BTreeSet::new();
@@ -136,7 +139,32 @@ fn call_writes(
         do_if!(matches!(e.node, ExprNode::CallValue { .. }), called.extend(taken));
     };
     do_for!(e in exprs, each_expr(e, &mut note));
+    // A call to C can change each global, as [`global_writes`] tells.
+    let c_stmt = matches!(kind, NodeKind::Leaf(Stmt::Foreign { .. }));
+    let mut c_expr = false;
+    do_for!(e in exprs, each_expr(e, &mut |x| c_expr |= matches!(x.node, ExprNode::Foreign { .. })));
+    ret_if!(c_stmt || c_expr, all_globals.clone());
     called.iter().filter_map(|f| writes.get(*f as usize)).flatten().copied().collect()
+}
+
+/// Whether statements call a C function, at each depth of their blocks.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements.
+///
+/// # Returns
+///
+/// `true` when one does.
+fn calls_c(stmts: &[Stmt]) -> bool
+{
+    let mut found = false;
+    each_stmt(stmts, &mut |s| {
+        found |= matches!(s, Stmt::Foreign { .. });
+        let mut note = |e: &Expr| found |= matches!(e.node, ExprNode::Foreign { .. });
+        do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+    });
+    found
 }
 
 /// Whether a move out of a place can stand for a duplicate in a routine: a
@@ -380,8 +408,11 @@ fn lend_loop_dup(
         .flatten()
         .copied()
         .collect();
+    // A call to C inside the loop can change each global.
+    let c_call = inner.iter().any(|stmts| calls_c(stmts));
     let quiet = |place: Place| {
-        let global = tern!(let Place::Global(g) = place, written.contains(&g), false);
+        let global =
+            tern!(let Place::Global(g) = place, c_call || written.contains(&g), false);
         !global && !kept.contains(&place) && cells_alone(place, cond, &inner)
     };
     for set in init.iter_mut()
@@ -491,7 +522,9 @@ fn root_of_addr(addr: &Expr) -> Option<Place>
 
 /// The globals each function writes, itself or through the functions it
 /// calls: a set, a drop, an allocation, a resize or a free of one, a store
-/// into one, a move out of one, or an address of one.
+/// into one, a move out of one, or an address of one. A call to C writes each
+/// global: C can call back each function of the program, and in a C lib
+/// another thread runs calls while it waits.
 ///
 /// # Arguments
 ///
@@ -503,7 +536,9 @@ fn root_of_addr(addr: &Expr) -> Option<Place>
 fn global_writes(module: &Module) -> Vec<BTreeSet<u32>>
 {
     let taken = taken_fns(module);
+    let all_globals: BTreeSet<u32> = (0..module.globals.len() as u32).collect();
     let direct = |stmts: &[Stmt]| {
+        ret_if!(calls_c(stmts), all_globals.clone());
         let mut places = Vec::new();
         each_stmt(stmts, &mut |s| {
             places.extend(written_places(s));

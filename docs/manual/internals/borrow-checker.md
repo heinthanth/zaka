@@ -271,7 +271,12 @@ After the moves, `lend_arguments` marks each `Dup` left in a call argument `lent
 callee reads the caller's u8s, or the cells of a plain list, with a room of 0 and no
 retain, unless the call, or a call inside its arguments, sets the global read
 (`global_writes`, at each depth), or the place is read through a pointer, or a range or an
-address reads it. A box, which holds a captured local, is never lent. The same pass lends
+address reads it. A call to C sets each global (`calls_c`): C can call back each function
+of the program, and in a C lib another thread runs calls while the call waits in C, as Rust
+keeps a loan from living across a call that can change what it borrows. So a function that
+calls C, at each depth, takes each global as a duplicate, an each loop whose block reaches
+C walks a duplicate of a global, and the flow forgets the facts of each global after a call
+to C (`forget_globals`). A box, which holds a captured local, is never lent. The same pass lends
 the `Dup` a loop starts from, such as the source of an each loop (`lend_loop_dup`), when
 the loop reads the duplicate through its cells alone and leaves the source as it is. Last,
 `share_params` fills `Func::shared_params` with each list or struct parameter that holds

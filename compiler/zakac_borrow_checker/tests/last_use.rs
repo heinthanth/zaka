@@ -294,3 +294,54 @@ fn dups(text: &str) -> usize
     let module = out.out.lowered.folded.as_ref().map(ToSexpr::to_sexpr);
     module.unwrap_or_default().matches("(dup ").count()
 }
+
+/// A function that calls C: C can call back each function of the program,
+/// and in a C lib another thread runs calls while the call waits, so each
+/// global can change during the call.
+const CALLS_C: &str = "\
+strlen ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် \"libc\" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ s ဟူသော စာသား တစ်ခု ကို \
+                       လက်ခံပြီး လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+အရှည် ဟူသော လုပ်ဆောင်ချက် သည်
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+strlen ဟူသော လုပ်ဆောင်ချက်ကို စ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးပါပြီ။
+";
+
+#[test]
+fn a_global_a_function_that_calls_c_takes_is_duplicated()
+{
+    let module = ir(&format!("{CALLS_C}အရှည်(က) ကို ပြသမည်။\n"));
+    assert!(module.contains("(call အရှည် (dup g1))"), "{module}");
+    assert!(!module.contains("(dup_lent g1)"), "{module}");
+}
+
+#[test]
+fn a_global_a_function_with_no_call_to_c_takes_is_lent()
+{
+    let plain = CALLS_C.replace(
+        "strlen ဟူသော လုပ်ဆောင်ချက်ကို စ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြန်ပေးမည်။",
+        "၀ ကို ပြန်ပေးမည်။",
+    );
+    let module = ir(&format!("{plain}အရှည်(က) ကို ပြသမည်။\n"));
+    assert!(module.contains("(call အရှည် (dup_lent g1))"), "{module}");
+}
+
+#[test]
+fn an_each_loop_over_a_global_that_calls_c_walks_a_duplicate()
+{
+    let walk = |inner: &str| {
+        format!(
+            "{CALLS_C}ကိန်းရှင် ကများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကများ ၏ အကွက်တိုင်း ကို က အနေဖြင့် ယူ၍ {inner}
+ကများ ကို ပြသမည်။
+"
+        )
+    };
+    // A loop that reads alone lends its list; one that calls C can see the
+    // list change, so it walks a duplicate.
+    assert_eq!(dups(&walk("က ကို ပြသမည်။")), 0);
+    assert_eq!(dups(&walk("အရှည်(\"x\") ကို ပြသမည်။")), 1);
+}

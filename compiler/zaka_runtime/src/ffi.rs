@@ -10,6 +10,7 @@ use std::sync::Mutex;
 use libffi::middle::Cif;
 use libffi::middle::Type;
 use libffi::raw::ffi_call;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 use crate::callbacks::ZkCbShape;
@@ -161,10 +162,14 @@ pub extern "C" fn zk_ffi_call(
     };
     // SAFETY: `code` is the C function the shape describes; the values lie
     // at their addresses, and `ret` has room for the result.
+    // In a C lib other threads go into the libs while C runs.
+    let libs = crate::libs::serves_libs();
+    do_if!(libs, crate::libs::zk_lib_let_go());
     unsafe {
         let f: unsafe extern "C" fn() = std::mem::transmute(code);
         ffi_call(cif, Some(f), ret, args);
     }
+    do_if!(libs, crate::libs::zk_lib_take_back());
 }
 
 /// The shape a native shape stands for, made on its first use: the libffi

@@ -1685,6 +1685,28 @@ pub(crate) struct DropMark
     deep_seen: usize,
 }
 
+/// The drop that frees the queue, as it stands: the head of the queue and
+/// whether a drop is freeing it.
+///
+/// # Returns
+///
+/// The head, as an address, and the flag.
+pub(crate) fn drain_state() -> (usize, bool)
+{
+    (FREEING.load(Ordering::Relaxed) as usize, DRAINING.load(Ordering::Relaxed))
+}
+
+/// Put back the drop that frees the queue, as [`drain_state`] gave it.
+///
+/// # Arguments
+///
+/// * `state` - The head of the queue and the flag.
+pub(crate) fn set_drain_state(state: (usize, bool))
+{
+    FREEING.store(state.0 as *mut u8, Ordering::Relaxed);
+    DRAINING.store(state.1, Ordering::Relaxed);
+}
+
 /// Where the queues of the drops stand now.
 ///
 /// # Returns

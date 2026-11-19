@@ -169,7 +169,7 @@ impl LibNames
             header,
             "#define zk_lib_reset {reset}\n#define zk_lib_last_trap {last}\n#define \
              zk_lib_free {free}\n#define zk_lib_free_all {free_all}\n#define \
-             ZK_LIB_NAME \"{name}\"\n#endif\n"
+             ZK_LIB_NAME \"{name}\"\n#define ZK_LIB 1\n#endif\n"
         );
         let include = format!("#include \"{NAMES_HEADER}\"\n");
         let sources = files.iter_mut().filter(|f| f.name.ends_with(".c"));

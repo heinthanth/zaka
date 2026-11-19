@@ -226,10 +226,12 @@ pub fn emit(
     let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
     let fn_params: Vec<DataKind> = fn_params.filter(|k| k.is_fn()).collect();
     // So can a function whose parameters do not cross as C passes them, which C
-    // calls through a bridge.
+    // calls through a bridge; in a C lib each function C calls goes through the
+    // runtime, which lets one thread at a time into the lib.
     let platform = options.platform_bits;
     let bridged = |k: &DataKind| {
-        shared.made_closure || k.as_fn().is_some_and(|f| !as_is(f, platform))
+        let direct = k.as_fn().is_some_and(|f| as_is(f, platform));
+        shared.made_closure || options.lib || !direct
     };
     let bridged: Vec<DataKind> = fn_params.into_iter().filter(bridged).collect();
     do_for!(k in bridged, _ = shared.cb_shape(k));

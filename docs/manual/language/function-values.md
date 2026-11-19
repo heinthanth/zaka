@@ -882,7 +882,11 @@ error[ZK0462]: this value is isize, not a function value, so C cannot get leave 
 program with the trap `closure_escape` (see [When a program stops](../vm/traps.md)),
 and its message tells how to give leave. The native code of a closure remains in place after its
 last use, so a late call traps and never runs freed code. A call from C on another thread
-ends the run with a message, since the program runs on one thread.
+ends the run of a program with a message, since a program runs on one thread. In a C lib
+([Functions C can call](functions.md#functions-c-can-call)), C can call from each thread:
+the lock of the lib lets one thread in at a time, a call that waits in C lets the others
+in, and a trap on a thread with no call of the lib in progress stops the lib and gives C
+a result of zeros.
 
 **Where it runs.** `zakac run` makes one native closure for each closure given to C,
 found again from the octets of its record, and so does a native program, through the runtime

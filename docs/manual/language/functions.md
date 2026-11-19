@@ -1729,8 +1729,10 @@ the heap and the globals half written. `zk_reset_<lib>()` starts the lib again: 
 call sets the globals again, and the blocks the stopped lib held remain out of reach.
 The first call starts the runtime and sets the globals; the text a call prints goes out
 before it returns. Threads can call the lib: one call runs at a
-time, and a call from another thread waits until it ends. C that a call calls can call
-the lib again on the same thread.
+time, and a call from another thread waits until it ends or waits in C, which lets the
+other threads in. C that a call calls can call the lib again on the same thread, and C
+can call a function of the lib from each thread (see
+[Closures C calls](function-values.md#nested-functions-and-closures)).
 
 ## Recursion
 

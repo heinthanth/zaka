@@ -75,6 +75,38 @@ pub extern "C" fn zk_lib_unlock()
     FREED.notify_one();
 }
 
+/// Let go of the lock of the libs at each depth this thread holds it, for a
+/// call to C that lets other threads into the libs while it runs.
+///
+/// # Returns
+///
+/// The depth it held.
+pub(crate) fn let_go_lock() -> u32
+{
+    let mut held = HELD.lock().unwrap_or_else(PoisonError::into_inner);
+    let depth = held.1;
+    *held = (None, 0);
+    FREED.notify_all();
+    depth
+}
+
+/// Take the lock of the libs back at the depth a call to C let go of, once
+/// no other thread runs a call of a lib.
+///
+/// # Arguments
+///
+/// * `depth` - The depth, as [`let_go_lock`] gave it.
+pub(crate) fn take_lock(depth: u32)
+{
+    let me = std::thread::current().id();
+    let mut held = HELD.lock().unwrap_or_else(PoisonError::into_inner);
+    do_while!(
+        held.0.is_some_and(|t| t != me),
+        held = FREED.wait(held).unwrap_or_else(PoisonError::into_inner)
+    );
+    *held = (Some(me), held.1 + depth);
+}
+
 /// Write out what is buffered, as a C lib does at the end of each call.
 #[unsafe(export_name = stamped!("flush"))]
 pub extern "C" fn zk_flush() { flush_out(); }

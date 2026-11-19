@@ -429,7 +429,16 @@ a function gives back is a `char *`, a plain list `zk_list_<cells>`. Each block 
 gives C carries the kind and the count of its cells in front of it: C frees one block with
 `zk_free`, or a block with each block its cells point at, at each depth, with
 `zk_free_all` (`zk_free_all_from_<name>` with the C runtime of the lib). Threads can call
-the lib, one call at a time.
+the lib, one call at a time, under one lock for each lib of the runtime. A call that waits
+in a C function lets go of the lock, so other threads go into the libs while it waits,
+and takes it back once C returns, as Python lets go of its lock around C. While it waits
+another thread can change a global; as Rust does, the check counts a call to C as a change
+of each global, so a function that reaches C takes globals as duplicates, never as loans,
+and no value a call holds is freed under it. A global the call reads again after C can
+hold a new value. C can call a function of the program
+on each thread: on a thread that waits in C, the call goes on as part of that call; on
+another thread it runs as a call of the lib, and a trap there stops the lib and gives C a
+result of zeros.
 
 Several Zaka libs link into one program, static or shared. `<name>` is the name of the
 files, or `--lib-name`: ASCII letters, digits and `_`. Each name a lib links under that C

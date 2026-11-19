@@ -71,6 +71,9 @@ struct Cb
     cif: ffi_cif,
     /// The native address C calls.
     code: *mut c_void,
+    /// The C lib whose call gave C the closure, as an address; 0 in a
+    /// program.
+    lib: usize,
 }
 
 /// Each closure C got, kept for the whole run; the runtime runs on one thread.
@@ -98,9 +101,10 @@ fn cb<'a>(p: usize) -> &'a mut Cb
     unsafe { &mut *(p as *mut Cb) }
 }
 
-/// The code libffi runs when C calls a closure: a call from another thread
-/// ends the run, since the program runs on one thread; a call with no lend
-/// and no leave stops it; else the bridge runs the thunk.
+/// The code libffi runs when C calls a closure. In a C lib the lock of the
+/// libs lets one thread at a time in, see [`run_in_lib`]; a program runs on
+/// one thread, so a call from another one ends the run. A call with no lend
+/// and no leave stops; else the bridge runs the thunk.
 ///
 /// # Arguments
 ///
@@ -112,6 +116,8 @@ unsafe extern "C" fn run(
     _cif: *mut ffi_cif, ret: *mut c_void, args: *mut *mut c_void, data: *mut c_void,
 )
 {
+    let c = cb(data as usize);
+    ret_if!(crate::libs::serves_libs(), run_in_lib(c, ret, args));
     if !HOME.get()
     {
         eprintln!(
@@ -120,10 +126,64 @@ unsafe extern "C" fn run(
         );
         std::process::abort();
     }
-    let c = cb(data as usize);
+    bridge(c, ret, args)
+}
+
+/// Run the thunk of a closure through its bridge; a call with no lend and no
+/// leave stops.
+///
+/// # Arguments
+///
+/// * `c` - The closure.
+/// * `ret` - Where the result goes.
+/// * `args` - The address of each argument.
+fn bridge(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
+{
     do_if!(!c.kept && c.calls == 0, zk_plain_trap(trap::CLOSURE_ESCAPE));
     // SAFETY: the compiler writes a shape for each closure kind.
     (unsafe { &*c.shape }.bridge)(ret, args, c.record)
+}
+
+/// A call C makes of a closure of a C lib. On a thread that waits in C with
+/// calls of a lib parked, the call goes on as part of them: it takes them
+/// back, and lets go again once it ends. On another thread, with no call of a
+/// lib in progress, it runs as a call of the lib of the closure, through the
+/// guard of its glue: a trap stops that lib, and C gets a result of zeros.
+///
+/// # Arguments
+///
+/// * `c` - The closure.
+/// * `ret` - Where the result goes.
+/// * `args` - The address of each argument.
+fn run_in_lib(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
+{
+    if crate::libs::parked_here()
+    {
+        crate::libs::zk_lib_take_back();
+        bridge(c, ret, args);
+        crate::libs::zk_lib_let_go();
+        return;
+    }
+    let mut call = (c as *const Cb, ret, args);
+    let data = (&raw mut call).cast::<c_void>();
+    let status = crate::libs::guarded(c.lib, guarded_step, data);
+    ret_if!(status == 0 || ret.is_null());
+    // SAFETY: libffi gives a result of the size of the return kind.
+    unsafe { std::ptr::write_bytes(ret.cast::<u8>(), 0, (*c.cif.rtype).size) }
+}
+
+/// The step the guard of a lib runs for a call C makes on another thread.
+///
+/// # Arguments
+///
+/// * `data` - The closure, where the result goes and the arguments.
+extern "C" fn guarded_step(data: *mut c_void)
+{
+    // SAFETY: `run_in_lib` hands the three for the whole call.
+    let (c, ret, args) =
+        unsafe { *data.cast::<(*const Cb, *mut c_void, *mut *mut c_void)>() };
+    // SAFETY: each closure lives for the whole run.
+    bridge(unsafe { &*c }, ret, args)
 }
 
 /// The closure C got with the octets of a record.
@@ -179,7 +239,8 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
     ret_if!(let Some(found) = find(seen), found);
     #[rustfmt::skip]
     let fresh = Box::new(Cb { seen: seen.to_vec(), record: zk_fn_rec(f), calls: 0,
-        kept: zk_fn_bound(f) == 0, shape, cif: Default::default(), code: std::ptr::null_mut() });
+        kept: zk_fn_bound(f) == 0, shape, cif: Default::default(), code: std::ptr::null_mut(),
+        lib: crate::libs::current_lib() });
     let c = Box::leak(fresh);
     // SAFETY: the compiler writes a shape for each closure kind.
     let s = unsafe { &*shape };
@@ -222,7 +283,11 @@ pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
 {
     let bound = zk_fn_bound(f) != 0;
     // SAFETY: the compiler writes a shape for each closure kind.
-    ret_if!(!bound && unsafe { (*shape).as_is } != 0, zk_fn_code(f));
+    // In a C lib C calls each function of the program through `run`, under the
+    // lock of the libs.
+    let direct =
+        !bound && unsafe { (*shape).as_is } != 0 && !crate::libs::serves_libs();
+    ret_if!(direct, zk_fn_code(f));
     let c = cb(cb_of(f, shape));
     ret_if!(!bound, code_of(c.code));
     LENDS.lock().unwrap_or_else(|e| e.into_inner()).push(c as *mut Cb as usize);
@@ -351,6 +416,27 @@ pub extern "C" fn zk_cb_opt_handle(
     // SAFETY: the tag is the first octet of the optional.
     unsafe { *out = 1 };
     zk_cb_handle(at(out, ok_at), addr, list)
+}
+
+/// Take the closures lent now off the list, for a call to C that lets other
+/// threads into the libs.
+///
+/// # Returns
+///
+/// The lends.
+pub(crate) fn take_lends() -> Vec<usize>
+{
+    std::mem::take(&mut *LENDS.lock().unwrap_or_else(|e| e.into_inner()))
+}
+
+/// Put the closures lent back on the list, as [`take_lends`] gave them.
+///
+/// # Arguments
+///
+/// * `lends` - The lends.
+pub(crate) fn put_lends(lends: Vec<usize>)
+{
+    *LENDS.lock().unwrap_or_else(|e| e.into_inner()) = lends;
 }
 
 /// The count of closures lent now.

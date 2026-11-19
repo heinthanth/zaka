@@ -42,6 +42,7 @@ include = ["ZkTrap", "ZkRight", "ZkTag", "ZkFnRec"]
 "ZkLibPlace" = "zk_lib_place"
 "ZkTrapInfo" = "zk_trap_info"
 "ZkTrapFrame" = "zk_trap_frame"
+"Guard" = "zk_lib_guard_fn"
 "ZkKind" = "zk_kind"
 "ZkBuf" = "zk_buf"
 "ZkCbShape" = "zk_cb_shape"

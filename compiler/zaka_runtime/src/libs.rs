@@ -6,9 +6,11 @@
 //! own record again.
 
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::ffi::c_char;
+use std::ffi::c_void;
 use std::ptr::null;
 use std::ptr::null_mut;
 use std::sync::Mutex;
@@ -21,6 +23,7 @@ use zaka_host::Gate;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 
+use crate::program::ZkFrame;
 use crate::program::ZkProgram;
 use crate::program::make_frames;
 use crate::program::zk_depth;
@@ -44,7 +47,54 @@ pub struct ZkLib
     last: Mutex<Option<Box<TrapRecord>>>,
     /// The heap octets its calls hold, which its `--max-heap` caps.
     pub(crate) heap: AtomicUsize,
+    /// The function of its glue that runs a step as a call of the lib, with a
+    /// jump back for a trap, for C that calls a function of the program on a
+    /// thread with no call of a lib in progress.
+    guard: Guard,
 }
+
+/// The function of the glue of a lib that runs a step as a call of the lib:
+/// it takes the step and what the step takes, and gives the status of the
+/// call.
+pub type Guard = extern "C" fn(extern "C" fn(*mut c_void), *mut c_void) -> i32;
+
+/// What the calls of a lib that one thread has in progress hold of the
+/// runtime, parked while the thread waits in C and other threads run calls.
+struct Parked
+{
+    /// How often the thread held the lock of the libs.
+    holds: u32,
+    /// The depth of its calls.
+    depth: u32,
+    /// The rows of the frame table its calls wrote.
+    frames: Vec<ZkFrame>,
+    /// The lib of its call, as an address.
+    lib: usize,
+    /// The table in use, as an address.
+    prog: usize,
+    /// Where the call of the lib began.
+    base: u32,
+    /// Where a trap of its call jumps, as an address.
+    jump: usize,
+    /// The marks of its calls.
+    marks: Vec<Mark>,
+    /// The closures it lent to C calls.
+    lends: Vec<usize>,
+    /// The sink of its output, as an address.
+    sink: usize,
+    /// The drop that frees the queue.
+    drain: (usize, bool),
+}
+
+thread_local! {
+    /// What the calls of this thread hold of the runtime, parked while it
+    /// waits in C, the latest last.
+    static PARKED: RefCell<Vec<Parked>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Where a trap of the call in progress jumps: the `jmp_buf` of the wrapper
+/// of the call, which its glue reads.
+static JUMP: AtomicPtr<c_void> = AtomicPtr::new(null_mut());
 
 /// What a trap inside a call of a lib can leave half done, as the call found
 /// it.
@@ -280,6 +330,7 @@ fn forget_latest(old: Option<&TrapRecord>)
 ///   progress; it takes the trap and does not return.
 /// * `name` - Its name.
 /// * `slot` - The slot of the last trap of each lib, `zk_trap_slot_v1`.
+/// * `guard` - The function of its glue that runs a step as a call of the lib.
 ///
 /// # Returns
 ///
@@ -287,7 +338,7 @@ fn forget_latest(old: Option<&TrapRecord>)
 #[unsafe(export_name = stamped!("lib_open"))]
 pub extern "C" fn zk_lib_open(
     program: *const ZkProgram, leave: extern "C" fn(i32), name: *const c_char,
-    slot: *mut *const ZkTrapInfo,
+    slot: *mut *const ZkTrapInfo, guard: Guard,
 ) -> *mut ZkLib
 {
     // SAFETY: the glue of the lib hands its name as a NUL-ended text.
@@ -297,7 +348,7 @@ pub extern "C" fn zk_lib_open(
     drop(slots);
     #[rustfmt::skip]
     let lib = Box::new(ZkLib { prog: program, leave, name, base: Cell::new(0),
-        gate: Mutex::new(None), last: Mutex::new(None), heap: AtomicUsize::new(0) });
+        gate: Mutex::new(None), last: Mutex::new(None), heap: AtomicUsize::new(0), guard });
     let lib = Box::into_raw(lib);
     let was = zk_lib_enter(lib);
     make_frames();
@@ -431,4 +482,136 @@ pub extern "C" fn zk_lib_unwind()
     crate::callbacks::end_lends_from(mark.lends);
     crate::out::set_sink(mark.sink as *mut crate::out::ZkBuf);
     crate::seqs::back_to(mark.drops);
+}
+
+/// Whether the runtime serves a C lib: then a lock lets one thread at a time
+/// into the code of the program.
+///
+/// # Returns
+///
+/// `true` once a lib opened.
+pub(crate) fn serves_libs() -> bool
+{
+    !SLOTS.lock().unwrap_or_else(PoisonError::into_inner).is_empty()
+}
+
+/// The function of the glue of the lib whose call is in progress that runs a
+/// step as a call of the lib.
+///
+/// # Returns
+///
+/// The lib, as an address, or 0 outside each lib.
+pub(crate) fn current_lib() -> usize { CURRENT.load(Ordering::Acquire) as usize }
+
+/// Run a step as a call of a lib, on a thread with no call of a lib in
+/// progress, through the guard of its glue.
+///
+/// # Arguments
+///
+/// * `lib` - The lib, as an address.
+/// * `step` - The step.
+/// * `data` - What the step takes.
+///
+/// # Returns
+///
+/// The status of the call: 0, or the status of the trap it stopped on.
+pub(crate) fn guarded(
+    lib: usize, step: extern "C" fn(*mut c_void), data: *mut c_void,
+) -> i32
+{
+    // SAFETY: a lib lives as long as the program.
+    let lib = unsafe { &*(lib as *const ZkLib) };
+    (lib.guard)(step, data)
+}
+
+/// Whether this thread waits in C with calls of a lib parked.
+///
+/// # Returns
+///
+/// `true` when it does.
+pub(crate) fn parked_here() -> bool { PARKED.with(|p| !p.borrow().is_empty()) }
+
+/// Where a trap of the call in progress jumps.
+///
+/// # Returns
+///
+/// The `jmp_buf`, or NULL.
+#[unsafe(export_name = stamped!("lib_jump"))]
+pub extern "C" fn zk_lib_jump() -> *mut c_void { JUMP.load(Ordering::Acquire) }
+
+/// Set where a trap of the call in progress jumps.
+///
+/// # Arguments
+///
+/// * `to` - The `jmp_buf` of the wrapper of the call, or the one of the call
+///   around it at its end.
+#[unsafe(export_name = stamped!("lib_jump_set"))]
+pub extern "C" fn zk_lib_jump_set(to: *mut c_void) { JUMP.store(to, Ordering::Release) }
+
+/// Let other threads into the libs while this one waits in C: write out what
+/// is buffered, park what its calls hold of the runtime, and let go of the
+/// lock. Each call of a lib to C does it, and [`zk_lib_take_back`] once C
+/// returns.
+#[unsafe(export_name = stamped!("lib_let_go"))]
+pub extern "C" fn zk_lib_let_go()
+{
+    crate::out::flush_out();
+    // SAFETY: this thread holds the lock of the libs.
+    let (depth, frames) = unsafe { (zk_depth, crate::program::zk_frames) };
+    let rows = (depth as usize + 1).min(crate::program::frame_room());
+    let kept = tern!(frames.is_null(), Vec::new(), unsafe {
+        // SAFETY: the frame table holds `frame_room` rows.
+        std::slice::from_raw_parts(frames, rows).to_vec()
+    });
+    #[cfg(not(target_os = "wasi"))]
+    let lends = crate::callbacks::take_lends();
+    #[cfg(target_os = "wasi")]
+    let lends = Vec::new();
+    #[rustfmt::skip]
+    let parked = Parked { holds: 0, depth, frames: kept, lib: current_lib(),
+        prog: unsafe { zk_prog } as usize, base: base(), jump: zk_lib_jump() as usize,
+        marks: std::mem::take(&mut *MARKS.lock().unwrap_or_else(PoisonError::into_inner)),
+        lends, sink: crate::out::sink() as usize, drain: crate::seqs::drain_state() };
+    // The next thread starts with no call in progress.
+    // SAFETY: as above.
+    unsafe { zk_depth = 0 };
+    CURRENT.store(null_mut(), Ordering::Release);
+    zk_lib_jump_set(null_mut());
+    crate::out::set_sink(null_mut());
+    crate::seqs::set_drain_state((0, false));
+    let holds = crate::start::let_go_lock();
+    PARKED.with(|p| p.borrow_mut().push(Parked { holds, ..parked }));
+}
+
+/// Take the lock of the libs back once C returns, and what the calls of this
+/// thread held of the runtime, as [`zk_lib_let_go`] parked it.
+#[unsafe(export_name = stamped!("lib_take_back"))]
+pub extern "C" fn zk_lib_take_back()
+{
+    let Some(parked) = PARKED.with(|p| p.borrow_mut().pop())
+    else
+    {
+        return;
+    };
+    crate::start::take_lock(parked.holds);
+    // SAFETY: this thread holds the lock of the libs, and the frame table
+    // holds at least the rows it held at the time it parked them.
+    unsafe {
+        zk_depth = parked.depth;
+        zk_prog = parked.prog as *const ZkProgram;
+        let frames = crate::program::zk_frames;
+        let rows = parked.frames.len();
+        do_if!(
+            !frames.is_null(),
+            std::ptr::copy_nonoverlapping(parked.frames.as_ptr(), frames, rows)
+        );
+    }
+    CURRENT.store(parked.lib as *mut ZkLib, Ordering::Release);
+    do_if!(let Some(lib) = current(), lib.base.set(parked.base));
+    zk_lib_jump_set(parked.jump as *mut c_void);
+    *MARKS.lock().unwrap_or_else(PoisonError::into_inner) = parked.marks;
+    #[cfg(not(target_os = "wasi"))]
+    crate::callbacks::put_lends(parked.lends);
+    crate::out::set_sink(parked.sink as *mut crate::out::ZkBuf);
+    crate::seqs::set_drain_state(parked.drain);
 }
