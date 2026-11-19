@@ -163,3 +163,49 @@ fn the_ring_statements_reach_the_runtime()
     assert_eq!(collected.status, Some(0), "{}", collected.stderr);
     assert_eq!(collected.stdout, "ပြီး\n");
 }
+
+/// What `jobs.zaka` prints.
+const JOBS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
+                        ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
+
+/// Jobs run on threads of their own and channels take values between them,
+/// as in the VM.
+#[test]
+fn jobs_and_channels_run_on_threads()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/jobs.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, JOBS_OUT);
+}
+
+/// A trap in a job ends that job alone, and the program ends with code 1.
+#[test]
+fn a_trap_in_a_job_ends_it_alone()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/job_trap.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(1), "{}", run.stderr);
+    assert_eq!(run.stdout, "၅\n");
+    assert!(run.stderr.contains("job 1 stopped: integer division"), "{}", run.stderr);
+}
+
+/// A receive no job can serve stops the program.
+#[test]
+fn a_wait_no_job_can_end_stops_the_program()
+{
+    let path = root().join("tests/inputs/deadlock.zaka");
+    stops_with(&path, "", "each job waits; none can go on");
+}

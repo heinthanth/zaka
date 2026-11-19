@@ -115,6 +115,15 @@ The JIT finds a C function in its lib through `libloading`, with the names the V
 for each lib (`ucrtbase.dll` for libc and libm on Windows), and hands its address to
 Cranelift. The AOT path links the libs with the `-lX` flags of the C target.
 
+## Jobs
+
+A spawn writes the data block as the C target does (`jobs.rs`, the offsets of
+`zakac_codegen_target_c::jobs`), and the step of each function a job runs is Cranelift
+code, `zk_job_step_<f>`, defined after the bridges. The guard and the leave are C: an AOT
+build compiles `native_jobs_glue` beside the object and links it. The JIT has no C
+compiler for them, so it notes a job as a construct it cannot build: `zakac run` then runs
+the program on the VM.
+
 ## JIT and AOT
 
 The JIT builds a `JITModule` for the host ISA (`cranelift-native`), with each function of

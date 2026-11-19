@@ -58,6 +58,11 @@ pub enum ZkTrap
     Overlap,
     TooDeep,
     Permission,
+    JobTrapped,
+    Deadlock,
+    PipeClosed,
+    /// The head of the line of a trap that ended a job alone.
+    JobStopped,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -94,6 +99,10 @@ pub(crate) mod trap
     pub(crate) const OVERLAP: i32 = ZkTrap::Overlap as i32;
     pub(crate) const TOO_DEEP: i32 = ZkTrap::TooDeep as i32;
     pub(crate) const PERMISSION: i32 = ZkTrap::Permission as i32;
+    pub(crate) const JOB_TRAPPED: i32 = ZkTrap::JobTrapped as i32;
+    pub(crate) const DEADLOCK: i32 = ZkTrap::Deadlock as i32;
+    pub(crate) const PIPE_CLOSED: i32 = ZkTrap::PipeClosed as i32;
+    pub(crate) const JOB_STOPPED: i32 = ZkTrap::JobStopped as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.
@@ -332,6 +341,12 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
 {
     flush_out();
+    if let Some((jump, job)) = crate::jobs::leave()
+    {
+        job_stopped(job, &reason_text(trap, pairs));
+        crate::jobs::keep_trap(trap);
+        jump(trap);
+    }
     let said = stop_text(trap, pairs);
     let Some(leave) = crate::libs::leave()
     else
@@ -407,6 +422,58 @@ fn stop_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
     let p = prog();
     let reason = fill(row(p.trap_text, trap as usize), pairs);
     let mut line = fill(text(p.stopped_text), &[("e", &reason)]);
+    line.extend(place_text());
+    line
+}
+
+/// The reason of a trap with its place, with no head before it.
+///
+/// # Arguments
+///
+/// * `trap` - The trap.
+/// * `pairs` - Each name of its template and its value.
+///
+/// # Returns
+///
+/// The text.
+fn reason_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
+{
+    let mut line = fill(row(prog().trap_text, trap as usize), pairs);
+    line.extend(place_text());
+    line
+}
+
+/// Write the line of a trap that ended a job alone under `--trap unwind`:
+/// `<executable>: job <n> stopped: <reason>`; the rest of the program goes on.
+///
+/// # Arguments
+///
+/// * `job` - The number of the job.
+/// * `reason` - The reason with its place.
+fn job_stopped(job: usize, reason: &[u8])
+{
+    let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
+    let head = fill(
+        row(prog().trap_text, trap::JOB_STOPPED as usize),
+        &[("job", job.to_string().as_bytes())],
+    );
+    let mut line = [name, b": ", &head, b": ", reason, b"\n"].concat();
+    line.extend(backtrace());
+    let mut err = std::io::stderr().lock();
+    let _ = err.write_all(&line);
+    let _ = err.flush();
+}
+
+/// The place of the call in progress, ` (in <f>, at <file>:<line>:<col>)`,
+/// when the build keeps the calls.
+///
+/// # Returns
+///
+/// The text, blank when the build keeps none.
+fn place_text() -> Vec<u8>
+{
+    let p = prog();
+    let mut line = Vec::new();
     if tracks()
         && let Some(f) = frames().last()
     {

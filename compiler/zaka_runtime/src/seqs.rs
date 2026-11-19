@@ -415,11 +415,16 @@ thread_local! {
 }
 /// The blocks a release left held that can be part of a ring.
 static CANDIDATES: Blocks = Blocks::new();
-/// The new blocks whose cells the deep duplicate still visits.
-static DEEP_TODO: Blocks = Blocks::new();
-/// The old objects the deep duplicate gave a new block; while it runs, the
-/// next word of each one's head points at its new block.
-static DEEP_SEEN: Blocks = Blocks::new();
+thread_local! {
+    /// The new blocks whose cells the deep duplicate of this thread still
+    /// visits.
+    static DEEP_TODO: Blocks = const { Blocks::new() };
+}
+thread_local! {
+    /// The old objects the deep duplicate gave a new block; while it runs, the
+    /// next word of each one's head points at its new block.
+    static DEEP_SEEN: Blocks = const { Blocks::new() };
+}
 
 /// The octets of the blocks in the buffer of the ring collector.
 static RING_WAITING: AtomicUsize = AtomicUsize::new(0);
@@ -722,6 +727,10 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
 /// itself alone: trial deletion that halts the program while it runs.
 fn collect_rings()
 {
+    // shortcut: a collection waits while a job runs, since its trial counts
+    // change counts with plain ops; halt the threads at safe points instead
+    // if programs with long jobs need rings freed sooner.
+    ret_if!(crate::jobs::jobs_run());
     RING_WAITING.store(0, Ordering::Relaxed);
     let roots = CANDIDATES.take();
     let mut live = Vec::new();
@@ -949,10 +958,10 @@ fn deep_block(p: *mut u8, k: &ZkKind)
     seq_kind(block, k.cell);
     move_octets(block, base, size);
     zk_seq_put(p, block, count, size);
-    DEEP_TODO.push(block);
+    DEEP_TODO.with(|b| b.push(block));
     ret_if!(k.boxed == 0);
     h.next = block;
-    DEEP_SEEN.push(base);
+    DEEP_SEEN.with(|b| b.push(base));
 }
 
 /// Duplicate a value through its objects: each object it reaches gets a block
@@ -966,7 +975,7 @@ fn deep_block(p: *mut u8, k: &ZkKind)
 pub extern "C" fn zk_deep_seqs(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut deep_block);
-    while let Some(b) = DEEP_TODO.pop()
+    while let Some(b) = DEEP_TODO.with(|b| b.pop())
     {
         let h = head(b);
         let cell = kind(h.cell);
@@ -974,7 +983,7 @@ pub extern "C" fn zk_deep_seqs(p: *mut u8, k: *const ZkKind)
         (0..h.size / stride)
             .for_each(|i| each_block(at(b, i * stride), cell, &mut deep_block));
     }
-    while let Some(b) = DEEP_SEEN.pop()
+    while let Some(b) = DEEP_SEEN.with(|b| b.pop())
     {
         head(b).next = std::ptr::null_mut();
     }
@@ -1845,7 +1854,7 @@ pub(crate) fn drop_mark() -> DropMark
     #[rustfmt::skip]
     let mark = DropMark { freeing: FREEING.get() as usize,
         draining: DRAINING.get(), candidates: CANDIDATES.len(),
-        deep_todo: DEEP_TODO.len(), deep_seen: DEEP_SEEN.len() };
+        deep_todo: DEEP_TODO.with(|b| b.len()), deep_seen: DEEP_SEEN.with(|b| b.len()) };
     mark
 }
 
@@ -1860,6 +1869,6 @@ pub(crate) fn back_to(mark: DropMark)
     FREEING.set(mark.freeing as *mut u8);
     DRAINING.set(mark.draining);
     CANDIDATES.truncate(mark.candidates);
-    DEEP_TODO.truncate(mark.deep_todo);
-    DEEP_SEEN.truncate(mark.deep_seen);
+    DEEP_TODO.with(|b| b.truncate(mark.deep_todo));
+    DEEP_SEEN.with(|b| b.truncate(mark.deep_seen));
 }

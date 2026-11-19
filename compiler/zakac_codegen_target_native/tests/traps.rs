@@ -101,3 +101,38 @@ fn the_ring_statements_reach_the_runtime()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "ပြီး\n");
 }
+
+/// What `jobs.zaka` prints.
+const JOBS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
+                        ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
+
+/// Jobs run on threads of their own in an AOT build, and a trap in one ends
+/// it alone; `--jit` reports a job, which the JIT cannot run.
+#[test]
+fn jobs_run_on_threads_in_an_aot_build()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(
+        &c_inputs().join("jobs.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    )
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, JOBS_OUT);
+    let trap = crate::common::run_aot(
+        &c_inputs().join("job_trap.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let trap = trap.expect("the first build linked");
+    assert_eq!(trap.status, Some(1), "{}", trap.stderr);
+    assert_eq!(trap.stdout, "၅\n");
+    assert!(trap.stderr.contains("job 1 stopped: integer division"), "{}", trap.stderr);
+    let jit = run_jit(&c_inputs().join("jobs.zaka"), &[]);
+    assert!(jit.stderr.contains("a job"), "{}", jit.stderr);
+}

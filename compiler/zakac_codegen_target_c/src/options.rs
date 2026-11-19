@@ -273,6 +273,10 @@ pub struct TargetCOptions
     /// function that code outside can call.
     #[builder(default)]
     pub lib: bool,
+    /// Whether a trap in a job stops the whole program (`--trap abort`); the
+    /// default ends the job alone.
+    #[builder(default)]
+    pub trap_abort: bool,
 }
 
 impl Default for TargetCOptions

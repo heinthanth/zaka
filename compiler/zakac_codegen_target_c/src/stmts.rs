@@ -62,6 +62,17 @@ impl FnGen<'_, '_>
         match s
         {
             Stmt::Set { place, value, .. } => self.set(*place, value),
+            Stmt::Wait { job, .. } =>
+            {
+                let j = self.expr(job);
+                self.line(&format!("(void)zk_job_wait({j});"));
+            }
+            Stmt::Send { pipe, value, .. } => self.send(pipe, value),
+            Stmt::Close { pipe, .. } =>
+            {
+                let p = self.expr(pipe);
+                self.line(&format!("zk_pipe_close({p});"));
+            }
             Stmt::Print { value, .. } => self.print(value),
             Stmt::If { cond, then, els, .. } => self.if_stmt(cond, then, els),
             Stmt::Loop { init, cond, update, block, .. } =>

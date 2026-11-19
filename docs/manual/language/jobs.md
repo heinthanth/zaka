@@ -280,5 +280,16 @@ chooses:
 
 ## Where jobs run
 
-Jobs run on the VM, which `zakac run` picks for a program with a job. The C and native
-targets refuse a program with a job for now.
+- **The VM** runs each job in turns on its one thread, as above.
+- **A native program**, from the C target or the native target
+  ([Native programs](../compiler/native.md)), runs each job on a thread of its own, with
+  a stack of 64 MiB. The threads run at once, so the order of their lines can change from
+  run to run; what a job gives back, and what a channel carries, cannot. A wait for a
+  job, a receive or a send that would wait while no other thread runs stops the program
+  with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a trap in a
+  job stop the whole program.
+- **The JIT** cannot run a job: `zakac run` gives a program with a job to the VM, and
+  `zakac run --jit` reports it.
+- While a job runs, a native program collects no rings: the collector changes counts
+  with plain ops, so it waits until each job has ended. The buffer still fills, and the
+  end of the program collects, as ever.

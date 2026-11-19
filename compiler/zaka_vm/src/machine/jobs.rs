@@ -84,10 +84,6 @@ struct Job
     end: End,
     /// The kind of its result, `None` for a function that gives nothing.
     ret: Option<DataKind>,
-    /// The blocks that hold its own copies of its list and struct
-    /// arguments, each with its kind, dropped when it ends.
-    #[builder(default)]
-    kept: Vec<(u64, DataKind)>,
     /// Whether some job waited for it.
     #[builder(default)]
     awaited: bool,
@@ -214,7 +210,8 @@ impl Machine
 {
     /// Start a job that calls a function: its arguments leave the stack,
     /// the job enters the function at once, and the number of the job is
-    /// pushed. The job holds a duplicate of each list and struct argument.
+    /// pushed. The job holds each list and struct argument, which the spawn
+    /// takes owned.
     ///
     /// # Arguments
     ///
@@ -279,8 +276,9 @@ impl Machine
         self.enter(f)
     }
 
-    /// Copy a list or struct argument into a block of the running job, which
-    /// holds its own count of what the argument holds.
+    /// Move a list or struct argument into a block of the running job: the
+    /// spawn takes its arguments owned, as a set does, and the function of
+    /// the job drops each of its parameters as it returns.
     ///
     /// # Arguments
     ///
@@ -296,8 +294,6 @@ impl Machine
         let size = u64::from(kind.size(self.module.platform_bits));
         let to = self.mem.push_stack(size, 0).ok_or(TrapKind::StackFull { size })?;
         self.mem.blit(to, from, kind)?;
-        self.dup_value(to, kind)?;
-        self.jobs.list[self.jobs.now].kept.push((to, kind));
         Ok(Value::Ptr(to))
     }
 
@@ -417,20 +413,18 @@ impl Machine
         Ok(())
     }
 
-    /// End the running job, which returned: keep its result and drop its
-    /// copies of its arguments.
+    /// End the running job, which returned: keep its result.
     ///
     /// # Returns
     ///
-    /// `Ok`, or a trap a drop hits.
+    /// `Ok`, or a trap for a stack that lacks the result.
     fn end_job(&mut self) -> Step
     {
         let now = self.jobs.now;
         let ret = self.jobs.list[now].ret;
         let result = ret.map(|_| self.pop()).transpose()?;
         self.jobs.list[now].end = End::Done(result);
-        let kept = std::mem::take(&mut self.jobs.list[now].kept);
-        kept.into_iter().try_for_each(|(at, kind)| self.drop_value(at, kind))
+        Ok(())
     }
 
     /// Stop the running job at a trap, when `--trap unwind` lets the program

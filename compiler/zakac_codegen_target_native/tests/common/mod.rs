@@ -128,7 +128,18 @@ pub fn run_aot(
     );
     let made = made.unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let dir = tempfile::tempdir().unwrap();
-    let lib = write_cache_for(dir.path(), &[], test_abi()).unwrap();
+    let glue: Vec<zakac_codegen_target_c::emit::CFile> = made
+        .jobs
+        .then(|| {
+            let text = zakac_codegen_target_c::jobs::native_jobs_glue();
+            zakac_codegen_target_c::emit::CFile::builder()
+                .name("zaka_jobs.c")
+                .text(text)
+                .build()
+        })
+        .into_iter()
+        .collect();
+    let lib = write_cache_for(dir.path(), &glue, test_abi()).unwrap();
     let obj = dir.path().join(format!("main.{}", dialect.object()));
     std::fs::write(&obj, &made.octets).unwrap();
     let sources: Vec<PathBuf> = std::iter::once(obj).chain(lib).collect();

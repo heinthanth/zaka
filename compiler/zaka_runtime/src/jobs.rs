@@ -1,0 +1,457 @@
+//! The jobs and channels of a native program, each job on a thread of its
+//! own. One lock guards the state of each job and channel, and one condition
+//! wakes each thread that waits when the state changes. The state counts the
+//! threads that run: a thread that would wait while no other runs stops the
+//! program with the trap `deadlock`.
+//!
+//! A job runs a step the compiler writes, under a guard the compiler writes:
+//! the step takes the arguments out of the data block of the job and writes
+//! the result at its start; the guard keeps the place a trap of the job
+//! jumps back to under `--trap unwind`.
+
+use std::cell::Cell;
+use std::collections::VecDeque;
+use std::ffi::c_void;
+use std::sync::Condvar;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+use std::sync::PoisonError;
+
+use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_if;
+
+use crate::heap::zk_threads_begin;
+use crate::program::ZkKind;
+use crate::seqs::kind;
+use crate::seqs::zk_drop;
+use crate::traps::named;
+use crate::traps::stop;
+use crate::traps::stop_owned;
+use crate::traps::trap;
+
+/// The step of a job: it takes the data block of the job.
+pub type ZkStep = extern "C" fn(*mut c_void);
+
+/// The guard of a job: it runs the step on the data block, and gives 0, or
+/// a value other than 0 once a trap jumped back to it.
+pub type ZkGuard = extern "C" fn(ZkStep, *mut c_void) -> i32;
+
+/// Where a job stands.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum End
+{
+    /// It runs.
+    Runs,
+    /// It returned; its result is at the start of its data block.
+    Done,
+    /// It stopped at a trap.
+    Trapped,
+}
+
+/// One job.
+struct Job
+{
+    /// Where it stands.
+    end: End,
+    /// Its data block: the result at its start, then the arguments.
+    data: usize,
+    /// The kind of its result, or NULL for a function that gives nothing.
+    ret: usize,
+    /// Whether some wait saw it.
+    awaited: bool,
+}
+
+/// One channel.
+struct Pipe
+{
+    /// Each value that waits, the oldest first, as its octets.
+    queue: VecDeque<Box<[u8]>>,
+    /// The most values that wait at once; 0 for no limit.
+    room: usize,
+    /// The kind of its values, from the first send.
+    kind: usize,
+    /// Whether it is closed.
+    closed: bool,
+}
+
+/// The state of the jobs and channels.
+struct State
+{
+    /// Each job; the job a program holds as `n` is at `n - 1`.
+    jobs: Vec<Job>,
+    /// Each channel, as the jobs are numbered.
+    pipes: Vec<Pipe>,
+    /// The threads that run and do not wait, the main one included.
+    running: usize,
+    /// The threads that wait for the state to change.
+    parked: usize,
+    /// The count of changes so far, which tells a waiter its wake is real.
+    changes: u64,
+    /// The job threads, to join at the end of the program.
+    threads: Vec<std::thread::JoinHandle<()>>,
+}
+
+/// The state of the jobs and channels.
+static STATE: Mutex<State> = Mutex::new(State {
+    jobs: Vec::new(),
+    pipes: Vec::new(),
+    running: 1,
+    parked: 0,
+    changes: 0,
+    threads: Vec::new(),
+});
+
+/// Wakes each thread that waits once the state changes.
+static CHANGED: Condvar = Condvar::new();
+
+thread_local! {
+    /// The function that jumps back to the guard of the job of this thread
+    /// under `--trap unwind`, and the number of the job.
+    static LEAVE: Cell<Option<(extern "C" fn(i32), usize)>> = const { Cell::new(None) };
+    /// The trap that ended the job of this thread.
+    static TRAPPED: Cell<i32> = const { Cell::new(0) };
+}
+
+/// The state, locked.
+///
+/// # Returns
+///
+/// The guard.
+fn state() -> MutexGuard<'static, State>
+{
+    STATE.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Mark the state changed: each thread that waits runs again and looks.
+///
+/// # Arguments
+///
+/// * `st` - The state.
+fn changed(st: &mut State)
+{
+    st.running += st.parked;
+    st.parked = 0;
+    st.changes += 1;
+    CHANGED.notify_all();
+}
+
+/// Wait until `came` holds; a wait while no other thread runs stops the
+/// program with the trap `deadlock`.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked.
+/// * `came` - What the thread waits for.
+///
+/// # Returns
+///
+/// The state, locked, with `came` holding.
+fn wait_until(
+    mut st: MutexGuard<'static, State>, came: impl Fn(&State) -> bool,
+) -> MutexGuard<'static, State>
+{
+    while !came(&st)
+    {
+        st.running -= 1;
+        st.parked += 1;
+        if st.running == 0
+        {
+            drop(st);
+            deadlock();
+        }
+        let seen = st.changes;
+        while st.changes == seen
+        {
+            st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
+        }
+    }
+    st
+}
+
+/// Stop the whole program with the trap `deadlock`, from whichever thread.
+fn deadlock() -> !
+{
+    LEAVE.set(None);
+    stop(trap::DEADLOCK, &[])
+}
+
+/// The function that jumps back to the guard of the job of this thread, and
+/// its number, when a trap ends the job alone.
+///
+/// # Returns
+///
+/// The function and the number, or `None` on the main thread and under
+/// `--trap abort`.
+pub(crate) fn leave() -> Option<(extern "C" fn(i32), usize)> { LEAVE.get() }
+
+/// Keep the trap that ends the job of this thread, for its guard.
+///
+/// # Arguments
+///
+/// * `trap` - The trap.
+pub(crate) fn keep_trap(trap: i32) { TRAPPED.set(trap) }
+
+/// Make a data block of a job: zeros, which the spawn fills.
+///
+/// # Arguments
+///
+/// * `size` - The octets of the block.
+///
+/// # Returns
+///
+/// The block.
+#[unsafe(export_name = stamped!("job_data"))]
+pub extern "C" fn zk_job_data(size: usize) -> *mut u8
+{
+    let block = vec![0u8; size.max(1)].into_boxed_slice();
+    Box::leak(block).as_mut_ptr()
+}
+
+/// Start a job on a thread of its own.
+///
+/// # Arguments
+///
+/// * `guard` - The guard the compiler writes.
+/// * `jump` - The function that jumps back to the guard.
+/// * `step` - The step of the job.
+/// * `data` - Its data block, from [`zk_job_data`].
+/// * `ret` - The kind of its result, or NULL for none.
+/// * `abort` - 1 when a trap of the job stops the whole program.
+///
+/// # Returns
+///
+/// The number of the job.
+#[unsafe(export_name = stamped!("job_start"))]
+pub extern "C" fn zk_job_start(
+    guard: ZkGuard, jump: extern "C" fn(i32), step: ZkStep, data: *mut u8,
+    ret: *const ZkKind, abort: i32,
+) -> usize
+{
+    zk_threads_begin();
+    let mut st = state();
+    let n = st.jobs.len() + 1;
+    let job =
+        Job { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false };
+    st.jobs.push(job);
+    st.running += 1;
+    let data = data as usize;
+    let run = move || run_job(guard, (jump, abort != 0), step, data, n);
+    let thread = std::thread::Builder::new().stack_size(64 << 20).spawn(run);
+    let Ok(thread) = thread
+    else
+    {
+        drop(st);
+        stop_owned(trap::OUT_OF_MEM, vec![named("size", 64usize << 20)])
+    };
+    st.threads.push(thread);
+    n
+}
+
+/// The work of the thread of a job: run the guard, then mark the job ended.
+///
+/// # Arguments
+///
+/// * `guard` - The guard.
+/// * `(jump, abort)` - The function that jumps back to the guard, and whether a
+///   trap stops the whole program.
+/// * `step` - The step.
+/// * `data` - The data block.
+/// * `n` - The number of the job.
+fn run_job(
+    guard: ZkGuard, (jump, abort): (extern "C" fn(i32), bool), step: ZkStep,
+    data: usize, n: usize,
+)
+{
+    do_if!(!abort, LEAVE.set(Some((jump, n))));
+    let status = guard(step, data as *mut c_void);
+    LEAVE.set(None);
+    let mut st = state();
+    st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
+    st.running -= 1;
+    changed(&mut st);
+}
+
+/// Wait for a job to end.
+///
+/// # Arguments
+///
+/// * `n` - The number of the job.
+///
+/// # Returns
+///
+/// The address of its result, at the start of its data block; a job that
+/// stopped at a trap stops the waiter with the trap `job trapped`.
+#[unsafe(export_name = stamped!("job_wait"))]
+pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
+{
+    let st = state();
+    let at = n.checked_sub(1).filter(|i| *i < st.jobs.len());
+    let Some(at) = at
+    else
+    {
+        drop(st);
+        stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+    };
+    let mut st = wait_until(st, |s| s.jobs[at].end != End::Runs);
+    st.jobs[at].awaited = true;
+    let job = &st.jobs[at];
+    ret_if!(job.end == End::Done, job.data as *mut u8);
+    drop(st);
+    stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+}
+
+/// Make a channel.
+///
+/// # Arguments
+///
+/// * `room` - The most values that wait in it; 0 for no limit.
+///
+/// # Returns
+///
+/// The number of the channel.
+#[unsafe(export_name = stamped!("pipe_new"))]
+pub extern "C" fn zk_pipe_new(room: usize) -> usize
+{
+    let mut st = state();
+    st.pipes.push(Pipe { queue: VecDeque::new(), room, kind: 0, closed: false });
+    st.pipes.len()
+}
+
+/// The index of a channel, or a stop for a number that names none.
+///
+/// # Arguments
+///
+/// * `st` - The state.
+/// * `n` - The number.
+///
+/// # Returns
+///
+/// The index.
+fn pipe_at(st: &State, n: usize) -> usize
+{
+    let at = n.checked_sub(1).filter(|i| *i < st.pipes.len());
+    at.unwrap_or_else(|| stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]))
+}
+
+/// Move a value into a channel, leaving zeros in its place; the send waits
+/// while the channel is full, and a closed channel stops the program.
+///
+/// # Arguments
+///
+/// * `n` - The number of the channel.
+/// * `value` - The address of the value.
+/// * `k` - Its kind.
+#[unsafe(export_name = stamped!("pipe_send"))]
+pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
+{
+    let size = kind(k).size;
+    let st = state();
+    let at = pipe_at(&st, n);
+    let full = |s: &State| {
+        let p = &s.pipes[at];
+        p.closed || p.room == 0 || p.queue.len() < p.room
+    };
+    let mut st = wait_until(st, full);
+    if st.pipes[at].closed
+    {
+        drop(st);
+        stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
+    }
+    // SAFETY: the value is `size` octets the generated code owns.
+    let octets = unsafe { std::slice::from_raw_parts_mut(value, size) };
+    let pipe = &mut st.pipes[at];
+    pipe.queue.push_back(octets.to_vec().into_boxed_slice());
+    pipe.kind = k as usize;
+    octets.fill(0);
+    changed(&mut st);
+}
+
+/// Write the next value of a channel as an optional: it waits while the
+/// channel is open and holds none, and writes no data once it is closed and
+/// drained.
+///
+/// # Arguments
+///
+/// * `n` - The number of the channel.
+/// * `out` - The optional.
+/// * `k` - The kind of the optional: its fields are the tag and the data.
+#[unsafe(export_name = stamped!("pipe_receive"))]
+pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
+{
+    let optional = kind(k);
+    let st = state();
+    let at = pipe_at(&st, n);
+    let came = |s: &State| s.pipes[at].closed || !s.pipes[at].queue.is_empty();
+    let mut st = wait_until(st, came);
+    let value = st.pipes[at].queue.pop_front();
+    do_if!(value.is_some(), changed(&mut st));
+    drop(st);
+    // SAFETY: the optional is `size` octets of the generated code.
+    let slot = unsafe { std::slice::from_raw_parts_mut(out, optional.size) };
+    slot.fill(0);
+    let Some(value) = value
+    else
+    {
+        return;
+    };
+    let fields = optional.field_list();
+    let (tag, data) = (fields[0].offset, fields[1].offset);
+    slot[tag] = 1;
+    slot[data..data + value.len()].copy_from_slice(&value);
+}
+
+/// Close a channel; a second close stops the program.
+///
+/// # Arguments
+///
+/// * `n` - The number of the channel.
+#[unsafe(export_name = stamped!("pipe_close"))]
+pub extern "C" fn zk_pipe_close(n: usize)
+{
+    let mut st = state();
+    let at = pipe_at(&st, n);
+    if st.pipes[at].closed
+    {
+        drop(st);
+        stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
+    }
+    st.pipes[at].closed = true;
+    changed(&mut st);
+}
+
+/// Wait for each job at the end of the program, then drop each result the
+/// jobs left and each value the channels hold.
+///
+/// # Returns
+///
+/// Whether a job stopped at a trap that no wait saw.
+pub(crate) fn end() -> bool
+{
+    let st = state();
+    ret_if!(st.jobs.is_empty() && st.pipes.is_empty(), false);
+    let st = wait_until(st, |s| s.jobs.iter().all(|j| j.end != End::Runs));
+    let mut st = st;
+    let threads = std::mem::take(&mut st.threads);
+    let jobs = std::mem::take(&mut st.jobs);
+    let pipes = std::mem::take(&mut st.pipes);
+    drop(st);
+    threads.into_iter().for_each(|t| _ = t.join());
+    let lost = jobs.iter().any(|j| j.end == End::Trapped && !j.awaited);
+    let results = jobs.iter().filter(|j| j.end == End::Done && j.ret != 0);
+    results.for_each(|j| zk_drop(j.data as *mut u8, j.ret as *const ZkKind));
+    let held = pipes.into_iter().filter(|p| p.kind != 0);
+    for pipe in held
+    {
+        let k = pipe.kind as *const ZkKind;
+        pipe.queue.into_iter().for_each(|mut v| zk_drop(v.as_mut_ptr(), k));
+    }
+    lost
+}
+
+/// Whether a job thread other than this one can run, so the ring collector
+/// waits: it walks the counts with plain ops.
+///
+/// # Returns
+///
+/// `true` while a job runs.
+pub(crate) fn jobs_run() -> bool { state().jobs.iter().any(|j| j.end == End::Runs) }

@@ -74,6 +74,10 @@ pub struct Lowered
     /// The unwind codes of each function, for 64-bit Windows.
     #[builder(default)]
     pub unwinds: Vec<FnUnwind>,
+    /// Whether the program starts a job, so the build compiles the C guard of
+    /// jobs beside the object.
+    #[builder(default)]
+    pub jobs: bool,
 }
 
 /// State shared across the functions of a program.
@@ -125,6 +129,11 @@ pub struct Shared<'m, M: Module>
     /// The unwind codes of each function compiled so far, for 64-bit
     /// Windows.
     pub unwinds: Vec<FnUnwind>,
+    /// The step of each function a job runs, under the function.
+    pub steps: Vec<(u32, FuncId)>,
+    /// Whether the code runs in this process, which has no C compiler for
+    /// the guard of a job.
+    pub jit: bool,
 }
 
 impl<M: Module> Shared<'_, M>
@@ -437,7 +446,8 @@ pub fn emit<M: Module>(
         runtime: HashMap::new(), funcs: Vec::new(), globals: Vec::new(), records: Vec::new(),
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
-        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new() };
+        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(),
+        jit: main_name == "zk_main" };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
     let mut clif = String::new();
@@ -486,6 +496,15 @@ pub fn emit<M: Module>(
         clif.push_str(&text);
         done += 1;
     }
+    // A step can start no job of its own, so each is lowered once.
+    let steps = s.steps.clone();
+    for (f, id) in steps
+    {
+        let mut sig = s.m.make_signature();
+        sig.params.push(AbiParam::new(ptr));
+        let text = define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.job_step(f));
+        clif.push_str(&text);
+    }
     ret_if!(let Some(what) = s.missing.take(), Err(Error::NotForNative { what }));
     define_descrs(&mut s).map_err(module_error)?;
     define_table(&mut s, table, grants).map_err(module_error)?;
@@ -497,7 +516,7 @@ pub fn emit<M: Module>(
     let lines = line_table(&mut s, main, main_name);
     #[rustfmt::skip]
     return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
-        .export_shapes(export_shapes).lines(lines)
+        .export_shapes(export_shapes).lines(lines).jobs(!s.steps.is_empty())
         .unwinds(std::mem::take(&mut s.unwinds)).build());
 }
 

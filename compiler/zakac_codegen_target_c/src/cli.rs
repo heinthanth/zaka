@@ -76,6 +76,8 @@ const CHECKS_ARG: &str = "checks";
 const MAX_DEPTH_ARG: &str = "max_depth";
 /// The flag that caps the heap octets the executable holds at once.
 const MAX_HEAP_ARG: &str = "max_heap";
+/// The flag for what a trap in a job does.
+const TRAP_ARG: &str = "trap";
 /// The flag that names a C lib in the names C calls and in its link names.
 pub const LIB_NAME_ARG: &str = "lib_name";
 /// The flag of a release build, which leaves out the source line of each
@@ -145,9 +147,11 @@ pub fn target_options(matches: &ArgMatches) -> TargetCOptions
     let heap = matches.get_one::<u64>(MAX_HEAP_ARG).copied().unwrap_or(0);
     let release =
         matches.try_get_one::<bool>(RELEASE_ARG).ok().flatten() == Some(&true);
+    let abort = matches.try_get_one::<String>(TRAP_ARG).ok().flatten();
+    let abort = abort.is_some_and(|t| t == "abort");
     #[rustfmt::skip]
     let options = TargetCOptions::builder().checks(checks).max_depth(depth).max_heap(heap)
-        .debug_info(!release).build();
+        .debug_info(!release).trap_abort(abort).build();
     options
 }
 
@@ -248,11 +252,17 @@ pub fn attach_target_args(cmd: clap::Command) -> clap::Command
         .help(t!("target_c.max_heap"))
         .value_parser(clap::value_parser!(u64))
         .default_value("0");
+    let trap = Arg::new(TRAP_ARG)
+        .long("trap")
+        .value_name("MODE")
+        .help(t!("target_c.trap_mode"))
+        .value_parser(["unwind", "abort"])
+        .default_value("unwind");
     let lib_name = Arg::new(LIB_NAME_ARG)
         .long("lib-name")
         .value_name("NAME")
         .help(t!("target_c.lib_name"));
-    let cmd = cmd.arg(cache).arg(checks).arg(depth).arg(heap).arg(lib_name);
+    let cmd = cmd.arg(cache).arg(checks).arg(depth).arg(heap).arg(trap).arg(lib_name);
     attach_toolchain_args(cmd)
 }
 

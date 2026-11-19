@@ -10,6 +10,7 @@ use std::thread::ThreadId;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::ctx::zk_ctx;
 use crate::out::flush_out;
@@ -111,7 +112,8 @@ pub(crate) fn take_lock(depth: u32)
 #[unsafe(export_name = stamped!("flush"))]
 pub extern "C" fn zk_flush() { flush_out(); }
 
-/// End the run: write out what is buffered.
+/// End the run: wait for each job, then write out what is buffered. A job
+/// that stopped at a trap no wait saw makes the status 1.
 ///
 /// # Arguments
 ///
@@ -123,6 +125,7 @@ pub extern "C" fn zk_flush() { flush_out(); }
 #[unsafe(export_name = stamped!("finish"))]
 pub extern "C" fn zk_finish(status: i32) -> i32
 {
+    let lost = crate::jobs::end();
     flush_out();
-    status
+    tern!(lost && status == 0, 1, status)
 }

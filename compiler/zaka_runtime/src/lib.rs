@@ -31,6 +31,7 @@ pub mod exchange;
 pub mod ffi;
 pub mod heap;
 pub mod host;
+pub mod jobs;
 pub mod libs;
 pub mod native;
 pub mod out;

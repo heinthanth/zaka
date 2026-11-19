@@ -162,6 +162,21 @@ en = "more than %{depth} nested calls"
 [target_c.trap.permission_denied]
 en = "%{what} needs %{flag}"
 
+[target_c.trap_mode]
+en = "What a trap in a job does: unwind ends that job alone, and a wait for it traps in turn; abort stops the whole program."
+
+[target_c.trap.job_trapped]
+en = "the job %{job} this waits for stopped at a trap"
+
+[target_c.trap.deadlock]
+en = "each job waits; none can go on"
+
+[target_c.trap.pipe_closed]
+en = "the channel %{pipe} is closed: no value can go to it, and it cannot close again"
+
+[target_c.trap.job_stopped]
+en = "job %{job} stopped"
+
 [target_c.permission.read]
 en = "reading \"%{s}\""
 

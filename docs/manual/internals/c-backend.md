@@ -284,6 +284,27 @@ in its kind, and `zk_is_table` knows it through its name, `%map`, so the walks t
 and own a struct need no change; `zk_eq` and `zk_show` call the ဇယား steps first. The trap of a
 missing row is `ZK_TRAP_NO_ROW`.
 
+## Jobs and channels
+
+- `jobs.rs` writes `zaka_jobs.c` for a program that starts a job: `zk_job_guard`, which
+  runs a step under `setjmp` and keeps the jump through `zk_lib_jump_set`, the thread's
+  own; `zk_job_leave`, which jumps back; and `zk_job_step_<f>` for each function a job
+  runs, which calls it with the arguments of the data block and writes the result at its
+  start. The function drops its parameters as it returns, so the step drops none.
+- A spawn takes a data block (`zk_job_data`), moves each argument into it at a 16-octet
+  part (`part_offsets`; the arguments come owned, as the value of a set does, since calls alone
+  lend), and calls `zk_job_start`. A wait copies the result out and shares what it holds
+  (`zk_dup_seqs`); a receive writes the optional into a temp; a send moves its value
+  through its address.
+- The runtime (`zaka_runtime/src/jobs.rs`) keeps the jobs and channels under one lock and
+  one condition. It counts the threads that run: a wait that would leave none running is
+  the trap `deadlock`. `zk_job_start` turns counts atomic (`zk_threads_begin`) and starts
+  a thread of 64 MiB; under `--trap unwind`, `stop` writes `job <n> stopped: ...` and
+  calls the leave of the thread's job. `zk_finish` waits for each job, drops each result
+  and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
+  job. `collect_rings` waits while a job runs; the lists of the deep duplicate are each
+  thread's own.
+
 ## C functions
 
 `emit` writes `zaka_ffi.c` when `Module::foreign` has rows. The file includes

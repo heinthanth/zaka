@@ -66,6 +66,15 @@ impl<M: Module> FnGen<'_, '_, M>
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
             ExprNode::Convert { operand, .. } => self.convert(operand, e.kind),
             ExprNode::Call { func, args, .. } => self.call(Callee::Fn(*func), args),
+            ExprNode::Spawn { func, args, .. } => self.spawn(*func, args),
+            ExprNode::Wait(job) => self.wait(job, e.kind),
+            ExprNode::MakePipe(room) =>
+            {
+                let ptr = self.s.ptr;
+                let room = self.word(i64::from(room.unwrap_or(0)));
+                self.rt("zk_pipe_new", &[ptr], &[ptr], &[room]).unwrap_or(room)
+            }
+            ExprNode::Receive(pipe) => self.receive(pipe, e.kind),
             ExprNode::CallValue { callee, args } =>
             {
                 self.call(Callee::Value(callee), args)

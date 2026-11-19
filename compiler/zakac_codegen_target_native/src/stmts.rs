@@ -90,6 +90,19 @@ impl<M: Module> FnGen<'_, '_, M>
         match s
         {
             Stmt::Set { place, value, .. } => self.set(*place, value),
+            Stmt::Wait { job, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let j = self.expr(job);
+                self.rt("zk_job_wait", &[ptr], &[ptr], &[j]);
+            }
+            Stmt::Send { pipe, value, .. } => self.send(pipe, value),
+            Stmt::Close { pipe, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let p = self.expr(pipe);
+                self.rt("zk_pipe_close", &[ptr], &[], &[p]);
+            }
             Stmt::Print { value, .. } => self.print(value),
             Stmt::If { cond, then, els, .. } => self.if_stmt(cond, then, els),
             Stmt::Loop { init, cond, update, block, .. } =>

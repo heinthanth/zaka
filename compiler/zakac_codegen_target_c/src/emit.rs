@@ -235,6 +235,7 @@ pub fn emit(
     };
     let bridged: Vec<DataKind> = fn_params.into_iter().filter(bridged).collect();
     do_for!(k in bridged, _ = shared.cb_shape(k));
+    let jobs = crate::jobs::jobs_source(&mut shared);
     let header = shared.header();
     let kinds = shared.kinds_source();
     let ffi =
@@ -253,6 +254,7 @@ pub fn emit(
     out.push(CFile::builder().name(KINDS_HEADER).text(header).build());
     out.push(CFile::builder().name(KINDS_SOURCE).text(kinds).build());
     out.push(CFile::builder().name(MAIN_SOURCE).text(main).build());
+    do_if!(let Some(text) = jobs, out.push(CFile::builder().name(crate::jobs::JOBS_SOURCE).text(text).build()));
     do_if!(
         !module.foreign.is_empty(),
         out.push(CFile::builder().name(FFI_SOURCE).text(ffi).build())
@@ -417,6 +419,9 @@ pub(crate) struct Shared<'m>
     /// Whether the program makes a closure.
     #[builder(default)]
     pub(crate) made_closure: bool,
+    /// The functions a job runs, each with a step of its own.
+    #[builder(default)]
+    pub(crate) spawned: std::collections::BTreeSet<u32>,
     /// Each function kind C can get as a closure; its index names its shape.
     #[builder(default)]
     pub(crate) cb_kinds: Vec<DataKind>,
@@ -694,6 +699,7 @@ impl Shared<'_>
                 comment(&f.name)
             );
         }
+        out.push_str(&crate::jobs::declarations(self));
         out.push_str(&self.descr.declarations());
         let _ = writeln!(out, "extern const zk_program {PROGRAM_TABLE};");
         let shapes = (0..self.cb_kinds.len()).map(shape_name);
@@ -853,6 +859,10 @@ pub fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),
         ("ZK_TRAP_TOO_DEEP", t!("target_c.trap.too_deep")),
         ("ZK_TRAP_PERMISSION", t!("target_c.trap.permission_denied")),
+        ("ZK_TRAP_JOB_TRAPPED", t!("target_c.trap.job_trapped")),
+        ("ZK_TRAP_DEADLOCK", t!("target_c.trap.deadlock")),
+        ("ZK_TRAP_PIPE_CLOSED", t!("target_c.trap.pipe_closed")),
+        ("ZK_TRAP_JOB_STOPPED", t!("target_c.trap.job_stopped")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }

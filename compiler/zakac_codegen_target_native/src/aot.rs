@@ -65,6 +65,9 @@ pub struct Object
     /// In a C lib, the index of the bridge of each function that code
     /// outside can call.
     pub export_shapes: Vec<usize>,
+    /// Whether the program starts a job, so the link takes the C guard of
+    /// jobs.
+    pub jobs: bool,
 }
 
 /// The Cranelift flags of both the JIT and AOT: code tuned for speed, and a
@@ -121,7 +124,10 @@ pub fn object(
     crate::unwind::write(&mut product, &lowered.unwinds)?;
     let mut octets = product.emit().map_err(module_error)?;
     crate::debug::place_text(&mut octets, &places)?;
-    Ok(Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes })
+    #[rustfmt::skip]
+    let object = Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes,
+        jobs: lowered.jobs };
+    Ok(object)
 }
 
 /// Give each name of a C lib that C never calls its linked form, as the C

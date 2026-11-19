@@ -356,6 +356,11 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                 })
                 .collect();
             do_if!(let Some(n) = &names, n.add_to(&mut glue));
+            let jobs = zakac_codegen_target_c::jobs::native_jobs_glue();
+            do_if!(
+                made.jobs,
+                glue.push(CFile::builder().name("zaka_jobs.c").text(jobs).build())
+            );
             let built =
                 write_cache_for(&cache, glue.as_slice(), target.abi).and_then(|lib| {
                     let obj = cache.join(format!("main.{}", dialect.object()));
