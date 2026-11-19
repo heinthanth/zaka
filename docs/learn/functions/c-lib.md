@@ -80,6 +80,7 @@ const zk_trap *zk_last_trap_from_mathlib(void);
 void zk_reset_mathlib(void);
 const zk_trap *zk_last_trap(void);
 void zk_free(void *p);
+void zk_free_all(void *p);
 
 int32_t add_numbers(int32_t zk_p0, int32_t zk_p1, int32_t *zk_out);
 ```
@@ -151,11 +152,12 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 
 ## Limits
 
-- A function C can call takes integers, decimal numbers, true and false, characters,
-  addresses, text, handles, optionals of text or handles, and structs of numbers, text
-  and lists of numbers; it gives back one of these, text, or a plain list of numbers,
-  through its out pointer (ZK0465). Text it gives back is a `char *`, a list is a
-  `zk_list_<cell>` (`ptr` and `count`), and C frees each with `zk_free`.
+- A function C can call takes and gives back integers, decimal numbers, true and false,
+  characters, addresses, text, handles, optionals of text or handles, plain lists of
+  these or of structs, and structs of all these, the result through its out pointer
+  (ZK0465). Text it gives back is a `char *`, and a list a `zk_list_<cells>` (`ptr` and
+  `count`), such as `zk_list_text`. C frees one with `zk_free`, or one with each text
+  and list inside it with `zk_free_all`.
 - A struct it takes or gives back needs a C name, which the header declares it under
   (ZK0492):
   `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`.

@@ -9,7 +9,6 @@ use std::cell::Cell;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::ffi::c_char;
-use std::ffi::c_void;
 use std::ptr::null;
 use std::ptr::null_mut;
 use std::sync::Mutex;
@@ -432,16 +431,4 @@ pub extern "C" fn zk_lib_unwind()
     crate::callbacks::end_lends_from(mark.lends);
     crate::out::set_sink(mark.sink as *mut crate::out::ZkBuf);
     crate::seqs::back_to(mark.drops);
-}
-
-/// Free text or the cells of a list a lib gave back.
-///
-/// # Arguments
-///
-/// * `p` - The `char *` or the `ptr` of a list; NULL frees nothing.
-#[unsafe(export_name = stamped!("free"))]
-pub extern "C" fn zk_free(p: *mut c_void)
-{
-    // SAFETY: the block came from the C allocator, outside each count.
-    unsafe { crate::heap::free(p) }
 }

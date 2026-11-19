@@ -35,11 +35,20 @@ fn a_function_c_can_call_checks()
 #[test]
 fn a_kind_c_cannot_take_is_zk0465()
 {
-    // C has no form for a list of text.
-    let texts =
-        export("စာများ", "texts", &one("စာသား"), "စာသား စာရင်း", "[က] ကို ပြန်ပေးမည်။");
-    assert_eq!(codes(&texts), [Code::KindNotAcrossC]);
-    // Text, a plain list of numbers and a struct of these go in their C form.
+    // C has no form for a ဇယား.
+    let table = "စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား";
+    let counts = export("ရေတွက်", "counts", &one("စာသား"), table, "[:] ကို ပြန်ပေးမည်။");
+    assert_eq!(codes(&counts), [Code::KindNotAcrossC]);
+    // Text, plain lists of numbers or of text, and structs of these go in their
+    // C form.
+    ok(&export("စာများ", "texts", &one("စာသား"), "စာသား စာရင်း", "[က] ကို ပြန်ပေးမည်။"));
+    ok(&export(
+        "အရေ",
+        "count_texts",
+        &one("စာသား စာရင်း"),
+        "လက္ခဏာမဲ့ ကိန်းပြည့်",
+        "က ၏ အကွက်အရေအတွက် ကို ပြန်ပေးမည်။",
+    ));
     let int = "၃၂ ဘစ် ကိန်းပြည့်";
     ok(&export("ပဲ့တင်", "echo_text", &one("စာသား"), "စာသား", "က ကို ပြန်ပေးမည်။"));
     ok(&export(

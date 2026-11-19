@@ -27,6 +27,9 @@ echo 0 hi!
 echo with no out 0
 squares 0 2 7 49
 older 0 Ann Jr 31
+names 0 2 Dr Ann, Dr Bo
+count_names 0 2
+same_people 0 2 Ann 30 Bo 4
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
@@ -227,19 +230,24 @@ fn a_c_program_calls_a_zaka_lib()
     let names = exported_names(&dir.join(&shared));
     let api = [
         "add_numbers",
+        "count_names",
         "digit_count",
         "divide",
         "echo",
         "greet",
         "manhattan",
         "mirror",
+        "names",
         "older",
+        "same_people",
         "squares",
+        "zk_free_all_from_mathlib",
         "zk_free_from_mathlib",
         "zk_last_trap_from_mathlib",
         "zk_reset_mathlib",
     ];
-    let runtime = ["zk_free", "zk_last_trap"].map(zakac_codegen_target_c::linked_name);
+    let runtime = ["zk_free", "zk_free_all", "zk_last_trap"];
+    let runtime = runtime.map(zakac_codegen_target_c::linked_name);
     let mut api: Vec<String> =
         api.iter().map(|n| n.to_string()).chain(runtime).collect();
     api.sort();
@@ -324,6 +332,7 @@ fn each_name_a_lib_links_under_is_its_own_or_the_runtime_s()
         "zk_reset_mathlib",
         "zk_last_trap_from_mathlib",
         "zk_free_from_mathlib",
+        "zk_free_all_from_mathlib",
         "zk_trap_slot_v1",
     ];
     let runtime = zakac_codegen_target_c::RUNTIME_PREFIX;

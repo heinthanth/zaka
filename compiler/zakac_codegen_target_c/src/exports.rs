@@ -18,7 +18,6 @@ use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
-use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::fn_kind::FnKind;
@@ -96,8 +95,8 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
 pub fn api_names(exports: &[Export<'_>], names: &LibNames) -> Vec<String>
 {
     let each = exports.iter().map(|e| e.c_name.to_string());
-    let runtime = ["zk_free", "zk_last_trap"].map(crate::linked_name);
-    let lib = [names.reset(), names.last_trap(), names.free()];
+    let runtime = ["zk_free", "zk_free_all", "zk_last_trap"].map(crate::linked_name);
+    let lib = [names.reset(), names.last_trap(), names.free(), names.free_all()];
     each.chain(lib).chain(runtime).collect()
 }
 
@@ -192,6 +191,9 @@ struct CKinds
     structs: Vec<DataKind>,
     /// The cell kind of each plain list, which C takes as `{ ptr, count }`.
     lists: Vec<DataKind>,
+    /// Each struct and each plain list, as its declaration comes: each after
+    /// the structs and the lists it holds.
+    order: Vec<DataKind>,
     /// The C name of each struct, under the struct name.
     c_names: BTreeMap<String, String>,
 }
@@ -211,8 +213,13 @@ impl CKinds
     fn of(exports: &[Export<'_>], platform: u16) -> CKinds
     {
         let c_names = exports.first().map(|e| e.c_structs.clone()).unwrap_or_default();
-        let mut kinds =
-            CKinds { platform, structs: Vec::new(), lists: Vec::new(), c_names };
+        let mut kinds = CKinds {
+            platform,
+            structs: Vec::new(),
+            lists: Vec::new(),
+            order: Vec::new(),
+            c_names,
+        };
         let each = exports
             .iter()
             .flat_map(|e| param_kinds(e.func).into_iter().chain(e.func.ret));
@@ -230,13 +237,27 @@ impl CKinds
     fn note(&mut self, kind: DataKind)
     {
         let cell = cells(kind).0;
-        let list = cell.as_seq().map(|s| s.cell);
-        do_if!(let Some(c) = list.filter(|c| !self.lists.contains(c)), self.lists.push(c));
+        ret_if!(let Some(s) = cell.as_seq(), self.note_list(cell, s.cell));
         let plain = cell.is_struct() && cell.fallible_parts().is_none();
         ret_if!(!plain || self.structs.contains(&cell));
         let fields = cell.as_struct().map(|s| s.fields().to_vec()).unwrap_or_default();
         fields.into_iter().for_each(|(_, k)| self.note(k));
         self.structs.push(cell);
+        self.order.push(cell);
+    }
+
+    /// Note a plain list, after the struct or the list its cells are.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The list kind.
+    /// * `cell` - The kind of its cells.
+    fn note_list(&mut self, list: DataKind, cell: DataKind)
+    {
+        ret_if!(self.lists.contains(&cell));
+        self.note(cell);
+        self.lists.push(cell);
+        self.order.push(list);
     }
 
     /// The C kind of a value a wrapper takes: `const char *` for text,
@@ -306,28 +327,41 @@ impl CKinds
     /// The C text.
     fn struct_decls(&self) -> String
     {
-        let mut out = String::new();
-        for (at, kind) in self.structs.iter().enumerate()
+        let decls: String = self.order.iter().map(|k| self.decl(*k)).collect();
+        let structs = !self.structs.is_empty();
+        tern!(structs, format!("{ASSERT_MACRO}{decls}"), decls)
+    }
+
+    /// The declaration of one struct, with a check of its size, or of one plain
+    /// list.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The struct or the list kind.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    fn decl(&self, kind: DataKind) -> String
+    {
+        ret_if!(let Some(s) = kind.as_seq(), self.list_decl(s.cell));
+        let Some((at, s)) =
+            self.structs.iter().position(|k| *k == kind).zip(kind.as_struct())
+        else
         {
-            let Some(s) = kind.as_struct()
-            else
-            {
-                continue;
-            };
-            let _ = write!(out, "\n/* {} */\ntypedef struct\n{{\n", comment(&s.name));
-            let fields = s.fields().iter().enumerate();
-            fields.for_each(|(i, (name, k))| out.push_str(&self.field(i, name, *k)));
-            let name = self.struct_name(at);
-            let _ = writeln!(out, "}} {name};");
-            let size = self.c_form(*kind).0;
-            let _ = writeln!(
-                out,
-                "ZK_LIB_ASSERT(sizeof({name}) == {size}, \"the C size of {name} \
-                 differs from its Zaka size\");"
-            );
-        }
-        let out = tern!(out.is_empty(), out, format!("{ASSERT_MACRO}{out}"));
-        self.list_decls() + &out
+            return String::new();
+        };
+        let mut out = format!("\n/* {} */\ntypedef struct\n{{\n", comment(&s.name));
+        let fields = s.fields().iter().enumerate();
+        fields.for_each(|(i, (name, k))| out.push_str(&self.field(i, name, *k)));
+        let name = self.struct_name(at);
+        let size = self.c_form(kind).0;
+        let _ = writeln!(
+            out,
+            "}} {name};\nZK_LIB_ASSERT(sizeof({name}) == {size}, \"the C size of \
+             {name} differs from its Zaka size\");"
+        );
+        out
     }
 
     /// The C line of one field of a struct.
@@ -360,30 +394,44 @@ impl CKinds
     /// The name, such as `zk_list_int32_t`.
     fn list_name(&self, cell: DataKind) -> String
     {
-        let c = c_kind(cell, self.platform).unwrap_or_else(|| "int".into());
-        format!("zk_list_{}", c.replace(' ', "_"))
+        format!("zk_list_{}", self.cell_part(cell))
     }
 
+    /// The part of the name of a list that names its cells: `text`, the name
+    /// of a struct, `list_<cells>` for a list, else the C scalar.
+    ///
+    /// # Arguments
+    ///
+    /// * `cell` - The cell kind.
+    ///
+    /// # Returns
+    ///
+    /// The part.
+    fn cell_part(&self, cell: DataKind) -> String
+    {
+        ret_if!(cell.is_text(), "text".into());
+        ret_if!(let Some(s) = cell.as_seq(), format!("list_{}", self.cell_part(s.cell)));
+        self.c_given(cell).replace(' ', "_")
+    }
     /// The C form of each plain list: a pointer to its cells and their count,
     /// each declared once, as two libs can declare the same.
     ///
     /// # Returns
     ///
     /// The C text.
-    fn list_decls(&self) -> String
+    fn list_decl(&self, cell: DataKind) -> String
     {
-        let decl = |cell: &DataKind| {
-            let name = self.list_name(*cell);
-            let guard = name.to_uppercase();
-            let c = c_kind(*cell, self.platform).unwrap_or_else(|| "int".into());
-            format!(
-                "\n#ifndef {guard}\n#define {guard}\n/* A plain list of {c}: its \
-                 cells, which the caller frees with zk_free(list.ptr), and their \
-                 count. */\ntypedef struct\n{{\n    {c} *ptr;\n    size_t count;\n}} \
-                 {name};\n#endif\n"
-            )
-        };
-        self.lists.iter().map(decl).collect()
+        let name = self.list_name(cell);
+        let guard = name.to_uppercase();
+        let c = self.c_given(cell);
+        let ptr = declared(&c, "*ptr");
+        format!(
+            "\n#ifndef {guard}\n#define {guard}\n/* A plain list of {c}: its cells, \
+             which the caller frees with zk_free(list.ptr), or with \
+             zk_free_all(list.ptr) with each block the cells point at, and their \
+             count. */\ntypedef struct\n{{\n    {ptr};\n    size_t count;\n}} \
+             {name};\n#endif\n"
+        )
     }
 
     /// The size of the C form of a kind, as the runtime writes it and C reads
@@ -598,11 +646,15 @@ pub fn header(
          text or the cells of a list the lib {name} gave back, with the C runtime the \
          lib was built with; on Windows, where a lib of GNU and a lib of MSVC each \
          have their own, the one to use.\n *\n * @param p The `char *` or the `ptr` \
-         of a list; NULL frees nothing.\n */\nvoid {}(void *p);\n",
+         of a list; NULL frees nothing.\n */\nvoid {}(void *p);\n\n/**\n * As the \
+         free of the lib {name}, with each block the cells point at.\n *\n * @param p \
+         The `char *` or the `ptr` of a list; NULL frees nothing.\n */\nvoid {}(void \
+         *p);\n",
         shared_part(),
         names.last_trap(),
         names.reset(),
-        names.free()
+        names.free(),
+        names.free_all()
     );
     let kinds = CKinds::of(exports, platform);
     out.push_str(&kinds.struct_decls());
@@ -639,33 +691,38 @@ fn shared_part() -> String
         .collect();
     let (free, last) =
         (crate::linked_name("zk_free"), crate::linked_name("zk_last_trap"));
+    let free_all = crate::linked_name("zk_free_all");
     format!(
         "\n#ifndef ZAKA_LIB_SHARED_H\n#define ZAKA_LIB_SHARED_H\n\n/* The runtime \
          links each of its names with its version and hash. */\n#define zk_free \
-         {free}\n#define zk_last_trap {last}\n\n/** The status of a call that went \
-         through. A trap gives 1 + the id of the trap. */\n#define ZK_OK 0\n/** The \
-         status of each call after a call stopped on a trap. */\n#define ZK_STOPPED \
-         (-1)\n\n/* The id of each trap. */\n{ids}\n/** One call in progress when a \
-         trap stopped a lib. */\ntypedef struct zk_trap_frame\n{{\n    /** The Zaka \
-         name of the function, UTF-8, or NULL when the build keeps no calls. */\n    \
-         const char *function;\n    /** The source file, or NULL when the build keeps \
-         no source lines. */\n    const char *file;\n    /** The line, from 1; 0 with \
-         no source line. */\n    uint32_t line;\n    /** The column, from 1; 0 with \
-         no source line. */\n    uint32_t column;\n}} zk_trap_frame;\n\n/** A trap a \
-         lib stopped on: valid until the next trap of the same lib or its reset. \
-         */\ntypedef struct zk_trap\n{{\n    /** The id of the trap, a ZK_TRAP_*; the \
-         status of the call is the id + 1. */\n    int32_t code;\n    /** The short \
-         name of the trap, such as \"overflow\". */\n    const char *kind;\n    /** \
-         The trap line, with its place. */\n    const char *message;\n    /** The \
-         name of the lib. */\n    const char *lib;\n    /** The call the trap stopped \
-         in. */\n    zk_trap_frame where;\n    /** The calls in progress, the \
-         innermost first. */\n    const zk_trap_frame *frames;\n    /** The count of \
-         frames: 0 when the build keeps no calls. */\n    size_t frame_count;\n}} \
-         zk_trap;\n\n/**\n * The trap a Zaka lib stopped on last: each lib linked \
-         with this runtime counts.\n *\n * @return The trap, or NULL while no lib \
-         stopped on one.\n */\nconst zk_trap *zk_last_trap(void);\n\n/**\n * Free \
-         text or the cells of a list a lib gave back.\n *\n * @param p The `char *` \
-         or the `ptr` of a list; NULL frees nothing.\n */\nvoid zk_free(void \
+         {free}\n#define zk_free_all {free_all}\n#define zk_last_trap {last}\n\n/** \
+         The status of a call that went through. A trap gives 1 + the id of the trap. \
+         */\n#define ZK_OK 0\n/** The status of each call after a call stopped on a \
+         trap. */\n#define ZK_STOPPED (-1)\n\n/* The id of each trap. */\n{ids}\n/** \
+         One call in progress when a trap stopped a lib. */\ntypedef struct \
+         zk_trap_frame\n{{\n    /** The Zaka name of the function, UTF-8, or NULL \
+         when the build keeps no calls. */\n    const char *function;\n    /** The \
+         source file, or NULL when the build keeps no source lines. */\n    const \
+         char *file;\n    /** The line, from 1; 0 with no source line. */\n    \
+         uint32_t line;\n    /** The column, from 1; 0 with no source line. */\n    \
+         uint32_t column;\n}} zk_trap_frame;\n\n/** A trap a lib stopped on: valid \
+         until the next trap of the same lib or its reset. */\ntypedef struct \
+         zk_trap\n{{\n    /** The id of the trap, a ZK_TRAP_*; the status of the call \
+         is the id + 1. */\n    int32_t code;\n    /** The short name of the trap, \
+         such as \"overflow\". */\n    const char *kind;\n    /** The trap line, with \
+         its place. */\n    const char *message;\n    /** The name of the lib. */\n    \
+         const char *lib;\n    /** The call the trap stopped in. */\n    \
+         zk_trap_frame where;\n    /** The calls in progress, the innermost first. \
+         */\n    const zk_trap_frame *frames;\n    /** The count of frames: 0 when \
+         the build keeps no calls. */\n    size_t frame_count;\n}} zk_trap;\n\n/**\n \
+         * The trap a Zaka lib stopped on last: each lib linked with this runtime \
+         counts.\n *\n * @return The trap, or NULL while no lib stopped on one.\n \
+         */\nconst zk_trap *zk_last_trap(void);\n\n/**\n * Free text or the cells of \
+         a list a lib gave back.\n *\n * @param p The `char *` or the `ptr` of a \
+         list; NULL frees nothing.\n */\nvoid zk_free(void *p);\n\n/**\n * Free text \
+         or the cells of a list a lib gave back, with each block the cells point at: \
+         the text and the lists in them, at each depth.\n *\n * @param p The `char *` \
+         or the `ptr` of a list; NULL frees nothing.\n */\nvoid zk_free_all(void \
          *p);\n\n#endif\n"
     )
 }

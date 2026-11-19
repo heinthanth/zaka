@@ -4,6 +4,7 @@
 pub use zakac_ast::stmt::is_lib_path;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_true;
+use zakac_rust_sugars::tern;
 
 use crate::kind::DataKind;
 
@@ -159,9 +160,10 @@ pub fn callback_result(kind: DataKind, platform: u16) -> bool
 }
 
 /// Whether a lib can give a value of the kind to C or take it from C in its
-/// C form: a kind [`crosses`] takes; text, as a `char *`; a plain list of
-/// numbers, as `{ ptr, count }`; a counted list of these; or a struct of
-/// these. The lib allocates what it gives, and C frees it with `zk_free`.
+/// C form: a kind [`crosses`] takes; text, as a `char *`; a plain list, as
+/// `{ ptr, count }`, of cells [`list_cell`] takes; a counted list of these; or
+/// a struct of these. The lib allocates what it gives, and C frees it with
+/// `zk_free`, or with `zk_free_all` for a block and each block in it.
 ///
 /// # Arguments
 ///
@@ -175,14 +177,38 @@ pub fn exchanged(kind: DataKind, platform: u16) -> bool
 {
     ret_true!(kind.is_text());
     ret_false!(kind.fallible_parts().is_some() || kind.is_borrow());
-    let numbers = |cell: DataKind| !cell.is_struct() && crosses(cell, platform);
     match kind
     {
-        DataKind::Seq(s) => !s.boxed && numbers(s.cell),
+        DataKind::Seq(s) => !s.boxed && list_cell(s.cell, platform),
         DataKind::List(l) => exchanged(l.cell, platform),
-        DataKind::Struct(s) => s.fields().iter().all(|(_, k)| exchanged(*k, platform)),
+        // A struct of Zaka itself, such as the one of a ဇယား, whose name
+        // starts with `%`, has no C form.
+        DataKind::Struct(s) =>
+        {
+            !s.name.starts_with('%')
+                && s.fields().iter().all(|(_, k)| exchanged(*k, platform))
+        }
         _ => crosses(kind, platform),
     }
+}
+
+/// Whether a plain list C takes or gives can hold cells of the kind: text,
+/// numbers and the other kinds C passes unchanged, structs of such kinds,
+/// and plain lists of them; a counted list as a cell has no C form.
+///
+/// # Arguments
+///
+/// * `cell` - The kind of the cells.
+/// * `platform` - Bit count of the platform-sized integer kinds.
+///
+/// # Returns
+///
+/// `true` if it can.
+fn list_cell(cell: DataKind, platform: u16) -> bool
+{
+    ret_false!(cell.as_list().is_some());
+    let rich = cell.is_struct() || cell.as_seq().is_some() || cell.is_text();
+    tern!(rich, exchanged(cell, platform), crosses(cell, platform))
 }
 
 /// Whether a function that code outside can call can take a value of the
@@ -199,7 +225,8 @@ pub fn exchanged(kind: DataKind, platform: u16) -> bool
 /// `true` if it can.
 pub fn export_param(kind: DataKind, platform: u16) -> bool
 {
-    let whole = kind.is_struct() && exchanged(kind, platform);
+    let whole =
+        (kind.is_struct() || kind.as_seq().is_some()) && exchanged(kind, platform);
     whole || callback_param(kind, platform)
 }
 

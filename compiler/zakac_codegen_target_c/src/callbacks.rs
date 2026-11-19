@@ -138,6 +138,11 @@ pub fn crossing(kind: DataKind, platform: u16) -> Option<Crossing>
     let plain = is_plain_struct(kind);
     ret_if!(plain && struct_fits(kind, platform), Some(Crossing::Struct));
     ret_if!(plain, exchanged(kind, platform).then_some(Crossing::Rich));
+    // A plain list C passes comes in its C form, `{ ptr, count }`.
+    ret_if!(
+        kind.as_seq().is_some(),
+        exchanged(kind, platform).then_some(Crossing::Rich)
+    );
     ffi_kind(kind, platform).map(|_| Crossing::AsIs)
 }
 

@@ -161,6 +161,15 @@ so the linker keeps one for the program, and each runtime writes each trap to th
 each lib it serves. A counted block records the count it counts in (`Head::owner`), a raw
 block of a lib with a cap goes in `RAW_OWNERS`, and a block the lib gives C counts in none.
 
+`zaka_runtime/src/exchange.rs` writes and reads the C form of a value (`zk_to_c`,
+`zk_from_c`): a plain list one cell at a time, each in its C form. A block it gives C starts
+`C_HEAD` (16) octets after a head that holds the kind of its cells and their count, NULL
+for text; `zk_free` frees from the head, and `zk_free_all` walks the cells first
+(`free_inside`) and frees each text and list the cells hold. The header of a lib declares each
+struct and each plain list in the order in which each holds the others (`CKinds::order`), and names a
+list after its cells (`cell_part`). A struct of Zaka itself, whose name starts with `%`
+(the one of a ဇယား), has no C form.
+
 `zaka_runtime/cbindgen.toml` sets out `zaka_runtime.h`: the C names of the Rust structs
 (`ZkProgram` is `zk_program`), the enum members with the name of their enum in front
 (`ZkTrap::ZeroDivisor` is `ZK_TRAP_ZERO_DIVISOR`), and `ZK_NORETURN` for a function that

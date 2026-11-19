@@ -38,6 +38,22 @@ int main(void)
     status = older(given, &grown);
     printf("older %d %s %d\n", status, grown.name, grown.age);
     zk_free_from_mathlib(grown.name);
+    zk_list_text named = {NULL, 0};
+    status = names("Dr ", &named);
+    printf("names %d %u %s, %s\n", status, (unsigned)named.count, named.ptr[0],
+           named.ptr[1]);
+    uint64_t counted = 0;
+    status = count_names(named, &counted);
+    printf("count_names %d %u\n", status, (unsigned)counted);
+    /* The cells and each text the cells point at go in one call. */
+    zk_free_all(named.ptr);
+    person crowd[2] = {{"Ann", 30}, {"Bo", 4}};
+    zk_list_person given_people = {crowd, 2};
+    zk_list_person back = {NULL, 0};
+    status = same_people(given_people, &back);
+    printf("same_people %d %u %s %d %s %d\n", status, (unsigned)back.count,
+           back.ptr[0].name, back.ptr[0].age, back.ptr[1].name, back.ptr[1].age);
+    zk_free_all_from_mathlib(back.ptr);
     printf("trap before %s\n", zk_last_trap() == NULL ? "none" : "some");
     int64_t quotient = 0;
     status = divide(7, 0, &quotient);

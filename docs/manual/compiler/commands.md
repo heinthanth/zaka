@@ -403,8 +403,8 @@ folder, named after the input or the last part of `-o`:
 | File | What it holds |
 | --- | --- |
 | `lib<name>.a` (`<name>.lib` for MSVC) | the static lib: the objects of the program with the runtime lib inside it |
-| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_last_trap` and `zk_free` alone; MSVC writes its import lib as `<name>.dll.lib` |
-| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, the id of each trap (`ZK_TRAP_OVERFLOW`, ...), the `zk_trap` struct, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_last_trap` and `zk_free` |
+| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_free_all_from_<name>`, `zk_last_trap`, `zk_free` and `zk_free_all` alone; MSVC writes its import lib as `<name>.dll.lib` |
+| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, the id of each trap (`ZK_TRAP_OVERFLOW`, ...), the `zk_trap` struct, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_free_all_from_<name>`, `zk_last_trap`, `zk_free` and `zk_free_all` |
 
 Each function returns an `int32_t` status and gives its result through a last
 parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
@@ -423,8 +423,13 @@ the drops, so the calls around it go on.
 `zk_reset_<name>()` starts the lib again. The first call starts the runtime and sets the
 globals. Text comes in as a
 `const char *`; an address or a handle as a `void *`; a struct whole, as the header
-declares it. Text a function gives back is a `char *`, a plain list `zk_list_<cell>`,
-and C frees each with `zk_free`. Threads can call the lib, one call at a time.
+declares it; a plain list as `zk_list_<cells>`, named after its cells (`zk_list_int32_t`,
+`zk_list_text`, `zk_list_person`, `zk_list_list_text`), with the C form of each cell. Text
+a function gives back is a `char *`, a plain list `zk_list_<cells>`. Each block the lib
+gives C carries the kind and the count of its cells in front of it: C frees one block with
+`zk_free`, or a block with each block its cells point at, at each depth, with
+`zk_free_all` (`zk_free_all_from_<name>` with the C runtime of the lib). Threads can call
+the lib, one call at a time.
 
 Several Zaka libs link into one program, static or shared. `<name>` is the name of the
 files, or `--lib-name`: ASCII letters, digits and `_`. Each name a lib links under that C

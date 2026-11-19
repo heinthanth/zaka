@@ -1632,13 +1632,16 @@ The rules:
   fields, passed whole, or a struct in its C form (below). The result is a number, a
   character, true or false, an address, a plain struct, or a value in its C form, which
   the lib writes through the out pointer (ZK0465).
-- A value in its C form: text is a `char *`, a plain list of numbers is
-  `zk_list_<cell>`, the C struct `{ <cell> *ptr; size_t count; }`, a counted list holds
-  its cells in a row, and a struct holds the C forms of its fields. A parameter of such
-  a struct comes from C and the lib copies what it points at. The lib allocates a
-  result, and C frees each `char *` and each `ptr` with `zk_free`; for a NULL out
-  pointer the lib makes no C form. A list of text, or a plain list of
-  structs, has no C form (ZK0465).
+- A value in its C form: text is a `char *`; a plain list is `zk_list_<cells>`, the C
+  struct `{ <cell> *ptr; size_t count; }` with the C form of each cell, named after its
+  cells (`zk_list_int32_t`, `zk_list_text`, `zk_list_person`, `zk_list_list_text`); a
+  counted list holds its cells in a row; and a struct holds the C forms of its fields.
+  The cells of a plain list are numbers, text, structs of such fields, or plain lists of
+  these. A parameter of such a kind, a plain list among them, comes from C, and the lib
+  copies what it points at. The lib allocates a result: C frees one `char *` or `ptr`
+  with `zk_free`, or one with each block its cells point at, at each depth, with
+  `zk_free_all`; for a NULL out pointer the lib makes no C form. A ဇယား and a counted
+  list among the cells of a plain list have no C form (ZK0465).
   `ဒေတာ ပြောင်းလဲရန်` and `ဒေတာ ထည့်ပေးရန်` are ZK0466.
 - Each struct a parameter or the result passes has a C name (ZK0492): that struct and
   each struct among its fields. The mark `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော
@@ -1707,10 +1710,10 @@ point ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသ�
 ```
 
 ```zaka-error ZK0465
-စာများ ဟူသော လုပ်ဆောင်ချက် သည် "texts" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
+ရေတွက် ဟူသော လုပ်ဆောင်ချက် သည် "counts" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော လုပ်ဆောင်ချက်ဖြစ်၍
 က ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
-[က] ကို ပြန်ပေးမည်။
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား တစ်ခု ကို ပြန်ပေးမည်။
+[:] ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

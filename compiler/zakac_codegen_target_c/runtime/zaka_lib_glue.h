@@ -177,4 +177,12 @@ ZK_LIB_EXPORT const zk_trap_info *zk_lib_last_trap(void)
  */
 ZK_LIB_EXPORT void zk_lib_free(void *p) { zk_free(p); }
 
+/**
+ * Free text or the cells of a list the lib gave back with each block the
+ * cells point at, with the C runtime the lib was built with.
+ *
+ * @param p The `char *` or the `ptr` of a list; NULL frees nothing.
+ */
+ZK_LIB_EXPORT void zk_lib_free_all(void *p) { zk_free_all(p); }
+
 #endif

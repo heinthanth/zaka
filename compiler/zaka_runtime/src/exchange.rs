@@ -1,17 +1,23 @@
 //! Values a C lib gives to C or takes from it in their C form: text as a
-//! `char *` the lib allocates, a plain list as `{ ptr, count }` with cells the
-//! lib allocates, a counted list as the cells in a row, and a struct as a C
-//! struct of the C forms of its fields. The caller frees each `char *` and
-//! each `ptr` with `zk_free`, as raw blocks of unsafe code are freed. Numbers,
-//! characters, booleans and addresses are the same in both forms.
+//! `char *` the lib allocates, a plain list as `{ ptr, count }` with the C
+//! forms of its cells in a block the lib allocates, a counted list as the
+//! cells in a row, and a struct as a C struct of the C forms of its fields.
+//! Numbers, characters, booleans and addresses are the same in both forms.
+//!
+//! Each block the lib gives C starts after a head that names the kind of its
+//! cells and their count. C frees one block with `zk_free`, or a block with
+//! each block its cells point at with `zk_free_all`.
 //!
 //! The C form of a struct places its fields as C does: each at the next
 //! offset its alignment allows, the struct as wide as its widest alignment.
 //! The header of a lib declares the same places and checks its size.
 
+use std::ffi::c_void;
+
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::heap::WORD;
 use crate::heap::ld;
@@ -198,29 +204,90 @@ fn each_field(
 fn seq_to_c(from: *const u8, k: &ZkKind, to: *mut u8)
 {
     let count = zk_seq_len(from);
-    let size = count * kind(k.cell).size;
-    let cells = c_block(size);
-    do_if!(size != 0, move_octets(cells, zk_seq_base(from), size));
+    let (cell, base) = (kind(k.cell), zk_seq_base(from));
+    let c_size = c_form(cell).0;
+    let cells = c_block(count * c_size, k.cell, count);
+    let each =
+        |i: usize| zk_to_c(at(base, i * cell.size), k.cell, at(cells, i * c_size));
+    do_for!(i in 0..tern!(cells.is_null(), 0, count), each(i));
     st(to, cells);
     st(at(to, WORD), count);
 }
 
-/// A raw block, which C frees with `zk_free`, or NULL for no octets.
+/// The octets in front of a block the lib gives C: the kind of its cells and
+/// their count, padded so the cells keep the alignment malloc gives.
+const C_HEAD: usize = 16;
+
+/// A block the lib gives C, after its head, or NULL for no octets.
 ///
 /// # Arguments
 ///
-/// * `size` - The octets.
+/// * `size` - The octets of its cells.
+/// * `cell` - The kind of each cell, for `zk_free_all`; NULL for text.
+/// * `count` - The count of cells.
 ///
 /// # Returns
 ///
 /// The block.
-fn c_block(size: usize) -> *mut u8
+fn c_block(size: usize, cell: *const ZkKind, count: usize) -> *mut u8
 {
     ret_if!(size == 0, std::ptr::null_mut());
     // C owns the block, so it counts against no cap of `--max-heap`.
-    let block = crate::heap::calloc(size, 1).cast::<u8>();
-    do_if!(block.is_null(), zk_out_of_mem(size as u64));
-    block
+    let start = crate::heap::calloc(C_HEAD + size, 1).cast::<u8>();
+    do_if!(start.is_null(), zk_out_of_mem(size as u64));
+    st(start, cell);
+    st(at(start, WORD), count);
+    at(start, C_HEAD)
+}
+
+/// Free a block the lib gave C, with each block its cells point at.
+///
+/// # Arguments
+///
+/// * `p` - The `char *` or the `ptr` of a list; NULL frees nothing.
+#[unsafe(export_name = stamped!("free_all"))]
+pub extern "C" fn zk_free_all(p: *mut c_void)
+{
+    ret_if!(p.is_null());
+    let start = p.cast::<u8>().wrapping_sub(C_HEAD);
+    let (cell, count): (*const ZkKind, usize) = (ld(start), ld(at(start, WORD)));
+    do_if!(!cell.is_null(), {
+        let step = c_form(kind(cell)).0;
+        do_for!(i in 0..count, free_inside(at(p.cast(), i * step), cell));
+    });
+    zk_free(p)
+}
+
+/// Free each block a value in its C form points at, and none of its own.
+///
+/// # Arguments
+///
+/// * `c` - The value in its C form.
+/// * `k` - Its kind.
+fn free_inside(c: *mut u8, k: *const ZkKind)
+{
+    let k = kind(k);
+    match k.tag
+    {
+        tag::TEXT | tag::SEQ => zk_free_all(ld(c)),
+        tag::LIST => each_cell(k, c, c, &|_, cell, f| free_inside(f, cell)),
+        tag::STRUCT => each_field(k, c, c, &|_, field, f| free_inside(f, field)),
+        _ => (),
+    }
+}
+
+/// Free one block the lib gave C.
+///
+/// # Arguments
+///
+/// * `p` - The `char *` or the `ptr` of a list; NULL frees nothing.
+#[unsafe(export_name = stamped!("free"))]
+pub extern "C" fn zk_free(p: *mut c_void)
+{
+    ret_if!(p.is_null());
+    // SAFETY: the block came from `c_block`, after its head, outside each
+    // count of the heap.
+    unsafe { crate::heap::free(p.cast::<u8>().wrapping_sub(C_HEAD).cast()) }
 }
 
 /// A duplicate of text that ends in a zero octet, in a raw block C frees with
@@ -236,7 +303,7 @@ fn c_block(size: usize) -> *mut u8
 fn c_text(from: *const u8) -> *mut u8
 {
     let raw = octets(from);
-    let dup = c_block(raw.len() + 1);
+    let dup = c_block(raw.len() + 1, std::ptr::null(), raw.len() + 1);
     move_octets(dup, raw.as_ptr(), raw.len());
     st(at(dup, raw.len()), 0u8);
     dup
@@ -253,9 +320,13 @@ fn c_text(from: *const u8) -> *mut u8
 fn seq_from_c(from: *const u8, k: &ZkKind, to: *mut u8)
 {
     let (cells, count): (*const u8, usize) = (ld(from), ld(at(from, WORD)));
-    let size = count * kind(k.cell).size;
+    let cell = kind(k.cell);
+    let size = count * cell.size;
     ret_if!(size == 0 || cells.is_null(), zk_seq_put(to, std::ptr::null_mut(), 0, 0));
-    let block = zk_seq_new(size);
-    move_octets(block, cells, size);
+    let (block, c_size) = (zk_seq_new(size), c_form(cell).0);
+    let each = |i: usize| {
+        zk_from_c(at(cells.cast_mut(), i * c_size), k.cell, at(block, i * cell.size))
+    };
+    do_for!(i in 0..count, each(i));
     zk_seq_put(to, block, count, size);
 }

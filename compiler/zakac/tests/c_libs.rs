@@ -27,6 +27,9 @@ echo 0 hi!
 echo with no out 0
 squares 0 2 7 49
 older 0 Ann Jr 31
+names 0 2 Dr Ann, Dr Bo
+count_names 0 2
+same_people 0 2 Ann 30 Bo 4
 trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
