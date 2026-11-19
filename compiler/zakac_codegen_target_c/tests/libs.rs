@@ -31,6 +31,8 @@ trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                         at mathlib.zaka:10:1)
+trap code 1 1 zero_divisor mathlib
+trap at စား mathlib.zaka:10:1, 1 calls, the latest 1
 after -1
 trap after reset none
 reset 0 3
@@ -233,10 +235,13 @@ fn a_c_program_calls_a_zaka_lib()
         "mirror",
         "older",
         "squares",
-        "zk_free",
-        "zk_last_trap",
-        "zk_lib_reset",
+        "zk_last_trap_from_mathlib",
+        "zk_reset_mathlib",
     ];
+    let runtime = ["zk_free", "zk_last_trap"].map(zakac_codegen_target_c::linked_name);
+    let mut api: Vec<String> =
+        api.iter().map(|n| n.to_string()).chain(runtime).collect();
+    api.sort();
     assert_eq!(names, api);
     let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
     check_driver(&cc, dir, &static_libs(dir), "static_driver");
@@ -269,4 +274,57 @@ fn threads_call_a_zaka_lib_one_at_a_time()
     let output = run_driver(&cc, dir, "threads.c", &static_libs(dir), "threads");
     // Eight threads count the digits of 0 to 1999, three octets each.
     assert_eq!(output, "165360\n");
+}
+
+/// The `zk_` names the members of a static lib define, with no `_` of Mach-O
+/// before them.
+///
+/// # Arguments
+///
+/// * `path` - The static lib.
+///
+/// # Returns
+///
+/// The names.
+fn defined_zk_names(path: &Path) -> Vec<String>
+{
+    use object::Object;
+    use object::ObjectSymbol;
+
+    let octets = std::fs::read(path).unwrap();
+    let archive = object::read::archive::ArchiveFile::parse(&*octets).unwrap();
+    let members = archive.members().map(Result::unwrap);
+    let files =
+        members.filter_map(|m| object::File::parse(m.data(&*octets).ok()?).ok());
+    let names = files.flat_map(|f| {
+        let defined = f.symbols().filter(|s| s.is_global() && s.is_definition());
+        defined.filter_map(|s| s.name().ok().map(str::to_string)).collect::<Vec<_>>()
+    });
+    let bare = names.map(|n| n.strip_prefix('_').map(str::to_string).unwrap_or(n));
+    bare.filter(|n| n.starts_with("zk_")).collect()
+}
+
+#[test]
+fn each_name_a_lib_links_under_is_its_own_or_the_runtime_s()
+{
+    let Some(_) = cc()
+    else
+    {
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let dir = dir.path();
+    build_lib(dir);
+    let msvc = Dialect::of(test_abi()) == Dialect::Msvc;
+    let lib = tern!(msvc, "mathlib.lib", "libmathlib.a");
+    let names = defined_zk_names(&dir.join(lib));
+    let api = ["zk_reset_mathlib", "zk_last_trap_from_mathlib"];
+    let runtime = zakac_codegen_target_c::RUNTIME_PREFIX;
+    let foreign: Vec<&String> = names
+        .iter()
+        .filter(|n| !api.contains(&n.as_str()))
+        .filter(|n| !n.starts_with("zk_mathlib_") && !n.starts_with(runtime))
+        .collect();
+    assert!(foreign.is_empty(), "names of no lib: {foreign:?}");
+    assert!(names.iter().any(|n| n.starts_with("zk_mathlib_")), "{names:?}");
 }

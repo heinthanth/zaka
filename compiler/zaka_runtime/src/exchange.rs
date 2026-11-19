@@ -105,7 +105,7 @@ fn c_offsets(k: &ZkKind) -> Vec<(usize, usize, usize)>
 /// * `k` - Its kind.
 /// * `to` - Where the C form goes: room for it, as [`c_form`] gives; NULL, when
 ///   C has no use for the value, writes nothing.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("to_c"))]
 pub extern "C" fn zk_to_c(from: *const u8, k: *const ZkKind, to: *mut u8)
 {
     ret_if!(to.is_null());
@@ -133,7 +133,7 @@ pub extern "C" fn zk_to_c(from: *const u8, k: *const ZkKind, to: *mut u8)
 /// * `from` - The C form.
 /// * `k` - The kind of the value.
 /// * `to` - Where the value goes.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("from_c"))]
 pub extern "C" fn zk_from_c(from: *const u8, k: *const ZkKind, to: *mut u8)
 {
     let k = kind(k);

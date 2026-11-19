@@ -12,6 +12,11 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+include!("../zaka_runtime/stamp.rs");
+
+/// The start of the attribute that names an export of the runtime.
+const STAMPED: &str = "#[unsafe(export_name = stamped!(\"";
+
 /// The profile of the runtime lib: release, with a panic that aborts.
 const PROFILE: &str = "zaka-runtime";
 /// The lowest macOS the lib targets: Rust's own floor, so the linker
@@ -30,7 +35,7 @@ fn main()
     {
         println!("cargo:rerun-if-changed={}", root.join(watched).display());
     }
-    write_header(&root.join("compiler/zaka_runtime"), &out.join("zaka_runtime.h"));
+    write_header(&root.join("compiler/zaka_runtime"), &out);
     // Beside the lib of the target itself, a Windows host carries the lib of
     // the other ABI, so `--target-abi` picks either, and each host carries
     // the libs of WASI.
@@ -123,28 +128,87 @@ fn lib_file(target: &str) -> &'static str
     tern!(target.ends_with("-msvc"), "zaka_runtime.lib", "libzaka_runtime.a")
 }
 
-/// Write the C header of the runtime from its Rust: the functions, the
-/// structs the generated code and the runtime share, the ids of the traps,
-/// the rights and the kinds, as `cbindgen.toml` of the crate sets them out.
-/// A browser build writes it too, as the explorer shows it.
+/// Write the header of the runtime, `zaka_runtime.h`, from its sources: the
+/// declarations under their plain names, and a `#define` before them that
+/// maps each plain name to the name it links under.
 ///
 /// # Arguments
 ///
-/// * `runtime` - The folder of the crate `zaka_runtime`.
-/// * `header` - Where the header goes.
-fn write_header(runtime: &Path, header: &Path)
+/// * `runtime` - The folder of the runtime crate.
+/// * `out` - `OUT_DIR`, where the header goes.
+fn write_header(runtime: &Path, out: &Path)
 {
+    // cbindgen leaves out an export whose name a macro gives, so it reads a
+    // duplicate of the sources with a plain `no_mangle` in its place.
+    let plain = out.join("runtime_src");
+    let names = plain_sources(&runtime.join("src"), &plain);
     let config = cbindgen::Config::from_file(runtime.join("cbindgen.toml"))
         .expect("cbindgen.toml of the runtime reads");
     let made = cbindgen::Builder::new()
         .with_config(config)
-        .with_src(runtime.join("src/lib.rs"))
+        .with_src(plain.join("lib.rs"))
         .generate()
         .expect("the runtime header generates");
     let mut text = Vec::new();
     made.write(&mut text);
     let text = String::from_utf8(text).expect("cbindgen writes UTF-8");
-    write(header, first_paragraphs(&text).as_bytes());
+    let prefix = runtime_prefix(&runtime.join(".."));
+    println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");
+    let defines: String =
+        names.iter().map(|n| format!("#define zk_{n} {prefix}{n}\n")).collect();
+    let head = "/* Each name of the runtime links with the version and the hash of \
+                the runtime\n   that zakac carries, so libs from other builds of \
+                zakac link beside it. */\n";
+    let header = format!("{head}{defines}\n{}", first_paragraphs(&text));
+    write(&out.join("zaka_runtime.h"), header.as_bytes());
+}
+
+/// Copy the sources of the runtime with each `export_name` of a macro read as
+/// a plain `no_mangle`.
+///
+/// # Arguments
+///
+/// * `src` - The source folder of the runtime.
+/// * `to` - The folder of the duplicates.
+///
+/// # Returns
+///
+/// The name of each export, without its `zk_`.
+fn plain_sources(src: &Path, to: &Path) -> Vec<String>
+{
+    std::fs::create_dir_all(to).expect("OUT_DIR is writable");
+    let files = std::fs::read_dir(src).expect("the runtime sources are readable");
+    let mut names = Vec::new();
+    for path in files.flatten().map(|e| e.path())
+    {
+        let text = std::fs::read_to_string(&path).expect("a source file is readable");
+        let lines = text.lines().map(|l| plain_line(l, &mut names));
+        let plain: String = lines.map(|l| format!("{l}\n")).collect();
+        write(&to.join(path.file_name().expect("a file name")), plain.as_bytes());
+    }
+    names
+}
+
+/// A line of a source with an `export_name` of a macro read as `no_mangle`.
+///
+/// # Arguments
+///
+/// * `line` - The line.
+/// * `names` - Where the name of the export goes.
+///
+/// # Returns
+///
+/// The line.
+fn plain_line(line: &str, names: &mut Vec<String>) -> String
+{
+    let rest = line.trim_start().strip_prefix(STAMPED);
+    let Some(name) = rest.and_then(|r| r.split('"').next())
+    else
+    {
+        return line.to_string();
+    };
+    names.push(name.to_string());
+    line.replace(line.trim_start(), "#[unsafe(no_mangle)]")
 }
 
 /// The header with each doc comment cut to its first paragraph: the gist

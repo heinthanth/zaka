@@ -6584,6 +6584,8 @@ name = "zaka_runtime"
 version = "0.1.0"
 dependencies = [
  "libffi",
+ "strum",
+ "xxhash-rust",
  "zaka_host",
  "zakac_rust_sugars",
 ]
@@ -6866,6 +6868,7 @@ dependencies = [
  "rust-i18n",
  "strum",
  "tempfile",
+ "xxhash-rust",
  "zaka_host",
  "zaka_runtime",
  "zaka_vm",

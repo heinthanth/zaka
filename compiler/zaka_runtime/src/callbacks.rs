@@ -217,7 +217,7 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
 /// # Returns
 ///
 /// The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_code"))]
 pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
 {
     let bound = zk_fn_bound(f) != 0;
@@ -252,7 +252,7 @@ fn code_of(p: *mut c_void) -> ZkCode
 /// # Returns
 ///
 /// The count.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_lent"))]
 pub extern "C" fn zk_cb_lent() -> usize { LENDS.lock().map_or(0, |l| l.len()) }
 
 /// End the lends of the closures a C call got, once it returns.
@@ -260,7 +260,7 @@ pub extern "C" fn zk_cb_lent() -> usize { LENDS.lock().map_or(0, |l| l.len()) }
 /// # Arguments
 ///
 /// * `from` - The count of lends before the call.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_end"))]
 pub extern "C" fn zk_cb_end(from: usize)
 {
     let mut lends = LENDS.lock().unwrap_or_else(|e| e.into_inner());
@@ -279,7 +279,7 @@ pub extern "C" fn zk_cb_end(from: usize)
 ///
 /// * `f` - The function value.
 /// * `shape` - The bridge and the libffi kinds of its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_leave"))]
 pub extern "C" fn zk_cb_leave(f: ZkFn, shape: *const ZkCbShape)
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0);
@@ -295,7 +295,7 @@ pub extern "C" fn zk_cb_leave(f: ZkFn, shape: *const ZkCbShape)
 /// # Arguments
 ///
 /// * `f` - The function value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_revoke"))]
 pub extern "C" fn zk_cb_revoke(f: ZkFn)
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0);
@@ -318,7 +318,7 @@ pub extern "C" fn zk_cb_revoke(f: ZkFn)
 /// * `out` - Where the handle goes.
 /// * `addr` - Where the address C passed lies.
 /// * `list` - The kind of the cells of the box, as a list of one cell.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_handle"))]
 pub extern "C" fn zk_cb_handle(
     out: *mut u8, addr: *const *mut c_void, list: *const ZkKind,
 )
@@ -339,7 +339,7 @@ pub extern "C" fn zk_cb_handle(
 /// * `ok_at` - The offset of the handle in it.
 /// * `addr` - Where the address C passed lies.
 /// * `list` - The kind of the cells of the box, as a list of one cell.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_opt_handle"))]
 pub extern "C" fn zk_cb_opt_handle(
     out: *mut u8, size: usize, ok_at: usize, addr: *const *mut c_void,
     list: *const ZkKind,

@@ -37,6 +37,7 @@ fn each_function_of_windows_code_has_a_row_of_pdata()
         &grants,
         &target,
         false,
+        None,
     );
     let octets = made.unwrap().octets;
     let file = object::File::parse(&*octets).unwrap();

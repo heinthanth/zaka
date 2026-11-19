@@ -5,13 +5,20 @@ use std::path::Path;
 
 use zakac_rust_sugars::ret_if;
 
+include!("stamp.rs");
+
 fn main()
 {
     println!("cargo:rerun-if-changed=src");
+    println!("cargo:rerun-if-changed=../zaka_host/src");
+    println!("cargo:rerun-if-changed=stamp.rs");
+    let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets it");
+    let prefix = runtime_prefix(&Path::new(&manifest).join(".."));
+    println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");
     let files = std::fs::read_dir("src").expect("src is readable").flatten();
     let mut paths: Vec<_> = files.map(|e| e.path()).collect();
     paths.sort();
-    let rows: String = paths.iter().filter_map(|p| export_rows(p)).collect();
+    let rows: String = paths.iter().filter_map(|p| export_rows(p, &prefix)).collect();
     let out = std::env::var("OUT_DIR").expect("cargo sets OUT_DIR");
     let dest = Path::new(&out).join("exports.rs");
     std::fs::write(dest, format!("&[\n{rows}]")).expect("OUT_DIR is writable");
@@ -22,11 +29,12 @@ fn main()
 /// # Arguments
 ///
 /// * `path` - The source file.
+/// * `prefix` - The prefix of the exported names, in place of `zk_`.
 ///
 /// # Returns
 ///
 /// The rows, or `None` for a file that is no module of exports.
-fn export_rows(path: &Path) -> Option<String>
+fn export_rows(path: &Path, prefix: &str) -> Option<String>
 {
     let module = path.file_stem()?.to_str()?;
     ret_if!(module == "lib" || module == "exports", None);
@@ -43,7 +51,8 @@ fn export_rows(path: &Path) -> Option<String>
             .collect::<String>()
     });
     let row = |name: String| {
-        format!("    (\"{name}\", crate::{module}::{name} as *const u8),\n")
+        let linked = name.strip_prefix("zk_").unwrap_or(&name);
+        format!("    (\"{prefix}{linked}\", crate::{module}::{name} as *const u8),\n")
     };
     Some(names.map(row).collect())
 }

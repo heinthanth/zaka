@@ -828,6 +828,7 @@ pub fn compile(source: &str, options: &Options) -> Compiled
                 &zaka_host::Grants::all(),
                 &target,
                 true,
+                None,
             );
             let file = made.map(|o| native_files(m, o));
             (None, Some(file))

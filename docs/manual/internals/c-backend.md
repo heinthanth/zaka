@@ -22,16 +22,18 @@ ir::Module ──emit──▶ m0.c … mN.c, main.c, zaka_checks.h, zaka_kinds.
 | File | Job |
 | --- | --- |
 | `cli.rs` | the standalone command; `zakac build` calls its `command_main` for `--backend c` |
-| `driver.rs` | the phases, then `emit`; the cache folder; the two runtime headers, embedded with `include_str!`, and the runtime lib of each ABI it carries, embedded with `include_bytes!`: `runtime_lib(abi)` gives its octets, its file name and the OS libs it needs (`RuntimeLib::native_libs`); `write_cache_for` writes the one of the ABI of the build; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
+| `driver.rs` | the phases, then `emit`; the cache folder; the runtime headers, embedded with `include_str!`, and the runtime lib of each ABI it carries, embedded with `include_bytes!`: `runtime_lib(abi)` gives its octets, its file name and the OS libs it needs (`RuntimeLib::native_libs`); `write_cache_for` writes the one of the ABI of the build; `translate` takes a `TargetCOptions` (`checks`, `max_depth`, `debug_info`, `max_heap`) |
 | `emit.rs` | the files of a program: a module file for each source file, the shared header, `main.c`, and the program table `zk_the_program` in `zaka_kinds.c` |
 | `stmts.rs`, `exprs.rs` | a statement or an expression of the IR as C |
 | `kinds.rs` | the C kind of each scalar kind, and constants as C text |
 | `descriptors.rs` | the description of each kind the runtime walks: `zk_kind` in `zaka_kinds.c` |
 | `ffi.rs` | `zaka_ffi.c`: the structs, declarations and wrappers of the C functions; the `-lX` flags of their libs |
 | `callbacks.rs` | `zaka_callback.c`: its head (`CALLBACK_HEAD`: `zaka_runtime.h`), the scalar C kinds the bridges name (`zk_ck_<name>`, `scalar_kinds`), then a bridge and a `zk_cb_native_shape` (`zk_cbs_<n>`) for each function kind that goes to C |
+| `exports.rs` | a C lib: the wrapper of each function C can call, after the glue of `runtime/zaka_lib_glue.h`, and the header of the lib with the part each lib shares (the status words, the ids of the traps, `zk_trap`, `zk_free`, `zk_last_trap`) |
+| `lib_names.rs` | the names of a C lib (`LibNames`): its name, the prefix `zk_<name>_<hash>_` of each name it links under that C never calls, and `zaka_lib_names.h`, which maps each such name the C files use (`zk_f<n>`, `zk_r<n>`, `zk_k<n>`, `zk_g<n>`, `zk_cbs_<n>`, `zk_cbb_<n>`, `zk_the_program`, `zk_lib_init`) and the names of the glue (`zk_lib_reset`, `zk_lib_last_trap`, `ZK_LIB_NAME`) to those of the lib |
 | `toolchain.rs` | finding the compiler (`find_cc_for`: for MSVC, `cl` or `clang-cl` on the PATH, else the `cl` of Visual Studio through `find-msvc-tools`, with the variables of its Developer Prompt in `Tool::env`), the flags of each `Dialect` (GNU or MSVC, as data in `Flags`), the compiles of the `.c` files (started at once) and the link, which takes the other inputs, the runtime lib among them, unchanged; `msvc_link` puts the options of the linker after `/link` |
 | `build.rs` | builds `zaka_runtime` as a static lib for the target of the build, and on Windows for the other ABI too (see [The runtime](#the-runtime)) |
-| `runtime/` | the two hand-written C11 headers: `zaka_target_c_runtime.h` and `zaka_c_sugars.h` |
+| `runtime/` | the hand-written C11 headers: `zaka_target_c_runtime.h`, `zaka_c_sugars.h` and `zaka_lib_glue.h`, the glue of a C lib (its record in the runtime, the start of its globals, the jump of a trap, its reset and its last trap) |
 
 A function or a global goes into the module file of the source file its span starts in.
 
@@ -130,9 +132,19 @@ The C side reads the runtime through three headers:
 | `zaka_target_c_runtime.h` | hand-written: the inline code the generated C runs for each operation, the checked integer operations of each kind (`zk_add_i32`, `zk_div_u64`, ...), the loads and stores and the marks of the calls in progress; it includes `zaka_runtime.h` |
 | `zaka_c_sugars.h` | `RET_IF`, `DONE_IF`, `DO_IF`, `NEXT_IF`, `LEAVE_IF`, `DO_FOR` |
 
-`zaka_target_c_runtime.h` includes two headers a build writes, so an editor reads it with the
-headers of a build beside it: `mise run c:mock-headers` writes a build of hello into
-`target/c-headers`, and `runtime/.clangd` points clangd there.
+`zaka_target_c_runtime.h` includes two headers a build writes, and `zaka_lib_glue.h` a third,
+`zaka_lib_names.h`, so an editor reads them with the headers of a build beside them:
+`mise run editor:mock-header` writes a build of hello and of a lib into `target/c-headers`,
+and `runtime/.clangd` points clangd there.
+
+Each name the runtime exports links as `zk_rt_<version>_<hash>_<name>`: the version of the
+crate, and a hash of its sources and those of `zaka_host` (`zaka_runtime/stamp.rs`, which the
+build scripts of the runtime and of this crate both include). The Rust writes
+`#[unsafe(export_name = stamped!("alloc"))]`; cbindgen reads a duplicate of the sources with a
+plain `no_mangle` in its place, and the build script puts a `#define zk_alloc
+zk_rt_..._alloc` for each name before the declarations, so the C keeps the plain names.
+`RUNTIME_PREFIX` and `linked_name` give the prefix to Cranelift, and the table of exports
+of the JIT carries the linked names.
 
 `zaka_runtime/cbindgen.toml` sets out `zaka_runtime.h`: the C names of the Rust structs
 (`ZkProgram` is `zk_program`), the enum members with the name of their enum in front

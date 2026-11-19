@@ -12,9 +12,11 @@ use zakac_ast::target::Target;
 use zakac_ast::target::TargetAbi;
 use zakac_ast::target::TargetArch;
 use zakac_ast::target::TargetOs;
+use zakac_codegen_target_c::lib_names::LibNames;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_host_errors::Error;
 use zakac_ir_builder::ir::Module as IrModule;
+use zakac_rust_sugars::do_if;
 use zakac_span::source_file::SourceFile;
 
 use crate::emit::emit;
@@ -93,13 +95,15 @@ pub(crate) fn base_flags() -> Result<settings::Builder, Error>
 /// * `grants` - The rights the executable holds.
 /// * `target` - The target.
 /// * `want_clif` - Whether to keep the CLIF text.
+/// * `names` - The names of a C lib, whose names C never calls the object links
+///   under.
 ///
 /// # Returns
 ///
 /// The object, or the error of the lowering.
 pub fn object(
     program: &IrModule, files: &[Arc<SourceFile>], options: TargetCOptions,
-    grants: &Grants, target: &Target, want_clif: bool,
+    grants: &Grants, target: &Target, want_clif: bool, names: Option<&LibNames>,
 ) -> Result<Object, Error>
 {
     let mut flags = base_flags()?;
@@ -112,9 +116,32 @@ pub fn object(
     let mut m = ObjectModule::new(builder.map_err(module_error)?);
     let lowered = emit(&mut m, program, files, options, grants, "main", want_clif)?;
     let mut product = m.finish();
+    do_if!(let Some(names) = names, rename(&mut product.object, names));
     let places = crate::debug::write(&mut product, &lowered.lines)?;
     crate::unwind::write(&mut product, &lowered.unwinds)?;
     let mut octets = product.emit().map_err(module_error)?;
     crate::debug::place_text(&mut octets, &places)?;
     Ok(Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes })
+}
+
+/// Give each name of a C lib that C never calls its linked form, as the C
+/// files of the lib map it in `zaka_lib_names.h`.
+///
+/// # Arguments
+///
+/// * `object` - The object.
+/// * `names` - The names of the lib.
+fn rename(object: &mut cranelift_object::object::write::Object<'_>, names: &LibNames)
+{
+    let held = LibNames::held(|n| object.symbol_id(n.as_bytes()).is_some());
+    let renames = held.iter().filter_map(|plain| {
+        Some((object.symbol_id(plain.as_bytes())?, plain.len(), names.linked(plain)?))
+    });
+    for (id, plain_len, linked) in renames.collect::<Vec<_>>()
+    {
+        // The stored name carries the prefix of the format, such as `_`.
+        let name = &mut object.symbol_mut(id).name;
+        name.truncate(name.len() - plain_len);
+        name.extend_from_slice(linked.as_bytes());
+    }
 }

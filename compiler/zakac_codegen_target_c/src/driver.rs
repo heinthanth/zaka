@@ -31,6 +31,7 @@ use crate::options::TargetCOptions;
 pub const RUNTIME: &[(&str, &str)] = &[
     ("zaka_c_sugars.h", include_str!("../runtime/zaka_c_sugars.h")),
     ("zaka_target_c_runtime.h", include_str!("../runtime/zaka_target_c_runtime.h")),
+    ("zaka_lib_glue.h", include_str!("../runtime/zaka_lib_glue.h")),
     ("zaka_runtime.h", include_str!(concat!(env!("OUT_DIR"), "/zaka_runtime.h"))),
 ];
 

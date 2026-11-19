@@ -12,6 +12,9 @@ use zaka_runtime::ffi::ZkCKind;
 use zaka_runtime::ffi::ZkCbNativeShape;
 use zaka_runtime::ffi::ZkFfiShape;
 use zaka_runtime::heap::ZkFnRec;
+use zaka_runtime::libs::ZkLibPlace;
+use zaka_runtime::libs::ZkTrapFrame;
+use zaka_runtime::libs::ZkTrapInfo;
 use zaka_runtime::out::ZkBuf;
 use zaka_runtime::program::ZkField;
 use zaka_runtime::program::ZkFnName;
@@ -47,7 +50,8 @@ macro_rules! forms {
         vec![$(Form {
             name: $c,
             size: size_of::<$rust>(),
-            fields: vec![$((stringify!($field), offset_of!($rust, $field))),*],
+            // A field C names with a reserved word of Rust, `where`, is raw in Rust.
+            fields: vec![$((stringify!($field).trim_start_matches("r#"), offset_of!($rust, $field))),*],
         }),*]
     };
 }
@@ -82,6 +86,9 @@ fn forms() -> Vec<Form>
         ZkCbNativeShape => "zk_cb_native_shape" { bridge, ret, args, nargs, as_is }
         ZkCKind => "zk_c_kind" { tag, count, members }
         ZkFfiShape => "zk_ffi_shape" { ret, args, nargs, nfixed, variadic }
+        ZkLibPlace => "zk_lib_place" { lib, prog, base }
+        ZkTrapFrame => "zk_trap_frame" { function, file, line, column }
+        ZkTrapInfo => "zk_trap_info" { code, kind, message, lib, r#where, frames, frame_count }
     }
 }
 

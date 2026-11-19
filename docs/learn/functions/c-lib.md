@@ -62,9 +62,24 @@ The header declares each function under its name in C:
 ```c
 #define ZK_OK 0
 #define ZK_STOPPED (-1)
+#define ZK_TRAP_ZERO_DIVISOR 0
+/* ... an id for each stop ... */
 
-const char *zk_last_trap(void);
-void zk_lib_reset(void);
+typedef struct zk_trap
+{
+    int32_t code;            /* ZK_TRAP_ZERO_DIVISOR, ... */
+    const char *kind;        /* "zero_divisor", ... */
+    const char *message;     /* the line the stop prints */
+    const char *lib;         /* "mathlib" */
+    zk_trap_frame where;     /* the function, file, line and column it stopped in */
+    const zk_trap_frame *frames;
+    size_t frame_count;
+} zk_trap;
+
+const zk_trap *zk_last_trap_from_mathlib(void);
+void zk_reset_mathlib(void);
+const zk_trap *zk_last_trap(void);
+void zk_free(void *p);
 
 int32_t add_numbers(int32_t zk_p0, int32_t zk_p1, int32_t *zk_out);
 ```
@@ -72,10 +87,11 @@ int32_t add_numbers(int32_t zk_p0, int32_t zk_p1, int32_t *zk_out);
 Each function gives back a status, not its result. The result goes to the address in the
 last parameter, which can be NULL when the caller has no use for it. The status is
 `ZK_OK` when the call went through. When the call stopped, as a division with zero as
-divisor stops a program, the status is 1 more than the number of the stop, `zk_last_trap()` gives its
-text, and the program that called goes on. The lib stops with it: each later call gives
-`ZK_STOPPED`, since the stop can leave the lib half done, until `zk_lib_reset()` starts it
-again from the start.
+divisor stops a program, the status is 1 more than the number of the stop, and the
+program that called goes on. `zk_last_trap_from_mathlib()` gives the stop as a struct:
+its number, its name, its line, and the function, file and line it stopped in. The lib
+stops with it: each later call gives `ZK_STOPPED`, since the stop can leave the lib half
+done, until `zk_reset_mathlib()` starts it again from the start.
 
 The first call starts the lib: it sets the globals of the program. Text a function takes
 comes in as a `const char *`, and what the function prints comes out at the end of each
@@ -146,12 +162,16 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
 - Threads can call a lib, but one call runs at a time; the others wait.
+- Several Zaka libs link into one program. Each keeps its own names, and a stop stops its
+  own lib alone; `zk_free` and `zk_last_trap()`, the last stop of each lib, serve them
+  all. The name in `zk_reset_<name>` is the name of the files of the lib, or
+  `--lib-name`, which takes ASCII letters, digits and `_`.
 
 ## Hands on
 
 - Add a function `"twice"` that gives back twice a 64-bit integer, build the lib, and
   call it from C.
 - Call a function of the lib that divides with zero as divisor, then print
-  `zk_last_trap()`.
+  `zk_last_trap_from_mathlib()->message` and the line in `where`.
 
 Next: [The heap](../pointers/heap.md).

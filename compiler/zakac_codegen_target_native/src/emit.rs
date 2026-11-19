@@ -28,6 +28,7 @@ use zakac_codegen_target_c::exports::EXPORT_KINDS;
 use zakac_codegen_target_c::exports::Export;
 use zakac_codegen_target_c::exports::exported;
 use zakac_codegen_target_c::kinds::is_blob;
+use zakac_codegen_target_c::linked_name;
 use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_host_errors::Error;
 use zakac_ir_builder::ir::Func;
@@ -260,9 +261,11 @@ impl<M: Module> Shared<'_, M>
         let ext = |t: &Type| tern_abi(*t);
         sig.params.extend(params.iter().map(ext));
         sig.returns.extend(rets.iter().map(ext));
+        // The runtime links each of its names with its version and hash.
+        let linked = tern!(name.starts_with("zk_"), linked_name(name), name.into());
         let id = self
             .m
-            .declare_function(name, Linkage::Import, &sig)
+            .declare_function(&linked, Linkage::Import, &sig)
             .expect("a runtime name");
         self.runtime.insert(name, id);
         id

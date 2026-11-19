@@ -14,7 +14,6 @@ use zakac_rust_sugars::ret_if;
 use crate::out::flush_out;
 use crate::program::ZkProgram;
 use crate::program::make_frames;
-use crate::program::zk_depth;
 use crate::program::zk_prog;
 use crate::traps::set_name;
 
@@ -26,7 +25,7 @@ use crate::traps::set_name;
 /// * `argc` - The argument count `main` was given.
 /// * `argv` - The arguments `main` was given; the first is the executable.
 /// * `program` - The table of the program, which the runtime reads from now on.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("start"))]
 pub extern "C" fn zk_start(argc: i32, argv: *mut *mut c_char, program: *const ZkProgram)
 {
     // SAFETY: `main` calls this first, on the one thread of the program.
@@ -52,7 +51,7 @@ static FREED: Condvar = Condvar::new();
 /// Wait until no other thread runs a call of the C lib, then hold it: the
 /// heap, the globals and the frames of the runtime serve one call at a time.
 /// The thread that holds it can call again, as C that a call calls does.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("lib_lock"))]
 pub extern "C" fn zk_lib_lock()
 {
     let me = std::thread::current().id();
@@ -66,7 +65,7 @@ pub extern "C" fn zk_lib_lock()
 
 /// End the hold of [`zk_lib_lock`] for one call: once the calls of the
 /// thread all end, the next thread that waits goes on.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("lib_unlock"))]
 pub extern "C" fn zk_lib_unlock()
 {
     let mut held = HELD.lock().unwrap_or_else(PoisonError::into_inner);
@@ -76,25 +75,16 @@ pub extern "C" fn zk_lib_unlock()
     FREED.notify_one();
 }
 
-/// Clear what a trap leaves half done, so a C lib can start again: the depth
-/// of the calls, the count of the heap, the closures lent to C calls, the
-/// buffer the output goes to, the queues of the drops and the text of the
-/// trap. The blocks of the heap from before remain, out of reach.
-#[unsafe(no_mangle)]
-pub extern "C" fn zk_runtime_reset()
-{
-    // SAFETY: the lib holds its lock, so no call runs.
-    unsafe { zk_depth = 0 };
-    crate::heap::reset_count();
-    #[cfg(not(target_os = "wasi"))]
-    crate::callbacks::end_lends();
-    crate::out::reset_sink();
-    crate::seqs::reset_drops();
-    crate::traps::forget_trap();
-}
+/// How often the thread in a call of a C lib holds the lock of the libs: 1
+/// for a reset alone, more for a call in progress around it.
+///
+/// # Returns
+///
+/// The count.
+pub(crate) fn holds() -> u32 { HELD.lock().unwrap_or_else(PoisonError::into_inner).1 }
 
 /// Write out what is buffered, as a C lib does at the end of each call.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("flush"))]
 pub extern "C" fn zk_flush() { flush_out(); }
 
 /// End the run: write out what is buffered.
@@ -106,7 +96,7 @@ pub extern "C" fn zk_flush() { flush_out(); }
 /// # Returns
 ///
 /// The status, for `main` to return.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("finish"))]
 pub extern "C" fn zk_finish(status: i32) -> i32
 {
     flush_out();

@@ -347,6 +347,7 @@ differs from the VM.
 | `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
 | `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC) |
+| `--lib-name <NAME>` | the name of the files | the name of a C lib (`--emit lib`) in `zk_reset_<NAME>`, `zk_last_trap_from_<NAME>` and the names it links under: ASCII letters, digits and `_`, starting with a letter or `_`; a file name C cannot take needs it |
 | `--runtime-lib <FILE>` | the runtime lib `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; with a C compiler for that target in `--cc`, the C and native targets build for its OS and CPU (see [Cross builds](native.md#cross-builds)) |
 | `--allow-read[=<PATHS>]`, `--allow-write[=<PATHS>]`, `--allow-env[=<NAMES>]`, `--allow-ffi`, `-A`, `--no-permission-prompt` | none | the rights the executable holds, written into it, as `zakac run` grants them to a run; the executable asks for a right it lacks on a terminal, as the VM does; see [Permissions](../vm/running.md#permissions) |
 
@@ -402,18 +403,33 @@ folder, named after the input or the last part of `-o`:
 | File | What it holds |
 | --- | --- |
 | `lib<name>.a` (`<name>.lib` for MSVC) | the static lib: the objects of the program with the runtime lib inside it |
-| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap` and `zk_lib_reset` alone; MSVC writes its import lib as `<name>.dll.lib` |
-| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, and of `zk_last_trap` and `zk_lib_reset` |
+| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_last_trap` and `zk_free` alone; MSVC writes its import lib as `<name>.dll.lib` |
+| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, the id of each trap (`ZK_TRAP_OVERFLOW`, ...), the `zk_trap` struct, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_last_trap` and `zk_free` |
 
 Each function returns an `int32_t` status and gives its result through a last
 parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
 of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap, since a
-trap can leave the heap and the globals half written; `zk_last_trap()` gives the text of
-that trap, and `zk_lib_reset()` starts the lib again. The first call starts the runtime
-and sets the globals. Text comes in as a
+trap can leave the heap and the globals half written. `zk_last_trap_from_<name>()` gives
+that trap as a `zk_trap`: its id (`code`), its short name (`kind`), its line
+(`message`), the lib, the call it stopped in (`where`: the function, the file, the line
+and the column) and each call in progress (`frames`, the innermost first; none in a
+`--release` build). It remains valid until the next trap of the lib or its reset;
+`zk_last_trap()` gives the last trap of each lib that shares the runtime.
+`zk_reset_<name>()` starts the lib again. The first call starts the runtime and sets the
+globals. Text comes in as a
 `const char *`; an address or a handle as a `void *`; a struct whole, as the header
 declares it. Text a function gives back is a `char *`, a plain list `zk_list_<cell>`,
-and C frees each with `zk_free`. Threads can call the lib, one call at a time. A program that links the static lib
+and C frees each with `zk_free`. Threads can call the lib, one call at a time.
+
+Several Zaka libs link into one program, static or shared. `<name>` is the name of the
+files, or `--lib-name`: ASCII letters, digits and `_`. Each name a lib links under that C
+never calls takes the form `zk_<name>_<hash>_...`, with a hash of the lib name, its
+program and the runtime, so two libs never clash. The runtime links its names as
+`zk_rt_<version>_<hash>_...`, and the header maps `zk_free` and `zk_last_trap` to them:
+the static libs from one `zakac` share one runtime, and libs from two builds of `zakac`
+each keep their own. A trap stops the lib it came from alone. Each lib carries the
+calls of the libs it calls through C on top of its own, and a trap lists the calls of its
+own lib alone. A program that links the static lib
 links the OS libs of the runtime with it, which the comment at the top of the header
 lists.
 

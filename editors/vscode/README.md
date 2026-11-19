@@ -7,8 +7,8 @@ programs, from the language server in `zakac`.
 
 1. Build `zakac` (`cargo build -p zakac`) and set `zaka.server.path`, or install
    it on the `PATH` (`cargo install --path compiler/zakac` in the Zaka repo).
-2. Install this extension: `mise run vscode:build`, then
-   `code --install-extension editors/vscode/zaka-<version>.vsix`.
+2. Install this extension: `mise run editor:install-vscode`, or
+   `mise run editor:install-cursor` for Cursor; each builds the `.vsix` first.
 3. Open a `.zaka` or `.zk` file. Zaka files get the Zaka logo as their icon when the
    icon theme has none for them.
 

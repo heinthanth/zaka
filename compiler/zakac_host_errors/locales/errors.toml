@@ -51,6 +51,9 @@ en = "a C lib needs a function that code outside can call: mark one with \"<C na
 [errors.lib_on_wasi]
 en = "a C lib cannot be built for WASI: build it for another OS"
 
+[errors.lib_name]
+en = "the lib name \"%{name}\" cannot go into C names: give --lib-name, of ASCII letters, digits and _, that starts with a letter or _"
+
 [errors.c_functions_on_wasi]
 en = "a program for WASI cannot call C functions: WASI loads no shared libs, so build it for another OS"
 

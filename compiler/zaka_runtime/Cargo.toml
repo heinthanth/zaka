@@ -10,6 +10,7 @@ edition.workspace = true
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+strum = { workspace = true }
 zaka_host = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 
@@ -19,3 +20,4 @@ libffi = { workspace = true }
 
 [build-dependencies]
 zakac_rust_sugars = { workspace = true }
+xxhash-rust = { workspace = true }

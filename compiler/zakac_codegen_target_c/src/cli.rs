@@ -55,6 +55,7 @@ use crate::emit::CFile;
 use crate::exports;
 use crate::exports::exported;
 use crate::ffi::link_libs_for;
+use crate::lib_names::LibNames;
 use crate::options::Emit;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
@@ -75,6 +76,8 @@ const CHECKS_ARG: &str = "checks";
 const MAX_DEPTH_ARG: &str = "max_depth";
 /// The flag that caps the heap octets the executable holds at once.
 const MAX_HEAP_ARG: &str = "max_heap";
+/// The flag that names a C lib in the names C calls and in its link names.
+pub const LIB_NAME_ARG: &str = "lib_name";
 /// The flag of a release build, which leaves out the source line of each
 /// statement; `zakac build` gets it from the VM target, which shares it.
 const RELEASE_ARG: &str = "release";
@@ -199,6 +202,7 @@ pub const TARGET_ARGS: &[&str] = &[
     LD_FLAG_ARG,
     NO_DEFAULT_FLAGS_ARG,
     RUNTIME_LIB_ARG,
+    LIB_NAME_ARG,
     "allow-read",
     "allow-write",
     "allow-env",
@@ -244,7 +248,31 @@ pub fn attach_target_args(cmd: clap::Command) -> clap::Command
         .help(t!("target_c.max_heap"))
         .value_parser(clap::value_parser!(u64))
         .default_value("0");
-    attach_toolchain_args(cmd.arg(cache).arg(checks).arg(depth).arg(heap))
+    let lib_name = Arg::new(LIB_NAME_ARG)
+        .long("lib-name")
+        .value_name("NAME")
+        .help(t!("target_c.lib_name"));
+    let cmd = cmd.arg(cache).arg(checks).arg(depth).arg(heap).arg(lib_name);
+    attach_toolchain_args(cmd)
+}
+
+/// The names of a C lib: from `--lib-name`, or else the name of its files.
+///
+/// # Arguments
+///
+/// * `matches` - The flags.
+/// * `files` - The files of the lib.
+/// * `module` - Its program.
+///
+/// # Returns
+///
+/// The names, or the error of a name C cannot take.
+pub fn lib_names(
+    matches: &ArgMatches, files: &LibFiles, module: &zakac_ir_builder::ir::Module,
+) -> Result<LibNames, Error>
+{
+    let given = matches.try_get_one::<String>(LIB_NAME_ARG).ok().flatten();
+    LibNames::of(given.unwrap_or(&files.name), module)
 }
 
 /// Add the flags that pick the toolchain and pass flags to it.
@@ -479,10 +507,17 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let files = files.unwrap();
     let dialect = toolchain::Dialect::of(target_from(matches, BuildTarget::C).abi);
     let libs = folded.map(|m| link_libs_for(&m.foreign, dialect)).unwrap_or_default();
-    let api = exports::api_names(&exports);
-    let header = lib_files.as_ref().map(|f| {
+    let names = lib_files.as_ref().zip(folded).map(|(f, m)| lib_names(matches, f, m));
+    let names = names.transpose();
+    ret_if!(let Err(error) = names, report_command_error(io, &info, error));
+    let names = names.unwrap();
+    let mut files = files;
+    do_if!(let Some(n) = &names, n.add_to(&mut files));
+    let api =
+        names.as_ref().map(|n| exports::api_names(&exports, n)).unwrap_or_default();
+    let header = lib_files.as_ref().zip(names.as_ref()).map(|(f, n)| {
         let links = static_links(built_for.abi, dialect, &libs);
-        let text = exports::header(&exports, target.platform_bits, &f.name, &links);
+        let text = exports::header(&exports, target.platform_bits, n, &links);
         (f.header.clone(), text)
     });
     #[rustfmt::skip]

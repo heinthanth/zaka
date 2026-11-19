@@ -17,7 +17,8 @@ cargo rustc -p zaka_runtime --lib --crate-type staticlib --profile zaka-runtime 
   --target "$triple" -- --print native-static-libs 2> "$out/build.log" \
   || { cat "$out/build.log"; exit 1; }
 
-sed -n 's/.*native-static-libs: //p' "$out/build.log" | tr ' ' '\n' | sed '/^$/d' > "$out/native-libs.txt"
+sed -n 's/.*native-static-libs: //p' "$out/build.log" | tr ' ' '\n' | \
+  sed '/^$/d' > "$out/native-libs.txt"
 
 case "$triple" in *-msvc) lib=zaka_runtime.lib ;; *) lib=libzaka_runtime.a ;; esac
 cp "${CARGO_TARGET_DIR:-target}/$triple/zaka-runtime/$lib" "$out/$lib"

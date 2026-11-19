@@ -41,11 +41,11 @@ code at once.
 | Test the compiler and the VM, not the web crates | `mise run test:compiler` |
 | Test the Learn and Docs pages | `mise run test:books` (`cargo nextest run -p zaka_website books::`) |
 | Test the web crates: the site, the books and the explorer | `mise run test:web` |
-| Headers for the editor of the C runtime | `mise run c:mock-headers` (a build of hello in `target/c-headers`, which `runtime/.clangd` reads; again after a change to `zaka_runtime`) |
+| Headers for the editor of the C runtime | `mise run editor:mock-header` (a build of hello and of a lib in `target/c-headers`, which `runtime/.clangd` reads; again after a change to `zaka_runtime`) |
 | Format | `mise run format` (rustfmt, then clang-format on the C runtime headers; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |
-| Build the VS Code extension | `mise run vscode:build` (wasm-pack, bun, vsce) |
+| Build the VS Code extension | `mise run editor:build-vscode` (wasm-pack, bun, vsce); `editor:install-vscode` and `editor:install-cursor` install it |
 | Build and publish the site | `mise run pages:publish` (`dist`, then Cloudflare Pages) |
 
 ## Learn and Docs pages

@@ -124,6 +124,7 @@ pub fn run_aot(
         grants,
         &target,
         false,
+        None,
     );
     let made = made.unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let dir = tempfile::tempdir().unwrap();

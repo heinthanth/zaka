@@ -51,6 +51,9 @@ en = "  ... %{n} calls more"
 [target_c.full_hint]
 en = "note: set %{var}=full to list each call, or %{var}=0 to leave the calls out"
 
+[target_c.lib_name]
+en = "The name of a C lib in the names C calls (zk_reset_<name>, zk_last_trap_from_<name>) and in the names it links under: ASCII letters, digits and _; the name of its files when not given."
+
 [target_c.runtime_lib]
 en = "A runtime lib built for another target (cargo build -p zaka_runtime --target <triple>), to build for that OS and CPU with a C compiler for it; native-libs.txt beside it lists the OS libs it needs, one flag a line."
 

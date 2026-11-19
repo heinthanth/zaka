@@ -86,6 +86,11 @@ pub enum Error
     LibWithNoExports,
     #[error("{}", t!("errors.lib_on_wasi"))]
     LibOnWasi,
+    #[error("{}", t!("errors.lib_name", name = name))]
+    LibName
+    {
+        name: String
+    },
     #[error("{}", t!("errors.c_for_other_host", target = target, host = host))]
     CForOtherHost
     {

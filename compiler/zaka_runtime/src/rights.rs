@@ -145,12 +145,25 @@ fn build_gate() -> Gate
 /// `true` when the run holds the right.
 pub fn allowed(right: Right, subject: &str) -> bool
 {
-    let Ok(mut held) = GATE.lock()
-    else
-    {
-        return false;
-    };
-    held.get_or_insert_with(build_gate).check(right, subject).is_ok()
+    with_gate(|g| g.check(right, subject).is_ok()).unwrap_or(false)
+}
+
+/// Run a step with the gate of the run: the gate of the C lib whose call is
+/// in progress, or else the gate of the program; each is made from the grants
+/// of its build at the first check.
+///
+/// # Arguments
+///
+/// * `step` - The step.
+///
+/// # Returns
+///
+/// What the step gave, or `None` when the gate is out of reach.
+fn with_gate<R>(step: impl FnOnce(&mut Gate) -> R) -> Option<R>
+{
+    let lib = crate::libs::current().map(|l| &l.gate);
+    let mut held = lib.unwrap_or(&GATE).lock().ok()?;
+    Some(step(held.get_or_insert_with(build_gate)))
 }
 
 /// The grant of the environment in the gate of the run.
@@ -158,15 +171,7 @@ pub fn allowed(right: Right, subject: &str) -> bool
 /// # Returns
 ///
 /// The grant.
-fn env_grant() -> Grant
-{
-    let Ok(mut held) = GATE.lock()
-    else
-    {
-        return Grant::None;
-    };
-    held.get_or_insert_with(build_gate).grants.env.clone()
-}
+fn env_grant() -> Grant { with_gate(|g| g.grants.env.clone()).unwrap_or(Grant::None) }
 
 /// What an effect of a right does, as a message names it.
 ///
@@ -250,7 +255,7 @@ fn subject_of(p: *const c_char) -> String
 /// # Returns
 ///
 /// 1 when it does.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("allowed"))]
 pub extern "C" fn zk_allowed(right: i32, subject: *const c_char) -> i32
 {
     i32::from(allowed(right_of(right), &subject_of(subject)))
@@ -262,7 +267,7 @@ pub extern "C" fn zk_allowed(right: i32, subject: *const c_char) -> i32
 /// # Arguments
 ///
 /// * `name` - The C name.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("need_ffi"))]
 pub extern "C" fn zk_need_ffi(name: *const c_char)
 {
     let name = subject_of(name);
@@ -299,7 +304,7 @@ fn named(row: *mut c_char, names: &[String]) -> bool
 /// # Returns
 ///
 /// The variables.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("allowed_env"))]
 pub extern "C" fn zk_allowed_env(
     envp: *mut *mut c_char, count: *mut i32,
 ) -> *mut *mut c_char

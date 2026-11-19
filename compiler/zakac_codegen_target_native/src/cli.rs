@@ -23,6 +23,7 @@ use zakac_ir_builder::cli::fold_options;
 use zakac_ir_builder::cli::semcheck_options;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_reporter::render::write_diagnostics;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::cli::target_from;
 use zakac_session::artifact::ArtifactFormat;
@@ -219,10 +220,12 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     const LIB_GLUE: &str = "zaka_lib.c";
     use zakac_codegen_target_c::cli::build_and_link;
     use zakac_codegen_target_c::cli::input_path;
+    use zakac_codegen_target_c::cli::lib_names;
     use zakac_codegen_target_c::cli::target_options;
     use zakac_codegen_target_c::cli::with_exe;
     use zakac_codegen_target_c::driver::default_cache;
     use zakac_codegen_target_c::driver::write_cache_for;
+    use zakac_codegen_target_c::exports::api_names;
     use zakac_codegen_target_c::ffi::link_libs_for;
     use zakac_codegen_target_c::options::RunCheck;
     use zakac_codegen_target_c::toolchain::Dialect;
@@ -293,6 +296,14 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         ..target_options(matches)
     };
     let grants = grants_from(matches, Granted::Run);
+    let stem = input_path(&input);
+    let out = |ext: &str| {
+        arg("output").map_or_else(|| stem.with_extension(ext), PathBuf::from)
+    };
+    let files = lib.then(|| LibFiles::of(&out(""), target.clone()));
+    let names = files.as_ref().map(|f| lib_names(matches, f, program)).transpose();
+    ret_if!(let Err(error) = names, report_command_error(io, &info, error));
+    let names = names.unwrap();
     let made = crate::aot::object(
         program,
         source_map.files(),
@@ -300,10 +311,10 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         &grants,
         &target,
         emit == Emit::Clif,
+        names.as_ref(),
     );
     ret_if!(let Err(error) = made, report_command_error(io, &info, error));
     let made = made.unwrap();
-    let stem = input_path(&input);
     let written = |path: PathBuf, octets: &[u8]| {
         std::fs::write(&path, octets).map_err(|e| {
             let context = zakac_host_errors::errors::IOErrorContext::new(
@@ -312,9 +323,6 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             );
             Error::from_io(e, context)
         })
-    };
-    let out = |ext: &str| {
-        arg("output").map_or_else(|| stem.with_extension(ext), PathBuf::from)
     };
     let done = match emit
     {
@@ -332,18 +340,22 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             let checks = options.checks.with(RunCheck::Sanitizers, false);
             let dialect = Dialect::of(target.abi);
             let libs = link_libs_for(&program.foreign, dialect);
-            let files = lib.then(|| LibFiles::of(&out(""), target.clone()));
             let exe = files
                 .as_ref()
                 .map_or_else(|| with_exe(out(""), target.os), |f| f.shared.clone());
             // The wrappers of a lib are C, which the C toolchain builds beside
             // the object.
             let platform = options.platform_bits;
-            let api = zakac_codegen_target_c::exports::api_names(&exports);
-            let glue = files.as_ref().map(|_| {
-                let text = native_glue(&exports, &made.export_shapes, platform);
-                CFile::builder().name(LIB_GLUE).text(text).build()
-            });
+            let api =
+                names.as_ref().map(|n| api_names(&exports, n)).unwrap_or_default();
+            let mut glue: Vec<CFile> = names
+                .iter()
+                .map(|_| {
+                    let text = native_glue(&exports, &made.export_shapes, platform);
+                    CFile::builder().name(LIB_GLUE).text(text).build()
+                })
+                .collect();
+            do_if!(let Some(n) = &names, n.add_to(&mut glue));
             let built =
                 write_cache_for(&cache, glue.as_slice(), target.abi).and_then(|lib| {
                     let obj = cache.join(format!("main.{}", dialect.object()));
@@ -357,15 +369,15 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                     .debug_info(options.debug_info).exports(&api).build();
                     build_and_link(matches, io, &info, link)
                 });
-            let Some(f) =
-                files.filter(|_| built.as_ref().is_ok_and(|c| *c == ExitCode::Success))
+            let ok = built.as_ref().is_ok_and(|c| *c == ExitCode::Success);
+            let Some((f, n)) = files.zip(names).filter(|_| ok)
             else
             {
                 return built
                     .unwrap_or_else(|error| report_command_error(io, &info, error));
             };
             let links = static_links(target.abi, dialect, &libs);
-            let text = header(&exports, platform, &f.name, &links);
+            let text = header(&exports, platform, &n, &links);
             written(f.header, text.as_bytes()).map(|_| ExitCode::Success)
         }
     };

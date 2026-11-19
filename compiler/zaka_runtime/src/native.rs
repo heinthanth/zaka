@@ -20,7 +20,7 @@ use crate::traps::zk_too_deep;
 /// # Arguments
 ///
 /// * `func` - The number of its function: 0 for main, n + 1 for function n.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("enter_call"))]
 pub extern "C" fn zk_enter_call(func: u32)
 {
     ret_if!(!tracks());
@@ -37,7 +37,7 @@ pub extern "C" fn zk_enter_call(func: u32)
 }
 
 /// Note a call as it returns.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("leave_call"))]
 pub extern "C" fn zk_leave_call()
 {
     ret_if!(!tracks());
@@ -50,7 +50,7 @@ pub extern "C" fn zk_leave_call()
 /// # Arguments
 ///
 /// * `site` - The index of the site in the site table.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("at_site"))]
 pub extern "C" fn zk_at_site(site: u32)
 {
     ret_if!(prog().debug_info == 0);
@@ -73,7 +73,7 @@ pub extern "C" fn zk_at_site(site: u32)
 /// # Returns
 ///
 /// The remainder, with the sign of `a`.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fmod"))]
 pub extern "C" fn zk_fmod(a: f64, b: f64) -> f64 { a % b }
 
 /// The remainder of an f32 division, as C's `fmodf`.
@@ -86,5 +86,5 @@ pub extern "C" fn zk_fmod(a: f64, b: f64) -> f64 { a % b }
 /// # Returns
 ///
 /// The remainder, with the sign of `a`.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fmodf"))]
 pub extern "C" fn zk_fmodf(a: f32, b: f32) -> f32 { a % b }

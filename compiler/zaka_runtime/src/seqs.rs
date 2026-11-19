@@ -124,7 +124,7 @@ pub fn at(p: *const u8, n: usize) -> *mut u8 { p.cast_mut().wrapping_add(n) }
 /// # Returns
 ///
 /// The first cell.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("seq_base"))]
 pub extern "C" fn zk_seq_base(at: *const u8) -> *mut u8 { ld(at) }
 
 /// The cell count of a plain list or text.
@@ -136,7 +136,7 @@ pub extern "C" fn zk_seq_base(at: *const u8) -> *mut u8 { ld(at) }
 /// # Returns
 ///
 /// The count.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("seq_len"))]
 pub extern "C" fn zk_seq_len(p: *const u8) -> usize { ld(at(p, WORD)) }
 
 /// The third word of a plain list or text: the size of its heap block, 0 when
@@ -159,7 +159,7 @@ pub fn seq_room(p: *const u8) -> usize { ld(at(p, 2 * WORD)) }
 /// * `base` - The first cell.
 /// * `len` - The count.
 /// * `room` - The size of the block it owns, 0 for none.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("seq_put"))]
 pub extern "C" fn zk_seq_put(p: *mut u8, base: *mut u8, len: usize, room: usize)
 {
     st(p, base);
@@ -194,7 +194,7 @@ pub fn octets<'a>(p: *const u8) -> &'a [u8]
 /// # Returns
 ///
 /// The duplicate on the heap, for `zk_text_cstr_free`.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_cstr"))]
 pub extern "C" fn zk_text_cstr(p: *const u8) -> *mut c_char
 {
     let raw = octets(p);
@@ -210,7 +210,7 @@ pub extern "C" fn zk_text_cstr(p: *const u8) -> *mut c_char
 /// # Arguments
 ///
 /// * `dup` - The duplicate.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_cstr_free"))]
 pub extern "C" fn zk_text_cstr_free(dup: *mut c_char)
 {
     // SAFETY: the duplicate came from malloc.
@@ -225,7 +225,7 @@ pub extern "C" fn zk_text_cstr_free(dup: *mut c_char)
 /// * `s` - The octets.
 /// * `len` - Their count.
 /// * `size` - The size of the slot.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_lit"))]
 pub extern "C" fn zk_text_lit(slot: *mut u8, s: *const c_char, len: usize, size: usize)
 {
     let base = if len > 0
@@ -669,7 +669,7 @@ fn drop_block(p: *mut u8, k: &ZkKind)
 ///
 /// * `p` - The value.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("drop"))]
 pub extern "C" fn zk_drop(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut drop_block);
@@ -750,7 +750,7 @@ fn unshare(p: *mut u8, k: &ZkKind)
 ///
 /// * `p` - The value.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("dup_seqs"))]
 pub extern "C" fn zk_dup_seqs(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut dup_block);
@@ -795,7 +795,7 @@ fn deep_block(p: *mut u8, k: &ZkKind)
 ///
 /// * `p` - The value.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("deep_seqs"))]
 pub extern "C" fn zk_deep_seqs(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut deep_block);
@@ -819,7 +819,7 @@ pub extern "C" fn zk_deep_seqs(p: *mut u8, k: *const ZkKind)
 ///
 /// * `p` - The value.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("lend_seqs"))]
 pub extern "C" fn zk_lend_seqs(p: *mut u8, k: *const ZkKind)
 {
     each_block(p, kind(k), &mut |p, k| {
@@ -843,7 +843,7 @@ pub extern "C" fn zk_lend_seqs(p: *mut u8, k: *const ZkKind)
 /// # Returns
 ///
 /// The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("own"))]
 pub extern "C" fn zk_own(p: *mut u8, k: *const ZkKind) -> *mut u8
 {
     own(p, kind(k));
@@ -874,7 +874,7 @@ fn own(p: *mut u8, k: &ZkKind)
 /// # Returns
 ///
 /// The block, or NULL for an object that is the zero word.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("obj_ptr"))]
 pub extern "C" fn zk_obj_ptr(p: *const u8) -> *mut u8
 {
     let base = zk_seq_base(p);
@@ -889,7 +889,7 @@ pub extern "C" fn zk_obj_ptr(p: *const u8) -> *mut u8
 ///
 /// * `p` - The slot of the object.
 /// * `base` - The block, or NULL for the zero word.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("ptr_obj"))]
 pub extern "C" fn zk_ptr_obj(p: *mut u8, base: *mut u8)
 {
     let size = if base.is_null() { 0 } else { head(base).size };
@@ -906,7 +906,7 @@ pub extern "C" fn zk_ptr_obj(p: *mut u8, base: *mut u8)
 /// # Returns
 ///
 /// The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("pin"))]
 pub extern "C" fn zk_pin(p: *mut u8) -> *mut u8
 {
     let base = zk_seq_base(p);
@@ -920,7 +920,7 @@ pub extern "C" fn zk_pin(p: *mut u8) -> *mut u8
 ///
 /// * `p` - The first octet.
 /// * `size` - The count.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("zero"))]
 pub extern "C" fn zk_zero(p: *mut u8, size: usize) { zero(p, size) }
 
 /// Move a list into a heap block of a plain list.
@@ -931,7 +931,7 @@ pub extern "C" fn zk_zero(p: *mut u8, size: usize) { zero(p, size) }
 /// * `src` - The list.
 /// * `list` - The kind of the list.
 /// * `fixed` - 1 for a static list, which holds no count and no drop frees.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("to_heap"))]
 pub extern "C" fn zk_to_heap(
     dst: *mut u8, src: *const u8, list: *const ZkKind, fixed: i32,
 )
@@ -966,7 +966,7 @@ pub extern "C" fn zk_to_heap(
 /// # Returns
 ///
 /// The cell, counted from 0.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cell_of"))]
 pub extern "C" fn zk_cell_of(index: i64, len: usize, first: i32) -> usize
 {
     in_range(trap::INDEX_OUT_OF_RANGE, index, len as i64, first, 1)
@@ -1038,7 +1038,7 @@ fn place_of(index: i64, count: usize, first: i32) -> usize
 /// # Returns
 ///
 /// The address of the fields.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("object_cell"))]
 pub extern "C" fn zk_object_cell(p: *const u8) -> *mut u8
 {
     do_if!(zk_seq_len(p) == 0, zk_plain_trap(trap::NULL_OBJECT));
@@ -1057,7 +1057,7 @@ pub extern "C" fn zk_object_cell(p: *const u8) -> *mut u8
 /// # Returns
 ///
 /// The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("slice_cell"))]
 pub extern "C" fn zk_slice_cell(
     p: *const u8, index: i64, first: i32, stride: usize,
 ) -> *mut u8
@@ -1088,7 +1088,7 @@ fn edge_check(base: *const u8, n: usize)
 /// * `limit` - The cell count of the source, or the largest size for none.
 /// * `stride` - The octets of a cell.
 /// * `text` - 1 for text, whose ends must fall between characters.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("make_slice"))]
 pub extern "C" fn zk_make_slice(
     slot: *mut u8, base: *mut u8, start: u64, len: u64, limit: usize, stride: usize,
     text: i32,
@@ -1150,7 +1150,7 @@ fn utf8_len(s: &[u8]) -> usize
 /// # Returns
 ///
 /// 1 when the octets are UTF-8.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("is_utf8"))]
 pub extern "C" fn zk_is_utf8(s: *const u8, n: usize) -> i32
 {
     ret_if!(n == 0, 1);
@@ -1164,7 +1164,7 @@ pub extern "C" fn zk_is_utf8(s: *const u8, n: usize) -> i32
 /// # Arguments
 ///
 /// * `p` - The plain list.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("check_utf8"))]
 pub extern "C" fn zk_check_utf8(p: *const u8)
 {
     ret_if!(!check_on(TEXT_BIT));
@@ -1233,7 +1233,7 @@ fn put_cell(p: *mut u8, k: &ZkKind, src: *mut u8, n: usize)
 /// * `p` - The plain list.
 /// * `k` - Its kind.
 /// * `src` - The new cell, moved out and zeroed.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("add_cell"))]
 pub extern "C" fn zk_add_cell(p: *mut u8, k: *const ZkKind, src: *mut u8)
 {
     put_cell(p, kind(k), src, zk_seq_len(p))
@@ -1248,7 +1248,7 @@ pub extern "C" fn zk_add_cell(p: *mut u8, k: *const ZkKind, src: *mut u8)
 /// * `index` - The number of the place.
 /// * `first` - The number of the first cell.
 /// * `src` - The new cell, moved out and zeroed.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("insert_cell"))]
 pub extern "C" fn zk_insert_cell(
     p: *mut u8, k: *const ZkKind, index: i64, first: i32, src: *mut u8,
 )
@@ -1262,7 +1262,7 @@ pub extern "C" fn zk_insert_cell(
 ///
 /// * `p` - The plain list or text.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("remove_cell"))]
 pub extern "C" fn zk_remove_cell(p: *mut u8, k: *const ZkKind)
 {
     let k = kind(k);
@@ -1398,7 +1398,7 @@ fn splice(p: *mut u8, from: usize, to: usize, add: &[u8])
 ///
 /// * `p` - The text.
 /// * `text` - The added text.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("add_text"))]
 pub extern "C" fn zk_add_text(p: *mut u8, text: *const u8)
 {
     let len = zk_seq_len(p);
@@ -1411,7 +1411,7 @@ pub extern "C" fn zk_add_text(p: *mut u8, text: *const u8)
 ///
 /// * `p` - The text.
 /// * `c` - The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("add_char"))]
 pub extern "C" fn zk_add_char(p: *mut u8, c: u32)
 {
     let len = zk_seq_len(p);
@@ -1443,7 +1443,7 @@ fn insert_at(p: *const u8, index: i64, first: i32) -> usize
 /// * `index` - The number.
 /// * `first` - The number of the first character.
 /// * `text` - The added text.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("insert_text"))]
 pub extern "C" fn zk_insert_text(p: *mut u8, index: i64, first: i32, text: *const u8)
 {
     let split = insert_at(p, index, first);
@@ -1458,7 +1458,7 @@ pub extern "C" fn zk_insert_text(p: *mut u8, index: i64, first: i32, text: *cons
 /// * `index` - The number.
 /// * `first` - The number of the first character.
 /// * `c` - The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("insert_char"))]
 pub extern "C" fn zk_insert_char(p: *mut u8, index: i64, first: i32, c: u32)
 {
     let split = insert_at(p, index, first);
@@ -1473,7 +1473,7 @@ pub extern "C" fn zk_insert_char(p: *mut u8, index: i64, first: i32, c: u32)
 /// * `index` - The number.
 /// * `first` - The number of the first character.
 /// * `c` - The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("set_char"))]
 pub extern "C" fn zk_set_char(p: *mut u8, index: i64, first: i32, c: u32)
 {
     let s = octets(p);
@@ -1533,7 +1533,7 @@ fn span(p: *const u8, start: i64, end: i64, chars: i32) -> (usize, usize)
 /// * `end` - The last one.
 /// * `chars` - 1 for characters, 0 for octets.
 /// * `text` - The new text.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("replace_text"))]
 pub extern "C" fn zk_replace_text(
     p: *mut u8, start: i64, end: i64, chars: i32, text: *const u8,
 )
@@ -1551,7 +1551,7 @@ pub extern "C" fn zk_replace_text(
 /// * `end` - The last one.
 /// * `chars` - 1 for characters, 0 for octets.
 /// * `c` - The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("replace_char"))]
 pub extern "C" fn zk_replace_char(p: *mut u8, start: i64, end: i64, chars: i32, c: u32)
 {
     let (from, to) = span(p, start, end, chars);
@@ -1584,7 +1584,7 @@ fn remove_char(p: *mut u8)
 /// # Returns
 ///
 /// The count.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("char_count"))]
 pub extern "C" fn zk_char_count(p: *const u8) -> usize { chars_in(octets(p)) }
 
 /// A numbered character of text.
@@ -1598,7 +1598,7 @@ pub extern "C" fn zk_char_count(p: *const u8) -> usize { chars_in(octets(p)) }
 /// # Returns
 ///
 /// The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("char_at"))]
 pub extern "C" fn zk_char_at(p: *const u8, index: i64, first: i32) -> u32
 {
     let s = octets(p);
@@ -1616,7 +1616,7 @@ pub extern "C" fn zk_char_at(p: *const u8, index: i64, first: i32) -> u32
 /// # Returns
 ///
 /// The character.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("char_at_octet"))]
 pub extern "C" fn zk_char_at_octet(p: *const u8, index: u64) -> u32
 {
     let s = octets(p);
@@ -1646,7 +1646,7 @@ pub extern "C" fn zk_char_at_octet(p: *const u8, index: u64) -> u32
 /// # Returns
 ///
 /// 1 when the two hold the same octets.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_eq"))]
 pub extern "C" fn zk_text_eq(a: *const u8, b: *const u8) -> i32
 {
     i32::from(octets(a) == octets(b))

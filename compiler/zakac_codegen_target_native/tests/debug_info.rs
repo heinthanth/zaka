@@ -33,6 +33,7 @@ fn object_of(debug_info: bool) -> Vec<u8>
         &grants,
         &native_target(),
         false,
+        None,
     );
     made.unwrap().octets
 }

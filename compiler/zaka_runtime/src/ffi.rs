@@ -131,7 +131,7 @@ fn members(list: *const *const ZkCKind, count: u32) -> Vec<Type>
 /// * `shape` - The shape of the call.
 /// * `args` - The address of each value.
 /// * `ret` - Where the result goes: room for it, and for a word at least.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("ffi_call"))]
 pub extern "C" fn zk_ffi_call(
     code: *const c_void, shape: *const ZkFfiShape, args: *mut *mut c_void,
     ret: *mut c_void,
@@ -177,7 +177,7 @@ pub extern "C" fn zk_ffi_call(
 /// # Returns
 ///
 /// The shape.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("cb_shape_of"))]
 pub extern "C" fn zk_cb_shape_of(native: *const ZkCbNativeShape) -> *const ZkCbShape
 {
     let mut shapes = SHAPES.lock().unwrap_or_else(|e| e.into_inner());
@@ -204,7 +204,7 @@ pub extern "C" fn zk_cb_shape_of(native: *const ZkCbNativeShape) -> *const ZkCbS
 /// # Arguments
 ///
 /// * `p` - The string.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("c_free"))]
 pub extern "C" fn zk_c_free(p: *mut c_void)
 {
     // SAFETY: C handed over a block of its allocator.

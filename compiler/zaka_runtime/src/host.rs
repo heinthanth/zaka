@@ -219,7 +219,7 @@ fn with_right(
 }
 
 /// Read a line of standard input.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_read_line"))]
 pub extern "C" fn zk_host_read_line(
     slot: *mut u8, ret: *const ZkKind, stream: *const u8, stream_kind: *const ZkKind,
 )
@@ -236,7 +236,7 @@ pub extern "C" fn zk_host_read_line(
 }
 
 /// Read a whole file as text.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_read_file"))]
 pub extern "C" fn zk_host_read_file(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Read, path, |name, ret| {
@@ -249,7 +249,7 @@ pub extern "C" fn zk_host_read_file(slot: *mut u8, ret: *const ZkKind, path: *co
 }
 
 /// Write text as the whole of a file.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_write_file"))]
 pub extern "C" fn zk_host_write_file(
     slot: *mut u8, ret: *const ZkKind, text: *const u8, path: *const u8,
 )
@@ -261,7 +261,7 @@ pub extern "C" fn zk_host_write_file(
 }
 
 /// Add text at the end of a file.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_append_file"))]
 pub extern "C" fn zk_host_append_file(
     slot: *mut u8, ret: *const ZkKind, text: *const u8, path: *const u8,
 )
@@ -273,7 +273,7 @@ pub extern "C" fn zk_host_append_file(
 }
 
 /// Write text to standard output or standard error.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_write_stream"))]
 pub extern "C" fn zk_host_write_stream(
     slot: *mut u8, ret: *const ZkKind, text: *const u8, stream: *const u8,
     stream_kind: *const ZkKind,
@@ -297,7 +297,7 @@ pub extern "C" fn zk_host_write_stream(
 }
 
 /// Remove a file, or a folder that holds nothing.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_remove"))]
 pub extern "C" fn zk_host_remove(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Write, path, |name, ret| {
@@ -306,7 +306,7 @@ pub extern "C" fn zk_host_remove(slot: *mut u8, ret: *const ZkKind, path: *const
 }
 
 /// Make a folder and each folder above it.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_make_folder"))]
 pub extern "C" fn zk_host_make_folder(
     slot: *mut u8, ret: *const ZkKind, path: *const u8,
 )
@@ -317,7 +317,7 @@ pub extern "C" fn zk_host_make_folder(
 }
 
 /// The names a folder holds, sorted.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_list_folder"))]
 pub extern "C" fn zk_host_list_folder(
     slot: *mut u8, ret: *const ZkKind, path: *const u8,
 )
@@ -352,7 +352,7 @@ fn good_names(slot: *mut u8, ret: &ZkKind, names: &[String])
 }
 
 /// What a path holds: a file, a folder or something else.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_path_kind"))]
 pub extern "C" fn zk_host_path_kind(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Read, path, |name, ret| {
@@ -365,7 +365,7 @@ pub extern "C" fn zk_host_path_kind(slot: *mut u8, ret: *const ZkKind, path: *co
 }
 
 /// Move a file or a folder, replacing what the target holds.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_rename"))]
 pub extern "C" fn zk_host_rename(
     slot: *mut u8, ret: *const ZkKind, from: *const u8, to: *const u8,
 )
@@ -380,7 +380,7 @@ pub extern "C" fn zk_host_rename(
 }
 
 /// Read a variable of the environment.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("host_read_env"))]
 pub extern "C" fn zk_host_read_env(slot: *mut u8, ret: *const ZkKind, name: *const u8)
 {
     with_right(slot, ret, Right::Env, name, |var, ret| match TermWorld.read_env(var)
@@ -418,7 +418,7 @@ fn put_text_list(at: *mut u8, rows: &[&[u8]])
 /// * `at` - The slot: three words.
 /// * `count` - The number of texts.
 /// * `items` - The texts, each zero-ended.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_list"))]
 pub extern "C" fn zk_text_list(at: *mut u8, count: i32, items: *mut *mut c_char)
 {
     let n = count.max(0) as usize;
@@ -435,7 +435,7 @@ pub extern "C" fn zk_text_list(at: *mut u8, count: i32, items: *mut *mut c_char)
 ///
 /// * `out` - Where the text goes.
 /// * `s` - What C passed.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_of_c"))]
 pub extern "C" fn zk_text_of_c(out: *mut u8, s: *const c_char)
 {
     do_if!(s.is_null(), zk_plain_trap(trap::NULL_FROM_C));
@@ -455,7 +455,7 @@ pub extern "C" fn zk_text_of_c(out: *mut u8, s: *const c_char)
 /// * `size` - The size of the result.
 /// * `ok_at` - The offset of the text in it.
 /// * `s` - What C gave back.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_from_c"))]
 pub extern "C" fn zk_text_from_c(
     out: *mut u8, size: usize, ok_at: usize, s: *const c_char,
 )

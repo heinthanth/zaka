@@ -164,12 +164,12 @@ backtrace line is a function name with no place.
 
 `zakac` carries the runtime lib of its own OS and CPU, so a build is for the host unless
 it is told otherwise. A build for another OS or CPU takes a runtime lib built for that target and a C
-compiler for it. `mise run runtime:cross <triple>` builds the lib with the Rust target of
+compiler for it. `mise run runtime:cross-build <triple>` builds the lib with the Rust target of
 that triple (`rustup target add <triple>`), and writes `native-libs.txt` beside it, the OS
 libs the lib needs:
 
 ```console
-$ mise run runtime:cross x86_64-unknown-linux-gnu
+$ mise run runtime:cross-build x86_64-unknown-linux-gnu
 $ zakac build --backend native --target-os linux --target-arch x86_64 \
     --runtime-lib target/runtime/x86_64-unknown-linux-gnu/libzaka_runtime.a \
     --cc x86_64-linux-gnu-gcc age.zaka

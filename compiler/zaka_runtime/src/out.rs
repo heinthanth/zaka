@@ -126,7 +126,7 @@ unsafe extern "C" {
 ///
 /// * `s` - The octets.
 /// * `n` - Their count.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("emit"))]
 pub extern "C" fn zk_emit(s: *const c_void, n: usize)
 {
     ret_if!(n == 0);
@@ -139,7 +139,7 @@ pub extern "C" fn zk_emit(s: *const c_void, n: usize)
 /// # Arguments
 ///
 /// * `buf` - The buffer, made blank here.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("sink_open"))]
 pub extern "C" fn zk_sink_open(buf: *mut ZkBuf)
 {
     // SAFETY: the generated code hands its own buffer.
@@ -158,7 +158,7 @@ pub extern "C" fn zk_sink_open(buf: *mut ZkBuf)
 /// # Arguments
 ///
 /// * `slot` - The slot of the text: three words.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("sink_close"))]
 pub extern "C" fn zk_sink_close(slot: *mut u8)
 {
     let buf = INTO.load(Ordering::Relaxed);
@@ -186,11 +186,11 @@ pub extern "C" fn zk_sink_close(slot: *mut u8)
 ///
 /// * `s` - The octets.
 /// * `n` - Their count; a NUL among them is written too.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_raw"))]
 pub extern "C" fn zk_put_raw(s: *const c_char, n: usize) { zk_emit(s.cast(), n) }
 
 /// Write the line break that ends each print.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_line"))]
 pub extern "C" fn zk_put_line() { emit(b"\n") }
 
 /// Write number text, each Western digit swapped for the Burmese digit of the
@@ -199,7 +199,7 @@ pub extern "C" fn zk_put_line() { emit(b"\n") }
 /// # Arguments
 ///
 /// * `s` - The text, NUL at its end.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_burmese"))]
 pub extern "C" fn zk_put_burmese(s: *const c_char)
 {
     emit(burmese_digits(&String::from_utf8_lossy(text(s))).as_bytes())
@@ -210,7 +210,7 @@ pub extern "C" fn zk_put_burmese(s: *const c_char)
 /// # Arguments
 ///
 /// * `v` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_u"))]
 pub extern "C" fn zk_put_u(v: u64) { emit(burmese_digits(&v.to_string()).as_bytes()) }
 
 /// Write a signed integer.
@@ -218,7 +218,7 @@ pub extern "C" fn zk_put_u(v: u64) { emit(burmese_digits(&v.to_string()).as_byte
 /// # Arguments
 ///
 /// * `v` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_i"))]
 pub extern "C" fn zk_put_i(v: i64) { emit(burmese_digits(&v.to_string()).as_bytes()) }
 
 /// Write a float from its bit pattern, as the VM writes it.
@@ -227,7 +227,7 @@ pub extern "C" fn zk_put_i(v: i64) { emit(burmese_digits(&v.to_string()).as_byte
 ///
 /// * `bits` - The width: 32 or 64.
 /// * `raw` - The pattern, in the low `bits` bits.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_fbits"))]
 pub extern "C" fn zk_put_fbits(bits: i32, raw: u64)
 {
     emit(float_text(bits as u16, raw).as_bytes())
@@ -238,7 +238,7 @@ pub extern "C" fn zk_put_fbits(bits: i32, raw: u64)
 /// # Arguments
 ///
 /// * `v` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_f32"))]
 pub extern "C" fn zk_put_f32(v: f32) { zk_put_fbits(32, u64::from(v.to_bits())) }
 
 /// Write an f64.
@@ -246,7 +246,7 @@ pub extern "C" fn zk_put_f32(v: f32) { zk_put_fbits(32, u64::from(v.to_bits())) 
 /// # Arguments
 ///
 /// * `v` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_f64"))]
 pub extern "C" fn zk_put_f64(v: f64) { zk_put_fbits(64, v.to_bits()) }
 
 /// Write a truth value as its word.
@@ -254,7 +254,7 @@ pub extern "C" fn zk_put_f64(v: f64) { zk_put_fbits(64, v.to_bits()) }
 /// # Arguments
 ///
 /// * `v` - The value, 0 or 1.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_bool"))]
 pub extern "C" fn zk_put_bool(v: u8)
 {
     let word = match v
@@ -270,7 +270,7 @@ pub extern "C" fn zk_put_bool(v: u8)
 /// # Arguments
 ///
 /// * `c` - The scalar value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_char"))]
 pub extern "C" fn zk_put_char(c: u32)
 {
     let ch = char::from_u32(c).unwrap_or(char::REPLACEMENT_CHARACTER);
@@ -289,7 +289,7 @@ pub extern "C" fn zk_put_char(c: u32)
 ///
 /// The scalar value, or U+FFFD when the integer names none: below zero, past
 /// U+10FFFF, or a surrogate.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("char_of"))]
 pub extern "C" fn zk_char_of(negative: i32, v: u64) -> u32
 {
     let scalar =

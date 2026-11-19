@@ -27,6 +27,8 @@ trap before none
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                       at mathlib.zaka:10:1)
+trap code 1 1 zero_divisor mathlib
+trap at စား mathlib.zaka:10:1, 1 calls, the latest 1
 after -1
 trap after reset none
 reset 0 3
@@ -40,6 +42,7 @@ greet 0 4
 divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                          at mathlib.zaka:10:1)
+trap kind zero_divisor mathlib
 after -1
 ";
 
@@ -73,21 +76,42 @@ fn ran(cmd: &mut Command, what: &str) -> String
     String::from_utf8(out.stdout).unwrap().replace("\r\n", "\n")
 }
 
+/// What the C program that links two libs prints.
+const TWO_LIBS: &str = "\
+add 0 42
+twice 0 42
+divide 1
+traps math none
+latest mathlib
+after -1 0 10
+reset 0 3
+";
+
 /// Build the lib of `mathlib.zaka` with a backend into a folder of its own.
 ///
 /// # Arguments
 ///
 /// * `dir` - The folder.
 /// * `backend` - The backend, `c` or `native`.
-fn build_lib(dir: &Path, backend: &str)
+fn build_lib(dir: &Path, backend: &str) { build_named(dir, backend, "mathlib") }
+
+/// Build the lib of `<name>.zaka` of the inputs with a backend into a folder.
+///
+/// # Arguments
+///
+/// * `dir` - The folder.
+/// * `backend` - The backend, `c` or `native`.
+/// * `name` - The name of the lib and of its file.
+fn build_named(dir: &Path, backend: &str, name: &str)
 {
-    std::fs::copy(c_inputs().join("mathlib.zaka"), dir.join("mathlib.zaka")).unwrap();
+    let file = format!("{name}.zaka");
+    std::fs::copy(c_inputs().join(&file), dir.join(&file)).unwrap();
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
     // The trap names the file as the build was given it.
     cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1");
-    cmd.args(["build", "--backend", backend, "--emit", "lib", "--cache", "cache"]);
-    cmd.args(["-o", "mathlib", "mathlib.zaka"]);
-    ran(&mut cmd, &format!("the lib build of the {backend} backend"));
+    cmd.args(["build", "--backend", backend, "--emit", "lib", "--cache"]);
+    cmd.arg(format!("cache_{name}")).args(["-o", name, &file]);
+    ran(&mut cmd, &format!("the build of {name} with the {backend} backend"));
 }
 
 /// Link the C driver with the static lib in a folder, and run it.
@@ -179,5 +203,35 @@ fn c_and_rust_call_a_zaka_lib_of_each_backend()
         );
         let from_rust = run_rust_driver(dir.path(), &os_libs);
         assert_eq!(from_rust, FROM_RUST, "the {backend} lib from Rust");
+    }
+}
+
+#[test]
+fn two_zaka_libs_link_into_one_c_program()
+{
+    // shortcut: the driver builds with GNU flags, as in the test above.
+    let gnu = Dialect::of(host_abi()) == Dialect::Gnu;
+    if !gnu || find_cc_for(None, Dialect::Gnu).is_err()
+    {
+        eprintln!("the C lib test needs a GNU C toolchain");
+        return;
+    }
+    let os_libs = runtime_lib(host_abi()).map(|r| r.native_libs().collect::<Vec<_>>());
+    let os_libs = os_libs.unwrap_or_default();
+    let cc = find_cc_for(None, Dialect::Gnu).expect("a C compiler");
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "mathlib");
+        build_named(dir, backend, "twicelib");
+        let exe = dir.join(format!("two_libs{}", std::env::consts::EXE_SUFFIX));
+        let mut cmd = cc.command();
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("two_libs.c"));
+        cmd.arg(dir.join("libmathlib.a")).arg(dir.join("libtwicelib.a"));
+        cmd.args(&os_libs).arg("-lm").arg("-o").arg(&exe);
+        ran(&mut cmd, "the link of two libs");
+        let printed = ran(&mut Command::new(&exe), "the program of two libs");
+        assert_eq!(printed, TWO_LIBS, "two libs of the {backend} backend");
     }
 }

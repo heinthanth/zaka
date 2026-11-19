@@ -1,18 +1,19 @@
 //! Stops: the trap line with its place, and the backtrace of the calls in
 //! progress, as the VM writes them.
 
-use std::ffi::CString;
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::io::Write;
 use std::mem::ManuallyDrop;
-use std::sync::Mutex;
 use std::sync::OnceLock;
-use std::sync::PoisonError;
 
+use strum::EnumIter;
+use strum::IntoEnumIterator;
+use strum::IntoStaticStr;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::libs::TrapRecord;
 use crate::out::flush_out;
 use crate::program::ZkFrame;
 use crate::program::prog;
@@ -25,7 +26,8 @@ use crate::program::zk_frames;
 /// The traps a program can stop with; the compiler writes the text of each,
 /// from its locale, into the table of the program.
 #[repr(C)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, IntoStaticStr, EnumIter)]
+#[strum(serialize_all = "snake_case")]
 #[allow(missing_docs)]
 pub enum ZkTrap
 {
@@ -100,38 +102,6 @@ const SHOWN_CALLS: u64 = 16;
 
 /// The name of the executable, without its folder, which leads a trap line.
 static NAME: OnceLock<Vec<u8>> = OnceLock::new();
-
-/// The function a C lib leaves a call through when the call stops on a trap:
-/// it jumps back to the wrapper of the call, which returns the trap as its
-/// status, so the program that loaded the lib goes on.
-static LEAVE: OnceLock<extern "C" fn(i32)> = OnceLock::new();
-
-/// The text of the trap a C lib stopped on: the trap line with its place,
-/// with no name of an executable and no backtrace; none after a reset.
-static LAST: Mutex<Option<CString>> = Mutex::new(None);
-
-/// Make each trap leave through `leave`, in place of the end of the run: a C
-/// lib sets it on its first call.
-///
-/// # Arguments
-///
-/// * `leave` - The function that leaves the call in progress; it takes the trap
-///   and does not return.
-#[unsafe(no_mangle)]
-pub extern "C" fn zk_on_trap(leave: extern "C" fn(i32)) { _ = LEAVE.set(leave); }
-
-/// The text of the trap a C lib stopped on.
-///
-/// # Returns
-///
-/// The text, ended with a zero octet, or NULL before a trap.
-#[unsafe(no_mangle)]
-pub extern "C" fn zk_trap_text() -> *const c_char
-{
-    // The text remains in place until a reset or the next trap replaces it.
-    let last = LAST.lock().unwrap_or_else(PoisonError::into_inner);
-    last.as_ref().map_or(std::ptr::null(), |t| t.as_ptr())
-}
 
 /// Keep the name of the executable for trap lines.
 ///
@@ -223,12 +193,26 @@ fn frame_name(func: u32) -> &'static [u8]
 /// The text, or `None`.
 fn place(site: u32) -> Option<Vec<u8>>
 {
+    let (file, line, col) = site_of(site)?;
+    Some([file, format!(":{line}:{col}").into_bytes()].concat())
+}
+
+/// The file, the line and the column of a site, when the build keeps them.
+///
+/// # Arguments
+///
+/// * `site` - The index of the site, 0 for none.
+///
+/// # Returns
+///
+/// The file, the line and the column, or `None`.
+fn site_of(site: u32) -> Option<(Vec<u8>, u32, u32)>
+{
     let p = prog();
     ret_if!(p.debug_info == 0 || site == 0 || p.sites.is_null(), None);
     // SAFETY: the compiler writes a row for each site it marks.
     let s = unsafe { *p.sites.add(site as usize) };
-    let file = row(p.site_files, s.file as usize);
-    Some([file, format!(":{}:{}", s.line, s.col).as_bytes()].concat())
+    Some((row(p.site_files, s.file as usize).to_vec(), s.line, s.col))
 }
 
 /// The text of a call with its function, and its site when the build keeps
@@ -339,7 +323,7 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 
 /// Stop the run, as the VM does: write what is buffered, then the trap line
 /// `<executable>: the program stopped: <trap>` with its place, then the
-/// backtrace, and leave with status 1. In a C lib that set [`zk_on_trap`],
+/// backtrace, and leave with status 1. In a call of a C lib,
 /// leave the call in progress instead.
 ///
 /// # Arguments
@@ -350,7 +334,7 @@ pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
 {
     flush_out();
     let said = stop_text(trap, pairs);
-    let Some(leave) = LEAVE.get().copied()
+    let Some(leave) = crate::libs::leave()
     else
     {
         exit_with(said)
@@ -389,9 +373,6 @@ pub fn named(name: &str, value: impl ToString) -> (String, Vec<u8>)
 {
     (name.to_string(), value.to_string().into_bytes())
 }
-
-/// Forget the trap a C lib stopped on, for a reset.
-pub fn forget_trap() { *LAST.lock().unwrap_or_else(PoisonError::into_inner) = None; }
 
 /// End the run on a trap: write the trap line after the name of the
 /// executable, then the backtrace, and leave with status 1.
@@ -449,14 +430,22 @@ fn stop_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
 /// * `said` - The trap line.
 fn leave_call(leave: extern "C" fn(i32), trap: i32, said: Vec<u8>) -> !
 {
-    let kept = CString::new(said).unwrap_or_default();
-    *LAST.lock().unwrap_or_else(PoisonError::into_inner) = Some(kept);
+    let kind = ZkTrap::iter().nth(trap as usize).map_or("", <&str>::from);
+    // The calls of the lib: those past where its call began, the innermost
+    // first; a lib that C called from inside another lib leaves that lib's
+    // calls out, since their functions are not its own.
+    let all = frames();
+    let from = (crate::libs::base() as usize + 1).min(all.len());
+    let calls = all[from..].iter().rev();
+    let calls = calls.map(|f| (frame_name(f.func).to_vec(), site_of(f.site))).collect();
+    let record = TrapRecord::new(trap, kind, said, crate::libs::name(), calls);
+    crate::libs::keep_trap(record);
     leave(trap);
     std::process::abort()
 }
 
 /// Stop the run: an integer division or remainder had zero as divisor.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("zero_divisor"))]
 pub extern "C" fn zk_zero_divisor() -> ! { stop(trap::ZERO_DIVISOR, &[]) }
 
 /// Stop the run: a shift went as far as the width of its value, or further.
@@ -465,7 +454,7 @@ pub extern "C" fn zk_zero_divisor() -> ! { stop(trap::ZERO_DIVISOR, &[]) }
 ///
 /// * `distance` - The shift distance.
 /// * `bits` - The bit width of the shifted value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("shift_too_far"))]
 pub extern "C" fn zk_shift_too_far(distance: u64, bits: u32) -> !
 {
     stop_owned(
@@ -475,7 +464,7 @@ pub extern "C" fn zk_shift_too_far(distance: u64, bits: u32) -> !
 }
 
 /// Stop the run: the step of a counted loop was not positive.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("step_not_positive"))]
 pub extern "C" fn zk_step_not_positive() -> ! { stop(trap::STEP_NOT_POSITIVE, &[]) }
 
 /// Stop the run: the result of an operation does not fit its kind.
@@ -484,14 +473,14 @@ pub extern "C" fn zk_step_not_positive() -> ! { stop(trap::STEP_NOT_POSITIVE, &[
 ///
 /// * `op` - The operator, such as `+` or `neg`.
 /// * `kind` - The Zaka name of the kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("overflow"))]
 pub extern "C" fn zk_overflow(op: *const c_char, kind: *const c_char) -> !
 {
     stop(trap::OVERFLOW, &[("op", text(op)), ("kind", text(kind))])
 }
 
 /// Stop the run: more nested calls than the depth limit of the build.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("too_deep"))]
 pub extern "C" fn zk_too_deep() -> !
 {
     stop_owned(trap::TOO_DEEP, vec![named("depth", prog().max_depth)])
@@ -505,7 +494,7 @@ pub extern "C" fn zk_too_deep() -> !
 /// * `index` - The number as written.
 /// * `lo` - The first number of the range.
 /// * `hi` - The last number of the range.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("range_trap"))]
 pub extern "C" fn zk_range_trap(trap: i32, index: i64, lo: i64, hi: i64) -> !
 {
     stop_owned(trap, vec![named("index", index), named("lo", lo), named("hi", hi)])
@@ -516,7 +505,7 @@ pub extern "C" fn zk_range_trap(trap: i32, index: i64, lo: i64, hi: i64) -> !
 /// # Arguments
 ///
 /// * `trap` - The trap.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("plain_trap"))]
 pub extern "C" fn zk_plain_trap(trap: i32) -> ! { stop(trap, &[]) }
 
 /// Stop the run with a trap that names numbers: a range of text (start, end)
@@ -528,7 +517,7 @@ pub extern "C" fn zk_plain_trap(trap: i32) -> ! { stop(trap, &[]) }
 /// * `n` - The count of names.
 /// * `names` - The names.
 /// * `nums` - The numbers.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("nums_trap"))]
 pub extern "C" fn zk_nums_trap(
     trap: i32, n: i32, names: *const *const c_char, nums: *const i64,
 ) -> !
@@ -546,7 +535,7 @@ pub extern "C" fn zk_nums_trap(
 ///
 /// * `trap` - The trap.
 /// * `addr` - The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("addr_trap"))]
 pub extern "C" fn zk_addr_trap(trap: i32, addr: *const c_void) -> !
 {
     stop_owned(trap, vec![named("addr", format!("{:#x}", addr as usize))])
@@ -558,7 +547,7 @@ pub extern "C" fn zk_addr_trap(trap: i32, addr: *const c_void) -> !
 ///
 /// * `trap` - The trap.
 /// * `e` - The text of the `%{e}` slot.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("text_trap"))]
 pub extern "C" fn zk_text_trap(trap: i32, e: *const c_char) -> !
 {
     stop(trap, &[("e", text(e))])
@@ -569,7 +558,7 @@ pub extern "C" fn zk_text_trap(trap: i32, e: *const c_char) -> !
 /// # Arguments
 ///
 /// * `addr` - The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("null_deref"))]
 pub extern "C" fn zk_null_deref(addr: *const c_void) -> !
 {
     zk_addr_trap(trap::NULL_DEREF, addr)
@@ -580,7 +569,7 @@ pub extern "C" fn zk_null_deref(addr: *const c_void) -> !
 /// # Arguments
 ///
 /// * `size` - The octets asked for.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("out_of_mem"))]
 pub extern "C" fn zk_out_of_mem(size: u64) -> !
 {
     stop_owned(trap::OUT_OF_MEM, vec![named("size", size)])

@@ -1,5 +1,6 @@
-# The headers here include two that a build writes: zaka_checks.h, for each
-# build, and zaka_runtime.h, from the Rust of the runtime. `mise run c:mock-headers`
-# writes a build of hello into target/c-headers, where the editor finds both.
+# The headers here include three that a build writes: zaka_checks.h, for each
+# build, zaka_runtime.h, from the Rust of the runtime, and zaka_lib_names.h, for
+# each lib, which zaka_lib_glue.h reads. `mise run editor:mock-header` writes a
+# build of hello and of a lib into target/c-headers, where the editor finds them.
 CompileFlags:
   Add: [-xc, -std=c11, -I../../../target/c-headers]

@@ -99,9 +99,11 @@ Both extensions take files that end in `.zaka` or `.zk`.
 2. Build and install the extension:
 
    ```console
-   $ mise run vscode:build
-   $ code --install-extension editors/vscode/zaka-0.1.0.vsix
+   $ mise run editor:install-vscode
    ```
+
+   The task builds the `.vsix` first (`mise run editor:build-vscode`);
+   `mise run editor:install-cursor` installs it into Cursor.
 
 3. Open a `.zaka` file. It shows the Zaka logo as its file icon, unless the icon theme
    has its own icon for Zaka.

@@ -464,8 +464,9 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 
 /// Write the list of the names a shared lib gives, and give the flag of the
 /// linker that reads it: a version script for ELF, an exported-symbol list for
-/// Mach-O. A DLL gives the names `__declspec(dllexport)` marks alone, and MSVC
-/// links no such list.
+/// Mach-O, and a module-definition file for a DLL, which GNU takes as an input
+/// and MSVC through `/DEF:`. The list names `zk_free` and `zk_last_trap` of the
+/// runtime, which no `__declspec(dllexport)` marks.
 ///
 /// # Arguments
 ///
@@ -474,25 +475,29 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 ///
 /// # Returns
 ///
-/// The flag, none for an executable or a DLL, or the error of a write.
+/// The flag, none for an executable, or the error of a write.
 fn export_flag(
     plan: &BuildPlan<'_>, objects: &[PathBuf],
 ) -> zakac_host_errors::Result<Option<String>>
 {
+    ret_if!(plan.archive.is_none() || plan.exports.is_empty(), Ok(None));
     let dll = plan.out.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
     let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
-    ret_if!(plan.archive.is_none() || plan.exports.is_empty() || dll || msvc, Ok(None));
     let dir = objects.first().and_then(|o| o.parent()).unwrap_or(Path::new("."));
     let apple = plan.abi == TargetAbi::Apple;
-    let (file, text) = match apple
+    let each = |line: &dyn Fn(&String) -> String| -> String {
+        plan.exports.iter().map(line).collect()
+    };
+    let (file, text) = match (dll, apple)
     {
-        true => (
-            "zaka_exports.txt",
-            plan.exports.iter().map(|n| format!("_{n}\n")).collect(),
+        (true, _) => (
+            "zaka_exports.def",
+            format!("EXPORTS\n{}", each(&|n| format!("    {n}\n"))),
         ),
-        false =>
+        (false, true) => ("zaka_exports.txt", each(&|n| format!("_{n}\n"))),
+        (false, false) =>
         {
-            let names: String = plan.exports.iter().map(|n| format!("{n}; ")).collect();
+            let names = each(&|n| format!("{n}; "));
             ("zaka_exports.map", format!("{{ global: {names}local: *; }};\n"))
         }
     };
@@ -500,11 +505,13 @@ fn export_flag(
     let context = || IOErrorContext::new(path.clone(), IOErrorAction::Write);
     std::fs::write(&path, text).map_err(|e| Error::from_io(e, context()))?;
     let shown = path.display();
-    Ok(Some(tern!(
-        apple,
-        format!("-Wl,-exported_symbols_list,{shown}"),
-        format!("-Wl,--version-script={shown}")
-    )))
+    Ok(Some(match (dll, apple)
+    {
+        (true, _) if msvc => format!("/DEF:{shown}"),
+        (true, _) => shown.to_string(),
+        (false, true) => format!("-Wl,-exported_symbols_list,{shown}"),
+        (false, false) => format!("-Wl,--version-script={shown}"),
+    }))
 }
 
 /// Write the static lib of a C lib build: the objects, with the members of

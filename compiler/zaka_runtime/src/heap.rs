@@ -247,7 +247,7 @@ pub fn head<'a>(base: *const u8) -> &'a mut Head
 /// # Returns
 ///
 /// The first cell; the run stops when no room is left.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("seq_new"))]
 pub extern "C" fn zk_seq_new(size: usize) -> *mut u8
 {
     do_if!(!heap_take(size), zk_out_of_mem(size as u64));
@@ -302,7 +302,7 @@ pub fn seq_kind(base: *mut u8, cell: *const ZkKind) { head(base).cell = cell }
 /// # Arguments
 ///
 /// * `base` - The first cell, or NULL.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("seq_free"))]
 pub extern "C" fn zk_seq_free(base: *mut u8)
 {
     ret_if!(base.is_null());
@@ -329,7 +329,7 @@ pub fn null_check(p: *const u8)
 /// * `to` - The address written.
 /// * `from` - The address read; the two can overlap.
 /// * `size` - The size in octets.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_block"))]
 pub extern "C" fn zk_put_block(to: *mut u8, from: *const u8, size: usize)
 {
     ret_if!(size == 0 || std::ptr::eq(to, from));
@@ -350,7 +350,7 @@ pub extern "C" fn zk_put_block(to: *mut u8, from: *const u8, size: usize)
 /// # Returns
 ///
 /// The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("ptr_add"))]
 pub extern "C" fn zk_ptr_add(p: *mut u8, count: i64, stride: usize) -> *mut u8
 {
     do_if!(check_on(NULL_BIT) && p.is_null() && count != 0, zk_null_deref(p.cast()));
@@ -369,7 +369,7 @@ pub extern "C" fn zk_ptr_add(p: *mut u8, count: i64, stride: usize) -> *mut u8
 /// # Returns
 ///
 /// The steps.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("ptr_sub"))]
 pub extern "C" fn zk_ptr_sub(p: *const u8, q: *const u8, stride: usize) -> i64
 {
     let distance = (p as usize).wrapping_sub(q as usize) as isize as i64;
@@ -387,7 +387,7 @@ pub extern "C" fn zk_ptr_sub(p: *const u8, q: *const u8, stride: usize) -> i64
 /// # Returns
 ///
 /// The block, or NULL when the size overflows or no room is left.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("alloc"))]
 pub extern "C" fn zk_alloc(count: u64, stride: usize) -> *mut u8
 {
     let Some(size) = usize::try_from(count).ok().and_then(|c| c.checked_mul(stride))
@@ -408,7 +408,7 @@ pub extern "C" fn zk_alloc(count: u64, stride: usize) -> *mut u8
 /// # Arguments
 ///
 /// * `p` - The block, or NULL.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("raw_free"))]
 pub extern "C" fn zk_raw_free(p: *mut c_void)
 {
     ret_if!(p.is_null());
@@ -428,7 +428,7 @@ pub extern "C" fn zk_raw_free(p: *mut c_void)
 /// # Returns
 ///
 /// The block; the run stops when the size overflows or no room is left.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("realloc"))]
 pub extern "C" fn zk_realloc(p: *mut u8, count: u64, stride: usize) -> *mut u8
 {
     let Some(size) = usize::try_from(count).ok().and_then(|c| c.checked_mul(stride))
@@ -454,7 +454,7 @@ pub extern "C" fn zk_realloc(p: *mut u8, count: u64, stride: usize) -> *mut u8
 /// * `stride` - The octets of a cell.
 /// * `overlap` - 1 when the runs can overlap; with 0 the mem checks stop the
 ///   run when the two do.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("blit"))]
 pub extern "C" fn zk_blit(
     src: *const u8, count: u64, dst: *mut u8, stride: usize, overlap: i32,
 )
@@ -480,7 +480,7 @@ pub extern "C" fn zk_blit(
 /// * `count` - The cell count.
 /// * `cell` - The value of a cell.
 /// * `size` - The octets of a cell.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fill"))]
 pub extern "C" fn zk_fill(dst: *mut u8, count: u64, cell: *const u8, size: usize)
 {
     do_if!(count > 0, null_check(dst));
@@ -525,7 +525,7 @@ pub struct ZkFnRec
 /// # Returns
 ///
 /// The value; the run stops when it is null.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_check"))]
 pub extern "C" fn zk_fn_check(f: ZkFn) -> ZkFn
 {
     do_if!(f.is_null(), zk_plain_trap(trap::NULL_CALL));
@@ -541,7 +541,7 @@ pub extern "C" fn zk_fn_check(f: ZkFn) -> ZkFn
 /// # Returns
 ///
 /// The record.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_rec"))]
 pub extern "C" fn zk_fn_rec(f: ZkFn) -> *mut u8 { (f as usize & !1) as *mut u8 }
 
 /// The code a function value runs: the first word of its record.
@@ -553,7 +553,7 @@ pub extern "C" fn zk_fn_rec(f: ZkFn) -> *mut u8 { (f as usize & !1) as *mut u8 }
 /// # Returns
 ///
 /// The code.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_code"))]
 pub extern "C" fn zk_fn_code(f: ZkFn) -> ZkCode { ld(zk_fn_rec(f)) }
 
 /// The kind of the record of a closure: the second word of the record.
@@ -581,7 +581,7 @@ fn fn_kind(f: ZkFn) -> *const ZkKind
 /// # Returns
 ///
 /// 1 for a closure, else 0.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_bound"))]
 pub extern "C" fn zk_fn_bound(f: ZkFn) -> i32 { i32::from(!fn_kind(f).is_null()) }
 
 /// Whether a function value holds a count of a closure record: a closure that
@@ -612,7 +612,7 @@ pub fn holds_record(f: ZkFn) -> bool
 /// # Returns
 ///
 /// The closure.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("closure"))]
 pub extern "C" fn zk_closure(record: *mut u8, thunk: ZkCode, k: *const ZkKind) -> ZkFn
 {
     // SAFETY: the generated code hands a descriptor.
@@ -638,7 +638,7 @@ pub extern "C" fn zk_closure(record: *mut u8, thunk: ZkCode, k: *const ZkKind) -
 /// # Returns
 ///
 /// The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_c"))]
 pub extern "C" fn zk_fn_c(f: ZkFn) -> ZkFn
 {
     do_if!(!f.is_null() && zk_fn_bound(f) != 0, zk_plain_trap(trap::CLOSURE_ESCAPE));
@@ -655,7 +655,7 @@ pub extern "C" fn zk_fn_c(f: ZkFn) -> ZkFn
 /// # Returns
 ///
 /// The duplicate.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_dup"))]
 pub extern "C" fn zk_fn_dup(f: ZkFn) -> ZkFn
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0, f);
@@ -674,7 +674,7 @@ pub extern "C" fn zk_fn_dup(f: ZkFn) -> ZkFn
 /// # Returns
 ///
 /// The lent value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_lend"))]
 pub extern "C" fn zk_fn_lend(f: ZkFn) -> ZkFn
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0, f);
@@ -710,7 +710,7 @@ pub fn drop_fn(at: *mut u8)
 /// # Returns
 ///
 /// The size in octets.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_size"))]
 pub extern "C" fn zk_fn_size(f: ZkFn) -> usize
 {
     // SAFETY: a closure record holds its kind.
@@ -722,7 +722,7 @@ pub extern "C" fn zk_fn_size(f: ZkFn) -> usize
 /// # Arguments
 ///
 /// * `f` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("fn_release"))]
 pub extern "C" fn zk_fn_release(f: ZkFn)
 {
     let mut slot = f;
@@ -739,7 +739,3 @@ pub extern "C" fn zk_fn_release(f: ZkFn)
 ///
 /// The kind.
 pub fn record_kind(f: ZkFn) -> *const ZkKind { fn_kind(f) }
-
-/// Count no live block, for a reset of a C lib: the blocks of before remain,
-/// out of reach, and count against no limit.
-pub(crate) fn reset_count() { HEAP_LIVE.store(0, Ordering::Relaxed); }

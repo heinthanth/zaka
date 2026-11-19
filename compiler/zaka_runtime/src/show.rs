@@ -91,7 +91,7 @@ fn piece(p: *const c_char) -> Step { Step::Piece(text(p)) }
 /// # Returns
 ///
 /// The field, or NULL.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("field_named"))]
 pub extern "C" fn zk_field_named(
     k: *const ZkKind, name: *const c_char,
 ) -> *const ZkField
@@ -200,7 +200,7 @@ fn push_pairs(
 /// # Returns
 ///
 /// 1 when the two are equal.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("eq"))]
 pub extern "C" fn zk_eq(a: *const u8, b: *const u8, k: *const ZkKind) -> i32
 {
     let mut steps = vec![Step::Value { a, b, k, nested: false }];
@@ -287,7 +287,7 @@ fn show_member(p: *const u8, k: &ZkKind)
 /// # Arguments
 ///
 /// * `p` - The address.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_ptr"))]
 pub extern "C" fn zk_put_ptr(p: *const u8)
 {
     ret_if!(p.is_null(), emit(text(prog().null_text)));
@@ -300,7 +300,7 @@ pub extern "C" fn zk_put_ptr(p: *const u8)
 /// # Arguments
 ///
 /// * `f` - The value.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("put_fn"))]
 pub extern "C" fn zk_put_fn(f: ZkFn)
 {
     let p = prog();
@@ -499,7 +499,7 @@ fn show_step(step: Step, s: &mut Vec<Step>, inside: &mut HashSet<usize>)
 /// * `p` - The value.
 /// * `k` - Its kind.
 /// * `nested` - 1 to write text in quotes.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("show"))]
 pub extern "C" fn zk_show(p: *const u8, k: *const ZkKind, nested: i32)
 {
     let mut steps =
@@ -775,7 +775,7 @@ fn tab_find(t: &Tab<'_>, index: *const u8) -> Option<(usize, usize)>
 /// # Returns
 ///
 /// The number of the row, or -1 when no row holds the index.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("row_find"))]
 pub extern "C" fn zk_row_find(p: *const u8, k: *const ZkKind, index: *const u8) -> i64
 {
     tab_find(&tab_of(p, kind(k)), index).map_or(-1, |(row, _)| row as i64)
@@ -877,7 +877,7 @@ fn tab_push(t: &Tab<'_>, h: u64, index: *mut u8, src: *mut u8) -> usize
 /// * `k` - Its kind.
 /// * `index` - The index, moved out and zeroed.
 /// * `src` - The value, moved out and zeroed.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("set_row"))]
 pub extern "C" fn zk_set_row(p: *mut u8, k: *const ZkKind, index: *mut u8, src: *mut u8)
 {
     let t = tab_of(p, kind(k));
@@ -915,7 +915,7 @@ pub extern "C" fn zk_set_row(p: *mut u8, k: *const ZkKind, index: *mut u8, src: 
 /// * `p` - The ဇယား.
 /// * `k` - Its kind.
 /// * `index` - The index.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("remove_row"))]
 pub extern "C" fn zk_remove_row(p: *mut u8, k: *const ZkKind, index: *const u8)
 {
     let t = tab_of(p, kind(k));
@@ -1024,7 +1024,7 @@ fn push_table(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
 ///
 /// * `p` - The result.
 /// * `k` - Its kind.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("not_good"))]
 pub extern "C" fn zk_not_good(p: *const u8, k: *const ZkKind) -> !
 {
     let value = shown(p, repr(kind(k)) as *const ZkKind);
@@ -1032,17 +1032,17 @@ pub extern "C" fn zk_not_good(p: *const u8, k: *const ZkKind) -> !
 }
 
 /// Stop the run: a result with no value that failed was read as good.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("not_good_bare"))]
 pub extern "C" fn zk_not_good_bare() -> ! { zk_plain_trap(trap::NOT_GOOD_BARE) }
 
 /// Stop the run: a good result was read as failed.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("not_fault"))]
 pub extern "C" fn zk_not_fault() -> ! { zk_plain_trap(trap::NOT_FAULT) }
 
 /// Stop the run: an optional that holds no data was read.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("no_data"))]
 pub extern "C" fn zk_no_data() -> ! { zk_plain_trap(trap::NO_DATA) }
 
 /// Stop the run: a handle a C function closed went to C again.
-#[unsafe(no_mangle)]
+#[unsafe(export_name = stamped!("closed_handle"))]
 pub extern "C" fn zk_closed_handle() -> ! { zk_plain_trap(trap::CLOSED_HANDLE) }

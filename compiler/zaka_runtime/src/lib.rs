@@ -12,6 +12,15 @@
 // values it names, as each C function takes them.
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
+/// The name an export of the runtime links under: the prefix of this build of
+/// the runtime, then the name without its `zk_`. C and generated code write
+/// the plain name, which the header of the runtime maps to this one.
+macro_rules! stamped {
+    ($name:literal) => {
+        concat!(env!("ZK_NAME_PREFIX"), $name)
+    };
+}
+
 // WASI has no libffi: a program for it calls no C function and hands C no
 // closure.
 #[cfg(not(target_os = "wasi"))]
@@ -21,6 +30,7 @@ pub mod exchange;
 pub mod ffi;
 pub mod heap;
 pub mod host;
+pub mod libs;
 pub mod native;
 pub mod out;
 pub mod program;

@@ -28,13 +28,14 @@ zakac_rust_sugars = { workspace = true }
 zakac_semcheck = { workspace = true }
 zakac_session = { workspace = true }
 zakac_span = { workspace = true }
+xxhash-rust = { workspace = true }
 
 
 [target.'cfg(windows)'.dependencies]
 find-msvc-tools = { workspace = true }
 
 [dev-dependencies]
-object = { workspace = true }
+object = { workspace = true, features = ["archive"] }
 tempfile = { workspace = true }
 zaka_runtime = { workspace = true }
 zaka_vm = { workspace = true, features = ["ffi"] }
@@ -43,6 +44,7 @@ zakac_codegen_target_vm = { workspace = true }
 [build-dependencies]
 cargo-build = { workspace = true }
 cbindgen = { workspace = true }
+xxhash-rust = { workspace = true }
 zakac_rust_sugars = { workspace = true }
 
 [[test]]

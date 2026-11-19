@@ -129,6 +129,11 @@ the C toolchain of the C target (`build_and_link`), with no C to compile. An exe
 linked for the OS and the CPU of the host, and an ABI whose runtime lib `zakac` carries;
 `--emit obj` and `--emit clif` take another target.
 
+Cranelift code calls each function of the runtime under its linked name
+(`zk_rt_<version>_<hash>_<name>`, through `linked_name` of the C target). In a C lib,
+`aot::object` renames the names of the lib that C never calls in the finished object
+(`LibNames::held`, then `symbol_mut`), as `zaka_lib_names.h` maps them for the glue.
+
 ## Tests
 
 | Test | Checks |

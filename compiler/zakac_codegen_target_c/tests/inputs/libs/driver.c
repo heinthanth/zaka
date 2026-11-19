@@ -42,11 +42,17 @@ int main(void)
     int64_t quotient = 0;
     status = divide(7, 0, &quotient);
     printf("divide %d\n", status);
-    printf("trap %s\n", zk_last_trap());
+    const zk_trap *trap = zk_last_trap_from_mathlib();
+    printf("trap %s\n", trap->message);
+    printf("trap code %d %d %s %s\n", trap->code == ZK_TRAP_ZERO_DIVISOR,
+           status == trap->code + 1, trap->kind, trap->lib);
+    printf("trap at %s %s:%u:%u, %u calls, the latest %d\n", trap->where.function,
+           trap->where.file, trap->where.line, trap->where.column,
+           (unsigned)trap->frame_count, zk_last_trap() == trap);
     status = add_numbers(1, 1, &sum);
     printf("after %d\n", status);
-    zk_lib_reset();
-    printf("trap after reset %s\n", zk_last_trap() == NULL ? "none" : "some");
+    zk_reset_mathlib();
+    printf("trap after reset %s\n", zk_last_trap_from_mathlib() == NULL ? "none" : "some");
     status = add_numbers(1, 2, &sum);
     printf("reset %d %d\n", status, sum);
     return 0;
