@@ -15,18 +15,22 @@ use std::ptr::null;
 use std::ptr::null_mut;
 use std::sync::Mutex;
 use std::sync::PoisonError;
+use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicPtr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zaka_host::Gate;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::do_while;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::ctx::depth;
 use crate::ctx::zk_ctx;
 use crate::program::ZkProgram;
-use crate::program::zk_prog;
+use crate::program::set_thread_prog;
+use crate::program::thread_prog;
 use crate::seqs::DropMark;
 
 /// A C lib the runtime serves.
@@ -38,8 +42,8 @@ pub struct ZkLib
     leave: extern "C" fn(i32),
     /// Its name, as the build named it.
     name: CString,
-    /// The depth of the calls where its call in progress began.
-    base: Cell<u32>,
+    /// Where it stands, as [`zk_lib_state_of`] names it.
+    state: AtomicI32,
     /// Its gate, made from its grants at the first check.
     pub(crate) gate: Mutex<Option<Gate>>,
     /// The trap it stopped on last.
@@ -57,32 +61,40 @@ pub struct ZkLib
 /// call.
 pub type Guard = extern "C" fn(extern "C" fn(*mut c_void), *mut c_void) -> i32;
 
-/// What the calls of a lib that one thread has in progress hold of the
-/// runtime that the libs share, parked while the thread waits in C and other
-/// threads run calls. The calls in progress, the jump target of a trap, the
-/// sink of the output and the queue of the drops belong to the thread, and
-/// need no parking.
-struct Parked
-{
-    /// How often the thread held the lock of the libs.
-    holds: u32,
-    /// The lib of its call, as an address.
-    lib: usize,
-    /// The table in use, as an address.
-    prog: usize,
-    /// Where the call of the lib began.
-    base: u32,
-    /// The marks of its calls.
-    marks: Vec<Mark>,
-    /// The closures it lent to C calls.
-    lends: Vec<usize>,
+/// The state of a lib before its first call, and after a reset.
+const FRESH: i32 = 0;
+/// The state of a lib whose calls run.
+const RUNS: i32 = 1;
+
+thread_local! {
+    /// How often this thread held the lock of the libs, for each call to C it
+    /// waits in, the latest last. The rest of the state of its calls belongs
+    /// to the thread and needs no parking.
+    static PARKED: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
 }
 
 thread_local! {
-    /// What the calls of this thread hold of the runtime, parked while it
-    /// waits in C, the latest last.
-    static PARKED: RefCell<Vec<Parked>> = const { RefCell::new(Vec::new()) };
+    /// The lib whose call is in progress on this thread, or NULL outside each
+    /// lib.
+    static CURRENT: Cell<*mut ZkLib> = const { Cell::new(null_mut()) };
 }
+
+thread_local! {
+    /// The depth of the calls where the call of the current lib began.
+    static BASE: Cell<u32> = const { Cell::new(0) };
+}
+
+thread_local! {
+    /// The status of the trap that ended the call in progress: 1 + its id.
+    static STATUS: Cell<i32> = const { Cell::new(0) };
+}
+
+/// The count of calls with no lock in progress, over each lib, with
+/// [`COLLECTS`] set while a call under a lock runs the ring collector.
+static FREE: AtomicUsize = AtomicUsize::new(0);
+
+/// The bit of [`FREE`] that the ring collector holds.
+const COLLECTS: usize = 1 << (usize::BITS - 1);
 
 thread_local! {
     /// Where a trap of the call in progress jumps: the `jmp_buf` of the wrapper
@@ -102,8 +114,11 @@ struct Mark
     drops: DropMark,
 }
 
-/// A mark for each call of a lib in progress, the innermost last.
-static MARKS: Mutex<Vec<Mark>> = Mutex::new(Vec::new());
+thread_local! {
+    /// A mark for each call of a lib in progress on this thread, the
+    /// innermost last.
+    static MARKS: RefCell<Vec<Mark>> = const { RefCell::new(Vec::new()) };
+}
 
 /// The slot of each lib this runtime serves, each once.
 static SLOTS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
@@ -229,9 +244,6 @@ fn c_text(mut raw: Vec<u8>) -> CString
     CString::new(raw).unwrap_or_default()
 }
 
-/// The lib whose call is in progress, or NULL outside each lib.
-static CURRENT: AtomicPtr<ZkLib> = AtomicPtr::new(null_mut());
-
 /// The lib whose call is in progress.
 ///
 /// # Returns
@@ -239,9 +251,8 @@ static CURRENT: AtomicPtr<ZkLib> = AtomicPtr::new(null_mut());
 /// The lib, or `None` outside each lib.
 pub(crate) fn current<'a>() -> Option<&'a ZkLib>
 {
-    // SAFETY: a lib lives as long as the program, and the lock of the libs
-    // lets one thread in at a time.
-    unsafe { CURRENT.load(Ordering::Acquire).as_ref() }
+    // SAFETY: a lib lives as long as the program.
+    unsafe { CURRENT.get().as_ref() }
 }
 
 /// The function that jumps back to the wrapper of the call in progress.
@@ -256,7 +267,7 @@ pub(crate) fn leave() -> Option<extern "C" fn(i32)> { current().map(|l| l.leave)
 /// # Returns
 ///
 /// The depth, 0 outside each lib.
-pub(crate) fn base() -> u32 { current().map_or(0, |l| l.base.get()) }
+pub(crate) fn base() -> u32 { BASE.get() }
 
 /// The name of the current lib.
 ///
@@ -314,11 +325,12 @@ fn forget_latest(old: Option<&TrapRecord>)
     each_slot(|slot| unsafe { do_if!(*slot == gone, *slot = null()) });
 }
 
-/// Make the record of a C lib, on its first call: the lib lives as long as
-/// the program.
+/// Make the record of a C lib, on its first call, unless another thread made
+/// it first: the lib lives as long as the program.
 ///
 /// # Arguments
 ///
+/// * `home` - Where the glue keeps the record; the runtime writes it once.
 /// * `program` - The table of its program.
 /// * `leave` - The function that jumps back to the wrapper of its call in
 ///   progress; it takes the trap and does not return.
@@ -331,19 +343,26 @@ fn forget_latest(old: Option<&TrapRecord>)
 /// The lib.
 #[unsafe(export_name = stamped!("lib_open"))]
 pub extern "C" fn zk_lib_open(
-    program: *const ZkProgram, leave: extern "C" fn(i32), name: *const c_char,
-    slot: *mut *const ZkTrapInfo, guard: Guard,
+    home: *mut *mut ZkLib, program: *const ZkProgram, leave: extern "C" fn(i32),
+    name: *const c_char, slot: *mut *const ZkTrapInfo, guard: Guard,
 ) -> *mut ZkLib
 {
+    // SAFETY: the glue hands a static of its own, which the runtime alone
+    // writes.
+    let home = unsafe { AtomicPtr::from_ptr(home) };
+    let mut slots = SLOTS.lock().unwrap_or_else(PoisonError::into_inner);
+    let known = home.load(Ordering::Acquire);
+    ret_if!(!known.is_null(), known);
+    do_if!(!slots.contains(&(slot as usize)), slots.push(slot as usize));
     // SAFETY: the glue of the lib hands its name as a NUL-ended text.
     let name = unsafe { CStr::from_ptr(name) }.to_owned();
-    let mut slots = SLOTS.lock().unwrap_or_else(PoisonError::into_inner);
-    do_if!(!slots.contains(&(slot as usize)), slots.push(slot as usize));
-    drop(slots);
     #[rustfmt::skip]
-    let lib = Box::new(ZkLib { prog: program, leave, name, base: Cell::new(0),
+    let lib = Box::new(ZkLib { prog: program, leave, name, state: AtomicI32::new(FRESH),
         gate: Mutex::new(None), last: Mutex::new(None), heap: AtomicUsize::new(0), guard });
     let lib = Box::into_raw(lib);
+    crate::program::keep_last(program);
+    home.store(lib, Ordering::Release);
+    drop(slots);
     let was = zk_lib_enter(lib);
     zk_ctx();
     zk_lib_return(was);
@@ -362,16 +381,12 @@ pub extern "C" fn zk_lib_open(
 #[unsafe(export_name = stamped!("lib_enter"))]
 pub extern "C" fn zk_lib_enter(lib: *mut ZkLib) -> ZkLibPlace
 {
-    // SAFETY: the lock of the libs lets one thread in at a time.
-    let (prog, depth) = (unsafe { zk_prog }, depth());
-    let was = ZkLibPlace { lib: CURRENT.load(Ordering::Acquire), prog, base: base() };
-    CURRENT.store(lib, Ordering::Release);
-    MARKS.lock().unwrap_or_else(PoisonError::into_inner).push(mark());
+    let was = ZkLibPlace { lib: CURRENT.get(), prog: thread_prog(), base: base() };
+    BASE.set(depth());
+    CURRENT.set(lib);
+    MARKS.with(|m| m.borrow_mut().push(mark()));
     // SAFETY: the glue hands the lib `zk_lib_open` made.
-    let lib = unsafe { &*lib };
-    lib.base.set(depth);
-    // SAFETY: as above.
-    unsafe { zk_prog = lib.prog };
+    set_thread_prog(unsafe { &*lib }.prog);
     was
 }
 
@@ -383,13 +398,12 @@ pub extern "C" fn zk_lib_enter(lib: *mut ZkLib) -> ZkLibPlace
 #[unsafe(export_name = stamped!("lib_return"))]
 pub extern "C" fn zk_lib_return(was: ZkLibPlace)
 {
-    MARKS.lock().unwrap_or_else(PoisonError::into_inner).pop();
-    CURRENT.store(was.lib, Ordering::Release);
-    // Outside each lib the table of the last lib remains, for `zk_free` from C,
-    // which counts the heap against its cap.
-    // SAFETY: the lock of the libs lets one thread in at a time.
-    do_if!(!was.prog.is_null(), unsafe { zk_prog = was.prog });
-    do_if!(let Some(lib) = current(), lib.base.set(was.base));
+    MARKS.with(|m| m.borrow_mut().pop());
+    CURRENT.set(was.lib);
+    BASE.set(was.base);
+    // Outside each lib the table of the last lib of the thread remains, for
+    // `zk_free` from C, which counts the heap against its cap.
+    do_if!(!was.prog.is_null(), set_thread_prog(was.prog));
 }
 
 /// The trap a lib stopped on last.
@@ -466,16 +480,18 @@ fn mark() -> Mark
 #[unsafe(export_name = stamped!("lib_unwind"))]
 pub extern "C" fn zk_lib_unwind()
 {
-    let marks = MARKS.lock().unwrap_or_else(PoisonError::into_inner);
-    let Some(mark) = marks.last()
+    let Some((lends, sink, drops)) =
+        MARKS.with(|m| m.borrow().last().map(|k| (k.lends, k.sink, k.drops)))
     else
     {
         return;
     };
     #[cfg(not(target_os = "wasi"))]
-    crate::callbacks::end_lends_from(mark.lends);
-    crate::out::set_sink(mark.sink as *mut crate::out::ZkBuf);
-    crate::seqs::back_to(mark.drops);
+    crate::callbacks::end_lends_from(lends);
+    #[cfg(target_os = "wasi")]
+    let _ = lends;
+    crate::out::set_sink(sink as *mut crate::out::ZkBuf);
+    crate::seqs::back_to(drops);
 }
 
 /// Whether the runtime serves a C lib: then a lock lets one thread at a time
@@ -495,7 +511,7 @@ pub(crate) fn serves_libs() -> bool
 /// # Returns
 ///
 /// The lib, as an address, or 0 outside each lib.
-pub(crate) fn current_lib() -> usize { CURRENT.load(Ordering::Acquire) as usize }
+pub(crate) fn current_lib() -> usize { CURRENT.get() as usize }
 
 /// Run a step as a call of a lib, on a thread with no call of a lib in
 /// progress, through the guard of its glue.
@@ -543,42 +559,131 @@ pub extern "C" fn zk_lib_jump() -> *mut c_void { JUMP.get() }
 pub extern "C" fn zk_lib_jump_set(to: *mut c_void) { JUMP.set(to) }
 
 /// Let other threads into the libs while this one waits in C: write out what
-/// is buffered, park what its calls hold of the runtime, and let go of the
-/// lock. Each call of a lib to C does it, and [`zk_lib_take_back`] once C
-/// returns.
+/// is buffered and let go of the lock. Each call of a lib to C does it, and
+/// [`zk_lib_take_back`] once C returns.
 #[unsafe(export_name = stamped!("lib_let_go"))]
 pub extern "C" fn zk_lib_let_go()
 {
     crate::out::flush_out();
-    #[cfg(not(target_os = "wasi"))]
-    let lends = crate::callbacks::take_lends();
-    #[cfg(target_os = "wasi")]
-    let lends = Vec::new();
-    #[rustfmt::skip]
-    let parked = Parked { holds: 0, lib: current_lib(), prog: unsafe { zk_prog } as usize,
-        base: base(), lends,
-        marks: std::mem::take(&mut *MARKS.lock().unwrap_or_else(PoisonError::into_inner)) };
-    CURRENT.store(null_mut(), Ordering::Release);
     let holds = crate::start::let_go_lock();
-    PARKED.with(|p| p.borrow_mut().push(Parked { holds, ..parked }));
+    PARKED.with(|p| p.borrow_mut().push(holds));
 }
 
-/// Take the lock of the libs back once C returns, and what the calls of this
-/// thread held of the runtime, as [`zk_lib_let_go`] parked it.
+/// Take the lock of the libs back once C returns, as [`zk_lib_let_go`] let go
+/// of it.
 #[unsafe(export_name = stamped!("lib_take_back"))]
 pub extern "C" fn zk_lib_take_back()
 {
-    let Some(parked) = PARKED.with(|p| p.borrow_mut().pop())
+    let Some(holds) = PARKED.with(|p| p.borrow_mut().pop())
     else
     {
         return;
     };
-    crate::start::take_lock(parked.holds);
-    // SAFETY: this thread holds the lock of the libs.
-    unsafe { zk_prog = parked.prog as *const ZkProgram };
-    CURRENT.store(parked.lib as *mut ZkLib, Ordering::Release);
-    do_if!(let Some(lib) = current(), lib.base.set(parked.base));
-    *MARKS.lock().unwrap_or_else(PoisonError::into_inner) = parked.marks;
-    #[cfg(not(target_os = "wasi"))]
-    crate::callbacks::put_lends(parked.lends);
+    crate::start::take_lock(holds);
 }
+
+/// The state of a lib: 0 before its first call and after a reset, 3 while
+/// its globals are being set, 1 while its calls run, 2 once a trap of a call
+/// under its lock stopped it.
+///
+/// # Arguments
+///
+/// * `lib` - The lib, or NULL before its first call.
+///
+/// # Returns
+///
+/// The state.
+#[unsafe(export_name = stamped!("lib_state_of"))]
+pub extern "C" fn zk_lib_state_of(lib: *const ZkLib) -> i32
+{
+    // SAFETY: a lib lives as long as the program.
+    unsafe { lib.as_ref() }.map_or(FRESH, |l| l.state.load(Ordering::Acquire))
+}
+
+/// Set the state of a lib, as [`zk_lib_state_of`] names it.
+///
+/// # Arguments
+///
+/// * `lib` - The lib; NULL is left alone.
+/// * `state` - The state.
+#[unsafe(export_name = stamped!("lib_state_set"))]
+pub extern "C" fn zk_lib_state_set(lib: *const ZkLib, state: i32)
+{
+    // SAFETY: a lib lives as long as the program.
+    do_if!(let Some(l) = unsafe { lib.as_ref() }, l.state.store(state, Ordering::Release));
+}
+
+/// The status of the trap that ended the call in progress on this thread.
+///
+/// # Returns
+///
+/// 1 + the id of the trap.
+#[unsafe(export_name = stamped!("lib_status"))]
+pub extern "C" fn zk_lib_status() -> i32 { STATUS.get() }
+
+/// Keep the status of the trap that ends the call in progress on this thread.
+///
+/// # Arguments
+///
+/// * `status` - 1 + the id of the trap.
+#[unsafe(export_name = stamped!("lib_status_set"))]
+pub extern "C" fn zk_lib_status_set(status: i32) { STATUS.set(status) }
+
+/// Count a call with no lock in, once the lib runs and the counts of the
+/// heap are atomic: such a call reaches no mutable global and calls no C, so
+/// calls of it run on several threads at once.
+///
+/// # Arguments
+///
+/// * `home` - Where the glue keeps the record of the lib.
+///
+/// # Returns
+///
+/// 1 when the call goes on, and is counted until [`zk_lib_free_out`]; 2 when
+/// a trap stopped the lib; else 0 or 3, and the glue first opens the lib and
+/// sets its globals under the lock, and asks again.
+#[unsafe(export_name = stamped!("lib_free_in"))]
+pub extern "C" fn zk_lib_free_in(home: *mut *mut ZkLib) -> i32
+{
+    // SAFETY: the glue hands a static of its own, which the runtime alone
+    // writes.
+    let lib = unsafe { AtomicPtr::from_ptr(home) }.load(Ordering::Acquire);
+    ret_if!(lib.is_null(), FRESH);
+    // A collection of rings changes counts with plain ops: wait for its end.
+    do_while!(FREE.fetch_add(1, Ordering::SeqCst) & COLLECTS != 0, {
+        FREE.fetch_sub(1, Ordering::SeqCst);
+        std::thread::yield_now();
+    });
+    let state = zk_lib_state_of(lib);
+    ret_if!(state == RUNS && crate::heap::threaded(), RUNS);
+    FREE.fetch_sub(1, Ordering::SeqCst);
+    tern!(state == RUNS, FRESH, state)
+}
+
+/// Count a call with no lock out, at its end.
+#[unsafe(export_name = stamped!("lib_free_out"))]
+pub extern "C" fn zk_lib_free_out() { FREE.fetch_sub(1, Ordering::SeqCst); }
+
+/// Wait until no call with no lock runs, before the globals of a lib are set
+/// again: such calls read the constants. The caller holds the lock of the
+/// libs, and a lib whose globals are being set lets no new call with no
+/// lock in.
+#[unsafe(export_name = stamped!("lib_drain"))]
+pub extern "C" fn zk_lib_drain()
+{
+    do_while!(FREE.load(Ordering::SeqCst) & !COLLECTS != 0, std::thread::yield_now());
+}
+
+/// Hold off the calls with no lock while the ring collector runs.
+///
+/// # Returns
+///
+/// `true` when none runs and the collector may go on; it ends the hold with
+/// [`end_collect`].
+pub(crate) fn begin_collect() -> bool
+{
+    FREE.compare_exchange(0, COLLECTS, Ordering::SeqCst, Ordering::SeqCst).is_ok()
+}
+
+/// End the hold of [`begin_collect`].
+pub(crate) fn end_collect() { FREE.fetch_and(!COLLECTS, Ordering::SeqCst); }

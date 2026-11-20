@@ -10,8 +10,8 @@ use zakac_rust_sugars::ret_if;
 
 use crate::program::ZkFrame;
 use crate::program::prog;
+use crate::program::prog_ptr;
 use crate::program::tracks;
-use crate::program::zk_prog;
 
 /// The calls in progress on one thread.
 #[repr(C)]
@@ -60,9 +60,9 @@ pub extern "C" fn zk_ctx() -> *mut ZkCtx
 /// The count, 0 when no frame is kept.
 fn wanted_rows() -> usize
 {
-    // SAFETY: `zk_start` and the start of a lib set the table before the
-    // program runs; a NULL table means no program runs yet.
-    let started = unsafe { !zk_prog.is_null() };
+    // `zk_start` and the start of a lib set the table before the program
+    // runs; a NULL table means no program runs yet.
+    let started = !prog_ptr().is_null();
     ret_if!(!started || !tracks(), 0);
     prog().max_depth as usize + 1
 }

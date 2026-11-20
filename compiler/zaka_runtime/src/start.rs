@@ -84,7 +84,10 @@ pub extern "C" fn zk_lib_unlock()
 /// The depth it held.
 pub(crate) fn let_go_lock() -> u32
 {
+    let me = std::thread::current().id();
     let mut held = HELD.lock().unwrap_or_else(PoisonError::into_inner);
+    // A thread that holds no lock, such as a job's, has none to let go of.
+    ret_if!(held.0 != Some(me), 0);
     let depth = held.1;
     *held = (None, 0);
     FREED.notify_all();
@@ -99,6 +102,7 @@ pub(crate) fn let_go_lock() -> u32
 /// * `depth` - The depth, as [`let_go_lock`] gave it.
 pub(crate) fn take_lock(depth: u32)
 {
+    ret_if!(depth == 0);
     let me = std::thread::current().id();
     let mut held = HELD.lock().unwrap_or_else(PoisonError::into_inner);
     do_while!(

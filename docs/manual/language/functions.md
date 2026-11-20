@@ -1724,13 +1724,17 @@ In the lib, each such function returns an `int32_t` status and gives its result 
 a last parameter, an address it writes unless it is NULL: the function above is
 `int32_t add_numbers(int32_t, int32_t, int32_t *)` in C. The status is `ZK_OK` (0), `1 +`
 the number of the trap the call stopped on, which `zk_last_trap_from_<lib>()` gives as a
-`zk_trap` struct, or `ZK_STOPPED` (-1) for each call after a trap, since a trap can leave
-the heap and the globals half written. `zk_reset_<lib>()` starts the lib again: the next
-call sets the globals again, and the blocks the stopped lib held remain out of reach.
-The first call starts the runtime and sets the globals; the text a call prints goes out
-before it returns. Threads can call the lib: one call runs at a
-time, and a call from another thread waits until it ends or waits in C, which lets the
-other threads in. C that a call calls can call the lib again on the same thread, and C
+`zk_trap` struct, or `ZK_STOPPED` (-1). A trap in a function that reaches a mutable
+global, or one of the functions below, stops the lib: each later call gives `ZK_STOPPED`,
+since the trap can leave the heap and the globals half written. A trap in each other
+function fails that call alone, and the lib goes on. `zk_reset_<lib>()` starts the lib
+again: the next call sets the globals again, and the blocks the stopped lib held remain
+out of reach. The first call starts the runtime and sets the globals; the text a call
+prints goes out before it returns. Threads can call the lib. A function that, itself or
+through each function it calls, reaches no mutable global, calls no C and no function
+value, and starts no job runs on several threads at once, with no lock. Each other function runs
+one call at a time, and a call from another thread waits until it ends or waits in C,
+which lets the other threads in. C that a call calls can call the lib again on the same thread, and C
 can call a function of the lib from each thread (see
 [Closures C calls](function-values.md#nested-functions-and-closures)).
 

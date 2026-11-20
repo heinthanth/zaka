@@ -36,7 +36,7 @@ trap the program stopped: integer division or remainder with zero as divisor (in
                       at mathlib.zaka:10:1)
 trap code 1 1 zero_divisor mathlib
 trap at စား mathlib.zaka:10:1, 1 calls, the latest 1
-after -1
+after 0
 trap after reset none
 reset 0 3
 ";
@@ -50,7 +50,7 @@ divide 1
 trap the program stopped: integer division or remainder with zero as divisor (in စား, \
                          at mathlib.zaka:10:1)
 trap kind zero_divisor mathlib
-after -1
+after 0
 ";
 
 /// The folder of the inputs of the C lib tests of the C target.
@@ -93,7 +93,7 @@ greet 0 4
 divide 1
 traps math none
 latest mathlib
-after -1 0 10
+after 0 0 10
 reset 0 3
 ";
 
@@ -478,5 +478,40 @@ fn a_call_that_waits_in_c_lets_another_thread_into_the_lib()
             THREAD_CALLS,
             "threads with the {backend} backend"
         );
+    }
+}
+
+/// What the C program that calls freelib.zaka prints.
+#[cfg(unix)]
+const FREE_CALLS: &str = "\
+wrong 0
+fail trap zero_divisor
+after 0 2
+count 0 401
+";
+
+#[cfg(unix)]
+#[test]
+fn exports_that_reach_no_global_run_on_threads_at_once()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "freelib", &[]);
+        let exe = dir.join("free_calls");
+        let mut cmd = cc.command();
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("free_calls.c"));
+        cmd.arg(dir.join(static_file("freelib")))
+            .args(os_libs())
+            .args(["-lm", "-pthread"]);
+        ran(cmd.arg("-o").arg(&exe), "the link of free_calls.c");
+        let printed = ran_in_time(&exe);
+        assert_eq!(printed, FREE_CALLS, "free calls with the {backend} backend");
     }
 }

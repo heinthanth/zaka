@@ -352,6 +352,13 @@ static THREADED: AtomicBool = AtomicBool::new(false);
 #[unsafe(export_name = stamped!("threads_begin"))]
 pub extern "C" fn zk_threads_begin() { THREADED.store(true, Ordering::SeqCst) }
 
+/// Whether the counts of the heap change through atomic ops.
+///
+/// # Returns
+///
+/// `true` once [`zk_threads_begin`] ran.
+pub(crate) fn threaded() -> bool { THREADED.load(Ordering::SeqCst) }
+
 /// The count of a block as an atomic, for the ops of a program with threads.
 ///
 /// # Arguments

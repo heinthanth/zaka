@@ -42,6 +42,53 @@ pub(crate) fn check_jobs(module: &Module) -> Vec<Diagnostic>
     reached.into_iter().filter_map(|f| global_use(module, f)).collect()
 }
 
+/// Whether calls of an export of a C lib can run on several threads at once
+/// with no lock: neither it nor each function it reaches uses a mutable
+/// global, calls C, calls through a function value, or starts a job or a
+/// parallel map.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+/// * `f` - The function number of the export.
+///
+/// # Returns
+///
+/// `true` when they can.
+pub fn runs_free(module: &Module, f: u32) -> bool
+{
+    let reached = reached_fns(module, BTreeSet::from([f]));
+    let alone = |g: &u32| !needs_lock(&module.funcs[*g as usize].block);
+    reached.iter().all(|g| alone(g) && global_use(module, *g).is_none())
+}
+
+/// Whether statements call C, call through a function value, or start a job
+/// or a parallel map.
+///
+/// # Arguments
+///
+/// * `block` - The statements.
+///
+/// # Returns
+///
+/// `true` when they do.
+fn needs_lock(block: &[Stmt]) -> bool
+{
+    let mut found = false;
+    each_stmt(block, &mut |s| {
+        let par = matches!(s, Stmt::Loop { par: Some(_), .. });
+        found |= par || matches!(s, Stmt::Foreign { .. } | Stmt::CallValue { .. });
+        let mut note = |e: &Expr| {
+            let node = &e.node;
+            found |=
+                matches!(node, ExprNode::Foreign { .. } | ExprNode::CallValue { .. });
+            found |= matches!(node, ExprNode::Spawn { .. });
+        };
+        do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+    });
+    found
+}
+
 /// The functions some call starts a job in, and those a parallel map runs.
 ///
 /// # Arguments

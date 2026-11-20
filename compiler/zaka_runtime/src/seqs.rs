@@ -727,10 +727,18 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
 /// itself alone: trial deletion that halts the program while it runs.
 fn collect_rings()
 {
-    // shortcut: a collection waits while a job runs, since its trial counts
-    // change counts with plain ops; halt the threads at safe points instead
-    // if programs with long jobs need rings freed sooner.
-    ret_if!(crate::jobs::jobs_run());
+    // shortcut: a collection waits while a job or a call of a C lib with no
+    // lock runs, since its trial counts change counts with plain ops; halt
+    // the threads at safe points instead if programs with long jobs need
+    // rings freed sooner.
+    ret_if!(crate::jobs::jobs_run() || !crate::libs::begin_collect());
+    collect_held();
+    crate::libs::end_collect();
+}
+
+/// The work of [`collect_rings`], while no other thread changes a count.
+fn collect_held()
+{
     RING_WAITING.store(0, Ordering::Relaxed);
     let roots = CANDIDATES.take();
     let mut live = Vec::new();

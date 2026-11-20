@@ -409,8 +409,11 @@ folder, named after the input or the last part of `-o`:
 
 Each function returns an `int32_t` status and gives its result through a last
 parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
-of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap, since a
-trap can leave the heap and the globals half written. `zk_last_trap_from_<name>()` gives
+of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap that
+stopped the lib. A trap stops the lib when its function, itself or through each function
+it calls, reaches a mutable global, calls C or a function value, or starts a job, since
+the trap can leave the heap and the globals half written; a trap in each other function
+fails that call alone. `zk_last_trap_from_<name>()` gives
 that trap as a `zk_trap`: its id (`code`), its short name (`kind`), its line
 (`message`), the lib, the call it stopped in (`where`: the function, the file, the line
 and the column) and each call in progress (`frames`, the innermost first; none in a
@@ -430,7 +433,11 @@ a function gives back is a `char *`, a plain list `zk_list_<cells>`. Each block 
 gives C carries the kind and the count of its cells in front of it: C frees one block with
 `zk_free`, or a block with each block its cells point at, at each depth, with
 `zk_free_all` (`zk_free_all_from_<name>` with the C runtime of the lib). Threads can call
-the lib, one call at a time, under one lock for each lib of the runtime. A call that waits
+the lib. The functions whose trap fails the call alone run on several threads at once,
+with no lock: such a function reads constants alone, and the counts of the heap turn
+atomic at its first call. The rest run one call at a time, under one lock for each lib of
+the runtime; the first call of the lib sets its globals under that lock, and a reset waits
+for the calls with no lock to end before the next call sets them again. A call that waits
 in a C function lets go of the lock, so other threads go into the libs while it waits,
 and takes it back once C returns, as Python lets go of its lock around C. While it waits
 another thread can change a global; as Rust does, the check counts a call to C as a change
@@ -448,8 +455,8 @@ program and the runtime, so two libs never clash. The runtime links its names as
 `zk_rt_<version>_<hash>_...`, and the header maps `zk_free` and `zk_last_trap` to them:
 the static libs from one `zakac` share one runtime, and libs from two builds of `zakac`
 each keep their own; the build of each runtime joins its hash to the metadata of each Rust
-crate in it, so no name of one clashes with the other. A trap stops the lib it came from
-alone. `--max-heap` caps each lib on its own: a block counts in the count of the lib whose
+crate in it, so no name of one clashes with the other. A trap stops, or fails a call of,
+the lib it came from alone. `--max-heap` caps each lib on its own: a block counts in the count of the lib whose
 call made it, and text and lists a lib gives to C count in none, since C frees them.
 `zk_free_from_<name>()` frees with the C runtime the lib was built with: on Windows a lib
 of GNU and a lib of MSVC each have their own, so a program that loads both frees what each

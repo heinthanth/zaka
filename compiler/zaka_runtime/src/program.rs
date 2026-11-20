@@ -2,9 +2,13 @@
 //! `zaka_target_c_runtime.h` gives it, and the globals that the inline code of
 //! the header reads.
 
+use std::cell::Cell;
 use std::ffi::CStr;
 use std::ffi::c_char;
 use std::ptr::null;
+use std::ptr::null_mut;
+use std::sync::atomic::AtomicPtr;
+use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::ret_if;
 
@@ -145,16 +149,67 @@ pub(crate) const OVERLAP_BIT: u32 = 1 << 7;
 #[allow(non_upper_case_globals)]
 pub static mut zk_prog: *const ZkProgram = null();
 
+thread_local! {
+    /// The table of the C lib whose call this thread runs, or ran last.
+    static THREAD_PROG: Cell<*const ZkProgram> = const { Cell::new(null()) };
+}
+
+/// The table of the C lib opened first, for a thread that runs no call of a
+/// lib.
+static FIRST_LIB_PROG: AtomicPtr<ZkProgram> = AtomicPtr::new(null_mut());
+
+/// The table of the C lib whose call this thread runs, or ran last.
+///
+/// # Returns
+///
+/// The table, or NULL when the thread ran no call of a lib.
+pub(crate) fn thread_prog() -> *const ZkProgram { THREAD_PROG.get() }
+
+/// Set the table of the C lib whose call this thread runs.
+///
+/// # Arguments
+///
+/// * `program` - The table.
+pub(crate) fn set_thread_prog(program: *const ZkProgram) { THREAD_PROG.set(program) }
+
+/// Keep the table of a C lib as the one of each thread that runs no call of a
+/// lib, unless a lib opened before it.
+///
+/// # Arguments
+///
+/// * `program` - The table.
+pub(crate) fn keep_last(program: *const ZkProgram)
+{
+    let (fresh, ord) = (program.cast_mut(), Ordering::AcqRel);
+    _ = FIRST_LIB_PROG.compare_exchange(null_mut(), fresh, ord, Ordering::Acquire);
+}
+
+/// The table in use on this thread: the one of its C lib, else the one of the
+/// first lib, else the one `zk_start` set.
+///
+/// # Returns
+///
+/// The table, or NULL before a program runs.
+pub(crate) fn prog_ptr() -> *const ZkProgram
+{
+    let own = THREAD_PROG.get();
+    ret_if!(!own.is_null(), own);
+    let first = FIRST_LIB_PROG.load(Ordering::Acquire);
+    ret_if!(!first.is_null(), first);
+    // SAFETY: `zk_start` sets it on the one thread of the program, before
+    // each other thread starts.
+    unsafe { zk_prog }
+}
+
 /// The table of the running program.
 ///
 /// # Returns
 ///
-/// The table; `zk_start` set it before the program ran.
+/// The table; `zk_start` or the start of a lib set it before the program ran.
 pub fn prog() -> &'static ZkProgram
 {
-    // SAFETY: `zk_start` sets the table before each other runtime call, and
-    // the table lives as long as the program.
-    unsafe { &*zk_prog }
+    // SAFETY: the table lives as long as the program.
+    unsafe { &*prog_ptr() }
 }
 
 /// Whether a check is on in the build.

@@ -90,9 +90,11 @@ last parameter, which can be NULL when the caller has no use for it. The status 
 `ZK_OK` when the call went through. When the call stopped, as a division with zero as
 divisor stops a program, the status is 1 more than the number of the stop, and the
 program that called goes on. `zk_last_trap_from_mathlib()` gives the stop as a struct:
-its number, its name, its line, and the function, file and line it stopped in. The lib
-stops with it: each later call gives `ZK_STOPPED`, since the stop can leave the lib half
-done, until `zk_reset_mathlib()` starts it again from the start.
+its number, its name, its line, and the function, file and line it stopped in. A function
+that changes no global, as the one above, fails that call alone, and the lib goes on. A
+stop in a function that reaches a mutable global, or calls C, stops the lib with it: each
+later call gives `ZK_STOPPED`, since the stop can leave the lib half done, until
+`zk_reset_mathlib()` starts it again from the start.
 
 The first call starts the lib: it sets the globals of the program. Text a function takes
 comes in as a `const char *`, and what the function prints comes out at the end of each
@@ -163,11 +165,13 @@ same with `cargo:rustc-link-search=static` and `cargo:rustc-link-lib=static=math
   `point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ...`.
 - It stands at the top level, takes no kind parameters, and neither takes nor gives back a
   block as its own (ZK0490).
-- Threads can call a lib, but one call runs at a time; the others wait, until it ends or
-  waits in a C function. C can call a function of the program from each thread, built
-  with `--allow-ffi` for the C functions it calls.
+- Threads can call a lib. A function that reaches no mutable global and calls no C, itself
+  or through the functions it calls, runs on several threads at once. Calls of the other
+  functions run one at a time; the others wait, until it ends or waits in a C function. C
+  can call a function of the program from each thread, built with `--allow-ffi` for the C
+  functions it calls.
 - Several Zaka libs link into one program, from one build of `zakac` or from several.
-  Each keeps its own names and its own `--max-heap`, and a stop stops its own lib alone;
+  Each keeps its own names and its own `--max-heap`, and a stop touches its own lib alone;
   `zk_free` and `zk_last_trap()`, the last stop of each lib, serve them all. The name in
   `zk_reset_<name>` is the name of the files of the lib, or `--lib-name`, which takes
   ASCII letters, digits and `_`.

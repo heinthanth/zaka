@@ -5,6 +5,7 @@
 //! late call from C stops the run instead of running freed code.
 
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::ffi::c_void;
 use std::sync::Mutex;
 
@@ -15,6 +16,7 @@ use libffi::raw::ffi_closure_alloc;
 use libffi::raw::ffi_prep_cif;
 use libffi::raw::ffi_prep_closure_loc;
 use libffi::raw::ffi_status_FFI_OK;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -76,10 +78,13 @@ struct Cb
     lib: usize,
 }
 
-/// Each closure C got, kept for the whole run; the runtime runs on one thread.
+/// Each closure C got, kept for the whole run.
 static CBS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
-/// The closures lent to the C calls that run now, the latest last.
-static LENDS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+thread_local! {
+    /// The closures lent to the C calls this thread runs now, the latest
+    /// last.
+    static LENDS: RefCell<Vec<usize>> = const { RefCell::new(Vec::new()) };
+}
 
 thread_local! {
     /// Set on the thread that runs the program, at its first lend or leave.
@@ -290,7 +295,7 @@ pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
     ret_if!(direct, zk_fn_code(f));
     let c = cb(cb_of(f, shape));
     ret_if!(!bound, code_of(c.code));
-    LENDS.lock().unwrap_or_else(|e| e.into_inner()).push(c as *mut Cb as usize);
+    LENDS.with(|l| l.borrow_mut().push(c as *mut Cb as usize));
     c.calls += 1;
     do_if!(!c.kept, c.record = zk_fn_rec(f));
     code_of(c.code)
@@ -318,7 +323,7 @@ fn code_of(p: *mut c_void) -> ZkCode
 ///
 /// The count.
 #[unsafe(export_name = stamped!("cb_lent"))]
-pub extern "C" fn zk_cb_lent() -> usize { LENDS.lock().map_or(0, |l| l.len()) }
+pub extern "C" fn zk_cb_lent() -> usize { lends() }
 
 /// End the lends of the closures a C call got, once it returns.
 ///
@@ -328,12 +333,12 @@ pub extern "C" fn zk_cb_lent() -> usize { LENDS.lock().map_or(0, |l| l.len()) }
 #[unsafe(export_name = stamped!("cb_end"))]
 pub extern "C" fn zk_cb_end(from: usize)
 {
-    let mut lends = LENDS.lock().unwrap_or_else(|e| e.into_inner());
-    while lends.len() > from
-    {
-        let p = lends.pop().unwrap_or_default();
-        cb(p).calls -= 1;
-    }
+    let ended = LENDS.with(|l| {
+        let mut l = l.borrow_mut();
+        let from = from.min(l.len());
+        l.split_off(from)
+    });
+    do_for!(p in ended, cb(p).calls -= 1);
 }
 
 /// Give C leave to call a closure after the call that gave it: the leave holds
@@ -418,33 +423,12 @@ pub extern "C" fn zk_cb_opt_handle(
     zk_cb_handle(at(out, ok_at), addr, list)
 }
 
-/// Take the closures lent now off the list, for a call to C that lets other
-/// threads into the libs.
-///
-/// # Returns
-///
-/// The lends.
-pub(crate) fn take_lends() -> Vec<usize>
-{
-    std::mem::take(&mut *LENDS.lock().unwrap_or_else(|e| e.into_inner()))
-}
-
-/// Put the closures lent back on the list, as [`take_lends`] gave them.
-///
-/// # Arguments
-///
-/// * `lends` - The lends.
-pub(crate) fn put_lends(lends: Vec<usize>)
-{
-    *LENDS.lock().unwrap_or_else(|e| e.into_inner()) = lends;
-}
-
 /// The count of closures lent now.
 ///
 /// # Returns
 ///
 /// The count.
-pub(crate) fn lends() -> usize { LENDS.lock().unwrap_or_else(|e| e.into_inner()).len() }
+pub(crate) fn lends() -> usize { LENDS.with(|l| l.borrow().len()) }
 
 /// End each lend past the first `n`: a trap inside a call of a C lib that lent
 /// closures left them lent.
@@ -452,7 +436,4 @@ pub(crate) fn lends() -> usize { LENDS.lock().unwrap_or_else(|e| e.into_inner())
 /// # Arguments
 ///
 /// * `n` - The count of lends that remain.
-pub(crate) fn end_lends_from(n: usize)
-{
-    LENDS.lock().unwrap_or_else(|e| e.into_inner()).truncate(n);
-}
+pub(crate) fn end_lends_from(n: usize) { LENDS.with(|l| l.borrow_mut().truncate(n)); }

@@ -886,7 +886,8 @@ ends the run of a program with a message, since a program runs on one thread. In
 ([Functions C can call](functions.md#functions-c-can-call)), C can call from each thread:
 the lock of the lib lets one thread in at a time, a call that waits in C lets the others
 in, and a trap on a thread with no call of the lib in progress stops the lib and gives C
-a result of zeros.
+a result of zeros. A function that calls a function value takes that lock in a lib, since
+the value can be C.
 
 **Where it runs.** `zakac run` makes one native closure for each closure given to C,
 found again from the octets of its record, and so does a native program, through the runtime

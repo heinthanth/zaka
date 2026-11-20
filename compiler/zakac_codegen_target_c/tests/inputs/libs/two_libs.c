@@ -1,5 +1,6 @@
 /* Links two Zaka libs into one program: each keeps its own names and shares
-   the runtime with the other, and a trap stops the lib it came from alone. */
+   the runtime with the other, and a trap fails the call of the lib it came
+   from alone. */
 #include <stdint.h>
 #include <stdio.h>
 

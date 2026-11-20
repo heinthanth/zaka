@@ -46,6 +46,7 @@ mod testing;
 mod values;
 mod walk;
 
+pub use jobs::runs_free;
 pub use walk::each_stmt;
 
 zakac_i18n::init!();

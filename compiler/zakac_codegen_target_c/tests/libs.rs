@@ -1,6 +1,7 @@
 //! A C lib built from Zaka, `--emit lib`: a C program links the static lib
 //! and the shared lib, calls the functions that code outside can call, gets
-//! a trap back as a status, and finds the lib stopped after it.
+//! a trap back as a status, and finds the lib going on after it: the function
+//! that trapped reaches no mutable global.
 
 use std::ffi::OsString;
 use std::path::Path;
@@ -36,7 +37,7 @@ trap the program stopped: integer division or remainder with zero as divisor (in
                         at mathlib.zaka:10:1)
 trap code 1 1 zero_divisor mathlib
 trap at စား mathlib.zaka:10:1, 1 calls, the latest 1
-after -1
+after 0
 trap after reset none
 reset 0 3
 ";

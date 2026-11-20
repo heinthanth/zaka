@@ -13,6 +13,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Write;
 
+use zakac_borrow_checker::runs_free;
 use zakac_ir_builder::ir::Dest;
 use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module;
@@ -53,6 +54,9 @@ pub struct Export<'a>
     pub kind: DataKind,
     /// The C name of each struct the lib gives to C, under the struct name.
     pub c_structs: &'a BTreeMap<String, String>,
+    /// Whether its calls run on several threads at once with no lock: it
+    /// reaches no mutable global and calls no C.
+    pub free: bool,
 }
 
 /// The functions of a module that code outside can call, in source order.
@@ -75,6 +79,7 @@ pub fn exported(module: &Module) -> Vec<Export<'_>>
             c_name,
             kind: kind_of(func),
             c_structs: &module.c_structs,
+            free: runs_free(module, n as u32),
         })
         .collect()
 }
@@ -565,6 +570,29 @@ pub fn lib_source(exports: &[Export<'_>], shapes: &[usize], platform: u16) -> St
     out
 }
 
+/// The lines of a wrapper that holds the lock of the libs: the lock and the
+/// entry, the check for a stopped lib, the end of a trap, the start of the
+/// globals and the end.
+const LOCKED_PARTS: [&str; 5] = [
+    "    zk_lib_lock();\n    zk_lib_place zk_was = zk_lib_in();\n",
+    "    RET_IF(\n        zk_lib_state_of(zk_lib_self) == ZK_LIB_STOPPED,\n        \
+     zk_lib_end(zk_outer, zk_was, ZK_STOPPED)\n    );\n",
+    "zk_lib_stop",
+    "    zk_lib_begin();\n",
+    "zk_lib_end",
+];
+
+/// The same lines of a wrapper whose calls run with no lock: a trap fails the
+/// call alone.
+const FREE_PARTS: [&str; 5] = [
+    "    RET_IF(zk_lib_free_begin() == ZK_LIB_STOPPED, ZK_STOPPED);\n    zk_lib_place \
+     zk_was = zk_lib_enter(zk_lib_self);\n",
+    "",
+    "zk_lib_fail",
+    "",
+    "zk_lib_free_end",
+];
+
 /// The wrapper of one function: it starts the runtime on the first call,
 /// calls the bridge of the function kind with the address of each
 /// parameter, writes the result, and returns the status.
@@ -596,17 +624,17 @@ fn wrapper(e: &Export<'_>, shape: usize, kinds: &CKinds) -> String
         let value = tern!(whole.is_some(), "zk_r".into(), format!("({c})zk_r.{m}"));
         format!("    DO_IF(zk_out != NULL, *zk_out = {value});\n")
     });
+    let parts = tern!(e.free, &FREE_PARTS, &LOCKED_PARTS);
+    let &[enter, stopped, stop, begin, end] = parts;
     format!(
         "\n/* {} */\nZK_LIB_EXPORT int32_t {}({})\n{{\n    void *zk_args[] = \
-         {{{args}}};\n    {held} zk_r;\n    jmp_buf zk_here;\n    zk_lib_lock();\n    \
-         zk_lib_place zk_was = zk_lib_in();\n    jmp_buf *zk_outer = (jmp_buf \
-         *)zk_lib_jump();\n    uint32_t zk_depth_was = zk_ctx()->depth;\n    \
-         RET_IF(zk_lib_state == 2, zk_lib_end(zk_outer, zk_was, ZK_STOPPED));\n    if \
-         (setjmp(zk_here) != 0)\n        return zk_lib_stop(zk_outer, zk_was, \
-         zk_depth_was);\n    ZK_LIB_NO_UNWIND(zk_here);\n    \
-         zk_lib_jump_set(&zk_here);\n    zk_lib_begin();\n    zk_cbb_{shape}({into}, \
-         zk_args, (uint8_t *)&{});\n    zk_flush();\n{out}    return \
-         zk_lib_end(zk_outer, zk_was, ZK_OK);\n}}\n",
+         {{{args}}};\n    {held} zk_r;\n    jmp_buf zk_here;\n{enter}    jmp_buf \
+         *zk_outer = (jmp_buf *)zk_lib_jump();\n    uint32_t zk_depth_was = \
+         zk_ctx()->depth;\n{stopped}    if (setjmp(zk_here) != 0)\n        return \
+         {stop}(zk_outer, zk_was, zk_depth_was);\n    ZK_LIB_NO_UNWIND(zk_here);\n    \
+         zk_lib_jump_set(&zk_here);\n{begin}    zk_cbb_{shape}({into}, zk_args, \
+         (uint8_t *)&{});\n    zk_flush();\n{out}    return {end}(zk_outer, zk_was, \
+         ZK_OK);\n}}\n",
         comment(&e.func.name),
         e.c_name,
         c_params(e.func, kinds),
