@@ -346,8 +346,9 @@ A loop marked `အပြိုင်` before its last word lets its rounds run a
 the verb of each parallel loop (`ရေတွက်၍`, `တိုး၍`, `လျှော့၍`, `ယူ၍`), and before
 `လုပ်ဆောင်သော ရလဒ်များ` in a parallel map. `<n>` is an integer (ZK0405), worked out as the loop
 starts, and zero or below stops the program with the trap `threads not positive`. The rounds
-then run on `<n>` threads, never more threads than rounds, each thread a chunk of
-the rounds one after another; 1 runs them in order on the thread of the loop. With no count,
+then run on `<n>` threads, never more threads than rounds: each thread takes the next
+block of rounds that none took, until none is left, so a thread whose rounds end fast takes
+more; 1 runs them in order on the thread of the loop. With no count,
 a loop takes one thread for each core.
 
 Each has the block form too. The rounds follow the rules of a job, since the rounds run at

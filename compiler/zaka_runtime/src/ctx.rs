@@ -85,10 +85,27 @@ fn grow(ctx: &mut ZkCtx, rows: usize)
             std::slice::from_raw_parts(ctx.frames, ctx.room)
         })
     );
-    // shortcut: the table of a thread that ends is never freed, a few octets
-    // a row; free it on thread exit if programs start threads by the thousand.
+    // shortcut: the table before a growth is never freed, and neither is the
+    // table of a thread of C's own that ends; a job frees its own as it ends.
     ctx.frames = Box::leak(frames).as_mut_ptr();
     ctx.room = rows;
+}
+
+/// Free the frame table of the calling thread, which ends: a job's, once its
+/// step returned.
+pub(crate) fn release_frames()
+{
+    let at = CTX.with(UnsafeCell::get);
+    // SAFETY: each thread reaches its own context, and no reference to it
+    // outlives this call.
+    let ctx = unsafe { &mut *at };
+    ret_if!(ctx.room == 0);
+    // SAFETY: the table is the boxed slice of `room` rows `grow` leaked.
+    let table = unsafe {
+        Box::from_raw(std::ptr::slice_from_raw_parts_mut(ctx.frames, ctx.room))
+    };
+    drop(table);
+    (ctx.frames, ctx.room) = (null_mut(), 0);
 }
 
 /// The count of calls in progress on the calling thread.

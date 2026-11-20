@@ -804,9 +804,10 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   each round and carries `Par::Rounds`; the VM runs it in order, and native code calls
   `zk_par_for(count, step, data, guard, leave, abort)` with a step (`zk_round_step_<f>`)
   that reads the arguments from a data block. The runtime runs fewer rounds than cores in
-  order, and else starts one job for each core over a chunk of rounds (or the count of
+  order, and else starts one job for each core (or for each thread of the count of
   threads the loop was given, `ParRounds::threads`, after `HaltCause::ThreadsNotPositive`
-  for zero or below), waits for each,
+  for zero or below); the jobs take blocks of rounds from one counter until none is left
+  (`Rounds`), so a fast job takes more. It waits for each and joins its thread,
   then stops with `job trapped` when one trapped. The JIT runs both, through the guard
   the runtime carries.
 - **A call.** `call f` takes one block of the stack region for each local of `f`

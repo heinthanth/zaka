@@ -600,3 +600,16 @@ fn a_parallel_loop_over_each_value_of_a_narrow_kind_counts_with_no_overflow()
     );
     assert_eq!(output(&unsigned), "၂၅၆\n");
 }
+
+#[test]
+fn a_trap_in_a_round_names_the_function_of_its_loop()
+{
+    let text = program(
+        "ကိန်းရှင် ထွက် သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၁ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို ၁၀ ကို (၁ - i) ဖြင့် စားသော စားလဒ် ဟု ထားမည်။",
+    );
+    // Fewer rounds than cores run in order, on the thread of the loop.
+    let (_, result) = run_source_with(&text, &RunOptions::default());
+    let trap = result.expect_err("the second round divides by zero");
+    assert_eq!((trap.kind, trap.func.as_str()), (TrapKind::ZeroDivisor, "ပရိုဂရမ်"));
+}

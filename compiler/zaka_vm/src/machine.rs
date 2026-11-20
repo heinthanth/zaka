@@ -20,6 +20,7 @@ use zakac_ir_builder::ir::HaltCause;
 use zakac_ir_builder::ir::InfixOp;
 use zakac_ir_builder::ir::PrefixOp;
 use zakac_ir_builder::ir::RingsAct;
+use zakac_ir_builder::ir::shown_name;
 use zakac_ir_builder::value::EvalError;
 use zakac_ir_builder::value::Value;
 use zakac_ir_builder::value::compare;
@@ -1329,10 +1330,11 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// The name, or `?` for an index with no function.
+    /// The name as written (with no mark of a round or of the kinds of a
+    /// generic), or `?` for an index with no function.
     fn func_name(&self, func: u32) -> &str
     {
-        self.module.funcs.get(func as usize).map_or("?", |f| f.name.as_str())
+        self.module.funcs.get(func as usize).map_or("?", |f| shown_name(&f.name))
     }
 
     /// Describe the block an address falls in, or ends just before.

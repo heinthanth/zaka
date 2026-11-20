@@ -17,6 +17,7 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
 use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
@@ -65,6 +66,8 @@ struct Job
     ret: usize,
     /// Whether some wait saw it.
     awaited: bool,
+    /// Its thread, until a wait or the end of the program joins it.
+    thread: Option<std::thread::JoinHandle<()>>,
 }
 
 /// One channel.
@@ -100,6 +103,9 @@ struct State
     locks: Vec<Held>,
     /// Each job; the job a program holds as `n` is at `n - 1`.
     jobs: Vec<Job>,
+    /// The numbers of the jobs of parallel loops that ended, which no program
+    /// holds, for the next jobs to take.
+    spare: Vec<usize>,
     /// Each channel, as the jobs are numbered.
     pipes: Vec<Pipe>,
     /// The threads that run and do not wait, the main one included.
@@ -108,19 +114,17 @@ struct State
     parked: usize,
     /// The count of changes so far, which tells a waiter its wake is real.
     changes: u64,
-    /// The job threads, to join at the end of the program.
-    threads: Vec<std::thread::JoinHandle<()>>,
 }
 
 /// The state of the jobs and channels.
 static STATE: Mutex<State> = Mutex::new(State {
     locks: Vec::new(),
     jobs: Vec::new(),
+    spare: Vec::new(),
     pipes: Vec::new(),
     running: 1,
     parked: 0,
     changes: 0,
-    threads: Vec::new(),
 });
 
 /// Wakes each thread that waits once the state changes.
@@ -253,10 +257,19 @@ pub extern "C" fn zk_job_start(
 {
     zk_threads_begin();
     let mut st = state();
-    let n = st.jobs.len() + 1;
-    let job =
-        Job { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false };
-    st.jobs.push(job);
+    #[rustfmt::skip]
+    let job = Job { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false,
+        thread: None };
+    let next = st.jobs.len() + 1;
+    let n = st.spare.pop().unwrap_or(next);
+    if n == next
+    {
+        st.jobs.push(job);
+    }
+    else
+    {
+        st.jobs[n - 1] = job;
+    }
     st.running += 1;
     let data = data as usize;
     let run = move || run_job(guard, (jump, abort != 0), step, data, n);
@@ -267,7 +280,7 @@ pub extern "C" fn zk_job_start(
         drop(st);
         stop_owned(trap::OUT_OF_MEM, vec![named("size", 64usize << 20)])
     };
-    st.threads.push(thread);
+    st.jobs[n - 1].thread = Some(thread);
     n
 }
 
@@ -290,6 +303,8 @@ fn run_job(
     JOB.set(n);
     let status = guard(step, data as *mut c_void);
     LEAVE.set(None);
+    // The thread ends here, and its calls with it.
+    crate::ctx::release_frames();
     let mut st = state();
     st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
     // The locks a job held when it stopped remain taken, broken.
@@ -321,9 +336,11 @@ pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
     };
     let mut st = wait_until(st, |s| s.jobs[at].end != End::Runs);
     st.jobs[at].awaited = true;
-    let job = &st.jobs[at];
-    ret_if!(job.end == End::Done, job.data as *mut u8);
+    let (end, data) = (st.jobs[at].end, st.jobs[at].data);
+    let thread = st.jobs[at].thread.take();
     drop(st);
+    join(thread);
+    ret_if!(end == End::Done, data as *mut u8);
     stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
 }
 
@@ -408,36 +425,57 @@ pub type ZkMapStep = extern "C" fn(*mut u8, *mut u8);
 /// loop and the number of the round, from 0.
 pub type ZkRoundStep = extern "C" fn(*mut u8, usize);
 
-/// The rounds one job of a parallel loop runs.
-struct Chunk
+/// The rounds of a parallel loop that its jobs share: each job takes the next
+/// block of rounds until none is left, so a job whose rounds run fast takes
+/// more of them.
+struct Rounds
 {
     /// The step of a round.
     step: ZkRoundStep,
     /// The data block of the loop, as an address.
     data: usize,
-    /// The first round.
-    lo: usize,
-    /// The round past the last.
-    hi: usize,
+    /// The count of rounds.
+    count: usize,
+    /// The rounds of one take.
+    block: usize,
+    /// The first round no job took so far.
+    next: AtomicUsize,
 }
 
-/// The step of a job that runs a chunk of rounds.
+/// The step of a job of a parallel loop: take a block of rounds and run them,
+/// until no round is left.
 ///
 /// # Arguments
 ///
-/// * `data` - The chunk.
-extern "C" fn run_chunk(data: *mut c_void)
+/// * `data` - The rounds.
+extern "C" fn run_rounds(data: *mut c_void)
 {
-    // SAFETY: `zk_par_for` hands each job a chunk that lives as long as the
-    // program.
-    let c = unsafe { &*data.cast::<Chunk>() };
-    (c.lo..c.hi).for_each(|i| (c.step)(c.data as *mut u8, i));
+    // SAFETY: `zk_par_for` hands each job the rounds, which outlive the jobs.
+    let r = unsafe { &*data.cast::<Rounds>() };
+    loop
+    {
+        let lo = r.next.fetch_add(r.block, Ordering::Relaxed);
+        ret_if!(lo >= r.count);
+        let hi = (lo + r.block).min(r.count);
+        (lo..hi).for_each(|i| (r.step)(r.data as *mut u8, i));
+    }
+}
+
+/// Join the thread of a job, once the job ended.
+///
+/// # Arguments
+///
+/// * `thread` - The thread, or `None` when a wait joined it before.
+fn join(thread: Option<std::thread::JoinHandle<()>>)
+{
+    do_if!(let Some(t) = thread, _ = t.join());
 }
 
 /// Run the rounds of a parallel loop: with no count of threads, fewer rounds
-/// than cores run here, in order, and else each core gets a job that runs a
-/// chunk of them; with a count, a job for each thread it names runs a chunk,
-/// never more jobs than rounds, and one runs the rounds here, in order. A trap
+/// than cores run here, in order, and else each core gets a job; with a count,
+/// a job for each thread it names, never more jobs than rounds, and one runs
+/// the rounds here, in order. Each job takes the next block of rounds until
+/// none is left. A trap
 /// in a round acts as in a job: the rounds of its job end, the other jobs
 /// finish, and the loop then stops with `job trapped`; under `--trap abort` the
 /// program stops at once.
@@ -465,21 +503,16 @@ pub extern "C" fn zk_par_for(
         return;
     }
     let workers = tern!(threads == 0, cores, threads.min(count));
-    let per = count.div_ceil(workers);
-    let chunk = |lo: usize| {
-        // shortcut: a chunk is never freed, a few words a job; free it once
-        // the job ends if programs run parallel loops a million times.
-        let c = Box::leak(Box::new(Chunk {
-            step,
-            data: data as usize,
-            lo,
-            hi: (lo + per).min(count),
-        }));
-        let at: *mut Chunk = c;
-        zk_job_start(guard, jump, run_chunk, at.cast(), std::ptr::null(), abort)
-    };
-    let jobs: Vec<usize> = (0..count).step_by(per).map(chunk).collect();
-    // Each job ends before the loop goes on, so a trap waits for the others.
+    // Eight takes for each job leave rounds for a job that ends first to take.
+    let block = (count / (workers * 8)).max(1);
+    #[rustfmt::skip]
+    let mut rounds = Rounds { step, data: data as usize, count, block, next: AtomicUsize::new(0) };
+    let at: *mut Rounds = &mut rounds;
+    let start =
+        |_| zk_job_start(guard, jump, run_rounds, at.cast(), std::ptr::null(), abort);
+    let jobs: Vec<usize> = (0..workers).map(start).collect();
+    // Each job ends before the loop goes on, so a trap waits for the others,
+    // and the rounds outlive each job.
     let ended: Vec<bool> = jobs.iter().map(|n| job_ended_well(*n)).collect();
     let trapped = jobs.iter().zip(ended).find(|(_, ok)| !ok).map(|(n, _)| *n);
     ret_if!(trapped.is_none());
@@ -497,10 +530,15 @@ pub extern "C" fn zk_par_for(
 /// `true` when it ran to its end, `false` when a trap ended it.
 fn job_ended_well(n: usize) -> bool
 {
-    let st = wait_until(state(), |s| s.jobs[n - 1].end != End::Runs);
-    let mut st = st;
+    let mut st = wait_until(state(), |s| s.jobs[n - 1].end != End::Runs);
     st.jobs[n - 1].awaited = true;
-    st.jobs[n - 1].end == End::Done
+    let well = st.jobs[n - 1].end == End::Done;
+    let thread = st.jobs[n - 1].thread.take();
+    // No program holds the number of a job of a loop, so the next job takes it.
+    st.spare.push(n);
+    drop(st);
+    join(thread);
+    well
 }
 
 /// What the rounds of a parallel map read and write.
@@ -698,7 +736,7 @@ pub(crate) fn end() -> bool
     ret_if!(st.jobs.is_empty() && st.pipes.is_empty(), false);
     let st = wait_until(st, |s| s.jobs.iter().all(|j| j.end != End::Runs));
     let mut st = st;
-    let threads = std::mem::take(&mut st.threads);
+    let threads: Vec<_> = st.jobs.iter_mut().filter_map(|j| j.thread.take()).collect();
     let jobs = std::mem::take(&mut st.jobs);
     let pipes = std::mem::take(&mut st.pipes);
     drop(st);
