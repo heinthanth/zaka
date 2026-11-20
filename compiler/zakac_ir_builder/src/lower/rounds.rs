@@ -111,12 +111,17 @@ impl Lowerer<'_>
         // The rounds: |last - first| / step + 1.
         let count = self.hidden(DataKind::USIZE, span);
         out.push(Stmt::Set { place: count, value: self.usize_const(0, span), span });
+        // A word of the sign of the counter holds the gap of each two values of
+        // a narrower kind, so the count never overflows where the loop does
+        // not.
+        let word = word_of(kind);
+        let widen = |e: &Expr| node_expr(word, convert_node(e.clone()), span);
         let rounds = |a: &Expr, b: &Expr, l: &Self| {
             let gap =
-                node_expr(kind, infix_node(InfixOp::Sub, a.clone(), b.clone()), span);
+                node_expr(word, infix_node(InfixOp::Sub, widen(a), widen(b)), span);
             let steps = node_expr(
-                kind,
-                infix_node(InfixOp::Div, gap, stride_read.clone()),
+                word,
+                infix_node(InfixOp::Div, gap, widen(&stride_read)),
                 span,
             );
             let wide = node_expr(DataKind::USIZE, convert_node(steps), span);
@@ -615,20 +620,20 @@ impl Lowerer<'_>
         self.loops.push(self.scopes.len());
         self.scoped(|l| {
             let var = l.declare(&n.var, kind, Access::LoopVar);
-            let r = node_expr(
-                kind,
-                convert_node(read(number, DataKind::USIZE, span)),
-                span,
-            );
-            let stride = read(heads[2], kind, span);
-            let step = node_expr(kind, infix_node(InfixOp::Mul, r, stride), span);
-            let first = read(heads[0], kind, span);
-            let up = node_expr(
-                kind,
-                infix_node(InfixOp::Add, first.clone(), step.clone()),
-                span,
-            );
-            let down = node_expr(kind, infix_node(InfixOp::Sub, first, step), span);
+            // The value comes to be in a word, as the count does; it lies
+            // between the bounds, so it fits the counter.
+            let word = word_of(kind);
+            let widen = |e: Expr| node_expr(word, convert_node(e), span);
+            let r = widen(read(number, DataKind::USIZE, span));
+            let stride = widen(read(heads[2], kind, span));
+            let step = node_expr(word, infix_node(InfixOp::Mul, r, stride), span);
+            let first = widen(read(heads[0], kind, span));
+            let near = |op: InfixOp| {
+                let value =
+                    node_expr(word, infix_node(op, first.clone(), step.clone()), span);
+                node_expr(kind, convert_node(value), span)
+            };
+            let (up, down) = (near(InfixOp::Add), near(InfixOp::Sub));
             let up_test = read(heads[1], DataKind::Bool, span);
             out.push(Stmt::If {
                 cond: up_test,
@@ -758,6 +763,22 @@ impl Lowerer<'_>
         // A trap shows the name before `#`: the function the loop is in.
         format!("{}#round{func}{}", self.current, self.suffix)
     }
+}
+
+/// The word of the sign of a counter: `isize` for a signed one, `usize` for
+/// an unsigned one.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the counter.
+///
+/// # Returns
+///
+/// The word.
+fn word_of(kind: DataKind) -> DataKind
+{
+    let signed = kind.int_kind().is_none_or(|i| i.signed);
+    tern!(signed, DataKind::ISIZE, DataKind::USIZE)
 }
 
 /// A hidden name for a slot of the function of a round.
