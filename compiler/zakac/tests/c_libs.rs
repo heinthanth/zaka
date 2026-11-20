@@ -516,7 +516,6 @@ fn exports_that_reach_no_global_run_on_threads_at_once()
     }
 }
 
-#[cfg(unix)]
 /// The folder of the programs of these tests that call C.
 ///
 /// # Returns
@@ -527,9 +526,9 @@ fn program_inputs() -> PathBuf
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/inputs/c_libs")
 }
 
-#[cfg(unix)]
 /// Build a program of [`program_inputs`] into an executable, run it, and
-/// give back its status, its output and its errors.
+/// give back its status, its output and its errors. The file the threads of
+/// C come from, `threads.zaka`, goes beside it. A run past 30 seconds fails.
 ///
 /// # Arguments
 ///
@@ -543,17 +542,52 @@ fn program_inputs() -> PathBuf
 fn built_and_ran(dir: &Path, backend: &str, name: &str) -> (bool, String, String)
 {
     let file = format!("{name}.zaka");
-    std::fs::copy(program_inputs().join(&file), dir.join(&file)).unwrap();
+    for f in [file.as_str(), "threads.zaka"]
+    {
+        std::fs::copy(program_inputs().join(f), dir.join(f)).unwrap();
+    }
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
     cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1");
     cmd.args(["build", "--backend", backend, "--allow-ffi", "-o", name, &file]);
     ran(&mut cmd, "the build of a program");
-    let out = Command::new(dir.join(name)).output().unwrap();
+    let exe = dir.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+    let out = within_deadline(Command::new(exe), name);
     let text = |o: &[u8]| String::from_utf8_lossy(o).replace("\r\n", "\n");
     (out.status.success(), text(&out.stdout), text(&out.stderr))
 }
 
-#[cfg(unix)]
+/// Run a program and wait for it, at most 30 seconds.
+///
+/// # Arguments
+///
+/// * `cmd` - The command.
+/// * `name` - The name of the program, for the failure.
+///
+/// # Returns
+///
+/// What it gave back.
+///
+/// # Panics
+///
+/// When it runs past the deadline, which ends it first.
+fn within_deadline(mut cmd: Command, name: &str) -> std::process::Output
+{
+    use std::process::Stdio;
+    let piped = cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = piped.spawn().unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    while child.try_wait().unwrap().is_none()
+    {
+        if std::time::Instant::now() > deadline
+        {
+            let _ = child.kill();
+            panic!("{name} ran past 30 seconds");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    child.wait_with_output().unwrap()
+}
+
 #[test]
 fn c_calls_a_function_that_uses_no_global_from_a_thread_of_its_own()
 {
@@ -566,7 +600,6 @@ fn c_calls_a_function_that_uses_no_global_from_a_thread_of_its_own()
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn a_call_from_a_c_thread_of_a_function_that_uses_a_global_ends_the_run()
 {
@@ -579,7 +612,6 @@ fn a_call_from_a_c_thread_of_a_function_that_uses_a_global_ends_the_run()
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn c_calls_a_closure_of_copied_captures_from_a_thread_of_its_own()
 {
@@ -592,7 +624,6 @@ fn c_calls_a_closure_of_copied_captures_from_a_thread_of_its_own()
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn c_threads_and_the_main_thread_share_a_locked_object_through_a_closure()
 {
@@ -608,7 +639,20 @@ fn c_threads_and_the_main_thread_share_a_locked_object_through_a_closure()
     }
 }
 
-#[cfg(unix)]
+#[test]
+fn a_wait_stops_as_a_deadlock_once_the_thread_of_c_that_could_act_leaves()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let (ok, printed, errors) =
+            built_and_ran(dir.path(), backend, "c_thread_deadlock");
+        assert!(!ok, "the run stops with the {backend} backend");
+        assert_eq!(printed, "", "{backend}: no value came");
+        assert!(errors.contains("none can go on"), "{backend}: {errors}");
+    }
+}
+
 #[test]
 fn a_call_from_a_c_thread_of_a_closure_whose_capture_is_written_ends_the_run()
 {

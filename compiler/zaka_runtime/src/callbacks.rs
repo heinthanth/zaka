@@ -174,11 +174,13 @@ fn run_on_c_thread(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
         zk_fn_bound(record.cast_const().cast()) != 0,
         zk_fn_release(record.cast_const().cast())
     );
+    crate::jobs::recheck_waits();
 }
 
 /// Whether C holds a closure it can call from a thread of its own, through a
 /// lend of a call that runs now or through a leave, so a thread of C can still
-/// change what a job waits for.
+/// change what a job waits for. A function with no captures that crosses
+/// reaches no value a job waits on, so C holding one counts for nothing.
 ///
 /// # Returns
 ///
@@ -187,7 +189,9 @@ pub(crate) fn lent_to_threads() -> bool
 {
     let list = CBS.lock().unwrap_or_else(|e| e.into_inner()).clone();
     let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
-    list.iter().map(|p| cb(*p)).any(|c| c.crosses && (c.kept || c.calls > 0))
+    let bound = |c: &Cb| zk_fn_bound(c.record.cast_const().cast()) != 0;
+    let held = |c: &Cb| c.calls > 0 || (c.kept && bound(c));
+    list.iter().map(|p| cb(*p)).any(|c| c.crosses && held(c))
 }
 
 /// A count of the record of a closure, for a call on a thread of C's own; the

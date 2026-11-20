@@ -509,7 +509,8 @@ C starts threads of its own too, and two of the rules above reach them:
 - Each thread of C holds a lock under a number of its own, so a thread of C waits for a
   lock the main thread or another thread of C holds. A wait never stops as a deadlock
   while a thread of C can still change what it waits for: while such a call runs, or C
-  holds a closure it can call from a thread of its own.
+  holds a closure with captures it can call from a thread of its own. Once the thread
+  of C leaves its call, the wait checks again.
 - C calls a [lib built from Zaka](functions.md#functions-c-can-call) from several
   threads: a function of the lib that reaches no such variable, calls no C and no function
   value, and starts no job runs on the threads at once, with no lock.

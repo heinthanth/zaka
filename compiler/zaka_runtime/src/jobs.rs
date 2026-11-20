@@ -195,6 +195,17 @@ fn outside_acts() -> bool
         || lent_to_threads()
 }
 
+/// Look again at each wait once a thread of C left a call of the program: a
+/// wait that began while that thread could still act checks again for a
+/// deadlock. A lib looks at none, as its waits never stop as one.
+pub(crate) fn recheck_waits()
+{
+    ret_if!(!PROGRAM.load(Ordering::SeqCst));
+    let mut st = state();
+    ret_if!(st.parked == 0);
+    changed(&mut st);
+}
+
 /// Whether C holds a closure it can call from a thread of its own.
 ///
 /// # Returns

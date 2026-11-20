@@ -308,9 +308,11 @@ missing row is `ZK_TRAP_NO_ROW`.
   one condition. It counts the threads that run, the main one (`mark_main`, from
   `zk_start`) and each job: a wait that would leave none running is the trap `deadlock`,
   unless a thread out of the count can still act (`outside_acts`): each thread of a C
-  lib, a call from a thread of C that runs now (`free_calls`), or a closure C holds that
-  it can call from a thread of its own (`lent_to_threads`). A thread of C waits and
-  changes no count. `zk_job_start` turns counts atomic (`zk_threads_begin`) and starts
+  lib, a call from a thread of C that runs now (`free_calls`), or a closure with
+  captures C holds that it can call from a thread of its own (`lent_to_threads`; a
+  function with no captures reaches no value a job waits on). A thread of C waits and
+  changes no count, and once it leaves its call, `recheck_waits` wakes each wait to
+  check again. `zk_job_start` turns counts atomic (`zk_threads_begin`) and starts
   a thread of 64 MiB; under `--trap unwind`, `stop` writes `job <n> stopped: ...` and
   calls the leave of the thread's job. `zk_finish` waits for each job, drops each result
   and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
