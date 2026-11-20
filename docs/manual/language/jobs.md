@@ -520,7 +520,9 @@ A program on threads runs in another order each time, so a mistake that hangs on
 order can hide on the VM. `zakac run --shuffle-job-order` shuffles the turns: each turn
 takes 1 to 200 ops and goes to one of the jobs that can run, both drawn from a seed. The
 run writes the seed it drew to standard error, and `--shuffle-job-order=<seed>` runs that
-order again ([Commands](../compiler/commands.md#run)).
+order again ([Commands](../compiler/commands.md#run)). In the explorer, the setting "Turns of jobs" shuffles
+the turns as the flag does, from a seed each run draws; the `JOB` register of the debugger shows
+the job that runs, what each job waits for, and the seed.
 
 Each job gets a stack region of its own, of the size `--max-stack` gives
 ([Commands](../compiler/commands.md#run)).

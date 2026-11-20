@@ -11,6 +11,7 @@ use zaka_host::MemWorld;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::Held;
 use zaka_vm::machine::HostData;
+use zaka_vm::machine::JobState;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::PackedVar;
 use zaka_vm::machine::RunOptions;
@@ -639,6 +640,12 @@ pub struct Session
     /// How the variables of each run sit in the address space.
     #[builder(default)]
     frames: FrameMode,
+    /// Whether each run shuffles the turns of its jobs, from a seed of its
+    /// own.
+    #[builder(default)]
+    shuffled: bool,
+    /// The seed that shuffles the turns of the run, when it does.
+    seed: Option<u64>,
     /// How long the run has taken so far.
     #[builder(default)]
     spent: Duration,
@@ -733,15 +740,19 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
 /// * `ops` - The ops.
 /// * `max_heap` - The cap on live heap octets.
 /// * `frames` - How the variables sit in the address space.
+/// * `seed` - The seed that shuffles the turns of the jobs, or `None` for the
+///   fixed turns.
 ///
 /// # Returns
 ///
 /// The machine.
-fn machine_for(ops: &bc::Module, max_heap: u64, frames: FrameMode) -> Machine
+fn machine_for(
+    ops: &bc::Module, max_heap: u64, frames: FrameMode, seed: Option<u64>,
+) -> Machine
 {
     #[rustfmt::skip]
     let options = RunOptions::builder().max_steps(RUN_STEPS).max_heap(max_heap)
-        .frames(frames).build();
+        .frames(frames).maybe_shuffle(seed).build();
     let mut machine = Machine::new(ops.clone(), options);
     // The explorer runs in storage: no file or variable of the host is near.
     machine.set_gate(zaka_host::Gate::new(zaka_host::Grants::all()));
@@ -987,7 +998,7 @@ impl Session
     /// The session, at the first op.
     pub fn new(ops: Option<&bc::Module>) -> Self
     {
-        let machine = ops.map(|o| machine_for(o, MAX_HEAP, FrameMode::default()));
+        let machine = ops.map(|o| machine_for(o, MAX_HEAP, FrameMode::default(), None));
         Session::builder().maybe_machine(machine).build()
     }
 
@@ -1016,6 +1027,39 @@ impl Session
         self.reset();
     }
 
+    /// Set whether each run shuffles the turns of its jobs; a change starts
+    /// the run again.
+    ///
+    /// # Arguments
+    ///
+    /// * `shuffled` - Whether it does.
+    pub fn set_shuffled(&mut self, shuffled: bool)
+    {
+        ret_if!(shuffled == self.shuffled);
+        self.shuffled = shuffled;
+        self.reset();
+    }
+
+    /// The seed that shuffles the turns of the run, when it does.
+    ///
+    /// # Returns
+    ///
+    /// The seed, or `None` for the fixed turns.
+    pub fn seed(&self) -> Option<u64> { self.seed }
+
+    /// What each job of the run does, the main job first, and the number of
+    /// the job that runs now.
+    ///
+    /// # Returns
+    ///
+    /// The states and the number; none without ops.
+    pub fn jobs(&self) -> (Vec<JobState>, usize)
+    {
+        self.machine
+            .as_ref()
+            .map_or((Vec::new(), 0), |m| (m.job_states(), m.running_job()))
+    }
+
     /// Whether there are ops to run.
     ///
     /// # Returns
@@ -1027,7 +1071,10 @@ impl Session
     pub fn reset(&mut self)
     {
         let (cap, frames) = (self.max_heap, self.frames);
-        let fresh = |m: &Machine| machine_for(m.module(), cap, frames);
+        // Each run of a shuffled session draws a seed of its own.
+        self.seed = self.shuffled.then(|| js_sys::Date::now() as u64);
+        let seed = self.seed;
+        let fresh = |m: &Machine| machine_for(m.module(), cap, frames, seed);
         self.machine = self.machine.as_ref().map(fresh);
         self.viewed = 0;
         self.ended = None;

@@ -66,6 +66,7 @@ mod deep;
 mod jobs;
 mod pipes;
 
+pub use jobs::JobState;
 pub use jobs::TrapMode;
 mod table;
 

@@ -269,6 +269,64 @@ impl Jobs
 /// The kind of a job number.
 pub(super) const JOB_ID: IntKind = IntKind::new(false, Width::Platform);
 
+/// What a job does, as a debugger shows it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum JobState
+{
+    /// It runs now.
+    Runs,
+    /// It waits for its turn.
+    Queued,
+    /// It waits for the end of the job with this number.
+    WaitsJob(usize),
+    /// It waits for each other job to end: the main job at the end.
+    WaitsEach,
+    /// It waits for a value of the channel with this number.
+    WaitsReceive(usize),
+    /// It waits for room in the channel with this number.
+    WaitsSend(usize),
+    /// It waits for a lock another job holds.
+    WaitsLock,
+    /// It returned.
+    Done,
+    /// It stopped at a trap.
+    Trapped,
+}
+
+impl Machine
+{
+    /// Each job of the program and what it does, the main job first, for a
+    /// debugger.
+    ///
+    /// # Returns
+    ///
+    /// The state of each job, under its number.
+    pub fn job_states(&self) -> Vec<JobState>
+    {
+        let jobs = &self.jobs;
+        let state = |(n, j): (usize, &Job)| match (&j.end, j.waits)
+        {
+            (End::Trapped(_), _) => JobState::Trapped,
+            (End::Done(_) | End::Kept(_), _) => JobState::Done,
+            _ if n == jobs.now => JobState::Runs,
+            (_, Waits::Nothing) => JobState::Queued,
+            (_, Waits::Job(k)) => JobState::WaitsJob(k),
+            (_, Waits::Each) => JobState::WaitsEach,
+            (_, Waits::Receive(p)) => JobState::WaitsReceive(p),
+            (_, Waits::Send(p)) => JobState::WaitsSend(p),
+            (_, Waits::Lock(_)) => JobState::WaitsLock,
+        };
+        jobs.list.iter().enumerate().map(state).collect()
+    }
+
+    /// The number of the job that runs now; the main job is 0.
+    ///
+    /// # Returns
+    ///
+    /// The number.
+    pub fn running_job(&self) -> usize { self.jobs.now }
+}
+
 impl Machine
 {
     /// Start a job that calls a function: its arguments leave the stack,

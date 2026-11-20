@@ -73,6 +73,9 @@ const HEAP_CAP_STORE: &str = "zaka-explorer-heap-cap";
 /// space.
 const FRAMES_STORE: &str = "zaka-explorer-frames";
 
+/// Local storage name of the switch that shuffles the turns of the jobs.
+const SHUFFLE_STORE: &str = "zaka-explorer-shuffle-jobs";
+
 /// Local storage name of the stage view switch.
 const STAGE_STORE: &str = "zaka-explorer-stage-open";
 
@@ -181,6 +184,10 @@ pub struct AppState
     pub frames: Signal<FrameMode>,
     /// Choose how the variables of a run sit in the address space.
     pub set_frames: WriteSignal<FrameMode>,
+    /// Whether each run shuffles the turns of its jobs.
+    pub shuffled: Signal<bool>,
+    /// Choose whether each run shuffles the turns of its jobs.
+    pub set_shuffled: WriteSignal<bool>,
     /// Whether ops run in batches, one batch a frame.
     pub going: RwSignal<bool>,
     /// The speed of the timed stepping.
@@ -483,6 +490,8 @@ pub fn provide_state() -> AppState
         use_local_storage::<HeapCap, FromToStringCodec>(HEAP_CAP_STORE);
     let (frames, set_frames, _) =
         use_local_storage::<FrameMode, FromToStringCodec>(FRAMES_STORE);
+    let (shuffled, set_shuffled, _) =
+        use_local_storage::<bool, FromToStringCodec>(SHUFFLE_STORE);
     let (stage_open, set_stage_open, _) =
         use_local_storage_with_options::<bool, FromToStringCodec>(
             STAGE_STORE,
@@ -542,6 +551,8 @@ pub fn provide_state() -> AppState
         .set_heap_cap(set_heap_cap)
         .frames(frames)
         .set_frames(set_frames)
+        .shuffled(shuffled)
+        .set_shuffled(set_shuffled)
         .going(RwSignal::new(false))
         .speed(RwSignal::new(Speed::default()))
         .panel_tab(RwSignal::new(PanelTab::default()))
@@ -583,6 +594,7 @@ fn wire_debug(state: AppState)
         let mut session = ops.with(|ops| Session::new(ops.as_ref()));
         session.set_max_heap(untrack(|| state.heap_cap.get().octets()));
         session.set_frames(untrack(|| state.frames.get()));
+        session.set_shuffled(untrack(|| state.shuffled.get()));
         session.set_line_stops(untrack(|| state.line_stops()));
         session.set_op_stops(untrack(|| state.op_stops()));
         state.debug.set(session);
@@ -600,6 +612,10 @@ fn wire_debug(state: AppState)
     Effect::new(move |_| {
         let frames = state.frames.get();
         state.debug.update(|s| s.set_frames(frames));
+    });
+    Effect::new(move |_| {
+        let shuffled = state.shuffled.get();
+        state.debug.update(|s| s.set_shuffled(shuffled));
     });
     Effect::new(move |_| {
         let stops = state.op_stops();
