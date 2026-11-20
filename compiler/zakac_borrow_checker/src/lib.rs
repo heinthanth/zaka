@@ -46,6 +46,7 @@ mod testing;
 mod values;
 mod walk;
 
+pub use jobs::crossing_fns;
 pub use jobs::runs_free;
 pub use walk::each_stmt;
 

@@ -59,8 +59,6 @@ pub struct ZkCbNativeShape
     pub args: *const *const ZkCKind,
     /// The count of parameters.
     pub nargs: u32,
-    /// Whether C can call the code of a function of the kind with no bridge.
-    pub as_is: i32,
 }
 
 /// A value the runtime keeps for the whole run, shared on its one thread.
@@ -198,7 +196,7 @@ pub extern "C" fn zk_cb_shape_of(native: *const ZkCbNativeShape) -> *const ZkCbS
         Box::leak(raw.into_boxed_slice());
     #[rustfmt::skip]
     let shape = Box::leak(Box::new(ZkCbShape { bridge: n.bridge, ret: ret.as_raw_ptr().cast(),
-        args: raw.as_mut_ptr().cast(), nargs: n.nargs, as_is: n.as_is }));
+        args: raw.as_mut_ptr().cast(), nargs: n.nargs }));
     map.insert(native as usize, Kept(shape as *const ZkCbShape));
     shape
 }

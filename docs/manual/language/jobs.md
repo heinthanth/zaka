@@ -463,3 +463,16 @@ chooses:
 - While a job runs, a native program collects no rings: the collector changes counts
   with plain ops, so it waits until each job has ended. The buffer still fills, and the
   end of the program collects, as ever.
+
+## Threads of C
+
+C starts threads of its own too, and two of the rules above reach them:
+
+- A native program hands C a function, and C calls it on a thread it started: the call
+  runs when the function captures nothing and, itself or through each function it calls,
+  reads and writes no variable at the top of a file, the rule of ZK0726. Each other call
+  from such a thread ends the run with a message
+  ([Closures C calls](function-values.md#nested-functions-and-closures)).
+- C calls a [lib built from Zaka](functions.md#functions-c-can-call) from several
+  threads: a function of the lib that reaches no such variable, calls no C and no function
+  value, and starts no job runs on the threads at once, with no lock.

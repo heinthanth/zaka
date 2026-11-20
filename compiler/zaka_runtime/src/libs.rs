@@ -649,15 +649,22 @@ pub extern "C" fn zk_lib_free_in(home: *mut *mut ZkLib) -> i32
     // writes.
     let lib = unsafe { AtomicPtr::from_ptr(home) }.load(Ordering::Acquire);
     ret_if!(lib.is_null(), FRESH);
-    // A collection of rings changes counts with plain ops: wait for its end.
-    do_while!(FREE.fetch_add(1, Ordering::SeqCst) & COLLECTS != 0, {
-        FREE.fetch_sub(1, Ordering::SeqCst);
-        std::thread::yield_now();
-    });
+    free_enter();
     let state = zk_lib_state_of(lib);
     ret_if!(state == RUNS && crate::heap::threaded(), RUNS);
     FREE.fetch_sub(1, Ordering::SeqCst);
     tern!(state == RUNS, FRESH, state)
+}
+
+/// Count a call with no lock in: a call of a lib, or a call C makes from a
+/// thread of its own. It waits while the ring collector runs, which changes
+/// counts with plain ops.
+pub(crate) fn free_enter()
+{
+    do_while!(FREE.fetch_add(1, Ordering::SeqCst) & COLLECTS != 0, {
+        FREE.fetch_sub(1, Ordering::SeqCst);
+        std::thread::yield_now();
+    });
 }
 
 /// Count a call with no lock out, at its end.

@@ -6,6 +6,7 @@ use bon::Builder;
 use strum::IntoEnumIterator;
 use zaka_host::Grant;
 use zaka_host::Grants;
+use zakac_borrow_checker::crossing_fns;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
@@ -29,7 +30,6 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::span::Span;
 
 use crate::callbacks::CALLBACK_SOURCE;
-use crate::callbacks::as_is;
 use crate::callbacks::bridge_kinds;
 use crate::callbacks::cb_source;
 use crate::callbacks::fits;
@@ -225,16 +225,10 @@ pub fn emit(
     // A closure can go to a C function that takes a function value.
     let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
     let fn_params: Vec<DataKind> = fn_params.filter(|k| k.is_fn()).collect();
-    // So can a function whose parameters do not cross as C passes them, which C
-    // calls through a bridge; in a C lib each function C calls goes through the
-    // runtime, which lets one thread at a time into the lib.
+    // So can a function: C calls each one through a bridge and the runtime,
+    // which hold the rules of threads.
     let platform = options.platform_bits;
-    let bridged = |k: &DataKind| {
-        let direct = k.as_fn().is_some_and(|f| as_is(f, platform));
-        shared.made_closure || options.lib || !direct
-    };
-    let bridged: Vec<DataKind> = fn_params.into_iter().filter(bridged).collect();
-    do_for!(k in bridged, _ = shared.cb_shape(k));
+    do_for!(k in fn_params, _ = shared.cb_shape(k));
     let jobs = crate::jobs::jobs_source(&mut shared);
     let header = shared.header();
     let kinds = shared.kinds_source();
@@ -759,12 +753,15 @@ impl Shared<'_>
             fields.push(("sites", "zk_t_sites".into()));
             fields.push(("site_files", "zk_t_site_files".into()));
         });
-        for n in 0..self.module.funcs.len() as u32
+        let crossing = crossing_fns(self.module);
+        for (n, crosses) in crossing.iter().enumerate()
         {
-            let (record, func) = (record_name(n), func_name(n));
+            let (record, func) = (record_name(n as u32), func_name(n as u32));
+            let crosses = u8::from(*crosses);
             let _ = writeln!(
                 out,
-                "const zk_fnrec {record} = {{.code = (zk_code){func}, .none = NULL}};"
+                "const zk_fnrec {record} = {{.code = (zk_code){func}, .none = NULL, \
+                 .crosses = {crosses}}};"
             );
         }
         out.push_str("static const zk_fn_name zk_t_fn_names[] = {\n");

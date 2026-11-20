@@ -77,15 +77,15 @@ fn forms() -> Vec<Form>
         ZkFrame => "zk_frame" { func, site }
         ZkCtx => "zk_context" { depth, frames, room }
         ZkFnName => "zk_fn_name" { code, name }
-        ZkFnRec => "zk_fnrec" { code, none }
+        ZkFnRec => "zk_fnrec" { code, none, crosses }
         ZkField => "zk_field" { name, offset, kind }
         ZkMember => "zk_member" { value, shown }
         ZkKind => "zk_kind" {
             tag, size, cell, len, fields, members, name, holds_text, holds_borrow, owns, boxed,
         }
         ZkBuf => "zk_buf" { data, len, cap, prev }
-        ZkCbShape => "zk_cb_shape" { bridge, ret, args, nargs, as_is }
-        ZkCbNativeShape => "zk_cb_native_shape" { bridge, ret, args, nargs, as_is }
+        ZkCbShape => "zk_cb_shape" { bridge, ret, args, nargs }
+        ZkCbNativeShape => "zk_cb_native_shape" { bridge, ret, args, nargs }
         ZkCKind => "zk_c_kind" { tag, count, members }
         ZkFfiShape => "zk_ffi_shape" { ret, args, nargs, nfixed, variadic }
         ZkLibPlace => "zk_lib_place" { lib, prog, base }

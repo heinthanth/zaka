@@ -163,7 +163,12 @@ The runtime keeps a record of each C lib it serves (`zaka_runtime/src/libs.rs`):
 the jump back to its wrapper, its gate, its last trap and its heap count. Each wrapper
 enters its lib (`zk_lib_enter`, which also pushes a mark of the lends, the sink of the
 output and the drop queues) and returns to the lib around it; a trap puts the mark back
-(`zk_lib_unwind`). Each lib's glue defines `zk_trap_slot_v1` weak (`selectany` on Windows),
+(`zk_lib_unwind`). An export that `runs_free` (borrow checker) marks runs with no lock
+(`FREE_PARTS` in `exports.rs`): `zk_lib_free_in` counts it in `FREE` once the lib runs
+and the counts are atomic, a trap fails the call alone (`zk_lib_fail`), and the ring
+collector and the start of the globals wait for `FREE` to drain. The state of a lib
+(`zk_lib_state_of`) and the status of a trap (`zk_lib_status`) live in the runtime, so a
+call with no lock reads them with no race. Each lib's glue defines `zk_trap_slot_v1` weak (`selectany` on Windows),
 so the linker keeps one for the program, and each runtime writes each trap to the slot of
 each lib it serves. A counted block records the count it counts in (`Head::owner`), a raw
 block of a lib with a cap goes in `RAW_OWNERS`, and a block the lib gives C counts in none.
@@ -348,13 +353,13 @@ new text of the program (`zk_text_of_c`), with `bad_utf8` for octets that are no
 frees the duplicates of the text arguments, since `strstr` and `strchr` point into them.
 `ffi_source` defines the structs of `FfiCall::extra` too, so a struct can be an other value.
 A parameter of a function kind that `is_callback` takes is declared with the C pointer
-kind of its signature (`void *` for each address), and the wrapper passes `zk_fn_code(value)`
-cast to it; a function value holds a function at each point, so C never gets NULL there. The C signature of a Zaka function that such a kind can hold
-matches the C one, so C can call it as it calls a C function. A trap in a callback is the trap of the run: the
-program stops where it happens.
+kind of its signature (`void *` for each address), and the wrapper passes the code
+`zk_cb_code` gives (below) cast to it; a function value holds a function at each point, so
+C never gets NULL there. A trap in a callback is the trap of the run: the program stops
+where it happens.
 
-A closure goes to C through `zaka_callback.c`, which `emit` writes when the program makes a
-closure and gives function values to C or holds a leave statement (`Stmt::Leave`). The file
+Function values go to C through `zaka_callback.c`, which `emit` writes when the program
+gives function values to C or holds a leave statement (`Stmt::Leave`). The file
 starts with `zaka_runtime.h` (the runtime keeps
 `zk_cb_code`, `zk_cb_lent`, `zk_cb_end`, `zk_cb_leave` and `zk_cb_revoke` in `callbacks.rs`,
 with `zk_fn_size` and `zk_fn_release` in `heap.rs`), and for each
@@ -367,20 +372,25 @@ lent to the call; a leave statement is `zk_cb_leave(value, zk_cb_shape_of(&shape
 and keeps them for the run. Each closure gets one libffi
 closure, found again from the octets of its record, and its code is never freed, so a late
 call from C stops the run with `ZK_TRAP_CLOSURE_ESCAPE` and never runs freed code; a call
-on another thread aborts a program with a message. In a C lib, `run_in_lib` takes the call
+from a thread of C's own runs when the record of the function allows it: `zk_fnrec` holds a
+third word, `crosses`, set for a function with no captures that, itself or through each
+function it calls, uses no mutable global (`crossing_fns` in the borrow checker).
+`run_on_c_thread` counts such a call in `FREE`, so the ring collector waits, and the lend
+turned the counts atomic before. Each other call from another thread aborts a program
+with a message. In a C lib, `run_in_lib` takes the call
 instead: on a thread with calls parked in C it takes them back, runs the bridge and lets go
 again; on another thread it runs the bridge through the guard of the lib (`zk_lib_guard`
-of the glue, which `zk_lib_open` takes), whose `setjmp` catches a trap, and C gets zeros. A
-function C calls goes through the bridge in a lib even when it could go as it is
-(`options.lib` in `emit`, `serves_libs` in `zk_cb_code`), so no call skips the lock.
+of the glue, which `zk_lib_open` takes), whose `setjmp` catches a trap, and C gets zeros. Each
+function C calls goes through the bridge, a plain function too, so no call skips the lock
+of a lib or the thread rules of a program.
 
 A call to C in a lib lets go of the lock (`ZK_LIB_LET_GO` in each wrapper of
 `zaka_ffi.c`, which `ZK_LIB` of `zaka_lib_names.h` turns on, and `zk_ffi_call` for
-Cranelift code): `zk_lib_let_go` writes out the output, parks what the calls of the thread
-hold of the runtime in a thread-local list (`Parked`: the depth, the rows of the frame
-table, the lib, the table, the base, the jump target, the marks, the lends, the sink and
-the drop that frees the queue), clears them for the next thread, and lets go of the lock
-at each depth it held. `zk_lib_take_back` waits for the lock and puts them back. The jump
+Cranelift code): `zk_lib_let_go` writes out the output, keeps the count of its holds in a
+thread-local list (`PARKED`) and lets go of the lock at each depth it held; the rest of
+the state of a call (the lib, its base, the table, the marks, the lends, the jump target,
+the sink and the drop queue) is each thread's own. `zk_lib_take_back` waits for the lock
+and takes it back at that depth. The jump
 target of a trap lives in the runtime (`zk_lib_jump`, `zk_lib_jump_set`), not in the
 glue, since a thread that waits in C lets others into the same lib.
 

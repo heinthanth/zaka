@@ -18,19 +18,21 @@ use libffi::raw::ffi_prep_closure_loc;
 use libffi::raw::ffi_status_FFI_OK;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::heap::WORD;
 use crate::heap::ZkCode;
 use crate::heap::ZkFn;
+use crate::heap::ZkFnRec;
 use crate::heap::zero;
 use crate::heap::zk_fn_bound;
-use crate::heap::zk_fn_code;
 use crate::heap::zk_fn_dup;
 use crate::heap::zk_fn_rec;
 use crate::heap::zk_fn_release;
 use crate::heap::zk_fn_size;
+use crate::heap::zk_threads_begin;
 use crate::program::ZkKind;
 use crate::seqs::at;
 use crate::seqs::zk_to_heap;
@@ -51,8 +53,6 @@ pub struct ZkCbShape
     pub args: *mut *mut c_void,
     /// The count of parameters.
     pub nargs: u32,
-    /// Whether C can call the code of a function of the kind with no bridge.
-    pub as_is: i32,
 }
 
 /// A closure C can call: its libffi closure and what it reads.
@@ -76,6 +76,9 @@ struct Cb
     /// The C lib whose call gave C the closure, as an address; 0 in a
     /// program.
     lib: usize,
+    /// Whether C can call it from a thread of its own: a function with no
+    /// captures that uses no mutable global, itself or through its callees.
+    crosses: bool,
 }
 
 /// Each closure C got, kept for the whole run.
@@ -107,9 +110,10 @@ fn cb<'a>(p: usize) -> &'a mut Cb
 }
 
 /// The code libffi runs when C calls a closure. In a C lib the lock of the
-/// libs lets one thread at a time in, see [`run_in_lib`]; a program runs on
-/// one thread, so a call from another one ends the run. A call with no lend
-/// and no leave stops; else the bridge runs the thunk.
+/// libs lets one thread at a time in, see [`run_in_lib`]. In a program a call
+/// from a thread of C's own runs when the function can cross, see
+/// [`run_on_c_thread`], and ends the run otherwise. A call with no lend and no
+/// leave stops; else the bridge runs the thunk.
 ///
 /// # Arguments
 ///
@@ -123,15 +127,31 @@ unsafe extern "C" fn run(
 {
     let c = cb(data as usize);
     ret_if!(crate::libs::serves_libs(), run_in_lib(c, ret, args));
-    if !HOME.get()
-    {
-        eprintln!(
-            "C called a function of the program from a thread other than the one that \
-             runs it; the run ends here"
-        );
-        std::process::abort();
-    }
-    bridge(c, ret, args)
+    ret_if!(HOME.get(), bridge(c, ret, args));
+    ret_if!(c.crosses, run_on_c_thread(c, ret, args));
+    eprintln!(
+        "C called a function of the program from a thread other than the one that \
+         runs it, and the function uses a mutable global or captures variables; the \
+         run ends here"
+    );
+    std::process::abort();
+}
+
+/// A call C makes from a thread of its own of a function that can cross: the
+/// thread gets its calls in progress on first use, the counts of the heap are
+/// atomic since the function was lent, and the ring collector waits while the
+/// call runs. A trap stops the program, as on its own thread.
+///
+/// # Arguments
+///
+/// * `c` - The closure.
+/// * `ret` - Where the result goes.
+/// * `args` - The address of each argument.
+fn run_on_c_thread(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
+{
+    crate::libs::free_enter();
+    bridge(c, ret, args);
+    crate::libs::zk_lib_free_out();
 }
 
 /// Run the thunk of a closure through its bridge; a call with no lend and no
@@ -242,10 +262,13 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
     HOME.set(true);
     let seen = record_octets(f);
     ret_if!(let Some(found) = find(seen), found);
+    let crosses = crosses(f);
+    // A thread of C's own can call it at each time from now on.
+    do_if!(crosses, zk_threads_begin());
     #[rustfmt::skip]
     let fresh = Box::new(Cb { seen: seen.to_vec(), record: zk_fn_rec(f), calls: 0,
         kept: zk_fn_bound(f) == 0, shape, cif: Default::default(), code: std::ptr::null_mut(),
-        lib: crate::libs::current_lib() });
+        lib: crate::libs::current_lib(), crosses });
     let c = Box::leak(fresh);
     // SAFETY: the compiler writes a shape for each closure kind.
     let s = unsafe { &*shape };
@@ -271,9 +294,9 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
     p
 }
 
-/// The address C calls for a function value given to a C call: the code of a
-/// function whose parameters cross as C passes them; else the libffi closure,
-/// which for a closure of the program is lent until the call ends.
+/// The address C calls for a function value given to a C call: its libffi
+/// closure, which for a closure of the program is lent until the call ends.
+/// Each call from C goes through [`run`], where the rules of threads hold.
 ///
 /// # Arguments
 ///
@@ -287,18 +310,28 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
 pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
 {
     let bound = zk_fn_bound(f) != 0;
-    // SAFETY: the compiler writes a shape for each closure kind.
-    // In a C lib C calls each function of the program through `run`, under the
-    // lock of the libs.
-    let direct =
-        !bound && unsafe { (*shape).as_is } != 0 && !crate::libs::serves_libs();
-    ret_if!(direct, zk_fn_code(f));
     let c = cb(cb_of(f, shape));
     ret_if!(!bound, code_of(c.code));
     LENDS.with(|l| l.borrow_mut().push(c as *mut Cb as usize));
     c.calls += 1;
     do_if!(!c.kept, c.record = zk_fn_rec(f));
     code_of(c.code)
+}
+
+/// Whether C can call a function value from a thread of its own.
+///
+/// # Arguments
+///
+/// * `f` - The function value.
+///
+/// # Returns
+///
+/// `true` for a function with no captures whose record says so.
+fn crosses(f: ZkFn) -> bool
+{
+    ret_false!(zk_fn_bound(f) != 0);
+    // SAFETY: the record of a function with no captures is a `ZkFnRec`.
+    unsafe { (*zk_fn_rec(f).cast::<ZkFnRec>()).crosses != 0 }
 }
 
 /// The code of a libffi closure, as C calls it.

@@ -18,6 +18,7 @@ use cranelift_module::Linkage;
 use cranelift_module::Module;
 use zaka_host::Grant;
 use zaka_host::Grants;
+use zakac_borrow_checker::crossing_fns;
 use zakac_codegen_target_c::descriptors::Descriptors;
 use zakac_codegen_target_c::descriptors::KindRow;
 use zakac_codegen_target_c::emit::PROGRAM_TABLE;
@@ -600,6 +601,7 @@ fn declare_program<M: Module>(s: &mut Shared<'_, M>)
         define(s.m, id, blob).expect("a global");
         s.globals.push(id);
     }
+    let crossing = crossing_fns(s.module);
     for n in 0..s.module.funcs.len()
     {
         // The wrappers of a C lib call each function C can call through its
@@ -612,6 +614,7 @@ fn declare_program<M: Module>(s: &mut Shared<'_, M>)
         let mut blob = Blob::new();
         blob.ptr(Some(Target::Func(s.funcs[n])));
         blob.ptr(None);
+        blob.u64(u64::from(crossing[n]));
         define(s.m, id, blob.done()).expect("a record");
         s.records.push(id);
     }

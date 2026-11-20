@@ -881,8 +881,12 @@ error[ZK0462]: this value is isize, not a function value, so C cannot get leave 
 **A late call.** A call from C to a closure with no C call running and no leave stops the
 program with the trap `closure_escape` (see [When a program stops](../vm/traps.md)),
 and its message tells how to give leave. The native code of a closure remains in place after its
-last use, so a late call traps and never runs freed code. A call from C on another thread
-ends the run of a program with a message, since a program runs on one thread. In a C lib
+last use, so a late call traps and never runs freed code. C can call a function from a
+thread of its own when the function captures nothing and, itself or through each
+function it calls, uses no mutable global; the counts of the heap turn atomic once such a
+function goes to C, and a trap on that thread stops the program. A call from another
+thread of each other function, or of a closure, ends the run of a program with a message;
+so does each call from another thread in the VM, which runs on one thread. In a C lib
 ([Functions C can call](functions.md#functions-c-can-call)), C can call from each thread:
 the lock of the lib lets one thread in at a time, a call that waits in C lets the others
 in, and a trap on a thread with no call of the lib in progress stops the lib and gives C

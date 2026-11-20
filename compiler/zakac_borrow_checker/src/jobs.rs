@@ -62,6 +62,38 @@ pub fn runs_free(module: &Module, f: u32) -> bool
     reached.iter().all(|g| alone(g) && global_use(module, *g).is_none())
 }
 
+/// Which functions C can call from a thread of its own: those that, itself
+/// or through each function they call, use no mutable global.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// For each function, whether it can.
+pub fn crossing_fns(module: &Module) -> Vec<bool>
+{
+    let taken = taken_fns(module);
+    let count = module.funcs.len();
+    let mut callers: Vec<Vec<u32>> = vec![Vec::new(); count];
+    for (f, func) in module.funcs.iter().enumerate()
+    {
+        let mut called = BTreeSet::new();
+        callees(&func.block, &taken, &mut called);
+        do_for!(g in called, callers[g as usize].push(f as u32));
+    }
+    let mut crosses = vec![true; count];
+    let uses = (0..count as u32).filter(|f| global_use(module, *f).is_some());
+    let mut next: Vec<u32> = uses.collect();
+    while let Some(f) = next.pop()
+    {
+        let seen = !std::mem::replace(&mut crosses[f as usize], false);
+        do_if!(!seen, next.extend(&callers[f as usize]));
+    }
+    crosses
+}
+
 /// Whether statements call C, call through a function value, or start a job
 /// or a parallel map.
 ///

@@ -13,7 +13,6 @@ use cranelift_module::FuncId;
 use cranelift_module::Linkage;
 use cranelift_module::Module;
 use zakac_codegen_target_c::callbacks::Crossing;
-use zakac_codegen_target_c::callbacks::as_is;
 use zakac_codegen_target_c::callbacks::box_list;
 use zakac_codegen_target_c::callbacks::cells;
 use zakac_codegen_target_c::callbacks::crossing;
@@ -284,7 +283,6 @@ impl<M: Module> Shared<'_, M>
         b.ptr(Some(Target::Data(ret_id, 0)));
         b.ptr(Some(Target::Data(args, 0)));
         b.u32(params.len() as u32);
-        b.u32(u32::from(as_is(f, self.platform())));
         define(self.m, id, b.done()).expect("a callback shape");
         self.cb_shapes.push((kind, bridge, id));
         Some(id)

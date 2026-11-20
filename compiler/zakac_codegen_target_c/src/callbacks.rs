@@ -265,26 +265,6 @@ pub fn fits(f: &FnKind, platform: u16) -> bool
     ret_fits && params.iter().all(|k| crossing(*k, platform).is_some())
 }
 
-/// Whether C can call the code of a function of a function kind with no
-/// bridge: each parameter crosses as it is, and the result is no struct,
-/// which the code takes a slot for first. A closure takes the bridge in each
-/// case, which hands the thunk its record.
-///
-/// # Arguments
-///
-/// * `f` - The function kind.
-/// * `platform` - Bit count of the platform-sized kinds.
-///
-/// # Returns
-///
-/// `true` when it can.
-pub fn as_is(f: &FnKind, platform: u16) -> bool
-{
-    let (params, ret) = fn_shape(f);
-    let slot = ret.is_some_and(is_blob);
-    !slot && params.iter().all(|k| crossing(*k, platform) == Some(Crossing::AsIs))
-}
-
 /// The kinds whose descriptors the bridge of a function kind names: each
 /// parameter the bridge makes, to lend it and drop it, the cells of the box
 /// of each handle, to make it, and a result in its C form, to write it.
@@ -629,11 +609,9 @@ impl Bridge<'_>
             "\n/* {name} */\nstatic void zk_cbb_{n}(void *zk_ret, void **zk_args, \
              uint8_t *zk_rec)\n{{\n{steps}}}\nstatic const zk_c_kind *const \
              zk_cbt_{n}[] = {{{listed}}};\nconst zk_cb_native_shape {} = {{.bridge = \
-             zk_cbb_{n}, .ret = &{ret_ffi}, .args = zk_cbt_{n}, .nargs = {}, .as_is = \
-             {}}};\n",
+             zk_cbb_{n}, .ret = &{ret_ffi}, .args = zk_cbt_{n}, .nargs = {}}};\n",
             shape_name(n),
             params.len(),
-            u8::from(as_is(f, self.platform))
         )
     }
 

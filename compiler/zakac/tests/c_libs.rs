@@ -515,3 +515,66 @@ fn exports_that_reach_no_global_run_on_threads_at_once()
         assert_eq!(printed, FREE_CALLS, "free calls with the {backend} backend");
     }
 }
+
+#[cfg(unix)]
+/// The folder of the programs of these tests that call C.
+///
+/// # Returns
+///
+/// The folder.
+fn program_inputs() -> PathBuf
+{
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/inputs/c_libs")
+}
+
+#[cfg(unix)]
+/// Build a program of [`program_inputs`] into an executable, run it, and
+/// give back its status, its output and its errors.
+///
+/// # Arguments
+///
+/// * `dir` - The folder to build in.
+/// * `backend` - The backend.
+/// * `name` - The name of the program, with no `.zaka`.
+///
+/// # Returns
+///
+/// Whether it ended well, what it printed, and its errors.
+fn built_and_ran(dir: &Path, backend: &str, name: &str) -> (bool, String, String)
+{
+    let file = format!("{name}.zaka");
+    std::fs::copy(program_inputs().join(&file), dir.join(&file)).unwrap();
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
+    cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1");
+    cmd.args(["build", "--backend", backend, "--allow-ffi", "-o", name, &file]);
+    ran(&mut cmd, "the build of a program");
+    let out = Command::new(dir.join(name)).output().unwrap();
+    let text = |o: &[u8]| String::from_utf8_lossy(o).replace("\r\n", "\n");
+    (out.status.success(), text(&out.stdout), text(&out.stderr))
+}
+
+#[cfg(unix)]
+#[test]
+fn c_calls_a_function_that_uses_no_global_from_a_thread_of_its_own()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let (ok, printed, _) = built_and_ran(dir.path(), backend, "c_thread");
+        assert!(ok, "the program ends well with the {backend} backend");
+        assert_eq!(printed, "၁၀\nပြီး\n", "C threads with the {backend} backend");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_call_from_a_c_thread_of_a_function_that_uses_a_global_ends_the_run()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let (ok, _, errors) = built_and_ran(dir.path(), backend, "c_thread_global");
+        assert!(!ok, "the run ends with the {backend} backend");
+        assert!(errors.contains("uses a mutable global"), "{backend}: {errors}");
+    }
+}
