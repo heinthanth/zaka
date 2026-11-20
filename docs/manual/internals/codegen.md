@@ -762,7 +762,11 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   enters `f`; then the spawner goes on. `take_turns` runs after each op: a job whose calls
   ended keeps its result (`end_job`), and a job that ended, parked, or ran its 100 ops
   gives the turn to the next job that can run, in order (`next_turn`); with none, the
-  trap `Deadlock`. `wait` on a job still running pushes the number back, steps the
+  trap `Deadlock`. With `RunOptions::shuffle` (`--shuffle-job-order`), a `fastrand::Rng`
+  of the seed draws the length of each turn (1 to 200 ops) and its job among those that
+  can run (`Jobs::turn`, `next_to_go`). In native code each thread holds the line it
+  prints while threads run (`out::LINE`), and hands it on whole at its end, so two
+  threads never mix inside a line. `wait` on a job still running pushes the number back, steps the
   program counter back one op and parks, so the op runs again on a later turn. The last
   `ret` of `main` parks likewise while a job runs (`park_at_end`). A trap in a job
   under `TrapMode::Unwind` ends that job alone (`job_trapped`), and a later wait for it

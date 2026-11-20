@@ -1,7 +1,9 @@
 //! The jobs of a program, run as green threads: each job has its own
 //! operand stack, calls and stack region, over the one heap, and the jobs
 //! take turns of a fixed count of ops on one host thread. The order of the
-//! turns is fixed, so a run gives the same output each time.
+//! turns is fixed, so a run gives the same output each time; a seed
+//! (`--shuffle-job-order`) shuffles them, and the same seed gives the same
+//! order again.
 //!
 //! The running job keeps its state in the fields of the machine; each other
 //! job keeps its state in its row of [`Jobs`], and a switch swaps the two. A
@@ -123,6 +125,9 @@ pub struct Jobs
     left: u32,
     /// The stack regions of the jobs that ended, for the next jobs to take.
     spare: Vec<StackRange>,
+    /// What draws the length and the job of each turn, when a seed shuffles
+    /// them.
+    rng: Option<fastrand::Rng>,
 }
 
 impl Default for Jobs
@@ -131,7 +136,7 @@ impl Default for Jobs
     {
         #[rustfmt::skip]
         let jobs = Jobs { list: vec![Job::default()], pipes: Vec::new(), locks: Vec::new(),
-            now: 0, left: TURN, spare: Vec::new() };
+            now: 0, left: TURN, spare: Vec::new(), rng: None };
         jobs
     }
 }
@@ -216,16 +221,48 @@ impl Jobs
         }
     }
 
-    /// The next job that can run, after the running one in order; the
-    /// running one itself comes last.
+    /// The next job that can run: after the running one in order, the
+    /// running one itself last; with a seed, one of those that can run, drawn
+    /// from it.
     ///
     /// # Returns
     ///
     /// The number of the job, or `None` when none can run.
-    fn next_to_go(&self) -> Option<usize>
+    fn next_to_go(&mut self) -> Option<usize>
     {
         let count = self.list.len();
-        (1..=count).map(|k| (self.now + k) % count).find(|n| self.can_go(*n))
+        let free =
+            (1..=count).map(|k| (self.now + k) % count).filter(|n| self.can_go(*n));
+        let free: Vec<usize> = free.collect();
+        let Some(rng) = self.rng.as_mut()
+        else
+        {
+            return free.first().copied();
+        };
+        ret_if!(free.is_empty(), None);
+        Some(free[rng.usize(..free.len())])
+    }
+
+    /// Shuffle the turns from a seed, or keep them fixed.
+    ///
+    /// # Arguments
+    ///
+    /// * `seed` - The seed, or `None` for the fixed turns.
+    pub(super) fn shuffle(&mut self, seed: Option<u64>)
+    {
+        self.rng = seed.map(fastrand::Rng::with_seed);
+        self.left = self.turn();
+    }
+
+    /// The count of ops of the next turn: a fixed count, or with a seed one
+    /// from 1 to twice that count.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn turn(&mut self) -> u32
+    {
+        self.rng.as_mut().map_or(TURN, |r| r.u32(1..=2 * TURN))
     }
 }
 
@@ -513,7 +550,7 @@ impl Machine
     {
         let next = self.jobs.next_to_go().ok_or(TrapKind::Deadlock)?;
         self.jobs.list[next].waits = Waits::Nothing;
-        self.jobs.left = TURN;
+        self.jobs.left = self.jobs.turn();
         self.swap_to(next);
         Ok(())
     }

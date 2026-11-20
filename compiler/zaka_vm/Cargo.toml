@@ -15,6 +15,7 @@ ffi = ["dep:libffi", "dep:libloading"]
 [dependencies]
 bon = { workspace = true }
 clap = { workspace = true }
+fastrand = { workspace = true }
 libffi = { workspace = true, optional = true }
 libloading = { workspace = true, optional = true }
 rust-i18n = { workspace = true }

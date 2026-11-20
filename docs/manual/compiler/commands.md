@@ -520,6 +520,7 @@ which stop a program that goes too far, and two options to look at the use of th
 | `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
 | `--trap <MODE>` | `unwind` | what a trap in a [job](../language/jobs.md#a-trap-in-a-job) does: `unwind` ends that job alone, and `abort` stops the whole program |
 | `--leaks` | off | list the heap blocks left unfreed when the program ends |
+| `--shuffle-job-order[=<SEED>]` | off | shuffle the [turns of the jobs](../language/jobs.md#turns-on-the-vm): each turn takes 1 to 200 ops and goes to a job that can run, both drawn from `SEED`; with no `SEED` the run draws one and writes it to standard error. The same seed gives the same order again. Not with `--jit` |
 | `--jit` | off | run the program through Cranelift, and report a program it cannot build; see below |
 | `--vm` | off | run the program on the VM; `--jit` wins over it |
 | `--allow-read[=<PATHS>]` | none | let the program read files, list folders and tell what a path holds: each path, or those under the paths of a comma list; see [Permissions](../vm/running.md#permissions) |
@@ -574,7 +575,7 @@ arguments from `--`. The VM runs the program instead when one of these holds:
 - `--vm` is given;
 - the input is an artifact (`.zkc` or `.zkct`) or standard input;
 - a flag of the VM alone is given: `--max-steps`, `--max-stack`, `--frames`, `--leaks`,
-  `--results` or `--scratch`;
+  `--shuffle-job-order`, `--results` or `--scratch`;
 - the CPU of the host is not one Cranelift builds for (`x86_64`, `aarch64`, `riscv64`),
   `--target-bits` is not the width of an address of the host, or the program holds a
   construct the native target does not build at present.

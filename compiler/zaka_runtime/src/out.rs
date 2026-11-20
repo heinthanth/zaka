@@ -2,6 +2,7 @@
 //! interpolation writes into, and the print of each scalar.
 
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::io::Write;
@@ -42,11 +43,16 @@ pub struct ZkBuf
 thread_local! {
     /// The sink of an interpolation; NULL while text goes to stdout.
     static INTO: Cell<*mut ZkBuf> = const { Cell::new(std::ptr::null_mut()) };
+    /// While threads run, the line this thread prints, until its end: each
+    /// print then reaches stdout whole, never mixed with the print of another
+    /// thread inside a line.
+    static LINE: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Write out what waits for stdout.
+/// Write out what waits for stdout, after the line this thread holds.
 pub fn flush_out()
 {
+    flush_line();
     let Ok(mut out) = OUT.lock()
     else
     {
@@ -72,6 +78,40 @@ pub fn emit(octets: &[u8])
         // `zk_sink_open` and `zk_sink_close`.
         return grow_into(unsafe { &mut *into }, octets);
     }
+    ret_if!(crate::heap::threaded(), held(octets));
+    to_out(octets);
+}
+
+/// Keep octets in the line of this thread; a line end hands the whole line
+/// on to stdout.
+///
+/// # Arguments
+///
+/// * `octets` - The octets.
+fn held(octets: &[u8])
+{
+    let whole = LINE.with_borrow_mut(|line| {
+        line.extend_from_slice(octets);
+        octets.contains(&b'\n').then(|| std::mem::take(line))
+    });
+    do_if!(let Some(line) = whole, to_out(&line));
+}
+
+/// Hand on the line this thread holds with no end so far, as its job or its
+/// call ends or the output flushes.
+pub fn flush_line()
+{
+    let rest = LINE.with_borrow_mut(std::mem::take);
+    do_if!(!rest.is_empty(), to_out(&rest));
+}
+
+/// Add octets to what waits for stdout, and write it out once it is full.
+///
+/// # Arguments
+///
+/// * `octets` - The octets.
+fn to_out(octets: &[u8])
+{
     let full = {
         let Ok(mut out) = OUT.lock()
         else

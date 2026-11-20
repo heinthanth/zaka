@@ -644,3 +644,31 @@ fn a_list_result_comes_to_each_wait_after_its_region_went_to_another_job()
     );
     assert_eq!(output(&text), "က!\nခ!\nက!\n");
 }
+
+#[test]
+fn a_seed_shuffles_the_turns_and_gives_the_same_order_again()
+{
+    let text = program(
+        "ကိန်းရှင် က သည် ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"ခ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"ဂ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+\"မ\" ဟု ပြသမည်။",
+    );
+    let run = |seed: u64| {
+        let options = RunOptions::builder().shuffle(seed).build();
+        let (out, result) = run_source_with(&text, &options);
+        assert!(result.is_ok(), "seed {seed}: {result:?}");
+        out
+    };
+    let lines = |out: &str| {
+        let mut l: Vec<String> = out.lines().map(str::to_string).collect();
+        l.sort();
+        l
+    };
+    let fixed = lines(&output(&text));
+    let orders: std::collections::BTreeSet<String> = (0..20).map(run).collect();
+    // Each order holds the same lines, and the seeds give more than one order.
+    assert!(orders.iter().all(|o| lines(o) == fixed), "{orders:?}");
+    assert!(orders.len() > 1, "{orders:?}");
+    assert_eq!(run(7), run(7));
+}

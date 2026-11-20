@@ -113,6 +113,10 @@ pub struct RunOptions
     /// What a job does when it traps.
     #[builder(default)]
     pub trap: TrapMode,
+    /// The seed that shuffles the turns of the jobs: each turn takes a count
+    /// of ops and goes to a job that can run, both drawn from it. `None` keeps
+    /// the fixed turns, the same on each run.
+    pub shuffle: Option<u64>,
 }
 
 impl Default for RunOptions
@@ -664,6 +668,7 @@ impl Machine
         let placed = machine.place_globals().and_then(|()| machine.place_texts());
         let placed = placed.and_then(|()| machine.place_seqs());
         machine.mem.open_stack(options.max_stack);
+        machine.jobs.shuffle(options.shuffle);
         let entered = placed.and_then(|()| machine.enter(main));
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
         machine.raise_peak();

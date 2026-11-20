@@ -82,11 +82,20 @@ const TRAP_ARG: &str = "trap";
 const LEAKS_ARG: &str = "leaks";
 /// The id of the flag that runs the program as native code, with the JIT.
 const JIT_ARG: &str = "jit";
+/// The flag that shuffles the turns of the jobs, with a seed or none.
+const SHUFFLE_ARG: &str = "shuffle_job_order";
 /// The id of the flag that runs the program on the VM.
 const VM_ARG: &str = "vm";
 /// The flags of the VM alone: a run that names one runs on the VM.
-const VM_ONLY_ARGS: &[&str] =
-    &[MAX_STEPS_ARG, MAX_STACK_ARG, FRAMES_ARG, LEAKS_ARG, "results", "scratch"];
+const VM_ONLY_ARGS: &[&str] = &[
+    MAX_STEPS_ARG,
+    MAX_STACK_ARG,
+    FRAMES_ARG,
+    LEAKS_ARG,
+    SHUFFLE_ARG,
+    "results",
+    "scratch",
+];
 
 /// What runs a program with the JIT: the matches of `zakac run`, the
 /// streams, the rights of the run, and the arguments of the start block. It
@@ -154,6 +163,14 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .help(t!("vm.trap_mode"))
         .value_parser(["unwind", "abort"])
         .default_value("unwind");
+    let shuffle = Arg::new(SHUFFLE_ARG)
+        .long("shuffle-job-order")
+        .value_name("SEED")
+        .help(t!("vm.shuffle_job_order"))
+        .value_parser(value_parser!(u64))
+        .num_args(0..=1)
+        .require_equals(true)
+        .conflicts_with(JIT_ARG);
     let leaks = Arg::new(LEAKS_ARG)
         .long("leaks")
         .help(t!("vm.leaks"))
@@ -169,6 +186,7 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
     let cmd = attach_borrow_check_args(attach_compile_args(cmd.arg(input)));
     let cmd = attach_codegen_args(cmd);
     let cmd = cmd.arg(depth).arg(steps).arg(heap).arg(stack).arg(frames).arg(trap);
+    let cmd = cmd.arg(shuffle);
     let cmd = attach_grant_args(cmd, Granted::Run);
     cmd.arg(leaks).arg(jit).arg(vm).arg(args).about(t!("vm.about"))
 }
@@ -327,7 +345,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     };
     ret_if!(let Some(error) = other_host(&module), report_command_error(io, &cmd_info, error));
 
-    let options = run_options(matches);
+    let options = drawn_seed(matches, run_options(matches), io);
     let args = run_args(matches);
     let pair = |(k, v): (OsString, OsString)| {
         format!("{}={}", k.to_string_lossy(), v.to_string_lossy())
@@ -460,10 +478,35 @@ fn run_options(matches: &ArgMatches) -> RunOptions
     let leaks = matches.get_flag(LEAKS_ARG);
     let trap = matches.get_one::<String>(TRAP_ARG);
     let trap = trap.and_then(|t| t.parse().ok()).unwrap_or_default();
+    let shuffle = matches.get_one::<u64>(SHUFFLE_ARG).copied();
     #[rustfmt::skip]
     let options = RunOptions::builder().max_depth(depth).maybe_max_steps(steps)
-        .max_heap(heap).max_stack(stack).frames(frames).leaks(leaks).trap(trap).build();
+        .max_heap(heap).max_stack(stack).frames(frames).leaks(leaks).trap(trap)
+        .maybe_shuffle(shuffle).build();
     options
+}
+
+/// Draw a seed for `--shuffle-job-order` given with none, and tell it on
+/// standard error, so the same order can run again.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+/// * `options` - The options of the run.
+/// * `io` - The standard streams.
+///
+/// # Returns
+///
+/// The options, with the seed drawn.
+fn drawn_seed(
+    matches: &ArgMatches, options: RunOptions, io: &mut CommandIO<'_>,
+) -> RunOptions
+{
+    let given = matches.value_source(SHUFFLE_ARG) == Some(ValueSource::CommandLine);
+    ret_if!(!given || options.shuffle.is_some(), options);
+    let seed = fastrand::u64(..);
+    let _ = writeln!(io.stderr, "{}", t!("vm.shuffle_seed", seed = seed));
+    RunOptions { shuffle: Some(seed), ..options }
 }
 
 /// Write one line on standard error for each heap block left unfreed.

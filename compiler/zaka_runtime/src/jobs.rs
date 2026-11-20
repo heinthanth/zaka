@@ -391,8 +391,9 @@ fn run_job(
     JOB.set(n);
     let status = guard(step, data as *mut c_void);
     LEAVE.set(None);
-    // The thread ends here, and its calls with it.
+    // The thread ends here, and its calls and its line with it.
     crate::ctx::release_frames();
+    crate::out::flush_line();
     let mut st = state();
     st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
     // The locks a job held when it stopped remain taken, broken.

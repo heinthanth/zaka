@@ -9,6 +9,7 @@ edition = "2024"
 
 [workspace.dependencies]
 cc = "1.4"
+fastrand = "2.5"
 object = { version = "0.40", default-features = false, features = ["read_core", "macho", "elf", "coff", "pe"] }
 iced-x86 = { version = "1.22", default-features = false, features = ["std", "decoder", "intel"] }
 yaxpeax-arm = { version = "0.5", default-features = false, features = ["std", "fmt"] }

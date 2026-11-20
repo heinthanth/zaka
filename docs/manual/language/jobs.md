@@ -435,7 +435,13 @@ The VM runs each job on the one thread of the VM, in turns of a fixed count of o
 the order the jobs started. The order of the turns never changes, so a program prints the
 same lines each run. A wait for a job that has not ended, a receive from an open channel
 that holds none and a send to a full one give the turn to the next job.
-Each line a print writes comes out whole.
+Each line a print writes comes out whole, on the VM and on threads alike.
+
+A program on threads runs in another order each time, so a mistake that hangs on the
+order can hide on the VM. `zakac run --shuffle-job-order` shuffles the turns: each turn
+takes 1 to 200 ops and goes to one of the jobs that can run, both drawn from a seed. The
+run writes the seed it drew to standard error, and `--shuffle-job-order=<seed>` runs that
+order again ([Commands](../compiler/commands.md#run)).
 
 Each job gets a stack region of its own, of the size `--max-stack` gives
 ([Commands](../compiler/commands.md#run)).

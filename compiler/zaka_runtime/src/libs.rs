@@ -677,7 +677,11 @@ pub(crate) fn free_calls() -> usize { FREE.load(Ordering::SeqCst) & !COLLECTS }
 
 /// Count a call with no lock out, at its end.
 #[unsafe(export_name = stamped!("lib_free_out"))]
-pub extern "C" fn zk_lib_free_out() { FREE.fetch_sub(1, Ordering::SeqCst); }
+pub extern "C" fn zk_lib_free_out()
+{
+    crate::out::flush_line();
+    FREE.fetch_sub(1, Ordering::SeqCst);
+}
 
 /// Wait until no call with no lock runs, before the globals of a lib are set
 /// again: such calls read the constants. The caller holds the lock of the

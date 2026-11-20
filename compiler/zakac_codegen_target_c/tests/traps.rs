@@ -260,6 +260,47 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
 }
 
+/// Jobs that print at once never mix their lines.
+#[test]
+fn the_prints_of_jobs_come_out_as_whole_lines()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/job_lines.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(sorted_lines(&run.stdout), job_lines());
+}
+
+/// The lines `job_lines.zaka` prints, sorted: each of four labels with each
+/// number from 1 to 300 in Burmese digits.
+fn job_lines() -> Vec<String>
+{
+    let burmese = |n: u32| {
+        let digit = |c: char| char::from_u32(0x1040 + c.to_digit(10).unwrap_or(0));
+        n.to_string().chars().filter_map(digit).collect::<String>()
+    };
+    let labels = ["က", "ခ", "ဂ", "ဃ"];
+    let mut lines: Vec<String> = labels
+        .iter()
+        .flat_map(|l| (1..=300).map(move |n| format!("{l}-{}", burmese(n))))
+        .collect();
+    lines.sort();
+    lines
+}
+
+/// The lines of an output, sorted.
+fn sorted_lines(out: &str) -> Vec<String>
+{
+    let mut lines: Vec<String> = out.lines().map(str::to_string).collect();
+    lines.sort();
+    lines
+}
+
 /// What `par_loop.zaka` prints.
 const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ ၈၊ ၁၀၊ ၁၂၊ ၁၄၊ ၁၆၊ ၁၈၊ ၂၀၊ ၂၂၊ ၂၄၊ \
                             ၂၆၊ ၂၈၊ ၃၀၊ ၃၂၊ ၃၄၊ ၃၆၊ ၃၈၊ ၄၀]\n[၁၊ ၂၊ ၃၊ ၄၊ ၅၊ ၆၊ ၇၊ ၈၊ \

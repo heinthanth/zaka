@@ -6598,6 +6598,7 @@ dependencies = [
  "bon",
  "cargo-build",
  "clap",
+ "fastrand",
  "libffi",
  "libloading",
  "rust-i18n",

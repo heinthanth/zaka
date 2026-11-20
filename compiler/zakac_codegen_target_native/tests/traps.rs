@@ -187,6 +187,51 @@ fn atomic_adds_of_two_threads_lose_nothing()
 
 /// A parallel map runs its rounds on threads in an AOT build and through the
 /// JIT, and gives its results in the order of the cells.
+/// Jobs that print at once never mix their lines, through the JIT and as an
+/// executable.
+#[test]
+fn the_prints_of_jobs_come_out_as_whole_lines()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let path = c_inputs().join("job_lines.zaka");
+    let jit = run_jit(&path, &[]);
+    assert_eq!(jit.status, Some(0), "{}", jit.stderr);
+    assert_eq!(sorted_lines(&jit.stdout), job_lines());
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(sorted_lines(&run.stdout), job_lines());
+}
+
+/// The lines `job_lines.zaka` prints, sorted: each of four labels with each
+/// number from 1 to 300 in Burmese digits.
+fn job_lines() -> Vec<String>
+{
+    let burmese = |n: u32| {
+        let digit = |c: char| char::from_u32(0x1040 + c.to_digit(10).unwrap_or(0));
+        n.to_string().chars().filter_map(digit).collect::<String>()
+    };
+    let labels = ["က", "ခ", "ဂ", "ဃ"];
+    let mut lines: Vec<String> = labels
+        .iter()
+        .flat_map(|l| (1..=300).map(move |n| format!("{l}-{}", burmese(n))))
+        .collect();
+    lines.sort();
+    lines
+}
+
+/// The lines of an output, sorted.
+fn sorted_lines(out: &str) -> Vec<String>
+{
+    let mut lines: Vec<String> = out.lines().map(str::to_string).collect();
+    lines.sort();
+    lines
+}
+
 #[test]
 fn a_parallel_map_runs_its_rounds_on_threads()
 {
