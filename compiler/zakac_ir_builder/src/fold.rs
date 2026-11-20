@@ -399,7 +399,8 @@ impl Folder
                 self.drop_value(callee);
                 do_for!(a in args, self.drop_value(a));
             }
-            Stmt::AtomicAdd { addr, value, .. } =>
+            Stmt::AtomicAdd { addr, value, .. }
+            | Stmt::AtomicSet { addr, value, .. } =>
             {
                 self.drop_value(addr);
                 self.drop_value(value);
@@ -564,6 +565,8 @@ impl Folder
             | ExprNode::Own { value: addr, .. }
             | ExprNode::Closure { record: addr, .. }
             | ExprNode::CField { base: addr, .. }
+            // Another thread can change an atomic number, so none is known.
+            | ExprNode::AtomicLoad { addr }
             | ExprNode::FieldAddr { base: addr, .. } =>
             {
                 self.drop_value(addr);

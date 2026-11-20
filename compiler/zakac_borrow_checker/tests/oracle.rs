@@ -61,6 +61,7 @@ fn raw_expr(e: &Expr) -> bool
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
+        | ExprNode::AtomicLoad { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
@@ -138,10 +139,9 @@ fn raw_stmt(s: &Stmt) -> bool
         {
             raw_expr(callee) || args.iter().any(raw_expr)
         }
-        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
-        {
-            raw_expr(addr) || raw_expr(value)
-        }
+        Stmt::Store { addr, value, .. }
+        | Stmt::AtomicAdd { addr, value, .. }
+        | Stmt::AtomicSet { addr, value, .. } => raw_expr(addr) || raw_expr(value),
         Stmt::Blit { src, dst, count, .. } =>
         {
             [src, dst, count].into_iter().any(raw_expr)

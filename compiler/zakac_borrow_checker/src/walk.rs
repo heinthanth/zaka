@@ -33,6 +33,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
+        | ExprNode::AtomicLoad { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
@@ -109,7 +110,9 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         {
             std::iter::once(callee).chain(args).collect()
         }
-        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+        Stmt::Store { addr, value, .. }
+        | Stmt::AtomicAdd { addr, value, .. }
+        | Stmt::AtomicSet { addr, value, .. } =>
         {
             vec![addr, value]
         }
@@ -202,6 +205,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
+        | ExprNode::AtomicLoad { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }
@@ -280,7 +284,9 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         {
             std::iter::once(callee).chain(args.iter_mut()).collect()
         }
-        Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+        Stmt::Store { addr, value, .. }
+        | Stmt::AtomicAdd { addr, value, .. }
+        | Stmt::AtomicSet { addr, value, .. } =>
         {
             vec![addr, value]
         }

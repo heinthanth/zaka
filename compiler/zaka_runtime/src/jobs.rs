@@ -417,6 +417,37 @@ pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
     );
 }
 
+/// Read an atomic number of the platform width in one step that sees each
+/// change another thread made before it.
+///
+/// # Arguments
+///
+/// * `at` - The address of the number.
+///
+/// # Returns
+///
+/// The number.
+#[unsafe(export_name = stamped!("atomic_load"))]
+pub extern "C" fn zk_atomic_load(at: *mut isize) -> isize
+{
+    // SAFETY: as in `zk_atomic_add`.
+    unsafe { AtomicIsize::from_ptr(at) }.load(Ordering::SeqCst)
+}
+
+/// Set an atomic number of the platform width in one step, which each other
+/// thread sees whole and in order.
+///
+/// # Arguments
+///
+/// * `at` - The address of the number.
+/// * `v` - The value.
+#[unsafe(export_name = stamped!("atomic_set"))]
+pub extern "C" fn zk_atomic_set(at: *mut isize, v: isize)
+{
+    // SAFETY: as in `zk_atomic_add`.
+    unsafe { AtomicIsize::from_ptr(at) }.store(v, Ordering::SeqCst);
+}
+
 /// The step of a parallel map: it takes the address of a cell and the address
 /// the result goes to.
 pub type ZkMapStep = extern "C" fn(*mut u8, *mut u8);

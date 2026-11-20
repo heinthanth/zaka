@@ -413,7 +413,7 @@ fn jobs_add_to_an_atomic_number_with_no_lock()
         "/../zakac_codegen_target_c/tests/inputs/atomics.zaka"
     ))
     .unwrap();
-    assert_eq!(output(&text), "၁၉၈၀\n၄\n");
+    assert_eq!(output(&text), "၁၉၈၀\n၇\n၄\n");
 }
 
 #[test]

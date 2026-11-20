@@ -1368,9 +1368,11 @@ impl Lowerer<'_>
         // first and the address after it.
         let held = matches!(dest, Dest::Mem(_)) && !want.holds_text();
         let value = tern!(held && has_call(&n.value), self.hold(value, out), value);
+        let atomic = held && self.holds_atomic(&n.target);
         out.push(match dest
         {
             Dest::Slot(place) => Stmt::Set { place, value, span },
+            Dest::Mem(addr) if atomic => Stmt::AtomicSet { addr, value, span },
             Dest::Mem(addr) => Stmt::Store { addr, value, span },
         });
     }
@@ -3611,6 +3613,11 @@ impl Lowerer<'_>
             ast::Expr::Field(n) if self.kind_of(&n.base).as_external().is_some() =>
             {
                 self.c_field_read(n, kind)
+            }
+            // Another thread can change an atomic field at each moment.
+            ast::Expr::Field(n) if self.holds_atomic(e) =>
+            {
+                ExprNode::AtomicLoad { addr: Box::new(self.field_addr(n)) }
             }
             ast::Expr::Field(n) =>
             {

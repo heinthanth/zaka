@@ -117,6 +117,13 @@ impl<M: Module> FnGen<'_, '_, M>
                 let sub = self.b.ins().iconst(types::I32, i64::from(*sub));
                 self.rt("zk_atomic_add", &[ptr, ptr, types::I32], &[], &[a, v, sub]);
             }
+            Stmt::AtomicSet { addr, value, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let a = self.expr(addr);
+                let v = self.expr(value);
+                self.rt("zk_atomic_set", &[ptr, ptr], &[], &[a, v]);
+            }
             Stmt::Unlock { obj, .. } =>
             {
                 let ptr = self.s.ptr;

@@ -240,7 +240,7 @@ fn atomic_adds_of_two_threads_lose_nothing()
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
+    assert_eq!(run.stdout, "၁၉၈၀\n၇\n၄\n");
 }
 
 /// A parallel map runs its rounds on threads and gives its results in the

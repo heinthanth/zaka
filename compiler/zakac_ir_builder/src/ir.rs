@@ -639,6 +639,17 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Set an atomic number in one step, which each other thread sees whole
+    /// and in order.
+    AtomicSet
+    {
+        /// The address of the number.
+        addr: Expr,
+        /// The value, of the integer kind of the number.
+        value: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Work of the ring collector: run it now, pause it, resume it, or set
     /// its threshold.
     Rings
@@ -848,6 +859,7 @@ impl Stmt
             | Stmt::Lock { span, .. }
             | Stmt::Unlock { span, .. }
             | Stmt::AtomicAdd { span, .. }
+            | Stmt::AtomicSet { span, .. }
             | Stmt::AddCell { span, .. }
             | Stmt::RemoveCell { span, .. }
             | Stmt::SetChar { span, .. }
@@ -1048,6 +1060,13 @@ pub enum ExprNode
     Load
     {
         /// The address, a pointer.
+        addr: Box<Expr>,
+    },
+    /// The value of an atomic number, read in one step that sees each change
+    /// another thread made before it; the expression kind is its integer.
+    AtomicLoad
+    {
+        /// The address of the number.
         addr: Box<Expr>,
     },
     /// A field of the struct C keeps behind a handle, read at the address C

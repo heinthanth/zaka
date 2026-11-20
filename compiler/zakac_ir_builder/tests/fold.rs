@@ -165,3 +165,17 @@ fn a_cell_of_a_list_with_no_cells_is_out_of_range_without_a_panic()
     let codes: Vec<Code> = found.iter().map(|d| d.code).collect();
     assert_eq!(codes, [Code::CellOutOfRange]);
 }
+
+#[test]
+fn an_atomic_field_is_read_and_set_in_one_step_and_never_folded()
+{
+    let text = "ကောင်တာ ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ကြိမ် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု \
+                ပါဝင်သည်။
+ကိန်းရှင် c သည် ကောင်တာ(ကြိမ်: ၀) ဖြစ်ပါစေ။
+c ၏ ကြိမ် ကို ၇ ဟု ထားမည်။
+c ၏ ကြိမ် ကို ပြသမည်။";
+    let forms = folded(text);
+    let has = |head: &str| forms.iter().any(|f| f.starts_with(head));
+    assert!(has("(atomic_set "), "{forms:?}");
+    assert!(has("(print (atomic_load "), "{forms:?}");
+}

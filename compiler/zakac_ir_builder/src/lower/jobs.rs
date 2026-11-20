@@ -165,7 +165,7 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// `true` if it does.
-    fn holds_atomic(&mut self, e: &ast::Expr) -> bool
+    pub(super) fn holds_atomic(&mut self, e: &ast::Expr) -> bool
     {
         // The address of a field forgets that it holds an atomic number, so a
         // field is found through the struct of its base.

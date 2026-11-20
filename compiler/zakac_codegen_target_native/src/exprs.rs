@@ -232,6 +232,12 @@ impl<M: Module> FnGen<'_, '_, M>
         let ptr = self.s.ptr;
         match &e.node
         {
+            ExprNode::AtomicLoad { addr } =>
+            {
+                let (ptr, a) = (self.s.ptr, self.expr(addr));
+                let got = self.rt("zk_atomic_load", &[ptr], &[ptr], &[a]);
+                got.expect("the runtime gives the number")
+            }
             ExprNode::Load { addr } =>
             {
                 let a = self.expr(addr);

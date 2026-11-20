@@ -182,7 +182,7 @@ fn atomic_adds_of_two_threads_lose_nothing()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
+    assert_eq!(run.stdout, "၁၉၈၀\n၇\n၄\n");
 }
 
 /// A parallel map runs its rounds on threads in an AOT build and through the

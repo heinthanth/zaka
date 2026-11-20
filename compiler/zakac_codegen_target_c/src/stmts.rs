@@ -87,6 +87,14 @@ impl FnGen<'_, '_>
                     texts[0], texts[1]
                 ));
             }
+            Stmt::AtomicSet { addr, value, .. } =>
+            {
+                let texts = self.operands(&[addr, value]);
+                self.line(&format!(
+                    "zk_atomic_set((ptrdiff_t *)({}), (ptrdiff_t)({}));",
+                    texts[0], texts[1]
+                ));
+            }
             Stmt::Unlock { obj, .. } =>
             {
                 let o = self.expr(obj);

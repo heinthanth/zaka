@@ -127,7 +127,9 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             {
                 [dst, count, value].into_iter().for_each(|e| expr_places(e, out))
             }
-            Stmt::Store { addr, value, .. } | Stmt::AtomicAdd { addr, value, .. } =>
+            Stmt::Store { addr, value, .. }
+            | Stmt::AtomicAdd { addr, value, .. }
+            | Stmt::AtomicSet { addr, value, .. } =>
             {
                 expr_places(addr, out);
                 expr_places(value, out);
@@ -201,6 +203,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
+        | ExprNode::AtomicLoad { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }

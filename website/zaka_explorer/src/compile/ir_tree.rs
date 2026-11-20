@@ -239,6 +239,12 @@ impl IrTree<'_>
             {
                 self.node("send", blank, span, vec![self.expr(pipe), self.expr(value)])
             }
+            Stmt::AtomicSet { addr, value, .. } => self.node(
+                "atomic_set",
+                blank,
+                span,
+                vec![self.expr(addr), self.expr(value)],
+            ),
             Stmt::AtomicAdd { addr, value, sub, .. } =>
             {
                 let label = tern!(*sub, "atomic_sub", "atomic_add");
@@ -538,6 +544,10 @@ impl IrTree<'_>
             }
             ExprNode::AddrOf(place) => ("addr", self.place_text(*place), Vec::new()),
             ExprNode::Load { addr } => ("load", String::new(), vec![self.expr(addr)]),
+            ExprNode::AtomicLoad { addr } =>
+            {
+                ("atomic_load", String::new(), vec![self.expr(addr)])
+            }
             ExprNode::CField { base, offset } =>
             {
                 ("c_field", offset.to_string(), vec![self.expr(base)])

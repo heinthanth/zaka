@@ -172,6 +172,11 @@ impl FnGen<'_, '_>
                 ret_if!(is_blob(e.kind), a);
                 format!("zk_ld_{}({a})", self.shared.mem(e.kind))
             }
+            ExprNode::AtomicLoad { addr } =>
+            {
+                let a = self.expr(addr);
+                format!("zk_atomic_load((ptrdiff_t *)({a}))")
+            }
             ExprNode::Take { addr } => self.take(addr, e.kind),
             ExprNode::Own { value, pin } =>
             {
@@ -1041,7 +1046,7 @@ fn acts(e: &Expr, stop: bool) -> bool
         | ExprNode::AddrOf(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::Text(_) => false,
-        ExprNode::Load { addr } => acts(addr, stop),
+        ExprNode::Load { addr } | ExprNode::AtomicLoad { addr } => acts(addr, stop),
         ExprNode::Lend { operand } => acts(operand, stop),
         ExprNode::FieldAddr { base, .. } => acts(base, stop),
         ExprNode::Prefix { op, operand } =>

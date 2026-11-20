@@ -203,8 +203,10 @@ and subtract from at once with no lock and lose no change:
 | `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်။` | adds the value in one step no other job can split |
 | `<atomic> ထဲမှ <value> ကို နုတ်ယူမည်။` | subtracts the value in one step |
 
-- A read of an atomic number is a plain read, of its integer kind, and a set is a plain
-  set. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, is
+- A read of an atomic number gives its integer kind, and a set takes it. A read or a set
+  of an atomic field of an object is one step too: a read sees each change another job
+  made before it, and a set reaches each other job whole. A set whose value reads the
+  same number, such as `x ကို x + ၁ ဟု ထားမည်`, is
   ZK0727: a job could change the number between the read and the write.
 - An add and a subtraction wrap past the range of the kind, with no stop.
 - A field of an object jobs share that holds an atomic number is read, set and added to

@@ -97,6 +97,10 @@ impl ToSexpr for Stmt
             Stmt::Call { name, args, .. } => call_sexpr(name, args),
             Stmt::CallValue { callee, args, .. } => call_value_sexpr(callee, args),
             Stmt::Foreign { func, args, .. } => foreign_sexpr(*func, args),
+            Stmt::AtomicSet { addr, value, .. } =>
+            {
+                list("atomic_set", [addr.to_sexpr(), value.to_sexpr()])
+            }
             Stmt::AtomicAdd { addr, value, sub, .. } =>
             {
                 let head = tern!(*sub, "atomic_sub", "atomic_add");
@@ -233,6 +237,7 @@ impl ToSexpr for Expr
             }
             ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
+            ExprNode::AtomicLoad { addr } => list("atomic_load", [addr.to_sexpr()]),
             ExprNode::CField { base, offset } =>
             {
                 list("c_field", [base.to_sexpr(), offset.to_string()])

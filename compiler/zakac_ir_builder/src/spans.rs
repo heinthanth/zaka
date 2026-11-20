@@ -213,7 +213,8 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             w.span(span);
         }
         Stmt::Store { addr, value, span }
-        | Stmt::AtomicAdd { addr, value, span, .. } =>
+        | Stmt::AtomicAdd { addr, value, span, .. }
+        | Stmt::AtomicSet { addr, value, span } =>
         {
             expr(addr, w);
             expr(value, w);
@@ -326,6 +327,7 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
         | ExprNode::Load { addr: operand }
+        | ExprNode::AtomicLoad { addr: operand }
         | ExprNode::Lend { operand }
         | ExprNode::Take { addr: operand }
         | ExprNode::Dup { value: operand, .. }

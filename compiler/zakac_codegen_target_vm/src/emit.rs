@@ -1072,7 +1072,8 @@ impl<'s> FuncGen<'s>
             {
                 self.call_stmt(Target::Value(callee), args)
             }
-            Stmt::Store { addr, value, .. } =>
+            // The VM runs one job at a time, so each store is whole and in order.
+            Stmt::Store { addr, value, .. } | Stmt::AtomicSet { addr, value, .. } =>
             {
                 self.expr(addr);
                 self.put(value);
@@ -1776,7 +1777,7 @@ impl<'s> FuncGen<'s>
                 self.foreign(slot.map(Op::LocalAddr), *func, args);
             }
             ExprNode::AddrOf(place) => self.addr_of(*place),
-            ExprNode::Load { addr } =>
+            ExprNode::Load { addr } | ExprNode::AtomicLoad { addr } =>
             {
                 self.expr(addr);
                 do_if!(!e.kind.is_aggregate(), self.op(Op::Load(e.kind)));
