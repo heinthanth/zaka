@@ -35,6 +35,25 @@ enum RoundHead<'a>
     Rows(&'a st::EachStmt, DataKind),
 }
 
+impl RoundHead<'_>
+{
+    /// The count of threads the loop was given.
+    ///
+    /// # Returns
+    ///
+    /// The expression, or `None` for one thread for each core.
+    fn threads(&self) -> Option<&ast::Expr>
+    {
+        match self
+        {
+            RoundHead::Counted(n, _) => n.threads.as_ref(),
+            RoundHead::Each(n, ..)
+            | RoundHead::Chars(n, ..)
+            | RoundHead::Rows(n, _) => n.threads.as_ref(),
+        }
+    }
+}
+
 impl Lowerer<'_>
 {
     /// Lower a parallel counted loop: a slot for each bound and for the step,
@@ -282,6 +301,7 @@ impl Lowerer<'_>
         count: Place, span: Span, out: &mut Vec<Stmt>,
     )
     {
+        let threads = head.threads().map(|t| self.thread_count(t, out));
         let free = self.round_names(block);
         out.extend(
             free.iter().filter_map(|(name, p)| self.own_before(block, *name, *p, span)),
@@ -307,7 +327,7 @@ impl Lowerer<'_>
         let call_args = std::iter::once(at_read).chain(args.iter().cloned()).collect();
         let name = self.round_name(func);
         let call = Stmt::Call { func, name, args: call_args, span };
-        let par = Par::Rounds(ParRounds { func, count, args });
+        let par = Par::Rounds(ParRounds { func, count, args, threads });
         out.push(Stmt::Loop {
             init: vec![Stmt::Set { place: at, value: zero, span }],
             cond: node_expr(DataKind::Bool, cond, span),
@@ -316,6 +336,39 @@ impl Lowerer<'_>
             span,
             par: Some(Box::new(par)),
         });
+    }
+
+    /// The count of threads of a parallel loop or map in a `usize` slot, after
+    /// a stop of the program for zero or below.
+    ///
+    /// # Arguments
+    ///
+    /// * `threads` - The expression of the count, an integer.
+    /// * `out` - The list the statements go to.
+    ///
+    /// # Returns
+    ///
+    /// The slot.
+    pub(super) fn thread_count(
+        &mut self, threads: &ast::Expr, out: &mut Vec<Stmt>,
+    ) -> Place
+    {
+        let span = threads.span();
+        let kind = self.kind_of(threads);
+        let given = self.hidden(kind, span);
+        let value = self.coerce(threads, kind);
+        out.push(Stmt::Set { place: given, value, span });
+        let zero = node_expr(kind, convert_node(self.usize_const(0, span)), span);
+        let bad = compare_node(CmpOp::Le, read(given, kind, span), zero);
+        let halt =
+            Stmt::Halt { cause: HaltCause::ThreadsNotPositive, value: None, span };
+        let cond = node_expr(DataKind::Bool, bad, span);
+        out.push(Stmt::If { cond, then: vec![halt], els: Vec::new(), span });
+        let count = self.hidden(DataKind::USIZE, span);
+        let wide =
+            node_expr(DataKind::USIZE, convert_node(read(given, kind, span)), span);
+        out.push(Stmt::Set { place: count, value: wide, span });
+        count
     }
 
     /// The variables from outside the loop that a round names, each with its

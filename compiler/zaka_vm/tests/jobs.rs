@@ -552,3 +552,26 @@ fn a_round_writes_no_row_of_a_table_from_outside()
     );
     assert_eq!(codes(&text), [Code::RoundWritesOutside]);
 }
+
+#[test]
+fn a_count_of_threads_of_zero_stops()
+{
+    let text = program(
+        "ကိန်းရှင် ချည် သည် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင်လုပ်ငန်း ချည် ခုခွဲ၍ ရေတွက်၍ ထွက် ၏ အကွက် i ကို i ဟု ထားမည်။",
+    );
+    let (_, result) = run_source_with(&text, &RunOptions::default());
+    let trap = result.expect_err("a count of zero stops");
+    assert!(matches!(trap.kind, TrapKind::ThreadsNotPositive), "{trap}");
+}
+
+#[test]
+fn a_count_of_threads_that_is_no_integer_is_refused()
+{
+    let text = program(
+        "ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင်လုပ်ငန်း \"နှစ်\" ခုခွဲ၍ ရေတွက်၍ ထွက် ၏ အကွက် i ကို i ဟု ထားမည်။",
+    );
+    assert_eq!(codes(&text), [Code::LoopBoundNotInt]);
+}

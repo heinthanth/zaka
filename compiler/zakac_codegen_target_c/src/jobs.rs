@@ -371,9 +371,10 @@ impl FnGen<'_, '_>
         let (sk, ok) =
             (self.shared.descr.of(p.src_kind), self.shared.descr.of(p.out_kind));
         let abort = i32::from(self.shared.options.trap_abort);
+        let threads = p.threads.map_or_else(|| "0".to_string(), |t| self.place(t));
         self.line(&format!(
             "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{}, zk_job_guard, \
-             zk_job_leave, {abort});",
+             zk_job_leave, {abort}, {threads});",
             p.func
         ));
     }
@@ -398,9 +399,10 @@ impl FnGen<'_, '_>
         }
         let count = self.place(p.count);
         let abort = i32::from(self.shared.options.trap_abort);
+        let threads = p.threads.map_or_else(|| "0".to_string(), |t| self.place(t));
         self.line(&format!(
             "zk_par_for({count}, zk_round_step_{}, {data}, zk_job_guard, \
-             zk_job_leave, {abort});",
+             zk_job_leave, {abort}, {threads});",
             p.func
         ));
     }

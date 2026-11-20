@@ -664,6 +664,18 @@ impl Checker
             .for_each(|(span, n)| self.report(od::round_writes_outside(span, &n)));
     }
 
+    /// Check the count of threads of a parallel loop or map: an integer, as a
+    /// bound of a counted loop is (ZK0405).
+    ///
+    /// # Arguments
+    ///
+    /// * `threads` - The count.
+    pub(crate) fn check_threads(&mut self, threads: &Expr)
+    {
+        let found = self.infer(threads, None);
+        do_if!(let Some(k) = found, _ = self.need_bound(k, threads));
+    }
+
     /// Report a variable from outside a round of a parallel loop that the
     /// round reads, when it holds a value jobs cannot use (ZK0494): the rounds
     /// run on several threads at once.

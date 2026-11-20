@@ -84,6 +84,9 @@ en = "the channel %{pipe} is closed: no value can go to it, and it cannot close 
 [vm.trap.lock_broken]
 en = "the lock of this object is broken: the job that held it stopped at a trap"
 
+[vm.trap.threads_not_positive]
+en = "the count of threads of a parallel loop or map is not positive"
+
 [vm.trap.job_stopped]
 en = "job %{job} stopped"
 

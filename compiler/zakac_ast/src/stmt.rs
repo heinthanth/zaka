@@ -319,6 +319,10 @@ pub struct CountedStmt
     #[builder(default)]
     #[serde(default)]
     pub parallel: bool,
+    /// The count of threads, `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍` in place of `အပြိုင်`;
+    /// `None` for one thread for each core.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threads: Option<Expr>,
     /// Source region.
     pub span: Span,
 }
@@ -350,6 +354,10 @@ pub struct EachStmt
     #[builder(default)]
     #[serde(default)]
     pub parallel: bool,
+    /// The count of threads, `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍` in place of `အပြိုင်`;
+    /// `None` for one thread for each core.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threads: Option<Expr>,
     /// Source region.
     pub span: Span,
 }

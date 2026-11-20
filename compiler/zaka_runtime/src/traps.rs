@@ -64,6 +64,7 @@ pub enum ZkTrap
     /// The head of the line of a trap that ended a job alone.
     JobStopped,
     LockBroken,
+    ThreadsNotPositive,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -105,6 +106,7 @@ pub(crate) mod trap
     pub(crate) const PIPE_CLOSED: i32 = ZkTrap::PipeClosed as i32;
     pub(crate) const JOB_STOPPED: i32 = ZkTrap::JobStopped as i32;
     pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
+    pub(crate) const THREADS_NOT_POSITIVE: i32 = ZkTrap::ThreadsNotPositive as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.
@@ -534,6 +536,14 @@ pub extern "C" fn zk_shift_too_far(distance: u64, bits: u32) -> !
 /// Stop the run: the step of a counted loop was not positive.
 #[unsafe(export_name = stamped!("step_not_positive"))]
 pub extern "C" fn zk_step_not_positive() -> ! { stop(trap::STEP_NOT_POSITIVE, &[]) }
+
+/// Stop the run: the count of threads of a parallel loop or map is zero or
+/// below.
+#[unsafe(export_name = stamped!("threads_not_positive"))]
+pub extern "C" fn zk_threads_not_positive() -> !
+{
+    stop(trap::THREADS_NOT_POSITIVE, &[])
+}
 
 /// Stop the run: the result of an operation does not fit its kind.
 ///

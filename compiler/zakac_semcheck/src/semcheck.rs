@@ -1750,7 +1750,7 @@ impl Checker
     /// # Returns
     ///
     /// The kind when it is an integer.
-    fn need_bound(&mut self, kind: DataKind, e: &Expr) -> Option<DataKind>
+    pub(crate) fn need_bound(&mut self, kind: DataKind, e: &Expr) -> Option<DataKind>
     {
         ret_if!(kind.is_int(), Some(kind));
         self.report(kd::loop_bound_not_int(e.span(), &kind.name()));
@@ -2500,6 +2500,7 @@ impl Visitor for Checker
     fn visit_counted(&mut self, n: &CountedStmt)
     {
         do_if!(n.parallel, self.check_round(Some(n.var.name), &n.block));
+        do_if!(let Some(t) = &n.threads, self.check_threads(t));
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
@@ -2519,6 +2520,7 @@ impl Visitor for Checker
             n.parallel,
             self.check_round(n.place.as_ref().map(|p| p.name), &n.block)
         );
+        do_if!(let Some(t) = &n.threads, self.check_threads(t));
         let kinds = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
         do_if!(let Some(place) = &n.place, self.declare(place, kinds.and_then(|(p, _)| p), Access::Var));

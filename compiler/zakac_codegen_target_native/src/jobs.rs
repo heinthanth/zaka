@@ -18,6 +18,7 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::Par;
 use zakac_ir_builder::ir::ParMap;
 use zakac_ir_builder::ir::ParRounds;
+use zakac_ir_builder::ir::Place;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::kind::DataKind;
@@ -277,6 +278,25 @@ impl<M: Module> FnGen<'_, '_, M>
         [guard, leave, abort]
     }
 
+    /// The count of threads a parallel loop or map was given, 0 for one
+    /// thread for each core.
+    ///
+    /// # Arguments
+    ///
+    /// * `threads` - The slot of the count, or `None`.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn threads_arg(&mut self, threads: Option<Place>) -> Value
+    {
+        match threads
+        {
+            Some(t) => self.read(t),
+            None => self.word(0),
+        }
+    }
+
     /// A parallel map that runs its rounds at once, in place of its loop.
     ///
     /// # Arguments
@@ -291,13 +311,10 @@ impl<M: Module> FnGen<'_, '_, M>
         let step = self.s.map_step_of(p.func);
         let step = self.addr_of_fn(step);
         let [guard, leave, abort] = self.guard_args();
-        let params = [ptr, ptr, ptr, ptr, ptr, ptr, ptr, types::I32];
-        self.rt(
-            "zk_par_map",
-            &params,
-            &[],
-            &[src, sk, out, ok, step, guard, leave, abort],
-        );
+        let threads = self.threads_arg(p.threads);
+        let params = [ptr, ptr, ptr, ptr, ptr, ptr, ptr, types::I32, ptr];
+        let args = [src, sk, out, ok, step, guard, leave, abort, threads];
+        self.rt("zk_par_map", &params, &[], &args);
     }
 
     /// The rounds of a parallel loop that run at once, in place of its loop: a
@@ -323,8 +340,10 @@ impl<M: Module> FnGen<'_, '_, M>
         let step = self.s.round_step_of(p.func);
         let step = self.addr_of_fn(step);
         let [guard, leave, abort] = self.guard_args();
-        let params = [ptr, ptr, ptr, ptr, ptr, types::I32];
-        self.rt("zk_par_for", &params, &[], &[count, step, data, guard, leave, abort]);
+        let threads = self.threads_arg(p.threads);
+        let params = [ptr, ptr, ptr, ptr, ptr, types::I32, ptr];
+        let args = [count, step, data, guard, leave, abort, threads];
+        self.rt("zk_par_for", &params, &[], &args);
     }
 
     /// The code of the step of a round of a parallel loop: it calls the

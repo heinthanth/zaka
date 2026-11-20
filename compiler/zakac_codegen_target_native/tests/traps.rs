@@ -273,3 +273,37 @@ fn steps_characters_and_rows_spread_their_rounds()
         assert_eq!(run.stdout, want, "{input}");
     }
 }
+
+/// A loop and a map run on the count of threads given to each in an AOT
+/// build: three jobs each stop when each round traps.
+#[test]
+fn a_count_of_threads_sets_the_jobs_of_a_loop()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    let run = crate::common::run_aot(
+        &c_inputs().join("par_threads.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let Some(run) = run
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၉၉၀၀\n[၁၊ ၄၊ ၉၊ ၁၆၊ ၂၅]\n");
+    let trap = crate::common::run_aot(
+        &c_inputs().join("par_threads_trap.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let trap = trap.expect("the first build linked");
+    assert_eq!(trap.status, Some(1), "{}", trap.stderr);
+    assert_eq!(
+        trap.stderr.matches("stopped: integer division").count(),
+        3,
+        "{}",
+        trap.stderr
+    );
+}

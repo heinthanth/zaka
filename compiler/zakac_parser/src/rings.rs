@@ -230,7 +230,7 @@ impl Parser<'_>
     ///
     /// Nothing, or an `expected-token` diagnostic at the first word that does
     /// not read.
-    fn eat_words(&mut self, words: &[&str]) -> PResult<()>
+    pub(crate) fn eat_words(&mut self, words: &[&str]) -> PResult<()>
     {
         for word in words
         {

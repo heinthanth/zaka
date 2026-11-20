@@ -209,7 +209,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0402 | a condition that is not true/false | [If and else](../../learn/control-flow/if-else.md) |
 | ZK0403 | an operator used on the wrong kind, such as `မှန် + ၁` | [Arithmetic](../../learn/operators/arithmetic.md) |
 | ZK0404 | two kinds that cannot be combined without a conversion | [Arithmetic](../../learn/operators/arithmetic.md#mixing-kinds) |
-| ZK0405 | a counted-loop bound or step that is not an integer | [Counted loops](../../learn/control-flow/counted-loops.md#rules) |
+| ZK0405 | a counted-loop bound or step, or the count of threads of a parallel loop or map, that is not an integer | [Counted loops](../../learn/control-flow/counted-loops.md#rules) |
 | ZK0406 | a number too big for the variable's kind | [Integers](../../learn/values/integers.md) |
 | ZK0407 | a shift wider than the kind's bit count | [Bitwise operators](../../learn/operators/bitwise.md) |
 | ZK0408 | a conversion that is not allowed | [Converting between kinds](../../learn/operators/conversion.md) |

@@ -52,7 +52,9 @@ from a round, such as a running sum, is ZK0728:
 ```
 
 A native program runs the rounds on one thread for each core, once the rounds are at
-least as numerous as the cores; fewer rounds, and the rounds on the VM, run in order. The rounds follow
+least as numerous as the cores; fewer rounds, and the rounds on the VM, run in order. To pick the count of threads, write `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍` in place of
+`အပြိုင်`: `၀ မှ ၉၉ အထိ i အနေဖြင့် အပြိုင်လုပ်ငန်း ၄ ခုခွဲ၍ ရေတွက်၍ ...` splits the rounds among
+four threads. The rounds follow
 the rules of a job:
 
 - A round reads values from outside that jobs can use: numbers, text and lists, but no

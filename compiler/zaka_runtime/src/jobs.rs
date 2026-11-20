@@ -434,10 +434,12 @@ extern "C" fn run_chunk(data: *mut c_void)
     (c.lo..c.hi).for_each(|i| (c.step)(c.data as *mut u8, i));
 }
 
-/// Run the rounds of a parallel loop: fewer rounds than cores run here, in
-/// order; else each core gets a job that runs a chunk of them. A trap in a
-/// round acts as in a job: the rounds of its job end, the other jobs finish,
-/// and the loop then stops with `job trapped`; under `--trap abort` the
+/// Run the rounds of a parallel loop: with no count of threads, fewer rounds
+/// than cores run here, in order, and else each core gets a job that runs a
+/// chunk of them; with a count, a job for each thread it names runs a chunk,
+/// never more jobs than rounds, and one runs the rounds here, in order. A trap
+/// in a round acts as in a job: the rounds of its job end, the other jobs
+/// finish, and the loop then stops with `job trapped`; under `--trap abort` the
 /// program stops at once.
 ///
 /// # Arguments
@@ -448,18 +450,21 @@ extern "C" fn run_chunk(data: *mut c_void)
 /// * `guard` - The guard of a job, from the glue.
 /// * `jump` - The function that jumps back to the guard on a trap.
 /// * `abort` - 1 when a trap stops the whole program.
+/// * `threads` - The count of threads the loop was given, 0 for none.
 #[unsafe(export_name = stamped!("par_for"))]
 pub extern "C" fn zk_par_for(
     count: usize, step: ZkRoundStep, data: *mut u8, guard: ZkGuard,
-    jump: extern "C" fn(i32), abort: i32,
+    jump: extern "C" fn(i32), abort: i32, threads: usize,
 )
 {
-    let workers = std::thread::available_parallelism().map_or(1, usize::from);
-    if count < workers
+    let cores = std::thread::available_parallelism().map_or(1, usize::from);
+    let in_order = tern!(threads == 0, count < cores, threads.min(count) <= 1);
+    if in_order
     {
         (0..count).for_each(|i| step(data, i));
         return;
     }
+    let workers = tern!(threads == 0, cores, threads.min(count));
     let per = count.div_ceil(workers);
     let chunk = |lo: usize| {
         // shortcut: a chunk is never freed, a few words a job; free it once
@@ -540,10 +545,12 @@ extern "C" fn map_round(data: *mut u8, i: usize)
 /// * `guard` - The guard of a job, from the glue.
 /// * `jump` - The function that jumps back to the guard on a trap.
 /// * `abort` - 1 when a trap stops the whole program.
+/// * `threads` - The count of threads the map was given, 0 for none.
 #[unsafe(export_name = stamped!("par_map"))]
 pub extern "C" fn zk_par_map(
     src: *mut u8, src_kind: *const ZkKind, out: *mut u8, out_kind: *const ZkKind,
     step: ZkMapStep, guard: ZkGuard, jump: extern "C" fn(i32), abort: i32,
+    threads: usize,
 )
 {
     let (base, n) = (zk_seq_base(src) as usize, zk_seq_len(src));
@@ -553,7 +560,7 @@ pub extern "C" fn zk_par_map(
     let at = results.as_mut_ptr() as usize;
     let mut map = MapData { base, cell, at, ret, step };
     let data: *mut MapData = &mut map;
-    zk_par_for(n, map_round, data.cast(), guard, jump, abort);
+    zk_par_for(n, map_round, data.cast(), guard, jump, abort, threads);
     let start = results.as_mut_ptr();
     // SAFETY: each result is `ret` octets of `results`, which the add moves
     // out.

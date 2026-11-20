@@ -94,6 +94,13 @@ pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
 /// or apart from it.
 const LOCK_WORDS: [&str; 2] = ["ခေတ္တ", "ခဏ"];
 
+/// The word that opens the count of threads of a parallel loop or map,
+/// `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍`.
+const JOB_WORD: &str = "အပြိုင်လုပ်ငန်း";
+
+/// The word that ends the count of threads.
+const SPLIT_WORD: &str = "ခုခွဲ၍";
+
 /// The word that ends a parallel map, after `လုပ်ဆောင်သော`.
 const MAP_RESULTS: &str = "ရလဒ်များ";
 
@@ -196,6 +203,22 @@ impl Parser<'_>
         true
     }
 
+    /// Parse the count of threads of a parallel loop or map,
+    /// `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍`, which stands in place of `အပြိုင်`; the word
+    /// `ခုခွဲ၍` reads glued or apart.
+    ///
+    /// # Returns
+    ///
+    /// The count, `None` when the phrase does not come next, or a diagnostic.
+    pub(crate) fn parse_threads(&mut self) -> PResult<Option<Expr>>
+    {
+        ret_if!(!self.is_word_at(0, JOB_WORD), Ok(None));
+        self.bump();
+        let count = self.parse_notation()?;
+        self.eat_words(&[SPLIT_WORD])?;
+        Ok(Some(count))
+    }
+
     /// Whether a parallel map comes next: `၏ အကွက်တိုင်း ကို <fn> ဟူသော
     /// လုပ်ဆောင်ချက် ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ`.
     ///
@@ -211,9 +234,22 @@ impl Parser<'_>
             && self.peek_n(3).kind == TokenKind::Ident
             && kw(4, Kw::FnValue)
             && kw(5, Kw::Hpjint)
-            && self.is_word_at(6, PARALLEL)
-            && kw(7, Kw::CallHead)
-            && self.is_word_at(8, MAP_RESULTS)
+            && (self.is_word_at(6, JOB_WORD) || self.par_map_end_at(6))
+    }
+
+    /// Whether `အပြိုင် လုပ်ဆောင်သော ရလဒ်များ` stands `n` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - Where `အပြိုင်` stands.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn par_map_end_at(&self, n: usize) -> bool
+    {
+        let call_head = self.peek_n(n + 1).kind == TokenKind::Kw(Kw::CallHead);
+        self.is_word_at(n, PARALLEL) && call_head && self.is_word_at(n + 2, MAP_RESULTS)
     }
 
     /// Parse a parallel map after the list it maps.
@@ -229,7 +265,10 @@ impl Parser<'_>
     {
         do_for!(_ in 0..3, _ = self.bump());
         let func = self.parse_ident()?;
-        do_for!(_ in 0..4, _ = self.bump());
+        do_for!(_ in 0..2, _ = self.bump());
+        let threads = self.parse_threads()?;
+        do_if!(threads.is_none(), _ = self.bump());
+        self.expect(Kw::CallHead)?;
         let last = self.bump();
         let span = list.span().to(&last.span);
         let id = self.new_id();
@@ -238,8 +277,15 @@ impl Parser<'_>
             NameExpr::builder().id(fn_id).name(func.name).span(func.span).build(),
         );
         #[rustfmt::skip]
-        let node = VerbExpr::builder().id(id).op(VerbOp::ParMap).args(vec![list, name])
-            .particle(last.particle).is_cmp(false).span(span).build();
+        let args = [list, name].into_iter().chain(threads).collect();
+        let node = VerbExpr::builder()
+            .id(id)
+            .op(VerbOp::ParMap)
+            .args(args)
+            .particle(last.particle)
+            .is_cmp(false)
+            .span(span)
+            .build();
         Ok(Expr::Verb(node))
     }
 

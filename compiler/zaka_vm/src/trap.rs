@@ -179,6 +179,8 @@ pub enum TrapKind
     Deadlock,
     /// A lock of a shared object whose holder stopped at a trap.
     LockBroken,
+    /// The count of threads of a parallel loop or map is zero or below.
+    ThreadsNotPositive,
     /// A send to a closed channel, or a second close of one.
     PipeClosed
     {
@@ -359,6 +361,7 @@ impl fmt::Display for TrapKind
             TrapKind::JobTrapped { job } => t!("vm.trap.job_trapped", job = job),
             TrapKind::Deadlock => t!("vm.trap.deadlock"),
             TrapKind::LockBroken => t!("vm.trap.lock_broken"),
+            TrapKind::ThreadsNotPositive => t!("vm.trap.threads_not_positive"),
             TrapKind::PipeClosed { pipe } => t!("vm.trap.pipe_closed", pipe = pipe),
             TrapKind::ForeignCall { name } => t!("vm.trap.foreign_call", name = name),
             TrapKind::PermissionDenied { right, subject } =>
@@ -448,6 +451,7 @@ impl TrapKind
             | TrapKind::JobTrapped { .. }
             | TrapKind::Deadlock
             | TrapKind::LockBroken
+            | TrapKind::ThreadsNotPositive
             | TrapKind::PipeClosed { .. }
             | TrapKind::ForeignCall { .. }
             | TrapKind::PermissionDenied { .. }

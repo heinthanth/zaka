@@ -423,6 +423,10 @@ impl FnGen<'_, '_>
             cause == HaltCause::StepNotPositive,
             self.line("zk_step_not_positive();")
         );
+        ret_if!(
+            cause == HaltCause::ThreadsNotPositive,
+            self.line("zk_threads_not_positive();")
+        );
         ret_if!(cause == HaltCause::ClosedHandle, self.line("zk_closed_handle();"));
         ret_if!(
             cause == HaltCause::NullFromC,

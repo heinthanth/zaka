@@ -212,6 +212,10 @@ pub struct ParMap
     pub src_kind: DataKind,
     /// The kind of the plain list it fills.
     pub out_kind: DataKind,
+    /// The hidden slot of the count of threads, a `usize` the map was given;
+    /// `None` for one thread for each core.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threads: Option<Place>,
 }
 
 /// The rounds of a parallel loop that a native build runs at once: each
@@ -229,6 +233,10 @@ pub struct ParRounds
     /// outside the loop that the round reaches, and the first value of a
     /// counted loop.
     pub args: Vec<Expr>,
+    /// The hidden slot of the count of threads, a `usize` the loop was given;
+    /// `None` for one thread for each core.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threads: Option<Place>,
 }
 
 /// What a native build runs in place of a loop, at once on several threads.
@@ -1452,6 +1460,8 @@ pub enum HaltCause
     NoRow,
     /// The step of a counted loop is zero or below.
     StepNotPositive,
+    /// The count of threads of a parallel loop or map is zero or below.
+    ThreadsNotPositive,
 }
 
 /// The name of a function a reader knows: the name the program writes. The

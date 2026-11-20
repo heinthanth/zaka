@@ -585,6 +585,7 @@ pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
 {
     v.enter(n);
     v.visit_expr(&n.source);
+    do_if!(let Some(threads) = &n.threads, v.visit_expr(threads));
     do_if!(let Some(place) = &n.place, v.visit_ident(place));
     v.visit_ident(&n.var);
     v.visit_block(&n.block);
@@ -607,6 +608,7 @@ pub fn walk_counted<V: Visitor + ?Sized>(v: &mut V, n: &CountedStmt)
     v.visit_expr(&n.from);
     v.visit_expr(&n.to);
     do_if!(let Some(step) = &n.step, v.visit_expr(step));
+    do_if!(let Some(threads) = &n.threads, v.visit_expr(threads));
     v.visit_ident(&n.var);
     v.visit_block(&n.block);
     v.leave(n);
@@ -1402,6 +1404,7 @@ pub fn walk_each_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EachStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.source);
+    opt_expr_mut(v, &mut n.threads);
     do_if!(let Some(place) = &mut n.place, v.visit_ident_mut(place));
     v.visit_ident_mut(&mut n.var);
     v.visit_block_mut(&mut n.block);
@@ -1414,6 +1417,7 @@ pub fn walk_counted_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut CountedStmt)
     v.visit_expr_mut(&mut n.from);
     v.visit_expr_mut(&mut n.to);
     opt_expr_mut(v, &mut n.step);
+    opt_expr_mut(v, &mut n.threads);
     v.visit_ident_mut(&mut n.var);
     v.visit_block_mut(&mut n.block);
 }

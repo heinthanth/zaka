@@ -720,6 +720,9 @@ place of the sentence when one takes the operands (`own_verb`, `own_count`).
   argument loop stops before it (`call_word_at`), and the call node gets `parallel`.
   Before `ရလဒ်` and `ရလဒ်ကောင်း`, `glued.rs` splits the short ends too
   (`ENDS_BEFORE_RESULT`), so `စောင့်သော ရလဒ်` reads as the call `စောင့်` and its end.
+- `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍` in place of `အပြိုင်` gives a parallel loop or map its count
+  of threads (`parse_threads`, `threads` on `CountedStmt` and `EachStmt`, a third argument
+  of `VerbOp::ParMap`); `ခုခွဲ၍` reads glued or apart.
 - `အပြိုင်` after `အနေဖြင့်` marks a parallel loop (`eat_parallel`, `parallel` on
   `CountedStmt` and `EachStmt`); `data_reads` reads a parallel map as `VerbOp::ParMap`
   with the list and the name of the function (`at_par_map`).

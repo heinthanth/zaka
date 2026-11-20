@@ -180,6 +180,9 @@ en = "job %{job} stopped"
 [target_c.trap.lock_broken]
 en = "the lock of this object is broken: the job that held it stopped at a trap"
 
+[target_c.trap.threads_not_positive]
+en = "the count of threads of a parallel loop or map is not positive"
+
 [target_c.permission.read]
 en = "reading \"%{s}\""
 

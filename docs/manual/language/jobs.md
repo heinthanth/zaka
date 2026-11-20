@@ -339,7 +339,16 @@ A loop marked `အပြိုင်` before its last word lets its rounds run a
 <from> မှ <to> အထိ <name> အနေဖြင့် အပြိုင် ရေတွက်၍ <stmt>
 <list> ၏ အကွက်တိုင်း ကို <name> အနေဖြင့် အပြိုင် ယူ၍ <stmt>
 <list> ၏ အကွက်တိုင်း ကို <number> နှင့် <name> အနေဖြင့် အပြိုင် ယူ၍ <stmt>
+<from> မှ <to> အထိ <name> အနေဖြင့် အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍ ရေတွက်၍ <stmt>
 ```
+
+`အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍` ("split into `<n>` jobs") stands in place of `အပြိုင်` before
+the verb of each parallel loop (`ရေတွက်၍`, `တိုး၍`, `လျှော့၍`, `ယူ၍`), and before
+`လုပ်ဆောင်သော ရလဒ်များ` in a parallel map. `<n>` is an integer (ZK0405), worked out as the loop
+starts, and zero or below stops the program with the trap `threads not positive`. The rounds
+then run on `<n>` threads, never more threads than rounds, each thread a chunk of
+the rounds one after another; 1 runs them in order on the thread of the loop. With no count,
+a loop takes one thread for each core.
 
 Each has the block form too. The rounds follow the rules of a job, since the rounds run at
 once on several threads:
@@ -388,6 +397,7 @@ cell, in the order of the cells.
 
 ```text
 <list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက် ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ
+<list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက် ဖြင့် အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍ လုပ်ဆောင်သော ရလဒ်များ
 ```
 
 - The function takes one parameter that the cells fit, and follows the rules of the

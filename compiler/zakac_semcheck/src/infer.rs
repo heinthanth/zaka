@@ -522,6 +522,11 @@ impl Checker
             {
                 return self.infer_par_map(list, f);
             }
+            (VerbOp::ParMap, [list, Expr::Name(f), threads]) =>
+            {
+                self.check_threads(threads);
+                return self.infer_par_map(list, f);
+            }
             (VerbOp::Join, pieces) => return self.infer_join(pieces),
             (VerbOp::CharAt | VerbOp::CharNth, [text, index]) =>
             {

@@ -352,11 +352,18 @@ impl Lowerer<'_>
     pub(super) fn par_map(&mut self, n: &ast::VerbExpr, kind: DataKind) -> ExprNode
     {
         let span = n.span;
-        let [list, ast::Expr::Name(f)] = n.args.as_slice()
-        else
+        let (list, f, threads) = match n.args.as_slice()
         {
-            unreachable!("the parser gives a map its list and its function")
+            [list, ast::Expr::Name(f)] => (list, f, None),
+            [list, ast::Expr::Name(f), threads] => (list, f, Some(threads)),
+            _ => unreachable!("the parser gives a map its list and its function"),
         };
+        let threads = threads.map(|t| {
+            let mut out = Vec::new();
+            let slot = self.thread_count(t, &mut out);
+            self.pre.extend(out);
+            slot
+        });
         let given = self.kind_of(list);
         let list_kind = each_list(given, false);
         let source = tern!(
@@ -405,6 +412,7 @@ impl Lowerer<'_>
             func: sig.index,
             src_kind: list_kind,
             out_kind: kind,
+            threads,
         };
         let par = as_is.then(|| Box::new(Par::Map(par)));
         #[rustfmt::skip]

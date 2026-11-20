@@ -321,3 +321,30 @@ fn steps_characters_and_rows_spread_their_rounds()
         assert_eq!(run.stdout, want, "{input}");
     }
 }
+
+/// A loop and a map run on the count of threads given to each: three jobs
+/// each stop when each round traps.
+#[test]
+fn a_count_of_threads_sets_the_jobs_of_a_loop()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/par_threads.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "၉၉၀၀\n[၁၊ ၄၊ ၉၊ ၁၆၊ ၂၅]\n");
+    let path = root().join("tests/inputs/par_threads_trap.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let trap = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(trap.status, Some(1), "{}", trap.stderr);
+    assert_eq!(
+        trap.stderr.matches("stopped: integer division").count(),
+        3,
+        "{}",
+        trap.stderr
+    );
+}

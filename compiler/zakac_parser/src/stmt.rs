@@ -536,7 +536,8 @@ impl Parser<'_>
         self.expect(Kw::To)?;
         let (step, var) = self.parse_step_and_var()?;
         self.expect(Kw::CountAs)?;
-        let parallel = self.eat_parallel();
+        let threads = self.parse_threads()?;
+        let parallel = threads.is_some() || self.eat_parallel();
         let mode = kw_of(&self.peek()).and_then(count_mode);
         let names = [Kw::Counting, Kw::Increasing, Kw::Decreasing];
         let mode = mode.ok_or_else(|| self.err_one_of(&names))?;
@@ -545,7 +546,7 @@ impl Parser<'_>
         let span = from.span().to(&block.span);
         #[rustfmt::skip]
         let node = CountedStmt::builder().var(var).from(from).to(to).maybe_step(step).mode(mode)
-            .block(block).parallel(parallel).span(span).build();
+            .block(block).parallel(parallel).maybe_threads(threads).span(span).build();
         Ok(Stmt::Counted(node))
     }
 
@@ -583,13 +584,14 @@ impl Parser<'_>
             false => (None, first),
         };
         self.expect(Kw::CountAs)?;
-        let parallel = self.eat_parallel();
+        let threads = self.parse_threads()?;
+        let parallel = threads.is_some() || self.eat_parallel();
         self.expect(Kw::Taking)?;
         let block = self.parse_branch(true)?;
         let span = source.span().to(&block.span);
         #[rustfmt::skip]
         let node = EachStmt::builder().source(source).part(part).maybe_place(place).var(var)
-            .block(block).parallel(parallel).span(span).build();
+            .block(block).parallel(parallel).maybe_threads(threads).span(span).build();
         Ok(Stmt::Each(node))
     }
 
