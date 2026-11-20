@@ -171,6 +171,7 @@ pub fn heap_owner() -> usize
 /// `true` when the octets fit and are counted.
 pub fn take_into(owner: usize, size: usize) -> bool
 {
+    crate::seqs::safe_point();
     ret_if!(owner == 0, true);
     let cap = prog().max_heap;
     // SAFETY: a count lives as long as the program.

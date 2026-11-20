@@ -187,6 +187,30 @@ fn atomic_adds_of_two_threads_lose_nothing()
 
 /// A parallel map runs its rounds on threads in an AOT build and through the
 /// JIT, and gives its results in the order of the cells.
+/// The ring collector runs while jobs run, through the JIT and as an
+/// executable.
+#[test]
+fn the_ring_collector_runs_while_jobs_run()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let path = c_inputs().join("ring_jobs.zaka");
+    let jit = run_jit(&path, &[]);
+    assert_eq!(
+        (jit.status, jit.stdout.as_str()),
+        (Some(0), "collected while jobs ran\n"),
+        "{}",
+        jit.stderr
+    );
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "collected while jobs ran\n");
+}
+
 /// Jobs that print at once never mix their lines, through the JIT and as an
 /// executable.
 #[test]

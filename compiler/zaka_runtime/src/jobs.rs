@@ -280,6 +280,13 @@ fn wait_until(
         {
             st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
         }
+        // A thread that wakes during a collection halts first, holding no lock.
+        if crate::seqs::halt_asked()
+        {
+            drop(st);
+            crate::seqs::safe_point();
+            st = state();
+        }
     }
     st
 }
@@ -902,3 +909,24 @@ pub(crate) fn end() -> bool
 ///
 /// `true` while a job runs.
 pub(crate) fn jobs_run() -> bool { state().jobs.iter().any(|j| j.end == End::Runs) }
+
+/// Whether this thread counts among the running threads: the main one, or a
+/// job.
+///
+/// # Returns
+///
+/// `true` when it does.
+pub(crate) fn counted_thread() -> bool { JOB.get() != 0 || MAIN.get() }
+
+/// The count of running threads other than this one, which counts itself;
+/// `None` while another thread holds the state, so a wait never blocks on
+/// it.
+///
+/// # Returns
+///
+/// The count, or `None`.
+pub(crate) fn running_others() -> Option<usize>
+{
+    let st = STATE.try_lock().ok()?;
+    Some(st.running.saturating_sub(1))
+}

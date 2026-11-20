@@ -316,7 +316,11 @@ missing row is `ZK_TRAP_NO_ROW`.
   a thread of 64 MiB; under `--trap unwind`, `stop` writes `job <n> stopped: ...` and
   calls the leave of the thread's job. `zk_finish` waits for each job, drops each result
   and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
-  job. `collect_rings` waits while a job runs; the lists of the deep duplicate are each
+  job. While jobs run, `collect_rings` asks the other running threads to halt at a safe
+  point (`seqs::safe_point`: each allocation in `take_into`, each candidate in
+  `note_candidate`, and each wake in `wait_until`) and collects once each halted
+  (`halt_others`); one that reaches none in 20 ms lets the collection go, and the next
+  full buffer asks again. The lists of the deep duplicate are each
   thread's own.
 - `zk_lock` and `zk_unlock` find each lock through the block of the object (`zk_seq_base` of
   the variable) and name the holder through `owner`: the number of a job, or a number of

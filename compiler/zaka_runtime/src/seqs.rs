@@ -11,7 +11,10 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::do_while;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 
 use crate::heap::WORD;
 use crate::heap::ZkFn;
@@ -727,17 +730,68 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
     }
 }
 
+/// Set while a collection asks the running threads to halt at a safe point.
+static HALT: AtomicBool = AtomicBool::new(false);
+
+/// The count of threads halted at a safe point.
+static HALTED: AtomicUsize = AtomicUsize::new(0);
+
+/// How long a collection waits for the running threads to halt before it lets
+/// the request go; the next full buffer asks again.
+const HALT_WAIT: std::time::Duration = std::time::Duration::from_millis(20);
+
+/// A safe point: where a collection asks the running threads to halt, a
+/// thread waits here until the collection ends. Each allocation, each
+/// candidate a release notes and each wake of a waiting thread passes one, at
+/// the cost of one atomic load.
+pub fn safe_point()
+{
+    ret_if!(!HALT.load(Ordering::Acquire));
+    HALTED.fetch_add(1, Ordering::SeqCst);
+    do_while!(HALT.load(Ordering::Acquire), std::thread::yield_now());
+    HALTED.fetch_sub(1, Ordering::SeqCst);
+}
+
+/// Whether a collection asks the running threads to halt.
+///
+/// # Returns
+///
+/// `true` while it does.
+pub(crate) fn halt_asked() -> bool { HALT.load(Ordering::Acquire) }
+
 /// Free each group of blocks in the buffer, or reached from it, that holds
-/// itself alone: trial deletion that halts the program while it runs.
+/// itself alone: trial deletion that halts the program while it runs. While
+/// jobs run, the other running threads halt at their next safe point first;
+/// a thread that reaches none in [`HALT_WAIT`] (a loop with no allocation, or a
+/// call of C) lets the collection go, and the next full buffer tries again.
 fn collect_rings()
 {
-    // shortcut: a collection waits while a job or a call of a C lib with no
-    // lock runs, since its trial counts change counts with plain ops; halt
-    // the threads at safe points instead if programs with long jobs need
-    // rings freed sooner.
-    ret_if!(crate::jobs::jobs_run() || !crate::libs::begin_collect());
-    collect_held();
+    ret_if!(!crate::libs::begin_collect());
+    let alone = !crate::jobs::jobs_run();
+    do_if!(alone || halt_others(), collect_held());
+    HALT.store(false, Ordering::Release);
     crate::libs::end_collect();
+}
+
+/// Ask the other running threads to halt at their next safe point, and wait
+/// for them, at most [`HALT_WAIT`]. Threads that wait for a job, a channel or a
+/// lock are halted, as each wake passes a safe point.
+///
+/// # Returns
+///
+/// `true` once each other running thread halted.
+fn halt_others() -> bool
+{
+    ret_false!(!crate::jobs::counted_thread());
+    HALT.store(true, Ordering::SeqCst);
+    let deadline = std::time::Instant::now() + HALT_WAIT;
+    loop
+    {
+        let others = crate::jobs::running_others();
+        ret_true!(others.is_some_and(|n| HALTED.load(Ordering::SeqCst) >= n));
+        ret_false!(std::time::Instant::now() > deadline);
+        std::thread::yield_now();
+    }
 }
 
 /// The work of [`collect_rings`], while no other thread changes a count.
@@ -807,6 +861,7 @@ extern "C" fn collect_at_exit() { collect_rings() }
 /// * `base` - The first cell of the block.
 pub fn note_candidate(base: *mut u8)
 {
+    safe_point();
     let h = head(base);
     ret_if!(h.buffered != 0 || h.cell.is_null() || !can_ring(h.cell));
     // The program frees each ring left as it ends, as the VM does.

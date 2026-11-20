@@ -260,6 +260,23 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
 }
 
+/// The ring collector runs while jobs run: it halts the threads at safe
+/// points.
+#[test]
+fn the_ring_collector_runs_while_jobs_run()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/ring_jobs.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "collected while jobs ran\n");
+}
+
 /// Jobs that print at once never mix their lines.
 #[test]
 fn the_prints_of_jobs_come_out_as_whole_lines()

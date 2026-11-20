@@ -439,6 +439,10 @@ reference to the next. The VM and the native runtime also run a **ring collector
   frees each such group.
 - An object outside a ring is still freed the moment its last reference goes; an object
   inside a ring is freed when the collector next runs.
+- While [jobs](jobs.md) run on threads, a collection halts each running thread at its next
+  allocation, or as it wakes from a wait, and runs once each has halted. A thread that
+  allocates nothing for a while, such as one in a long loop of arithmetic or in a call of
+  C, lets that collection go, and the next one tries again.
 
 So safe code cannot leave a block behind: `zakac run --leaks` lists nothing for a program
 with no unsafe code.
