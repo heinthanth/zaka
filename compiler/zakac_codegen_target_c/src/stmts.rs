@@ -83,7 +83,7 @@ impl FnGen<'_, '_>
                 let texts = self.operands(&[addr, value]);
                 let sub = i32::from(*sub);
                 self.line(&format!(
-                    "zk_atomic_add({}, (intptr_t)({}), {sub});",
+                    "zk_atomic_add((ptrdiff_t *)({}), (ptrdiff_t)({}), {sub});",
                     texts[0], texts[1]
                 ));
             }
