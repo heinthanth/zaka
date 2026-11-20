@@ -395,8 +395,8 @@ code word of the record. `run_on_c_thread` takes a count of a closure's record w
 lend or the leave holds (`LENDING`, a lock the lends, the leaves and their ends take
 too), counts the call in `FREE`, so the ring collector waits, and the lend turned the
 counts atomic before; a call after the lend with no leave stops with
-`ZK_TRAP_CLOSURE_ESCAPE`. Each other call from another thread aborts a program
-with a message. In a C lib, `run_in_lib` takes the call
+`ZK_TRAP_CLOSURE_ESCAPE`. Each other call from another thread ends a program with a
+message and status 1. In a C lib, `run_in_lib` takes the call
 instead: on a thread with calls parked in C it takes them back, runs the bridge and lets go
 again; on another thread it runs the bridge through the guard of the lib (`zk_lib_guard`
 of the glue, which `zk_lib_open` takes), whose `setjmp` catches a trap, and C gets zeros. Each

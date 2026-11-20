@@ -139,7 +139,9 @@ unsafe extern "C" fn run(
          runs it, and the function uses a mutable global, or captures a variable a \
          statement writes or a value jobs cannot use; the run ends here"
     );
-    std::process::abort();
+    // Status 1, as a trap leaves: an abort makes Windows write a report first,
+    // which takes seconds.
+    std::process::exit(1);
 }
 
 /// A call C makes from a thread of its own of a function that can cross: the
