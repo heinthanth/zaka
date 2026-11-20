@@ -37,8 +37,10 @@ fn main()
 fn build_guard(prefix: &str)
 {
     println!("cargo:rerun-if-changed=c/job_guard.c");
+    // C11, as each build of the C target: MSVC knows `_Noreturn` in it alone.
     cc::Build::new()
         .file("c/job_guard.c")
+        .std("c11")
         .define("ZK_PREFIX", prefix)
         .compile("zk_job_guard");
 }
