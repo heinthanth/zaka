@@ -493,14 +493,15 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let cache = arg(CACHE_ARG).map_or_else(|| default_cache(&stem), PathBuf::from);
     let given = take_runtime_lib(matches, built_for.abi);
     ret_if!(let Err(error) = given, report_command_error(io, &info, error));
-    let cross =
-        other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit != Emit::C);
-    ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
     let wasi = wasi::is_wasi(built_for.abi);
     ret_if!(wasi && lib, report_command_error(io, &info, Error::LibOnWasi));
     let folded = translated.borrowchecked.lowered.folded.as_ref();
     let c_fns = wasi && folded.is_some_and(|m| !m.foreign.is_empty());
     ret_if!(c_fns, report_command_error(io, &info, Error::CFunctionsOnWasi));
+    // A fault of the program comes before a fault of the tools.
+    let cross =
+        other_host(&target_from(matches, BuildTarget::C)).filter(|_| emit != Emit::C);
+    ret_if!(let Some(error) = cross, report_command_error(io, &info, error));
     let exports = folded.map(exported).unwrap_or_default();
     ret_if!(
         lib && exports.is_empty(),
