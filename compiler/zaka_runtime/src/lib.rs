@@ -59,3 +59,26 @@ pub fn exports() -> &'static [(&'static str, *const u8)]
     static TABLE: Table = Table(include!(concat!(env!("OUT_DIR"), "/exports.rs")));
     TABLE.0
 }
+
+#[cfg(feature = "guard")]
+unsafe extern "C" {
+    /// The guard of a job, in C: runs the step, and gives 1 once a trap
+    /// jumped back to it.
+    #[link_name = stamped!("job_guard")]
+    fn job_guard(step: jobs::ZkStep, data: *mut std::ffi::c_void) -> i32;
+    /// The jump back to the guard of the job of this thread.
+    #[link_name = stamped!("job_leave")]
+    fn job_leave(trap: i32) -> !;
+}
+
+/// The guard of a job and its jump, under the plain names the code of a job
+/// calls, for a JIT: a build of a program compiles its own.
+///
+/// # Returns
+///
+/// The names and addresses.
+#[cfg(feature = "guard")]
+pub fn job_glue() -> [(&'static str, *const u8); 2]
+{
+    [("zk_job_guard", job_guard as *const u8), ("zk_job_leave", job_leave as *const u8)]
+}

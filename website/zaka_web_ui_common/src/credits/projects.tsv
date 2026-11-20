@@ -4,6 +4,7 @@ crate	base64	0.23.1	MIT OR Apache-2.0	https://github.com/marshallpierce/rust-bas
 crate	bon	3.10.1	MIT OR Apache-2.0	https://github.com/elastio/bon
 crate	cargo-build	1.0.0	MIT	https://github.com/IoaNNUwU/cargo-build
 crate	cbindgen	0.29.4	MPL-2.0	https://github.com/mozilla/cbindgen
+crate	cc	1.4.6	MIT OR Apache-2.0	https://github.com/rust-lang/cc-rs
 crate	chrono	0.4.45	MIT OR Apache-2.0	https://github.com/chronotope/chrono
 crate	clap	4.6.7	MIT OR Apache-2.0	https://github.com/clap-rs/clap
 crate	codee	0.3.5	MIT OR Apache-2.0	https://github.com/Synphonyte/codee

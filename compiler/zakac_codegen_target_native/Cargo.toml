@@ -17,6 +17,7 @@ jit = [
     "dep:cranelift-jit",
     "dep:cranelift-native",
     "dep:zaka_runtime",
+    "zaka_runtime/guard",
     "dep:libloading",
     "dep:zaka_vm",
     "cranelift-codegen/host-arch",

@@ -6583,6 +6583,7 @@ dependencies = [
 name = "zaka_runtime"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "libffi",
  "strum",
  "xxhash-rust",

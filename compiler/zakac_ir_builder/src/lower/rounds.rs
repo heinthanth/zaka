@@ -26,8 +26,8 @@ enum RoundHead<'a>
     /// A counted loop: its variable, of a kind, from a first value, up or
     /// down, with a step.
     Counted(&'a st::CountedStmt, DataKind),
-    /// A loop over each cell of a list: the slot of the list and its kind.
-    Each(&'a st::EachStmt, Place, DataKind),
+    /// A loop over each cell of a list: the kind of the list.
+    Each(&'a st::EachStmt, DataKind),
     /// A loop over each character of text: the kind of the text and of the
     /// list of where each character starts.
     Chars(&'a st::EachStmt, DataKind, DataKind),
@@ -165,7 +165,7 @@ impl Lowerer<'_>
         out.push(Stmt::Set { place: count, value: cells, span });
         let at =
             node_expr(kind.pointer_to().as_borrowed(), ExprNode::AddrOf(list), span);
-        let head = RoundHead::Each(n, list, kind);
+        let head = RoundHead::Each(n, kind);
         self.round_loop(head, vec![at], &n.block, count, n.span, out);
         let drop = Stmt::Drop { dest: Dest::Slot(list), kind, span };
         do_if!(kind.holds_text(), out.push(drop));
@@ -569,7 +569,7 @@ impl Lowerer<'_>
             {
                 inner.extend(self.counted_round(n, *kind, number, heads, block));
             }
-            RoundHead::Each(n, _, kind) =>
+            RoundHead::Each(n, kind) =>
             {
                 inner.extend(self.each_round_of(n, *kind, number, heads[0], span));
             }

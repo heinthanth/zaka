@@ -18,6 +18,12 @@ zakac_rust_sugars = { workspace = true }
 [target.'cfg(not(target_os = "wasi"))'.dependencies]
 libffi = { workspace = true }
 
+[features]
+# The guard of a job in C, for code the JIT runs in the process of zakac; a
+# build of a program compiles its own.
+guard = ["dep:cc"]
+
 [build-dependencies]
 zakac_rust_sugars = { workspace = true }
 xxhash-rust = { workspace = true }
+cc = { workspace = true, optional = true }

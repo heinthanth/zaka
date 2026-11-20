@@ -107,8 +107,8 @@ fn the_ring_statements_reach_the_runtime()
 const JOBS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
                         ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
 
-/// Jobs run on threads of their own in an AOT build, and a trap in one ends
-/// it alone; `--jit` reports a job, which the JIT cannot run.
+/// Jobs run on threads of their own in an AOT build and through the JIT, and
+/// a trap in one ends it alone.
 #[test]
 fn jobs_run_on_threads_in_an_aot_build()
 {
@@ -135,7 +135,12 @@ fn jobs_run_on_threads_in_an_aot_build()
     assert_eq!(trap.stdout, "၅\n");
     assert!(trap.stderr.contains("job 1 stopped: integer division"), "{}", trap.stderr);
     let jit = run_jit(&c_inputs().join("jobs.zaka"), &[]);
-    assert!(jit.stderr.contains("a job"), "{}", jit.stderr);
+    assert_eq!(
+        (jit.status, jit.stdout.as_str()),
+        (Some(0), JOBS_OUT),
+        "{}",
+        jit.stderr
+    );
 }
 
 /// Two jobs change one shared object inside lock blocks in an AOT build, and
@@ -180,15 +185,20 @@ fn atomic_adds_of_two_threads_lose_nothing()
     assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
 }
 
-/// A parallel map runs its rounds on threads in an AOT build, and gives its
-/// results in the order of the cells; `--jit` reports it, as it does a job.
+/// A parallel map runs its rounds on threads in an AOT build and through the
+/// JIT, and gives its results in the order of the cells.
 #[test]
 fn a_parallel_map_runs_its_rounds_on_threads()
 {
     use zakac_borrow_checker::options::OverflowMode;
     let path = c_inputs().join("par_map.zaka");
     let jit = run_jit(&path, &[]);
-    assert!(jit.stderr.contains("a parallel map"), "{}", jit.stderr);
+    assert_eq!(
+        (jit.status, jit.stdout.as_str()),
+        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n"),
+        "{}",
+        jit.stderr
+    );
     let grants = zaka_host::Grants::default();
     let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
     else
@@ -204,8 +214,9 @@ const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ �
                             ၂၆၊ ၂၈၊ ၃၀၊ ၃၂၊ ၃၄၊ ၃၆၊ ၃၈၊ ၄၀]\n[၁၊ ၂၊ ၃၊ ၄၊ ၅၊ ၆၊ ၇၊ ၈၊ \
                             ၉၊ ၁၀၊ ၁၁၊ ၁၂၊ ၁၃၊ ၁၄၊ ၁၅၊ ၁၆၊ ၁၇၊ ၁၈၊ ၁၉၊ ၂၀]\n";
 
-/// The rounds of parallel loops run on threads in an AOT build, and a trap in
-/// a round ends its job: the loop then stops with the trap of the job.
+/// The rounds of parallel loops run on threads in an AOT build and through
+/// the JIT, and a trap in a round ends its job: the loop then stops with the
+/// trap of the job.
 #[test]
 fn the_rounds_of_a_parallel_loop_run_on_threads()
 {
@@ -238,7 +249,19 @@ fn the_rounds_of_a_parallel_loop_run_on_threads()
         trap.stderr
     );
     let jit = run_jit(&c_inputs().join("par_loop.zaka"), &[]);
-    assert!(jit.stderr.contains("a parallel loop"), "{}", jit.stderr);
+    assert_eq!(
+        (jit.status, jit.stdout.as_str()),
+        (Some(0), PAR_LOOP_OUT),
+        "{}",
+        jit.stderr
+    );
+    let jit_trap = run_jit(&c_inputs().join("par_loop_trap.zaka"), &[]);
+    assert_eq!(jit_trap.status, Some(1), "{}", jit_trap.stderr);
+    assert!(
+        jit_trap.stderr.contains("this waits for stopped at a trap"),
+        "{}",
+        jit_trap.stderr
+    );
 }
 
 /// What `par_loop_steps.zaka` prints.

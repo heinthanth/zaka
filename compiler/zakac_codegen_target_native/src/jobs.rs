@@ -39,8 +39,6 @@ impl<M: Module> Shared<'_, M>
     /// The step.
     pub fn step_of(&mut self, f: u32) -> FuncId
     {
-        // The JIT gives a program with a job to the VM.
-        do_if!(self.jit, self.missing("a job"));
         let known = self.steps.iter().find(|(g, _)| *g == f).map(|(_, id)| *id);
         ret_if!(let Some(id) = known, id);
         let mut sig = self.m.make_signature();
@@ -63,8 +61,6 @@ impl<M: Module> Shared<'_, M>
     /// The step.
     pub fn map_step_of(&mut self, f: u32) -> FuncId
     {
-        // The JIT gives a program with a parallel map to the VM.
-        do_if!(self.jit, self.missing("a parallel map"));
         let known = self.map_steps.iter().find(|(g, _)| *g == f).map(|(_, id)| *id);
         ret_if!(let Some(id) = known, id);
         let mut sig = self.m.make_signature();
@@ -87,8 +83,6 @@ impl<M: Module> Shared<'_, M>
     /// The step.
     pub fn round_step_of(&mut self, f: u32) -> FuncId
     {
-        // The JIT gives a program with a parallel loop to the VM.
-        do_if!(self.jit, self.missing("a parallel loop"));
         let known = self.round_steps.iter().find(|(g, _)| *g == f).map(|(_, id)| *id);
         ret_if!(let Some(id) = known, id);
         let mut sig = self.m.make_signature();

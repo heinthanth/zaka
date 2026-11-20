@@ -58,6 +58,7 @@ thanks to all of these projects.
 | [bon](https://github.com/elastio/bon) | 3.10.1 | MIT OR Apache-2.0 |
 | [cargo-build](https://github.com/IoaNNUwU/cargo-build) | 1.0.0 | MIT |
 | [cbindgen](https://github.com/mozilla/cbindgen) | 0.29.4 | MPL-2.0 |
+| [cc](https://github.com/rust-lang/cc-rs) | 1.4.6 | MIT OR Apache-2.0 |
 | [chrono](https://github.com/chronotope/chrono) | 0.4.45 | MIT OR Apache-2.0 |
 | [clap](https://github.com/clap-rs/clap) | 4.6.7 | MIT OR Apache-2.0 |
 | [codee](https://github.com/Synphonyte/codee) | 0.3.5 | MIT OR Apache-2.0 |

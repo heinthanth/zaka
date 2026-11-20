@@ -23,6 +23,24 @@ fn main()
     let out = std::env::var("OUT_DIR").expect("cargo sets OUT_DIR");
     let dest = Path::new(&out).join("exports.rs");
     std::fs::write(dest, format!("&[\n{rows}]")).expect("OUT_DIR is writable");
+    #[cfg(feature = "guard")]
+    build_guard(&prefix);
+}
+
+/// Compile the guard of a job in C into the lib, each name with the prefix of
+/// the runtime.
+///
+/// # Arguments
+///
+/// * `prefix` - The prefix of the exported names, in place of `zk_`.
+#[cfg(feature = "guard")]
+fn build_guard(prefix: &str)
+{
+    println!("cargo:rerun-if-changed=c/job_guard.c");
+    cc::Build::new()
+        .file("c/job_guard.c")
+        .define("ZK_PREFIX", prefix)
+        .compile("zk_job_guard");
 }
 
 /// The rows of the table for each `pub extern "C" fn` of a source file.

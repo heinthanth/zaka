@@ -120,9 +120,13 @@ Cranelift. The AOT path links the libs with the `-lX` flags of the C target.
 A spawn writes the data block as the C target does (`jobs.rs`, the offsets of
 `zakac_codegen_target_c::jobs`), and the step of each function a job runs is Cranelift
 code, `zk_job_step_<f>`, defined after the bridges. The guard and the leave are C: an AOT
-build compiles `native_jobs_glue` beside the object and links it. The JIT has no C
-compiler for them, so it notes a job as a construct it cannot build: `zakac run` then runs
-the program on the VM.
+build compiles `native_jobs_glue` beside the object and links it. The JIT has no C compiler
+at run time, so the runtime carries one of its own: with the feature `guard`, which the `jit`
+feature of this crate turns on, the build script of `zaka_runtime` compiles
+`c/job_guard.c` through `cc`, each name with the prefix of the runtime, and
+`zaka_runtime::job_glue` hands the JIT its address under the plain names `zk_job_guard` and
+`zk_job_leave`. On 64-bit Windows that guard clears the frame of its jump buffer, since the
+code of the JIT gives no table to unwind.
 
 ## JIT and AOT
 

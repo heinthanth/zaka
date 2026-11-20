@@ -485,8 +485,8 @@ chooses:
   job, a receive or a send that would wait while no other thread runs stops the program
   with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a trap in a
   job stop the whole program.
-- **The JIT** cannot run a job, a parallel loop or a parallel map: `zakac run` gives such
-  a program to the VM, and `zakac run --jit` reports it.
+- **The JIT** (`zakac run`) runs jobs, parallel loops and maps on threads of its own, as a
+  native program does.
 - While a job runs, a native program collects no rings: the collector changes counts
   with plain ops, so it waits until each job has ended. The buffer still fills, and the
   end of the program collects, as ever.
