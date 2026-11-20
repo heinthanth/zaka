@@ -239,7 +239,7 @@ impl Checker
             used.iter().filter(|u| u.decl != own).copied().collect();
         ret_if!(used.is_empty());
         do_if!(used.iter().any(|u| !u.func), self.scopes.mark_closure(&n.name.name));
-        self.captured.insert(own, used);
+        self.captured.of_fn.insert(own, used);
     }
 }
 /// The function kind of a declared function.

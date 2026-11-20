@@ -806,6 +806,10 @@ impl Stmt
     }
 }
 
+/// The number of fields of a closure record before its captures: the code
+/// word and the info word.
+pub const RECORD_HEAD: usize = 2;
+
 /// An expression with its data kind.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct Expr

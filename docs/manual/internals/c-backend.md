@@ -372,11 +372,16 @@ lent to the call; a leave statement is `zk_cb_leave(value, zk_cb_shape_of(&shape
 and keeps them for the run. Each closure gets one libffi
 closure, found again from the octets of its record, and its code is never freed, so a late
 call from C stops the run with `ZK_TRAP_CLOSURE_ESCAPE` and never runs freed code; a call
-from a thread of C's own runs when the record of the function allows it: `zk_fnrec` holds a
-third word, `crosses`, set for a function with no captures that, itself or through each
-function it calls, uses no mutable global (`crossing_fns` in the borrow checker).
-`run_on_c_thread` counts such a call in `FREE`, so the ring collector waits, and the lend
-turned the counts atomic before. Each other call from another thread aborts a program
+from a thread of C's own runs when the table of names allows it: the row of the function,
+or of the thunk of a closure, in `fn_names` holds `crosses`. It is set for a function
+that, itself or through each function it calls, uses no mutable global, and for a thunk
+each capture of its record is a duplicate of a value with no box, function value, pointer or
+handle (`crossing_fns` in the borrow checker). The runtime finds the row through the
+code word of the record. `run_on_c_thread` takes a count of a closure's record while the
+lend or the leave holds (`LENDING`, a lock the lends, the leaves and their ends take
+too), counts the call in `FREE`, so the ring collector waits, and the lend turned the
+counts atomic before; a call after the lend with no leave stops with
+`ZK_TRAP_CLOSURE_ESCAPE`. Each other call from another thread aborts a program
 with a message. In a C lib, `run_in_lib` takes the call
 instead: on a thread with calls parked in C it takes them back, runs the bridge and lets go
 again; on another thread it runs the bridge through the guard of the lib (`zk_lib_guard`

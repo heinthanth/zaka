@@ -500,6 +500,8 @@ impl Checker
             return None;
         };
         let int = self.atomic_place(target)?;
+        // The add writes the number, so a closure shares it and copies none.
+        self.note_written(target);
         self.infer(target, None);
         self.expect_kind(value, Some(int));
         Some(None)

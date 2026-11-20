@@ -469,9 +469,10 @@ chooses:
 C starts threads of its own too, and two of the rules above reach them:
 
 - A native program hands C a function, and C calls it on a thread it started: the call
-  runs when the function captures nothing and, itself or through each function it calls,
-  reads and writes no variable at the top of a file, the rule of ZK0726. Each other call
-  from such a thread ends the run with a message
+  runs when the function, and each function it calls, reads and writes no variable at the
+  top of a file, the rule of ZK0726, and when each variable it captures is one no
+  statement writes, of a kind jobs can use other than an object. Each other call from
+  such a thread ends the run with a message
   ([Closures C calls](function-values.md#nested-functions-and-closures)).
 - C calls a [lib built from Zaka](functions.md#functions-c-can-call) from several
   threads: a function of the lib that reaches no such variable, calls no C and no function

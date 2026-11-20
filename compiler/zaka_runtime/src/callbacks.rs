@@ -25,15 +25,16 @@ use zakac_rust_sugars::tern;
 use crate::heap::WORD;
 use crate::heap::ZkCode;
 use crate::heap::ZkFn;
-use crate::heap::ZkFnRec;
 use crate::heap::zero;
 use crate::heap::zk_fn_bound;
+use crate::heap::zk_fn_code;
 use crate::heap::zk_fn_dup;
 use crate::heap::zk_fn_rec;
 use crate::heap::zk_fn_release;
 use crate::heap::zk_fn_size;
 use crate::heap::zk_threads_begin;
 use crate::program::ZkKind;
+use crate::program::prog;
 use crate::seqs::at;
 use crate::seqs::zk_to_heap;
 use crate::traps::trap;
@@ -83,6 +84,10 @@ struct Cb
 
 /// Each closure C got, kept for the whole run.
 static CBS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+/// Held while a lend, a leave or a call on a thread of C's own reads or
+/// changes the lends and the leave of a closure.
+static LENDING: Mutex<()> = Mutex::new(());
+
 thread_local! {
     /// The closures lent to the C calls this thread runs now, the latest
     /// last.
@@ -131,8 +136,8 @@ unsafe extern "C" fn run(
     ret_if!(c.crosses, run_on_c_thread(c, ret, args));
     eprintln!(
         "C called a function of the program from a thread other than the one that \
-         runs it, and the function uses a mutable global or captures variables; the \
-         run ends here"
+         runs it, and the function uses a mutable global, or captures a variable a \
+         statement writes or a value jobs cannot use; the run ends here"
     );
     std::process::abort();
 }
@@ -149,9 +154,43 @@ unsafe extern "C" fn run(
 /// * `args` - The address of each argument.
 fn run_on_c_thread(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
 {
+    // The call holds a count of the record of a closure, taken while the lend
+    // or the leave is known to hold, so the end of the lend frees nothing
+    // under it.
+    let held = {
+        let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
+        (c.kept || c.calls > 0).then(|| hold_record(c.record))
+    };
+    let Some(record) = held
+    else
+    {
+        zk_plain_trap(trap::CLOSURE_ESCAPE)
+    };
     crate::libs::free_enter();
-    bridge(c, ret, args);
+    // SAFETY: the compiler writes a shape for each closure kind.
+    (unsafe { &*c.shape }.bridge)(ret, args, record);
     crate::libs::zk_lib_free_out();
+    do_if!(
+        zk_fn_bound(record.cast_const().cast()) != 0,
+        zk_fn_release(record.cast_const().cast())
+    );
+}
+
+/// A count of the record of a closure, for a call on a thread of C's own; the
+/// record of a function lives for the whole run and takes none.
+///
+/// # Arguments
+///
+/// * `record` - The record.
+///
+/// # Returns
+///
+/// The record.
+fn hold_record(record: *mut u8) -> *mut u8
+{
+    let f: ZkFn = record.cast_const().cast();
+    ret_if!(zk_fn_bound(f) == 0, record);
+    zk_fn_dup(f).cast_mut().cast()
 }
 
 /// Run the thunk of a closure through its bridge; a call with no lend and no
@@ -313,12 +352,15 @@ pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
     let c = cb(cb_of(f, shape));
     ret_if!(!bound, code_of(c.code));
     LENDS.with(|l| l.borrow_mut().push(c as *mut Cb as usize));
+    let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
     c.calls += 1;
     do_if!(!c.kept, c.record = zk_fn_rec(f));
     code_of(c.code)
 }
 
-/// Whether C can call a function value from a thread of its own.
+/// Whether C can call a function value from a thread of its own: the row of
+/// its function, or of the thunk of its closure, in the table of names allows
+/// it so.
 ///
 /// # Arguments
 ///
@@ -326,12 +368,16 @@ pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
 ///
 /// # Returns
 ///
-/// `true` for a function with no captures whose record says so.
+/// `true` when it can.
 fn crosses(f: ZkFn) -> bool
 {
-    ret_false!(zk_fn_bound(f) != 0);
-    // SAFETY: the record of a function with no captures is a `ZkFnRec`.
-    unsafe { (*zk_fn_rec(f).cast::<ZkFnRec>()).crosses != 0 }
+    let addr = |c: ZkCode| c.map_or(0, |c| c as usize);
+    let code = addr(zk_fn_code(f));
+    let p = prog();
+    ret_false!(p.fn_names.is_null());
+    // SAFETY: the table holds `fn_count` rows.
+    let rows = unsafe { std::slice::from_raw_parts(p.fn_names, p.fn_count) };
+    rows.iter().any(|r| addr(r.code) == code && r.crosses != 0)
 }
 
 /// The code of a libffi closure, as C calls it.
@@ -371,6 +417,7 @@ pub extern "C" fn zk_cb_end(from: usize)
         let from = from.min(l.len());
         l.split_off(from)
     });
+    let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
     do_for!(p in ended, cb(p).calls -= 1);
 }
 
@@ -387,6 +434,7 @@ pub extern "C" fn zk_cb_leave(f: ZkFn, shape: *const ZkCbShape)
 {
     ret_if!(f.is_null() || zk_fn_bound(f) == 0);
     let c = cb(cb_of(f, shape));
+    let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
     ret_if!(c.kept);
     c.record = zk_fn_dup(f).cast_mut().cast();
     c.kept = true;
@@ -408,6 +456,7 @@ pub extern "C" fn zk_cb_revoke(f: ZkFn)
         return;
     };
     let c = cb(p);
+    let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
     ret_if!(!c.kept);
     c.kept = false;
     zk_fn_release(c.record.cast_const().cast());

@@ -57,6 +57,10 @@ pub struct ZkFnName
     pub code: crate::heap::ZkCode,
     /// The name, as a print writes it.
     pub name: *const c_char,
+    /// 1 when C can call the function from a thread of its own: neither it
+    /// nor each function it calls uses a mutable global, and for the thunk of
+    /// a closure each capture is a duplicate of a value jobs can use; else 0.
+    pub crosses: usize,
 }
 
 /// What the runtime reads of a program: the fields of `struct zk_program`.

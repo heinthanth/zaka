@@ -1783,6 +1783,7 @@ impl Checker
     pub(crate) fn place_kind(&mut self, target: &Expr) -> Option<DataKind>
     {
         self.mark_row_write(target);
+        self.note_written(target);
         let Some(place) = place_of(target)
         else
         {
@@ -1822,6 +1823,25 @@ impl Checker
         let diag = access.and_then(|(access, n)| access_error(access, n));
         do_if!(let Some(d) = diag, self.report(d));
         kind
+    }
+
+    /// Note the local a write reaches, so a closure that captures it shares
+    /// it and holds no duplicate of it: the variable at the root of a field, a
+    /// cell or a row. A write through a pointer leaves the variable as it
+    /// is.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The place written.
+    pub(crate) fn note_written(&mut self, target: &Expr)
+    {
+        let Some(root) = written_root(target)
+        else
+        {
+            return;
+        };
+        let decl = self.scopes.lookup(&root.name).map(|b| b.span);
+        do_if!(let Some(d) = decl, _ = self.captured.written.insert(d));
     }
 
     /// Check the list an add or a remove statement changes: a place that
@@ -2131,6 +2151,29 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
         kd::kind_mismatch(span, &want_name, &found_name),
         unbridged
     )
+}
+
+/// The variable a write reaches: the name at the root of a field, a cell or a
+/// row.
+///
+/// # Arguments
+///
+/// * `target` - The place written.
+///
+/// # Returns
+///
+/// The name, or `None` for a write through a pointer or into no variable.
+fn written_root(target: &Expr) -> Option<&NameExpr>
+{
+    match target
+    {
+        Expr::Name(n) => Some(n),
+        Expr::Group(n) => written_root(&n.inner),
+        Expr::Field(n) => written_root(&n.base),
+        Expr::Index(n) => written_root(&n.list),
+        Expr::Verb(n) if n.op == VerbOp::RowValue => written_root(n.args.first()?),
+        _ => None,
+    }
 }
 
 /// The diagnostic for assigning to a name that does not allow it.

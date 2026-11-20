@@ -2,11 +2,13 @@
 //! module of its own, after the top-level ones, that takes each capture it
 //! names after its declared parameters.
 //!
-//! A capture is shared: the function and the block around it read and write
-//! one variable. A local that a nested function names lives in a box, a
-//! counted block of one cell, so it outlives the call that declares it; each
-//! use of the name, in the function around and inside the nested one, reads
-//! or writes that cell. A captured closure is held as a value.
+//! A capture of a local that nothing writes after its declaration is a
+//! duplicate, made where the closure is made, which the function holds as a
+//! value. Each other capture is shared: the function and the block around it
+//! read and write one variable. Such a local lives in a box, a counted block of
+//! one cell, so it outlives the call that declares it; each use of the name, in
+//! the function around and inside the nested one, reads or writes that cell.
+//! A captured closure is held as a value.
 //!
 //! A function with captures is a closure, made once where it is declared: a
 //! record of a code word, an info word and one field for each capture (a box,
@@ -16,6 +18,7 @@
 //! and the record, and calls the function with each field. A call of itself
 //! inside itself passes its own captures on.
 
+use zakac_ast::stmt::CaptureMode;
 use zakac_ast::visit::Visitor;
 use zakac_semcheck::fn_kind::FnKind;
 use zakac_semcheck::fn_kind::FnParam;
@@ -40,10 +43,6 @@ pub(super) struct Nested
     /// The declaration.
     pub span: Span,
 }
-
-/// The number of words of a closure record before its captures: the code
-/// word and the info word.
-pub(crate) const RECORD_HEAD: usize = 2;
 
 /// The kind of one field of a closure record.
 ///
@@ -87,6 +86,8 @@ impl Lowerer<'_>
     {
         let names: Vec<Name> =
             f.captures.iter().map(|c| self.capture_name(c.name.name)).collect();
+        let copies: Vec<bool> =
+            f.captures.iter().map(|c| c.mode == CaptureMode::Dup).collect();
         let kinds: Vec<DataKind> =
             names.iter().map(|n| self.captured_kind(n)).collect();
         let index = self.top_count + self.lifted.len() as u32;
@@ -98,7 +99,8 @@ impl Lowerer<'_>
             .then(|| (closure_name(&f.name.name), value_kind.repr()));
         let declared = f.params.iter().map(|p| param_kind(p, self.structs));
         let own_kind = own.map(|(_, k)| k);
-        let held = names.iter().zip(&kinds).map(|(n, k)| held_kind(n, *k));
+        let held = names.iter().zip(&kinds).zip(&copies);
+        let held = held.map(|((n, k), copied)| tern!(*copied, *k, held_kind(n, *k)));
         let params = declared.chain(own_kind).chain(held).collect();
         let own_edit = own.map(|_| false);
         let edits = f.params.iter().map(|p| p.edit).chain(own_edit);
@@ -108,7 +110,7 @@ impl Lowerer<'_>
         let own_name = own.map(|(n, _)| n);
         let fills = f.params.iter().map(|p| p.fill).collect();
         #[rustfmt::skip]
-        let sig = Sig { index, params, edits: edits.collect(), fills, owned, ret, foreign: None, captures: names.clone(), own: own_name };
+        let sig = Sig { index, params, edits: edits.collect(), fills, owned, ret, foreign: None, captures: names.clone(), copies: copies.clone(), own: own_name };
         let name = format!("{}#{index}{}", f.name.name, self.suffix);
         #[rustfmt::skip]
         let nested = Nested { sig, written: f.name.name, name: name.clone(), value_kind, span: f.span };
@@ -116,7 +118,12 @@ impl Lowerer<'_>
         scope.insert(f.name.name, nested.clone());
         let saved = self.set_aside();
         self.own_fns.push(f.name.name);
-        let pairs: Vec<(Name, DataKind)> = names.into_iter().zip(kinds).collect();
+        let pairs: Vec<(Name, DataKind, bool)> = names
+            .into_iter()
+            .zip(kinds)
+            .zip(copies)
+            .map(|((n, k), c)| (n, k, c))
+            .collect();
         let mut func = self.func(f, own, &pairs);
         self.own_fns.pop();
         self.restore(saved);
@@ -178,9 +185,14 @@ impl Lowerer<'_>
     fn make_closure(&mut self, nested: &Nested, out: &mut Vec<Stmt>)
     {
         let span = nested.span;
-        let captures = nested.sig.captures.clone();
-        let fields: Vec<Expr> =
-            captures.iter().map(|c| self.capture_arg(c, span)).collect();
+        let captures = nested.sig.captures.iter().zip(&nested.sig.copies);
+        let captures: Vec<(Name, bool)> = captures.map(|(n, c)| (*n, *c)).collect();
+        let fields: Vec<Expr> = captures
+            .iter()
+            .map(|(n, copied)| {
+                tern!(*copied, self.capture_dup(n, span), self.capture_arg(n, span))
+            })
+            .collect();
         let kinds: Vec<DataKind> = fields.iter().map(|e| e.kind).collect();
         let record = DataKind::closure_record(&kinds);
         let thunk = self.thunk_of(nested, record);
@@ -312,18 +324,23 @@ impl Lowerer<'_>
 
     /// Declare a parameter that holds a capture of a function declared inside
     /// a function: the box of a variable, each use of which reads or writes
-    /// its cell, or a closure, held as a value.
+    /// its cell, a duplicate of a variable nothing writes, or a closure, held
+    /// as a value.
     ///
     /// # Arguments
     ///
     /// * `name` - The name of the capture in scope.
     /// * `kind` - Its kind.
+    /// * `copied` - Whether the capture is a duplicate.
     /// * `span` - The declared name of the function.
-    pub(super) fn declare_capture(&mut self, name: Name, kind: DataKind, span: Span)
+    pub(super) fn declare_capture(
+        &mut self, name: Name, kind: DataKind, copied: bool, span: Span,
+    )
     {
         let ident = ast::Ident::builder().name(name).span(span).build();
-        let place = self.declare(&ident, held_kind(&name, kind), Access::Var);
-        do_if!(!is_closure_tag(&name), self.mark_box(place));
+        let held = tern!(copied, kind, held_kind(&name, kind));
+        let place = self.declare(&ident, held, Access::Var);
+        do_if!(!copied && !is_closure_tag(&name), self.mark_box(place));
     }
 
     /// Declare the parameter that holds the closure of the function being
@@ -357,6 +374,24 @@ impl Lowerer<'_>
         let place = self.lookup(name);
         let kind = self.slot_kind(place);
         dup(read(place, kind, span))
+    }
+
+    /// A capture a closure record copies: a new count of the value of the
+    /// variable, read through its box or its borrow when it has one.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the local.
+    /// * `span` - The declaration of the closure.
+    ///
+    /// # Returns
+    ///
+    /// The duplicate.
+    fn capture_dup(&mut self, name: &str, span: Span) -> Expr
+    {
+        let kind = self.captured_kind(name);
+        let node = self.read_name(name, span);
+        dup(node_expr(kind, node, span))
     }
 
     /// The address of a function declared inside a function: the function
@@ -663,6 +698,8 @@ impl Visitor for Captures
 {
     fn visit_fn(&mut self, n: &st::FnDecl)
     {
-        self.0.extend(n.captures.iter().map(|c| c.name.name));
+        // A duplicate needs no box.
+        let shared = n.captures.iter().filter(|c| c.mode != CaptureMode::Dup);
+        self.0.extend(shared.map(|c| c.name.name));
     }
 }

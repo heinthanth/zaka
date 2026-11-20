@@ -578,3 +578,33 @@ fn a_call_from_a_c_thread_of_a_function_that_uses_a_global_ends_the_run()
         assert!(errors.contains("uses a mutable global"), "{backend}: {errors}");
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn c_calls_a_closure_of_copied_captures_from_a_thread_of_its_own()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let (ok, printed, _) = built_and_ran(dir.path(), backend, "c_thread_closure");
+        assert!(ok, "the program ends well with the {backend} backend");
+        assert_eq!(printed, "၄၂\nzaka\nပြီး\n", "a closure with the {backend} backend");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_call_from_a_c_thread_of_a_closure_whose_capture_is_written_ends_the_run()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let name = "c_thread_closure_written";
+        let (ok, _, errors) = built_and_ran(dir.path(), backend, name);
+        assert!(!ok, "the run ends with the {backend} backend");
+        assert!(
+            errors.contains("a variable a statement writes"),
+            "{backend}: {errors}"
+        );
+    }
+}

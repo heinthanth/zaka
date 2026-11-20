@@ -300,6 +300,8 @@ impl Checker
     /// `true` for a place; a constant counts, after its report.
     pub(crate) fn addressable(&mut self, operand: &Expr) -> bool
     {
+        // A pointer to the variable can write it.
+        self.note_written(operand);
         let place = place_of(operand).filter(|p| !self.in_temp_list(p));
         let Some(place) = place
         else

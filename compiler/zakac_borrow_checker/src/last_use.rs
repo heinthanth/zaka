@@ -234,12 +234,14 @@ fn lent_in(stmts: &[Stmt]) -> BTreeSet<Place>
 /// The place, or `None` for each other expression.
 fn dup_of(e: &Expr) -> Option<Place>
 {
-    // A deep duplicate is never a move: it makes objects of its own.
+    // A deep duplicate is never a move: it makes objects of its own. The
+    // liveness tracks text places alone, so a number remains a duplicate.
     let ExprNode::Dup { value, deep: false, .. } = &e.node
     else
     {
         return None;
     };
+    ret_if!(!e.kind.holds_text(), None);
     tern!(let ExprNode::Read(place) = value.node, Some(place), None)
 }
 

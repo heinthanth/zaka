@@ -1,8 +1,10 @@
 //! The captures of nested functions. A nested function names the locals and
 //! the closures around it with no list; the check finds each one as it resolves
 //! the names, then writes them into the declaration, so the IR builder knows
-//! what the closure holds. Each capture is shared: the function and the block
-//! around it read and write one variable.
+//! what the closure holds. A capture of a local that nothing writes after its
+//! declaration is a duplicate, made where the closure is made; each other
+//! capture is shared: the function and the block around it read and write one
+//! variable.
 
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -16,13 +18,23 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_stmt_mut;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::scope::Capture;
 
-/// The locals and functions each nested function names from around it, under
-/// the span of its name, in the order of their first use.
-pub(crate) type Captured = HashMap<Span, Vec<Capture>>;
+/// What the check finds of the captures of nested functions.
+#[derive(Debug, Default)]
+pub(crate) struct Captured
+{
+    /// The locals and functions each nested function names from around it,
+    /// under the span of its name, in the order of their first use.
+    pub of_fn: HashMap<Span, Vec<Capture>>,
+    /// The declared name of each local that a statement writes after its
+    /// declaration: an assignment, a heap statement, a parameter that can
+    /// change it, or its address taken.
+    pub written: HashSet<Span>,
+}
 
 /// Write the captures of each nested function into its declaration.
 ///
@@ -47,8 +59,10 @@ pub(crate) fn write_captures(program: &mut Program, captured: &Captured)
 /// # Returns
 ///
 /// The captures of each closure, under the span of its name.
-fn settle(captured: &Captured) -> HashMap<Span, Vec<Name>>
+fn settle(captured: &Captured) -> HashMap<Span, Vec<(Name, CaptureMode)>>
 {
+    let written = &captured.written;
+    let captured = &captured.of_fn;
     let names_local = |caps: &Vec<Capture>| caps.iter().any(|c| !c.func);
     let mut closures: HashSet<Span> = captured
         .iter()
@@ -69,14 +83,18 @@ fn settle(captured: &Captured) -> HashMap<Span, Vec<Name>>
         closures.extend(more);
     }
     let kept = |c: &&Capture| !c.func || closures.contains(&c.decl);
-    let names =
-        |caps: &Vec<Capture>| caps.iter().filter(kept).map(|c| c.name).collect();
+    // A local nothing writes is copied; a closure is held as a value as it is.
+    let copied = |c: &Capture| !c.func && !written.contains(&c.decl);
+    let mode = |c: &Capture| tern!(copied(c), CaptureMode::Dup, CaptureMode::Lend);
+    let names = |caps: &Vec<Capture>| {
+        caps.iter().filter(kept).map(|c| (c.name, mode(c))).collect()
+    };
     let closed = captured.iter().filter(|(at, _)| closures.contains(*at));
     closed.map(|(at, caps)| (*at, names(caps))).collect()
 }
 
 /// The walker that fills the captures of each function from its name.
-struct Writer<'a>(&'a HashMap<Span, Vec<Name>>);
+struct Writer<'a>(&'a HashMap<Span, Vec<(Name, CaptureMode)>>);
 
 impl VisitorMut for Writer<'_>
 {
@@ -86,24 +104,27 @@ impl VisitorMut for Writer<'_>
         {
             let at = f.name.span;
             let names = self.0.get(&at).map(Vec::as_slice).unwrap_or_default();
-            f.captures = names.iter().map(|name| item(*name, at)).collect();
+            f.captures =
+                names.iter().map(|(name, mode)| item(*name, *mode, at)).collect();
         }
         walk_stmt_mut(self, n);
     }
 }
 
-/// One capture, shared with the block around the function.
+/// One capture: a duplicate, or shared with the block around the function.
 ///
 /// # Arguments
 ///
 /// * `name` - The name of the local or the closure.
+/// * `mode` - [`CaptureMode::Dup`] for a duplicate, [`CaptureMode::Lend`] when
+///   shared.
 /// * `at` - The name of the function, which stands for the capture.
 ///
 /// # Returns
 ///
 /// The capture.
-fn item(name: Name, at: Span) -> CaptureItem
+fn item(name: Name, mode: CaptureMode, at: Span) -> CaptureItem
 {
     let ident = Ident::builder().name(name).span(at).build();
-    CaptureItem::builder().name(ident).mode(CaptureMode::Lend).span(at).build()
+    CaptureItem::builder().name(ident).mode(mode).span(at).build()
 }

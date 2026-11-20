@@ -35,6 +35,24 @@ const KIND: &str = "(ကိန်းပြည့် တစ်ခု ကို �
 /// Each function with the names it captures.
 fn captures(text: &str) -> Vec<(String, Vec<String>)>
 {
+    let found = captures_with_modes(text);
+    let names =
+        |caps: Vec<(String, CaptureMode)>| caps.into_iter().map(|(n, _)| n).collect();
+    found.into_iter().map(|(f, caps)| (f, names(caps))).collect()
+}
+
+/// The captures of each function of a program with no diagnostic, each with
+/// its mode: a duplicate, or shared.
+///
+/// # Arguments
+///
+/// * `text` - The program.
+///
+/// # Returns
+///
+/// Each function with its captures.
+fn captures_with_modes(text: &str) -> Vec<(String, Vec<(String, CaptureMode)>)>
+{
     let checked = check_as_is(text, &SemcheckOptions::default());
     let msgs: Vec<&str> =
         checked.out.diagnostics.iter().map(|d| d.message.as_str()).collect();
@@ -44,19 +62,36 @@ fn captures(text: &str) -> Vec<(String, Vec<String>)>
     walk.0
 }
 
-/// The walker that lists each function with its captures; each capture is
-/// shared.
-struct Found(Vec<(String, Vec<String>)>);
+/// The walker that lists each function with its captures and their modes.
+struct Found(Vec<(String, Vec<(String, CaptureMode)>)>);
 
 impl Visitor for Found
 {
     fn visit_fn(&mut self, n: &FnDecl)
     {
-        assert!(n.captures.iter().all(|c| c.mode == CaptureMode::Lend));
-        let names = n.captures.iter().map(|c| c.name.name.to_string()).collect();
-        self.0.push((n.name.name.to_string(), names));
+        let caps =
+            n.captures.iter().map(|c| (c.name.name.to_string(), c.mode)).collect();
+        self.0.push((n.name.name.to_string(), caps));
         walk_fn(self, n);
     }
+}
+
+/// The mode of each capture of one function of a program.
+///
+/// # Arguments
+///
+/// * `text` - The program.
+/// * `name` - The function.
+///
+/// # Returns
+///
+/// The modes, in order.
+fn modes_of(text: &str, name: &str) -> Vec<CaptureMode>
+{
+    let found = captures_with_modes(text);
+    let hit = found.into_iter().find(|(n, _)| n == name);
+    let (_, caps) = hit.unwrap_or_else(|| panic!("no function {name}"));
+    caps.into_iter().map(|(_, m)| m).collect()
 }
 
 /// The captures of one function of a list.
@@ -82,6 +117,34 @@ fn a_nested_function_captures_the_locals_it_names()
     let found = captures(&text);
     assert_eq!(of(&found, "ထည့်"), ["ထပ်"]);
     assert!(of(&found, "ပရိုဂရမ်").is_empty());
+}
+
+#[test]
+fn a_local_nothing_writes_is_copied()
+{
+    let text = start(&format!("ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။\n{ADD}\nထည့်(၅) ကို ပြသမည်။"));
+    assert_eq!(modes_of(&text, "ထည့်"), [CaptureMode::Dup]);
+}
+
+#[test]
+fn a_local_a_statement_writes_is_shared()
+{
+    let text = start(&format!(
+        "ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။\n{ADD}\nထပ် ကို ၂ ဟု ထားမည်။\nထည့်(၅) ကို ပြသမည်။"
+    ));
+    assert_eq!(modes_of(&text, "ထည့်"), [CaptureMode::Lend]);
+}
+
+#[test]
+fn a_local_the_nested_function_writes_is_shared()
+{
+    let text = start(
+        "ကိန်းရှင် ထပ် သည် ၁ ဖြစ်ပါစေ။
+အပြင် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ထပ် ကို ထပ် + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။",
+    );
+    assert_eq!(modes_of(&text, "အပြင်"), [CaptureMode::Lend]);
 }
 
 #[test]

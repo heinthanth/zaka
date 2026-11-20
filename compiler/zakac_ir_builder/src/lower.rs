@@ -59,6 +59,7 @@ use crate::ir::Module;
 use crate::ir::Place;
 use crate::ir::PrefixOp;
 use crate::ir::PrintValue;
+use crate::ir::RECORD_HEAD;
 use crate::ir::SliceFrom;
 use crate::ir::Slot;
 use crate::ir::Stmt;
@@ -252,6 +253,9 @@ struct Sig
     /// The locals a function declared inside a function borrows, whose
     /// borrows a call passes after the arguments.
     captures: Vec<Name>,
+    /// Whether each capture is a duplicate of a variable nothing writes, not
+    /// its box.
+    copies: Vec<bool>,
     /// The name of the closure of a function declared inside a function with
     /// captures, whose value a call passes after the arguments, before the
     /// borrows.
@@ -344,6 +348,7 @@ fn value_sig(f: &FnKind) -> Sig
         ret,
         foreign: None,
         captures: Vec::new(),
+        copies: Vec::new(),
         own: None,
     }
 }
@@ -406,6 +411,7 @@ fn collect_sigs(
             ret,
             foreign,
             captures: Vec::new(),
+            copies: Vec::new(),
             own: None,
         };
         do_if!(f.start, continue);
@@ -2232,7 +2238,7 @@ impl Lowerer<'_>
     /// The function.
     fn func(
         &mut self, f: &st::FnDecl, own: Option<(Name, DataKind)>,
-        captures: &[(Name, DataKind)],
+        captures: &[(Name, DataKind, bool)],
     ) -> Func
     {
         let given = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs));
@@ -2251,7 +2257,7 @@ impl Lowerer<'_>
         self.scoped(|l| {
             do_for!(p in &f.params, l.declare_param(p));
             do_if!(let Some((name, kind)) = own, l.declare_own(name, kind, f.name.span));
-            do_for!((name, kind) in captures, l.declare_capture(*name, *kind, f.name.span));
+            do_for!((name, kind, copied) in captures, l.declare_capture(*name, *kind, *copied, f.name.span));
             do_for!(p in &f.params, l.box_param(p, &mut block));
             // An external function keeps what the host or C gives in a result
             // variable; each other function gives each value back at its return.

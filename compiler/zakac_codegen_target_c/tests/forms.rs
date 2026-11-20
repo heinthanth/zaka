@@ -76,8 +76,8 @@ fn forms() -> Vec<Form>
         ZkSite => "zk_site" { file, line, col }
         ZkFrame => "zk_frame" { func, site }
         ZkCtx => "zk_context" { depth, frames, room }
-        ZkFnName => "zk_fn_name" { code, name }
-        ZkFnRec => "zk_fnrec" { code, none, crosses }
+        ZkFnName => "zk_fn_name" { code, name, crosses }
+        ZkFnRec => "zk_fnrec" { code, none }
         ZkField => "zk_field" { name, offset, kind }
         ZkMember => "zk_member" { value, shown }
         ZkKind => "zk_kind" {

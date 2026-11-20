@@ -753,25 +753,28 @@ impl Shared<'_>
             fields.push(("sites", "zk_t_sites".into()));
             fields.push(("site_files", "zk_t_site_files".into()));
         });
-        let crossing = crossing_fns(self.module);
-        for (n, crosses) in crossing.iter().enumerate()
+        for n in 0..self.module.funcs.len() as u32
         {
-            let (record, func) = (record_name(n as u32), func_name(n as u32));
-            let crosses = u8::from(*crosses);
+            let (record, func) = (record_name(n), func_name(n));
             let _ = writeln!(
                 out,
-                "const zk_fnrec {record} = {{.code = (zk_code){func}, .none = NULL, \
-                 .crosses = {crosses}}};"
+                "const zk_fnrec {record} = {{.code = (zk_code){func}, .none = NULL}};"
             );
         }
+        let crossing = crossing_fns(self.module);
         out.push_str("static const zk_fn_name zk_t_fn_names[] = {\n");
-        for (n, f) in self.module.funcs.iter().enumerate()
+        for ((n, f), crosses) in self.module.funcs.iter().enumerate().zip(crossing)
         {
             let name = c_string(shown_name(&f.name));
             let code = func_name(n as u32);
-            let _ = writeln!(out, "    {{.code = (zk_code){code}, .name = {name}}},");
+            let crosses = u8::from(crosses);
+            let _ = writeln!(
+                out,
+                "    {{.code = (zk_code){code}, .name = {name}, .crosses = \
+                 {crosses}}},"
+            );
         }
-        out.push_str("    {.code = NULL, .name = NULL}\n};\n");
+        out.push_str("    {.code = NULL, .name = NULL, .crosses = 0}\n};\n");
         fields.push(("fn_names", "zk_t_fn_names".into()));
         fields.push(("fn_count", self.module.funcs.len().to_string()));
         out.push_str(&grants_source(&self.grants, &mut fields));

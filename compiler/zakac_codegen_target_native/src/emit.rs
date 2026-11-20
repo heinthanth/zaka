@@ -601,7 +601,6 @@ fn declare_program<M: Module>(s: &mut Shared<'_, M>)
         define(s.m, id, blob).expect("a global");
         s.globals.push(id);
     }
-    let crossing = crossing_fns(s.module);
     for n in 0..s.module.funcs.len()
     {
         // The wrappers of a C lib call each function C can call through its
@@ -614,7 +613,6 @@ fn declare_program<M: Module>(s: &mut Shared<'_, M>)
         let mut blob = Blob::new();
         blob.ptr(Some(Target::Func(s.funcs[n])));
         blob.ptr(None);
-        blob.u64(u64::from(crossing[n]));
         define(s.m, id, blob.done()).expect("a record");
         s.records.push(id);
     }
@@ -910,14 +908,17 @@ fn fn_names<M: Module>(s: &mut Shared<'_, M>)
 {
     let id = s.anon(false);
     let mut b = Blob::new();
+    let crossing = crossing_fns(s.module);
     for (n, f) in s.module.funcs.iter().enumerate()
     {
         let name = s.string(shown_name(&f.name).as_bytes());
         b.ptr(Some(Target::Func(s.funcs[n])));
         b.ptr(Some(Target::Data(name, 0)));
+        b.u64(u64::from(crossing[n]));
     }
     b.ptr(None);
     b.ptr(None);
+    b.u64(0);
     define(s.m, id, b.done())?;
     Ok(id)
 }

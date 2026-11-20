@@ -11,10 +11,13 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
+use zakac_ir_builder::ir::RECORD_HEAD;
 use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::callgraph::callees;
@@ -63,7 +66,8 @@ pub fn runs_free(module: &Module, f: u32) -> bool
 }
 
 /// Which functions C can call from a thread of its own: those that, itself
-/// or through each function they call, use no mutable global.
+/// or through each function it calls, uses no mutable global; for the thunk
+/// of a closure, each capture is also a duplicate of a value jobs can use.
 ///
 /// # Arguments
 ///
@@ -73,6 +77,76 @@ pub fn runs_free(module: &Module, f: u32) -> bool
 ///
 /// For each function, whether it can.
 pub fn crossing_fns(module: &Module) -> Vec<bool>
+{
+    let mut crosses = global_free_fns(module);
+    // The rule of captures belongs to the closure alone, not to its callers.
+    for func in &module.funcs
+    {
+        each_stmt(&func.block, &mut |s| {
+            let mut note = |e: &Expr| {
+                let ExprNode::Closure { func, record, .. } = &e.node
+                else
+                {
+                    return;
+                };
+                let copies = record.kind.pointee().is_some_and(copied_captures);
+                do_if!(!copies, crosses[*func as usize] = false);
+            };
+            do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+        });
+    }
+    crosses
+}
+
+/// Whether each capture of a closure record is a duplicate of a value another
+/// thread can read: no box, which the function around shares, and no
+/// function value, pointer or handle at each depth of the value.
+///
+/// # Arguments
+///
+/// * `record` - The kind of the record.
+///
+/// # Returns
+///
+/// `true` when each is.
+fn copied_captures(record: DataKind) -> bool
+{
+    let fields = record.as_struct().map(|s| s.fields());
+    let mut captures = fields.unwrap_or_default().iter().skip(RECORD_HEAD);
+    captures.all(|(_, k)| crossing_value(*k))
+}
+
+/// Whether a value can be read from another thread once copied: it holds no
+/// box, function value, pointer or handle, at each depth.
+///
+/// # Arguments
+///
+/// * `kind` - The kind of the value.
+///
+/// # Returns
+///
+/// `true` when it can.
+fn crossing_value(kind: DataKind) -> bool
+{
+    let kind = kind.repr();
+    let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
+    ret_false!(shared || kind.is_box());
+    let cell = kind.cell_kind().filter(|_| !kind.is_text());
+    let fields = kind.as_struct().map(|s| s.fields()).unwrap_or_default();
+    cell.is_none_or(crossing_value) && fields.iter().all(|(_, k)| crossing_value(*k))
+}
+
+/// The functions that use no mutable global, in their own statements or in
+/// those of each function reached from them.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// For each function, whether it uses none.
+fn global_free_fns(module: &Module) -> Vec<bool>
 {
     let taken = taken_fns(module);
     let count = module.funcs.len();

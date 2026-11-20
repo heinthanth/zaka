@@ -882,11 +882,13 @@ error[ZK0462]: this value is isize, not a function value, so C cannot get leave 
 program with the trap `closure_escape` (see [When a program stops](../vm/traps.md)),
 and its message tells how to give leave. The native code of a closure remains in place after its
 last use, so a late call traps and never runs freed code. C can call a function from a
-thread of its own when the function captures nothing and, itself or through each
-function it calls, uses no mutable global; the counts of the heap turn atomic once such a
-function goes to C, and a trap on that thread stops the program. A call from another
-thread of each other function, or of a closure, ends the run of a program with a message;
-so does each call from another thread in the VM, which runs on one thread. In a C lib
+thread of its own when it, and each function it calls, uses no mutable global, and when
+each variable it captures is one no statement writes, holding a value jobs can use: no
+object, function value, pointer or handle. The counts of the heap turn atomic once such a
+function goes to C, and a trap on that thread stops the program. A thread C starts runs
+after the call that started it returns, so a closure it calls needs leave. A call from
+another thread of each other function ends the run of a program with a message; so does
+each call from another thread in the VM, which runs on one thread. In a C lib
 ([Functions C can call](functions.md#functions-c-can-call)), C can call from each thread:
 the lock of the lib lets one thread in at a time, a call that waits in C lets the others
 in, and a trap on a thread with no call of the lib in progress stops the lib and gives C
@@ -906,19 +908,23 @@ build cannot write.
 
 ### How it runs
 
-A captured local lives in a counted *box*, a block of one cell on the heap, and each read
-and write of it, inside the nested function and in the block around it, goes through the
-box. A local that no closure captures remains in its frame. A local of a loop block gets a
+A captured local that no statement writes after its declaration, in the function around
+or in a nested one, is copied: the closure holds its own count of the value, made where
+the closure is made, and the local remains in its frame. The duplicate reads as the variable
+does, since neither side can change it. Each other captured local lives in a counted
+*box*, a block of one cell on the heap, and each read and write of it, inside the nested
+function and in the block around it, goes through the box. A local that no closure
+captures remains in its frame. A local of a loop block gets a
 new box in each round, and a captured counter of a counted loop, or the cell variable of
 an each-loop, is copied into a new box in each round.
 
 The function of a nested function takes its declared parameters, then its own closure,
-then each capture, passed with a count: a box, or the closure of another nested
+then each capture, passed with a count: a duplicate, a box, or the closure of another nested
 function. Where the function is declared, the
-program fills a counted record of a code word, an info word and one field for each box,
+program fills a counted record of a code word, an info word and one field for each capture,
 and a hidden variable of the block holds it. A call through a closure runs a *thunk*,
-which takes the record last and calls the function with the boxes of its fields. A call of
-the function inside itself passes its own closure and boxes on. See
+which takes the record last and calls the function with its fields. A call of the function
+inside itself passes its own closure and captures on. See
 [call_value](../vm/instructions.md) and
 [Function values in C](../compiler/native.md).
 

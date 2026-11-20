@@ -706,8 +706,7 @@ pub type ZkCode = Option<unsafe extern "C" fn()>;
 pub type ZkFn = *const c_void;
 
 /// The record of a function of the program: its code, then NULL where a
-/// closure record holds its kind, then whether C can call it from a thread of
-/// its own.
+/// closure record holds its kind.
 #[repr(C)]
 pub struct ZkFnRec
 {
@@ -715,9 +714,6 @@ pub struct ZkFnRec
     pub code: ZkCode,
     /// NULL, which tells a function from a closure.
     pub none: *const c_void,
-    /// 1 when neither the function nor each function it calls uses a mutable
-    /// global, so C can call it from each thread; else 0.
-    pub crosses: usize,
 }
 
 /// The function a function value holds.
