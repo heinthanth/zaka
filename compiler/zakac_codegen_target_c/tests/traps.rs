@@ -203,6 +203,18 @@ fn a_trap_in_a_job_ends_it_alone()
     assert!(run.stderr.contains("job 1 stopped: integer division"), "{}", run.stderr);
 }
 
+/// A second wait for a job stops the program: the first took its result.
+#[test]
+fn a_second_wait_for_a_job_stops_the_program()
+{
+    let path = root().join("tests/inputs/wait_twice.zaka");
+    stops_with(
+        &path,
+        "က!\n",
+        "the job 1 this waits for gave its result to an earlier wait",
+    );
+}
+
 /// A receive no job can serve stops the program.
 #[test]
 fn a_wait_no_job_can_end_stops_the_program()

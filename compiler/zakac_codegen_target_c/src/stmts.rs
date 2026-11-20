@@ -65,7 +65,7 @@ impl FnGen<'_, '_>
             Stmt::Wait { job, .. } =>
             {
                 let j = self.expr(job);
-                self.line(&format!("(void)zk_job_wait({j});"));
+                self.line(&format!("zk_job_drop({j});"));
             }
             Stmt::Send { pipe, value, .. } => self.send(pipe, value),
             Stmt::Close { pipe, .. } =>

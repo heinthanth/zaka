@@ -65,8 +65,11 @@ struct Job
     data: usize,
     /// The kind of its result, or NULL for a function that gives nothing.
     ret: usize,
-    /// Whether some wait saw it.
+    /// Whether a wait took its result, or saw its trap.
     awaited: bool,
+    /// Whether its data block came from [`zk_job_data`], so the runtime frees
+    /// it; the jobs of a parallel loop read a block of the loop.
+    owned: bool,
     /// Its thread, until a wait or the end of the program joins it.
     thread: Option<std::thread::JoinHandle<()>>,
 }
@@ -326,8 +329,35 @@ pub(crate) fn keep_trap(trap: i32) { TRAPPED.set(trap) }
 #[unsafe(export_name = stamped!("job_data"))]
 pub extern "C" fn zk_job_data(size: usize) -> *mut u8
 {
-    let block = vec![0u8; size.max(1)].into_boxed_slice();
-    Box::leak(block).as_mut_ptr()
+    // The word in front of the block holds its size, for the free.
+    let block = vec![0u8; size + WORD].into_boxed_slice();
+    let start = Box::leak(block).as_mut_ptr();
+    // SAFETY: the block holds a word, then `size` octets.
+    unsafe {
+        start.cast::<usize>().write_unaligned(size);
+        start.add(WORD)
+    }
+}
+
+/// The octets of a word, in front of a data block of a job.
+const WORD: usize = size_of::<usize>();
+
+/// Free a data block of a job, from [`zk_job_data`].
+///
+/// # Arguments
+///
+/// * `data` - The block, as the address it gave.
+fn free_data(data: usize)
+{
+    ret_if!(data == 0);
+    // SAFETY: the word in front of the block holds its size, and the block
+    // is a leaked box of that size and the word.
+    unsafe {
+        let start = (data as *mut u8).sub(WORD);
+        let size = start.cast::<usize>().read_unaligned();
+        let slice = std::ptr::slice_from_raw_parts_mut(start, size + WORD);
+        drop(Box::from_raw(slice));
+    }
 }
 
 /// Start a job on a thread of its own.
@@ -350,11 +380,32 @@ pub extern "C" fn zk_job_start(
     ret: *const ZkKind, abort: i32,
 ) -> usize
 {
+    start_job((guard, jump, step), data, ret, abort, true)
+}
+
+/// Start a job on a thread of its own; see [`zk_job_start`].
+///
+/// # Arguments
+///
+/// * `(guard, jump, step)` - The guard, the jump back to it, and the step.
+/// * `data` - Its data block.
+/// * `ret` - The kind of its result, or NULL.
+/// * `abort` - 1 when a trap stops the whole program.
+/// * `owned` - Whether the runtime frees the data block.
+///
+/// # Returns
+///
+/// The number of the job.
+fn start_job(
+    (guard, jump, step): (ZkGuard, extern "C" fn(i32), ZkStep), data: *mut u8,
+    ret: *const ZkKind, abort: i32, owned: bool,
+) -> usize
+{
     zk_threads_begin();
     let mut st = state();
     #[rustfmt::skip]
     let job = Job { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false,
-        thread: None };
+        owned, thread: None };
     let next = st.jobs.len() + 1;
     let n = st.spare.pop().unwrap_or(next);
     if n == next
@@ -409,7 +460,9 @@ fn run_job(
     changed(&mut st);
 }
 
-/// Wait for a job to end.
+/// Wait for a job to end and take its result: one wait takes it, as the
+/// join of Rust does, and a second wait of the job stops the program with
+/// the trap `job waited`.
 ///
 /// # Arguments
 ///
@@ -417,8 +470,9 @@ fn run_job(
 ///
 /// # Returns
 ///
-/// The address of its result, at the start of its data block; a job that
-/// stopped at a trap stops the waiter with the trap `job trapped`.
+/// The address of its result, at the start of its data block; the caller
+/// moves the result out, then gives the block back with [`zk_job_taken`]. A
+/// job that stopped at a trap stops the waiter with the trap `job trapped`.
 #[unsafe(export_name = stamped!("job_wait"))]
 pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
 {
@@ -431,6 +485,11 @@ pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
         stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
     };
     let mut st = wait_until(st, |s| s.jobs[at].end != End::Runs);
+    if st.jobs[at].awaited
+    {
+        drop(st);
+        stop_owned(trap::JOB_WAITED, vec![named("job", n)])
+    }
     st.jobs[at].awaited = true;
     let (end, data) = (st.jobs[at].end, st.jobs[at].data);
     let thread = st.jobs[at].thread.take();
@@ -438,6 +497,36 @@ pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
     join(thread);
     ret_if!(end == End::Done, data as *mut u8);
     stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+}
+
+/// Give back the data block of a job whose result a wait moved out.
+///
+/// # Arguments
+///
+/// * `n` - The number of the job.
+#[unsafe(export_name = stamped!("job_taken"))]
+pub extern "C" fn zk_job_taken(n: usize)
+{
+    let data = {
+        let mut st = state();
+        let job = &mut st.jobs[n - 1];
+        std::mem::take(&mut job.data)
+    };
+    free_data(data);
+}
+
+/// Wait for a job and drop its result, for a wait whose value no one reads.
+///
+/// # Arguments
+///
+/// * `n` - The number of the job.
+#[unsafe(export_name = stamped!("job_drop"))]
+pub extern "C" fn zk_job_drop(n: usize)
+{
+    let data = zk_job_wait(n);
+    let ret = state().jobs[n - 1].ret;
+    do_if!(ret != 0, zk_drop(data, ret as *const ZkKind));
+    zk_job_taken(n);
 }
 
 /// Take the lock of a shared object: the thread waits while another holds
@@ -656,8 +745,9 @@ pub extern "C" fn zk_par_for(
     #[rustfmt::skip]
     let mut rounds = Rounds { step, data: data as usize, count, block, next: AtomicUsize::new(0) };
     let at: *mut Rounds = &mut rounds;
-    let start =
-        |_| zk_job_start(guard, jump, run_rounds, at.cast(), std::ptr::null(), abort);
+    let start = |_| {
+        start_job((guard, jump, run_rounds), at.cast(), std::ptr::null(), abort, false)
+    };
     let jobs: Vec<usize> = (0..workers).map(start).collect();
     // Each job ends before the loop goes on, so a trap waits for the others,
     // and the rounds outlive each job.
@@ -890,8 +980,13 @@ pub(crate) fn end() -> bool
     drop(st);
     threads.into_iter().for_each(|t| _ = t.join());
     let lost = jobs.iter().any(|j| j.end == End::Trapped && !j.awaited);
-    let results = jobs.iter().filter(|j| j.end == End::Done && j.ret != 0);
+    // The results no wait took are dropped, then each block the runtime owns
+    // is freed.
+    let untaken =
+        |j: &&Job| j.end == End::Done && j.ret != 0 && !j.awaited && j.data != 0;
+    let results = jobs.iter().filter(untaken);
     results.for_each(|j| zk_drop(j.data as *mut u8, j.ret as *const ZkKind));
+    jobs.iter().filter(|j| j.owned).for_each(|j| free_data(j.data));
     let held = pipes.into_iter().filter(|p| p.kind != 0);
     for pipe in held
     {

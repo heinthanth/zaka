@@ -176,8 +176,8 @@ impl<M: Module> FnGen<'_, '_, M>
         self.rt("zk_job_start", &params, &[ptr], &args).unwrap_or(data)
     }
 
-    /// A wait that takes the result of a job: a duplicate of it, which the job
-    /// keeps to the end of the program.
+    /// A wait that takes the result of a job: the result moves out of the
+    /// data block of the job, which the runtime then frees.
     ///
     /// # Arguments
     ///
@@ -192,15 +192,19 @@ impl<M: Module> FnGen<'_, '_, M>
         let ptr = self.s.ptr;
         let j = self.expr(job);
         let at = self.rt("zk_job_wait", &[ptr], &[ptr], &[j]).unwrap_or(j);
-        ret_if!(!is_blob(kind), self.load(self.s.clif_of(kind), at));
-        let t = self.temp(kind);
-        self.put_at(t, at, kind);
-        if kind.holds_text()
+        // The result moves out, and the runtime frees the block after.
+        let value = if is_blob(kind)
         {
-            let d = self.descr(kind);
-            self.rt("zk_dup_seqs", &[ptr, ptr], &[], &[t, d]);
+            let t = self.temp(kind);
+            self.put_at(t, at, kind);
+            t
         }
-        t
+        else
+        {
+            self.load(self.s.clif_of(kind), at)
+        };
+        self.rt("zk_job_taken", &[ptr], &[], &[j]);
+        value
     }
 
     /// A receive: the optional, in a temp of its own.

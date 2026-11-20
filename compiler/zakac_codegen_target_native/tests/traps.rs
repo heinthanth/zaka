@@ -187,6 +187,27 @@ fn atomic_adds_of_two_threads_lose_nothing()
 
 /// A parallel map runs its rounds on threads in an AOT build and through the
 /// JIT, and gives its results in the order of the cells.
+/// A second wait for a job stops the program, through the JIT and as an
+/// executable: the first wait took its result.
+#[test]
+fn a_second_wait_for_a_job_stops_the_program()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let path = c_inputs().join("wait_twice.zaka");
+    let said = "the job 1 this waits for gave its result to an earlier wait";
+    let jit = run_jit(&path, &[]);
+    assert_eq!((jit.status, jit.stdout.as_str()), (Some(1), "က!\n"), "{}", jit.stderr);
+    assert!(jit.stderr.contains(said), "{}", jit.stderr);
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
+    else
+    {
+        return;
+    };
+    assert_eq!((run.status, run.stdout.as_str()), (Some(1), "က!\n"), "{}", run.stderr);
+    assert!(run.stderr.contains(said), "{}", run.stderr);
+}
+
 /// The ring collector runs while jobs run, through the JIT and as an
 /// executable.
 #[test]

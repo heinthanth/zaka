@@ -38,7 +38,8 @@ function gave back:
 ```
 
 The kind of `ရှေ့` is `ကိန်းပြည့် ပြန်ပေးမည့် အပြိုင်လုပ်ငန်း`: a job whose function gives an
-integer. A job can be waited for more than once, and each wait gives the same result.
+integer. One wait takes the result: keep it in a variable to use it again, since a second
+wait for the same job stops the program.
 
 ## A job that gives nothing
 

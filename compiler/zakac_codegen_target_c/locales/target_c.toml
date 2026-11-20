@@ -168,6 +168,9 @@ en = "What a trap in a job does: unwind ends that job alone, and a wait for it t
 [target_c.trap.job_trapped]
 en = "the job %{job} this waits for stopped at a trap"
 
+[target_c.trap.job_waited]
+en = "the job %{job} this waits for gave its result to an earlier wait"
+
 [target_c.trap.deadlock]
 en = "each job waits; none can go on"
 

@@ -64,12 +64,37 @@ A job value names its job; a duplicate names the same job. Its short name in mes
 | `<job> ကို စောင့်မည်။` | waits for the end of the job; a result is dropped |
 | `<job> ကို စောင့်သော ရလဒ်` | waits, then gives the result |
 
-- A wait for a job that has ended gives at once. A job can be waited for more than once,
-  and each wait gives the same result: a list or text result is shared, as a duplicate is.
+- A wait for a job that has ended gives at once. One wait takes the result, as the join of
+  Rust does: the result moves to the waiter, and a second wait for the same job stops the
+  program with the trap `job waited`. To use the result in several places, keep it in a
+  variable, or pass it on through a [channel](#channels).
+- `<job> ကို စောင့်မည်။` takes the result too, and drops it. The result of a job no wait took
+  is dropped as the program ends.
 - `စောင့်` is a verb of [the core](core.md); a function of its own name in the program
   stands beside it.
 
 ```zaka
+အော် ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{စာ}!" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာ" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ရ သည် က ကို စောင့်သော ရလဒ် ဖြစ်ပါစေ။
+ရ ကို ပြသမည်။
+ရ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာ!
+မင်္ဂလာ!
+```
+
+A second wait for the same job stops the program:
+
+```zaka-stop
 အော် ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
 "{စာ}!" ကို ပြန်ပေးမည်။
@@ -84,7 +109,7 @@ A job value names its job; a duplicate names the same job. Its short name in mes
 
 ```text
 မင်္ဂလာ!
-မင်္ဂလာ!
+the program stopped: the job 1 this waits for gave its result to an earlier wait
 ```
 
 ## Values that go to a job

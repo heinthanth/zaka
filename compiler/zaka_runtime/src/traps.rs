@@ -65,6 +65,7 @@ pub enum ZkTrap
     JobStopped,
     LockBroken,
     ThreadsNotPositive,
+    JobWaited,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -107,6 +108,7 @@ pub(crate) mod trap
     pub(crate) const JOB_STOPPED: i32 = ZkTrap::JobStopped as i32;
     pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
     pub(crate) const THREADS_NOT_POSITIVE: i32 = ZkTrap::ThreadsNotPositive as i32;
+    pub(crate) const JOB_WAITED: i32 = ZkTrap::JobWaited as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.

@@ -65,13 +65,15 @@ fn two_jobs_sum_two_halves()
 }
 
 #[test]
-fn a_text_result_comes_to_each_wait_and_leaves_no_block_held()
+fn one_wait_takes_a_text_result_and_leaves_no_block_held()
 {
     let text = program(
         "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"မင်္ဂလာ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
-က ကို စောင့်သော ရလဒ် ကို ပြသမည်။
-က ကို စောင့်သော ရလဒ် ကို ပြသမည်။
-က ကို စောင့်မည်။",
+ကိန်းရှင် ရ သည် က ကို စောင့်သော ရလဒ် ဖြစ်ပါစေ။
+ရ ကို ပြသမည်။
+ရ ကို ပြသမည်။
+ကိန်းရှင် ခ သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"ခ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ခ ကို စောင့်မည်။",
     );
     let mut out = Vec::new();
     let options = RunOptions::default();
@@ -79,7 +81,21 @@ fn a_text_result_comes_to_each_wait_and_leaves_no_block_held()
         run_and_keep(&compile(&text), &mut out, &options, &HostData::default());
     assert!(result.is_ok(), "{result:?}");
     assert_eq!(String::from_utf8(out).unwrap(), "မင်္ဂလာ!\nမင်္ဂလာ!\n");
+    // The wait that reads no value dropped the result of its job.
     assert_eq!(machine.leaks(), Vec::new());
+}
+
+#[test]
+fn a_second_wait_for_a_job_stops_the_program()
+{
+    let text = program(
+        "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+က ကို စောင့်သော ရလဒ် ကို ပြသမည်။
+က ကို စောင့်သော ရလဒ် ကို ပြသမည်။",
+    );
+    let (out, result) = run_source_with(&text, &RunOptions::default());
+    assert_eq!(out, "က!\n");
+    assert_eq!(result.map_err(|t| t.kind), Err(TrapKind::JobWaited { job: 1 }));
 }
 
 #[test]
@@ -632,17 +648,18 @@ fn a_job_that_ended_gives_its_stack_region_to_the_next()
 }
 
 #[test]
-fn a_list_result_comes_to_each_wait_after_its_region_went_to_another_job()
+fn a_list_result_comes_to_its_wait_after_its_region_went_to_another_job()
 {
+    // က ends while ခ runs, and ဂ then takes a region of an ended job.
     let text = program(
         "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
-က ကို စောင့်မည်။
 ကိန်းရှင် ခ သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"ခ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
-(က ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
 (ခ ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+ကိန်းရှင် ဂ သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"ဂ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+(ဂ ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
 (က ကို စောင့်သော ရလဒ်) ကို ပြသမည်။",
     );
-    assert_eq!(output(&text), "က!\nခ!\nက!\n");
+    assert_eq!(output(&text), "ခ!\nဂ!\nက!\n");
 }
 
 #[test]

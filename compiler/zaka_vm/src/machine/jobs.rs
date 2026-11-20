@@ -396,11 +396,20 @@ impl Machine
             self.park(Waits::Job(n));
             return Ok(());
         }
+        // One wait takes the result, as the join of Rust does.
+        ret_if!(self.jobs.list[n].awaited, Err(TrapKind::JobWaited { job: id as u64 }));
         self.jobs.list[n].awaited = true;
-        match self.jobs.list[n].end.clone()
+        let ret = self.jobs.list[n].ret;
+        let end = std::mem::take(&mut self.jobs.list[n].end);
+        // The row keeps that the job ended, with no result left in it.
+        let ended = tern!(matches!(end, End::Trapped(_)), end.clone(), End::Done(None));
+        self.jobs.list[n].end = ended;
+        match (end, kind)
         {
-            End::Done(v) => self.take_result(v),
-            End::Kept(raw) => self.take_kept(&raw, kind),
+            (End::Done(v), _) => self.take_result(v),
+            (End::Kept(raw), Some(_)) => self.take_kept(&raw, kind),
+            // A wait whose value no one reads drops the result.
+            (End::Kept(raw), None) => ret.map_or(Ok(()), |k| self.drop_kept(&raw, k)),
             _ => Err(TrapKind::JobTrapped { job: id as u64 }),
         }
     }
@@ -486,8 +495,7 @@ impl Machine
     }
 
     /// Give the waiter the list or struct result of a job, kept as its
-    /// octets: the octets go to the slot under the number, which then holds its
-    /// own duplicate.
+    /// octets: the octets move to the slot under the number.
     ///
     /// # Arguments
     ///
@@ -499,11 +507,10 @@ impl Machine
     /// `Ok`, or a trap.
     fn take_kept(&mut self, raw: &[u8], kind: Option<DataKind>) -> Step
     {
-        let kind = kind.ok_or_else(|| malformed("a kept result has a kind"))?;
+        ret_if!(kind.is_none(), Err(malformed("a kept result has a kind")));
         let to = self.stack.last().and_then(|s| s.as_ptr());
         let to = to.ok_or_else(|| malformed("wait needs the slot for the result"))?;
-        self.mem.write_octets(to, raw)?;
-        self.dup_value(to, kind)
+        self.mem.write_octets(to, raw)
     }
 
     /// Whether the main job must wait at its last return: other jobs have not

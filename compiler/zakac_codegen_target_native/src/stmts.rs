@@ -94,7 +94,7 @@ impl<M: Module> FnGen<'_, '_, M>
             {
                 let ptr = self.s.ptr;
                 let j = self.expr(job);
-                self.rt("zk_job_wait", &[ptr], &[ptr], &[j]);
+                self.rt("zk_job_drop", &[ptr], &[], &[j]);
             }
             Stmt::Send { pipe, value, .. } => self.send(pipe, value),
             Stmt::Close { pipe, .. } =>

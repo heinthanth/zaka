@@ -441,8 +441,8 @@ impl FnGen<'_, '_>
         )
     }
 
-    /// The C text of a wait that takes the result of a job: a duplicate of
-    /// it, which the job keeps to the end of the program.
+    /// The C text of a wait that takes the result of a job: the result moves
+    /// out of the data block of the job, which the runtime then frees.
     ///
     /// # Arguments
     ///
@@ -455,19 +455,19 @@ impl FnGen<'_, '_>
     pub(crate) fn wait(&mut self, job: &Expr, kind: DataKind) -> String
     {
         let j = self.expr(job);
+        let j = self.spill(job.kind, j);
         let at = self.spill(DataKind::OPAQUE, format!("zk_job_wait({j})"));
         if !is_blob(kind)
         {
-            return format!("zk_ld_{}({at})", self.shared.mem(kind));
+            let load = format!("zk_ld_{}({at})", self.shared.mem(kind));
+            let v = self.spill(kind, load);
+            self.line(&format!("zk_job_taken({j});"));
+            return v;
         }
         let t = self.temp(kind);
         let size = self.shared.size(kind);
         self.line(&format!("zk_put_block({t}, {at}, {size});"));
-        if kind.holds_text()
-        {
-            let d = self.shared.descr.of(kind);
-            self.line(&format!("zk_dup_seqs({t}, {d});"));
-        }
+        self.line(&format!("zk_job_taken({j});"));
         t
     }
 

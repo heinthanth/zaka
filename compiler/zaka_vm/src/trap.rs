@@ -175,6 +175,12 @@ pub enum TrapKind
         /// The number of the job.
         job: u64,
     },
+    /// A second wait for a job, whose result the first wait took.
+    JobWaited
+    {
+        /// The number of the job.
+        job: u64,
+    },
     /// Each job waits for another, and none can go on.
     Deadlock,
     /// A lock of a shared object whose holder stopped at a trap.
@@ -359,6 +365,7 @@ impl fmt::Display for TrapKind
             TrapKind::NullFromC => t!("vm.trap.null_from_c"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
             TrapKind::JobTrapped { job } => t!("vm.trap.job_trapped", job = job),
+            TrapKind::JobWaited { job } => t!("vm.trap.job_waited", job = job),
             TrapKind::Deadlock => t!("vm.trap.deadlock"),
             TrapKind::LockBroken => t!("vm.trap.lock_broken"),
             TrapKind::ThreadsNotPositive => t!("vm.trap.threads_not_positive"),
@@ -449,6 +456,7 @@ impl TrapKind
             | TrapKind::NullFromC
             | TrapKind::ClosureEscape
             | TrapKind::JobTrapped { .. }
+            | TrapKind::JobWaited { .. }
             | TrapKind::Deadlock
             | TrapKind::LockBroken
             | TrapKind::ThreadsNotPositive

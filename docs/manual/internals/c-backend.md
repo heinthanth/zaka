@@ -301,9 +301,11 @@ missing row is `ZK_TRAP_NO_ROW`.
   start. The function drops its parameters as it returns, so the step drops none.
 - A spawn takes a data block (`zk_job_data`), moves each argument into it at a 16-octet
   part (`part_offsets`; the arguments come owned, as the value of a set does, since calls alone
-  lend), and calls `zk_job_start`. A wait copies the result out and shares what it holds
-  (`zk_dup_seqs`); a receive writes the optional into a temp; a send moves its value
-  through its address.
+  lend), and calls `zk_job_start`. A wait moves the result out of the block, and
+  `zk_job_taken` frees the block (the word in front of it holds its size); a wait whose value
+  no one reads calls `zk_job_drop`, which drops the result and frees the block. A second
+  wait of a job is the trap `job waited`. A receive writes the optional into a temp; a send
+  moves its value through its address.
 - The runtime (`zaka_runtime/src/jobs.rs`) keeps the jobs and channels under one lock and
   one condition. It counts the threads that run, the main one (`mark_main`, from
   `zk_start`) and each job: a wait that would leave none running is the trap `deadlock`,
