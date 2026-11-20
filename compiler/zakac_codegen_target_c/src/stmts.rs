@@ -960,6 +960,7 @@ impl FnGen<'_, '_>
         self.line("for (;;)");
         self.line("{");
         self.depth += 1;
+        do_if!(self.shared.safe_points, self.line("ZK_SAFE_POINT();"));
         // Each round tests at the site of the loop, after the statements of the
         // round before marked theirs.
         self.last_site = None;
@@ -1053,6 +1054,7 @@ impl FnGen<'_, '_>
         self.line("for (;;)");
         self.line("{");
         self.depth += 1;
+        do_if!(self.shared.safe_points, self.line("ZK_SAFE_POINT();"));
         self.in_loop(label, block);
         self.line(&format!("zk_next{label}:;"));
         self.line(&format!("if ({gap} < ({u}){step_text}) break;"));

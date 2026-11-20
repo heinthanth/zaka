@@ -7,6 +7,7 @@ use std::cell::Cell;
 use std::ffi::c_char;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU8;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
@@ -15,6 +16,7 @@ use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
+use zakac_rust_sugars::tern;
 
 use crate::heap::WORD;
 use crate::heap::ZkFn;
@@ -730,8 +732,23 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
     }
 }
 
-/// Set while a collection asks the running threads to halt at a safe point.
-static HALT: AtomicBool = AtomicBool::new(false);
+/// Set (1) while a collection asks the running threads to halt at a safe
+/// point; the loops of native code read it at each round, as `zk_halt`.
+#[unsafe(export_name = stamped!("halt"))]
+#[allow(non_upper_case_globals)]
+pub static mut zk_halt: u8 = 0;
+
+/// The flag of [`zk_halt`], read and set in one step.
+///
+/// # Returns
+///
+/// The flag.
+fn halt() -> &'static AtomicU8
+{
+    // SAFETY: the flag lives for the whole run, and each thread reads and
+    // sets it with atomic ops alone.
+    unsafe { AtomicU8::from_ptr(&raw mut zk_halt) }
+}
 
 /// The count of threads halted at a safe point.
 static HALTED: AtomicUsize = AtomicUsize::new(0);
@@ -746,18 +763,31 @@ const HALT_WAIT: std::time::Duration = std::time::Duration::from_millis(20);
 /// the cost of one atomic load.
 pub fn safe_point()
 {
-    ret_if!(!HALT.load(Ordering::Acquire));
+    ret_if!(!halt_asked());
     HALTED.fetch_add(1, Ordering::SeqCst);
-    do_while!(HALT.load(Ordering::Acquire), std::thread::yield_now());
+    do_while!(halt_asked(), std::thread::yield_now());
     HALTED.fetch_sub(1, Ordering::SeqCst);
 }
+
+/// A safe point the loops of native code reach once the flag reads set:
+/// see [`safe_point`].
+#[unsafe(export_name = stamped!("safe_point"))]
+pub extern "C" fn zk_safe_point() { safe_point() }
+
+/// The address of [`zk_halt`], which the loops of Cranelift code read.
+///
+/// # Returns
+///
+/// The address.
+#[unsafe(export_name = stamped!("halt_flag"))]
+pub extern "C" fn zk_halt_flag() -> *const u8 { &raw const zk_halt }
 
 /// Whether a collection asks the running threads to halt.
 ///
 /// # Returns
 ///
 /// `true` while it does.
-pub(crate) fn halt_asked() -> bool { HALT.load(Ordering::Acquire) }
+pub(crate) fn halt_asked() -> bool { halt().load(Ordering::Acquire) != 0 }
 
 /// Free each group of blocks in the buffer, or reached from it, that holds
 /// itself alone: trial deletion that halts the program while it runs. While
@@ -767,11 +797,19 @@ pub(crate) fn halt_asked() -> bool { HALT.load(Ordering::Acquire) }
 fn collect_rings()
 {
     ret_if!(!crate::libs::begin_collect());
-    let alone = !crate::jobs::jobs_run();
-    do_if!(alone || halt_others(), collect_held());
-    HALT.store(false, Ordering::Release);
+    let ran = !crate::jobs::jobs_run() || halt_others();
+    do_if!(ran, collect_held());
+    halt().store(0, Ordering::Release);
     crate::libs::end_collect();
+    // A request that lapsed waits for the buffer to double before the next,
+    // so each later release does not wait out the halt again.
+    let waiting = RING_WAITING.load(Ordering::Relaxed);
+    RETRY_AT.store(tern!(ran, 0, waiting.saturating_mul(2)), Ordering::Relaxed);
 }
+
+/// The octets in the buffer at which a collection after a lapsed one tries
+/// again; 0 after a collection ran.
+static RETRY_AT: AtomicUsize = AtomicUsize::new(0);
 
 /// Ask the other running threads to halt at their next safe point, and wait
 /// for them, at most [`HALT_WAIT`]. Threads that wait for a job, a channel or a
@@ -783,7 +821,7 @@ fn collect_rings()
 fn halt_others() -> bool
 {
     ret_false!(!crate::jobs::counted_thread());
-    HALT.store(true, Ordering::SeqCst);
+    halt().store(1, Ordering::SeqCst);
     let deadline = std::time::Instant::now() + HALT_WAIT;
     loop
     {
@@ -870,7 +908,8 @@ pub fn note_candidate(base: *mut u8)
     h.buffered = 1;
     CANDIDATES.push(base);
     let waiting = RING_WAITING.fetch_add(h.size, Ordering::Relaxed) + h.size;
-    do_if!(!RING_PAUSED.load(Ordering::Relaxed) && full(waiting), collect_rings());
+    let due = full(waiting) && waiting >= RETRY_AT.load(Ordering::Relaxed);
+    do_if!(!RING_PAUSED.load(Ordering::Relaxed) && due, collect_rings());
 }
 
 /// Whether the octets in the buffer run a collection.

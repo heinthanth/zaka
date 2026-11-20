@@ -66,6 +66,32 @@ pub fn runs_free(module: &Module, f: u32) -> bool
     reached.iter().all(|g| alone(g) && global_use(module, *g).is_none())
 }
 
+/// Whether a program starts a job or runs a parallel loop or map, so its
+/// loops pass a safe point of the ring collector at each round.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// `true` when it does.
+pub fn starts_jobs(module: &Module) -> bool
+{
+    let (mut loops, mut spawns) = (false, false);
+    let bodies = module.funcs.iter().map(|f| &f.block).chain([&module.main]);
+    for block in bodies
+    {
+        each_stmt(block, &mut |s| {
+            loops |= matches!(s, Stmt::Loop { par: Some(_), .. });
+            let mut note =
+                |e: &Expr| spawns |= matches!(e.node, ExprNode::Spawn { .. });
+            do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+        });
+    }
+    loops || spawns
+}
+
 /// Which functions C can call from a thread of its own: those that, itself
 /// or through each function it calls, uses no mutable global; for the thunk
 /// of a closure, each capture is also a duplicate of a value jobs can use.

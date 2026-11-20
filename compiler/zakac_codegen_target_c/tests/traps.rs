@@ -289,6 +289,23 @@ fn the_ring_collector_runs_while_jobs_run()
     assert_eq!(run.stdout, "collected while jobs ran\n");
 }
 
+/// The ring collector halts a thread that spins in a loop with no
+/// allocation: each round of the loop passes a safe point.
+#[test]
+fn the_ring_collector_halts_a_loop_with_no_allocation()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/ring_loop.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, "collected beside a loop\n");
+}
+
 /// Jobs that print at once never mix their lines.
 #[test]
 fn the_prints_of_jobs_come_out_as_whole_lines()

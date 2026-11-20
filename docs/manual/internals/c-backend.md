@@ -320,9 +320,11 @@ missing row is `ZK_TRAP_NO_ROW`.
   and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
   job. While jobs run, `collect_rings` asks the other running threads to halt at a safe
   point (`seqs::safe_point`: each allocation in `take_into`, each candidate in
-  `note_candidate`, and each wake in `wait_until`) and collects once each halted
-  (`halt_others`); one that reaches none in 20 ms lets the collection go, and the next
-  full buffer asks again. The lists of the deep duplicate are each
+  `note_candidate`, each wake in `wait_until`, and in a program with jobs
+  (`starts_jobs`) each round of a loop: `ZK_SAFE_POINT()` in C, which reads the flag
+  `zk_halt`, and an atomic load of the address `zk_halt_flag` gives in Cranelift code) and
+  collects once each halted (`halt_others`); one that reaches none in 20 ms lets the
+  collection go, and the next waits until the buffer doubled (`RETRY_AT`). The lists of the deep duplicate are each
   thread's own.
 - `zk_lock` and `zk_unlock` find each lock through the block of the object (`zk_seq_base` of
   the variable) and name the holder through `owner`: the number of a job, or a number of

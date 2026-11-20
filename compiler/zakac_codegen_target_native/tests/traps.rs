@@ -187,6 +187,25 @@ fn atomic_adds_of_two_threads_lose_nothing()
 
 /// A parallel map runs its rounds on threads in an AOT build and through the
 /// JIT, and gives its results in the order of the cells.
+/// The ring collector halts a thread that spins in a loop with no
+/// allocation, through the JIT and as an executable.
+#[test]
+fn the_ring_collector_halts_a_loop_with_no_allocation()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let path = c_inputs().join("ring_loop.zaka");
+    let want = (Some(0), "collected beside a loop\n");
+    let jit = run_jit(&path, &[]);
+    assert_eq!((jit.status, jit.stdout.as_str()), want, "{}", jit.stderr);
+    let grants = zaka_host::Grants::default();
+    let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
+    else
+    {
+        return;
+    };
+    assert_eq!((run.status, run.stdout.as_str()), want, "{}", run.stderr);
+}
+
 /// A second wait for a job stops the program, through the JIT and as an
 /// executable: the first wait took its result.
 #[test]

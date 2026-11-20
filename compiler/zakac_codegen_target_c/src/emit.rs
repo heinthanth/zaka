@@ -8,6 +8,7 @@ use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_borrow_checker::crossing_fns;
 use zakac_borrow_checker::options::OverflowMode;
+use zakac_borrow_checker::starts_jobs;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::Func;
@@ -201,7 +202,7 @@ pub fn emit(
     let module = &spelled;
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
-        .grants(grants.clone()).build();
+        .grants(grants.clone()).safe_points(starts_jobs(module)).build();
     let mut units = vec![String::new(); files.len().max(1)];
     let unit_of = |lo| files.iter().rposition(|f| f.start_pos <= lo).unwrap_or(0);
     for (n, g) in module.globals.iter().enumerate()
@@ -395,6 +396,10 @@ pub(crate) struct Shared<'m>
     pub(crate) module: &'m Module,
     /// The choices of the C target.
     pub(crate) options: TargetCOptions,
+    /// Whether the program starts jobs, so each round of a loop passes a safe
+    /// point of the ring collector.
+    #[builder(default)]
+    pub(crate) safe_points: bool,
     /// The rights the build grants the program.
     pub(crate) grants: Grants,
     /// The first construct the C target cannot build at present.

@@ -85,6 +85,21 @@ static inline zk_context *zk_enter(uint32_t func)
 #define ZK_AT(S) do { if (ZK_DEBUG_INFO && zk_c->depth <= ZK_MAX_DEPTH) zk_c->frames[zk_c->depth].site = (S); } while (0)
 /* clang-format on */
 
+/**
+ * A safe point of the ring collector at each round of a loop of a program
+ * with jobs: a thread a collection asks to halt waits in it until the
+ * collection ends. It reads one flag of the runtime.
+ */
+#ifdef __GNUC__
+/* clang-format off */
+#define ZK_SAFE_POINT() do { if (__atomic_load_n(&zk_halt, __ATOMIC_ACQUIRE)) zk_safe_point(); } while (0)
+/* clang-format on */
+#else
+/* clang-format off */
+#define ZK_SAFE_POINT() do { if (*(volatile uint8_t *)&zk_halt) zk_safe_point(); } while (0)
+/* clang-format on */
+#endif
+
 #if ZK_CHECK_NULL
 #define ZK_NULL_CHECK(p) ((p) == NULL ? zk_null_deref(p) : (void)0)
 #else

@@ -1,6 +1,7 @@
 //! The lowering of statements, as the C target writes them.
 
 use cranelift_codegen::ir::InstBuilder;
+use cranelift_codegen::ir::MemFlagsData;
 use cranelift_codegen::ir::Value;
 use cranelift_codegen::ir::condcodes::IntCC;
 use cranelift_codegen::ir::types;
@@ -784,6 +785,37 @@ impl<M: Module> FnGen<'_, '_, M>
         self.enter_block(after);
     }
 
+    /// The address of the flag a collection sets to halt the running
+    /// threads, read before a loop of a program with jobs.
+    ///
+    /// # Returns
+    ///
+    /// The address, or `None` for a program with no jobs.
+    fn halt_flag(&mut self) -> Option<Value>
+    {
+        ret_if!(!self.s.safe_points || !self.live, None);
+        let ptr = self.s.ptr;
+        self.rt("zk_halt_flag", &[], &[ptr], &[])
+    }
+
+    /// A safe point of the ring collector at the head of a round: one atomic
+    /// load of the flag, and a halt in the runtime once it is set.
+    ///
+    /// # Arguments
+    ///
+    /// * `flag` - The address of the flag, or `None` for a program with no
+    ///   jobs.
+    fn safe_point(&mut self, flag: Option<Value>)
+    {
+        let Some(flag) = flag.filter(|_| self.live)
+        else
+        {
+            return;
+        };
+        let set = self.b.ins().atomic_load(types::I8, MemFlagsData::trusted(), flag);
+        self.when(set, |g| _ = g.rt("zk_safe_point", &[], &[], &[]));
+    }
+
     /// Lower a loop: `init` once, then the test, the statements and the update
     /// in turn; `continue` jumps to the update.
     ///
@@ -797,11 +829,13 @@ impl<M: Module> FnGen<'_, '_, M>
     {
         let span = cond.span;
         self.block(init);
+        let flag = self.halt_flag();
         let head = self.b.create_block();
         let (inner, next, exit) =
             (self.b.create_block(), self.b.create_block(), self.b.create_block());
         self.jump(head);
         self.enter_block(head);
+        self.safe_point(flag);
         self.last_site = None;
         self.mark_site(span);
         let c = self.expr(cond);
@@ -886,6 +920,7 @@ impl<M: Module> FnGen<'_, '_, M>
         let (above, below) =
             (self.b.ins().icmp(gt, v0, last), self.b.ins().icmp(lt, v0, last));
         let past = self.b.ins().select(up, above, below);
+        let flag = self.halt_flag();
         let (inner, next, step_b, exit) = (
             self.b.create_block(),
             self.b.create_block(),
@@ -894,6 +929,7 @@ impl<M: Module> FnGen<'_, '_, M>
         );
         self.branch(past, exit, inner);
         self.enter_block(inner);
+        self.safe_point(flag);
         self.loops.push((next, exit));
         self.braced(block);
         self.loops.pop();
