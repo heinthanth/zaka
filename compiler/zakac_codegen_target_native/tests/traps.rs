@@ -180,20 +180,15 @@ fn atomic_adds_of_two_threads_lose_nothing()
     assert_eq!(run.stdout, "၁၉၈၀\n၄\n");
 }
 
-/// A parallel map runs its rounds on threads in an AOT build and through the
-/// JIT, and gives its results in the order of the cells.
+/// A parallel map runs its rounds on threads in an AOT build, and gives its
+/// results in the order of the cells; `--jit` reports it, as it does a job.
 #[test]
 fn a_parallel_map_runs_its_rounds_on_threads()
 {
     use zakac_borrow_checker::options::OverflowMode;
     let path = c_inputs().join("par_map.zaka");
     let jit = run_jit(&path, &[]);
-    assert_eq!(
-        (jit.status, jit.stdout.as_str()),
-        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n"),
-        "{}",
-        jit.stderr
-    );
+    assert!(jit.stderr.contains("a parallel map"), "{}", jit.stderr);
     let grants = zaka_host::Grants::default();
     let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
     else
@@ -202,4 +197,46 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+}
+
+/// What `par_loop.zaka` prints.
+const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ ၈၊ ၁၀၊ ၁၂၊ ၁၄၊ ၁၆၊ ၁၈၊ ၂၀၊ ၂၂၊ ၂၄၊ \
+                            ၂၆၊ ၂၈၊ ၃၀၊ ၃၂၊ ၃၄၊ ၃၆၊ ၃၈၊ ၄၀]\n[၁၊ ၂၊ ၃၊ ၄၊ ၅၊ ၆၊ ၇၊ ၈၊ \
+                            ၉၊ ၁၀၊ ၁၁၊ ၁၂၊ ၁၃၊ ၁၄၊ ၁၅၊ ၁၆၊ ၁၇၊ ၁၈၊ ၁၉၊ ၂၀]\n";
+
+/// The rounds of parallel loops run on threads in an AOT build, and a trap in
+/// a round ends its job: the loop then stops with the trap of the job.
+#[test]
+fn the_rounds_of_a_parallel_loop_run_on_threads()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    let run = crate::common::run_aot(
+        &c_inputs().join("par_loop.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let Some(run) = run
+    else
+    {
+        return;
+    };
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, PAR_LOOP_OUT);
+    let trap = crate::common::run_aot(
+        &c_inputs().join("par_loop_trap.zaka"),
+        OverflowMode::Stop,
+        &grants,
+    );
+    let trap = trap.expect("the first build linked");
+    assert_eq!(trap.status, Some(1), "{}", trap.stderr);
+    assert_eq!(trap.stdout, "");
+    assert!(trap.stderr.contains("stopped: integer division"), "{}", trap.stderr);
+    assert!(
+        trap.stderr.contains("this waits for stopped at a trap"),
+        "{}",
+        trap.stderr
+    );
+    let jit = run_jit(&c_inputs().join("par_loop.zaka"), &[]);
+    assert!(jit.stderr.contains("a parallel loop"), "{}", jit.stderr);
 }

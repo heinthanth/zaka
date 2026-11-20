@@ -195,7 +195,8 @@ fn needs_lock(block: &[Stmt]) -> bool
     found
 }
 
-/// The functions some call starts a job in, and those a parallel map runs.
+/// The functions some call starts a job in, and those a parallel map or the
+/// rounds of a parallel loop run.
 ///
 /// # Arguments
 ///
@@ -220,7 +221,7 @@ fn spawned_fns(module: &Module) -> BTreeSet<u32>
     {
         each_stmt(&f.block, &mut |s| {
             // A parallel map runs its function on other threads too.
-            do_if!(let Stmt::Loop { par: Some(p), .. } = s, _ = maps.insert(p.func));
+            do_if!(let Stmt::Loop { par: Some(p), .. } = s, _ = maps.insert(p.func()));
             do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
         });
     }

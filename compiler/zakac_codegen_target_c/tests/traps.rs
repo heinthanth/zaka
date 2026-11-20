@@ -259,3 +259,36 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
 }
+
+/// What `par_loop.zaka` prints.
+const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ ၈၊ ၁၀၊ ၁၂၊ ၁၄၊ ၁၆၊ ၁၈၊ ၂၀၊ ၂၂၊ ၂၄၊ \
+                            ၂၆၊ ၂၈၊ ၃၀၊ ၃၂၊ ၃၄၊ ၃၆၊ ၃၈၊ ၄၀]\n[၁၊ ၂၊ ၃၊ ၄၊ ၅၊ ၆၊ ၇၊ ၈၊ \
+                            ၉၊ ၁၀၊ ၁၁၊ ၁၂၊ ၁၃၊ ၁၄၊ ၁၅၊ ၁၆၊ ၁၇၊ ၁၈၊ ၁၉၊ ၂၀]\n";
+
+/// The rounds of parallel loops run on threads, and a trap in a round ends
+/// its job: the loop then stops with the trap of the job.
+#[test]
+fn the_rounds_of_a_parallel_loop_run_on_threads()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/par_loop.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(run.status, Some(0), "{}", run.stderr);
+    assert_eq!(run.stdout, PAR_LOOP_OUT);
+    let path = root().join("tests/inputs/par_loop_trap.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let trap = compile_and_run(&cc, &files, Checks::Default);
+    assert_eq!(trap.status, Some(1), "{}", trap.stderr);
+    assert_eq!(trap.stdout, "");
+    assert!(trap.stderr.contains("stopped: integer division"), "{}", trap.stderr);
+    assert!(
+        trap.stderr.contains("this waits for stopped at a trap"),
+        "{}",
+        trap.stderr
+    );
+}

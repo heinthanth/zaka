@@ -341,11 +341,26 @@ A loop marked `အပြိုင်` before its last word lets its rounds run a
 <list> ၏ အကွက်တိုင်း ကို <number> နှင့် <name> အနေဖြင့် အပြိုင် ယူ၍ <stmt>
 ```
 
-Each has the block form too. A round reads each variable from outside the loop, writes
-the variables it declares, and writes one cell of a list from outside: the cell of its
-own number, `<list> ၏ အကွက် <number>`. Each other write from a round is ZK0728. In this
-build the rounds run in order on each backend; the rule makes them safe to spread across
-threads.
+Each has the block form too. The rounds follow the rules of a job, since the rounds run at
+once on several threads:
+
+- A round writes the variables it declares, and one cell of a list from outside: the cell
+  of its own number, `<list> ၏ အကွက် <number>`. Each other write from a round is ZK0728,
+  an argument that lets a call change a variable from outside too.
+- Each variable from outside that a round reads holds a value jobs can use (ZK0494): no
+  plain shared object, and no closure from outside the round. Each function a round
+  reaches reads and writes no variable at the top of a file (ZK0726).
+- A round cannot stop the loop with `ကွင်းဆက် ကို ရပ်မည်။`, nor return from the function
+  around it (ZK0729); `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` ends the round alone.
+
+A native program runs the rounds on threads, one for each core of the host, when the rounds
+are at least as numerous as the cores; fewer rounds run in order on the thread of the loop, and so
+do the rounds on the VM. A counted loop with a step, or one marked `တိုး၍` or `လျှော့၍`, and
+a loop over the characters of text or the rows of a ဇယား, run their rounds in order. The lines
+the rounds print come in no fixed order in a native program. A trap in a round acts as in a
+job: the rounds of its thread end, the other threads finish, and the loop then stops with
+`job trapped`; under `--trap abort` the program stops at once. Rounds that run in order
+stop at the trap.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -376,9 +391,9 @@ cell, in the order of the cells.
 - The function takes one parameter that the cells fit, and follows the rules of the
   function a job starts in ([What a job can reach](#what-a-job-can-reach)): the cells and
   its result are of kinds jobs can use.
-- A native program runs the rounds on threads, one for each core of the host, when the
-  cells are of the kind of the parameter; the VM runs them in order. A trap in a round
-  stops the program.
+- A native program runs the rounds as those of a parallel loop, when the cells are of the
+  kind of the parameter; the VM runs them in order. A trap in a round acts as in a parallel
+  loop.
 
 ```zaka
 စကားလုံးရေ ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
@@ -458,8 +473,8 @@ chooses:
   job, a receive or a send that would wait while no other thread runs stops the program
   with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a trap in a
   job stop the whole program.
-- **The JIT** cannot run a job: `zakac run` gives a program with a job to the VM, and
-  `zakac run --jit` reports it.
+- **The JIT** cannot run a job, a parallel loop or a parallel map: `zakac run` gives such
+  a program to the VM, and `zakac run --jit` reports it.
 - While a job runs, a native program collects no rings: the collector changes counts
   with plain ops, so it waits until each job has ended. The buffer still fills, and the
   end of the program collects, as ever.

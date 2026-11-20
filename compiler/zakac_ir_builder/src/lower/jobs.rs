@@ -10,6 +10,7 @@ use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::task;
 
 use super::*;
+use crate::ir::Par;
 use crate::ir::ParMap;
 
 impl Lowerer<'_>
@@ -405,7 +406,7 @@ impl Lowerer<'_>
             src_kind: list_kind,
             out_kind: kind,
         };
-        let par = as_is.then(|| Box::new(par));
+        let par = as_is.then(|| Box::new(Par::Map(par)));
         #[rustfmt::skip]
         self.pre.push(Stmt::Loop { init: Vec::new(), cond, update, block: vec![add], span, par });
         ExprNode::Read(out)

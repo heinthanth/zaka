@@ -69,6 +69,7 @@ use crate::value::Value;
 
 mod jobs;
 mod nested;
+mod rounds;
 mod table;
 
 use nested::Nested;
@@ -562,6 +563,10 @@ struct Lowerer<'k>
     /// lowered, the outermost first.
     #[builder(default)]
     own_fns: Vec<Name>,
+    /// The written name of the function being lowered, which a round of a
+    /// parallel loop in it shows as its own.
+    #[builder(default = Name::new(""))]
+    current: Name,
     /// The number of top-level functions, which take the first numbers.
     top_count: u32,
     /// The functions declared inside functions, and their thunks, numbered
@@ -1099,8 +1104,13 @@ impl Lowerer<'_>
             st::Stmt::Block(n) => self.scoped_stmts(&n.stmts, out),
             st::Stmt::If(n) => out.push(self.if_stmt(n)),
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
+            st::Stmt::Counted(n) if spreads_counted(n) => self.parallel_counted(n, out),
             st::Stmt::Counted(n) => out.push(self.counted(n)),
             st::Stmt::Generic(n) => self.generic(n, out),
+            st::Stmt::Each(n) if n.parallel && n.part == st::EachPart::Cell =>
+            {
+                self.parallel_each(n, out)
+            }
             st::Stmt::Each(n) => self.each(n, out),
             st::Stmt::Lock(n) => self.lock_stmt(n, out),
             st::Stmt::Break(n) =>
@@ -2248,6 +2258,7 @@ impl Lowerer<'_>
         let whole = given.map(DataKind::repr).filter(|_| f.external);
         let ret = whole.or_else(|| fault.map_or(given, |f| f.ok));
         let depth = self.scopes.len();
+        let caller = std::mem::replace(&mut self.current, f.name.name);
         #[rustfmt::skip]
         let boxed = nested::boxed_in(f);
         #[rustfmt::skip]
@@ -2302,6 +2313,7 @@ impl Lowerer<'_>
         let given = fault.map_or(ret.map(DataKind::repr), |f| Some(f.wrapper));
         let frame =
             std::mem::replace(&mut self.frame, outer).expect("the frame is set");
+        self.current = caller;
         #[rustfmt::skip]
         return Func::builder().name(format!("{}{}", f.name.name, self.suffix))
             .params((f.params.len() + usize::from(own.is_some()) + captures.len()) as u32)
@@ -4406,6 +4418,22 @@ fn dup(e: Expr) -> Expr
     let (kind, span) = (e.kind, e.span);
     let node = ExprNode::Dup { value: Box::new(e), lent: false, deep: false };
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// Whether the rounds of a counted loop go to a function of their own, so a
+/// native build can run them at once: a parallel loop with no step that
+/// counts toward its last bound. Each other loop runs its rounds in order.
+///
+/// # Arguments
+///
+/// * `n` - The loop.
+///
+/// # Returns
+///
+/// `true` when the rounds go to a function.
+fn spreads_counted(n: &st::CountedStmt) -> bool
+{
+    n.parallel && n.step.is_none() && n.mode == st::CountMode::Count
 }
 
 /// The stats of the ring collector: the struct of the core, each field read

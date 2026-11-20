@@ -17,7 +17,6 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
 use std::sync::atomic::AtomicIsize;
-use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use zakac_rust_sugars::do_if;
@@ -405,12 +404,131 @@ pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
 /// the result goes to.
 pub type ZkMapStep = extern "C" fn(*mut u8, *mut u8);
 
-/// The count of parallel maps whose rounds run now.
-static MAPS: AtomicUsize = AtomicUsize::new(0);
+/// The step of a round of a parallel loop: it takes the data block of the
+/// loop and the number of the round, from 0.
+pub type ZkRoundStep = extern "C" fn(*mut u8, usize);
+
+/// The rounds one job of a parallel loop runs.
+struct Chunk
+{
+    /// The step of a round.
+    step: ZkRoundStep,
+    /// The data block of the loop, as an address.
+    data: usize,
+    /// The first round.
+    lo: usize,
+    /// The round past the last.
+    hi: usize,
+}
+
+/// The step of a job that runs a chunk of rounds.
+///
+/// # Arguments
+///
+/// * `data` - The chunk.
+extern "C" fn run_chunk(data: *mut c_void)
+{
+    // SAFETY: `zk_par_for` hands each job a chunk that lives as long as the
+    // program.
+    let c = unsafe { &*data.cast::<Chunk>() };
+    (c.lo..c.hi).for_each(|i| (c.step)(c.data as *mut u8, i));
+}
+
+/// Run the rounds of a parallel loop: fewer rounds than cores run here, in
+/// order; else each core gets a job that runs a chunk of them. A trap in a
+/// round acts as in a job: the rounds of its job end, the other jobs finish,
+/// and the loop then stops with `job trapped`; under `--trap abort` the
+/// program stops at once.
+///
+/// # Arguments
+///
+/// * `count` - The count of rounds.
+/// * `step` - The step of a round.
+/// * `data` - The data block of the loop, which the step reads.
+/// * `guard` - The guard of a job, from the glue.
+/// * `jump` - The function that jumps back to the guard on a trap.
+/// * `abort` - 1 when a trap stops the whole program.
+#[unsafe(export_name = stamped!("par_for"))]
+pub extern "C" fn zk_par_for(
+    count: usize, step: ZkRoundStep, data: *mut u8, guard: ZkGuard,
+    jump: extern "C" fn(i32), abort: i32,
+)
+{
+    let workers = std::thread::available_parallelism().map_or(1, usize::from);
+    if count < workers
+    {
+        (0..count).for_each(|i| step(data, i));
+        return;
+    }
+    let per = count.div_ceil(workers);
+    let chunk = |lo: usize| {
+        // shortcut: a chunk is never freed, a few words a job; free it once
+        // the job ends if programs run parallel loops a million times.
+        let c = Box::leak(Box::new(Chunk {
+            step,
+            data: data as usize,
+            lo,
+            hi: (lo + per).min(count),
+        }));
+        let at: *mut Chunk = c;
+        zk_job_start(guard, jump, run_chunk, at.cast(), std::ptr::null(), abort)
+    };
+    let jobs: Vec<usize> = (0..count).step_by(per).map(chunk).collect();
+    // Each job ends before the loop goes on, so a trap waits for the others.
+    let ended: Vec<bool> = jobs.iter().map(|n| job_ended_well(*n)).collect();
+    let trapped = jobs.iter().zip(ended).find(|(_, ok)| !ok).map(|(n, _)| *n);
+    ret_if!(trapped.is_none());
+    stop_owned(trap::JOB_TRAPPED, vec![named("job", trapped.unwrap_or_default())])
+}
+
+/// Wait for a job to end and mark it awaited.
+///
+/// # Arguments
+///
+/// * `n` - The number of the job.
+///
+/// # Returns
+///
+/// `true` when it ran to its end, `false` when a trap ended it.
+fn job_ended_well(n: usize) -> bool
+{
+    let st = wait_until(state(), |s| s.jobs[n - 1].end != End::Runs);
+    let mut st = st;
+    st.jobs[n - 1].awaited = true;
+    st.jobs[n - 1].end == End::Done
+}
+
+/// What the rounds of a parallel map read and write.
+struct MapData
+{
+    /// The first cell of the plain list the map reads.
+    base: usize,
+    /// The size of a cell.
+    cell: usize,
+    /// The first result.
+    at: usize,
+    /// The size of a result.
+    ret: usize,
+    /// The step the compiler writes for the function.
+    step: ZkMapStep,
+}
+
+/// The step of a round of a parallel map: one cell to one result.
+///
+/// # Arguments
+///
+/// * `data` - The map.
+/// * `i` - The number of the cell.
+extern "C" fn map_round(data: *mut u8, i: usize)
+{
+    // SAFETY: `zk_par_map` hands the rounds its map, which outlives them.
+    let m = unsafe { &*data.cast::<MapData>() };
+    (m.step)((m.base + i * m.cell) as *mut u8, (m.at + i * m.ret) as *mut u8);
+}
 
 /// Run a parallel map: each cell of a plain list goes to the step, the rounds
-/// spread over threads, and each result goes to the end of another plain
-/// list, in the order of the cells. A trap in a round stops the program.
+/// run as those of a parallel loop do, and each result goes to the end of
+/// another plain list, in the order of the cells.
 ///
 /// # Arguments
 ///
@@ -419,10 +537,13 @@ static MAPS: AtomicUsize = AtomicUsize::new(0);
 /// * `out` - The plain list the map fills, blank before.
 /// * `out_kind` - Its kind.
 /// * `step` - The step the compiler writes for the function.
+/// * `guard` - The guard of a job, from the glue.
+/// * `jump` - The function that jumps back to the guard on a trap.
+/// * `abort` - 1 when a trap stops the whole program.
 #[unsafe(export_name = stamped!("par_map"))]
 pub extern "C" fn zk_par_map(
     src: *mut u8, src_kind: *const ZkKind, out: *mut u8, out_kind: *const ZkKind,
-    step: ZkMapStep,
+    step: ZkMapStep, guard: ZkGuard, jump: extern "C" fn(i32), abort: i32,
 )
 {
     let (base, n) = (zk_seq_base(src) as usize, zk_seq_len(src));
@@ -430,28 +551,9 @@ pub extern "C" fn zk_par_map(
     let ret = kind(kind(out_kind).cell).size;
     let mut results = vec![0u8; (n * ret).max(1)];
     let at = results.as_mut_ptr() as usize;
-    let workers =
-        std::thread::available_parallelism().map_or(1, usize::from).clamp(1, n.max(1));
-    let per = n.div_ceil(workers).max(1);
-    zk_threads_begin();
-    MAPS.fetch_add(1, Ordering::SeqCst);
-    let round = move |lo: usize| {
-        let hi = (lo + per).min(n);
-        (lo..hi).for_each(|i| {
-            step((base + i * cell) as *mut u8, (at + i * ret) as *mut u8)
-        });
-    };
-    std::thread::scope(|s| {
-        for lo in (0..n).step_by(per)
-        {
-            let made = std::thread::Builder::new()
-                .stack_size(64 << 20)
-                .spawn_scoped(s, move || round(lo));
-            // A thread the host cannot make runs its rounds here.
-            do_if!(made.is_err(), round(lo));
-        }
-    });
-    MAPS.fetch_sub(1, Ordering::SeqCst);
+    let mut map = MapData { base, cell, at, ret, step };
+    let data: *mut MapData = &mut map;
+    zk_par_for(n, map_round, data.cast(), guard, jump, abort);
     let start = results.as_mut_ptr();
     // SAFETY: each result is `ret` octets of `results`, which the add moves
     // out.
@@ -606,14 +708,11 @@ pub(crate) fn end() -> bool
     lost
 }
 
-/// Whether a job thread other than this one can run, or the rounds of a
-/// parallel map, so the ring collector waits: it walks the counts with plain
-/// ops.
+/// Whether a job thread other than this one can run, the rounds of a
+/// parallel loop or map among them, so the ring collector waits: it walks the
+/// counts with plain ops.
 ///
 /// # Returns
 ///
 /// `true` while a job runs.
-pub(crate) fn jobs_run() -> bool
-{
-    MAPS.load(Ordering::SeqCst) > 0 || state().jobs.iter().any(|j| j.end == End::Runs)
-}
+pub(crate) fn jobs_run() -> bool { state().jobs.iter().any(|j| j.end == End::Runs) }

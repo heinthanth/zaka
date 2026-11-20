@@ -785,12 +785,23 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   `Stmt::AtomicAdd { addr, value, sub }` (from `ပေါင်းထည့်` and `နုတ်ယူ`, `atomic_stmt`)
   is the op `atomic_add`, one op on the VM, `zk_atomic_add` (`AtomicIsize`) in native code.
 - **Parallel maps.** The lowering (`par_map`) fills a hidden plain list in a loop of
-  calls, and marks the loop with `ParMap` (`Stmt::Loop::par`) when the cells are of the
+  calls, and marks the loop with `Par::Map` (`Stmt::Loop::par`) when the cells are of the
   kind of the parameter. The VM runs the loop; the C and native targets call
   `zk_par_map` in its place with a step of the function (`zk_map_step_<f>`), which lends
-  the cell and writes the result. The runtime spreads the rounds over scoped threads and
-  then adds each result in the order of the cells. A parallel loop lowers as its plain
-  loop.
+  the cell and writes the result. The runtime runs the rounds as those of a parallel
+  loop, then adds each result in the order of the cells.
+- **Parallel loops.** `lower/rounds.rs` lifts the round of a counted loop (no step,
+  `ရေတွက်၍`) or of a loop over the cells of a list into a function of its own,
+  `<fn>#round<n>`: the number of the round (`usize`), the first value and the direction of
+  a counted loop or the address of the list, then each variable from outside the round,
+  through its address (a box with a count for one a closure shares). Its statements run inside
+  a loop of one round, so a continue ends the round. A plain list a round writes gets a
+  block of its own before the loop (`own_before`). The loop calls the function once for
+  each round and carries `Par::Rounds`; the VM runs it in order, and native code calls
+  `zk_par_for(count, step, data, guard, leave, abort)` with a step (`zk_round_step_<f>`)
+  that reads the arguments from a data block. The runtime runs fewer rounds than cores in
+  order, and else starts one job for each core over a chunk of rounds, waits for each,
+  then stops with `job trapped` when one trapped. The JIT reports both.
 - **A call.** `call f` takes one block of the stack region for each local of `f`
   (`FrameMode::Checked`), or one block for all of them at C offsets (`Packed`), moves the
   arguments from the operand stack into the first locals, and pushes a `Frame`. `ret`

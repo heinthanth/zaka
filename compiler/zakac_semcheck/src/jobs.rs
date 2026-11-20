@@ -178,6 +178,36 @@ impl Visitor for RoundWrites
     }
 }
 
+/// The round of a parallel loop that a check is inside.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct RoundCtx
+{
+    /// The loop: a variable declared inside it belongs to the round.
+    pub span: Span,
+    /// The variable of the number of the round, if the loop has one.
+    pub number: Option<Name>,
+    /// The count of loops around the block of the round, inside the function.
+    pub depth: u32,
+}
+
+impl RoundCtx
+{
+    /// The round of a loop, before its depth is known.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The loop.
+    /// * `number` - The variable of the number of the round.
+    ///
+    /// # Returns
+    ///
+    /// The round.
+    pub(crate) fn of(span: Span, number: Option<Name>) -> RoundCtx
+    {
+        RoundCtx { span, number, depth: 0 }
+    }
+}
+
 /// The variable at the root of a place, through fields and cells.
 ///
 /// # Arguments
@@ -619,6 +649,73 @@ impl Checker
         found
             .into_iter()
             .for_each(|(span, n)| self.report(od::round_writes_outside(span, &n)));
+    }
+
+    /// Report a variable from outside a round of a parallel loop that the
+    /// round reads, when it holds a value jobs cannot use (ZK0494): the rounds
+    /// run on several threads at once.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The name read.
+    pub(crate) fn round_read(&mut self, n: &NameExpr)
+    {
+        let Some(round) = self.round
+        else
+        {
+            return;
+        };
+        let local =
+            self.scopes.local(&n.name).filter(|b| !round.span.contains(&b.span));
+        let Some(kind) = local.and_then(|b| b.kind)
+        else
+        {
+            return;
+        };
+        self.goes_to_job(kind, n.span);
+    }
+
+    /// Report a call in a round of a parallel loop of a closure declared
+    /// outside the round (ZK0494): its captures are shared, and the rounds
+    /// run on several threads at once.
+    ///
+    /// # Arguments
+    ///
+    /// * `sig` - The function called.
+    /// * `callee` - The name of the callee.
+    pub(crate) fn round_call(&mut self, sig: &FnSig, callee: &Ident)
+    {
+        let outside = self.round.is_some_and(|r| !r.span.contains(&sig.decl));
+        do_if!(
+            outside && sig.closure,
+            self.report(kd::not_for_jobs(callee.span, &callee.name))
+        );
+    }
+
+    /// Report an argument a call in a round of a parallel loop lets the
+    /// function change, when it is a variable from outside the round other
+    /// than the cell of the round's own number (ZK0728).
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - The argument.
+    pub(crate) fn round_edit_arg(&mut self, arg: &Expr)
+    {
+        let Some(round) = self.round
+        else
+        {
+            return;
+        };
+        let own_cell = matches!(arg, Expr::Index(n)
+            if matches!(n.index.as_ref(), Expr::Name(i) if Some(i.name) == round.number));
+        let Some((name, span)) = root_name(arg).filter(|_| !own_cell)
+        else
+        {
+            return;
+        };
+        let outside =
+            self.scopes.local(&name).is_some_and(|b| !round.span.contains(&b.span));
+        do_if!(outside, self.report(od::round_writes_outside(span, &name)));
     }
 
     /// Report a kind that jobs cannot use, where a value of it goes to a job

@@ -596,7 +596,10 @@ GlobalInJob = ("ZK0726", Level::Error),
 AtomicReadWrite = ("ZK0727", Level::Error),
 /// A round of a parallel loop writes a variable outside the cell of its own
 /// number.
-RoundWritesOutside = ("ZK0728", Level::Error) }
+RoundWritesOutside = ("ZK0728", Level::Error),
+/// A round of a parallel loop leaves the loop or its function: a break of the
+/// loop itself, or a return.
+RoundLeaves = ("ZK0729", Level::Error) }
 
 /// Each code with the address of the page that teaches it, which the build
 /// script reads from the error page of the manual.

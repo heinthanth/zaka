@@ -214,6 +214,52 @@ pub struct ParMap
     pub out_kind: DataKind,
 }
 
+/// The rounds of a parallel loop that a native build runs at once: each
+/// round calls the function with its number and the same other arguments.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ParRounds
+{
+    /// The function of a round: its first parameter is the number of the
+    /// round, a `usize` from 0.
+    pub func: u32,
+    /// The hidden slot of the count of rounds, which the start of the loop
+    /// sets.
+    pub count: Place,
+    /// The other arguments, each a word: the addresses of the variables from
+    /// outside the loop that the round reaches, and the first value of a
+    /// counted loop.
+    pub args: Vec<Expr>,
+}
+
+/// What a native build runs in place of a loop, at once on several threads.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Par
+{
+    /// The loop of a parallel map.
+    Map(ParMap),
+    /// The loop of a parallel loop.
+    Rounds(ParRounds),
+}
+
+impl Par
+{
+    /// The function that runs on the threads: the mapped one, or the
+    /// function of a round.
+    ///
+    /// # Returns
+    ///
+    /// Its index among the functions of the module.
+    pub fn func(&self) -> u32
+    {
+        match self
+        {
+            Par::Map(p) => p.func,
+            Par::Rounds(p) => p.func,
+        }
+    }
+}
+
 /// Where a slot lives. Written `g0` for a global and `l0` for a local of the
 /// current function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -355,7 +401,7 @@ pub enum Stmt
         /// For the loop of a parallel map, what a native build runs in its
         /// place: the rounds at once; the VM runs the loop.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        par: Option<Box<ParMap>>,
+        par: Option<Box<Par>>,
     },
     /// Counted loop: `var` runs from `from` to `to`, both included.
     Counted

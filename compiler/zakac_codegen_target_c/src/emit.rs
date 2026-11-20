@@ -419,6 +419,10 @@ pub(crate) struct Shared<'m>
     /// The functions a parallel map runs, each with a step of its own.
     #[builder(default)]
     pub(crate) mapped: std::collections::BTreeSet<u32>,
+    /// The functions of the rounds of a parallel loop, each with a step of its
+    /// own.
+    #[builder(default)]
+    pub(crate) rounds: std::collections::BTreeSet<u32>,
     /// Each function kind C can get as a closure; its index names its shape.
     #[builder(default)]
     pub(crate) cb_kinds: Vec<DataKind>,

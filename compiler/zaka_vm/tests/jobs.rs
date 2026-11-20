@@ -463,3 +463,68 @@ fn a_round_of_a_parallel_loop_writes_the_cell_of_its_own_number_alone()
     );
     assert_eq!(codes(&outside), [Code::RoundWritesOutside]);
 }
+
+/// The head of a program with a function that changes its parameter.
+const BUMP: &str = "တိုး ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+က ကို က + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn a_round_that_leaves_its_loop_or_its_function_is_refused()
+{
+    let leave = program("၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ကွင်းဆက် ကို ရပ်မည်။");
+    assert_eq!(codes(&leave), [Code::RoundLeaves]);
+    let back = format!(
+        "ပြန် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ \
+         ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n{}",
+        program("")
+    );
+    assert_eq!(codes(&back), [Code::RoundLeaves]);
+    let inner =
+        program("၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ၀ မှ ၄ အထိ j အနေဖြင့် ရေတွက်၍ ကွင်းဆက် ကို ရပ်မည်။");
+    assert_eq!(codes(&inner), []);
+}
+
+#[test]
+fn a_continue_ends_the_round_alone()
+{
+    let text = program(
+        "ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အကယ်၍ i သည် ၂ ထက် ကြီးလျှင် နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။
+ထွက် ၏ အကွက် i ကို i + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ထွက် ကို ပြသမည်။",
+    );
+    assert_eq!(output(&text), "[၁၊ ၂၊ ၃၊ ၀၊ ၀]\n");
+}
+
+#[test]
+fn a_round_reads_from_outside_values_jobs_can_use_alone()
+{
+    let text = format!(
+        "ကောင်တာ ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် n ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\n{}",
+        program(
+            "ကိန်းရှင် c သည် ကောင်တာ(n: ၁) ဖြစ်ပါစေ။
+ကိန်းရှင် ထွက် သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၁ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို c ၏ n ဟု ထားမည်။"
+        )
+    );
+    assert_eq!(codes(&text), [Code::NotForJobs]);
+}
+
+#[test]
+fn a_round_lets_a_call_change_no_variable_from_outside()
+{
+    let text = format!(
+        "{BUMP}{}",
+        program(
+            "ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ တိုး ဟူသော လုပ်ဆောင်ချက်ကို စု ဖြင့် လုပ်ဆောင်မည်။"
+        )
+    );
+    assert_eq!(codes(&text), [Code::RoundWritesOutside]);
+}

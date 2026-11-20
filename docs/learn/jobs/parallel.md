@@ -51,5 +51,24 @@ from a round, such as a running sum, is ZK0728:
 [၀၊ ၁၀၊ ၂၀၊ ၃၀၊ ၄၀]
 ```
 
-In this build the rounds of a parallel loop run in order; the rule makes them safe
-to spread across threads.
+A native program runs the rounds on one thread for each core, once the rounds are at
+least as numerous as the cores; fewer rounds, and the rounds on the VM, run in order. The rounds follow
+the rules of a job:
+
+- A round reads values from outside that jobs can use: numbers, text and lists, but no
+  plain shared object (ZK0494).
+- A round cannot stop the loop or return from its function (ZK0729), since the other
+  rounds are running; `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` ends its own round.
+- The lines rounds print come in no fixed order on threads.
+- A trap in a round ends the rounds of its thread; the loop then stops once the others
+  finish, as a wait for a job that trapped does.
+
+```zaka-error ZK0729
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ထွက် ၏ အကွက် i ကို i ဟု ထားမည်။
+ကွင်းဆက် ကို ရပ်မည်။          // the other rounds are running: ZK0729
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```

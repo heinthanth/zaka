@@ -240,7 +240,7 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The state.
-    fn set_aside(&mut self) -> Aside
+    pub(super) fn set_aside(&mut self) -> Aside
     {
         let top = self.scopes.first().cloned().unwrap_or_default();
         Aside {
@@ -260,7 +260,7 @@ impl Lowerer<'_>
     /// # Arguments
     ///
     /// * `a` - The state.
-    fn restore(&mut self, a: Aside)
+    pub(super) fn restore(&mut self, a: Aside)
     {
         self.scopes = a.scopes;
         self.drops = a.drops;
@@ -684,8 +684,23 @@ fn held_kind(name: &str, kind: DataKind) -> DataKind
 /// The names.
 pub(super) fn boxed_in(f: &st::FnDecl) -> HashSet<Name>
 {
+    boxed_in_stmts(&f.block.stmts)
+}
+
+/// The names the functions declared in statements capture and share, so the
+/// function that runs them keeps each local of these names in a box.
+///
+/// # Arguments
+///
+/// * `stmts` - The statements.
+///
+/// # Returns
+///
+/// The names.
+pub(super) fn boxed_in_stmts(stmts: &[st::Stmt]) -> HashSet<Name>
+{
     let mut walk = Captures(HashSet::new());
-    do_for!(s in &f.block.stmts, walk.visit_stmt(s));
+    do_for!(s in stmts, walk.visit_stmt(s));
     walk.0
 }
 

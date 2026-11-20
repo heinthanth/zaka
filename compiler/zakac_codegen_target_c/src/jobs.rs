@@ -7,7 +7,10 @@ use std::fmt::Write;
 
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::Module;
+use zakac_ir_builder::ir::Par;
 use zakac_ir_builder::ir::ParMap;
+use zakac_ir_builder::ir::ParRounds;
+use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
@@ -118,17 +121,83 @@ pub fn parts(module: &Module, f: u32) -> Vec<Option<DataKind>>
 /// The C text.
 pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
 {
-    if shared.spawned.is_empty() && shared.mapped.is_empty()
-    {
-        return None;
-    }
+    ret_if!(no_jobs(shared), None);
     let mut out =
         format!("#include \"{KINDS_HEADER}\"\n#include <setjmp.h>\n\n{GUARD}");
     let spawned: Vec<u32> = shared.spawned.iter().copied().collect();
     spawned.into_iter().for_each(|f| out.push_str(&step(shared, f)));
     let mapped: Vec<u32> = shared.mapped.iter().copied().collect();
     mapped.into_iter().for_each(|f| out.push_str(&map_step(shared, f)));
+    let rounds: Vec<u32> = shared.rounds.iter().copied().collect();
+    rounds.into_iter().for_each(|f| out.push_str(&round_step(shared, f)));
     Some(out)
+}
+
+/// Whether a program starts no job, maps nothing at once and runs no
+/// parallel loop.
+///
+/// # Arguments
+///
+/// * `shared` - The state shared across functions.
+///
+/// # Returns
+///
+/// `true` when it needs no guard.
+fn no_jobs(shared: &Shared<'_>) -> bool
+{
+    shared.spawned.is_empty() && shared.mapped.is_empty() && shared.rounds.is_empty()
+}
+
+/// The offset of each argument of a round in the data block of its loop,
+/// after the number of the round, which the block leaves out.
+///
+/// # Arguments
+///
+/// * `module` - The program.
+/// * `f` - The function of a round.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The kind of each argument with its offset, and the size of the block.
+pub fn round_parts(
+    module: &Module, f: u32, platform: u16,
+) -> (Vec<(DataKind, u32)>, u32)
+{
+    let kinds = parts(module, f);
+    let rest: Vec<Option<DataKind>> =
+        std::iter::once(None).chain(kinds.iter().skip(2).copied()).collect();
+    let (offsets, size) = part_offsets(&rest, platform);
+    let each = rest.iter().zip(offsets).skip(1);
+    let each = each.map(|(k, at)| (k.expect("a parameter has a kind"), at));
+    (each.collect(), size)
+}
+
+/// The step of a round of a parallel loop: it calls the function of the round
+/// with the number of the round and the arguments of the data block, which
+/// are words the loop shares.
+///
+/// # Arguments
+///
+/// * `shared` - The state shared across functions.
+/// * `f` - The function of a round.
+///
+/// # Returns
+///
+/// The C text.
+fn round_step(shared: &mut Shared<'_>, f: u32) -> String
+{
+    let (each, _) = round_parts(shared.module, f, shared.options.platform_bits);
+    let loads =
+        each.iter().map(|(k, at)| format!("zk_ld_{}(zk_b + {at})", shared.mem(*k)));
+    let args: Vec<String> = std::iter::once("zk_i".to_string()).chain(loads).collect();
+    let name = shared.module.funcs[f as usize].name.replace("*/", "* /");
+    format!(
+        "\n/** The step of a round that runs `{name}`. */\nvoid \
+         zk_round_step_{f}(uint8_t *zk_b, size_t zk_i)\n{{\n    {}({});\n}}\n",
+        func_name(f),
+        args.join(", ")
+    )
 }
 
 /// The step of a parallel map through a function: it lends the cell to the
@@ -252,10 +321,7 @@ pub fn native_jobs_glue() -> String
 /// The C text, blank for a program that starts no job.
 pub(crate) fn declarations(shared: &Shared<'_>) -> String
 {
-    if shared.spawned.is_empty() && shared.mapped.is_empty()
-    {
-        return String::new();
-    }
+    ret_if!(no_jobs(shared), String::new());
     let mut out = String::from(
         "int32_t zk_job_guard(void (*step)(void *), void *data);\n_Noreturn void \
          zk_job_leave(int32_t trap);\n",
@@ -268,25 +334,73 @@ pub(crate) fn declarations(shared: &Shared<'_>) -> String
     steps.for_each(|f| {
         _ = writeln!(out, "void zk_map_step_{f}(uint8_t *zk_c, uint8_t *zk_o);")
     });
+    let rounds = shared.rounds.iter();
+    rounds.for_each(|f| {
+        _ = writeln!(out, "void zk_round_step_{f}(uint8_t *zk_b, size_t zk_i);")
+    });
     out
 }
 
 impl FnGen<'_, '_>
 {
+    /// Write what a native build runs at once in place of a loop: a parallel
+    /// map or the rounds of a parallel loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `par` - The map or the rounds.
+    pub(crate) fn par(&mut self, par: &Par)
+    {
+        match par
+        {
+            Par::Map(p) => self.par_map(p),
+            Par::Rounds(p) => self.par_rounds(p),
+        }
+    }
+
     /// Write a parallel map that runs its rounds at once, in place of its
     /// loop.
     ///
     /// # Arguments
     ///
     /// * `p` - The map.
-    pub(crate) fn par_map(&mut self, p: &ParMap)
+    fn par_map(&mut self, p: &ParMap)
     {
         self.shared.mapped.insert(p.func);
         let (src, out) = (self.place(p.src), self.place(p.out));
         let (sk, ok) =
             (self.shared.descr.of(p.src_kind), self.shared.descr.of(p.out_kind));
+        let abort = i32::from(self.shared.options.trap_abort);
         self.line(&format!(
-            "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{});",
+            "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{}, zk_job_guard, \
+             zk_job_leave, {abort});",
+            p.func
+        ));
+    }
+
+    /// Write the rounds of a parallel loop that run at once, in place of its
+    /// loop: a data block of the arguments the rounds share, handed to the
+    /// runtime with the step of the round.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The rounds.
+    fn par_rounds(&mut self, p: &ParRounds)
+    {
+        self.shared.rounds.insert(p.func);
+        let platform = self.shared.options.platform_bits;
+        let (each, size) = round_parts(self.shared.module, p.func, platform);
+        let values = self.operands(&p.args.iter().collect::<Vec<_>>());
+        let data = self.spill(DataKind::OPAQUE, format!("zk_job_data({size})"));
+        for (v, (k, at)) in values.iter().zip(&each)
+        {
+            self.put_at(&format!("({data} + {at})"), v, *k);
+        }
+        let count = self.place(p.count);
+        let abort = i32::from(self.shared.options.trap_abort);
+        self.line(&format!(
+            "zk_par_for({count}, zk_round_step_{}, {data}, zk_job_guard, \
+             zk_job_leave, {abort});",
             p.func
         ));
     }

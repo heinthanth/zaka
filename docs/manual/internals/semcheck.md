@@ -651,7 +651,11 @@ the core. The compiler mark outside the core is ZK0349.
   A parallel map (`infer_par_map`) takes a function of one parameter the cells fit and
   gives a plain list of its result; `check_round` walks the block of a parallel loop and
   reports each write to a variable from outside it but the cell of the round's own
-  number (ZK0728).
+  number (ZK0728). Inside the round, `RoundCtx` (`in_round`) holds the loop: `round_read`
+  reports a variable from outside of a kind jobs cannot use and `round_call` a closure
+  from outside (ZK0494), `round_edit_arg` an argument that lets a call change a variable
+  from outside (ZK0728), and a break of the loop itself or a return is ZK0729. A
+  function declared in the round clears the context.
 
 ## Comptime calls
 

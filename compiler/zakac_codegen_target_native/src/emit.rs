@@ -134,6 +134,8 @@ pub struct Shared<'m, M: Module>
     pub steps: Vec<(u32, FuncId)>,
     /// The step of each function a parallel map runs, under the function.
     pub map_steps: Vec<(u32, FuncId)>,
+    /// The step of the function of each parallel loop, under the function.
+    pub round_steps: Vec<(u32, FuncId)>,
     /// Whether the code runs in this process, which has no C compiler for
     /// the guard of a job.
     pub jit: bool,
@@ -449,7 +451,7 @@ pub fn emit<M: Module>(
         runtime: HashMap::new(), funcs: Vec::new(), globals: Vec::new(), records: Vec::new(),
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
-        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(), map_steps: Vec::new(),
+        cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(), map_steps: Vec::new(), round_steps: Vec::new(),
         jit: main_name == "zk_main" };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
@@ -508,6 +510,16 @@ pub fn emit<M: Module>(
         let text = define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.map_step(f));
         clif.push_str(&text);
     }
+    // A round step calls the function of its round alone.
+    let rounds = s.round_steps.clone();
+    for (f, id) in rounds
+    {
+        let mut sig = s.m.make_signature();
+        sig.params.extend([AbiParam::new(ptr), AbiParam::new(ptr)]);
+        let text =
+            define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.round_step(f));
+        clif.push_str(&text);
+    }
     // A step can start no job of its own, so each is lowered once.
     let steps = s.steps.clone();
     for (f, id) in steps
@@ -528,7 +540,7 @@ pub fn emit<M: Module>(
     let lines = line_table(&mut s, main, main_name);
     #[rustfmt::skip]
     return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
-        .export_shapes(export_shapes).lines(lines).jobs(!s.steps.is_empty())
+        .export_shapes(export_shapes).lines(lines).jobs(!(s.steps.is_empty() && s.map_steps.is_empty() && s.round_steps.is_empty()))
         .unwinds(std::mem::take(&mut s.unwinds)).build());
 }
 

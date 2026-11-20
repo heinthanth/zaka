@@ -381,3 +381,19 @@ pub fn round_writes_outside(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::RoundWritesOutside, msg, span)
         .with_help(t!("codes.ZK0728.help"))
 }
+
+/// A round of a parallel loop leaves the loop or its function: a break of the
+/// loop itself, or a return.
+///
+/// # Arguments
+///
+/// * `span` - The break or the return.
+///
+/// # Returns
+///
+/// The `ZK0729` diagnostic.
+pub fn round_leaves(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0729.message");
+    Diagnostic::new(Code::RoundLeaves, msg, span).with_help(t!("codes.ZK0729.help"))
+}

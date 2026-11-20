@@ -1571,6 +1571,15 @@ en = "write \"<list> ၏ အကွက် <number> ...\" with the number of the r
 [codes.ZK0728.explain]
 en = """The rounds of a parallel loop, `အပြိုင် ရေတွက်၍` or `အပြိုင် ယူ၍`, can run at once, so no round writes what another reads or writes. A round reads each variable from outside the loop, writes the variables it declares, and writes one cell of a list from outside: the cell of its own number, `<list> ၏ အကွက် <number>`, where `<number>` is the variable of the loop (the number of the cell in an each loop with two names)."""
 
+[codes.ZK0729.title]
+en = "a round that leaves its loop"
+[codes.ZK0729.message]
+en = "a round of a parallel loop leaves the loop or its function, and the rounds run at once, so no round can end the others"
+[codes.ZK0729.help]
+en = "end the round alone with \"နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။\", keep what the round found in its own cell, and act on it after the loop, or drop \"အပြိုင်\""
+[codes.ZK0729.explain]
+en = """The rounds of a parallel loop run at once on several threads, so a round cannot stop the loop with `ကွင်းဆက် ကို ရပ်မည်။`, nor leave the function around it with a return: the other rounds are running. `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` ends the round alone. A break of a loop inside the round, and a return from a function declared inside it, are fine."""
+
 [codes.ZK0497.title]
 en = "a job of no declared function"
 [codes.ZK0497.message]

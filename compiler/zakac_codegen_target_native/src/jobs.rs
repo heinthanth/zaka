@@ -12,9 +12,12 @@ use cranelift_module::Linkage;
 use cranelift_module::Module;
 use zakac_codegen_target_c::jobs::part_offsets;
 use zakac_codegen_target_c::jobs::parts;
+use zakac_codegen_target_c::jobs::round_parts;
 use zakac_codegen_target_c::kinds::is_blob;
 use zakac_ir_builder::ir::Expr;
+use zakac_ir_builder::ir::Par;
 use zakac_ir_builder::ir::ParMap;
+use zakac_ir_builder::ir::ParRounds;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_semcheck::kind::DataKind;
@@ -59,6 +62,8 @@ impl<M: Module> Shared<'_, M>
     /// The step.
     pub fn map_step_of(&mut self, f: u32) -> FuncId
     {
+        // The JIT gives a program with a parallel map to the VM.
+        do_if!(self.jit, self.missing("a parallel map"));
         let known = self.map_steps.iter().find(|(g, _)| *g == f).map(|(_, id)| *id);
         ret_if!(let Some(id) = known, id);
         let mut sig = self.m.make_signature();
@@ -66,6 +71,30 @@ impl<M: Module> Shared<'_, M>
         let name = format!("zk_map_step_{f}");
         let id = self.m.declare_function(&name, Linkage::Local, &sig).expect("a step");
         self.map_steps.push((f, id));
+        id
+    }
+
+    /// The step of the rounds of a parallel loop through their function,
+    /// declared on its first use.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function of a round.
+    ///
+    /// # Returns
+    ///
+    /// The step.
+    pub fn round_step_of(&mut self, f: u32) -> FuncId
+    {
+        // The JIT gives a program with a parallel loop to the VM.
+        do_if!(self.jit, self.missing("a parallel loop"));
+        let known = self.round_steps.iter().find(|(g, _)| *g == f).map(|(_, id)| *id);
+        ret_if!(let Some(id) = known, id);
+        let mut sig = self.m.make_signature();
+        sig.params.extend([AbiParam::new(self.ptr), AbiParam::new(self.ptr)]);
+        let name = format!("zk_round_step_{f}");
+        let id = self.m.declare_function(&name, Linkage::Local, &sig).expect("a step");
+        self.round_steps.push((f, id));
         id
     }
 
@@ -215,12 +244,45 @@ impl<M: Module> FnGen<'_, '_, M>
         self.rt("zk_pipe_send", &[ptr, ptr, ptr], &[], &[p, at, d]);
     }
 
+    /// What runs at once in place of a loop: a parallel map or the rounds of
+    /// a parallel loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `par` - The map or the rounds.
+    pub fn par(&mut self, par: &Par)
+    {
+        match par
+        {
+            Par::Map(p) => self.par_map(p),
+            Par::Rounds(p) => self.par_rounds(p),
+        }
+    }
+
+    /// The guard of a job, the function that jumps back to it, and whether a
+    /// trap stops the whole program, as the runtime takes them.
+    ///
+    /// # Returns
+    ///
+    /// The three values.
+    fn guard_args(&mut self) -> [Value; 3]
+    {
+        let ptr = self.s.ptr;
+        let guard = self.s.glue_fn("zk_job_guard", &[ptr, ptr], &[types::I32]);
+        let guard = self.addr_of_fn(guard);
+        let leave = self.s.glue_fn("zk_job_leave", &[types::I32], &[]);
+        let leave = self.addr_of_fn(leave);
+        let abort =
+            self.b.ins().iconst(types::I32, i64::from(self.s.options.trap_abort));
+        [guard, leave, abort]
+    }
+
     /// A parallel map that runs its rounds at once, in place of its loop.
     ///
     /// # Arguments
     ///
     /// * `p` - The map.
-    pub fn par_map(&mut self, p: &ParMap)
+    fn par_map(&mut self, p: &ParMap)
     {
         let ptr = self.s.ptr;
         let src = self.addr_of(p.src);
@@ -228,12 +290,70 @@ impl<M: Module> FnGen<'_, '_, M>
         let (sk, ok) = (self.descr(p.src_kind), self.descr(p.out_kind));
         let step = self.s.map_step_of(p.func);
         let step = self.addr_of_fn(step);
+        let [guard, leave, abort] = self.guard_args();
+        let params = [ptr, ptr, ptr, ptr, ptr, ptr, ptr, types::I32];
         self.rt(
             "zk_par_map",
-            &[ptr, ptr, ptr, ptr, ptr],
+            &params,
             &[],
-            &[src, sk, out, ok, step],
+            &[src, sk, out, ok, step, guard, leave, abort],
         );
+    }
+
+    /// The rounds of a parallel loop that run at once, in place of its loop: a
+    /// data block of the arguments the rounds share, handed to the runtime
+    /// with the step of the round.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The rounds.
+    fn par_rounds(&mut self, p: &ParRounds)
+    {
+        let ptr = self.s.ptr;
+        let (each, size) = round_parts(self.s.module, p.func, self.s.platform());
+        let vals: Vec<Value> = p.args.iter().map(|a| self.expr(a)).collect();
+        let size = self.word(i64::from(size));
+        let data = self.rt("zk_job_data", &[ptr], &[ptr], &[size]).unwrap_or(size);
+        for (v, (k, at)) in vals.into_iter().zip(&each)
+        {
+            let place = self.b.ins().iadd_imm_u(data, i64::from(*at));
+            self.put_at(place, v, *k);
+        }
+        let count = self.read(p.count);
+        let step = self.s.round_step_of(p.func);
+        let step = self.addr_of_fn(step);
+        let [guard, leave, abort] = self.guard_args();
+        let params = [ptr, ptr, ptr, ptr, ptr, types::I32];
+        self.rt("zk_par_for", &params, &[], &[count, step, data, guard, leave, abort]);
+    }
+
+    /// The code of the step of a round of a parallel loop: it calls the
+    /// function of the round with the number of the round and the arguments
+    /// of the data block.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function of a round.
+    pub fn round_step(&mut self, f: u32)
+    {
+        let first = self.b.current_block().expect("the first block");
+        let &[data, i] = self.b.block_params(first)
+        else
+        {
+            return;
+        };
+        let (each, _) = round_parts(self.s.module, f, self.s.platform());
+        let mut vals = vec![i];
+        for (k, at) in each
+        {
+            let place = self.b.ins().iadd_imm_u(data, i64::from(at));
+            vals.push(self.load(self.s.clif_of(k), place));
+        }
+        let id = self.s.funcs[f as usize];
+        let r = self.func_ref(id);
+        self.b.ins().call(r, &vals);
+        self.b.ins().return_(&[]);
+        self.live = false;
     }
 
     /// The code of the step of a parallel map through a function: it lends

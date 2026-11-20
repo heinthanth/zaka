@@ -60,6 +60,7 @@ use zakac_diagnostics::fold as fd;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::lint::LintLevel;
 use zakac_diagnostics::lint::LintLevels;
+use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_rust_sugars::do_for;
@@ -93,6 +94,7 @@ use crate::generic_struct::leftovers;
 use crate::generic_struct::name_instances;
 use crate::host;
 use crate::host::IO_ERROR;
+use crate::jobs::RoundCtx;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::op_calls::OpCalls;
@@ -742,6 +744,9 @@ pub(crate) struct Checker
     /// Number of loops around the current statement, inside the function.
     #[builder(default)]
     pub loop_depth: u32,
+    /// The round of a parallel loop around the current statement, inside the
+    /// function.
+    pub round: Option<RoundCtx>,
     /// The function around the current statement.
     pub func: Option<FnCtx>,
     /// The part each result variable is proven to hold here: `true` for a
@@ -1066,6 +1071,7 @@ impl Checker
         };
         self.name_foreign(&sig, callee.span, &sigs);
         self.refer(&callee.name, callee.span, sig.decl);
+        self.round_call(&sig, callee);
         let comptime = sig.comptime && place.is_none();
         do_if!(comptime, _ = self.comptime_sigs.insert(span, sig.clone()));
         let call = format!("a call of \"{}\", an unsafe function,", callee.name);
@@ -1653,6 +1659,7 @@ impl Checker
     fn check_arg(&mut self, arg: &Expr, kind: DataKind, edit: bool)
     {
         ret_if!(!edit, self.expect_kind(arg, Some(kind)));
+        self.round_edit_arg(arg);
         let Some(found) = self.place_kind(arg)
         else
         {
@@ -2097,6 +2104,25 @@ impl Checker
         f(self);
         self.loop_depth -= 1;
     }
+
+    /// Check statements as the round of a parallel loop when there is one,
+    /// inside the loop it belongs to.
+    ///
+    /// # Arguments
+    ///
+    /// * `round` - The round, or `None` for a loop that is no parallel one.
+    /// * `f` - The check.
+    fn in_round(&mut self, round: Option<RoundCtx>, f: impl FnOnce(&mut Self))
+    {
+        let Some(round) = round
+        else
+        {
+            return f(self);
+        };
+        let outer = self.round.replace(RoundCtx { depth: self.loop_depth, ..round });
+        f(self);
+        self.round = outer;
+    }
 }
 
 /// Whether `e` is a literal step of zero or below.
@@ -2478,8 +2504,9 @@ impl Visitor for Checker
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
         let changed = self.changed(&n.block.stmts);
+        let round = n.parallel.then(|| RoundCtx::of(n.span, Some(n.var.name)));
         self.proven_loop(changed, None, |c| {
-            c.in_loop(|c| c.scan_loop_block(&n.block, None))
+            c.in_loop(|c| c.in_round(round, |c| c.scan_loop_block(&n.block, None)))
         });
         self.scopes.pop();
     }
@@ -2497,8 +2524,10 @@ impl Visitor for Checker
         do_if!(let Some(place) = &n.place, self.declare(place, kinds.and_then(|(p, _)| p), Access::Var));
         self.declare(&n.var, kinds.map(|(_, k)| k), Access::Var);
         let changed = self.changed(&n.block.stmts);
+        let number = n.place.as_ref().map(|p| p.name);
+        let round = n.parallel.then(|| RoundCtx::of(n.span, number));
         self.proven_loop(changed, None, |c| {
-            c.in_loop(|c| c.scan_loop_block(&n.block, None))
+            c.in_loop(|c| c.in_round(round, |c| c.scan_loop_block(&n.block, None)))
         });
         self.scopes.pop();
     }
@@ -2524,6 +2553,9 @@ impl Visitor for Checker
     fn visit_break(&mut self, n: &BreakStmt)
     {
         do_if!(self.loop_depth == 0, self.report(rd::break_outside_loop(n.span)));
+        // A break of a loop inside the round is fine.
+        let leaves = self.round.is_some_and(|r| r.depth == self.loop_depth);
+        do_if!(leaves, self.report(od::round_leaves(n.span)));
     }
 
     fn visit_continue(&mut self, n: &ContinueStmt)
@@ -2544,6 +2576,8 @@ impl Visitor for Checker
         do_if!(nested, self.declare_nested(n));
         let outer = self.func.take();
         let depth = std::mem::take(&mut self.loop_depth);
+        // A function inside a round runs in the round, as its own function.
+        let round = self.round.take();
         let proven = std::mem::take(&mut self.proven);
         let touched = std::mem::take(&mut self.touched);
         let given = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
@@ -2581,12 +2615,14 @@ impl Visitor for Checker
         self.func = outer;
         self.unchecked = outer_unchecked;
         self.loop_depth = depth;
+        self.round = round;
         (self.proven, self.touched) =
             tern!(nested, (proven, touched), Default::default());
     }
 
     fn visit_return(&mut self, n: &ReturnStmt)
     {
+        do_if!(self.round.is_some(), self.report(od::round_leaves(n.span)));
         let Some(func) = self.func.clone()
         else
         {

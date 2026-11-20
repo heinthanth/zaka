@@ -168,6 +168,23 @@ impl Scopes
         Some(binding)
     }
 
+    /// Find a local variable, innermost scope first, with no note of a
+    /// capture: a name of the top level of the file is none.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    ///
+    /// # Returns
+    ///
+    /// What the name stands for, or `None` for no local.
+    pub fn local(&self, name: &str) -> Option<Binding>
+    {
+        let mut each = self.names.iter().enumerate().rev();
+        let (at, binding) = each.find_map(|(i, s)| s.get(name).map(|b| (i, *b)))?;
+        (at > 0).then_some(binding)
+    }
+
     /// Record a name found in scope `at` as a borrow of each open function
     /// whose first scope lies past it; a name of the top level of the file
     /// is no local.
