@@ -329,9 +329,14 @@ missing row is `ZK_TRAP_NO_ROW`.
 - `zk_lock` and `zk_unlock` find each lock through the block of the object (`zk_seq_base` of
   the variable) and name the holder through `owner`: the number of a job, or a number of
   its own for each other thread, from the high half (`NEXT_LOCKER`), so two threads of C
-  never pass as one. A lock another thread holds waits through the same deadlock check, a
-  thread takes again a lock it holds, and a job that stops at a trap leaves its locks
-  broken (`LockBroken`).
+  never pass as one. The locks sit apart from the state of the jobs, in 64 shards on the
+  address of the object (`LOCKS`): a lock no other thread holds is taken, and one no
+  thread waits for given back, under the lock of its shard alone (`take_free`). A lock
+  another thread holds waits through the same deadlock check, counted in `LOCK_WAITERS`, so
+  a give back wakes waiters when there are some; a thread takes again a lock it holds,
+  and a job that stops at a trap leaves its locks broken (`LockBroken`). Eight jobs that
+  each lock an object of their own 200,000 times ran 0.21 s with the locks in the state,
+  and 0.01 s apart.
 
 ## C functions
 

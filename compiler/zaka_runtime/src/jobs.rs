@@ -103,8 +103,6 @@ struct Held
 /// The state of the jobs and channels.
 struct State
 {
-    /// Each lock a thread holds, or that a job held when it stopped at a trap.
-    locks: Vec<Held>,
     /// Each job; the job a program holds as `n` is at `n - 1`.
     jobs: Vec<Job>,
     /// The numbers of the jobs of parallel loops that ended, which no program
@@ -122,7 +120,6 @@ struct State
 
 /// The state of the jobs and channels.
 static STATE: Mutex<State> = Mutex::new(State {
-    locks: Vec::new(),
     jobs: Vec::new(),
     spare: Vec::new(),
     pipes: Vec::new(),
@@ -452,10 +449,14 @@ fn run_job(
     // The thread ends here, and its calls and its line with it.
     crate::ctx::release_frames();
     crate::out::flush_line();
+    // The locks a job held when it stopped remain taken, broken.
+    for shard in &LOCKS
+    {
+        let mut held = shard.lock().unwrap_or_else(PoisonError::into_inner);
+        held.iter_mut().filter(|h| h.owner == n).for_each(|h| h.broken = true);
+    }
     let mut st = state();
     st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
-    // The locks a job held when it stopped remain taken, broken.
-    st.locks.iter_mut().filter(|h| h.owner == n).for_each(|h| h.broken = true);
     st.running -= 1;
     changed(&mut st);
 }
@@ -529,6 +530,72 @@ pub extern "C" fn zk_job_drop(n: usize)
     zk_job_taken(n);
 }
 
+/// The count of the shards of the locks.
+const SHARDS: usize = 64;
+
+/// Each lock a thread holds, or that a job held when it stopped at a trap,
+/// apart from the state and spread over shards on the address of the object:
+/// a thread takes a lock no other thread holds, and gives one back no thread
+/// waits for, with no lock of the state and none other objects share.
+static LOCKS: [Mutex<Vec<Held>>; SHARDS] = [const { Mutex::new(Vec::new()) }; SHARDS];
+
+/// The count of threads that wait for a lock, so a give back with none
+/// wakes no one.
+static LOCK_WAITERS: AtomicUsize = AtomicUsize::new(0);
+
+/// The shard of the locks of an object, locked.
+///
+/// # Arguments
+///
+/// * `obj` - The block of the object.
+///
+/// # Returns
+///
+/// The guard.
+fn locks(obj: usize) -> MutexGuard<'static, Vec<Held>>
+{
+    // Blocks align to 16 octets, so the low bits name no shard.
+    let shard = (obj >> 4) % SHARDS;
+    LOCKS[shard].lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// What a thread finds when it takes a lock.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Take
+{
+    /// It took the lock, or took once more one it holds.
+    Taken,
+    /// Its holder stopped at a trap.
+    Broken,
+    /// Another thread holds it.
+    Other,
+}
+
+/// Take a lock when no other thread holds it.
+///
+/// # Arguments
+///
+/// * `obj` - The block of the object.
+/// * `me` - The thread, as [`owner`] names it.
+///
+/// # Returns
+///
+/// What the thread found.
+fn take_free(obj: usize, me: usize) -> Take
+{
+    let mut held = locks(obj);
+    let Some(h) = held.iter_mut().find(|h| h.obj == obj)
+    else
+    {
+        held.push(Held { obj, owner: me, depth: 1, broken: false });
+        return Take::Taken;
+    };
+    ret_if!(h.broken, Take::Broken);
+    ret_if!(h.owner != me, Take::Other);
+    h.depth += 1;
+    Take::Taken
+}
+
 /// Take the lock of a shared object: the thread waits while another holds
 /// it, and takes once more a lock it holds.
 ///
@@ -541,22 +608,25 @@ pub extern "C" fn zk_lock(obj: *mut u8)
     // The block of the object names the lock, which each job that
     // holds the object shares; the variable differs from job to job.
     let (obj, me) = (zk_seq_base(obj) as usize, owner());
-    let free =
-        |s: &State| s.locks.iter().all(|h| h.obj != obj || h.owner == me || h.broken);
-    let mut st = wait_until(state(), free);
-    let held = st.locks.iter_mut().find(|h| h.obj == obj);
-    let Some(held) = held
-    else
+    let mut took = take_free(obj, me);
+    if took == Take::Other
     {
-        st.locks.push(Held { obj, owner: me, depth: 1, broken: false });
-        return;
-    };
-    if held.broken
-    {
-        drop(st);
-        stop(trap::LOCK_BROKEN, &[]);
+        // The count goes up before the look, so a give back after the look
+        // sees it and wakes this thread.
+        LOCK_WAITERS.fetch_add(1, Ordering::SeqCst);
+        let free = |_: &State| {
+            let held = locks(obj);
+            held.iter().all(|h| h.obj != obj || h.owner == me || h.broken)
+        };
+        while took == Take::Other
+        {
+            drop(wait_until(state(), free));
+            took = take_free(obj, me);
+        }
+        LOCK_WAITERS.fetch_sub(1, Ordering::SeqCst);
     }
-    held.depth += 1;
+    ret_if!(took == Take::Taken);
+    stop(trap::LOCK_BROKEN, &[]);
 }
 
 /// Give back the lock of a shared object once.
@@ -568,17 +638,19 @@ pub extern "C" fn zk_lock(obj: *mut u8)
 pub extern "C" fn zk_unlock(obj: *mut u8)
 {
     let (obj, me) = (zk_seq_base(obj) as usize, owner());
-    let mut st = state();
-    let at = st.locks.iter().position(|h| h.obj == obj && h.owner == me);
-    let Some(at) = at
-    else
     {
-        return;
-    };
-    st.locks[at].depth -= 1;
-    ret_if!(st.locks[at].depth > 0);
-    st.locks.remove(at);
-    changed(&mut st);
+        let mut held = locks(obj);
+        let Some(at) = held.iter().position(|h| h.obj == obj && h.owner == me)
+        else
+        {
+            return;
+        };
+        held[at].depth -= 1;
+        ret_if!(held[at].depth > 0);
+        held.remove(at);
+    }
+    ret_if!(LOCK_WAITERS.load(Ordering::SeqCst) == 0);
+    changed(&mut state());
 }
 
 /// Add a value to an atomic number of the platform width, or subtract it,
