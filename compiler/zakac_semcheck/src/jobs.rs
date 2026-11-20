@@ -53,6 +53,10 @@ pub const ATOMIC_ADD: &str = "ပေါင်းထည့်";
 /// The verb of the core that subtracts from an atomic number.
 pub const ATOMIC_SUB: &str = "နုတ်ယူ";
 
+/// The verb of the core that sets an atomic number when it holds an expected
+/// value: `<atomic> ထဲရှိ <expected> ကို <new> ဖြင့် အစားထိုးသော ရလဒ်`.
+pub const ATOMIC_CAS: &str = "အစားထိုး";
+
 /// Finds a read of one place inside a value.
 struct SamePlace
 {
@@ -539,7 +543,12 @@ impl Checker
     ) -> Option<Option<DataKind>>
     {
         let name = callee.name.as_str();
-        ret_if!(place.is_some() || (name != ATOMIC_ADD && name != ATOMIC_SUB), None);
+        ret_if!(place.is_some(), None);
+        if let ([target, expected, new], ATOMIC_CAS) = (args, name)
+        {
+            return self.cas_call(target, expected, new);
+        }
+        ret_if!(name != ATOMIC_ADD && name != ATOMIC_SUB, None);
         let [target, value] = args
         else
         {
@@ -551,6 +560,34 @@ impl Checker
         self.infer(target, None);
         self.expect_kind(value, Some(int));
         Some(None)
+    }
+
+    /// A compare-and-set of an atomic number, `<atomic> ထဲရှိ <expected> ကို
+    /// <new> ဖြင့် အစားထိုးသော ရလဒ်`: a result of its integer kind on each side,
+    /// as Rust's `compare_exchange` gives: the good side holds what the number
+    /// held, the expected value, and the error side what it held in its place.
+    /// Each value can read the same number: the set itself checks it.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The atomic number.
+    /// * `expected` - The value it must hold.
+    /// * `new` - The value it takes.
+    ///
+    /// # Returns
+    ///
+    /// `Some(Some(result))`, or `None` for a place that holds no atomic number,
+    /// which leaves the call to the replace of text.
+    fn cas_call(
+        &mut self, target: &Expr, expected: &Expr, new: &Expr,
+    ) -> Option<Option<DataKind>>
+    {
+        let int = self.atomic_place(target)?;
+        self.note_written(target);
+        self.infer(target, None);
+        self.expect_kind(expected, Some(int));
+        self.expect_kind(new, Some(int));
+        Some(Some(DataKind::fallible(Some(int), Some(int))))
     }
 
     /// The integer kind of an atomic number a place holds: a variable or a

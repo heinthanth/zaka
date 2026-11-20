@@ -2,6 +2,7 @@
 //! calls, and a call of the core's `စောင့်` on a job becomes a wait for it.
 
 use zakac_semcheck::jobs::ATOMIC_ADD;
+use zakac_semcheck::jobs::ATOMIC_CAS;
 use zakac_semcheck::jobs::ATOMIC_SUB;
 use zakac_semcheck::jobs::CLOSE;
 use zakac_semcheck::jobs::SEND;
@@ -154,6 +155,54 @@ impl Lowerer<'_>
         let addr = node_expr(DataKind::OPAQUE, self.addr_of(target), target.span());
         let value = self.owned(value, int);
         Some(Stmt::AtomicAdd { addr, value, sub, span: n.span })
+    }
+
+    /// Lower a compare-and-set of an atomic number: the set gives back what
+    /// the number held, and the result is good, holding it, when that was the
+    /// expected value, and an error holding it otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    /// * `kind` - The result kind.
+    ///
+    /// # Returns
+    ///
+    /// A read of the result, or `None` for a call that is no compare-and-set.
+    pub(super) fn cas_node(
+        &mut self, n: &ast::CallExpr, kind: DataKind,
+    ) -> Option<ExprNode>
+    {
+        ret_if!(n.place.is_some() || n.callee.name.as_str() != ATOMIC_CAS, None);
+        let [target, expected, new] = n.args.as_slice()
+        else
+        {
+            return None;
+        };
+        ret_if!(!self.holds_atomic(target), None);
+        let fault = Fault::of_kind(kind)?;
+        let int = fault.ok?;
+        let span = n.span;
+        let addr = node_expr(DataKind::OPAQUE, self.addr_of(target), target.span());
+        let expected = self.owned(expected, int);
+        let expected = self.spill(expected);
+        let new = self.owned(new, int);
+        #[rustfmt::skip]
+        let cas = ExprNode::AtomicCas { addr: Box::new(addr),
+            expected: Box::new(expected.clone()), new: Box::new(new) };
+        let held = self.spill(node_expr(int, cas, span));
+        let set = node_expr(
+            DataKind::Bool,
+            compare_node(CmpOp::Eq, held.clone(), expected),
+            span,
+        );
+        let result = self.hidden(kind, span);
+        let good = fault.value(false, Some(held.clone()), None, self.platform, span);
+        let bad = fault.value(true, None, Some(held), self.platform, span);
+        let then = vec![Stmt::Set { place: result, value: good, span }];
+        let els = vec![Stmt::Set { place: result, value: bad, span }];
+        self.pre.push(Stmt::If { cond: set, then, els, span });
+        Some(ExprNode::Read(result))
     }
 
     /// Whether a place holds an atomic number: a variable, or a field.

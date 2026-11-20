@@ -572,6 +572,14 @@ impl Folder
                 self.drop_value(addr);
                 (None, None)
             }
+            // Another thread can change an atomic number, so none is known.
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                self.drop_value(addr);
+                self.drop_value(expected);
+                self.drop_value(new);
+                (None, None)
+            }
             ExprNode::PtrAdd { base: lhs, offset: rhs }
             | ExprNode::PtrSub { lhs, rhs } =>
             {

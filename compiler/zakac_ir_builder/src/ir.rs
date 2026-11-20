@@ -1076,6 +1076,18 @@ pub enum ExprNode
         /// The address of the number.
         addr: Box<Expr>,
     },
+    /// Set an atomic number to `new` when it holds `expected`, in one step;
+    /// the value is what the number held before, as Rust's
+    /// `compare_exchange` gives back on each side.
+    AtomicCas
+    {
+        /// The address of the number.
+        addr: Box<Expr>,
+        /// The value the number must hold.
+        expected: Box<Expr>,
+        /// The value it takes.
+        new: Box<Expr>,
+    },
     /// A field of the struct C keeps behind a handle, read at the address C
     /// gave plus an offset: a number, a boolean or a counted list of numbers
     /// as C holds it; for an optional of text, the string the field's

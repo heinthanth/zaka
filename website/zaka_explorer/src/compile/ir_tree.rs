@@ -548,6 +548,11 @@ impl IrTree<'_>
             {
                 ("atomic_load", String::new(), vec![self.expr(addr)])
             }
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                let parts = vec![self.expr(addr), self.expr(expected), self.expr(new)];
+                ("atomic_cas", String::new(), parts)
+            }
             ExprNode::CField { base, offset } =>
             {
                 ("c_field", offset.to_string(), vec![self.expr(base)])

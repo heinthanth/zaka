@@ -343,6 +343,12 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
             expr(lhs, w);
             expr(rhs, w);
         }
+        ExprNode::AtomicCas { addr, expected, new } =>
+        {
+            expr(addr, w);
+            expr(expected, w);
+            expr(new, w);
+        }
         ExprNode::Call { args, .. }
         | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }

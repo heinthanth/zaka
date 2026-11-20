@@ -177,6 +177,15 @@ impl FnGen<'_, '_>
                 let a = self.expr(addr);
                 format!("zk_atomic_load((ptrdiff_t *)({a}))")
             }
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                let parts = self.operands(&[addr, expected, new]);
+                format!(
+                    "zk_atomic_cas((ptrdiff_t *)({}), (ptrdiff_t)({}), \
+                     (ptrdiff_t)({}))",
+                    parts[0], parts[1], parts[2]
+                )
+            }
             ExprNode::Take { addr } => self.take(addr, e.kind),
             ExprNode::Own { value, pin } =>
             {
@@ -1047,6 +1056,7 @@ fn acts(e: &Expr, stop: bool) -> bool
         | ExprNode::FnAddr { .. }
         | ExprNode::Text(_) => false,
         ExprNode::Load { addr } | ExprNode::AtomicLoad { addr } => acts(addr, stop),
+        ExprNode::AtomicCas { .. } => true,
         ExprNode::Lend { operand } => acts(operand, stop),
         ExprNode::FieldAddr { base, .. } => acts(base, stop),
         ExprNode::Prefix { op, operand } =>

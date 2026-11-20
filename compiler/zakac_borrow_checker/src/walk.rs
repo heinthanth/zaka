@@ -52,6 +52,10 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         {
             vec![lhs.as_ref(), rhs.as_ref()]
         }
+        ExprNode::AtomicCas { addr, expected, new } =>
+        {
+            vec![addr.as_ref(), expected.as_ref(), new.as_ref()]
+        }
         ExprNode::Wait(operand) | ExprNode::Receive(operand) => vec![operand.as_ref()],
         ExprNode::Call { args, .. }
         | ExprNode::Host { args, .. }
@@ -223,6 +227,10 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::RowFind { table: lhs, index: rhs } =>
         {
             vec![lhs.as_mut(), rhs.as_mut()]
+        }
+        ExprNode::AtomicCas { addr, expected, new } =>
+        {
+            vec![addr.as_mut(), expected.as_mut(), new.as_mut()]
         }
         ExprNode::Wait(operand) | ExprNode::Receive(operand) => vec![operand.as_mut()],
         ExprNode::Spawn { args, .. }

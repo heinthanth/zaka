@@ -793,7 +793,11 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   one job at a time, and `zk_atomic_load` and `zk_atomic_set` (`SeqCst`) in native code,
   so a C compiler never keeps the number in a register across a loop that waits for it,
   and folding never takes it as known. A local atomic number is the thread's own, read
-  and set as a plain slot.
+  and set as a plain slot. A compare-and-set (a call of the core's `အစားထိုး` with
+  `ထဲရှိ`, `ကို` and `ဖြင့်`, which `cas_call` checks) lowers to `ExprNode::AtomicCas`, which
+  gives what the number held (`cas_node`): the op `atomic_cas` on the VM, `zk_atomic_cas`
+  (`compare_exchange`) in native code; the result is then good, holding that value, when it
+  equals the expected one, and an error holding it otherwise.
 - **Parallel maps.** The lowering (`par_map`) fills a hidden plain list in a loop of
   calls (`each_loop`), and marks the loop with `Par::Map` (`Stmt::Loop::par`). Cells that
   widen to the parameter go first to a hidden plain list of its kind (`widened`), so the

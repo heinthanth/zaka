@@ -232,6 +232,15 @@ impl<M: Module> FnGen<'_, '_, M>
         let ptr = self.s.ptr;
         match &e.node
         {
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                let ptr = self.s.ptr;
+                let (a, e) = (self.expr(addr), self.expr(expected));
+                let n = self.expr(new);
+                let got =
+                    self.rt("zk_atomic_cas", &[ptr, ptr, ptr], &[ptr], &[a, e, n]);
+                got.expect("the runtime gives the number it held")
+            }
             ExprNode::AtomicLoad { addr } =>
             {
                 let (ptr, a) = (self.s.ptr, self.expr(addr));

@@ -81,6 +81,10 @@ fn raw_expr(e: &Expr) -> bool
             raw_expr(lhs) || raw_expr(rhs)
         }
         ExprNode::Wait(job) | ExprNode::Receive(job) => raw_expr(job),
+        ExprNode::AtomicCas { addr, expected, new } =>
+        {
+            raw_expr(addr) || raw_expr(expected) || raw_expr(new)
+        }
         ExprNode::Call { args, .. }
         | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }

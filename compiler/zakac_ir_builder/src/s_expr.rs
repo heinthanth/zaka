@@ -238,6 +238,11 @@ impl ToSexpr for Expr
             ExprNode::AddrOf(place) => list("addr", [place.to_string()]),
             ExprNode::Load { addr } => list("load", [addr.to_sexpr()]),
             ExprNode::AtomicLoad { addr } => list("atomic_load", [addr.to_sexpr()]),
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                let parts = [addr.to_sexpr(), expected.to_sexpr(), new.to_sexpr()];
+                list("atomic_cas", parts)
+            }
             ExprNode::CField { base, offset } =>
             {
                 list("c_field", [base.to_sexpr(), offset.to_string()])

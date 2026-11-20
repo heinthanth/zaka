@@ -1777,6 +1777,13 @@ impl<'s> FuncGen<'s>
                 self.foreign(slot.map(Op::LocalAddr), *func, args);
             }
             ExprNode::AddrOf(place) => self.addr_of(*place),
+            ExprNode::AtomicCas { addr, expected, new } =>
+            {
+                self.expr(addr);
+                self.expr(expected);
+                self.expr(new);
+                self.op(Op::AtomicCas(e.kind));
+            }
             ExprNode::Load { addr } | ExprNode::AtomicLoad { addr } =>
             {
                 self.expr(addr);

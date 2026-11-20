@@ -3333,6 +3333,7 @@ impl Lowerer<'_>
     {
         ret_if!(n.parallel, self.spawn_node(&n.callee, n.place.as_deref(), &n.args));
         ret_if!(let Some(wait) = self.wait_node(n), wait);
+        ret_if!(let Some(cas) = self.cas_node(n, kind), cas);
         let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
         let args = self.lower_args(&n.args, &sig);
         ret_if!(self.post.is_empty(), target.node(args));

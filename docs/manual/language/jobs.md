@@ -202,6 +202,7 @@ and subtract from at once with no lock and lose no change:
 | `အက်တမ်မစ် ဖြစ်သော <kind>` | the kind of an atomic number; `<kind>` is `ကိန်းပြည့်` or `လက္ခဏာမဲ့ ကိန်းပြည့်`, of the platform width, ZK0401 for another |
 | `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်။` | adds the value in one step no other job can split |
 | `<atomic> ထဲမှ <value> ကို နုတ်ယူမည်။` | subtracts the value in one step |
+| `<atomic> ထဲရှိ <expected> ကို <new> ဖြင့် အစားထိုးသော ရလဒ်` | sets the number to `<new>` when it holds `<expected>`, in one step, and gives a result |
 
 - A read of an atomic number gives its integer kind, and a set takes it. A read or a set
   of an atomic field of an object is one step too: a read sees each change another job
@@ -239,6 +240,59 @@ and subtract from at once with no lock and lose no change:
 ကိန်းရှင် ကြိမ် သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 ကြိမ် ကို ကြိမ် + ၁ ဟု ထားမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+The compare-and-set gives a [result](error-handling.md) of the integer kind of the number
+on each side, as `compare_exchange` of Rust does: a good result that holds what the number
+held, which is `<expected>`, once the number took `<new>`; or an error that holds what the
+number held in its place, with the number left as it was.
+
+- `ထဲတွင် အောင်မြင်သည့်သတင်း ရှိ` tests that the number took `<new>`, and `ထဲမှ ဒေတာ` and
+  `ထဲမှ အမှားအယွင်း ဒေတာ` read the sides ([Reading a whole result](error-handling.md#reading-a-whole-result)).
+- `<expected>` and `<new>` can read the same number, as no job can come between the test and
+  the set: no ZK0727.
+- `<atomic>` is a variable or a field that holds an atomic number; another place is
+  ZK0332. As a statement the result would go unread: ZK0443.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် x သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+x ထဲရှိ ၅ ကို ၆ ဖြင့် အစားထိုးသော ရလဒ် ကို ပြသမည်။
+x ထဲရှိ ၅ ကို ၇ ဖြင့် အစားထိုးသော ရလဒ် ကို ပြသမည်။
+x ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း(၅)
+အမှားအယွင်း(၆)
+၆
+```
+
+Three jobs each claim an object; the first to set the owner from 0 wins, and the others
+see the owner it set:
+
+```zaka
+ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ပိုင်ရှင် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ယူ ဟူသော လုပ်ဆောင်ချက် သည် ဘူး ဟူသော ကောင်တာ တစ်ခု ကို လည်းကောင်း န ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် ရ သည် ဘူး ၏ ပိုင်ရှင် ထဲရှိ ၀ ကို န ဖြင့် အစားထိုးသော ရလဒ် ဖြစ်ပါစေ။
+အကယ်၍ ရ ထဲတွင် အောင်မြင်သည့်သတင်း ရှိလျှင် ၁ ကို ပြန်ပေးမည်။
+၀ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘူး သည် ကောင်တာ(ပိုင်ရှင်: ၀) ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၁ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၂ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၃ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+(က ကို စောင့်သော ရလဒ်) + (ခ ကို စောင့်သော ရလဒ်) + (ဂ ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၁
 ```
 
 ## Channels

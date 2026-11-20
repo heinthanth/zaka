@@ -414,7 +414,7 @@ fn jobs_add_to_an_atomic_number_with_no_lock()
         "/../zakac_codegen_target_c/tests/inputs/atomics.zaka"
     ))
     .unwrap();
-    assert_eq!(output(&text), "၁၉၈၀\n၇\n၄\n");
+    assert_eq!(output(&text), "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n");
 }
 
 #[test]
@@ -671,4 +671,37 @@ fn a_seed_shuffles_the_turns_and_gives_the_same_order_again()
     assert!(orders.iter().all(|o| lines(o) == fixed), "{orders:?}");
     assert!(orders.len() > 1, "{orders:?}");
     assert_eq!(run(7), run(7));
+}
+
+/// Three jobs claim an object through a compare-and-set of its owner field.
+const CLAIM: &str = "ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
+                     ပိုင်ရှင် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+ယူ ဟူသော လုပ်ဆောင်ချက် သည် ဘူး ဟူသော ကောင်တာ တစ်ခု ကို လည်းကောင်း န ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် ရ သည် ဘူး ၏ ပိုင်ရှင် ထဲရှိ ၀ ကို န ဖြင့် အစားထိုးသော ရလဒ် ဖြစ်ပါစေ။
+အကယ်၍ ရ ထဲတွင် အောင်မြင်သည့်သတင်း ရှိလျှင် ၁ ကို ပြန်ပေးမည်။
+၀ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဘူး သည် ကောင်တာ(ပိုင်ရှင်: ၀) ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၁ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၂ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ယူ ဟူသော လုပ်ဆောင်ချက်ကို ဘူး နှင့် ၃ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+(က ကို စောင့်သော ရလဒ်) + (ခ ကို စောင့်သော ရလဒ်) + (ဂ ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn a_compare_and_set_lets_one_job_alone_claim_an_object()
+{
+    // Each order of the turns gives one winner.
+    for seed in 0..20
+    {
+        let options = RunOptions::builder().shuffle(seed).build();
+        let (out, result) = run_source_with(CLAIM, &options);
+        assert!(result.is_ok(), "seed {seed}: {result:?}");
+        assert_eq!(out, "၁\n", "seed {seed}");
+    }
 }

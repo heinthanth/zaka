@@ -725,6 +725,11 @@ impl Paths<'_, '_>
             Op::PipeClose => Ok(effect(&[I], None)),
             Op::Lock | Op::Unlock => Ok(effect(&[A], None)),
             Op::AtomicAdd(kind, _) => self.kinded(kind, &[class_of(kind), A], None),
+            Op::AtomicCas(kind) =>
+            {
+                let int = class_of(kind);
+                self.kinded(kind, &[int, int, A], Some(int))
+            }
             Op::FnAddr(f) => Ok(effect(&[], Some(Class::Fn(vet.callee(f)?.ret)))),
             Op::CallValue(n) => self.call_value(n as usize, stack),
             Op::Closure { func, record } =>

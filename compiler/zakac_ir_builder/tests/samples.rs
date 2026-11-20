@@ -223,6 +223,10 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
             expr_places(lhs, out);
             expr_places(rhs, out);
         }
+        ExprNode::AtomicCas { addr, expected, new } =>
+        {
+            [addr, expected, new].iter().for_each(|a| expr_places(a, out))
+        }
         ExprNode::Call { args, .. }
         | ExprNode::Spawn { args, .. }
         | ExprNode::Host { args, .. }

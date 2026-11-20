@@ -523,6 +523,27 @@ pub extern "C" fn zk_atomic_load(at: *mut isize) -> isize
     unsafe { AtomicIsize::from_ptr(at) }.load(Ordering::SeqCst)
 }
 
+/// Set an atomic number of the platform width to a new value when it holds
+/// the expected one, in one step no other thread can split.
+///
+/// # Arguments
+///
+/// * `at` - The address of the number.
+/// * `expected` - The value it must hold.
+/// * `new` - The value it takes.
+///
+/// # Returns
+///
+/// What it held before: `expected` when it took `new`.
+#[unsafe(export_name = stamped!("atomic_cas"))]
+pub extern "C" fn zk_atomic_cas(at: *mut isize, expected: isize, new: isize) -> isize
+{
+    // SAFETY: as in `zk_atomic_add`.
+    let n = unsafe { AtomicIsize::from_ptr(at) };
+    let swapped = n.compare_exchange(expected, new, Ordering::SeqCst, Ordering::SeqCst);
+    swapped.unwrap_or_else(|held| held)
+}
+
 /// Set an atomic number of the platform width in one step, which each other
 /// thread sees whole and in order.
 ///

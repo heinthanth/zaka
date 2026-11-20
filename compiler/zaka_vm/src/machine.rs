@@ -1433,6 +1433,16 @@ impl Machine
                 let new = infix_wrapping(op, old, v, platform).map_err(eval_trap)?;
                 self.mem.store(at, new)
             }
+            Op::AtomicCas(kind) =>
+            {
+                let (new, expected) = (self.pop()?, self.pop()?);
+                let at = self.pop_ptr("atomic_cas")?;
+                let old = self.mem.load(at, kind)?;
+                // The VM runs one job at a time, so the test and the set are
+                // one step.
+                do_if!(old == expected, self.mem.store(at, new)?);
+                self.push(old)
+            }
             Op::Unlock => self.unlock(),
             Op::FnAddr(f) => self.push(Value::Ptr(u64::from(f) + 1)),
             Op::CallValue(n) => self.call_value(n),

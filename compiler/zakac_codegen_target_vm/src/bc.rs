@@ -432,6 +432,10 @@ pub enum Op
     /// and add the value to the number, or subtract it when the flag is set,
     /// in one op; the result wraps.
     AtomicAdd(DataKind, bool),
+    /// Pop a new value, an expected value and the address of an atomic number
+    /// of this integer kind; set the number to the new value when it holds the
+    /// expected one, in one op, and push what it held before.
+    AtomicCas(DataKind),
     /// Push the address of the caller's slot for the list or struct result
     /// of the running call.
     ResultAddr,
@@ -692,6 +696,7 @@ impl Op
             {
                 format!("{}{}", if sub { "sub " } else { "" }, kind.name())
             }
+            Op::AtomicCas(kind) => kind.name(),
             Op::CallValue(n) => n.to_string(),
             Op::Host(func) => <&str>::from(func).to_string(),
             Op::Foreign(f) => format!("c{f}"),
