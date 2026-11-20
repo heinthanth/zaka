@@ -195,7 +195,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     let jit = run_jit(&path, &[]);
     assert_eq!(
         (jit.status, jit.stdout.as_str()),
-        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n"),
+        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n"),
         "{}",
         jit.stderr
     );
@@ -206,7 +206,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
 }
 
 /// What `par_loop.zaka` prints.

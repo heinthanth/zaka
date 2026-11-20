@@ -791,8 +791,10 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   and folding never takes it as known. A local atomic number is the thread's own, read
   and set as a plain slot.
 - **Parallel maps.** The lowering (`par_map`) fills a hidden plain list in a loop of
-  calls, and marks the loop with `Par::Map` (`Stmt::Loop::par`) when the cells are of the
-  kind of the parameter. The VM runs the loop; the C and native targets call
+  calls (`each_loop`), and marks the loop with `Par::Map` (`Stmt::Loop::par`). Cells that
+  widen to the parameter go first to a hidden plain list of its kind (`widened`), so the
+  rounds take each cell as it is; cells of text that differ from the parameter keep the
+  loop in order. The VM runs the loop; the C and native targets call
   `zk_par_map` in its place with a step of the function (`zk_map_step_<f>`), which lends
   the cell and writes the result. The runtime runs the rounds as those of a parallel
   loop, then adds each result in the order of the cells.

@@ -56,9 +56,11 @@ enum End
     /// It runs, or waits for its turn.
     #[default]
     Runs,
-    /// It returned, with its result: a value, or for a list or struct
-    /// result the address of the block that holds it.
+    /// It returned, with its result: a value, or nothing.
     Done(Option<Value>),
+    /// It returned a list or a struct, kept as its octets: the block it was
+    /// in sat in the stack region of the job, which the next job takes.
+    Kept(Vec<u8>),
     /// It stopped at a trap.
     Trapped(Box<Trap>),
 }
@@ -119,6 +121,8 @@ pub struct Jobs
     now: usize,
     /// The ops left in the turn of the running job.
     left: u32,
+    /// The stack regions of the jobs that ended, for the next jobs to take.
+    spare: Vec<StackRange>,
 }
 
 impl Default for Jobs
@@ -127,7 +131,7 @@ impl Default for Jobs
     {
         #[rustfmt::skip]
         let jobs = Jobs { list: vec![Job::default()], pipes: Vec::new(), locks: Vec::new(),
-            now: 0, left: TURN };
+            now: 0, left: TURN, spare: Vec::new() };
         jobs
     }
 }
@@ -252,7 +256,9 @@ impl Machine
         ret_if!(self.stack.len() < params, Err(malformed("missing arguments")));
         let args = self.stack.split_off(self.stack.len() - params);
         let size = self.options.max_stack;
-        let range = self.mem.take_region(size).ok_or(TrapKind::StackFull { size })?;
+        let spare = self.jobs.spare.pop().map(|r| StackRange { top: r.lo, ..r });
+        let range = spare.or_else(|| self.mem.take_region(size));
+        let range = range.ok_or(TrapKind::StackFull { size })?;
         let n = self.jobs.list.len();
         let job = Job::builder().range(range).maybe_ret(ret).build();
         self.jobs.list.push(job);
@@ -356,7 +362,8 @@ impl Machine
         self.jobs.list[n].awaited = true;
         match self.jobs.list[n].end.clone()
         {
-            End::Done(v) => self.take_result(v, kind),
+            End::Done(v) => self.take_result(v),
+            End::Kept(raw) => self.take_kept(&raw, kind),
             _ => Err(TrapKind::JobTrapped { job: id as u64 }),
         }
     }
@@ -425,28 +432,40 @@ impl Machine
         Ok((at, base))
     }
 
-    /// Give the waiter the result of a job that returned.
+    /// Give the waiter the result of a job that returned a value: it is
+    /// pushed. A list or struct result is kept, see [`Machine::take_kept`].
     ///
     /// # Arguments
     ///
-    /// * `v` - The result the job left.
+    /// * `v` - The result the job left, `None` for a function that gives
+    ///   nothing.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    fn take_result(&mut self, v: Option<Value>) -> Step
+    {
+        v.map_or(Ok(()), |v| self.push(v))
+    }
+
+    /// Give the waiter the list or struct result of a job, kept as its
+    /// octets: the octets go to the slot under the number, which then holds its
+    /// own duplicate.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw` - The octets of the result.
     /// * `kind` - The result kind.
     ///
     /// # Returns
     ///
     /// `Ok`, or a trap.
-    fn take_result(&mut self, v: Option<Value>, kind: Option<DataKind>) -> Step
+    fn take_kept(&mut self, raw: &[u8], kind: Option<DataKind>) -> Step
     {
-        let (Some(v), Some(kind)) = (v, kind)
-        else
-        {
-            return Ok(());
-        };
-        ret_if!(!kind.is_aggregate(), self.push(v));
-        let from = v.as_ptr().ok_or_else(|| malformed("a job result is an address"))?;
+        let kind = kind.ok_or_else(|| malformed("a kept result has a kind"))?;
         let to = self.stack.last().and_then(|s| s.as_ptr());
         let to = to.ok_or_else(|| malformed("wait needs the slot for the result"))?;
-        self.mem.blit(to, from, kind)?;
+        self.mem.write_octets(to, raw)?;
         self.dup_value(to, kind)
     }
 
@@ -509,7 +528,18 @@ impl Machine
         let now = self.jobs.now;
         let ret = self.jobs.list[now].ret;
         let result = ret.map(|_| self.pop()).transpose()?;
-        self.jobs.list[now].end = End::Done(result);
+        let platform = self.module.platform_bits;
+        // A list or struct result leaves the region of the job before
+        // another job takes the region.
+        let block =
+            ret.filter(|k| k.is_aggregate()).zip(result.and_then(|v| v.as_ptr()));
+        let kept =
+            block.map(|(k, at)| self.mem.octets(at, u64::from(k.size(platform))));
+        self.jobs.list[now].end = match kept
+        {
+            Some(raw) => End::Kept(raw?),
+            None => End::Done(result),
+        };
         Ok(())
     }
 
@@ -566,21 +596,39 @@ impl Machine
     /// `Ok`, or a trap a drop hits.
     pub(super) fn drop_job_results(&mut self) -> Step
     {
-        let results: Vec<(u64, DataKind)> = self
+        let results: Vec<(Vec<u8>, DataKind)> = self
             .jobs
             .list
             .iter()
             .filter_map(|j| match (&j.end, j.ret)
             {
-                (End::Done(Some(Value::Ptr(at))), Some(k)) if k.is_aggregate() =>
-                {
-                    Some((*at, k))
-                }
+                (End::Kept(raw), Some(k)) => Some((raw.clone(), k)),
                 _ => None,
             })
             .collect();
-        results.into_iter().try_for_each(|(at, kind)| self.drop_value(at, kind))?;
+        results.into_iter().try_for_each(|(raw, kind)| self.drop_kept(&raw, kind))?;
         self.drop_pipe_values()
+    }
+
+    /// Drop a list or struct result a job kept as its octets: the octets go to
+    /// a stack block of their own for the drop, which leaves after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw` - The octets.
+    /// * `kind` - The kind of the result.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap a drop hits.
+    fn drop_kept(&mut self, raw: &[u8], kind: DataKind) -> Step
+    {
+        let (top, size) = (self.mem.stack_top(), raw.len() as u64);
+        let at = self.mem.push_stack(size, 0).ok_or(TrapKind::StackFull { size })?;
+        self.mem.write_octets(at, raw)?;
+        let dropped = self.drop_value(at, kind);
+        self.mem.pop_stack(&[at], top);
+        dropped
     }
 
     /// Make another job the running one: park the state of the running one
@@ -602,7 +650,12 @@ impl Machine
         self.frames = std::mem::take(&mut next.frames);
         self.slots = next.slots;
         let range = next.range;
-        self.jobs.list[now].range = self.mem.swap_stack(range);
+        let left = self.mem.swap_stack(range);
+        self.jobs.list[now].range = left;
         self.jobs.now = n;
+        // A job that ended runs no more: the next job takes its region. Its
+        // blocks leave the table as the new calls cover them.
+        let ended = now != 0 && self.jobs.list[now].end != End::Runs;
+        do_if!(ended, self.jobs.spare.push(left));
     }
 }

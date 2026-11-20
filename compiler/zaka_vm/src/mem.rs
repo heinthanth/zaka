@@ -493,7 +493,8 @@ impl Mem
     }
 
     /// Take a stack region of its own for a job, out of the fresh room past
-    /// the heap blocks made so far.
+    /// the heap blocks made so far; the scheduler hands the region of a job
+    /// that ended to the next job before it asks for a fresh one.
     ///
     /// # Arguments
     ///
@@ -505,8 +506,6 @@ impl Mem
     /// has no room for it.
     pub fn take_region(&mut self, size: u64) -> Option<StackRange>
     {
-        // shortcut: the region of a job that ends is never handed out again;
-        // reuse it if programs start jobs by the million.
         let lo = self.fresh_start(size)?;
         Some(StackRange { lo, hi: lo + size, top: lo })
     }

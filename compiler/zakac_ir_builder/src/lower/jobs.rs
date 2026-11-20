@@ -380,6 +380,95 @@ impl Lowerer<'_>
         };
         let sig =
             self.sigs.get(&f.name).cloned().expect("the check found the function");
+        let param = sig.params[0];
+        // Cells that widen to the parameter go to a list of its kind first,
+        // so the rounds of a native build take each cell as it is.
+        let widens = list_kind.cell_kind() != Some(param) && !param.holds_text();
+        let (each, list_kind) = tern!(
+            widens,
+            self.widened(each, list_kind, param, span),
+            (each, list_kind)
+        );
+        let ret = kind.cell_kind().expect("a map gives a plain list");
+        let name = f.name.to_string();
+        let platform = self.platform;
+        let rounds = self.each_loop(each, list_kind, span, |value| {
+            let arg = coerce_lowered(value, param, platform);
+            let call = ExprNode::Call { func: sig.index, name, args: vec![arg] };
+            let value = node_expr(ret, call, span);
+            Stmt::AddCell { dest: Dest::Slot(out), kind, value, span }
+        });
+        let Stmt::Loop { par: slot, .. } = rounds
+        else
+        {
+            unreachable!("each_loop gives a loop")
+        };
+        // A native build runs the rounds at once when the cells go to the
+        // function as each is.
+        let as_is = list_kind.cell_kind() == Some(param);
+        let map = ParMap {
+            src: each,
+            out,
+            func: sig.index,
+            src_kind: list_kind,
+            out_kind: kind,
+            threads,
+        };
+        *slot = as_is.then(|| Box::new(Par::Map(map)));
+        ExprNode::Read(out)
+    }
+
+    /// Widen each cell of a list into a hidden plain list of the kind of a
+    /// parameter, in order.
+    ///
+    /// # Arguments
+    ///
+    /// * `each` - The hidden slot of the list.
+    /// * `list_kind` - Its kind.
+    /// * `param` - The kind of the parameter.
+    /// * `span` - The map.
+    ///
+    /// # Returns
+    ///
+    /// The hidden slot of the widened list, and its kind.
+    fn widened(
+        &mut self, each: Place, list_kind: DataKind, param: DataKind, span: Span,
+    ) -> (Place, DataKind)
+    {
+        let kind = DataKind::seq_of(param);
+        let wide = self.spill(node_expr(kind, ExprNode::BlankList, span));
+        let ExprNode::Read(wide) = wide.node
+        else
+        {
+            unreachable!("a spill gives a read of a hidden slot")
+        };
+        let platform = self.platform;
+        self.each_loop(each, list_kind, span, |value| {
+            let value = coerce_lowered(value, param, platform);
+            Stmt::AddCell { dest: Dest::Slot(wide), kind, value, span }
+        });
+        (wide, kind)
+    }
+
+    /// A loop over each cell of a list, in order, whose block is the one
+    /// statement `round` makes of the value of the cell; it goes to the
+    /// statements before the one being lowered.
+    ///
+    /// # Arguments
+    ///
+    /// * `each` - The hidden slot of the list.
+    /// * `list_kind` - Its kind.
+    /// * `span` - The source.
+    /// * `round` - Makes the statement of a round from the value of its cell.
+    ///
+    /// # Returns
+    ///
+    /// The loop, in place among the statements before.
+    fn each_loop(
+        &mut self, each: Place, list_kind: DataKind, span: Span,
+        round: impl FnOnce(Expr) -> Stmt,
+    ) -> &mut Stmt
+    {
         let at = self.hidden(DataKind::USIZE, span);
         self.pre.push(Stmt::Set { place: at, value: self.usize_const(0, span), span });
         let count = self.each_count(each, list_kind, span);
@@ -390,34 +479,14 @@ impl Lowerer<'_>
             span,
         );
         let (value, _) = each_cell(each, list_kind, at, span);
-        let arg = coerce_lowered(value, sig.params[0], self.platform);
-        let ret = kind.cell_kind().expect("a map gives a plain list");
-        let call = ExprNode::Call {
-            func: sig.index,
-            name: f.name.to_string(),
-            args: vec![arg],
-        };
-        let value = node_expr(ret, call, span);
-        let add = Stmt::AddCell { dest: Dest::Slot(out), kind, value, span };
         let one = self.usize_const(1, span);
         let next =
             node_expr(DataKind::USIZE, infix_node(InfixOp::Add, at_read, one), span);
         let update = vec![Stmt::Set { place: at, value: next, span }];
-        // A native build runs the rounds at once when the cells go to the
-        // function as each is.
-        let as_is = list_kind.cell_kind() == sig.params.first().copied();
-        let par = ParMap {
-            src: each,
-            out,
-            func: sig.index,
-            src_kind: list_kind,
-            out_kind: kind,
-            threads,
-        };
-        let par = as_is.then(|| Box::new(Par::Map(par)));
+        let block = vec![round(value)];
         #[rustfmt::skip]
-        self.pre.push(Stmt::Loop { init: Vec::new(), cond, update, block: vec![add], span, par });
-        ExprNode::Read(out)
+        self.pre.push(Stmt::Loop { init: Vec::new(), cond, update, block, span, par: None });
+        self.pre.last_mut().expect("the loop was pushed")
     }
 
     /// Lower a lock block: the lock is taken, the block runs, and each exit

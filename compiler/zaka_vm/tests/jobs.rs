@@ -19,6 +19,7 @@ use zakac_span::source_map::SourceMap;
 
 use crate::common::compile;
 use crate::common::output;
+use crate::common::output_on;
 use crate::common::run_source_with;
 
 /// A function that sums a list, one that joins a mark to text, one that
@@ -445,7 +446,7 @@ fn a_parallel_map_gives_a_list_in_the_order_of_the_cells()
         &HostData::default(),
     );
     assert!(result.is_ok(), "{result:?}");
-    assert_eq!(String::from_utf8(out).unwrap(), "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+    assert_eq!(String::from_utf8(out).unwrap(), "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
     assert_eq!(machine.leaks(), Vec::new());
 }
 
@@ -612,4 +613,34 @@ fn a_trap_in_a_round_names_the_function_of_its_loop()
     let (_, result) = run_source_with(&text, &RunOptions::default());
     let trap = result.expect_err("the second round divides by zero");
     assert_eq!((trap.kind, trap.func.as_str()), (TrapKind::ZeroDivisor, "ပရိုဂရမ်"));
+}
+
+#[test]
+fn a_job_that_ended_gives_its_stack_region_to_the_next()
+{
+    // Each region takes 1 MiB of the 4 GiB of a 32-bit VM: 8000 jobs fit
+    // when the regions of the ended ones come back.
+    let text = program(
+        "ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၈၀၀၀ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် j သည် စား ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+စု ကို စု + (j ကို စောင့်သော ရလဒ်) ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+စု ကို ပြသမည်။",
+    );
+    assert_eq!(output_on(&text, 32), "၁၆၀၀၀\n");
+}
+
+#[test]
+fn a_list_result_comes_to_each_wait_after_its_region_went_to_another_job()
+{
+    let text = program(
+        "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+က ကို စောင့်မည်။
+ကိန်းရှင် ခ သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"ခ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+(က ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+(ခ ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+(က ကို စောင့်သော ရလဒ်) ကို ပြသမည်။",
+    );
+    assert_eq!(output(&text), "က!\nခ!\nက!\n");
 }

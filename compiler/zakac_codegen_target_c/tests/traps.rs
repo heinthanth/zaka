@@ -257,7 +257,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n");
+    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
 }
 
 /// What `par_loop.zaka` prints.
