@@ -419,6 +419,10 @@ impl FnGen<'_, '_>
         ret_if!(cause == HaltCause::NotFault, self.line("zk_not_fault();"));
         ret_if!(cause == HaltCause::NoData, self.line("zk_no_data();"));
         ret_if!(cause == HaltCause::NoRow, self.line("zk_plain_trap(ZK_TRAP_NO_ROW);"));
+        ret_if!(
+            cause == HaltCause::StepNotPositive,
+            self.line("zk_step_not_positive();")
+        );
         ret_if!(cause == HaltCause::ClosedHandle, self.line("zk_closed_handle();"));
         ret_if!(
             cause == HaltCause::NullFromC,

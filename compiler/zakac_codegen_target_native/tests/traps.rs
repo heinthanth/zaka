@@ -240,3 +240,36 @@ fn the_rounds_of_a_parallel_loop_run_on_threads()
     let jit = run_jit(&c_inputs().join("par_loop.zaka"), &[]);
     assert!(jit.stderr.contains("a parallel loop"), "{}", jit.stderr);
 }
+
+/// What `par_loop_steps.zaka` prints.
+const PAR_STEPS_OUT: &str = "၅၁၆၉၉\n[မ၊ င၊ ်၊ ္၊ ဂ၊ လ၊ ာ၊ ပ၊ ါ၊  ၊ a၊ b၊ c]\n";
+
+/// What `par_loop_rows.zaka` prints.
+const PAR_ROWS_OUT: &str = "[၁၊ ၁၁၊ ၂၁၊ ၃၁၊ ၄၁၊ ၅၁၊ ၆၁၊ ၀၊ ၈၁၊ ၉၁၊ ၁၀၁၊ ၁၁၁၊ ၁၂၁၊ \
+                            ၁၃၁၊ ၁၄၁၊ ၁၅၁၊ ၁၆၁၊ ၁၇၁၊ ၁၈၁၊ ၁၉၁၊ ၂၀၁၊ ၂၁၁၊ ၂၂၁၊ ၂၃၁၊ \
+                            ၂၄၁၊ ၂၅၁၊ ၂၆၁၊ ၂၇၁၊ ၂၈၁၊ ၂၉၁]\n";
+
+/// Counted loops with a step, up and down, a loop over characters and one
+/// over the rows of a ဇယား spread their rounds in an AOT build too.
+#[test]
+fn steps_characters_and_rows_spread_their_rounds()
+{
+    use zakac_borrow_checker::options::OverflowMode;
+    let grants = zaka_host::Grants::default();
+    for (input, want) in
+        [("par_loop_steps.zaka", PAR_STEPS_OUT), ("par_loop_rows.zaka", PAR_ROWS_OUT)]
+    {
+        let run = crate::common::run_aot(
+            &c_inputs().join(input),
+            OverflowMode::Stop,
+            &grants,
+        );
+        let Some(run) = run
+        else
+        {
+            return;
+        };
+        assert_eq!(run.status, Some(0), "{input}: {}", run.stderr);
+        assert_eq!(run.stdout, want, "{input}");
+    }
+}

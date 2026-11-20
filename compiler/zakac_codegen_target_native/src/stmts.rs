@@ -464,6 +464,7 @@ impl<M: Module> FnGen<'_, '_, M>
             HaltCause::NotFault => Some(("zk_not_fault", None)),
             HaltCause::NoData => Some(("zk_no_data", None)),
             HaltCause::NoRow => Some(("zk_plain_trap", Some(plain(22)))),
+            HaltCause::StepNotPositive => Some(("zk_step_not_positive", None)),
             HaltCause::ClosedHandle => Some(("zk_closed_handle", None)),
             HaltCause::NullFromC => Some(("zk_plain_trap", Some(plain(10)))),
             HaltCause::NotGood => None,

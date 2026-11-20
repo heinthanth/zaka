@@ -24,53 +24,93 @@ use crate::lower::nested::closure_name;
 enum RoundHead<'a>
 {
     /// A counted loop: its variable, of a kind, from a first value, up or
-    /// down.
+    /// down, with a step.
     Counted(&'a st::CountedStmt, DataKind),
     /// A loop over each cell of a list: the slot of the list and its kind.
     Each(&'a st::EachStmt, Place, DataKind),
+    /// A loop over each character of text: the kind of the text and of the
+    /// list of where each character starts.
+    Chars(&'a st::EachStmt, DataKind, DataKind),
+    /// A loop over each row of a ဇယား: its kind.
+    Rows(&'a st::EachStmt, DataKind),
 }
 
 impl Lowerer<'_>
 {
-    /// Lower a parallel counted loop: a slot for each bound, the count of its
-    /// rounds, and the loop of the calls of its round.
+    /// Lower a parallel counted loop: a slot for each bound and for the step,
+    /// the direction and the count of its rounds, and the loop of the calls of
+    /// its round.
     ///
     /// # Arguments
     ///
-    /// * `n` - The loop, with no step and counting toward its last bound.
+    /// * `n` - The loop.
     /// * `out` - The list the statements go to.
     pub(super) fn parallel_counted(&mut self, n: &st::CountedStmt, out: &mut Vec<Stmt>)
     {
         let span = n.span;
         let kind = self.common(self.kind_of(&n.from), self.kind_of(&n.to));
         let (from, to) = (self.coerce(&n.from, kind), self.coerce(&n.to, kind));
-        let (first, last) = (self.hidden(kind, span), self.hidden(kind, span));
+        let one = node_expr(kind, convert_node(self.usize_const(1, span)), span);
+        let step = n.step.as_ref().map_or(one, |s| self.coerce(s, kind));
+        let [first, last, stride] =
+            [self.hidden(kind, span), self.hidden(kind, span), self.hidden(kind, span)];
         out.push(Stmt::Set { place: first, value: from, span });
         out.push(Stmt::Set { place: last, value: to, span });
-        let (first_read, last_read) = (read(first, kind, span), read(last, kind, span));
-        let up = self.hidden(DataKind::Bool, span);
-        let test = compare_node(CmpOp::Le, first_read.clone(), last_read.clone());
-        out.push(Stmt::Set {
-            place: up,
-            value: node_expr(DataKind::Bool, test, span),
+        out.push(Stmt::Set { place: stride, value: step, span });
+        let [first_read, last_read, stride_read] =
+            [first, last, stride].map(|p| read(p, kind, span));
+        // A step of zero or below stops the program, as each counted loop does.
+        let zero = node_expr(kind, convert_node(self.usize_const(0, span)), span);
+        let bad = node_expr(
+            DataKind::Bool,
+            compare_node(CmpOp::Le, stride_read.clone(), zero),
             span,
-        });
-        // The rounds reach the last bound up or down: |last - first| + 1.
-        let count = self.hidden(DataKind::USIZE, span);
-        let gap =
-            |a: Expr, b: Expr| node_expr(kind, infix_node(InfixOp::Sub, a, b), span);
+        );
+        let halt = Stmt::Halt { cause: HaltCause::StepNotPositive, value: None, span };
+        let check = Stmt::If { cond: bad, then: vec![halt], els: Vec::new(), span };
+        do_if!(n.step.is_some(), out.push(check));
+        let le = |a: &Expr, b: &Expr| {
+            node_expr(
+                DataKind::Bool,
+                compare_node(CmpOp::Le, a.clone(), b.clone()),
+                span,
+            )
+        };
+        let on = node_expr(DataKind::Bool, ExprNode::Const(Value::Bool(true)), span);
+        let no = node_expr(DataKind::Bool, ExprNode::Const(Value::Bool(false)), span);
+        // `ရေတွက်၍` goes toward the last bound; `တိုး၍` goes up and `လျှော့၍` down,
+        // with no round when the last bound lies on the other side.
+        let (up_value, valid) = match n.mode
+        {
+            st::CountMode::Count => (le(&first_read, &last_read), on),
+            st::CountMode::Increase => (on, le(&first_read, &last_read)),
+            st::CountMode::Decrease => (no, le(&last_read, &first_read)),
+        };
+        let up = self.hidden(DataKind::Bool, span);
+        out.push(Stmt::Set { place: up, value: up_value, span });
         let up_read = read(up, DataKind::Bool, span);
-        let set_gap = |gap: Expr, l: &Self| {
-            let wide = node_expr(DataKind::USIZE, convert_node(gap), span);
+        // The rounds: |last - first| / step + 1.
+        let count = self.hidden(DataKind::USIZE, span);
+        out.push(Stmt::Set { place: count, value: self.usize_const(0, span), span });
+        let rounds = |a: &Expr, b: &Expr, l: &Self| {
+            let gap =
+                node_expr(kind, infix_node(InfixOp::Sub, a.clone(), b.clone()), span);
+            let steps = node_expr(
+                kind,
+                infix_node(InfixOp::Div, gap, stride_read.clone()),
+                span,
+            );
+            let wide = node_expr(DataKind::USIZE, convert_node(steps), span);
             let one = l.usize_const(1, span);
             let value =
                 node_expr(DataKind::USIZE, infix_node(InfixOp::Add, wide, one), span);
             vec![Stmt::Set { place: count, value, span }]
         };
-        let then = set_gap(gap(last_read.clone(), first_read.clone()), self);
-        let els = set_gap(gap(first_read, last_read), self);
-        out.push(Stmt::If { cond: up_read.clone(), then, els, span });
-        let head_args = vec![read(first, kind, span), up_read];
+        let then = rounds(&last_read, &first_read, self);
+        let els = rounds(&first_read, &last_read, self);
+        let set = Stmt::If { cond: up_read.clone(), then, els, span };
+        out.push(Stmt::If { cond: valid, then: vec![set], els: Vec::new(), span });
+        let head_args = vec![first_read, up_read, stride_read];
         let head = RoundHead::Counted(n, kind);
         self.round_loop(head, head_args, &n.block, count, span, out);
     }
@@ -105,6 +145,125 @@ impl Lowerer<'_>
         self.round_loop(head, vec![at], &n.block, count, n.span, out);
         let drop = Stmt::Drop { dest: Dest::Slot(list), kind, span };
         do_if!(kind.holds_text(), out.push(drop));
+    }
+
+    /// Lower a parallel loop over each character of text: a slot of the text,
+    /// a first pass that keeps where each character starts, and the loop of
+    /// the calls of its round, one for each character.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `out` - The list the statements go to.
+    pub(super) fn parallel_chars(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
+    {
+        let span = n.source.span();
+        let given = self.kind_of(&n.source);
+        let kind = each_list(given, true);
+        let source = tern!(
+            kind == given,
+            self.owned(&n.source, kind),
+            self.through(&n.source, kind)
+        );
+        let text = self.hidden(kind, span);
+        self.slot(text).addressed = true;
+        out.push(Stmt::Set { place: text, value: source, span });
+        let starts_kind = DataKind::seq_of(DataKind::USIZE);
+        let starts = self.hidden(starts_kind, span);
+        self.slot(starts).addressed = true;
+        let blank = node_expr(starts_kind, ExprNode::BlankList, span);
+        out.push(Stmt::Set { place: starts, value: blank, span });
+        out.push(self.char_starts(text, kind, starts, span));
+        let count = self.hidden(DataKind::USIZE, span);
+        let chars = self.each_count(starts, starts_kind, span);
+        out.push(Stmt::Set { place: count, value: chars, span });
+        let at = |p: Place, k: DataKind| {
+            node_expr(k.pointer_to().as_borrowed(), ExprNode::AddrOf(p), span)
+        };
+        let head_args = vec![at(text, kind), at(starts, starts_kind)];
+        let head = RoundHead::Chars(n, kind, starts_kind);
+        self.round_loop(head, head_args, &n.block, count, n.span, out);
+        out.push(Stmt::Drop { dest: Dest::Slot(starts), kind: starts_kind, span });
+        do_if!(
+            kind.holds_text(),
+            out.push(Stmt::Drop { dest: Dest::Slot(text), kind, span })
+        );
+    }
+
+    /// The first pass of a parallel loop over characters: a loop that adds
+    /// where each character of the text starts to a list.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The slot of the text.
+    /// * `kind` - Its kind.
+    /// * `starts` - The slot of the list, blank before.
+    /// * `span` - The source of the loop.
+    ///
+    /// # Returns
+    ///
+    /// The loop.
+    fn char_starts(
+        &mut self, text: Place, kind: DataKind, starts: Place, span: Span,
+    ) -> Stmt
+    {
+        let at = self.hidden(DataKind::USIZE, span);
+        let at_read = read(at, DataKind::USIZE, span);
+        let count = self.each_count(text, kind, span);
+        let cond = node_expr(
+            DataKind::Bool,
+            compare_node(CmpOp::Lt, at_read.clone(), count),
+            span,
+        );
+        let (value, cell) = each_char(text, kind, at, span);
+        let c = self.hidden(cell, span);
+        let starts_kind = self.slot_kind(starts);
+        let add = Stmt::AddCell {
+            dest: Dest::Slot(starts),
+            kind: starts_kind,
+            value: at_read.clone(),
+            span,
+        };
+        let width = char_width(read(c, cell, span));
+        let next =
+            node_expr(DataKind::USIZE, infix_node(InfixOp::Add, at_read, width), span);
+        Stmt::Loop {
+            init: vec![Stmt::Set { place: at, value: self.usize_const(0, span), span }],
+            cond,
+            update: vec![Stmt::Set { place: at, value: next, span }],
+            block: vec![Stmt::Set { place: c, value, span }, add],
+            span,
+            par: None,
+        }
+    }
+
+    /// Lower a parallel loop over each row of a ဇယား: a slot of the ဇယား, and
+    /// the loop of the calls of its round, one for each room for a row; a
+    /// round of a removed row ends at once.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `out` - The list the statements go to.
+    pub(super) fn parallel_rows(&mut self, n: &st::EachStmt, out: &mut Vec<Stmt>)
+    {
+        let kind = self.kind_of(&n.source);
+        let span = n.source.span();
+        let source = self.owned(&n.source, kind);
+        let table = self.hidden(kind, span);
+        self.slot(table).addressed = true;
+        out.push(Stmt::Set { place: table, value: source, span });
+        let count = self.hidden(DataKind::USIZE, span);
+        let rows = self.row_slots(table, span);
+        out.push(Stmt::Set { place: count, value: rows, span });
+        let at =
+            node_expr(kind.pointer_to().as_borrowed(), ExprNode::AddrOf(table), span);
+        let head = RoundHead::Rows(n, kind);
+        self.round_loop(head, vec![at], &n.block, count, n.span, out);
+        do_if!(
+            kind.holds_text(),
+            out.push(Stmt::Drop { dest: Dest::Slot(table), kind, span })
+        );
     }
 
     /// The loop of the calls of a round, marked for a native build to run at
@@ -356,6 +515,16 @@ impl Lowerer<'_>
             {
                 inner.extend(self.each_round_of(n, *kind, number, heads[0], span));
             }
+            RoundHead::Chars(n, kind, starts_kind) =>
+            {
+                let parts = (*kind, *starts_kind);
+                inner.extend(self.char_round_of(n, parts, number, heads, span));
+            }
+            RoundHead::Rows(n, kind) =>
+            {
+                let table = self.lent_through(heads[0], *kind, span, &mut inner);
+                inner.extend(self.row_round(n, table, number));
+            }
         }
         vec![Stmt::Loop {
             init: vec![Stmt::Set { place: first, value: on, span }],
@@ -368,15 +537,16 @@ impl Lowerer<'_>
     }
 
     /// The block of a round of a counted loop: the variable of the loop, the
-    /// first value plus the number of the round, or minus it counting down,
-    /// then the statements.
+    /// first value plus the number of the round times the step, or minus it
+    /// counting down, then the statements.
     ///
     /// # Arguments
     ///
     /// * `n` - The loop.
     /// * `kind` - The kind of its variable.
     /// * `number` - The parameter of the number of the round.
-    /// * `heads` - The parameters of the first value and of the direction.
+    /// * `heads` - The parameters of the first value, of the direction and of
+    ///   the step.
     /// * `block` - The statements of a round.
     ///
     /// # Returns
@@ -392,11 +562,13 @@ impl Lowerer<'_>
         self.loops.push(self.scopes.len());
         self.scoped(|l| {
             let var = l.declare(&n.var, kind, Access::LoopVar);
-            let step = node_expr(
+            let r = node_expr(
                 kind,
                 convert_node(read(number, DataKind::USIZE, span)),
                 span,
             );
+            let stride = read(heads[2], kind, span);
+            let step = node_expr(kind, infix_node(InfixOp::Mul, r, stride), span);
             let first = read(heads[0], kind, span);
             let up = node_expr(
                 kind,
@@ -452,6 +624,69 @@ impl Lowerer<'_>
             span,
         });
         let (round, _) = self.each_round(n, list, cell, None);
+        out.extend(round);
+        out
+    }
+
+    /// A local that holds a lent view of the value at an address the loop
+    /// gives the round, which no drop lets go of.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The parameter of the address.
+    /// * `kind` - The kind of the value.
+    /// * `span` - The source of the loop.
+    /// * `out` - The statements so far, which get the set.
+    ///
+    /// # Returns
+    ///
+    /// The slot of the view.
+    fn lent_through(
+        &mut self, at: Place, kind: DataKind, span: Span, out: &mut Vec<Stmt>,
+    ) -> Place
+    {
+        let view = self.hidden(kind, span);
+        let addr = Box::new(read(at, kind.pointer_to().as_borrowed(), span));
+        let load = node_expr(kind, ExprNode::Load { addr }, span);
+        let lent = ExprNode::Dup { value: Box::new(load), lent: true, deep: false };
+        out.push(Stmt::Set { place: view, value: node_expr(kind, lent, span), span });
+        view
+    }
+
+    /// The block of a round of a loop over the characters of text: the text
+    /// and the list of starts, lent through their addresses, where the
+    /// character of the round starts, then the round as an each loop runs it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `(kind, starts_kind)` - The kinds of the text and of the list of
+    ///   starts.
+    /// * `number` - The parameter of the number of the round.
+    /// * `heads` - The parameters of the addresses of the text and the list.
+    /// * `span` - The source of the loop.
+    ///
+    /// # Returns
+    ///
+    /// The statements.
+    fn char_round_of(
+        &mut self, n: &st::EachStmt, (kind, starts_kind): (DataKind, DataKind),
+        number: Place, heads: &[Place], span: Span,
+    ) -> Vec<Stmt>
+    {
+        let mut out = Vec::new();
+        let text = self.lent_through(heads[0], kind, span, &mut out);
+        let starts = self.lent_through(heads[1], starts_kind, span, &mut out);
+        let (start, _) = each_cell(starts, starts_kind, number, span);
+        let at = self.hidden(DataKind::USIZE, span);
+        out.push(Stmt::Set { place: at, value: start, span });
+        let nth = self.hidden(DataKind::USIZE, span);
+        out.push(Stmt::Set {
+            place: nth,
+            value: read(number, DataKind::USIZE, span),
+            span,
+        });
+        let (round, _) = self.each_round(n, text, at, Some(nth));
         out.extend(round);
         out
     }

@@ -1104,9 +1104,17 @@ impl Lowerer<'_>
             st::Stmt::Block(n) => self.scoped_stmts(&n.stmts, out),
             st::Stmt::If(n) => out.push(self.if_stmt(n)),
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
-            st::Stmt::Counted(n) if spreads_counted(n) => self.parallel_counted(n, out),
+            st::Stmt::Counted(n) if n.parallel => self.parallel_counted(n, out),
             st::Stmt::Counted(n) => out.push(self.counted(n)),
             st::Stmt::Generic(n) => self.generic(n, out),
+            st::Stmt::Each(n) if n.parallel && n.part.is_row() =>
+            {
+                self.parallel_rows(n, out)
+            }
+            st::Stmt::Each(n) if n.parallel && n.part == st::EachPart::Char =>
+            {
+                self.parallel_chars(n, out)
+            }
             st::Stmt::Each(n) if n.parallel && n.part == st::EachPart::Cell =>
             {
                 self.parallel_each(n, out)
@@ -4418,22 +4426,6 @@ fn dup(e: Expr) -> Expr
     let (kind, span) = (e.kind, e.span);
     let node = ExprNode::Dup { value: Box::new(e), lent: false, deep: false };
     Expr::builder().kind(kind).node(node).span(span).build()
-}
-
-/// Whether the rounds of a counted loop go to a function of their own, so a
-/// native build can run them at once: a parallel loop with no step that
-/// counts toward its last bound. Each other loop runs its rounds in order.
-///
-/// # Arguments
-///
-/// * `n` - The loop.
-///
-/// # Returns
-///
-/// `true` when the rounds go to a function.
-fn spreads_counted(n: &st::CountedStmt) -> bool
-{
-    n.parallel && n.step.is_none() && n.mode == st::CountMode::Count
 }
 
 /// The stats of the ring collector: the struct of the core, each field read

@@ -355,8 +355,10 @@ once on several threads:
 
 A native program runs the rounds on threads, one for each core of the host, when the rounds
 are at least as numerous as the cores; fewer rounds run in order on the thread of the loop, and so
-do the rounds on the VM. A counted loop with a step, or one marked `တိုး၍` or `လျှော့၍`, and
-a loop over the characters of text or the rows of a ဇယား, run their rounds in order. The lines
+do the rounds on the VM. Each counted loop, with a step or not, and each loop over the
+cells of a list, the characters of text or the rows of a ဇယား spreads its rounds; a loop
+over the values of a channel runs them in order, since its values come one at a time. A
+round over a removed row of a ဇယား ends at once. The lines
 the rounds print come in no fixed order in a native program. A trap in a round acts as in a
 job: the rounds of its thread end, the other threads finish, and the loop then stops with
 `job trapped`; under `--trap abort` the program stops at once. Rounds that run in order

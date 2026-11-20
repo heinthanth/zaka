@@ -2185,6 +2185,7 @@ impl Machine
             HaltCause::NotFault => TrapKind::NotFault,
             HaltCause::NoData => TrapKind::NoData,
             HaltCause::NoRow => TrapKind::NoRow,
+            HaltCause::StepNotPositive => TrapKind::StepNotPositive,
             HaltCause::ClosedHandle => TrapKind::ClosedHandle,
             HaltCause::NullFromC => TrapKind::NullFromC,
         })

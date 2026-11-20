@@ -176,6 +176,14 @@ impl Visitor for RoundWrites
         self.write(&n.text);
         walk_replace(self, n);
     }
+
+    fn visit_verb(&mut self, n: &zakac_ast::expr::VerbExpr)
+    {
+        // A removal of a row writes its ဇယား.
+        let removed = n.args.first().filter(|_| n.op == VerbOp::RemoveRow);
+        do_if!(let Some(row) = removed, self.write(row));
+        zakac_ast::visit::walk_verb(self, n);
+    }
 }
 
 /// The round of a parallel loop that a check is inside.
@@ -225,6 +233,11 @@ fn root_name(place: &Expr) -> Option<(Name, Span)>
         Expr::Name(n) => Some((n.name, n.span)),
         Expr::Field(f) => root_name(&f.base),
         Expr::Index(i) => root_name(&i.list),
+        // A write through a row writes its ဇယား.
+        Expr::Verb(v) if matches!(v.op, VerbOp::Row | VerbOp::RowValue) =>
+        {
+            root_name(v.args.first()?)
+        }
         _ => None,
     }
 }

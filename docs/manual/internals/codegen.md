@@ -790,10 +790,14 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   `zk_par_map` in its place with a step of the function (`zk_map_step_<f>`), which lends
   the cell and writes the result. The runtime runs the rounds as those of a parallel
   loop, then adds each result in the order of the cells.
-- **Parallel loops.** `lower/rounds.rs` lifts the round of a counted loop (no step,
-  `ရေတွက်၍`) or of a loop over the cells of a list into a function of its own,
-  `<fn>#round<n>`: the number of the round (`usize`), the first value and the direction of
-  a counted loop or the address of the list, then each variable from outside the round,
+- **Parallel loops.** `lower/rounds.rs` lifts the round of a counted loop, or of a loop
+  over the cells of a list, the characters of text or the rows of a ဇယား, into a function
+  of its own, `<fn>#round<n>`: the number of the round (`usize`); the first value, the
+  direction and the step of a counted loop (a step of zero or below is
+  `HaltCause::StepNotPositive` before the loop), the address of the list, the addresses of
+  the text and of a list of where each character starts (a first pass, `char_starts`), or
+  the address of the ဇယား (round `r` is the room of row `r`, and a removed row ends its
+  round); then each variable from outside the round,
   through its address (a box with a count for one a closure shares). Its statements run inside
   a loop of one round, so a continue ends the round. A plain list a round writes gets a
   block of its own before the loop (`own_before`). The loop calls the function once for

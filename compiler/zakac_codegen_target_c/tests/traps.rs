@@ -292,3 +292,32 @@ fn the_rounds_of_a_parallel_loop_run_on_threads()
         trap.stderr
     );
 }
+
+/// What `par_loop_steps.zaka` prints.
+const PAR_STEPS_OUT: &str = "၅၁၆၉၉\n[မ၊ င၊ ်၊ ္၊ ဂ၊ လ၊ ာ၊ ပ၊ ါ၊  ၊ a၊ b၊ c]\n";
+
+/// What `par_loop_rows.zaka` prints.
+const PAR_ROWS_OUT: &str = "[၁၊ ၁၁၊ ၂၁၊ ၃၁၊ ၄၁၊ ၅၁၊ ၆၁၊ ၀၊ ၈၁၊ ၉၁၊ ၁၀၁၊ ၁၁၁၊ ၁၂၁၊ \
+                            ၁၃၁၊ ၁၄၁၊ ၁၅၁၊ ၁၆၁၊ ၁၇၁၊ ၁၈၁၊ ၁၉၁၊ ၂၀၁၊ ၂၁၁၊ ၂၂၁၊ ၂၃၁၊ \
+                            ၂၄၁၊ ၂၅၁၊ ၂၆၁၊ ၂၇၁၊ ၂၈၁၊ ၂၉၁]\n";
+
+/// Counted loops with a step, up and down, a loop over characters and one
+/// over the rows of a ဇယား spread their rounds too.
+#[test]
+fn steps_characters_and_rows_spread_their_rounds()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    for (input, want) in
+        [("par_loop_steps.zaka", PAR_STEPS_OUT), ("par_loop_rows.zaka", PAR_ROWS_OUT)]
+    {
+        let path = root().join("tests/inputs").join(input);
+        let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+        let run = compile_and_run(&cc, &files, Checks::Default);
+        assert_eq!(run.status, Some(0), "{input}: {}", run.stderr);
+        assert_eq!(run.stdout, want, "{input}");
+    }
+}

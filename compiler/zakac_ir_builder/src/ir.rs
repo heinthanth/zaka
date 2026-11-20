@@ -1450,6 +1450,8 @@ pub enum HaltCause
     /// A statement wrote through the value of a row of a ဇယား, and no row had
     /// the index.
     NoRow,
+    /// The step of a counted loop is zero or below.
+    StepNotPositive,
 }
 
 /// The name of a function a reader knows: the name the program writes. The

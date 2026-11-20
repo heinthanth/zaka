@@ -442,6 +442,24 @@ impl Lowerer<'_>
         out.extend(after);
     }
 
+    /// The count of rows a ဇယား holds room for, removed ones among them: the
+    /// rounds of a loop over its rows.
+    ///
+    /// # Arguments
+    ///
+    /// * `table` - The slot of the ဇယား.
+    /// * `span` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// The count, a `usize`.
+    pub(super) fn row_slots(&mut self, table: Place, span: Span) -> Expr
+    {
+        let kind = self.slot_kind(table);
+        let rows = self.part_of(read(table, kind, span), ROWS, span);
+        node_expr(DataKind::USIZE, self.count_word(rows, span), span)
+    }
+
     /// Lower one round of an each loop over rows in its own scope: skip a
     /// removed row, set the names, then run the block.
     ///
@@ -454,7 +472,9 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The round.
-    fn row_round(&mut self, n: &st::EachStmt, each: Place, at: Place) -> Vec<Stmt>
+    pub(super) fn row_round(
+        &mut self, n: &st::EachStmt, each: Place, at: Place,
+    ) -> Vec<Stmt>
     {
         let kind = self.slot_kind(each);
         let span = n.var.span;

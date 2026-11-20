@@ -528,3 +528,27 @@ fn a_round_lets_a_call_change_no_variable_from_outside()
     );
     assert_eq!(codes(&text), [Code::RoundWritesOutside]);
 }
+
+#[test]
+fn a_parallel_loop_with_a_step_of_zero_stops()
+{
+    let text = program(
+        "ကိန်းရှင် ခြား သည် ၀ ဖြစ်ပါစေ။
+ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၀ မှ ၄ အထိ ခြား စီ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို i ဟု ထားမည်။",
+    );
+    let options = RunOptions::default();
+    let (_, result) = run_source_with(&text, &options);
+    let trap = result.expect_err("a step of zero stops");
+    assert!(matches!(trap.kind, TrapKind::StepNotPositive), "{trap}");
+}
+
+#[test]
+fn a_round_writes_no_row_of_a_table_from_outside()
+{
+    let text = program(
+        "ကိန်းရှင် ဇ သည် ကိန်းပြည့် ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [:] ဖြစ်ပါစေ။
+၀ မှ ၉ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ဇ ထဲမှ အညွှန်း i ၏ တန်ဖိုး ကို i ဟု ထားမည်။",
+    );
+    assert_eq!(codes(&text), [Code::RoundWritesOutside]);
+}
