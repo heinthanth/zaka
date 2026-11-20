@@ -383,6 +383,7 @@ module:
   foreign: []
   unsafe_spans: []
   c_structs: {}
+  jobs_structs: []
   built_for: null
   span:
     lo: 0

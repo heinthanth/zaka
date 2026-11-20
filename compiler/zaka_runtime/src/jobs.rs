@@ -16,6 +16,7 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicIsize;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -88,7 +89,7 @@ struct Held
 {
     /// The address of the object.
     obj: usize,
-    /// The number of the job that holds it, 0 for the main thread.
+    /// The thread that holds it, as [`owner`] names it.
     owner: usize,
     /// The count of times the job took it.
     depth: u32,
@@ -138,7 +139,78 @@ thread_local! {
     static TRAPPED: Cell<i32> = const { Cell::new(0) };
     /// The number of the job of this thread, 0 for the main thread.
     static JOB: Cell<usize> = const { Cell::new(0) };
+    /// The number a thread that runs no job holds locks under, from its first
+    /// lock; 0 before it.
+    static LOCKER: Cell<usize> = const { Cell::new(0) };
+    /// Whether this thread runs the program: `zk_start` marks it.
+    static MAIN: Cell<bool> = const { Cell::new(false) };
 }
+
+/// The next number of a thread that runs no job, for its locks: the high half
+/// of the numbers, which no job reaches.
+static NEXT_LOCKER: AtomicUsize = AtomicUsize::new(1 << (usize::BITS - 1));
+
+/// Whether the main thread of a program runs, as against a C lib, whose
+/// threads come from C.
+static PROGRAM: AtomicBool = AtomicBool::new(false);
+
+/// Mark this thread as the main thread of the program, which the count of
+/// running threads holds from the start.
+pub(crate) fn mark_main()
+{
+    MAIN.set(true);
+    PROGRAM.store(true, Ordering::SeqCst);
+}
+
+/// The thread a lock names as its holder: the number of a job, or, for each
+/// other thread (the main one and each thread of C), a number of its own, so
+/// two such threads never pass as one.
+///
+/// # Returns
+///
+/// The number.
+fn owner() -> usize
+{
+    let job = JOB.get();
+    ret_if!(job != 0, job);
+    let mine = LOCKER.get();
+    ret_if!(mine != 0, mine);
+    let fresh = NEXT_LOCKER.fetch_add(1, Ordering::Relaxed);
+    LOCKER.set(fresh);
+    fresh
+}
+
+/// Whether a thread out of the count of running threads can still change
+/// what a waiter waits for: each thread of a C lib, a thread of C inside a
+/// call of the program now, or a closure that C can call from a thread of its
+/// own later. A wait then never stops as a deadlock.
+///
+/// # Returns
+///
+/// `true` when one can.
+fn outside_acts() -> bool
+{
+    !PROGRAM.load(Ordering::SeqCst)
+        || crate::libs::free_calls() > 0
+        || lent_to_threads()
+}
+
+/// Whether C holds a closure it can call from a thread of its own.
+///
+/// # Returns
+///
+/// `true` when it does.
+#[cfg(not(target_os = "wasi"))]
+fn lent_to_threads() -> bool { crate::callbacks::lent_to_threads() }
+
+/// Whether C holds a closure it can call from a thread of its own: never on
+/// WASI, which calls no C.
+///
+/// # Returns
+///
+/// `false`.
+#[cfg(target_os = "wasi")]
+fn lent_to_threads() -> bool { false }
 
 /// The state, locked.
 ///
@@ -178,16 +250,21 @@ fn wait_until(
     mut st: MutexGuard<'static, State>, came: impl Fn(&State) -> bool,
 ) -> MutexGuard<'static, State>
 {
+    // A thread of C is out of the count: it waits and changes no count.
+    let counted = JOB.get() != 0 || MAIN.get();
     while !came(&st)
     {
-        st.running -= 1;
-        st.parked += 1;
-        if st.running == 0
+        let seen = st.changes;
+        if counted
+        {
+            st.running -= 1;
+            st.parked += 1;
+        }
+        if counted && st.running == 0 && !outside_acts()
         {
             drop(st);
             deadlock();
         }
-        let seen = st.changes;
         while st.changes == seen
         {
             st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
@@ -355,7 +432,7 @@ pub extern "C" fn zk_lock(obj: *mut u8)
 {
     // The block of the object names the lock, which each job that
     // holds the object shares; the variable differs from job to job.
-    let (obj, me) = (zk_seq_base(obj) as usize, JOB.get());
+    let (obj, me) = (zk_seq_base(obj) as usize, owner());
     let free =
         |s: &State| s.locks.iter().all(|h| h.obj != obj || h.owner == me || h.broken);
     let mut st = wait_until(state(), free);
@@ -382,7 +459,7 @@ pub extern "C" fn zk_lock(obj: *mut u8)
 #[unsafe(export_name = stamped!("unlock"))]
 pub extern "C" fn zk_unlock(obj: *mut u8)
 {
-    let (obj, me) = (zk_seq_base(obj) as usize, JOB.get());
+    let (obj, me) = (zk_seq_base(obj) as usize, owner());
     let mut st = state();
     let at = st.locks.iter().position(|h| h.obj == obj && h.owner == me);
     let Some(at) = at

@@ -176,6 +176,20 @@ fn run_on_c_thread(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
     );
 }
 
+/// Whether C holds a closure it can call from a thread of its own, through a
+/// lend of a call that runs now or through a leave, so a thread of C can still
+/// change what a job waits for.
+///
+/// # Returns
+///
+/// `true` when it does.
+pub(crate) fn lent_to_threads() -> bool
+{
+    let list = CBS.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
+    list.iter().map(|p| cb(*p)).any(|c| c.crosses && (c.kept || c.calls > 0))
+}
+
 /// A count of the record of a closure, for a call on a thread of C's own; the
 /// record of a function lives for the whole run and takes none.
 ///

@@ -305,15 +305,21 @@ missing row is `ZK_TRAP_NO_ROW`.
   (`zk_dup_seqs`); a receive writes the optional into a temp; a send moves its value
   through its address.
 - The runtime (`zaka_runtime/src/jobs.rs`) keeps the jobs and channels under one lock and
-  one condition. It counts the threads that run: a wait that would leave none running is
-  the trap `deadlock`. `zk_job_start` turns counts atomic (`zk_threads_begin`) and starts
+  one condition. It counts the threads that run, the main one (`mark_main`, from
+  `zk_start`) and each job: a wait that would leave none running is the trap `deadlock`,
+  unless a thread out of the count can still act (`outside_acts`): each thread of a C
+  lib, a call from a thread of C that runs now (`free_calls`), or a closure C holds that
+  it can call from a thread of its own (`lent_to_threads`). A thread of C waits and
+  changes no count. `zk_job_start` turns counts atomic (`zk_threads_begin`) and starts
   a thread of 64 MiB; under `--trap unwind`, `stop` writes `job <n> stopped: ...` and
   calls the leave of the thread's job. `zk_finish` waits for each job, drops each result
   and each value a channel holds, and makes the status 1 when a trap no wait saw ended a
   job. `collect_rings` waits while a job runs; the lists of the deep duplicate are each
   thread's own.
 - `zk_lock` and `zk_unlock` find each lock through the block of the object (`zk_seq_base` of
-  the variable): a lock another thread holds waits through the same deadlock check, a
+  the variable) and name the holder through `owner`: the number of a job, or a number of
+  its own for each other thread, from the high half (`NEXT_LOCKER`), so two threads of C
+  never pass as one. A lock another thread holds waits through the same deadlock check, a
   thread takes again a lock it holds, and a job that stops at a trap leaves its locks
   broken (`LockBroken`).
 
@@ -379,7 +385,10 @@ from a thread of C's own runs when the table of names allows it: the row of the 
 or of the thunk of a closure, in `fn_names` holds `crosses`. It is set for a function
 that, itself or through each function it calls, uses no mutable global, and for a thunk
 each capture of its record is a duplicate of a value with no box, function value, pointer or
-handle (`crossing_fns` in the borrow checker). The runtime finds the row through the
+handle, save an object of a struct marked for jobs (`Module::jobs_structs`), whose fields
+each thread reaches under its lock (`crossing_fns` in the borrow checker). A write to a
+field of an object leaves the variable unwritten (`note_written` in the check), so such a
+capture is a duplicate. The runtime finds the row through the
 code word of the record. `run_on_c_thread` takes a count of a closure's record while the
 lend or the leave holds (`LENDING`, a lock the lends, the leaves and their ends take
 too), counts the call in `FREE`, so the ring collector waits, and the lend turned the

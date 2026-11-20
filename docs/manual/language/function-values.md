@@ -884,7 +884,9 @@ and its message tells how to give leave. The native code of a closure remains in
 last use, so a late call traps and never runs freed code. C can call a function from a
 thread of its own when it, and each function it calls, uses no mutable global, and when
 each variable it captures is one no statement writes, holding a value jobs can use: no
-object, function value, pointer or handle. The counts of the heap turn atomic once such a
+function value, pointer or handle, and no object other than one of a struct marked
+`အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`, whose fields each thread reaches in a lock block of it. A
+write to a field of an object leaves the variable that holds it unwritten. The counts of the heap turn atomic once such a
 function goes to C, and a trap on that thread stops the program. A thread C starts runs
 after the call that started it returns, so a closure it calls needs leave. A call from
 another thread of each other function ends the run of a program with a message; so does

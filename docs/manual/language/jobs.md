@@ -501,9 +501,15 @@ C starts threads of its own too, and two of the rules above reach them:
 - A native program hands C a function, and C calls it on a thread it started: the call
   runs when the function, and each function it calls, reads and writes no variable at the
   top of a file, the rule of ZK0726, and when each variable it captures is one no
-  statement writes, of a kind jobs can use other than an object. Each other call from
-  such a thread ends the run with a message
+  statement writes, of a kind jobs can use. An object it captures is one marked
+  `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`, reached in a lock block as in a job; a write to a field of
+  the object leaves the variable unwritten. Each other call from such a thread ends the
+  run with a message
   ([Closures C calls](function-values.md#nested-functions-and-closures)).
+- Each thread of C holds a lock under a number of its own, so a thread of C waits for a
+  lock the main thread or another thread of C holds. A wait never stops as a deadlock
+  while a thread of C can still change what it waits for: while such a call runs, or C
+  holds a closure it can call from a thread of its own.
 - C calls a [lib built from Zaka](functions.md#functions-c-can-call) from several
   threads: a function of the lib that reaches no such variable, calls no C and no function
   value, and starts no job runs on the threads at once, with no lock.

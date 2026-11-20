@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt;
 use std::str::FromStr;
 
@@ -58,6 +59,12 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub c_structs: BTreeMap<String, String>,
+    /// The name of each shared struct marked as usable in jobs: its objects are
+    /// reached under their locks, so a closure C calls from a thread of its
+    /// own can capture one.
+    #[builder(default)]
+    #[serde(default)]
+    pub jobs_structs: BTreeSet<String>,
     /// The target the program was settled for, when it depends on one.
     #[serde(default)]
     pub built_for: Option<Target>,

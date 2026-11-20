@@ -32,6 +32,7 @@ pub extern "C" fn zk_start(argc: i32, argv: *mut *mut c_char, program: *const Zk
     // SAFETY: `main` calls this first, on the one thread of the program.
     unsafe { zk_prog = program };
     zk_ctx();
+    crate::jobs::mark_main();
     ret_if!(argc <= 0 || argv.is_null());
     // SAFETY: `argv` holds `argc` NUL-ended arguments.
     let first = unsafe { *argv };

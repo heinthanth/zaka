@@ -594,6 +594,22 @@ fn c_calls_a_closure_of_copied_captures_from_a_thread_of_its_own()
 
 #[cfg(unix)]
 #[test]
+fn c_threads_and_the_main_thread_share_a_locked_object_through_a_closure()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let (ok, printed, errors) =
+            built_and_ran(dir.path(), backend, "c_thread_locked");
+        assert!(ok, "the program ends well with the {backend} backend: {errors}");
+        // Each of the five threads adds 1000 under the lock, and none passes
+        // a lock another holds.
+        assert_eq!(printed, "၅၀၀၀\n", "a locked object with the {backend} backend");
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn a_call_from_a_c_thread_of_a_closure_whose_capture_is_written_ends_the_run()
 {
     for backend in ["c", "native"]

@@ -300,3 +300,31 @@ fn a_leave_for_c_takes_a_function_value()
         start("ကိန်းရှင် n သည် ၁ ဖြစ်ပါစေ။\nအကယ်၍ n > ၀ ဖြစ်လျှင် n ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။");
     assert_eq!(codes_as_is(&inline), [Code::NotAFunction]);
 }
+
+/// A program whose start block reads field `n` of `b` in a nested function
+/// `ဖတ်` after a write to that field; `head` opens the struct declaration.
+fn field_write(head: &str) -> String
+{
+    let lines = start(
+        "ကိန်းရှင် b သည် ဘူး(n: ၁) ဖြစ်ပါစေ။
+ဖတ် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+b ၏ n ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+b ၏ n ကို ၂ ဟု ထားမည်။
+ဖတ်() ကို ပြသမည်။",
+    );
+    format!("ဘူး ဟူသော {head}ဒေတာအစုအဝေးတွင် n ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\n{lines}")
+}
+
+#[test]
+fn a_write_to_a_field_of_an_object_leaves_the_capture_copied()
+{
+    let text = field_write("မျှဝေနိုင်သော ");
+    assert_eq!(modes_of(&text, "ဖတ်"), [CaptureMode::Dup]);
+}
+
+#[test]
+fn a_write_to_a_field_of_a_plain_struct_shares_the_capture()
+{
+    assert_eq!(modes_of(&field_write(""), "ဖတ်"), [CaptureMode::Lend]);
+}

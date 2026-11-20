@@ -579,7 +579,7 @@ fn check_once(
 /// # Returns
 ///
 /// Their names.
-fn jobs_structs(program: &Program) -> HashSet<String>
+pub fn jobs_structs(program: &Program) -> HashSet<String>
 {
     let marked = |s: &&StructDecl| s.jobs && s.shared;
     let structs = program.stmts.iter().filter_map(as_struct_decl).filter(marked);
@@ -1790,7 +1790,6 @@ impl Checker
     pub(crate) fn place_kind(&mut self, target: &Expr) -> Option<DataKind>
     {
         self.mark_row_write(target);
-        self.note_written(target);
         let Some(place) = place_of(target)
         else
         {
@@ -1800,9 +1799,12 @@ impl Checker
         if let Expr::Name(n) = place
         {
             ret_if!(!self.check_writable(n), None);
+            self.note_written(target);
             return self.infer(target, None);
         }
         let kind = self.infer(target, None);
+        // The kinds of the parts are known from here, which the note reads.
+        self.note_written(target);
         // C owns the fields of a struct a handle points at.
         let base =
             tern!(let Expr::Field(f) = place, self.kinds.get(&f.base.id()), None);
@@ -1834,15 +1836,17 @@ impl Checker
 
     /// Note the local a write reaches, so a closure that captures it shares
     /// it and holds no duplicate of it: the variable at the root of a field, a
-    /// cell or a row. A write through a pointer leaves the variable as it
-    /// is.
+    /// cell or a row. A write through a pointer, or to a field of a shared
+    /// object, leaves the variable as it is: it holds the same object after.
     ///
     /// # Arguments
     ///
-    /// * `target` - The place written.
+    /// * `target` - The place written, whose parts have their kinds.
     pub(crate) fn note_written(&mut self, target: &Expr)
     {
-        let Some(root) = written_root(target)
+        let object =
+            |e: &Expr| self.kinds.get(&e.id()).is_some_and(|k| k.as_object().is_some());
+        let Some(root) = written_root(target, &object)
         else
         {
             return;
@@ -2185,19 +2189,28 @@ pub(crate) fn mismatch_report(span: Span, want: DataKind, found: DataKind)
 /// # Arguments
 ///
 /// * `target` - The place written.
+/// * `object` - Whether an expression holds a shared object, whose fields a
+///   write changes in place of the variable.
 ///
 /// # Returns
 ///
-/// The name, or `None` for a write through a pointer or into no variable.
-fn written_root(target: &Expr) -> Option<&NameExpr>
+/// The name, or `None` for a write through a pointer, to a field of an
+/// object, or into no variable.
+fn written_root<'e>(
+    target: &'e Expr, object: &impl Fn(&Expr) -> bool,
+) -> Option<&'e NameExpr>
 {
     match target
     {
         Expr::Name(n) => Some(n),
-        Expr::Group(n) => written_root(&n.inner),
-        Expr::Field(n) => written_root(&n.base),
-        Expr::Index(n) => written_root(&n.list),
-        Expr::Verb(n) if n.op == VerbOp::RowValue => written_root(n.args.first()?),
+        Expr::Group(n) => written_root(&n.inner, object),
+        Expr::Field(n) if object(&n.base) => None,
+        Expr::Field(n) => written_root(&n.base, object),
+        Expr::Index(n) => written_root(&n.list, object),
+        Expr::Verb(n) if n.op == VerbOp::RowValue =>
+        {
+            written_root(n.args.first()?, object)
+        }
         _ => None,
     }
 }

@@ -17,6 +17,7 @@ use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
@@ -89,7 +90,9 @@ pub fn crossing_fns(module: &Module) -> Vec<bool>
                 {
                     return;
                 };
-                let copies = record.kind.pointee().is_some_and(copied_captures);
+                let copies = record.kind.pointee();
+                let copies =
+                    copies.is_some_and(|r| copied_captures(r, &module.jobs_structs));
                 do_if!(!copies, crosses[*func as usize] = false);
             };
             do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
@@ -100,40 +103,49 @@ pub fn crossing_fns(module: &Module) -> Vec<bool>
 
 /// Whether each capture of a closure record is a duplicate of a value another
 /// thread can read: no box, which the function around shares, and no
-/// function value, pointer or handle at each depth of the value.
+/// function value, pointer or handle at each depth of the value, save an
+/// object of a struct marked as usable in jobs.
 ///
 /// # Arguments
 ///
 /// * `record` - The kind of the record.
+/// * `jobs` - The structs marked as usable in jobs.
 ///
 /// # Returns
 ///
 /// `true` when each is.
-fn copied_captures(record: DataKind) -> bool
+fn copied_captures(record: DataKind, jobs: &BTreeSet<String>) -> bool
 {
     let fields = record.as_struct().map(|s| s.fields());
     let mut captures = fields.unwrap_or_default().iter().skip(RECORD_HEAD);
-    captures.all(|(_, k)| crossing_value(*k))
+    captures.all(|(_, k)| crossing_value(*k, jobs))
 }
 
 /// Whether a value can be read from another thread once copied: it holds no
-/// box, function value, pointer or handle, at each depth.
+/// box, function value, pointer or handle, at each depth, save an object of a
+/// struct marked as usable in jobs, whose fields each thread reaches under its
+/// lock. The box of a captured variable a statement writes is no such object:
+/// a variable that holds an object is a box itself, so its box holds a box.
 ///
 /// # Arguments
 ///
 /// * `kind` - The kind of the value.
+/// * `jobs` - The structs marked as usable in jobs.
 ///
 /// # Returns
 ///
 /// `true` when it can.
-fn crossing_value(kind: DataKind) -> bool
+fn crossing_value(kind: DataKind, jobs: &BTreeSet<String>) -> bool
 {
     let kind = kind.repr();
+    let base = |name: &str| name.split('<').next().unwrap_or_default().to_string();
+    ret_true!(kind.as_object().is_some_and(|s| jobs.contains(&base(&s.name))));
     let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
     ret_false!(shared || kind.is_box());
     let cell = kind.cell_kind().filter(|_| !kind.is_text());
     let fields = kind.as_struct().map(|s| s.fields()).unwrap_or_default();
-    cell.is_none_or(crossing_value) && fields.iter().all(|(_, k)| crossing_value(*k))
+    let inner = |k: DataKind| crossing_value(k, jobs);
+    cell.is_none_or(inner) && fields.iter().all(|(_, k)| inner(*k))
 }
 
 /// The functions that use no mutable global, in their own statements or in

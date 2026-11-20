@@ -667,6 +667,14 @@ pub(crate) fn free_enter()
     });
 }
 
+/// The count of calls with no lock that run now: calls of a lib, and calls C
+/// makes from threads of its own.
+///
+/// # Returns
+///
+/// The count.
+pub(crate) fn free_calls() -> usize { FREE.load(Ordering::SeqCst) & !COLLECTS }
+
 /// Count a call with no lock out, at its end.
 #[unsafe(export_name = stamped!("lib_free_out"))]
 pub extern "C" fn zk_lib_free_out() { FREE.fetch_sub(1, Ordering::SeqCst); }

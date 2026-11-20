@@ -133,6 +133,7 @@ pub fn lower(
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
         .unsafe_spans(unsafe_spans(program)).c_structs(c_structs(program))
+        .jobs_structs(zakac_semcheck::semcheck::jobs_structs(program).into_iter().collect())
         .maybe_built_for(program.target)
         .span(program.span).build();
     module
