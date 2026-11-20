@@ -394,6 +394,9 @@ pub enum Op
     /// Work of the ring collector: run it now, pause it, resume it, or pop a
     /// `usize` and make it the octets in the buffer that run a collection.
     Rings(RingsAct),
+    /// Push one stat of the ring collector, for its field in the struct of the
+    /// core: a `ကိန်းပြည့်`, or for 4 a `မှန်မှားတန်ဖိုး`.
+    RingStat(u8),
     /// Start a job that calls the function at this index, its arguments on
     /// the stack as [`Op::Call`] takes them, and push the `usize` that names
     /// the job. The job runs in its own turns, from its own stack.
@@ -697,6 +700,7 @@ impl Op
             Op::Format(f) => format!("fmt{f}"),
             Op::Trap(code) => <&str>::from(code).to_string(),
             Op::Rings(act) => act.as_ref().to_string(),
+            Op::RingStat(n) => n.to_string(),
             Op::Wrap(op) => op.mnemonic().to_string(),
             Op::Load(kind)
             | Op::Store(kind)

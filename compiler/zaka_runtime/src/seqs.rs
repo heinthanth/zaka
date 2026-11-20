@@ -433,6 +433,10 @@ static RING_WAITING: AtomicUsize = AtomicUsize::new(0);
 static RING_THRESHOLD: AtomicUsize = AtomicUsize::new(16 * 1024);
 /// Whether the program paused the collections a full buffer runs.
 static RING_PAUSED: AtomicBool = AtomicBool::new(false);
+/// The collections that ran.
+static RING_RUNS: AtomicUsize = AtomicUsize::new(0);
+/// The octets the collections freed.
+static RING_FREED: AtomicUsize = AtomicUsize::new(0);
 /// The act of [`zk_rings`] that runs the collector now.
 const RINGS_COLLECT: u8 = 0;
 /// The act of [`zk_rings`] that pauses the collections.
@@ -758,7 +762,37 @@ fn collect_held()
     live.iter().for_each(|&b| scan(b));
     let mut white = Vec::new();
     live.iter().for_each(|&b| collect_white(b, &mut white));
+    RING_RUNS.fetch_add(1, Ordering::Relaxed);
+    let freed: usize = white.iter().map(|&b| head(b).size).sum();
+    RING_FREED.fetch_add(freed, Ordering::Relaxed);
     white.into_iter().for_each(|b| zk_seq_free(b));
+}
+
+/// One stat of the ring collector, for its field in the struct of the core: 0
+/// the collections that ran, 1 the octets the collections freed, 2 the octets
+/// waiting in the buffer, 3 the octets in the buffer that run a collection, 4
+/// whether the program paused the collections (1 or 0).
+///
+/// # Arguments
+///
+/// * `n` - The field.
+///
+/// # Returns
+///
+/// The stat; 0 past the last field.
+#[unsafe(export_name = stamped!("ring_stat"))]
+pub extern "C" fn zk_ring_stat(n: u32) -> i64
+{
+    let stat = match n
+    {
+        0 => RING_RUNS.load(Ordering::Relaxed),
+        1 => RING_FREED.load(Ordering::Relaxed),
+        2 => RING_WAITING.load(Ordering::Relaxed),
+        3 => RING_THRESHOLD.load(Ordering::Relaxed),
+        4 => usize::from(RING_PAUSED.load(Ordering::Relaxed)),
+        _ => 0,
+    };
+    i64::try_from(stat).unwrap_or(i64::MAX)
 }
 
 /// The collection the C lib runs as the program ends.

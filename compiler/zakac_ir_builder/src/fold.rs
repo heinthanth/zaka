@@ -493,7 +493,7 @@ impl Folder
         {
             ExprNode::Const(v) => return Some(*v),
             ExprNode::Read(_) => return None,
-            ExprNode::MakePipe(_) => return None,
+            ExprNode::MakePipe(_) | ExprNode::RingStat(_) => return None,
             ExprNode::Prefix { op, operand } =>
             {
                 let (op, v) = (*op, self.expr(operand));

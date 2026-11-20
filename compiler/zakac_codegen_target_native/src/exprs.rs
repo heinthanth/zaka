@@ -74,6 +74,18 @@ impl<M: Module> FnGen<'_, '_, M>
                 let room = self.word(i64::from(room.unwrap_or(0)));
                 self.rt("zk_pipe_new", &[ptr], &[ptr], &[room]).unwrap_or(room)
             }
+            ExprNode::RingStat(n) =>
+            {
+                let n = self.b.ins().iconst(types::I32, i64::from(*n));
+                let v = self
+                    .rt("zk_ring_stat", &[types::I32], &[types::I64], &[n])
+                    .unwrap_or(n);
+                match e.kind == DataKind::Bool
+                {
+                    true => self.b.ins().icmp_imm_s(IntCC::NotEqual, v, 0),
+                    false => v,
+                }
+            }
             ExprNode::Receive(pipe) => self.receive(pipe, e.kind),
             ExprNode::CallValue { callee, args } =>
             {

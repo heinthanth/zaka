@@ -70,7 +70,7 @@ fn fits(text: &str) -> bool
 }
 
 /// The statement that pauses the collections.
-const PAUSE: &str = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။";
+const PAUSE: &str = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ခေတ္တရပ်မည်။";
 
 /// The statement that runs the collector now.
 const COLLECT: &str = "မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။";
@@ -97,22 +97,22 @@ fn the_glued_and_the_spaced_words_both_read()
 #[test]
 fn a_small_threshold_collects_often()
 {
-    let small = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ၅၁၂ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
+    let small = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ၅၁၂ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
     assert!(fits(&program(small, "")));
 }
 
 #[test]
 fn a_threshold_past_the_heap_never_collects()
 {
-    let huge = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ၁၀၀၀၀၀၀၀၀၀ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
+    let huge = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ၁၀၀၀၀၀၀၀၀၀ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
     assert!(!fits(&program(huge, "")));
 }
 
 #[test]
 fn a_resume_lets_a_full_buffer_collect_again()
 {
-    let setup = format!("{PAUSE}\nအလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။");
-    let small = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ၅၁၂ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
+    let setup = format!("{PAUSE}\nအလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ပြန်လည်စတင်မည်။");
+    let small = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ၅၁၂ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။";
     assert!(fits(&program(&format!("{setup}\n{small}"), "")));
 }
 
@@ -120,4 +120,35 @@ fn a_resume_lets_a_full_buffer_collect_again()
 fn the_default_threshold_collects_without_a_statement()
 {
     assert!(fits(&program("", "")));
+}
+
+/// The expression of the stats of the collector.
+const STATS: &str = "အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ";
+
+#[test]
+fn the_stats_count_the_collections_and_the_octets_freed()
+{
+    let text = program(PAUSE, COLLECT).replace(
+        "\"ပြီး\" ဟု ပြသမည်။",
+        &format!(
+            "ကိန်းရှင် စံချိန် သည် {STATS} ဖြစ်ပါစေ။\nစံချိန် ၏ အကြိမ်အရေအတွက် ကို ပြသမည်။\nစံချိန် ၏ \
+             ရှင်းလင်းခဲ့သောဘိုက်အရေအတွက် သည် ၀ ထက် ကြီးသည် ဟု ပြသမည်။\nစံချိန် ၏ ခေတ္တရပ်ထား ကို ပြသမည်။"
+        ),
+    );
+    let (out, result) = run_source_with(&text, &RunOptions::default());
+    assert!(result.is_ok(), "{result:?}");
+    assert_eq!(out, "၂၀၀၀\nမှန်\nမှန်\n");
+}
+
+#[test]
+fn the_stats_show_the_threshold_and_a_blank_buffer_at_the_start()
+{
+    let text =
+        format!("ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{STATS} ကို ပြသမည်။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n");
+    let (out, result) = run_source_with(&text, &RunOptions::default());
+    assert!(result.is_ok(), "{result:?}");
+    let want = "အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ(အကြိမ်အရေအတွက်: ၀၊ \
+                ရှင်းလင်းခဲ့သောဘိုက်အရေအတွက်: ၀၊ ရှင်းလင်းရန်စီစဥ်နေသောဘိုက်အရေအတွက်: ၀၊ \
+                ရှင်းလင်းမှုလုပ်ဆောင်ရန်လိုအပ်သောဘိုက်အရေအတွက်: ၁၆၃၈၄၊ ခေတ္တရပ်ထား: မမှန်)\n";
+    assert_eq!(out, want);
 }

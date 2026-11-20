@@ -93,7 +93,10 @@ head's next word maps an old block to its new one while the work runs), and
 octets) and at the end of the run, as the VM does; a block waits when a block of its kind
 can be part of a ring, worked out once for each descriptor. `zk_rings(act, octets)` serves
 the statements of the collector: run it now (0), pause (1), resume (2), set the threshold
-(3). `zk_obj_ptr` and `zk_ptr_obj` turn an object into a pointer and back,
+(3). `zk_ring_stat(n)` gives one field of the stats, as `ring_stat n` of the VM does: the
+runs (0), the octets the collections freed (1), the octets waiting (2), the threshold (3), and 1 or 0
+for a pause (4); the stats expression lowers to a struct of five `ExprNode::RingStat`
+reads. `zk_obj_ptr` and `zk_ptr_obj` turn an object into a pointer and back,
 `zk_check_utf8` checks a list of u8s that becomes text. The blocks of the heap statements
 of unsafe code remain plain `zk_alloc` blocks with no head, and the two are never mixed. A
 counted list moved to the heap (`to_heap`) remains uncounted.

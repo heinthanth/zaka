@@ -51,6 +51,7 @@ fn raw_expr(e: &Expr) -> bool
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::MakePipe(_)
+        | ExprNode::RingStat(_)
         | ExprNode::BlankList => false,
         ExprNode::Format(pieces) => fmt_values(pieces).any(raw_expr),
         ExprNode::Chars { text, index, .. } =>

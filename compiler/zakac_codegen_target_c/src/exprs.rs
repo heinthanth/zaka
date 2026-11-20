@@ -74,6 +74,11 @@ impl FnGen<'_, '_>
             ExprNode::Spawn { func, args, .. } => self.spawn(*func, args),
             ExprNode::Wait(job) => self.wait(job, e.kind),
             ExprNode::MakePipe(room) => format!("zk_pipe_new({})", room.unwrap_or(0)),
+            ExprNode::RingStat(n) => tern!(
+                e.kind == DataKind::Bool,
+                format!("(zk_ring_stat({n}) != 0)"),
+                format!("(intptr_t)zk_ring_stat({n})")
+            ),
             ExprNode::Receive(pipe) => self.receive(pipe, e.kind),
             ExprNode::CallValue { callee, args } =>
             {

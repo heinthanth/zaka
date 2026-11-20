@@ -44,6 +44,9 @@ pub const SEND: &str = "ပို့";
 /// The verb of the core that closes a channel.
 pub const CLOSE: &str = "ပိတ်";
 
+/// The struct of the core that holds the stats of the ring collector.
+pub const RING_STATS: &str = "အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ";
+
 /// The verb of the core that adds to an atomic number.
 pub const ATOMIC_ADD: &str = "ပေါင်းထည့်";
 

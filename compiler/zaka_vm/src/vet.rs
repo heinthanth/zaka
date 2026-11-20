@@ -741,6 +741,8 @@ impl Paths<'_, '_>
             Op::Trap(_) => Ok(effect(&[], None)),
             Op::Rings(RingsAct::Threshold) => Ok(effect(&[I], None)),
             Op::Rings(_) => Ok(effect(&[], None)),
+            Op::RingStat(4) => Ok(effect(&[], Some(Class::Bool))),
+            Op::RingStat(_) => Ok(effect(&[], Some(I))),
             Op::Load(kind) => self.kinded(kind, &[A], Some(class_of(kind))),
             Op::Store(kind) => self.kinded(kind, &[class_of(kind), A], None),
             Op::Take(kind) if kind.is_aggregate() =>

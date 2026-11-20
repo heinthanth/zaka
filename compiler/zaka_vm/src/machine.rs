@@ -1468,6 +1468,7 @@ impl Machine
             Op::ListEq(kind) => self.list_eq(kind),
             Op::Halt { cause, kind } => self.halt(cause, kind),
             Op::Rings(act) => self.rings(act),
+            Op::RingStat(n) => self.ring_stat(n),
             Op::PrintList(kind) =>
             {
                 let addr = self.pop_ptr("print_list")?;

@@ -28,6 +28,7 @@ pub(crate) fn sub_exprs(e: &Expr) -> Vec<&Expr>
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::MakePipe(_)
+        | ExprNode::RingStat(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }
@@ -196,6 +197,7 @@ fn sub_exprs_mut(e: &mut Expr) -> Vec<&mut Expr>
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::MakePipe(_)
+        | ExprNode::RingStat(_)
         | ExprNode::BlankList => Vec::new(),
         ExprNode::Prefix { operand, .. }
         | ExprNode::Convert { operand, .. }

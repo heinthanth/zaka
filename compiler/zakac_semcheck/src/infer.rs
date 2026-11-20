@@ -31,6 +31,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::jobs::RING_STATS;
 use crate::kind::DataKind;
 use crate::kind::InitialGap;
 use crate::list::KindUse;
@@ -512,6 +513,10 @@ impl Checker
             }
             (VerbOp::RowCount, [table]) => return self.infer_row_count(table),
             (VerbOp::Receive, [pipe]) => return self.infer_receive(pipe),
+            (VerbOp::RingStats, []) =>
+            {
+                return self.structs.get(&Name::new(RING_STATS)).copied();
+            }
             (VerbOp::ParMap, [list, Expr::Name(f)]) =>
             {
                 return self.infer_par_map(list, f);

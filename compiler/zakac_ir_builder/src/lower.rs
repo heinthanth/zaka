@@ -4202,6 +4202,7 @@ impl Lowerer<'_>
         ret_if!(n.op == VerbOp::RowValue, self.row_value(n, kind));
         ret_if!(n.op == VerbOp::OrElse, self.or_else(n, kind));
         ret_if!(n.op == VerbOp::ParMap, self.par_map(n, kind));
+        ret_if!(n.op == VerbOp::RingStats, ring_stats(kind, n.span));
         if let (VerbOp::CharAt | VerbOp::CharNth, [text, index]) = (n.op, args)
         {
             let (text, index) = (self.expr(text), self.expr(index));
@@ -4281,6 +4282,7 @@ impl Lowerer<'_>
             | VerbOp::RowValue
             | VerbOp::OrElse
             | VerbOp::ParMap
+            | VerbOp::RingStats
             | VerbOp::RemoveRow =>
             {
                 panic!("verb {} is no one-operand value", n.op.as_ref())
@@ -4404,6 +4406,25 @@ fn dup(e: Expr) -> Expr
     let (kind, span) = (e.kind, e.span);
     let node = ExprNode::Dup { value: Box::new(e), lent: false, deep: false };
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The stats of the ring collector: the struct of the core, each field read
+/// on its own, in the order the core declares them.
+///
+/// # Arguments
+///
+/// * `kind` - The struct kind.
+/// * `span` - The expression.
+///
+/// # Returns
+///
+/// The struct.
+fn ring_stats(kind: DataKind, span: Span) -> ExprNode
+{
+    let fields = kind.as_struct().map(|s| s.fields()).unwrap_or_default();
+    let each = fields.iter().enumerate();
+    let read = each.map(|(n, (_, k))| node_expr(*k, ExprNode::RingStat(n as u8), span));
+    ExprNode::List(read.collect())
 }
 
 /// The value of a round of an each-cell loop: a duplicate of the cell.

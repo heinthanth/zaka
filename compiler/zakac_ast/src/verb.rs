@@ -234,6 +234,10 @@ pub enum VerbOp
     /// and the name of the function. The parser builds it.
     #[strum(serialize = "par_map")]
     ParMap,
+    /// `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ`: the stats of the ring collector, as
+    /// the struct of the core. The parser builds it.
+    #[strum(serialize = "ring_stats")]
+    RingStats,
     /// `<ဇယား> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး`: the value of a row, an
     /// optional when read, the value itself when written through. The parser
     /// builds it; no verb word stands for it.

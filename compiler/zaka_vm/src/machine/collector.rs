@@ -32,13 +32,23 @@ pub struct Rings
     pub threshold: u64,
     /// Whether the program paused the collections a full buffer runs.
     pub paused: bool,
+    /// The collections that ran.
+    pub runs: u64,
+    /// The octets the collections freed.
+    pub freed: u64,
 }
 
 impl Default for Rings
 {
     fn default() -> Self
     {
-        Rings { waiting: 0, threshold: DEFAULT_THRESHOLD, paused: false }
+        Rings {
+            waiting: 0,
+            threshold: DEFAULT_THRESHOLD,
+            paused: false,
+            runs: 0,
+            freed: 0,
+        }
     }
 }
 
@@ -250,8 +260,41 @@ impl Machine
         do_for!(r in &roots, self.scan(*r));
         let mut white = Vec::new();
         do_for!(r in &roots, self.collect_white(*r, &mut white));
+        self.rings.runs += 1;
+        let size = |b: &u64| self.mem.live_block(*b).map_or(0, |k| k.len);
+        self.rings.freed += white.iter().map(size).sum::<u64>();
         do_for!(b in white, self.mem.free(b)?);
         Ok(())
+    }
+
+    /// Push one stat of the ring collector, as [`ExprNode::RingStat`] names
+    /// it: a `ကိန်းပြည့်`, or for 4 whether the program paused the collections.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The field of the stat.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `Malformed` for a field past the last.
+    pub(super) fn ring_stat(&mut self, n: u8) -> Step
+    {
+        ret_if!(n == 4, self.push(Value::Bool(self.rings.paused)));
+        let r = self.rings;
+        let stat = match n
+        {
+            0 => r.runs,
+            1 => r.freed,
+            2 => r.waiting,
+            3 => r.threshold,
+            _ => return Err(malformed("a stat of the collector past the last")),
+        };
+        let platform = self.module.platform_bits;
+        self.push(Value::int(
+            IntKind::new(true, Width::Platform),
+            u128::from(stat),
+            platform,
+        ))
     }
 
     /// The blocks a counted block holds a count of: the owned text, plain

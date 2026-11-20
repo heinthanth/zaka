@@ -280,6 +280,7 @@ impl Parser<'_>
             {
                 self.parse_turbofish()
             }
+            TokenKind::Ident if self.at_ring_stats() => Ok(self.parse_ring_stats()),
             TokenKind::Ident if self.at_call_struct_lit() =>
             {
                 self.parse_call_struct_lit()

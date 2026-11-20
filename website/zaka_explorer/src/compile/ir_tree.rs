@@ -510,6 +510,7 @@ impl IrTree<'_>
             {
                 ("receive", String::new(), vec![self.expr(pipe)])
             }
+            ExprNode::RingStat(n) => ("ring_stat", n.to_string(), Vec::new()),
             ExprNode::MakePipe(room) => (
                 "make_pipe",
                 room.map(|r| r.to_string()).unwrap_or_default(),

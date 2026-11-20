@@ -310,6 +310,7 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
         | ExprNode::Text(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::MakePipe(_)
+        | ExprNode::RingStat(_)
         | ExprNode::BlankList => (),
         ExprNode::Format(pieces) => do_for!(e in fmt_values_mut(pieces), expr(e, w)),
         ExprNode::Chars { text, index, .. } =>

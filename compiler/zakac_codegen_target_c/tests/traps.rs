@@ -161,7 +161,8 @@ fn the_ring_statements_reach_the_runtime()
     assert!(stop_line(&paused.stderr).contains("no heap room"), "{}", paused.stderr);
     let collected = run_input("rings_collected.zaka");
     assert_eq!(collected.status, Some(0), "{}", collected.stderr);
-    assert_eq!(collected.stdout, "ပြီး\n");
+    // Each round collects once, and the rings it frees count.
+    assert_eq!(collected.stdout, "ပြီး\n၂၀၀၀\nမှန်\n");
 }
 
 /// What `jobs.zaka` prints.

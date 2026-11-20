@@ -99,7 +99,8 @@ fn the_ring_statements_reach_the_runtime()
     stops_with(&paused, &flags, "", "no heap room for 40 octets");
     let run = run_jit(&c_inputs().join("rings_collected.zaka"), &flags);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "ပြီး\n");
+    // Each round collects once, and the rings it frees count.
+    assert_eq!(run.stdout, "ပြီး\n၂၀၀၀\nမှန်\n");
 }
 
 /// What `jobs.zaka` prints.

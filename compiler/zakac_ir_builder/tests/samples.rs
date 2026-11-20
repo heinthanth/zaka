@@ -188,6 +188,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::SizeOf(_)
         | ExprNode::BlankList
         | ExprNode::MakePipe(_)
+        | ExprNode::RingStat(_)
         | ExprNode::FnAddr { .. }
         | ExprNode::Text(_) => (),
         ExprNode::Format(pieces) =>

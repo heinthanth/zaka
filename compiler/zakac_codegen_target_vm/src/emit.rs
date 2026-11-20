@@ -1738,6 +1738,7 @@ impl<'s> FuncGen<'s>
                 self.wait_into(slot, job, e.kind);
             }
             ExprNode::MakePipe(room) => self.op(Op::PipeNew(*room)),
+            ExprNode::RingStat(n) => self.op(Op::RingStat(*n)),
             ExprNode::Receive(pipe) =>
             {
                 let slot = Op::LocalAddr(self.temp("%ret", e.kind));

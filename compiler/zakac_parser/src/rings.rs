@@ -3,15 +3,21 @@
 //! reserved and each stays free to name a variable.
 //!
 //! - `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။` runs the collector now;
-//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။` pauses the collections a full buffer
+//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ခေတ္တရပ်မည်။` pauses the collections a full buffer
 //!   runs;
-//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။` resumes them;
-//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို <octets> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` sets the octets
-//!   in the buffer that run a collection.
+//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ပြန်လည်စတင်မည်။` resumes them;
+//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို <octets> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` sets the octets in
+//!   the buffer that run a collection;
+//! - `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ`, an expression, gives the stats of the
+//!   collector as the struct of the core
+//!   `အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ`.
 
+use zakac_ast::expr::Expr;
+use zakac_ast::expr::VerbExpr;
 use zakac_ast::stmt::RingsAct;
 use zakac_ast::stmt::RingsStmt;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::verb::VerbOp;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::ret_if;
@@ -23,13 +29,16 @@ use crate::parser::Parser;
 
 /// The word that opens the statements that pause, resume and tune the
 /// collector.
-const AUTO: &str = "အလိုအလျောက်";
+pub(crate) const AUTO: &str = "အလိုအလျောက်";
 
 /// The words after `မင်မိုရီ` that run the collector now.
 const COLLECT: [&str; 4] = ["ရှိ", "မလိုအပ်သော", "အရာများကို", "ရှင်းလင်းမည်"];
 
 /// The word after `အလိုအလျောက် မင်မိုရီ`.
-const CLEARING: &str = "ရှင်းလင်းခြင်းကို";
+const CLEARING: &str = "ရှင်းလင်းမှုကို";
+
+/// The words after `အလိုအလျောက် မင်မိုရီ` of the expression of the stats.
+const STATS: [&str; 2] = ["ရှင်းလင်းသည့်", "အခြေအနေ"];
 
 /// The verb that pauses the collections.
 const PAUSE: &str = "ခေတ္တရပ်မည်";
@@ -49,9 +58,78 @@ impl Parser<'_>
     /// `true` if it does.
     pub(crate) fn at_auto_rings(&self) -> bool
     {
+        self.at_auto_mem() && !self.at_ring_stats()
+    }
+
+    /// Whether `အလိုအလျောက် မင်မိုရီ` comes next.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_auto_mem(&self) -> bool
+    {
         let first = self.peek();
         let named = first.kind == TokenKind::Ident && self.text_of(first.span) == AUTO;
         named && self.peek_n(1).kind == TokenKind::Kw(Kw::Mem)
+    }
+
+    /// Whether the expression of the stats comes next:
+    /// `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn at_ring_stats(&self) -> bool
+    {
+        self.at_auto_mem() && self.words_at(2, &STATS).is_some()
+    }
+
+    /// Parse the expression of the stats of the collector.
+    ///
+    /// # Returns
+    ///
+    /// The expression.
+    pub(crate) fn parse_ring_stats(&mut self) -> Expr
+    {
+        let count = 2 + self.words_at(2, &STATS).unwrap_or_default();
+        let start = self.peek().span;
+        let tokens: Vec<_> = (0..count).map(|_| self.bump()).collect();
+        let last = tokens.last().copied().unwrap_or_else(|| self.peek());
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VerbExpr::builder().id(id).op(VerbOp::RingStats).args(Vec::new())
+            .particle(last.particle).is_cmp(false).span(start.to(&last.span)).build();
+        Expr::Verb(node)
+    }
+
+    /// The count of tokens that spell fixed words from `n` tokens ahead, each
+    /// word glued or apart.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - Where the first word starts.
+    /// * `words` - The words, in order.
+    ///
+    /// # Returns
+    ///
+    /// The count of tokens, or `None` when the words do not follow.
+    fn words_at(&self, n: usize, words: &[&str]) -> Option<usize>
+    {
+        let mut at = n;
+        for word in words
+        {
+            let mut read = String::new();
+            while read.len() < word.len()
+            {
+                let tok = self.peek_n(at);
+                let next = format!("{read}{}", self.text_of(tok.span));
+                let fits = tok.kind != TokenKind::Eof && word.starts_with(&next);
+                ret_if!(!fits, None);
+                read = next;
+                at += 1;
+            }
+        }
+        Some(at - n)
     }
 
     /// Whether `မင်မိုရီရှိ` opens the statement; `မင်မိုရီတွင်` opens a heap
@@ -77,7 +155,7 @@ impl Parser<'_>
         self.finish_rings(RingsAct::Collect, None, start)
     }
 
-    /// Parse a statement that opens with `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို`: a
+    /// Parse a statement that opens with `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို`: a
     /// pause, a resume or a threshold.
     ///
     /// # Returns

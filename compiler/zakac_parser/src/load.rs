@@ -59,6 +59,7 @@ use crate::hint::Hint;
 use crate::hint::exported_hints;
 use crate::parser::parse;
 use crate::parser::parse_with;
+use crate::rings::AUTO;
 use crate::using::CallWords;
 use crate::using::Functions;
 
@@ -1390,7 +1391,14 @@ fn lib_paths_from(program: &mut Program, file: &Path)
 fn uses_core(file: &SourceFile, lexed: &LexOutput) -> bool
 {
     let names = core_names();
-    !undeclared_names(file, lexed, |t| names.contains(t)).is_empty()
+    let named = !undeclared_names(file, lexed, |t| names.contains(t)).is_empty();
+    // The stats of the collector are a struct of the core that no word names.
+    let auto = |t: &Token| t.kind == TokenKind::Ident && snippet(file, t.span) == AUTO;
+    let stats = lexed
+        .tokens
+        .windows(2)
+        .any(|w| auto(&w[0]) && w[1].kind == TokenKind::Kw(Kw::Mem));
+    named || stats
 }
 
 /// The facts of the target a file names and does not declare itself, each

@@ -452,9 +452,9 @@ name a variable.
 | Statement | What it does |
 | --- | --- |
 | `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။` | runs the collector now |
-| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။` | pauses the runs a full list starts; blocks still wait, and the end of the program still collects |
-| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။` | resumes the runs, and collects at once when the list filled during the pause |
-| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` | makes `n` octets of waiting blocks start a run, a `usize`; 16,384 at first; it collects at once when the list holds that much and the runs are not paused |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ခေတ္တရပ်မည်။` | pauses the runs a full list starts; blocks still wait, and the end of the program still collects |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ပြန်လည်စတင်မည်။` | resumes the runs, and collects at once when the list filled during the pause |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` | makes `n` octets of waiting blocks start a run, a `usize`; 16,384 at first; it collects at once when the list holds that much and the runs are not paused |
 
 - A word stands glued or apart: `အရာများကို` or `အရာများ ကို`, `မင်မိုရီရှိ` or `မင်မိုရီ ရှိ`.
 - A pause suits a part of the program that must not halt for a collection, such as one frame
@@ -472,17 +472,41 @@ name a variable.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ခေတ္တရပ်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ခေတ္တရပ်မည်။
 ၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။        // the 100 rings go now
-အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ပြန်လည်စတင်မည်။
-အလိုအလျောက် မင်မိုရီ ရှင်းလင်းခြင်းကို ၁၀၂၄ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ပြန်လည်စတင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ၁၀၂၄ ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။
 "ပြီး" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ပြီး
+```
+
+One expression reads the collector, `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ`. It gives a struct
+of the core, `အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ`, whose fields hold the stats at the time the expression runs:
+
+| Field | Kind | Holds |
+| --- | --- | --- |
+| `အကြိမ်အရေအတွက်` | `ကိန်းပြည့်` | the collections that ran |
+| `ရှင်းလင်းခဲ့သောဘိုက်အရေအတွက်` | `ကိန်းပြည့်` | the octets of the blocks the collections freed |
+| `ရှင်းလင်းရန်စီစဥ်နေသောဘိုက်အရေအတွက်` | `ကိန်းပြည့်` | the octets of the blocks waiting in the list |
+| `ရှင်းလင်းမှုလုပ်ဆောင်ရန်လိုအပ်သောဘိုက်အရေအတွက်` | `ကိန်းပြည့်` | the octets of waiting blocks that start a run |
+| `ခေတ္တရပ်ထား` | `မှန်မှားတန်ဖိုး` | whether the runs a full list starts are paused |
+
+A block freed while it waits, since its last holder let go, counts in no collection. The
+VM and native code count the same octets.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ(အကြိမ်အရေအတွက်: ၀၊ ရှင်းလင်းခဲ့သောဘိုက်အရေအတွက်: ၀၊ ရှင်းလင်းရန်စီစဥ်နေသောဘိုက်အရေအတွက်: ၀၊ ရှင်းလင်းမှုလုပ်ဆောင်ရန်လိုအပ်သောဘိုက်အရေအတွက်: ၁၆၃၈၄၊ ခေတ္တရပ်ထား: မမှန်)
 ```
 
 ### Printing a ring

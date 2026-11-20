@@ -923,6 +923,11 @@ pub enum ExprNode
     /// A new channel, the `usize` that names it: with the most values that
     /// wait in it, or with no limit.
     MakePipe(Option<u32>),
+    /// One stat of the ring collector, for its field in the struct of the
+    /// core: 0 the collections that ran, 1 the octets the collections freed, 2
+    /// the octets waiting in the buffer, 3 the octets that run a
+    /// collection, 4 whether the program paused the collections.
+    RingStat(u8),
     /// The next value of a channel, as an optional: it waits while the
     /// channel is open and holds none, and holds no data once it is closed
     /// and drained.

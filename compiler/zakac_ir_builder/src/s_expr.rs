@@ -210,6 +210,7 @@ impl ToSexpr for Expr
             }
             ExprNode::Wait(job) => list("wait", [job.to_sexpr()]),
             ExprNode::Receive(pipe) => list("receive", [pipe.to_sexpr()]),
+            ExprNode::RingStat(n) => list("ring_stat", [n.to_string()]),
             ExprNode::MakePipe(room) =>
             {
                 list("make_pipe", room.iter().map(u32::to_string).collect::<Vec<_>>())
