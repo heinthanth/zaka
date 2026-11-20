@@ -17,6 +17,7 @@ crate	cranelift-module	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com
 crate	cranelift-native	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
 crate	cranelift-object	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
 crate	etcetera	0.11.0	MIT OR Apache-2.0	https://github.com/lunacookies/etcetera
+crate	fastrand	2.5.0	Apache-2.0 OR MIT	https://github.com/smol-rs/fastrand
 crate	find-msvc-tools	0.1.12	MIT OR Apache-2.0	https://github.com/rust-lang/cc-rs
 crate	fontdb	0.24.0	MIT	https://github.com/RazrFalcon/fontdb
 crate	gen-lsp-types	0.11.0	MIT	https://github.com/ribru17/gen-lsp-types
