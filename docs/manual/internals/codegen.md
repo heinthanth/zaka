@@ -798,7 +798,10 @@ the explorer calls `step`, `step_over` and `step_out` to show a program running.
   `zk_par_map` in its place with a step of the function (`zk_map_step_<f>`), which lends
   the cell and writes the result. The runtime runs the rounds as those of a parallel
   loop, then adds each result in the order of the cells.
-- **Parallel loops.** `lower/rounds.rs` lifts the round of a counted loop, or of a loop
+- **Parallel loops.** A counted loop whose counter is wider than the platform word
+  (`counter_wider`) lowers as a plain counted loop (`wide_counted`), after the check of
+  its count of threads, since the count of its rounds could pass the word.
+  `lower/rounds.rs` lifts the round of a counted loop, or of a loop
   over the cells of a list, the characters of text or the rows of a ဇယား, into a function
   of its own, `<fn>#round<n>`: the number of the round (`usize`); the first value, the
   direction and the step of a counted loop (a step of zero or below is

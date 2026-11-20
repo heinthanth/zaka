@@ -24,6 +24,16 @@ pub fn run(text: &str, folding: &FoldOptions) -> Lowered
     run_phases(&file, &LexerOptions::default(), &options, folding)
 }
 
+/// Run all phases on `text` for a platform width.
+pub fn run_on(text: &str, platform_bits: u16) -> Lowered
+{
+    let mut sm = SourceMap::new();
+    let file =
+        sm.new_source_file(FileName::Custom("t.zaka".into()), in_unsafe_code(text));
+    let options = SemcheckOptions::builder().platform_bits(platform_bits).build();
+    run_phases(&file, &LexerOptions::default(), &options, &FoldOptions::default())
+}
+
 /// The statements of the main list, one form each, with the statements of
 /// the start block in place of the call of it.
 pub fn main_forms(module: &Module) -> Vec<String>

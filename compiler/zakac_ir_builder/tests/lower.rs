@@ -386,3 +386,21 @@ fn a_pointer_initial_value_takes_the_declared_kind()
     };
     assert_eq!(value.kind, to_isize);
 }
+
+#[test]
+fn a_parallel_loop_whose_counter_is_wider_than_the_word_runs_in_order()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ထိပ် သည် ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ ဖြစ်ပါစေ။
+၁ မှ ထိပ် အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ i ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let rounds = |bits: u16| {
+        let lowered = crate::common::run_on(text, bits);
+        let module = lowered.folded.expect("the program lowers");
+        module.funcs.iter().any(|f| f.name.contains("#round"))
+    };
+    // On a 32-bit build the rounds of an i64 counter can outnumber the word
+    // that counts the rounds, so the loop keeps them in order.
+    assert!(rounds(64), "a 64-bit build spreads the rounds");
+    assert!(!rounds(32), "a 32-bit build runs them in order");
+}

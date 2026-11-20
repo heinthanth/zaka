@@ -351,7 +351,9 @@ starts, and zero or below stops the program with the trap `threads not positive`
 then run on `<n>` threads, never more threads than rounds: each thread takes the next
 block of rounds that none took, until none is left, so a thread whose rounds end fast takes
 more; 1 runs them in order on the thread of the loop. With no count,
-a loop takes one thread for each core.
+a loop takes one thread for each core. A counted loop whose counter is wider than the
+platform word (an `i64` counter in a build of `--target-bits 32`) runs its rounds in
+order, as their count could pass the word.
 
 Each has the block form too. The rounds follow the rules of a job, since the rounds run at
 once on several threads:

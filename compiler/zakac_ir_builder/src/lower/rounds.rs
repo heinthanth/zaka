@@ -56,6 +56,37 @@ impl RoundHead<'_>
 
 impl Lowerer<'_>
 {
+    /// Whether the counter of a parallel loop is wider than the word of the
+    /// platform the rounds are counted in: an `i64` counter on a 32-bit
+    /// build, whose range can hold more rounds than the word.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it is.
+    pub(super) fn counter_wider(&self, n: &st::CountedStmt) -> bool
+    {
+        let kind = self.common(self.kind_of(&n.from), self.kind_of(&n.to));
+        kind.bits(self.platform) > self.platform
+    }
+
+    /// Lower a parallel loop whose counter is wider than the word: its rounds
+    /// run in order, as a counted loop runs them, so no count of rounds is cut
+    /// to the word. A count of threads is still checked.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The loop.
+    /// * `out` - The list the statements go to.
+    pub(super) fn wide_counted(&mut self, n: &st::CountedStmt, out: &mut Vec<Stmt>)
+    {
+        do_if!(let Some(t) = &n.threads, _ = self.thread_count(t, out));
+        out.push(self.counted(n));
+    }
+
     /// Lower a parallel counted loop: a slot for each bound and for the step,
     /// the direction and the count of its rounds, and the loop of the calls of
     /// its round.

@@ -1105,7 +1105,11 @@ impl Lowerer<'_>
             st::Stmt::Block(n) => self.scoped_stmts(&n.stmts, out),
             st::Stmt::If(n) => out.push(self.if_stmt(n)),
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
-            st::Stmt::Counted(n) if n.parallel => self.parallel_counted(n, out),
+            st::Stmt::Counted(n) if n.parallel && !self.counter_wider(n) =>
+            {
+                self.parallel_counted(n, out)
+            }
+            st::Stmt::Counted(n) if n.parallel => self.wide_counted(n, out),
             st::Stmt::Counted(n) => out.push(self.counted(n)),
             st::Stmt::Generic(n) => self.generic(n, out),
             st::Stmt::Each(n) if n.parallel && n.part.is_row() =>
