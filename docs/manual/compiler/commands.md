@@ -362,7 +362,7 @@ turns on all of them.
 | `shift` | a shift as wide as its kind or wider | `default`, `mem` |
 | `bounds` | a cell, a place, a slice or a range outside its list or its text | `default`, `mem` |
 | `text` | a range of text that cuts a character, and u8s that hold no UTF-8 | `default`, `mem` |
-| `step` | a loop step that is not positive | `default`, `mem` |
+| `step` | a loop step that is not positive, in a counted loop and a parallel one alike; with it off, a parallel loop given a step of 0 stops on the `divide` check as it counts its rounds | `default`, `mem` |
 | `depth` | more nested calls than `--max-depth` | `default`, `mem` |
 | `null` | an access through the null address | `mem` |
 | `overlap` | a block copied onto a block it overlaps | `mem` |

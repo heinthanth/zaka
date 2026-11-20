@@ -458,6 +458,10 @@ impl<M: Module> FnGen<'_, '_, M>
     /// * `value` - The error value, when the failure holds one.
     fn halt(&mut self, cause: HaltCause, value: Option<&Expr>)
     {
+        // The step of a parallel loop follows the step check, as each counted
+        // loop does.
+        let unchecked = !self.s.options.checks.has(RunCheck::Step);
+        ret_if!(cause == HaltCause::StepNotPositive && unchecked);
         let plain = |code: i64| code;
         let stop = match cause
         {

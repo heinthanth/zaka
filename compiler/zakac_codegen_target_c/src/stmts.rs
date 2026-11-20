@@ -421,7 +421,7 @@ impl FnGen<'_, '_>
         ret_if!(cause == HaltCause::NoRow, self.line("zk_plain_trap(ZK_TRAP_NO_ROW);"));
         ret_if!(
             cause == HaltCause::StepNotPositive,
-            self.line("zk_step_not_positive();")
+            self.line("if (ZK_CHECK_STEP) zk_step_not_positive();")
         );
         ret_if!(
             cause == HaltCause::ThreadsNotPositive,

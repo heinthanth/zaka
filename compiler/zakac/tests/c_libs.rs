@@ -608,3 +608,43 @@ fn a_call_from_a_c_thread_of_a_closure_whose_capture_is_written_ends_the_run()
         );
     }
 }
+
+/// Build a program of [`program_inputs`] with run-time checks and run it.
+///
+/// # Arguments
+///
+/// * `dir` - The folder to build in.
+/// * `backend` - The backend.
+/// * `checks` - The value of `--checks`.
+///
+/// # Returns
+///
+/// What the run wrote to its standard error.
+#[cfg(unix)]
+fn zero_step_errors(dir: &Path, backend: &str, checks: &str) -> String
+{
+    let file = "par_zero_step.zaka";
+    std::fs::copy(program_inputs().join(file), dir.join(file)).unwrap();
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
+    cmd.current_dir(dir).env("ZAKAC_NO_CONFIG", "1");
+    cmd.args(["build", "--backend", backend, "--checks", checks, "-o", "zero", file]);
+    ran(&mut cmd, "the build of a program");
+    let out = Command::new(dir.join("zero")).output().unwrap();
+    assert!(!out.status.success(), "a step of zero stops with {checks}");
+    String::from_utf8_lossy(&out.stderr).into_owned()
+}
+
+#[cfg(unix)]
+#[test]
+fn the_step_check_of_a_parallel_loop_follows_the_checks_flag()
+{
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let on = zero_step_errors(dir.path(), backend, "default");
+        assert!(on.contains("step is not positive"), "{backend}: {on}");
+        // With the step check off, the count of rounds divides by the step.
+        let off = zero_step_errors(dir.path(), backend, "default,-step");
+        assert!(off.contains("zero as divisor"), "{backend}: {off}");
+    }
+}
