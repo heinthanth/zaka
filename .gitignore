@@ -21,3 +21,4 @@ website/zaka_web_ui_common/assets/fonts/*.ttf
 
 .taste-skill
 dist
+.zakac_c_cache

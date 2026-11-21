@@ -652,6 +652,18 @@ fn preposition_calls_match_the_other_forms()
     assert_eq!(value.1, prepositions);
 }
 
+#[test]
+fn call_result_can_join_the_declaration_end()
+{
+    for result in ["ရလဒ်", "ရလဒ်ကောင်း"]
+    {
+        let decl = "ကိန်းရှင် ဂ သည် က ကို ခ သို့";
+        let spaced = with_write(&format!("{decl} ရေး သည့် {result} ဖြစ်ပါစေ။"));
+        let attached = with_write(&format!("{decl} ရေးသည့်{result}ဖြစ်ပါစေ။"));
+        assert_eq!(second(&attached), second(&spaced));
+    }
+}
+
 /// The function `ကူး`, whose first parameter has the preposition `မှ` and
 /// whose second has none, before `rest`.
 fn with_move(rest: &str) -> String
