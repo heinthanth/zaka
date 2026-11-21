@@ -26,6 +26,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
 use crate::callgraph::callees;
+use crate::callgraph::kind_callees;
 use crate::last_use::written_places;
 use crate::values::taken_fns;
 use crate::walk::each_expr;
@@ -52,9 +53,10 @@ pub(crate) fn check_threads(module: &Module) -> Vec<Diagnostic>
 
 /// The functions whose threads can run as light tasks, small stacks that a pool
 /// of OS threads takes turns on: neither the function nor each function it
-/// reaches, through function values too, calls C, reads standard input,
-/// calls itself again or keeps more than 16 KiB of locals. A thread written
-/// `သီးသန့် အပြိုင်` runs on an OS thread of its own whatever this gives.
+/// reaches, through function values of a fitting kind too, calls C, reads
+/// standard input, calls itself again or keeps more than 16 KiB of locals. A
+/// thread written `သီးသန့် အပြိုင်` runs on an OS thread of its own whatever this
+/// gives.
 ///
 /// # Arguments
 ///
@@ -65,13 +67,12 @@ pub(crate) fn check_threads(module: &Module) -> Vec<Diagnostic>
 /// The function numbers, among those some call starts a thread in.
 pub fn light_fns(module: &Module) -> BTreeSet<u32>
 {
-    let taken = taken_fns(module);
     let calls: Vec<BTreeSet<u32>> = module
         .funcs
         .iter()
         .map(|f| {
             let mut called = BTreeSet::new();
-            callees(&f.block, &taken, &mut called);
+            kind_callees(module, &f.block, &mut called);
             called
         })
         .collect();

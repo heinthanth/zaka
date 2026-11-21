@@ -19,6 +19,7 @@ use crate::options::BorrowCheckOptions;
 use crate::roots::Roots;
 use crate::routine::Routine;
 use crate::values::taken_fns;
+use crate::values::value_callees;
 use crate::walk::each_expr;
 use crate::walk::each_stmt;
 use crate::walk::stmt_exprs;
@@ -51,6 +52,30 @@ pub(crate) fn callees(stmts: &[Stmt], taken: &BTreeSet<u32>, out: &mut BTreeSet<
             // A closure can run once a call gets it, so its thunk comes first.
             do_if!(let ExprNode::Closure { func, .. } = &e.node, { out.insert(*func); });
             do_if!(matches!(e.node, ExprNode::CallValue { .. }), out.extend(taken));
+        };
+        do_for!(e in stmt_exprs(s), each_expr(e, &mut add));
+    });
+}
+
+/// Add the function each call in `stmts` names to `out`, as [`callees`]
+/// does, but a call through a function value adds the functions whose
+/// address the module takes and whose shape fits the kind of the value.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+/// * `stmts` - The statements.
+/// * `out` - The function numbers found so far.
+pub(crate) fn kind_callees(module: &Module, stmts: &[Stmt], out: &mut BTreeSet<u32>)
+{
+    each_stmt(stmts, &mut |s| {
+        out.extend(call_target(s));
+        do_if!(let Stmt::CallValue { callee, .. } = s, out.extend(value_callees(module, callee.kind)));
+        let mut add = |e: &Expr| {
+            out.extend(expr_call_target(e));
+            // A closure can run once a call gets it, so its thunk comes first.
+            do_if!(let ExprNode::Closure { func, .. } = &e.node, { out.insert(*func); });
+            do_if!(let ExprNode::CallValue { callee, .. } = &e.node, out.extend(value_callees(module, callee.kind)));
         };
         do_for!(e in stmt_exprs(s), each_expr(e, &mut add));
     });
