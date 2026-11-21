@@ -27,7 +27,7 @@ no_return = "ZK_NORETURN"
 rename_variants = "QualifiedScreamingSnakeCase"
 
 [export]
-include = ["ZkTrap", "ZkRight", "ZkTag", "ZkFnRec"]
+include = ["ZkTrap", "ZkRight", "ZkTag", "ZkFnRec", "ZkSelect"]
 
 [export.rename]
 "ZkProgram" = "zk_program"

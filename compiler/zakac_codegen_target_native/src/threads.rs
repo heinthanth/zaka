@@ -231,6 +231,49 @@ impl<M: Module> FnGen<'_, '_, M>
         t
     }
 
+    /// A wait on several channels: three words for each channel on the stack
+    /// (its number, the address of its optional and the kind of the
+    /// optional), then the call that gives the place of the chosen one.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipes` - The channels.
+    /// * `slots` - The optional of each.
+    /// * `ms` - The time limit in milliseconds, or `None`.
+    /// * `idle` - Whether the wait does not wait.
+    /// * `chosen` - The slot of the chosen place.
+    pub fn select(
+        &mut self, pipes: &[Expr], slots: &[Place], ms: Option<&Expr>, idle: bool,
+        chosen: Place,
+    )
+    {
+        let ptr = self.s.ptr;
+        let word = ptr.bytes();
+        let words = self.slot(3 * word * pipes.len() as u32, word);
+        let base = self.b.ins().stack_addr(ptr, words, 0);
+        for (i, (pipe, slot)) in pipes.iter().zip(slots).enumerate()
+        {
+            let kind = self.place_kind(*slot);
+            let parts = [self.expr(pipe), self.addr_of(*slot), self.descr(kind)];
+            parts.into_iter().enumerate().for_each(|(k, v)| {
+                let at =
+                    self.b.ins().iadd_imm(base, i64::from(word) * (3 * i + k) as i64);
+                self.store(v, at);
+            });
+        }
+        let m = ms.map(|m| self.expr(m));
+        let m = m.unwrap_or_else(|| self.b.ins().iconst(ptr, 0));
+        // The modes of `ZkSelect` in the runtime: waits 0, timed 1, idle 2.
+        let mode = tern!(ms.is_some(), 1, tern!(idle, 2, 0));
+        let mode = self.b.ins().iconst(types::I32, mode);
+        let n = self.b.ins().iconst(ptr, pipes.len() as i64);
+        let params = [ptr, ptr, ptr, types::I32];
+        let got = self.rt("zk_select", &params, &[ptr], &[base, n, m, mode]);
+        let got = got.expect("zk_select gives the chosen place");
+        let at = self.addr_of(chosen);
+        self.store(got, at);
+    }
+
     /// A send: the value moves into the channel, and zeros take its place.
     ///
     /// # Arguments

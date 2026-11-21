@@ -336,7 +336,7 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
     /// # Returns
     ///
     /// The slot.
-    fn slot(&mut self, size: u32, align: u32) -> StackSlot
+    pub(crate) fn slot(&mut self, size: u32, align: u32) -> StackSlot
     {
         let shift = align.max(1).trailing_zeros().min(4) as u8;
         let data = StackSlotData::new(StackSlotKind::ExplicitSlot, size.max(1), shift);

@@ -110,6 +110,10 @@ impl<M: Module> FnGen<'_, '_, M>
                 let m = self.expr(ms);
                 self.rt("zk_sleep", &[ptr], &[], &[m]);
             }
+            Stmt::Select { pipes, slots, ms, idle, chosen, .. } =>
+            {
+                self.select(pipes, slots, ms.as_ref(), *idle, *chosen)
+            }
             Stmt::Lock { obj, .. } =>
             {
                 let ptr = self.s.ptr;

@@ -9,5 +9,6 @@ mod forms;
 mod light;
 mod permissions;
 mod samples;
+mod select;
 mod traps;
 mod unwind;

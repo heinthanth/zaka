@@ -134,10 +134,13 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 debug = false
 
-# The runtime lib that zakac embeds: a panic never unwinds into C.
+# The runtime lib that zakac embeds: a panic never unwinds into C. One codegen unit,
+# since two can each hold a hidden twin of a std helper (`box_new_uninit`), which the
+# linker refuses in a static lib.
 [profile.zaka-runtime]
 inherits = "release"
 panic = "abort"
+codegen-units = 1
 
 [profile.wasm-release]
 inherits = "release"

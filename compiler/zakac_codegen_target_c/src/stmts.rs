@@ -78,6 +78,10 @@ impl FnGen<'_, '_>
                 let m = self.expr(ms);
                 self.line(&format!("zk_sleep({m});"));
             }
+            Stmt::Select { pipes, slots, ms, idle, chosen, .. } =>
+            {
+                self.select(pipes, slots, ms.as_ref(), *idle, *chosen)
+            }
             Stmt::Lock { obj, .. } =>
             {
                 let o = self.expr(obj);

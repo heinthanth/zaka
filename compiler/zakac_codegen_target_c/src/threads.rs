@@ -10,6 +10,7 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Par;
 use zakac_ir_builder::ir::ParMap;
 use zakac_ir_builder::ir::ParRounds;
+use zakac_ir_builder::ir::Place;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
@@ -508,6 +509,49 @@ impl FnGen<'_, '_>
         let d = self.shared.descr.of(kind);
         self.line(&format!("zk_pipe_receive({p}, {t}, {d});"));
         t
+    }
+
+    /// Write a wait on several channels: three words for each channel (its
+    /// number, the address of its optional and the kind of the optional), then
+    /// the call that writes the place of the chosen one.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipes` - The channels.
+    /// * `slots` - The optional of each.
+    /// * `ms` - The time limit in milliseconds, or `None`.
+    /// * `idle` - Whether the wait does not wait.
+    /// * `chosen` - The slot of the chosen place.
+    pub(crate) fn select(
+        &mut self, pipes: &[Expr], slots: &[Place], ms: Option<&Expr>, idle: bool,
+        chosen: Place,
+    )
+    {
+        let exprs: Vec<&Expr> = pipes.iter().chain(ms).collect();
+        let texts = self.operands(&exprs);
+        let words: Vec<String> = texts
+            .iter()
+            .zip(slots)
+            .flat_map(|(p, s)| {
+                let d = self.shared.descr.of(self.place_kind(*s));
+                let at = self.addr_of(*s);
+                [
+                    format!("(size_t)({p})"),
+                    format!("(size_t){at}"),
+                    format!("(size_t){d}"),
+                ]
+            })
+            .collect();
+        let arms = format!("zk_t{}", self.fresh());
+        self.line(&format!("size_t {arms}[] = {{{}}};", words.join(", ")));
+        let mode = tern!(idle, "ZK_SELECT_IDLE", "ZK_SELECT_WAITS");
+        let (m, mode) = match ms
+        {
+            Some(_) => (texts[pipes.len()].clone(), "ZK_SELECT_TIMED"),
+            None => ("0".to_string(), mode),
+        };
+        let (c, n) = (self.place(chosen), pipes.len());
+        self.line(&format!("{c} = zk_select({arms}, {n}, {m}, {mode});"));
     }
 
     /// Write a send: the value moves into the channel, and zeros take its

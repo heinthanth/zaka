@@ -18,8 +18,11 @@ use std::sync::MutexGuard;
 use std::sync::PoisonError;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::AtomicU64;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
+use std::time::Duration;
+use std::time::Instant;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -121,6 +124,9 @@ struct State
     /// The light tasks that wait for the state to change, each with what it
     /// waits on; each is out of `running` and `parked`.
     parked_tasks: Vec<(Key, Box<Task>)>,
+    /// The time limits of waits on several channels that have not passed: a
+    /// wait is no deadlock while one remains, as its end changes the state.
+    alarms: usize,
 }
 
 /// The state of the threads and channels.
@@ -132,6 +138,7 @@ static STATE: Mutex<State> = Mutex::new(State {
     parked: 0,
     changes: 0,
     parked_tasks: Vec::new(),
+    alarms: 0,
 });
 
 /// Wakes each OS thread that waits once the state changes.
@@ -318,7 +325,7 @@ fn wait_until(
         // parked tasks.
         do_if!(counted, st.running -= 1);
         do_if!(counted && !task, st.parked += 1);
-        if counted && st.running == 0 && !outside_acts()
+        if counted && st.running == 0 && st.alarms == 0 && !outside_acts()
         {
             drop(st);
             deadlock();
@@ -1230,6 +1237,18 @@ pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
     let value = st.pipes[at].queue.pop_front();
     do_if!(value.is_some(), changed(&mut st, Key::Pipe(at)));
     drop(st);
+    fill_optional(out, optional, value.as_deref());
+}
+
+/// Write a value that left a channel as an optional, or no data.
+///
+/// # Arguments
+///
+/// * `out` - The optional.
+/// * `optional` - Its kind: its fields are the tag and the data.
+/// * `value` - The octets of the value, or `None` for no data.
+fn fill_optional(out: *mut u8, optional: &ZkKind, value: Option<&[u8]>)
+{
     // SAFETY: the optional is `size` octets of the generated code.
     let slot = unsafe { std::slice::from_raw_parts_mut(out, optional.size) };
     slot.fill(0);
@@ -1241,7 +1260,196 @@ pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
     let fields = optional.field_list();
     let (tag, data) = (fields[0].offset, fields[1].offset);
     slot[tag] = 1;
-    slot[data..data + value.len()].copy_from_slice(&value);
+    slot[data..data + value.len()].copy_from_slice(value);
+}
+
+/// How a wait on several channels ends when no channel holds a value.
+#[repr(u32)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ZkSelect
+{
+    /// It waits with no limit.
+    Waits,
+    /// It waits up to a time limit.
+    Timed,
+    /// It does not wait.
+    Idle,
+}
+
+/// Wait on several channels at once: the next value of a channel that holds
+/// one goes to its optional, one drawn at random from those that hold one.
+/// The wait lasts while no channel holds a value and one is open, up to the
+/// time limit; a wait that does not wait looks once.
+///
+/// # Arguments
+///
+/// * `arms` - Three words for each channel: its number, the address of its
+///   optional, and the kind of the optional.
+/// * `n` - The count of channels.
+/// * `ms` - The time limit in milliseconds, for [`ZkSelect::Timed`].
+/// * `mode` - How the wait ends when no channel holds a value.
+///
+/// # Returns
+///
+/// The place of the chosen channel among them; `n` when the time limit passed
+/// or, for a wait that does not wait, when no channel holds a value; `n + 1`
+/// when each channel is closed and drained.
+#[unsafe(export_name = stamped!("select"))]
+pub extern "C" fn zk_select(
+    arms: *const usize, n: usize, ms: usize, mode: ZkSelect,
+) -> usize
+{
+    // SAFETY: the generated code passes three words for each channel.
+    let words = unsafe { std::slice::from_raw_parts(arms, 3 * n) };
+    let mut st = state();
+    let at: Vec<usize> = words.chunks(3).map(|w| pipe_at(&st, w[0])).collect();
+    let ms = u64::try_from(ms).unwrap_or(u64::MAX);
+    let end =
+        (mode == ZkSelect::Timed).then(|| Instant::now() + Duration::from_millis(ms));
+    let holds = |s: &State, i: usize| !s.pipes[at[i]].queue.is_empty();
+    let closed = |s: &State| at.iter().all(|p| s.pipes[*p].closed);
+    let passed = || end.is_some_and(|e| Instant::now() >= e);
+    let done = |s: &State| {
+        (0..n).any(|i| holds(s, i)) || closed(s) || mode == ZkSelect::Idle || passed()
+    };
+    if let Some(e) = end.filter(|_| !done(&st))
+    {
+        st = set_alarm(st, e);
+    }
+    let mut st = wait_until(st, Key::Each, done);
+    let holding: Vec<usize> = (0..n).filter(|i| holds(&st, *i)).collect();
+    let chosen = match holding.is_empty()
+    {
+        false => holding[draw(holding.len())],
+        true if closed(&st) => n + 1,
+        true => n,
+    };
+    let value = (chosen < n).then(|| st.pipes[at[chosen]].queue.pop_front()).flatten();
+    do_if!(value.is_some(), changed(&mut st, Key::Pipe(at[chosen])));
+    drop(st);
+    let Some(arm) = words.chunks(3).nth(chosen)
+    else
+    {
+        return chosen;
+    };
+    fill_optional(arm[1] as *mut u8, kind(arm[2] as *const ZkKind), value.as_deref());
+    chosen
+}
+
+/// Draw a number below a count, so that no channel of a wait starves.
+///
+/// # Arguments
+///
+/// * `count` - The count, at least one.
+///
+/// # Returns
+///
+/// The number.
+fn draw(count: usize) -> usize
+{
+    // Each draw takes the next step of splitmix64 over one shared count.
+    const STEP: u64 = 0x9E37_79B9_7F4A_7C15;
+    static DRAWS: AtomicU64 = AtomicU64::new(STEP);
+    let mut z = DRAWS.fetch_add(STEP, Ordering::Relaxed);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    ((z ^ (z >> 31)) % count as u64) as usize
+}
+
+/// The ends of the time limits of the waits on several channels, for the
+/// OS thread that marks the state changed at each.
+#[cfg(not(target_os = "wasi"))]
+static ALARMS: Mutex<Vec<Instant>> = Mutex::new(Vec::new());
+
+/// Wakes the OS thread of the alarms once a time limit comes.
+#[cfg(not(target_os = "wasi"))]
+static ALARM_SET: Condvar = Condvar::new();
+
+/// Mark the state changed at the end of a time limit, so each wait looks
+/// again then: on an OS thread of its own, started at the first limit.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked.
+/// * `end` - The end of the time limit.
+///
+/// # Returns
+///
+/// The state, locked.
+#[cfg(not(target_os = "wasi"))]
+fn set_alarm(
+    mut st: MutexGuard<'static, State>, end: Instant,
+) -> MutexGuard<'static, State>
+{
+    static STARTED: std::sync::Once = std::sync::Once::new();
+    st.alarms += 1;
+    ALARMS.lock().unwrap_or_else(PoisonError::into_inner).push(end);
+    ALARM_SET.notify_one();
+    STARTED.call_once(|| _ = std::thread::Builder::new().spawn(ring_alarms));
+    st
+}
+
+/// Wait out a time limit where no other thread runs: no value can come, so
+/// the wait sleeps to its end.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked.
+/// * `end` - The end of the time limit.
+///
+/// # Returns
+///
+/// The state, locked.
+#[cfg(target_os = "wasi")]
+fn set_alarm(st: MutexGuard<'static, State>, end: Instant)
+-> MutexGuard<'static, State>
+{
+    drop(st);
+    std::thread::sleep(end.saturating_duration_since(Instant::now()));
+    state()
+}
+
+/// The work of the OS thread of the alarms: at the end of each time limit,
+/// mark the state changed.
+#[cfg(not(target_os = "wasi"))]
+fn ring_alarms()
+{
+    let mut list = ALARMS.lock().unwrap_or_else(PoisonError::into_inner);
+    loop
+    {
+        let now = Instant::now();
+        let first = list.iter().enumerate().min_by_key(|(_, t)| **t);
+        let first = first.map(|(i, t)| (i, *t));
+        list = match first
+        {
+            None => ALARM_SET.wait(list).unwrap_or_else(PoisonError::into_inner),
+            Some((i, t)) if t <= now =>
+            {
+                list.swap_remove(i);
+                drop(list);
+                ring(1);
+                ALARMS.lock().unwrap_or_else(PoisonError::into_inner)
+            }
+            Some((_, t)) =>
+            {
+                let wait = ALARM_SET.wait_timeout(list, t - now);
+                wait.unwrap_or_else(PoisonError::into_inner).0
+            }
+        };
+    }
+}
+
+/// Mark the state changed for time limits that passed.
+///
+/// # Arguments
+///
+/// * `count` - The count of limits.
+#[cfg(not(target_os = "wasi"))]
+fn ring(count: usize)
+{
+    let mut st = state();
+    st.alarms -= count;
+    changed(&mut st, Key::Each);
 }
 
 /// Close a channel; a second close stops the program.
