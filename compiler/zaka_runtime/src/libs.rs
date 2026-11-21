@@ -558,6 +558,14 @@ pub extern "C" fn zk_lib_jump() -> *mut c_void { JUMP.get() }
 #[unsafe(export_name = stamped!("lib_jump_set"))]
 pub extern "C" fn zk_lib_jump_set(to: *mut c_void) { JUMP.set(to) }
 
+/// Put the jump of a thread in place of the one of the calling OS thread, and
+/// give back the one before.
+///
+/// # Arguments
+///
+/// * `to` - The jump to run with, which gets the one before.
+pub(crate) fn swap_jump(to: &mut *mut c_void) { *to = JUMP.replace(*to); }
+
 /// Let other threads into the libs while this one waits in C: write out what
 /// is buffered and let go of the lock. Each call of a lib to C does it, and
 /// [`zk_lib_take_back`] once C returns.

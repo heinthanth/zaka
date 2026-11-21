@@ -32,6 +32,7 @@ pub mod ffi;
 pub mod heap;
 pub mod host;
 pub mod libs;
+mod local;
 pub mod native;
 pub mod out;
 pub mod program;

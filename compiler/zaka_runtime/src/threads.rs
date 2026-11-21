@@ -26,6 +26,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::heap::zk_threads_begin;
+use crate::local::Local;
 use crate::program::ZkKind;
 use crate::seqs::kind;
 use crate::seqs::zk_add_cell;
@@ -315,6 +316,21 @@ pub(crate) fn leave() -> Option<(extern "C" fn(i32), usize)> { LEAVE.get() }
 /// * `trap` - The trap.
 pub(crate) fn keep_trap(trap: i32) { TRAPPED.set(trap) }
 
+/// What a thread of the program keeps in the cells of this file.
+pub(crate) type Own = (Option<(extern "C" fn(i32), usize)>, i32, usize);
+
+/// Put the leave, the trap and the number of a thread in place of those of the
+/// calling OS thread, and give back those before.
+///
+/// # Arguments
+///
+/// * `own` - The cells to run with, which get those before.
+pub(crate) fn swap_own(own: &mut Own)
+{
+    let (leave, trapped, thread) = *own;
+    *own = (LEAVE.replace(leave), TRAPPED.replace(trapped), THREAD.replace(thread));
+}
+
 /// Make a data block of a thread: zeros, which the spawn fills.
 ///
 /// # Arguments
@@ -444,13 +460,13 @@ fn run_thread(
     data: usize, n: usize,
 )
 {
-    do_if!(!abort, LEAVE.set(Some((jump, n))));
-    THREAD.set(n);
+    let mut local = Local::of_thread(n, tern!(abort, None, Some((jump, n))));
+    local.swap();
     let status = guard(step, data as *mut c_void);
-    LEAVE.set(None);
-    // The OS thread ends here, and its calls and its line with it.
-    crate::ctx::release_frames();
+    // The thread ends here, and its line and its calls with it.
     crate::out::flush_line();
+    local.swap();
+    local.free();
     // The locks a thread held when it stopped remain taken, broken.
     for shard in &LOCKS
     {

@@ -2,11 +2,13 @@
 //! reaches them through [`zk_ctx`], once at the start of each function;
 //! Cranelift code and the runtime reach them through the same function.
 
+use std::cell::Cell;
 use std::cell::UnsafeCell;
 use std::ptr::null_mut;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 use crate::program::ZkFrame;
 use crate::program::prog;
@@ -32,6 +34,59 @@ thread_local! {
     /// collection at the end of the program still reaches it.
     static CTX: UnsafeCell<ZkCtx> =
         const { UnsafeCell::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 }) };
+    /// The context of the thread this OS thread runs now, when it is not
+    /// [`CTX`]: a thread holds its own, so the context that the code of a call
+    /// keeps is still the thread's when the thread goes on on another OS
+    /// thread.
+    static ACTIVE: Cell<*mut ZkCtx> = const { Cell::new(null_mut()) };
+}
+
+/// The context the calling OS thread runs with: the one of its thread, or its
+/// own.
+///
+/// # Returns
+///
+/// The context.
+fn active() -> *mut ZkCtx
+{
+    let thread = ACTIVE.get();
+    tern!(thread.is_null(), CTX.with(UnsafeCell::get), thread)
+}
+
+/// Put the context of a thread in place of the one the calling OS thread runs
+/// with, and give back the one before; NULL stands for the OS thread's own.
+///
+/// # Arguments
+///
+/// * `ctx` - The context to run with, which gets the one before.
+pub(crate) fn swap_active(ctx: &mut *mut ZkCtx) { *ctx = ACTIVE.replace(*ctx); }
+
+/// A new context for a thread, which [`free_ctx`] frees.
+///
+/// # Returns
+///
+/// The context.
+pub(crate) fn new_ctx() -> *mut ZkCtx
+{
+    Box::into_raw(Box::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 }))
+}
+
+/// Free the context of a thread and its frame table, once the thread ended and
+/// no OS thread runs with it.
+///
+/// # Arguments
+///
+/// * `ctx` - The context, from [`new_ctx`].
+pub(crate) fn free_ctx(ctx: *mut ZkCtx)
+{
+    ret_if!(ctx.is_null());
+    // SAFETY: `new_ctx` boxed it, and no OS thread runs with it now.
+    let ctx = unsafe { Box::from_raw(ctx) };
+    ret_if!(ctx.room == 0);
+    // SAFETY: the table is the boxed slice of `room` rows `grow` leaked.
+    drop(unsafe {
+        Box::from_raw(std::ptr::slice_from_raw_parts_mut(ctx.frames, ctx.room))
+    });
 }
 
 /// The calls in progress on the calling OS thread, with room in the frame table
@@ -43,9 +98,9 @@ thread_local! {
 #[unsafe(export_name = stamped!("ctx"))]
 pub extern "C" fn zk_ctx() -> *mut ZkCtx
 {
-    let at = CTX.with(UnsafeCell::get);
-    // SAFETY: each OS thread reaches its own context, and no reference to it
-    // outlives this call.
+    let at = active();
+    // SAFETY: each OS thread reaches the context it runs with, and no
+    // reference to it outlives this call.
     let ctx = unsafe { &mut *at };
     let want = wanted_rows();
     do_if!(ctx.room < want, grow(ctx, want));
@@ -90,23 +145,6 @@ fn grow(ctx: &mut ZkCtx, rows: usize)
     // ends.
     ctx.frames = Box::leak(frames).as_mut_ptr();
     ctx.room = rows;
-}
-
-/// Free the frame table of the calling OS thread, which ends: a thread's, once
-/// its step returned.
-pub(crate) fn release_frames()
-{
-    let at = CTX.with(UnsafeCell::get);
-    // SAFETY: each OS thread reaches its own context, and no reference to it
-    // outlives this call.
-    let ctx = unsafe { &mut *at };
-    ret_if!(ctx.room == 0);
-    // SAFETY: the table is the boxed slice of `room` rows `grow` leaked.
-    let table = unsafe {
-        Box::from_raw(std::ptr::slice_from_raw_parts_mut(ctx.frames, ctx.room))
-    };
-    drop(table);
-    (ctx.frames, ctx.room) = (null_mut(), 0);
 }
 
 /// The count of calls in progress on the calling OS thread.

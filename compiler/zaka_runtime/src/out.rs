@@ -352,3 +352,16 @@ pub(crate) fn sink() -> *mut ZkBuf { INTO.get() }
 ///
 /// * `to` - The sink, from [`sink`].
 pub(crate) fn set_sink(to: *mut ZkBuf) { INTO.set(to) }
+
+/// Put the sink and the line of a thread in place of those of the calling OS
+/// thread, and give back those before.
+///
+/// # Arguments
+///
+/// * `sink` - The sink to run with, which gets the one before.
+/// * `line` - The line to run with, which gets the one before.
+pub(crate) fn swap_sink(sink: &mut *mut ZkBuf, line: &mut Vec<u8>)
+{
+    *sink = INTO.replace(*sink);
+    LINE.with_borrow_mut(|held| std::mem::swap(held, line));
+}

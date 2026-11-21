@@ -208,6 +208,9 @@ checks. `RunChecks` stores the set as bits, and `--checks` builds it from a leve
 
 Each OS thread keeps its calls in progress in its own `zk_context` (`ZkCtx` in `ctx.rs`:
 `depth`, `frames`, `room`), which `zk_ctx()` returns, making the frame table on first use.
+A thread of the program has a context of its own, which `zk_ctx()` returns while an OS
+thread runs the thread (`Local` in `local.rs`), so the `zk_c` that a function keeps belongs
+to the thread and not to the OS thread.
 `ZK_ENTER(f)` opens each function and keeps the context in the local `zk_c`, while `main`
 and `zk_lib_init` get it through `ZK_HERE()`. `ZK_LEAVE()` closes each return. With
 `ZK_CHECK_DEPTH` on, the pair counts `zk_c->depth` and calls `zk_too_deep` past
@@ -275,7 +278,8 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | File | What it contains |
 | --- | --- |
 | `program.rs` | `ZkProgram`, the mirror of `zk_program`: the checks, the limits, the rights, the texts, the function names and the sites; `zk_prog`, the table of the running program |
-| `ctx.rs` | `ZkCtx` (`zk_context`) and `zk_ctx`, the calls in progress of each OS thread |
+| `ctx.rs` | `ZkCtx` (`zk_context`) and `zk_ctx`, the calls in progress of each OS thread, or of the thread it runs |
+| `local.rs` | `Local`, what a thread keeps for itself (its context, its trap jump, its number, its output sink and line), swapped with the cells of the OS thread that runs it |
 | `start.rs` | `zk_start` and `zk_finish`: the start and the end of a run |
 | `traps.rs` | the traps, the stop message and the backtrace |
 | `out.rs` | the buffer of standard output, the sink of a format, the print of numbers |
