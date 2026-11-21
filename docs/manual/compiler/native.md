@@ -121,7 +121,7 @@ none`, nothing is counted, so a recursion with no base case overflows the native
 it does in C. A [light task](../language/threads.md#light-tasks) calls no function again,
 and when its calls still take more than its stack of 1 MiB, it stops at the trap `stack
 full` (`the stack of a light task, N octets, ran full`): the thread ends alone under
-`--trap unwind`, and the program stops under `--trap abort` and on Windows. A debug build, the default, still keeps the list of calls in progress, so
+`--trap unwind`, and the program stops under `--trap abort`. A debug build, the default, still keeps the list of calls in progress, so
 `--checks none` names the place of a stop, while `--release` drops that list.
 
 `--max-heap <OCTETS>` caps the heap, the same as the VM's flag of that name (default 0, no

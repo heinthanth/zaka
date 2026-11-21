@@ -178,11 +178,9 @@ fn deep_chain(count: u32) -> String
 }
 
 /// The line of a light task whose stack ran full, under `--trap unwind`.
-#[cfg(unix)]
 const FULL: &str =
     "thread 1 stopped: the stack of a light task, 1048576 octets, ran full";
 
-#[cfg(unix)]
 #[test]
 fn a_light_task_whose_stack_runs_full_ends_alone_with_a_trap()
 {
@@ -190,20 +188,6 @@ fn a_light_task_whose_stack_runs_full_ends_alone_with_a_trap()
         assert!(run.stderr.contains(FULL), "{how}: {}", run.stderr);
         let want =
             "the program stopped: the thread 1 this waits for stopped at a trap\n";
-        assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
-        assert_eq!(run.status, Some(1), "{how}");
-    });
-}
-
-/// On Windows a full stack stops the whole program under each `--trap` mode:
-/// a jump out of the handler of a stack overflow is not safe there.
-#[cfg(windows)]
-#[test]
-fn on_windows_a_full_stack_stops_the_program()
-{
-    both(&deep_chain(120), |how, run| {
-        let want = "the program stopped: the stack of a light task, 1048576 octets, \
-                    ran full\n";
         assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
         assert_eq!(run.status, Some(1), "{how}");
     });
@@ -227,7 +211,6 @@ fn under_abort_a_full_stack_stops_the_program_after_its_output()
     assert_eq!(run.status, Some(1));
 }
 
-#[cfg(unix)]
 #[test]
 fn the_pool_goes_on_after_a_task_whose_stack_ran_full()
 {

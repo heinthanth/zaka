@@ -354,7 +354,7 @@ pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
     flush_out();
     if let Some((jump, thread)) = crate::threads::leave()
     {
-        thread_stopped(thread, &reason_text(trap, pairs));
+        thread_stopped(crate::threads::shown_number(thread), &reason_text(trap, pairs));
         crate::threads::keep_trap(trap);
         jump(trap);
     }
@@ -438,18 +438,27 @@ pub(crate) fn stack_full_from_signal(size: usize) -> !
     let reason = row(p.trap_text, trap::STACK_FULL as usize);
     raw_write(name);
     raw_write(b": ");
-    #[cfg(unix)]
     if let Some((jump, thread)) = crate::threads::leave()
     {
         let mut number = [0u8; 20];
-        let number = decimal(thread, &mut number);
+        let number = decimal(crate::threads::shown_number(thread), &mut number);
         let head = row(p.trap_text, trap::THREAD_STOPPED as usize);
         fill_raw(head, &[(b"thread", number)], &mut |piece| raw_write(piece));
         raw_write(b": ");
         fill_raw(reason, &[(b"size", digits)], &mut |piece| raw_write(piece));
         raw_write(b"\n");
         crate::threads::keep_trap(trap::STACK_FULL);
+        // Unix jumps from the signal handler back to the guard of the task. On
+        // Windows a jump out of the handler of an exception unwinds through the
+        // dispatch of the OS, so the task ends as a task that returned does:
+        // its fiber goes back to the pool for good.
+        #[cfg(unix)]
         jump(trap::STACK_FULL);
+        #[cfg(windows)]
+        {
+            _ = jump;
+            crate::tasks::end_running(trap::STACK_FULL);
+        }
     }
     // The head of the line holds the reason at `%{e}`.
     let stopped = text(p.stopped_text);

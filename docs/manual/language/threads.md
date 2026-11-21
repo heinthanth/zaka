@@ -860,8 +860,7 @@ A thread written `သီးသန့် အပြိုင်` in place of `အ�
 - A light task whose calls take more than its stack stops at the trap `stack full`. Under
   `--trap unwind`, the default, the thread ends alone, as at each other trap (`thread N
   stopped: the stack of a light task, N octets, ran full`), and a wait for it stops the
-  waiter. Under `--trap abort`, and on Windows in each mode, the program stops, after
-  the output it printed so far. An OS thread of its own, with `သီးသန့် အပြိုင်`, has room for
+  waiter. Under `--trap abort`, the program stops, after the output it printed so far. An OS thread of its own, with `သီးသန့် အပြိုင်`, has room for
   such a thread.
 - On the VM, the choice changes nothing: each thread takes turns there
   ([Turns on the VM](#turns-on-the-vm)).

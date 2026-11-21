@@ -336,6 +336,26 @@ mod pool
         pool.queue.extend(woken.into_iter().map(|(_, task)| task));
     }
 
+    /// End the running task at a trap with no jump back to its guard: its
+    /// fiber goes back to the pool for good, as when its guard returns, and the
+    /// drops of the calls it was in do not run, as with the jump.
+    ///
+    /// # Arguments
+    ///
+    /// * `status` - The trap.
+    #[cfg(windows)]
+    pub(crate) fn end_running(status: i32) -> !
+    {
+        let task = CURRENT.get();
+        // SAFETY: the running task lives in its box, and its OS thread waits in
+        // the switch of `run`; no switch comes back to it.
+        unsafe {
+            (*task).outcome = Outcome::Ended(status);
+            switch(&raw mut (*task).sp, (*task).back);
+        }
+        std::process::abort()
+    }
+
     /// The first code on the stack of a task: run its guard, keep what the
     /// guard gave, and switch back for good.
     ///

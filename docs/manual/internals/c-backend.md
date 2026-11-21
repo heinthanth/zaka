@@ -462,7 +462,10 @@ back to the guard of the task, so the thread alone ends (the signal is open agai
 `SA_NODEFER`); under `--trap abort` it ends the program. Each other
 fault goes on to the handler that was there before. On Windows a task is a fiber of the OS,
 which keeps 32 KiB of its stack for the handler (`SetThreadStackGuarantee`), and a vectored
-exception handler turns the stack overflow of a task into the same trap. A task takes its
+exception handler turns the stack overflow of a task into the same trap. Under `--trap
+unwind` the handler does not jump to the guard, since a jump out of the handler unwinds
+through the dispatch of the OS: `end_running` marks the task ended at the trap and switches
+back to the pool for good, as a task whose guard returned does. A task takes its
 `Local`, its call context and its other cells, from one OS thread of the pool to the next.
 It stops in `wait_until`,
 which drops the lock of the state first (a wait on several channels, `zk_select`, waits

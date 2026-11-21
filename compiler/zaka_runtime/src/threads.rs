@@ -726,6 +726,17 @@ fn live_row(st: &State, n: usize) -> Option<usize>
 /// # Returns
 ///
 /// The shown number.
+pub(crate) fn shown_number(n: usize) -> usize { shown(n) }
+
+/// The number of a thread as a message shows it: its row plus one.
+///
+/// # Arguments
+///
+/// * `n` - The number.
+///
+/// # Returns
+///
+/// The shown number.
 fn shown(n: usize) -> usize { row_at(n) + 1 }
 
 /// Give a row back for the next thread.
