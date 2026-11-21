@@ -45,7 +45,7 @@ impl Lowerer<'_>
         {
             unreachable!("the check lets a thread call a declared function alone")
         };
-        ExprNode::Spawn { func, name, args, apart }
+        ExprNode::Spawn { func, name, args, apart, detached: false }
     }
 
     /// The thread a wait waits for: the one argument of a call of the core's
@@ -89,14 +89,15 @@ impl Lowerer<'_>
     }
 
     /// Lower a call that runs in parallel as a statement: the thread starts,
-    /// and its number goes to a hidden slot no one reads.
+    /// detached, and its number goes to a hidden slot no one reads.
     ///
     /// # Arguments
     ///
     /// * `n` - The call.
     pub(super) fn spawn_stmt(&mut self, n: &st::CallStmt)
     {
-        let node = self.spawn_node(&n.callee, n.place.as_deref(), &n.args, n.apart);
+        let mut node = self.spawn_node(&n.callee, n.place.as_deref(), &n.args, n.apart);
+        do_if!(let ExprNode::Spawn { detached, .. } = &mut node, *detached = true);
         let kind = DataKind::Task(task::make(false, None));
         self.spill(node_expr(kind, node, n.span));
     }

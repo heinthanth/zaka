@@ -424,6 +424,13 @@ a pool of OS threads takes turns on, or on an OS thread of its own. A spawn call
 not written `သီးသန့် အပြိုင်`, and `zk_thread_start` otherwise; both take the same arguments,
 and the rest of this section holds for both.
 
+The number a start gives names a row of the thread table of the runtime: the row plus one
+in the low half, and in the high half a count of the threads that held the row before. A row
+goes back once a wait took the result (`zk_thread_taken`), and a spawn written as a statement
+wraps its start in `zk_thread_detach`, so the row of a thread no one can wait for goes back
+as the thread ends; its trap still ends the program with code 1. A number whose row went to a
+later thread names no thread, so a second wait for it traps `thread waited`.
+
 ### The C side
 
 `threads.rs` writes `zaka_threads.c` for a program that starts a thread. The file has:

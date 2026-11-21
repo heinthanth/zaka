@@ -332,3 +332,28 @@ fn file_calls_of_light_tasks_leave_the_pool_free()
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert_eq!(printed, format!("{}\n", burmese(count as u64)), "{stderr}");
 }
+
+/// 20 000 threads that no one waits for, then one that divides 10 with 0: each
+/// gives its row back as it ends, and the trap of the last still ends the
+/// program with code 1.
+const DETACHED: &str = "စား ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၁၀ / က ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၂၀၀၀၀ အထိ န အနေဖြင့် ရေတွက်၍ စား ဟူသော လုပ်ဆောင်ချက်ကို န ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+စား ဟူသော လုပ်ဆောင်ချက်ကို ၀ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+\"ပြီး\" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn threads_no_one_waits_for_give_their_rows_back_and_keep_their_traps()
+{
+    both(DETACHED, |how, run| {
+        assert_eq!(run.status, Some(1), "{how}: {}", run.stderr);
+        assert_eq!(run.stdout, "ပြီး\n", "{how}");
+        assert!(run.stderr.contains("integer division"), "{how}: {}", run.stderr);
+    });
+}

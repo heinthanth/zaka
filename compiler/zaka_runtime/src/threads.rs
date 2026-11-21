@@ -59,6 +59,9 @@ enum End
     Done,
     /// It stopped at a trap.
     Trapped,
+    /// Its row is free for the next thread: a wait took its result, or no
+    /// one could wait for it.
+    Released,
 }
 
 /// One thread.
@@ -77,6 +80,11 @@ struct Thread
     owned: bool,
     /// Its OS thread, until a wait or the end of the program joins it.
     os_thread: Option<std::thread::JoinHandle<()>>,
+    /// The count of threads before it in its row, in the high bits of its
+    /// number.
+    turn: usize,
+    /// Whether no one holds its number, so its row goes back as it ends.
+    detached: bool,
 }
 
 /// One channel.
@@ -108,11 +116,14 @@ struct Held
 /// The state of the threads and channels.
 struct State
 {
-    /// Each thread; the thread a program holds as `n` is at `n - 1`.
+    /// Each thread; the thread a program holds as `n` is in row
+    /// [`row_at`]`(n)`.
     threads: Vec<Thread>,
-    /// The numbers of the threads of parallel loops that ended, which no
-    /// program holds, for the next threads to take.
+    /// The rows whose threads ended and were released, for the next threads
+    /// to take.
     spare: Vec<usize>,
+    /// Whether a detached thread stopped at a trap, which no wait can see.
+    lost: bool,
     /// Each channel, as the threads are numbered.
     pipes: Vec<Pipe>,
     /// The OS threads that run and do not wait, the main one included.
@@ -133,6 +144,7 @@ struct State
 static STATE: Mutex<State> = Mutex::new(State {
     threads: Vec::new(),
     spare: Vec::new(),
+    lost: false,
     pipes: Vec::new(),
     running: 1,
     parked: 0,
@@ -624,21 +636,157 @@ fn add_thread(
 {
     zk_threads_begin();
     let mut st = state();
+    let at = st.spare.pop();
+    let turn = at.map_or(0, |i| (st.threads[i].turn + 1) & TURN_MASK);
     #[rustfmt::skip]
     let thread = Thread { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false,
-        owned, os_thread: None };
-    let next = st.threads.len() + 1;
-    let n = st.spare.pop().unwrap_or(next);
-    if n == next
+        owned, os_thread: None, turn, detached: false };
+    let at = match at
     {
-        st.threads.push(thread);
-    }
-    else
-    {
-        st.threads[n - 1] = thread;
-    }
+        Some(at) =>
+        {
+            st.threads[at] = thread;
+            at
+        }
+        None =>
+        {
+            st.threads.push(thread);
+            st.threads.len() - 1
+        }
+    };
     st.running += 1;
-    (st, n)
+    (st, number(at, turn))
+}
+
+/// The bits of a thread number below its turn: the row plus one.
+const TURN_SHIFT: u32 = usize::BITS / 2;
+
+/// The mask of a turn. Its top bit is clear, so a thread number is below the
+/// numbers of the OS threads that run no thread (see [`owner`]).
+const TURN_MASK: usize = (1 << (TURN_SHIFT - 1)) - 1;
+
+/// The number of a thread: its turn in the high bits, its row plus one in the
+/// low ones, so a number whose row went to a later thread names no thread.
+///
+/// # Arguments
+///
+/// * `at` - The row.
+/// * `turn` - The count of threads before it in the row.
+///
+/// # Returns
+///
+/// The number.
+fn number(at: usize, turn: usize) -> usize { (turn << TURN_SHIFT) | (at + 1) }
+
+/// The row of a thread number that the runtime gave out and still holds.
+///
+/// # Arguments
+///
+/// * `n` - The number.
+///
+/// # Returns
+///
+/// The row.
+fn row_at(n: usize) -> usize { (n & ((1 << TURN_SHIFT) - 1)) - 1 }
+
+/// The row of a thread number that the program holds, when the thread is
+/// still in it.
+///
+/// # Arguments
+///
+/// * `st` - The state.
+/// * `n` - The number.
+///
+/// # Returns
+///
+/// The row, or `None` for a number whose thread was released.
+fn live_row(st: &State, n: usize) -> Option<usize>
+{
+    let at = (n & ((1 << TURN_SHIFT) - 1)).checked_sub(1)?;
+    let thread = st.threads.get(at)?;
+    (thread.turn == n >> TURN_SHIFT && thread.end != End::Released).then_some(at)
+}
+
+/// The number of a thread as a message shows it: its row plus one.
+///
+/// # Arguments
+///
+/// * `n` - The number.
+///
+/// # Returns
+///
+/// The shown number.
+fn shown(n: usize) -> usize { row_at(n) + 1 }
+
+/// Give a row back for the next thread.
+///
+/// # Arguments
+///
+/// * `st` - The state.
+/// * `at` - The row.
+fn release(st: &mut State, at: usize)
+{
+    let thread = &mut st.threads[at];
+    thread.end = End::Released;
+    thread.data = 0;
+    thread.os_thread = None;
+    st.spare.push(at);
+}
+
+/// The result and the data block of a detached thread that ended, which no
+/// wait takes: its row goes back, and a trap of it is lost.
+///
+/// # Arguments
+///
+/// * `st` - The state.
+/// * `at` - The row.
+///
+/// # Returns
+///
+/// What to drop and free once the state is unlocked: the data block, the
+/// kind of its result when one is there, and whether the runtime owns it.
+fn release_detached(st: &mut State, at: usize) -> (usize, usize, bool)
+{
+    let thread = &st.threads[at];
+    let ret = tern!(thread.end == End::Done, thread.ret, 0);
+    let left = (thread.data, ret, thread.owned);
+    st.lost |= thread.end == End::Trapped;
+    release(st, at);
+    left
+}
+
+/// Drop the result of a detached thread and free its data block.
+///
+/// # Arguments
+///
+/// * `(data, ret, owned)` - What [`release_detached`] gave.
+fn drop_detached((data, ret, owned): (usize, usize, bool))
+{
+    do_if!(data != 0 && ret != 0, zk_drop(data as *mut u8, ret as *const ZkKind));
+    do_if!(owned, free_data(data));
+}
+
+/// Mark a thread whose number no one holds, as the call that starts it is a
+/// statement: its row goes back as soon as it ends.
+///
+/// # Arguments
+///
+/// * `n` - The number of the thread.
+///
+/// # Returns
+///
+/// The number.
+#[unsafe(export_name = stamped!("thread_detach"))]
+pub extern "C" fn zk_thread_detach(n: usize) -> usize
+{
+    let mut st = state();
+    let at = row_at(n);
+    st.threads[at].detached = true;
+    ret_if!(st.threads[at].end == End::Runs, n);
+    let left = release_detached(&mut st, at);
+    drop(st);
+    drop_detached(left);
+    n
 }
 
 /// Run a thread that was added on an OS thread of its own.
@@ -664,7 +812,7 @@ fn spawn_os_thread(
         drop(st);
         stop_owned(trap::OUT_OF_MEM, vec![named("size", 64usize << 20)])
     };
-    st.threads[n - 1].os_thread = Some(os_thread);
+    st.threads[row_at(n)].os_thread = Some(os_thread);
 }
 
 /// The work of the OS thread of a thread: run the guard, then mark the thread
@@ -709,9 +857,14 @@ pub(crate) fn thread_ended(n: usize, status: i32)
         held.iter_mut().filter(|h| h.owner == n).for_each(|h| h.broken = true);
     }
     let mut st = state();
-    st.threads[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
+    let at = row_at(n);
+    st.threads[at].end = if status == 0 { End::Done } else { End::Trapped };
     st.running -= 1;
     changed(&mut st, Key::Thread(n));
+    ret_if!(!st.threads[at].detached);
+    let left = release_detached(&mut st, at);
+    drop(st);
+    drop_detached(left);
 }
 
 /// Wait for a thread to end and take its result: one wait takes it, as the
@@ -732,19 +885,19 @@ pub(crate) fn thread_ended(n: usize, status: i32)
 pub extern "C" fn zk_thread_wait(n: usize) -> *mut u8
 {
     let st = state();
-    let at = n.checked_sub(1).filter(|i| *i < st.threads.len());
-    let Some(at) = at
+    // A wait took the result of a thread whose row went back.
+    let Some(at) = live_row(&st, n)
     else
     {
         drop(st);
-        stop_owned(trap::THREAD_TRAPPED, vec![named("thread", n)])
+        stop_owned(trap::THREAD_WAITED, vec![named("thread", shown(n))])
     };
     let ended = |s: &State| s.threads[at].end != End::Runs;
     let mut st = wait_until(st, Key::Thread(n), ended);
     if st.threads[at].awaited
     {
         drop(st);
-        stop_owned(trap::THREAD_WAITED, vec![named("thread", n)])
+        stop_owned(trap::THREAD_WAITED, vec![named("thread", shown(n))])
     }
     st.threads[at].awaited = true;
     let (end, data) = (st.threads[at].end, st.threads[at].data);
@@ -752,7 +905,7 @@ pub extern "C" fn zk_thread_wait(n: usize) -> *mut u8
     drop(st);
     join(os_thread);
     ret_if!(end == End::Done, data as *mut u8);
-    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", n)])
+    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", shown(n))])
 }
 
 /// Give back the data block of a thread whose result a wait moved out.
@@ -765,8 +918,12 @@ pub extern "C" fn zk_thread_taken(n: usize)
 {
     let data = {
         let mut st = state();
-        let thread = &mut st.threads[n - 1];
-        std::mem::take(&mut thread.data)
+        let at = row_at(n);
+        let data = std::mem::take(&mut st.threads[at].data);
+        // The wait took the result and joined the OS thread, so the row goes
+        // back.
+        release(&mut st, at);
+        data
     };
     free_data(data);
 }
@@ -780,7 +937,7 @@ pub extern "C" fn zk_thread_taken(n: usize)
 pub extern "C" fn zk_thread_drop(n: usize)
 {
     let data = zk_thread_wait(n);
-    let ret = state().threads[n - 1].ret;
+    let ret = state().threads[row_at(n)].ret;
     do_if!(ret != 0, zk_drop(data, ret as *const ZkKind));
     zk_thread_taken(n);
 }
@@ -1090,7 +1247,8 @@ pub extern "C" fn zk_par_for(
     let ended: Vec<bool> = threads.iter().map(|n| thread_ended_well(*n)).collect();
     let trapped = threads.iter().zip(ended).find(|(_, ok)| !ok).map(|(n, _)| *n);
     ret_if!(trapped.is_none());
-    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", trapped.unwrap_or_default())])
+    let trapped = trapped.map_or(0, shown);
+    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", trapped)])
 }
 
 /// Wait for a thread to end and mark it awaited.
@@ -1104,14 +1262,15 @@ pub extern "C" fn zk_par_for(
 /// `true` when it ran to its end, `false` when a trap ended it.
 fn thread_ended_well(n: usize) -> bool
 {
-    let ended = |s: &State| s.threads[n - 1].end != End::Runs;
+    let at = row_at(n);
+    let ended = |s: &State| s.threads[at].end != End::Runs;
     let mut st = wait_until(state(), Key::Thread(n), ended);
-    st.threads[n - 1].awaited = true;
-    let well = st.threads[n - 1].end == End::Done;
-    let os_thread = st.threads[n - 1].os_thread.take();
+    st.threads[at].awaited = true;
+    let well = st.threads[at].end == End::Done;
+    let os_thread = st.threads[at].os_thread.take();
     // No program holds the number of a thread of a loop, so the next thread
-    // takes it.
-    st.spare.push(n);
+    // takes its row.
+    release(&mut st, at);
     drop(st);
     join(os_thread);
     well
@@ -1563,9 +1722,11 @@ pub(crate) fn end() -> bool
         st.threads.iter_mut().filter_map(|j| j.os_thread.take()).collect();
     let threads = std::mem::take(&mut st.threads);
     let pipes = std::mem::take(&mut st.pipes);
+    let st_lost = std::mem::take(&mut st.lost);
+    st.spare.clear();
     drop(st);
     os_threads.into_iter().for_each(|t| _ = t.join());
-    let lost = threads.iter().any(|j| j.end == End::Trapped && !j.awaited);
+    let lost = st_lost || threads.iter().any(|j| j.end == End::Trapped && !j.awaited);
     // The results no wait took are dropped, then each block the runtime owns
     // is freed.
     let untaken =
@@ -1629,5 +1790,23 @@ mod tests
         assert!(!wait.meets(Key::Timer) && wait.meets(Key::Each));
         let timed = Key::Pipes { mask: pipe_bit(2), timed: true };
         assert!(timed.meets(Key::Timer) && !Key::Pipe(2).meets(Key::Timer));
+    }
+
+    #[test]
+    fn a_released_row_goes_to_the_next_thread_under_a_new_number()
+    {
+        let (st, first) = add_thread(std::ptr::null_mut(), std::ptr::null(), false);
+        drop(st);
+        thread_ended(first, 0);
+        let mut st = state();
+        let at = live_row(&st, first).expect("the thread keeps its row until a wait");
+        release(&mut st, at);
+        assert!(live_row(&st, first).is_none());
+        drop(st);
+        let (st, second) = add_thread(std::ptr::null_mut(), std::ptr::null(), false);
+        assert_eq!(row_at(second), row_at(first));
+        assert_ne!(second, first);
+        assert!(live_row(&st, first).is_none() && live_row(&st, second).is_some());
+        assert!(second < 1 << (usize::BITS - 1));
     }
 }

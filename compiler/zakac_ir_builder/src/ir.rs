@@ -1029,6 +1029,11 @@ pub enum ExprNode
         /// `သီးသန့် အပြိုင်`; a thread can run on one for other reasons too.
         #[serde(default)]
         apart: bool,
+        /// Whether no one reads the number, so no wait can come: a call that
+        /// runs in parallel as a statement. The runtime gives back the row of
+        /// such a thread as soon as it ends.
+        #[serde(default)]
+        detached: bool,
     },
     /// Wait for a thread to end; the value is what its function gave back.
     Wait(Box<Expr>),

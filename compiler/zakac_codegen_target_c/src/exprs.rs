@@ -71,9 +71,10 @@ impl FnGen<'_, '_>
             ExprNode::Logic { op, lhs, rhs } => self.logic(*op, lhs, rhs),
             ExprNode::Convert { operand, .. } => self.convert(operand, e.kind),
             ExprNode::Call { func, args, .. } => self.call(Callee::Fn(*func), args),
-            ExprNode::Spawn { func, args, apart, .. } =>
+            ExprNode::Spawn { func, args, apart, detached, .. } =>
             {
-                self.spawn(*func, args, *apart)
+                let start = self.spawn(*func, args, *apart);
+                tern!(*detached, format!("zk_thread_detach({start})"), start)
             }
             ExprNode::Wait(thread) => self.wait(thread, e.kind),
             ExprNode::MakePipe(room) => format!("zk_pipe_new({})", room.unwrap_or(0)),
