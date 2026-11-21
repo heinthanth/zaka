@@ -88,7 +88,7 @@ pub enum FrameMode
     Packed,
 }
 
-/// Limits for a run.
+/// Settings and limits for a run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
 pub struct RunOptions
 {
@@ -114,6 +114,9 @@ pub struct RunOptions
     /// What a thread does when it traps.
     #[builder(default)]
     pub trap: TrapMode,
+    /// Clock reads return zero during a comptime run so a build is repeatable.
+    #[builder(default)]
+    pub fixed_clock: bool,
     /// The seed that shuffles the turns of the threads: each turn takes a count
     /// of ops and goes to a thread that can run, both drawn from it. `None`
     /// keeps the fixed turns, the same on each run.

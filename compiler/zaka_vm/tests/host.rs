@@ -76,12 +76,40 @@ Hein
 #[test]
 fn the_stdlib_declares_each_host_function()
 {
-    let module = compile_checked(&format!("{IMPORT}\n{WORK}"));
+    let math_time = "\"စံကား/သင်္ချာ\" ကို ထည့်သွင်းမည်။\n\"စံကား/အချိန်\" ကို ထည့်သွင်းမည်။";
+    let module = compile_checked(&format!("{IMPORT}\n{math_time}\n{WORK}"));
     let ops = module.funcs.iter().flat_map(|f| f.code.iter());
     let served: HashSet<HostFn> =
         ops.filter_map(|op| tern!(let Op::Host(f) = op, Some(*f), None)).collect();
     let rows: HashSet<HostFn> = HOST_FNS.iter().map(|d| d.func).collect();
     assert_eq!(served, rows);
+}
+
+#[test]
+fn time_reads_advance_with_a_world_in_storage()
+{
+    let source = "\
+\"စံကား/အချိန်\" ကို ထည့်သွင်းမည်။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြာချိန်နာရီကိုဖတ်() ကို ပြသမည်။
+ယူနစ်အချိန်ကိုဖတ်() ကို ပြသမည်။
+၂ မီလီစက္ကန့် စောင့်မည်။
+ကြာချိန်နာရီကိုဖတ်() ကို ပြသမည်။
+ယူနစ်အချိန်ကိုဖတ်() ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let module = compile_checked(source);
+    let mut out = Vec::new();
+    let (_, result) = run_in(
+        &module,
+        &mut out,
+        &RunOptions::default(),
+        &HostData::default(),
+        Box::new(MemWorld::default()),
+        Gate::new(Grants::default()),
+    );
+    result.expect("the run ends");
+    assert_eq!(String::from_utf8(out).unwrap(), "၀\n၀\n၂\n၂\n");
 }
 
 /// A program that reads two lines of standard input and prints each whole

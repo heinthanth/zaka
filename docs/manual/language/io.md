@@ -197,10 +197,8 @@ no right. The pages and the explorer run in storage and grant each right.
 
 ## What the stdlib contains
 
-Next to this module, the stdlib (standard library) has `"စံကား/စာသား"` (finding,
-splitting and joining text, and text as an integer), `"စံကား/လမ်းကြောင်း"` (paths) and
-`"စံကား/စာရင်း"` (sorting, removing, finding and reversing the cells of a list), which
-[The stdlib](stdlib.md) describes. A table has its own reads and walks in the language
+The other [standard library modules](stdlib.md) cover text, paths, lists, math and time.
+A table has its own reads and walks in the language
 ([Tables](tables.md)).
 
 ## The rules

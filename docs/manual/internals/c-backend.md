@@ -288,7 +288,7 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | `heap.rs` | counted blocks, raw blocks, function values and closures, the heap count |
 | `seqs.rs` | plain lists, text edits, drops, duplicates, loans, the ring collector |
 | `show.rs` | `==`, the print of each data kind, results and optionals, the rows of a ဇယား (map) |
-| `host.rs` | the host functions of `zaka_host`: standard input, files and streams, the arguments and the environment |
+| `host.rs` | host calls for streams, files, arguments, the environment, math and time |
 | `rights.rs` | the rights of the run, and the asker on a terminal |
 | `threads.rs` | threads and channels, each thread as a light task or on its own OS thread (see [Threads and channels](#threads-and-channels)) |
 | `libs.rs` | the record of each C lib the runtime serves |

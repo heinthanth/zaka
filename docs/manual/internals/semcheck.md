@@ -299,9 +299,9 @@ name that a file both declares and imports is ZK0304.
 **External functions.** An external function (`FnDecl::external`) must be one of the
 functions the host serves. `check_external` asks `host::find`, a thin adapter over the
 table `HOST_FNS` of `zaka_host`, for the row with its name, parameter kinds and result
-kind (a result that can fail with `IO_ERROR`), and reports ZK0334, with `host::listing` as
+kind (a plain value or a result with an error kind), and reports ZK0334, with `host::listing` as
 help, when no row matches. The table matches data kinds through their names, so the
-stream structs and the error enumeration are the ones the stdlib declares. The IR builder
+stream structs and error enumerations are the ones the stdlib declares. The IR builder
 asks `host::find` again for the host function of its one statement, with the written name
 of an overload (`#<n>` cut off). A function signature that ends in
 `အခြားတန်ဖိုးများနှင့်အတူ` on a host function is ZK0334 too, since the host table has no

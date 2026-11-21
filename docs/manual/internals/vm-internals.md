@@ -284,13 +284,13 @@ The functions the VM serves to a program live in `zaka_host`, in three parts:
 
 | Part | Where | What it contains |
 | --- | --- | --- |
-| signature | the stdlib (`ပြင်ပမှလာသော` declarations) and `HOST_FNS` | the name, the parameter data kinds and the good result of each function; the check matches each external declaration to a row (`zakac_semcheck::host::find`) |
+| signature | the stdlib (`ပြင်ပမှလာသော` declarations) and `HOST_FNS` | the name, parameter data kinds, result and optional error kind. The check matches each external declaration to a row (`zakac_semcheck::host::find`) |
 | values | `zaka_vm/src/machine/host.rs` | the VM reads an argument and writes a result from its data kind alone, so a new function over the data kinds there needs no VM code |
 | effects | the run function of a row, against `Effects` | plain Rust: `Effects` reaches the `World` (`read_line`, `read_file`, `write_file`) and the standard streams of the VM (`write`) |
 
 The operation `host h`, the one operation of an external function, reads each argument
 through the address of its parameter as a `zaka_host::HostValue` (from its data kind:
-text, a stream struct, an enumeration member), runs `h` against the world of the VM, and
+text, a number, a stream struct or an enumeration member), runs `h`, and
 writes the result in the result slot from the data kind of the result (for a result that
 can fail: tag 1 and the good side, or tag 0 and the error side).
 
@@ -306,13 +306,14 @@ becomes `Waiting` until `give_input` or `close_input`.
 `HostFn`:
 
 ```text
-ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), read_file;
+ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), Some(IO_ERROR), Some(Right::Read), HostAction::Effect(read_file);
 ```
 
-Each row runs a Rust function `fn(&Args, &mut Effects) -> HostValue`. `Args::text(n)` and
-`Args::stream(n)` read the arguments, and `text_or_fault` and `nothing_or_fault` turn an
+An effect row runs a Rust function `fn(&Args, &mut Effects) -> HostValue`. `Args::text(n)`
+and `Args::stream(n)` read the arguments, and `text_or_fault` and `nothing_or_fault` turn an
 `io::Result` into a result, with a failure going through one mapping of `io::ErrorKind`
-to the members of the error enumeration.
+to the members of the error enumeration. Math rows share their float calculations
+with the native runtime.
 
 To add a host function:
 
@@ -320,7 +321,8 @@ To add a host function:
 2. When it needs an effect outside the VM that `World` lacks, add a `World` method and
    write it for `MemWorld` (the browser and the tests) and `TermWorld` (the terminal). A
    new data kind of argument or result needs a case in `machine/host.rs`.
-3. Declare it in the stdlib with its prepositions.
+3. Declare it in the stdlib with its prepositions and connect it to the native and C
+   targets.
 
 A `MemWorld` has the input lines given before the run and a map of files, and a
 `TermWorld` reads the standard input of the process and the files on disk. `zakac run`

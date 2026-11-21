@@ -36,6 +36,9 @@ fn an_external_function_the_host_does_not_serve_is_zk0334()
     let wrong_result = "ဖိုင်ကိုဖတ် ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ လမ်း ဟူသော \
                         စာသား တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။";
     assert_eq!(codes_as_is(&program(wrong_result)), [Code::UnknownHostFn]);
+    let optional = "နှစ်ထပ်ကိန်းရင်း ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ n ဟူသော \
+                    ဒဿမကိန်း တစ်ခု ကို လက်ခံပြီး ဒဿမကိန်း ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။";
+    assert_eq!(codes_as_is(&program(optional)), [Code::UnknownHostFn]);
 }
 
 #[test]

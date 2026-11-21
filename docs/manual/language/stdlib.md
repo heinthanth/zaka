@@ -1,6 +1,6 @@
 ---
 title: The stdlib
-description: The modules of the stdlib written in Zaka - text, paths and lists - with the call of each function, its result and its cost.
+description: The stdlib modules for text, paths, lists, I/O, math and time.
 ---
 
 # The stdlib
@@ -8,8 +8,7 @@ description: The modules of the stdlib written in Zaka - text, paths and lists -
 The stdlib (standard library) is a set of modules that the compiler carries, and a
 program imports the names it needs from each one, as it does from its own files
 ([Modules](modules.md)). The Learn book teaches it in [The
-stdlib](../../learn/stdlib/README.md). Next to [the core module](core.md), there are four
-modules:
+stdlib](../../learn/stdlib/README.md). These modules ship with [the core module](core.md).
 
 | Module | File | What it has |
 | --- | --- | --- |
@@ -17,6 +16,8 @@ modules:
 | `"စံကား/လမ်းကြောင်း"` | `stdlib/path.zaka` | the path kind `ဖိုင်လမ်းကြောင်း` and the parts of a path |
 | `"စံကား/စာရင်း"` | `stdlib/list.zaka` | sorting, removing, finding and reversing the cells of a list |
 | `"စံကား/အဝင်အထွက်"` | `stdlib/io.zaka` | streams, files and folders: [Input and output](io.md) |
+| `"စံကား/သင်္ချာ"` | `stdlib/math.zaka` | [math](#math) constants and functions on 64-bit floats |
+| `"စံကား/အချိန်"` | `stdlib/time.zaka` | [clocks and UTC formatting](#time) |
 
 Each function of the first three modules is written in Zaka. Its source is in the stdlib
 folder of the compiler, and an editor opens it through go to definition. Text and lists
@@ -168,6 +169,65 @@ l ကို ပြသမည်။
 ဒေတာ(၂)
 [၁၊ ၈၊ ၃၊ ၅]
 [၅၊ ၃၊ ၈၊ ၁]
+```
+
+## Math
+
+Import the constants `ပိုင်` (π) and `အွိုင်လာကိန်းသေ` (e) from `"စံကား/သင်္ချာ"`.
+Each function takes and gives a `ဒဿမကိန်း`, a 64-bit floating-point number.
+
+| Call | What it gives |
+| --- | --- |
+| `ပကတိတန်ဖိုး(n)` | absolute value |
+| `နှစ်ထပ်ကိန်းရင်း(n)` | square root |
+| `a ကို b ထပ်တင်သည့်ရလဒ်`, `ထပ်တင်(a၊ b)` | `a` raised to the power `b` |
+| `အခြေ၁၀ရှိသောလော့ဂရစ်သမ်(n)` | natural and base-ten logarithms |
+| `ဆိုင်း(n)`, `ကိုဆိုင်း(n)`, `တန်းဂျင့်(n)` | sine, cosine and tangent of an angle in radians |
+| `အောက်ဘက်အနီးဆုံးကိန်းပြည့်လျှော့ယူ(n)`, `အပေါ်ဘက်အနီးဆုံးကိန်းပြည့်တိုးယူ(n)` | round down or up to an integer value |
+| `အနီးဆုံးကိန်းပြည့်ယူ(n)` | round to the nearest integer value, with ties going to the larger magnitude |
+| `ဒဿမဖြုတ်(n)` | drop the fractional part, rounding towards zero |
+
+The functions follow floating-point arithmetic. The square root of a negative number
+gives `NaN`, and the logarithm of zero gives `-inf`. Transcendental functions
+can differ in their last digits across platforms.
+
+```zaka
+"စံကား/သင်္ချာ" မှ နှစ်ထပ်ကိန်းရင်း၊ ထပ်တင် နှင့် အနီးဆုံးကိန်းပြည့်ယူ တို့ကို ထည့်သွင်းမည်။
+၈၁.၀ ၏ နှစ်ထပ်ကိန်းရင်း ကို ပြသမည်။
+၁၀ ကို ၂ ထပ်တင်သည့်ရလဒ် ကို ပြသမည်။
+အနီးဆုံးကိန်းပြည့်ယူ(-၂.၅) ကို ပြသမည်။
+```
+
+```text
+၉.၀
+၁၀၀.၀
+-၃.၀
+```
+
+## Time
+
+Import these functions from `"စံကား/အချိန်"`. A clock reading is a signed 64-bit integer
+in milliseconds.
+
+| Call | What it gives |
+| --- | --- |
+| `ကြာချိန်နာရီကိုဖတ်()` | a reading from a monotonic clock with an unspecified origin. Subtract two readings to measure elapsed time |
+| `ယူနစ်အချိန်ကိုဖတ်()` | the current wall-clock time in milliseconds since 1970-01-01T00:00:00Z |
+| `အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း(ms)` | UTC text such as `1970-01-01T00:00:00.001Z`, or an `အချိန်အမှားအယွင်း` for a date outside 0000 through 9999 |
+
+UTC formatting uses Western digits and three fractional digits. Negative stamps refer
+to instants before 1970. The explorer uses a virtual clock that starts at the Unix epoch
+and advances during waits. Comptime calls read zero from both clocks.
+
+```zaka
+"စံကား/အချိန်" မှ အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း ကို ထည့်သွင်းမည်။
+အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း(၀) ကို ပြသမည်။
+အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း(-၁) ကို ပြသမည်။
+```
+
+```text
+ရလဒ်ကောင်း("1970-01-01T00:00:00.000Z")
+ရလဒ်ကောင်း("1969-12-31T23:59:59.999Z")
 ```
 
 ## Open

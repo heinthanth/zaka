@@ -1,0 +1,83 @@
+/// Reports a failure from the time module.
+///
+/// # Members
+///
+/// - `သတ်မှတ်အပိုင်းအခြားကျော်လွန်ခြင်း` marks a timestamp outside the UTC
+///   range of `အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း`.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/အချိန်" မှ အချိန်အမှားအယွင်း ကို ထည့်သွင်းမည်။
+///
+/// အချိန်အမှားအယွင်းများထဲမှ သတ်မှတ်အပိုင်းအခြားကျော်လွန်ခြင်း ကို ပြသမည်။
+/// ```
+အချိန်အမှားအယွင်း ဟူသော အများသုံး ဒေတာအမျိုးအစားကွဲတွင်
+သတ်မှတ်အပိုင်းအခြားကျော်လွန်ခြင်း ပါဝင်သည်။
+
+/// Reads the monotonic clock for measuring elapsed time.
+///
+/// # Returns
+///
+/// A signed 64-bit count of milliseconds from an unspecified origin.
+/// Subtract an earlier reading from a later one to get a duration.
+/// The explorer uses its virtual clock. A compile-time call gives zero.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/အချိန်" မှ ကြာချိန်နာရီကိုဖတ် ကို ထည့်သွင်းမည်။
+///
+/// ကိန်းရှင် အစ သည် ကြာချိန်နာရီကိုဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
+/// ၂ မီလီစက္ကန့် စောင့်မည်။
+/// ကိန်းရှင် အဆုံး သည် ကြာချိန်နာရီကိုဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
+/// အဆုံး - အစ ကို ပြသမည်။ // elapsed milliseconds
+/// ```
+ကြာချိန်နာရီကိုဖတ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+
+/// Reads the current Unix timestamp.
+///
+/// # Returns
+///
+/// A signed 64-bit count of milliseconds since `1970-01-01T00:00:00Z`.
+/// The explorer starts its virtual clock at that instant. A compile-time
+/// call gives zero.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/အချိန်" မှ ယူနစ်အချိန်ကိုဖတ် ကို ထည့်သွင်းမည်။
+///
+/// ယူနစ်အချိန်ကိုဖတ် သည့် ရလဒ် ကို ပြသမည်။ // current Unix milliseconds
+/// ```
+ယူနစ်အချိန်ကိုဖတ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+
+/// Formats a Unix timestamp as ISO 8601 text in UTC.
+///
+/// # Arguments
+///
+/// - `အချိန်` - a signed 64-bit count of milliseconds since
+///   `1970-01-01T00:00:00Z`. Negative values refer to earlier instants.
+///
+/// # Returns
+///
+/// A good result containing text with Western digits, three fractional
+/// digits and a trailing `Z`.
+///
+/// # Errors
+///
+/// Returns `သတ်မှတ်အပိုင်းအခြားကျော်လွန်ခြင်း` when the date falls outside
+/// the range 0000 through 9999.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/အချိန်" မှ အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း ကို ထည့်သွင်းမည်။
+///
+/// -၁ ကို အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း သည့် ရလဒ် ကို ပြသမည်။ // ရလဒ်ကောင်း("1969-12-31T23:59:59.999Z")
+/// ```
+အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+အချိန် ဟူသော ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံပြီး
+စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အချိန်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။

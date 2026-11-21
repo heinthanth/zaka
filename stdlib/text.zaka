@@ -22,8 +22,25 @@ j ကို j + ၁ ဟု ထားမည်။
 မှန် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// The first u8 number where `ပိုင်း` stands in `စာ`, or blank data when it
-/// stands nowhere; a blank piece stands at 0.
+/// Finds the first occurrence of a piece of text.
+///
+/// # Arguments
+///
+/// - `ပိုင်း` - text to look for.
+/// - `စာ` - text to search.
+///
+/// # Returns
+///
+/// The zero-based UTF-8 u8 offset of the match, or blank data when the piece is absent. A
+/// zero-length piece matches at zero.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ရှာ ကို ထည့်သွင်းမည်။
+///
+/// "ခ" ကို "ကခ" ထဲတွင် ရှာ သည့် ရလဒ် ကို ပြသမည်။ // ဒေတာ(၃)
+/// ```
 ရှာ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲတွင်" ကို သုံး၍ လည်းကောင်း
@@ -39,7 +56,24 @@ j ကို j + ၁ ဟု ထားမည်။
 အလွတ်ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// Whether `ပိုင်း` stands somewhere in `စာ`.
+/// Checks whether a piece occurs in text.
+///
+/// # Arguments
+///
+/// - `ပိုင်း` - text to look for.
+/// - `စာ` - text to search.
+///
+/// # Returns
+///
+/// A truth value. A zero-length piece occurs in all text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ပါမပါစစ် ကို ထည့်သွင်းမည်။
+///
+/// "ခ" ကို "ကခ" ထဲတွင် ပါမပါစစ် သည့် ရလဒ် ကို ပြသမည်။ // မှန်
+/// ```
 ပါမပါစစ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲတွင်" ကို သုံး၍ လည်းကောင်း
@@ -48,7 +82,24 @@ j ကို j + ၁ ဟု ထားမည်။
 တွေ့ ထဲတွင် ဒေတာ ရှိ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// Whether `စာ` starts with `ပိုင်း`.
+/// Checks whether text starts with a given piece.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+/// - `ပိုင်း` - the prefix to check.
+///
+/// # Returns
+///
+/// A truth value. A zero-length prefix matches all text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ စမစစစ် ကို ထည့်သွင်းမည်။
+///
+/// "ကခ" ကို "က" ဖြင့် စမစစစ် သည့် ရလဒ် ကို ပြသမည်။ // မှန်
+/// ```
 စမစစစ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ဖြင့်" ကို သုံး၍ လည်းကောင်း
@@ -56,7 +107,24 @@ j ကို j + ၁ ဟု ထားမည်။
 စာ ထဲတွင် ၀ အကွက်မှစ၍ ပိုင်း နှင့် ကိုက်ညီမှုရှိမရှိစစ် သည့် ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// Whether `စာ` ends with `ပိုင်း`.
+/// Checks whether text ends with a given piece.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+/// - `ပိုင်း` - the suffix to check.
+///
+/// # Returns
+///
+/// A truth value. A zero-length suffix matches all text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ဆုံးမဆုံးစစ် ကို ထည့်သွင်းမည်။
+///
+/// "ကခ" ကို "ခ" ဖြင့် ဆုံးမဆုံးစစ် သည့် ရလဒ် ကို ပြသမည်။ // မှန်
+/// ```
 ဆုံးမဆုံးစစ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ဖြင့်" ကို သုံး၍ လည်းကောင်း
@@ -69,7 +137,25 @@ j ကို j + ၁ ဟု ထားမည်။
 
 // ── Splitting and joining ──
 
-/// The pieces of `စာ` between each `ခြား`; a blank `ခြား` gives `စာ` alone.
+/// Splits text at each occurrence of a separator.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+/// - `ခြား` - the separator text.
+///
+/// # Returns
+///
+/// A list of the pieces, including zero-length pieces between adjacent separators. A
+/// zero-length separator gives a one-cell list containing the original text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ခွဲ ကို ထည့်သွင်းမည်။
+///
+/// "a,b,,c" ကို "," ဖြင့် ခွဲ သည့် ရလဒ် ကို ပြသမည်။ // ["a"၊ "b"၊ ""၊ "c"]
+/// ```
 ခွဲ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 ခြား ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ဖြင့်" ကို သုံး၍ လည်းကောင်း
@@ -97,8 +183,24 @@ j ကို j + ၁ ဟု ထားမည်။
 အပိုင်းများ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// The lines of `စာ`, each without its `\n` or `\r\n`; a line break at the end
-/// starts no blank line after it.
+/// Splits text into lines.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+///
+/// # Returns
+///
+/// A list of lines without their `\n` or `\r\n` endings. A final line break adds no extra
+/// line.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ စာကြောင်းများအဖြစ်ခွဲ ကို ထည့်သွင်းမည်။
+///
+/// "a\r\nb\n" ကို စာကြောင်းများအဖြစ်ခွဲ သည့် ရလဒ် ကို ပြသမည်။ // ["a"၊ "b"]
+/// ```
 စာကြောင်းများအဖြစ်ခွဲ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
@@ -137,7 +239,23 @@ j ကို j + ၁ ဟု ထားမည်။
 မမှန် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// The words of `စာ`: the runs of characters between white space.
+/// Splits text into runs between white space.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+///
+/// # Returns
+///
+/// A list of the nonblank runs. A space, tab, `\n` or `\r` counts as white space.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ စကားလုံးများအဖြစ်ခွဲ ကို ထည့်သွင်းမည်။
+///
+/// "က  ခ\tဂ" ကို စကားလုံးများအဖြစ်ခွဲ သည့် ရလဒ် ကို ပြသမည်။ // ["က"၊ "ခ"၊ "ဂ"]
+/// ```
 စကားလုံးများအဖြစ်ခွဲ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
@@ -155,7 +273,24 @@ j ကို j + ၁ ဟု ထားမည်။
 စကားလုံးများ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// The texts of a list joined, with `ခြား` between each two.
+/// Joins a list of texts with a separator.
+///
+/// # Arguments
+///
+/// - `စာများ` - the texts to join.
+/// - `ခြား` - the separator text.
+///
+/// # Returns
+///
+/// Text with the separator between adjacent entries.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ဆက် ကို ထည့်သွင်းမည်။
+///
+/// ["က"၊ "ခ"] ကို " / " ဖြင့် ဆက် သည့် ရလဒ် ကို ပြသမည်။ // က / ခ
+/// ```
 ဆက် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာများ ဟူသော စာသား စာရင်း တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 ခြား ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ဖြင့်" ကို သုံး၍ လည်းကောင်း
@@ -170,7 +305,23 @@ j ကို j + ၁ ဟု ထားမည်။
 
 // ── Changing text ──
 
-/// `စာ` without the white space at its start and at its end.
+/// Removes leading and trailing white space.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+///
+/// # Returns
+///
+/// The remaining text. A space, tab, `\n` or `\r` counts as white space.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ဘေးနှစ်ဖက်တွင်နေရာလွတ်ဖယ် ကို ထည့်သွင်းမည်။
+///
+/// "  က ခ\t" ကို ဘေးနှစ်ဖက်တွင်နေရာလွတ်ဖယ် သည့် ရလဒ် ကို ပြသမည်။ // က ခ
+/// ```
 ဘေးနှစ်ဖက်တွင်နေရာလွတ်ဖယ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
@@ -188,8 +339,25 @@ j ကို j + ၁ ဟု ထားမည်။
 အဖြေစာ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// `စာ` with each `ဟောင်း` in it replaced with `သစ်`, from the start on; a blank
-/// `ဟောင်း` changes nothing.
+/// Replaces occurrences of a piece of text from left to right.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+/// - `ဟောင်း` - the piece to replace.
+/// - `သစ်` - the replacement text.
+///
+/// # Returns
+///
+/// The revised text. A zero-length piece to replace gives the original text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ အကုန်အစားထိုး ကို ထည့်သွင်းမည်။
+///
+/// "a.b.c" တွင် "." ကို "::" ဖြင့် အကုန်အစားထိုး သည့် ရလဒ် ကို ပြသမည်။ // a::b::c
+/// ```
 အကုန်အစားထိုး ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "တွင်" ကို သုံး၍ လည်းကောင်း
 ဟောင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
@@ -201,7 +369,24 @@ j ကို j + ၁ ဟု ထားမည်။
 ပိုင်းများ ကို သစ် ဖြင့် ဆက် သည့် ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// `စာ` written `အကြိမ်` times in a row; 0 or fewer gives blank text.
+/// Repeats text a specified number of times.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+/// - `အကြိမ်` - the repetition count.
+///
+/// # Returns
+///
+/// The repeated text. A count of zero or less gives zero-length text.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ထပ်ခါထပ်ခါဆက် ကို ထည့်သွင်းမည်။
+///
+/// "က" ကို ၃ ကြိမ် ထပ်ခါထပ်ခါဆက် သည့် ရလဒ် ကို ပြသမည်။ // ကကက
+/// ```
 ထပ်ခါထပ်ခါဆက် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
 အကြိမ် ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကြိမ်" ကို သုံး၍ လည်းကောင်း
@@ -227,8 +412,23 @@ j ကို j + ၁ ဟု ထားမည်။
 ကုဒ် + အကွာ ကို စာလုံး တစ်လုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// `စာ` with each Latin letter `a`-`z` as `A`-`Z`; the other characters stand
-/// unchanged.
+/// Converts lowercase ASCII letters to uppercase.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+///
+/// # Returns
+///
+/// The converted text with all other characters retained.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ စာလုံးကြီးပြောင်း ကို ထည့်သွင်းမည်။
+///
+/// "abc က" ကို စာလုံးကြီးပြောင်း သည့် ရလဒ် ကို ပြသမည်။ // ABC က
+/// ```
 စာလုံးကြီးပြောင်း ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
@@ -237,8 +437,23 @@ j ကို j + ၁ ဟု ထားမည်။
 အဖြေစာ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// `စာ` with each Latin letter `A`-`Z` as `a`-`z`; the other characters stand
-/// unchanged.
+/// Converts uppercase ASCII letters to lowercase.
+///
+/// # Arguments
+///
+/// - `စာ` - the input text.
+///
+/// # Returns
+///
+/// The converted text with all other characters retained.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ စာလုံးသေးပြောင်း ကို ထည့်သွင်းမည်။
+///
+/// "ABC က" ကို စာလုံးသေးပြောင်း သည့် ရလဒ် ကို ပြသမည်။ // abc က
+/// ```
 စာလုံးသေးပြောင်း ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
@@ -249,7 +464,21 @@ j ကို j + ၁ ဟု ထားမည်။
 
 // ── Text as an integer ──
 
-/// The failures of reading text as an integer.
+/// Reports a failure when reading text as an integer.
+///
+/// # Members
+///
+/// - `ဗလာစာသား` - the text contains no input.
+/// - `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` - the input contains an invalid character.
+/// - `အကန့်အသတ်ကျော်ခြင်း` - the number is outside the integer range.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ကို ထည့်သွင်းမည်။
+///
+/// ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ဗလာစာသား ကို ပြသမည်။
+/// ```
 ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ဟူသော အများသုံး ဒေတာအမျိုးအစားကွဲတွင်
 ဗလာစာသား၊
 ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း နှင့်
@@ -267,8 +496,29 @@ j ကို j + ၁ ဟု ထားမည်။
 -၁ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-/// Read text as an integer: an optional `-`, then digits `0`-`9` or `၀`-`၉`.
-/// `t ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` calls this for text.
+/// Reads text as a platform-sized signed integer.
+///
+/// # Arguments
+///
+/// - `စ` - the input text.
+///
+/// # Returns
+///
+/// A good result containing the integer. The text accepts an optional leading minus sign and
+/// Western or Burmese digits.
+///
+/// # Errors
+///
+/// A failure of kind `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း` for blank input, invalid digits or an
+/// out-of-range value.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း ကို ထည့်သွင်းမည်။
+///
+/// "၁၂၃" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။ // ရလဒ်ကောင်း(၁၂၃)
+/// ```
 ကိန်းပြည့်အဖြစ်ပြောင်း ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
 စ ဟူသော စာသား တစ်ခု ကို
 လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။

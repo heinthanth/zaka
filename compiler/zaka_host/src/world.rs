@@ -147,12 +147,16 @@ pub trait World: Debug + Send + Sync
     /// of the input. A world that cannot take more does nothing.
     fn close_input(&mut self) {}
 
-    /// The milliseconds since the world began, the clock a sleep reads.
+    /// Milliseconds from the origin of the clock that schedules a sleep.
     ///
     /// # Returns
     ///
     /// The count.
     fn now_ms(&mut self) -> u64;
+
+    /// Milliseconds since the Unix epoch. A world in storage starts at the
+    /// epoch and advances with its virtual clock.
+    fn unix_ms(&mut self) -> i64;
 
     /// Let a count of milliseconds pass, while no thread of the program can
     /// run.
@@ -509,6 +513,8 @@ impl World for MemWorld
 
     fn now_ms(&mut self) -> u64 { self.clock }
 
+    fn unix_ms(&mut self) -> i64 { i64::try_from(self.clock).unwrap_or(i64::MAX) }
+
     fn sleep_ms(&mut self, ms: u64) { self.clock = self.clock.saturating_add(ms); }
 
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
@@ -602,6 +608,8 @@ impl World for TermWorld
         let start = START.get_or_init(std::time::Instant::now);
         u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
+
+    fn unix_ms(&mut self) -> i64 { crate::time::unix_ms() }
 
     fn sleep_ms(&mut self, ms: u64)
     {

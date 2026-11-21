@@ -294,7 +294,7 @@ impl FnGen<'_, '_>
         let target = self.place(place);
         if let ExprNode::Host { func, args } = &value.node
         {
-            return self.host_into(&target, *func, args, value.kind);
+            return self.host_into(&self.addr_of(place), *func, args, value.kind);
         }
         let v = self.expr(value);
         ret_if!(!is_blob(value.kind), self.line(&format!("{target} = {v};")));

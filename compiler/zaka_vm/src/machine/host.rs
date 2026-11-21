@@ -1,9 +1,7 @@
 //! The op `host`, the one op of an external function: the VM reads each
 //! argument through the address of its parameter as a value the host takes,
 //! runs the host function against its world, and writes the result in the
-//! result slot. Both turns follow the kinds alone (text, a stream struct, an
-//! enumeration member, a result that can fail), so a new host function over
-//! these kinds needs no code here.
+//! result slot. Both turns follow the data kinds of the declaration.
 
 use zaka_host::Args;
 use zaka_host::Effects;
@@ -48,6 +46,12 @@ impl Machine
             .collect::<Result<Vec<_>, _>>()?;
         addrs.reverse();
         let slot = self.pop_ptr("host")?;
+        if self.options.fixed_clock
+            && matches!(func, HostFn::MonotonicMs | HostFn::UnixMs)
+        {
+            self.put_host_value(slot, ret, HostValue::Int(0))?;
+            return self.push(Value::Ptr(slot));
+        }
         let read = addrs.iter().zip(&kinds).map(|(a, k)| self.host_value_at(*a, *k));
         let args = Args(read.collect::<Result<_, _>>()?);
         let world = &mut *self.world;
@@ -93,7 +97,7 @@ impl Machine
     /// # Arguments
     ///
     /// * `addr` - The address.
-    /// * `kind` - The kind: text, an enumeration, or a stream struct.
+    /// * `kind` - The kind of the parameter.
     ///
     /// # Returns
     ///
@@ -105,6 +109,15 @@ impl Machine
             kind.as_enum().is_some(),
             Ok(HostValue::Member(self.int_at(addr, kind)?))
         );
+        if matches!(kind, DataKind::Float(64) | DataKind::Int(_))
+        {
+            return match self.mem.load(addr, kind)?
+            {
+                Value::Float { raw, .. } => Ok(HostValue::Float(raw)),
+                Value::Int { raw, .. } => Ok(HostValue::Int(raw as i64)),
+                _ => Err(malformed("the host takes a number here")),
+            };
+        }
         let handle = kind.as_struct().and_then(|s| s.fields().first().map(|(_, k)| *k));
         let handle =
             handle.ok_or_else(|| malformed("the host takes no value of this kind"))?;
@@ -147,6 +160,12 @@ impl Machine
         match value
         {
             HostValue::Text(text) => self.place_text(at, &text),
+            HostValue::Float(raw) => self.mem.store(at, Value::Float { bits: 64, raw }),
+            HostValue::Int(value) =>
+            {
+                let int = int_kind(kind).ok_or_else(|| malformed("no integer kind"))?;
+                self.mem.store(at, Value::int(int, value as u128, platform))
+            }
             HostValue::Texts(texts) => self.place_text_list(at, &texts),
             HostValue::Member(n) =>
             {

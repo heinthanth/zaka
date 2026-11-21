@@ -3,7 +3,6 @@
 //! name, parameter kinds and result kind.
 
 pub use zaka_host::HostFn;
-pub use zaka_host::IO_ERROR;
 pub use zaka_host::listing;
 
 use crate::kind::DataKind;
@@ -15,7 +14,7 @@ use crate::kind::DataKind;
 /// * `name` - The declared name, or the inner name an overload takes after the
 ///   check, `<name>#<n>`.
 /// * `params` - The declared parameter kinds.
-/// * `ret` - The declared result kind, which must be one that can fail.
+/// * `ret` - The declared result kind.
 ///
 /// # Returns
 ///
@@ -23,7 +22,14 @@ use crate::kind::DataKind;
 pub fn find(name: &str, params: &[DataKind], ret: Option<DataKind>) -> Option<HostFn>
 {
     let name = name.split_once('#').map_or(name, |(written, _)| written);
-    let (ok, err) = ret.and_then(DataKind::fallible_parts)?;
+    let ret = ret?;
+    let (ok, err) = match ret.fallible_parts()
+    {
+        // A result with no error value is distinct from a plain value.
+        Some((_, None)) => return None,
+        Some(parts) => parts,
+        None => (Some(ret), None),
+    };
     let params: Vec<String> = params.iter().map(|k| k.name()).collect();
     let (ok, err) = (ok.map(DataKind::name), err.map(DataKind::name));
     HostFn::find(name, &params, ok.as_deref(), err.as_deref())

@@ -18,6 +18,7 @@ mod grants;
 mod kinds;
 pub mod numbers;
 mod table;
+pub mod time;
 mod value;
 mod world;
 

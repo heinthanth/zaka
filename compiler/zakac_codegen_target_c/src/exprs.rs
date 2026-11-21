@@ -256,7 +256,12 @@ impl FnGen<'_, '_>
             ExprNode::Host { func, args } =>
             {
                 let t = self.temp(e.kind);
-                self.host_into(&t, *func, args, e.kind);
+                let at = tern!(
+                    is_blob(e.kind),
+                    t.clone(),
+                    format!("((unsigned char *)&{t})")
+                );
+                self.host_into(&at, *func, args, e.kind);
                 t
             }
             ExprNode::Foreign { func, args } => self.foreign(*func, args, Some(e.kind)),
@@ -944,6 +949,16 @@ impl FnGen<'_, '_>
                 format!("zk_host_rename({slot}, {r}, {}, {})", v[0], v[1])
             }
             HostFn::ReadEnv => format!("zk_host_read_env({slot}, {r}, {})", v[0]),
+            HostFn::MonotonicMs => format!("zk_host_monotonic_ms({slot})"),
+            HostFn::UnixMs => format!("zk_host_unix_ms({slot})"),
+            HostFn::FormatUtc => format!("zk_host_format_utc({slot}, {r}, {})", v[0]),
+            _ =>
+            {
+                let op = func as u32;
+                assert!(HostFn::math_at(op).is_some(), "no lowering for {func:?}");
+                let last = v.last().expect("a math argument");
+                format!("zk_host_math({slot}, {op}u, {}, {last})", v[0])
+            }
         };
         self.line(&format!("{call};"));
     }

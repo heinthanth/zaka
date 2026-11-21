@@ -614,7 +614,7 @@ en = "unknown external function"
 [codes.ZK0334.message]
 en = "the VM serves no function \"%{n}\" with these parameter and result kinds"
 [codes.ZK0334.help]
-en = "the VM serves %{l}, each with a result that can fail with \"%{e}\""
+en = "the VM serves %{l}"
 [codes.ZK0334.explain]
 en = """A function that comes from outside, \"<name> ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ ...\", has no statements: the VM serves it while the program runs. The VM serves a fixed set of functions, so the name, the parameter kinds and the result kind must be those of one of them. The stdlib declares each of them; import them from there."""
 

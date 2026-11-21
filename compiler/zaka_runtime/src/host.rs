@@ -6,15 +6,18 @@ use std::ffi::c_char;
 use std::io;
 use std::io::Write;
 
+use zaka_host::HostFn;
 use zaka_host::NO_PERMISSION;
 use zaka_host::OTHER;
 use zaka_host::Right;
 use zaka_host::STDERR;
 use zaka_host::STDIN;
 use zaka_host::STDOUT;
+use zaka_host::TIME_RANGE;
 use zaka_host::TermWorld;
 use zaka_host::World;
 use zaka_host::io_member;
+use zaka_host::time;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
@@ -389,6 +392,52 @@ pub extern "C" fn zk_host_read_env(slot: *mut u8, ret: *const ZkKind, name: *con
         Ok(Some(value)) => good(slot, ret, Some(value.as_bytes())),
         _ => fault(slot, ret, zaka_host::NOT_FOUND),
     })
+}
+
+/// Run a math operation on two f64 slots. A call with one input passes the
+/// same slot twice.
+#[unsafe(export_name = stamped!("host_math"))]
+pub extern "C" fn zk_host_math(
+    slot: *mut u8, op: u32, first: *const u8, second: *const u8,
+)
+{
+    let calc = HostFn::math_at(op).expect("a math host operation");
+    // SAFETY: the generated call passes two f64 inputs and an f64 result slot.
+    unsafe {
+        let first = first.cast::<f64>().read_unaligned();
+        let second = second.cast::<f64>().read_unaligned();
+        slot.cast::<f64>().write_unaligned(calc(first, second));
+    }
+}
+
+/// Read the clock for elapsed time, in milliseconds.
+#[unsafe(export_name = stamped!("host_monotonic_ms"))]
+pub extern "C" fn zk_host_monotonic_ms(slot: *mut u8)
+{
+    // SAFETY: the generated call passes an i64 result slot.
+    unsafe { slot.cast::<i64>().write_unaligned(time::elapsed_ms(&mut TermWorld)) };
+}
+
+/// Read the UTC clock, in Unix milliseconds.
+#[unsafe(export_name = stamped!("host_unix_ms"))]
+pub extern "C" fn zk_host_unix_ms(slot: *mut u8)
+{
+    // SAFETY: the generated call passes an i64 result slot.
+    unsafe { slot.cast::<i64>().write_unaligned(TermWorld.unix_ms()) };
+}
+
+/// Format a Unix millisecond stamp in UTC.
+#[unsafe(export_name = stamped!("host_format_utc"))]
+pub extern "C" fn zk_host_format_utc(slot: *mut u8, ret: *const ZkKind, ms: *const u8)
+{
+    // SAFETY: the generated call passes an i64 input slot.
+    let ms = unsafe { ms.cast::<i64>().read_unaligned() };
+    let ret = kind(ret);
+    match time::format_utc(ms)
+    {
+        Some(stamp) => good(slot, ret, Some(stamp.as_bytes())),
+        None => fault(slot, ret, TIME_RANGE),
+    }
 }
 
 /// A plain list of text at a slot, each text copied.

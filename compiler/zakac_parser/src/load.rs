@@ -114,6 +114,8 @@ pub static STD_MODULES: &[(&str, &str, &str)] = &[
     std_module!("စံကား/စာသား", "text.zaka"),
     std_module!("စံကား/လမ်းကြောင်း", "path.zaka"),
     std_module!("စံကား/စာရင်း", "list.zaka"),
+    std_module!("စံကား/သင်္ချာ", "math.zaka"),
+    std_module!("စံကား/အချိန်", "time.zaka"),
     // The core shares the parts in `CORE_PARTS`.
     std_module!(CORE, "core/mod.zaka"),
 ];

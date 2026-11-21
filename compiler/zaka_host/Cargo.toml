@@ -6,6 +6,7 @@ edition.workspace = true
 
 [dependencies]
 bon = { workspace = true }
+chrono = { workspace = true, features = ["alloc"] }
 serde = { workspace = true }
 strum = { workspace = true }
 zakac_rust_sugars = { workspace = true }

@@ -1,12 +1,12 @@
 ---
 title: The stdlib
-description: Text, paths, lists and files with the modules the compiler carries - finding and splitting text, the parts of a path, sorting a list, and folders.
+description: Use the modules the compiler carries for text, paths, lists, files, math and time.
 ---
 
 # The stdlib
 
 The stdlib (standard library) comes with the compiler and includes functions for text,
-paths, lists, files and folders. We can import and call these functions in the same
+paths, lists, files, folders, math and time. We can import and call these functions in the same
 form as functions from our own modules. See [Modules](../modules/README.md) for how
 imports work.
 
@@ -189,6 +189,10 @@ lists `day.txt` afterwards.
 
 ## Details
 
+- **Math and time.** Import `နှစ်ထပ်ကိန်းရင်း` from `"စံကား/သင်္ချာ"` to find a square
+  root. Import `ကြာချိန်နာရီကိုဖတ်` from `"စံကား/အချိန်"` and subtract two readings to
+  measure elapsed milliseconds. See [Math](../../manual/language/stdlib.md#math) and
+  [Time](../../manual/language/stdlib.md#time) for runnable examples.
 - **More functions.** Each module has more functions than this page shows: for example,
   `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
   and `စီ` sorts a list with a function that compares two cells. [The

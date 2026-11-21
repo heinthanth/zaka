@@ -1787,6 +1787,7 @@ impl<'s> FuncGen<'s>
             {
                 let slot = self.temp("%host", e.kind);
                 self.host(Op::LocalAddr(slot), *func, args);
+                do_if!(!e.kind.is_aggregate(), self.op(Op::Load(e.kind)));
             }
             ExprNode::Foreign { func, args } =>
             {

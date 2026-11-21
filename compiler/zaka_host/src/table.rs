@@ -8,6 +8,8 @@ use strum::IntoStaticStr;
 use crate::grants::Right;
 use crate::kinds::BAD_TEXT;
 use crate::kinds::END_OF_INPUT;
+use crate::kinds::F64;
+use crate::kinds::I64;
 use crate::kinds::INPUT_STREAM;
 use crate::kinds::IO_ERROR;
 use crate::kinds::NO_PERMISSION;
@@ -17,6 +19,9 @@ use crate::kinds::OUTPUT_STREAM;
 use crate::kinds::PATH_KIND;
 use crate::kinds::TEXT;
 use crate::kinds::TEXT_LIST;
+use crate::kinds::TIME_ERROR;
+use crate::kinds::TIME_RANGE;
+use crate::time;
 use crate::value::Args;
 use crate::value::HostValue;
 use crate::world::Effects;
@@ -32,24 +37,32 @@ pub struct HostDef
     pub name: &'static str,
     /// The kind name of each parameter.
     pub params: &'static [&'static str],
-    /// The kind name of the good result; `None` for a good result that holds
-    /// no value. Each host function can fail with [`IO_ERROR`].
+    /// The kind name of the value, or of the good side of a result.
     pub ok: Option<&'static str>,
+    /// The kind name of the error, if the function can fail.
+    pub err: Option<&'static str>,
     /// The right a call needs, `None` for one each run holds.
     pub needs: Option<Right>,
-    /// The work: the result for the arguments.
-    pub run: fn(&Args, &mut Effects<'_>) -> HostValue,
+    action: HostAction,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum HostAction
+{
+    Effect(fn(&Args, &mut Effects<'_>) -> HostValue),
+    Math(fn(f64, f64) -> f64),
 }
 
 /// Make [`HostFn`], one variant for each row, and [`HOST_FNS`], the rows in
-/// the same order.
+/// the same order. Append new rows to preserve the numbers in saved ops.
 macro_rules! host_fns {
-    ($( $(#[$doc:meta])* $id:ident = $name:literal ($($param:expr),*) -> $ok:expr, $needs:expr, $run:expr; )*) => {
+    ($( $(#[$doc:meta])* $id:ident = $name:literal ($($param:expr),*) -> $ok:expr, $err:expr, $needs:expr, $action:expr; )*) => {
         /// A function the host serves.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         #[derive(EnumIter, IntoStaticStr)]
         #[serde(rename_all = "snake_case")]
         #[strum(serialize_all = "snake_case")]
+        #[repr(u32)]
         pub enum HostFn
         {
             $( $(#[$doc])* $id, )*
@@ -57,38 +70,66 @@ macro_rules! host_fns {
 
         /// Each host function, in the order of [`HostFn`].
         pub static HOST_FNS: &[HostDef] = &[
-            $( HostDef { func: HostFn::$id, name: $name, params: &[$($param),*], ok: $ok, needs: $needs, run: $run }, )*
+            $( HostDef { func: HostFn::$id, name: $name, params: &[$($param),*], ok: $ok, err: $err, needs: $needs, action: $action }, )*
         ];
     };
 }
 
 host_fns! {
     /// Read one line of an input stream, without its line break.
-    ReadLine = "စာကြောင်းတစ်ကြောင်းဖတ်"(INPUT_STREAM) -> Some(TEXT), None, read_line;
+    ReadLine = "စာကြောင်းတစ်ကြောင်းဖတ်"(INPUT_STREAM) -> Some(TEXT), Some(IO_ERROR), None, HostAction::Effect(read_line);
     /// Read a whole file as text.
-    ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), Some(Right::Read), read_file;
+    ReadFile = "ဖိုင်ကိုဖတ်"(TEXT) -> Some(TEXT), Some(IO_ERROR), Some(Right::Read), HostAction::Effect(read_file);
     /// Write text as the whole of a file: the text, then the path.
-    WriteFile = "ရေး"(TEXT, TEXT) -> None, Some(Right::Write), write_file;
+    WriteFile = "ရေး"(TEXT, TEXT) -> None, Some(IO_ERROR), Some(Right::Write), HostAction::Effect(write_file);
     /// Write text to an output stream, with no line break: the text, then the
     /// stream.
-    WriteStream = "ရေး"(TEXT, OUTPUT_STREAM) -> None, None, write_stream;
+    WriteStream = "ရေး"(TEXT, OUTPUT_STREAM) -> None, Some(IO_ERROR), None, HostAction::Effect(write_stream);
     /// Add text at the end of a file, making the file when it is not there:
     /// the text, then the path.
-    AppendFile = "နောက်ဆုံးမှဆက်ရေး"(TEXT, TEXT) -> None, Some(Right::Write), append_file;
+    AppendFile = "နောက်ဆုံးမှဆက်ရေး"(TEXT, TEXT) -> None, Some(IO_ERROR), Some(Right::Write), HostAction::Effect(append_file);
     /// Remove a file, or a folder that holds nothing.
-    Remove = "ဖျက်"(TEXT) -> None, Some(Right::Write), remove;
+    Remove = "ဖျက်"(TEXT) -> None, Some(IO_ERROR), Some(Right::Write), HostAction::Effect(remove);
     /// Make a folder and each folder above it that is not there.
-    MakeFolder = "ဖိုင်တွဲတစ်ခုပြုလုပ်"(TEXT) -> None, Some(Right::Write), make_folder;
+    MakeFolder = "ဖိုင်တွဲတစ်ခုပြုလုပ်"(TEXT) -> None, Some(IO_ERROR), Some(Right::Write), HostAction::Effect(make_folder);
     /// The names a folder holds, sorted.
-    ListFolder = "စု"(TEXT) -> Some(TEXT_LIST), Some(Right::Read), list_folder;
+    ListFolder = "စု"(TEXT) -> Some(TEXT_LIST), Some(IO_ERROR), Some(Right::Read), HostAction::Effect(list_folder);
     /// What a path holds: a file, a folder or another thing.
-    PathKind = "အမျိုးအစားခွဲ"(TEXT) -> Some(PATH_KIND), Some(Right::Read), path_kind;
+    PathKind = "အမျိုးအစားခွဲ"(TEXT) -> Some(PATH_KIND), Some(IO_ERROR), Some(Right::Read), HostAction::Effect(path_kind);
     /// Move a file or a folder, replacing what the target holds: the old
     /// path, then the new one.
-    Rename = "ရွှေ့"(TEXT, TEXT) -> None, Some(Right::Write), rename;
+    Rename = "ရွှေ့"(TEXT, TEXT) -> None, Some(IO_ERROR), Some(Right::Write), HostAction::Effect(rename);
     /// Read one variable of the environment; one that is not set fails as a
     /// file that is not there does.
-    ReadEnv = "ဖတ်"(TEXT) -> Some(TEXT), Some(Right::Env), read_env;
+    ReadEnv = "ဖတ်"(TEXT) -> Some(TEXT), Some(IO_ERROR), Some(Right::Env), HostAction::Effect(read_env);
+    /// Absolute value.
+    Abs = "ပကတိတန်ဖိုး"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.abs());
+    /// Square root.
+    Sqrt = "နှစ်ထပ်ကိန်းရင်း"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.sqrt());
+    /// Raise a base to a power.
+    Pow = "ထပ်တင်"(F64, F64) -> Some(F64), None, None, HostAction::Math(f64::powf);
+    /// Base-ten logarithm.
+    Log10 = "အခြေ၁၀ရှိသောလော့ဂရစ်သမ်"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.log10());
+    /// Sine, in radians.
+    Sin = "ဆိုင်း"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.sin());
+    /// Cosine, in radians.
+    Cos = "ကိုဆိုင်း"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.cos());
+    /// Tangent, in radians.
+    Tan = "တန်းဂျင့်"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.tan());
+    /// Round down.
+    Floor = "အောက်ဘက်အနီးဆုံးကိန်းပြည့်လျှော့ယူ"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.floor());
+    /// Round up.
+    Ceil = "အပေါ်ဘက်အနီးဆုံးကိန်းပြည့်တိုးယူ"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.ceil());
+    /// Round to the nearest integer, with ties going to the larger magnitude.
+    Round = "အနီးဆုံးကိန်းပြည့်ယူ"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.round());
+    /// Drop the fractional part.
+    Trunc = "ဒဿမဖြုတ်"(F64) -> Some(F64), None, None, HostAction::Math(|n, _| n.trunc());
+    /// Read the clock for elapsed time.
+    MonotonicMs = "ကြာချိန်နာရီကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(monotonic_ms);
+    /// Read the UTC clock, in Unix milliseconds.
+    UnixMs = "ယူနစ်အချိန်ကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(unix_ms);
+    /// Format one Unix millisecond stamp in UTC.
+    FormatUtc = "အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း"(I64) -> Some(TEXT), Some(TIME_ERROR), None, HostAction::Effect(format_utc);
 }
 
 /// Run [`HostFn::ReadLine`].
@@ -172,6 +213,25 @@ fn read_env(args: &Args, e: &mut Effects<'_>) -> HostValue
     text_or_fault(value)
 }
 
+fn monotonic_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    HostValue::Int(time::elapsed_ms(e.world))
+}
+
+fn unix_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    HostValue::Int(e.world.unix_ms())
+}
+
+fn format_utc(args: &Args, _: &mut Effects<'_>) -> HostValue
+{
+    match time::format_utc(args.int(0))
+    {
+        Some(stamp) => HostValue::Good(Some(Box::new(HostValue::Text(stamp)))),
+        None => HostValue::Fault(Box::new(HostValue::Member(TIME_RANGE))),
+    }
+}
+
 impl HostFn
 {
     /// The row of the function.
@@ -190,22 +250,55 @@ impl HostFn
     ///
     /// # Returns
     ///
-    /// The result: a good result, or a failure with a member of [`IO_ERROR`].
+    /// The value or tagged result described in the row.
     pub fn serve(self, args: &Args, effects: &mut Effects<'_>) -> HostValue
     {
-        (self.def().run)(args, effects)
+        let def = self.def();
+        match def.action
+        {
+            HostAction::Effect(run) => run(args, effects),
+            HostAction::Math(run) =>
+            {
+                let first = args.float(0);
+                let second = if def.params.len() == 2
+                {
+                    args.float(1)
+                }
+                else
+                {
+                    first
+                };
+                HostValue::Float(run(first, second).to_bits())
+            }
+        }
+    }
+
+    /// The calculation of the math operation with this host function number.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The number of the host function.
+    ///
+    /// # Returns
+    ///
+    /// The calculation, or `None` for a different host function.
+    pub fn math_at(op: u32) -> Option<fn(f64, f64) -> f64>
+    {
+        match HOST_FNS.get(op as usize)?.action
+        {
+            HostAction::Math(run) => Some(run),
+            HostAction::Effect(_) => None,
+        }
     }
 
     /// The host function an external declaration names: the same name, the
-    /// same parameter kinds, and a result that can fail with [`IO_ERROR`]
-    /// with the good result of the row.
+    /// same parameter and result kinds.
     ///
     /// # Arguments
     ///
     /// * `name` - The declared name.
     /// * `params` - The kind name of each declared parameter.
-    /// * `ok` - The kind name of the declared good result, `None` with no
-    ///   value.
+    /// * `ok` - The kind name of the value or the good side, if present.
     /// * `err` - The kind name of the declared error.
     ///
     /// # Returns
@@ -217,7 +310,7 @@ impl HostFn
     {
         let fits = |d: &&HostDef| {
             let kinds = params.iter().map(String::as_str).eq(d.params.iter().copied());
-            d.name == name && kinds && ok == d.ok && err == Some(IO_ERROR)
+            d.name == name && kinds && ok == d.ok && err == d.err
         };
         HOST_FNS.iter().find(fits).map(|d| d.func)
     }
@@ -230,7 +323,12 @@ impl HostFn
 /// The list.
 pub fn listing() -> String
 {
-    let each = HOST_FNS.iter().map(|d| format!("{}({})", d.name, d.params.join(", ")));
+    let each = HOST_FNS.iter().map(|d| {
+        let value = d.ok.unwrap_or("()");
+        let result =
+            d.err.map_or_else(|| value.to_owned(), |err| format!("{value} or {err}"));
+        format!("{}({}) -> {result}", d.name, d.params.join(", "))
+    });
     each.collect::<Vec<_>>().join(" / ")
 }
 

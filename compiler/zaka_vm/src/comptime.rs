@@ -176,8 +176,11 @@ impl VmRunner
             .map(|n| module.globals.iter().position(|g| g.name == n.as_str()))
             .collect();
         let kinds: Vec<_> = module.globals.iter().map(|g| g.kind).collect();
-        let run =
-            RunOptions::builder().max_steps(self.max_steps).max_heap(MAX_HEAP).build();
+        let run = RunOptions::builder()
+            .max_steps(self.max_steps)
+            .max_heap(MAX_HEAP)
+            .fixed_clock(true)
+            .build();
         let mut machine = Machine::new(module, run);
         machine.set_world(Box::new(TermWorld));
         machine.set_gate(gate);

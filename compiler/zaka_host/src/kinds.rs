@@ -5,6 +5,12 @@
 /// Text.
 pub const TEXT: &str = "text";
 
+/// A 64-bit float.
+pub const F64: &str = "f64";
+
+/// A signed 64-bit integer.
+pub const I64: &str = "i64";
+
 /// A plain list of text.
 pub const TEXT_LIST: &str = "text[]";
 
@@ -27,8 +33,14 @@ pub const INPUT_STREAM: &str = "အချက်အလက်အဝင်စီး
 /// The struct of an output stream, as the stdlib declares it.
 pub const OUTPUT_STREAM: &str = "အချက်အလက်အထွက်စီးကြောင်း";
 
-/// The enumeration each host function can fail with.
+/// The error enumeration of file, stream and environment operations.
 pub const IO_ERROR: &str = "အချက်အလက်အဝင်အထွက်အမှားအယွင်း";
+
+/// The error enumeration of the time module.
+pub const TIME_ERROR: &str = "အချိန်အမှားအယွင်း";
+
+/// The member of [`TIME_ERROR`] for a stamp outside the calendar range.
+pub const TIME_RANGE: u32 = 0;
 
 /// The handle of standard input, `စံပြုအဝင်`.
 pub const STDIN: u32 = 0;

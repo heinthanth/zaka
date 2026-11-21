@@ -4,6 +4,10 @@ pub enum HostValue
 {
     /// Text.
     Text(String),
+    /// The bits of a 64-bit float.
+    Float(u64),
+    /// A signed 64-bit integer.
+    Int(i64),
     /// A stream: the handle number its struct holds.
     Stream(u32),
     /// A member of an enumeration, counted from 0.
@@ -24,6 +28,26 @@ pub struct Args(pub Vec<HostValue>);
 
 impl Args
 {
+    /// The 64-bit float at a place.
+    pub(crate) fn float(&self, n: usize) -> f64
+    {
+        match self.0.get(n)
+        {
+            Some(HostValue::Float(raw)) => f64::from_bits(*raw),
+            other => panic!("argument {n} is no float: {other:?}"),
+        }
+    }
+
+    /// The signed 64-bit integer at a place.
+    pub(crate) fn int(&self, n: usize) -> i64
+    {
+        match self.0.get(n)
+        {
+            Some(HostValue::Int(value)) => *value,
+            other => panic!("argument {n} is no integer: {other:?}"),
+        }
+    }
+
     /// The text argument at a place.
     ///
     /// # Arguments

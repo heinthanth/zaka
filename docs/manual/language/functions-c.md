@@ -35,9 +35,8 @@ write `ပြင်ပမှလာသော` apart (`ပြင်ပ မှ လ�
 the result kind follow the rules of a regular function signature. A call of an external
 function is a call like others, in each call form.
 
-The VM serves a fixed set of functions, so an external function must be one of them, with
-the same name, the same parameter kinds, and a result that can fail with the error
-enumeration of input and output. A different one is ZK0334, and the help of that error
+The VM serves a fixed set of functions. An external declaration must match the name,
+parameter kinds and result kind of one of them. A different one is ZK0334, and its help
 lists the set. The stdlib declares each of these functions, so a program imports them from
 there instead of writing the function signatures.
 

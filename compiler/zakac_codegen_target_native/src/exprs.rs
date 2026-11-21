@@ -348,7 +348,7 @@ impl<M: Module> FnGen<'_, '_, M>
             {
                 let t = self.temp(e.kind);
                 self.host_into(t, *func, args, e.kind);
-                t
+                tern!(is_blob(e.kind), t, self.load(self.s.clif_of(e.kind), t))
             }
             ExprNode::Foreign { func, args } =>
             {
@@ -948,7 +948,6 @@ impl<M: Module> FnGen<'_, '_, M>
     {
         let ptr = self.s.ptr;
         let v: Vec<Value> = args.iter().map(|a| self.expr(a)).collect();
-        let r = self.descr(ret);
         let stream = |g: &mut Self, i: usize| {
             let k = args[i].kind.pointee().unwrap_or(args[i].kind);
             g.descr(k)
@@ -969,8 +968,26 @@ impl<M: Module> FnGen<'_, '_, M>
             HostFn::PathKind => ("zk_host_path_kind", vec![v[0]]),
             HostFn::Rename => ("zk_host_rename", vec![v[0], v[1]]),
             HostFn::ReadEnv => ("zk_host_read_env", vec![v[0]]),
+            HostFn::MonotonicMs => ("zk_host_monotonic_ms", vec![]),
+            HostFn::UnixMs => ("zk_host_unix_ms", vec![]),
+            HostFn::FormatUtc => ("zk_host_format_utc", vec![v[0]]),
+            _ =>
+            {
+                let op = func as u32;
+                assert!(HostFn::math_at(op).is_some(), "no lowering for {func:?}");
+                let op = self.b.ins().iconst(types::I32, i64::from(op));
+                let last = *v.last().expect("a math argument");
+                self.rt(
+                    "zk_host_math",
+                    &[ptr, types::I32, ptr, ptr],
+                    &[],
+                    &[slot, op, v[0], last],
+                );
+                return;
+            }
         };
-        call.splice(0..0, [slot, r]);
+        do_if!(func.def().err.is_some(), call.insert(0, self.descr(ret)));
+        call.insert(0, slot);
         let params = vec![ptr; call.len()];
         self.rt(name, &params, &[], &call);
     }

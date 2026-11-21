@@ -94,7 +94,6 @@ use crate::generic::Wanted;
 use crate::generic_struct::leftovers;
 use crate::generic_struct::name_instances;
 use crate::host;
-use crate::host::IO_ERROR;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::op_calls::OpCalls;
@@ -1150,8 +1149,7 @@ impl Checker
         ret_if!(n.lib.is_some(), self.check_c_fn(n, params, ret));
         // The host serves no function that takes other values.
         ret_if!(!n.variadic && host::find(&n.name.name, &params, ret).is_some());
-        let diag =
-            rd::unknown_host_fn(n.name.span, &n.name.name, &host::listing(), IO_ERROR);
+        let diag = rd::unknown_host_fn(n.name.span, &n.name.name, &host::listing());
         self.report(diag);
     }
 
