@@ -226,10 +226,35 @@ impl Lowerer<'_>
                 let shape = self.kind_of(&f.base).object_struct();
                 shape.and_then(|s| s.field(&f.field.name)).map(|(_, k)| k)
             }
-            ast::Expr::Name(n) => Some(self.slot_kind(self.lookup(&n.name))),
+            ast::Expr::Name(n) =>
+            {
+                let place = self.lookup(&n.name);
+                return self.reaches_atomic(place);
+            }
             _ => None,
         };
         held.and_then(DataKind::as_task).is_some_and(|t| t.atomic)
+    }
+
+    /// Whether a slot holds an atomic number, or the address of one from
+    /// outside a round of a parallel loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `place` - The slot.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(super) fn reaches_atomic(&mut self, place: Place) -> bool
+    {
+        let held = self.reached_kind(place).as_task().is_some_and(|t| t.atomic);
+        let Place::Local(n) = place
+        else
+        {
+            return held;
+        };
+        held || self.frame.as_ref().is_some_and(|f| f.atomics.contains(&n))
     }
 
     /// Whether a value is a channel.
@@ -420,7 +445,11 @@ impl Lowerer<'_>
             self.owned(list, list_kind),
             self.through(list, list_kind)
         );
-        let src = self.spill(source);
+        // A counted list holds its cells in place, and the rounds of a native
+        // build read a plain list, so the map reads a plain list made of it.
+        let cell = list_kind.cell_kind().filter(|_| list_kind.is_list());
+        let list_kind = cell.map_or(list_kind, DataKind::seq_of);
+        let src = self.spill(coerce_lowered(source, list_kind, self.platform));
         let res = self.spill(node_expr(kind, ExprNode::BlankList, span));
         let (ExprNode::Read(each), ExprNode::Read(out)) = (src.node, res.node)
         else

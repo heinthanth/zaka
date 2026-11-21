@@ -90,8 +90,7 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .long("target-bits")
         .value_name("BITS")
         .help(t!("ir.platform_bits"))
-        .value_parser(PLATFORM_WIDTHS.to_vec())
-        .default_value("64");
+        .value_parser(PLATFORM_WIDTHS.to_vec());
     let fold = Arg::new(FOLD_ARG)
         .long("fold")
         .value_name("LIST")

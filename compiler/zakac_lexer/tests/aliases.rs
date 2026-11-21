@@ -8,7 +8,12 @@ use zakac_lexer::aliases::WRITTEN;
 use zakac_lexer::reserved::RESERVED;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::token::Kw;
+use zakac_lexer::token::Punct;
+use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
+
+use crate::common::kinds;
+use crate::common::lexemes;
 
 /// The written spellings the aliases add, one line each: the spelling, the
 /// first spelling of its word, and the reserved word.
@@ -81,4 +86,29 @@ fn spoken_parts_of_several_vannas_read_as_their_word()
     // `မဟုတ်လျှင်` is "if not", `၏` alone is "of", and `အောင်` is no spoken
     // form of each `ရန်`.
     do_for!(w in ["မဟုတ်လျှင်", "၏", "ပြောင်းလဲအောင်"], assert_eq!(lookup(w), None, "{w}"));
+}
+
+#[test]
+fn formal_ends_lex_whole_in_a_file()
+{
+    // The segmenter makes `၏` a word of its own, so these go through the word
+    // builder and the lexer, not the table alone.
+    let formal = WRITTEN.iter().filter(|w| w.text.ends_with('၏'));
+    for w in formal
+    {
+        let text = format!("ကျော် {}။", w.text);
+        assert_eq!(lexemes(&text)[1], w.text, "{text}");
+        assert_eq!(kinds(&text)[1], TokenKind::Kw(w.kw), "{text}");
+    }
+    let glued = lexemes("ကျော် သည် ကိန်းပြည့်ဖြစ်၏။");
+    assert_eq!(glued[2..], ["ကိန်းပြည့်", "ဖြစ်၏", "။"]);
+}
+
+#[test]
+fn the_mark_of_stands_alone_in_a_file()
+{
+    let ei = TokenKind::Punct(Punct::Ei);
+    let texts = ["ကျော်၏ အသက်", "ကျော် ၏ အသက်", "က နှင့် ခ ၏ ပေါင်းလဒ်", "စ ၏ ဖြစ်"];
+    do_for!(t in texts, assert!(kinds(t).contains(&ei), "{t}"));
+    assert_eq!(lexemes("ကျော်၏ အသက်"), ["ကျော်", "၏", "အသက်"]);
 }

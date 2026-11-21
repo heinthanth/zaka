@@ -256,7 +256,10 @@ fn atomic_adds_of_two_threads_lose_nothing()
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n");
+    assert_eq!(
+        run.stdout,
+        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n"
+    );
 }
 
 /// A parallel map runs its rounds on threads and gives its results in the
@@ -273,7 +276,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
+    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n၃၉၆၉\n[၂၅၊ ၃၆]\n");
 }
 
 /// The ring collector runs while threads run: it halts the OS threads at safe

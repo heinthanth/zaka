@@ -34,7 +34,7 @@ en = "List the heap blocks left unfreed when the program ends."
 en = "Run the program as native code, made with Cranelift in this process, and report a program it cannot make. With neither --jit nor --vm, a source file runs as native code when it can, and on the VM otherwise."
 
 [vm.vm]
-en = "Run the program on the VM, as an artifact, standard input and the flags of the VM alone (--max-steps, --max-stack, --frames, --leaks, --results, --scratch) do; --jit wins over it."
+en = "Run the program on the VM, as an artifact, standard input and the flags of the VM alone (--max-steps, --max-stack, --frames, --leaks, --shuffle-thread-order, --results, --scratch) do; --jit wins over it."
 
 [vm.args]
 en = "The arguments for the start block of the program, after \"--\"."

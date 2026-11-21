@@ -45,6 +45,21 @@ fn a_struct_literal_pairs_each_field_with_its_value()
 }
 
 #[test]
+fn the_initial_value_stands_in_each_pair()
+{
+    let first = "အသက် အနေဖြင့် ကနဦးတန်ဖိုး နှင့် အတန်း အနေဖြင့် ၁ ရှိသော လူ တစ်ခု";
+    let last = "အတန်း အနေဖြင့် ၁ နှင့် အသက် အနေဖြင့် ကနဦးတန်ဖိုး ရှိသော လူ တစ်ခု";
+    for lit in [first, last]
+    {
+        assert!(shown(lit).starts_with("(print (struct လူ"), "{lit}");
+        let set = format!("{DECL}ကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်ပါစေ။\nက ကို {lit} ဟု ထားမည်။");
+        assert_eq!(codes(&set), [], "{set}");
+        let decl = format!("{DECL}ကိန်းရှင် က သည် လူ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် {lit} ဖြစ်ပါစေ။");
+        assert_eq!(codes(&decl), [], "{decl}");
+    }
+}
+
+#[test]
 fn the_count_is_one_word_or_two()
 {
     let joined = ("လူ".to_string(), "ယောက်".to_string());

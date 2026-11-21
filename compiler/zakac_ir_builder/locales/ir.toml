@@ -7,7 +7,7 @@ en = "Lower a checked program to the IR and fold its constants."
 en = "source text changed after re-ingest"
 
 [ir.platform_bits]
-en = "Bit width of the platform-sized integer kinds."
+en = "Bit width of the platform-sized integer kinds (default: 32 for a wasm32 CPU, 64 for the others)."
 
 [ir.fold]
 en = "Foldings to run: all, none, or a comma list of exprs, consts and branches. Errors in constant operations are reported whatever this holds."

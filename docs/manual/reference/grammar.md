@@ -48,7 +48,8 @@ leave that work out:
 - **Spellings.** The rules write one spelling of most reserved words. The lexer has a
   table of second spellings for parts of reserved words, and a reserved word written with
   a second spelling of a part is the same token: the verb ending `၍` can be `ပြီး` or
-  `ကာ` (`လက်ခံကာ`, `ဖြစ်ပြီး`), `သော` can be `သည့်`, and `တွင်` can be `၌`. The four
+  `ကာ` (`လက်ခံကာ`, `ဖြစ်ပြီး`), `သော` can be `သည့်`, `တွင်` can be `၌`, and the `သည်`
+  that ends a verb can be `၏` (`ဖြစ်၏`, `ပါဝင်၏`), while `၏` on its own is still "of". The four
   spellings of `done` are one row of that table too. The spoken forms of the same table count
   once a program allows them ([Spoken Burmese](../language/spoken.md)), and
   [Second spellings](../language/words.md#second-spellings) lists the parts.

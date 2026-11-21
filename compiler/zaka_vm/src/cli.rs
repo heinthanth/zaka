@@ -16,6 +16,7 @@ use zakac_cli_common::clap::crate_name;
 use zakac_cli_common::clap::parser::ValueSource;
 use zakac_cli_common::clap::value_parser;
 use zakac_cli_common::clap_utils::CommandInfo;
+use zakac_cli_common::clap_utils::format_command_error;
 use zakac_cli_common::clap_utils::report_command_error;
 use zakac_cli_common::command::Command;
 use zakac_cli_common::command::CommandIO;
@@ -371,7 +372,9 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ExitCode::Failure
 }
 
-/// Report each trap that ended a thread while the program went on.
+/// Report each trap that ended a thread while the program went on, as
+/// `<name>: thread <n> stopped: <reason>`: the program did not stop, so the
+/// line has no "the program stopped" head, as in native code.
 ///
 /// # Arguments
 ///
@@ -388,7 +391,7 @@ fn write_thread_traps(
     {
         let head = t!("vm.trap.thread_stopped", thread = thread);
         let msg = format!("{head}: {}", trap.report(source_map, backtrace()));
-        let _ = report_command_error(io, cmd_info, Error::RuntimeTrap { msg });
+        let _ = writeln!(io.stderr, "{}", format_command_error(cmd_info, msg));
     }
 }
 

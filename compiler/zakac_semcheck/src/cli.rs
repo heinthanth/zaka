@@ -76,8 +76,7 @@ fn configure_semcheck_command(cmd: clap::Command) -> clap::Command
         .long("target-bits")
         .value_name("BITS")
         .help(t!("semcheck.platform_bits"))
-        .value_parser(PLATFORM_WIDTHS.to_vec())
-        .default_value("64");
+        .value_parser(PLATFORM_WIDTHS.to_vec());
     let cmd = attach_lint_args(attach_common_io_args(cmd).arg(target_bits));
     let cmd = attach_grant_args(cmd, Granted::Comptime);
     attach_target_os_args(cmd).about(t!("semcheck.about"))
@@ -173,8 +172,9 @@ fn target_arch(matches: &ArgMatches) -> TargetArch
     word(TARGET_ARCH_ARG).and_then(|w| w.parse().ok()).unwrap_or_else(host_arch)
 }
 
-/// The bit count of the platform-sized kinds, from `--target-bits`: 32 for a
-/// WebAssembly CPU and 64 for the others, unless given.
+/// The bit count of the platform-sized kinds, from `--target-bits` or a config
+/// file: 32 for a WebAssembly CPU and 64 for the others, unless given. The flag
+/// has no default of its own, so that its help names no fixed width.
 ///
 /// # Arguments
 ///
@@ -187,8 +187,7 @@ pub fn platform_bits(matches: &ArgMatches) -> u16
 {
     let word = matches.try_get_one::<String>(TARGET_BITS_ARG).ok().flatten();
     let usual = tern!(target_arch(matches) == TargetArch::Wasm32, 32, 64);
-    let given = word.filter(|_| given(matches, TARGET_BITS_ARG));
-    given.and_then(|b| b.parse().ok()).unwrap_or(usual)
+    word.and_then(|b| b.parse().ok()).unwrap_or(usual)
 }
 
 /// The check options from the command line.

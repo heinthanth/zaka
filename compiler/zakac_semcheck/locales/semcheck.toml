@@ -4,7 +4,7 @@ _version = 2
 en = "Check names, scopes and data kinds of a parsed program."
 
 [semcheck.platform_bits]
-en = "Bit width of the platform-sized integer kinds."
+en = "Bit width of the platform-sized integer kinds (default: 32 for a wasm32 CPU, 64 for the others)."
 
 [semcheck.target_os]
 en = "The OS the program is built for; the host's when not given."

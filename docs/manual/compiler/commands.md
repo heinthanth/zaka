@@ -349,7 +349,7 @@ another target, stops the build with an error and exit code 3:
 
 ```console
 $ zakac build --backend c --results duplicate age.zaka
-build: --results does not go with --target c
+build: --results does not go with --backend c
 ```
 
 | Target | Makes | `--emit` | Output with no `-o` |
@@ -391,7 +391,7 @@ zakac run [flags] [INPUT] [-- ARGS...]
 | `--max-heap` | `<OCTETS>` | `268435456` | the most live heap octets before an allocation fails |
 | `--max-stack` | `<OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
 | `--frames` | `checked` or `packed` | `checked` | `checked` gives each variable a separate block, and `packed` puts the locals of a call next to each other, as C does |
-| `--trap` | `unwind` or `abort` | `unwind` | what a trap in a [thread](../language/threads.md#a-trap-in-a-thread) does: `unwind` ends that thread alone, and a wait for it traps in turn, while `abort` stops the whole program; at present the VM alone reads it, so a Cranelift run unwinds the thread under `abort` too (see [The VM or Cranelift](#the-vm-or-cranelift)) |
+| `--trap` | `unwind` or `abort` | `unwind` | what a trap in a [thread](../language/threads.md#a-trap-in-a-thread) does: `unwind` ends that thread alone, and a wait for it traps in turn, while `abort` stops the whole program, on the VM and in a Cranelift run alike |
 | `--shuffle-thread-order` | `[=<SEED>]` | off | shuffle the [turns of the threads](../language/threads.md#turns-on-the-vm) on the VM; see below |
 | `--leaks` | | off | list the heap blocks left unfreed when the program ends |
 | `--jit` | | off | run the program as native code through Cranelift, and report a program it cannot build as an error; see [The VM or Cranelift](#the-vm-or-cranelift) |
@@ -470,8 +470,8 @@ With neither `--jit` nor `--vm`, `zakac run` runs a source file as native code w
 can, and on the VM otherwise. The native run lowers the program as `build --backend
 native` does, with the output fact `"native"`, and runs it inside the `zakac` process with
 the checks of the `default` level, as a native executable runs. `--max-depth` and
-`--max-heap` set its limits, as for the VM, the rights come from the flags of [run](#run), and the
-arguments come after `--`.
+`--max-heap` set its limits and `--trap` what a trap in a thread does, as for the VM, the
+rights come from the flags of [run](#run), and the arguments come after `--`.
 
 The VM runs the program instead when one of these is true:
 
@@ -490,18 +490,15 @@ the end of a block in unsafe code does what it does in C, while the VM checks ea
 and stops the program at the bad one. To see the VM's checks on such a program, we give
 `--vm`. [Checks in the VM and in native code](../concepts/checked.md) sorts each mistake.
 
-The Cranelift run also ignores `--trap` at present: a trap in a thread ends that thread
-alone even under `--trap abort`, and the rest of the program goes on. To stop the whole
-program at the first trap of a thread, we give `--vm --trap abort`, or build an executable
-with `zakac build --backend c --trap abort`. Here `trap.zaka` starts a thread that divides
-with zero as divisor, counts to 20000, then prints `ပြီး`:
+`--trap abort` stops the whole program at the first trap of a thread in both runs, with
+the reason of that thread. Here `trap.zaka` starts a thread that divides with zero as
+divisor, counts to 20000, then prints `ပြီး`:
 
 ```console
 $ zakac run --vm --trap abort trap.zaka
 zaka_vm: the program stopped: integer division or remainder with zero as divisor (in စား, at trap.zaka:3:1)
 $ zakac run --trap abort trap.zaka
-trap.zaka: thread 1 stopped: integer division or remainder with zero as divisor (in စား, at trap.zaka:3:1)
-ပြီး
+trap.zaka: the program stopped: integer division or remainder with zero as divisor (in စား, at trap.zaka:3:1)
 ```
 
 `--jit` asks for Cranelift alone: a program it cannot build is an error, `--max-heap` caps

@@ -514,6 +514,22 @@ The rounds run at the same time on several threads, so the rounds follow the rul
 | Each function that a round reaches neither reads nor writes a variable at the top of a file. | ZK0726 |
 | A round cannot stop the loop with `ကွင်းဆက် ကို ရပ်မည်။`, or return from the function around the loop. `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` ends just the round. | ZK0729 |
 
+An add to an [atomic number](#atomic-numbers) from outside the loop, with `ပေါင်းထည့်မည်` or
+`နုတ်ယူမည်`, is no write in the sense of ZK0728: each change is one step that no other round
+can split, so the rounds can count into one number.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပေါင်း သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၁၀၀ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ပေါင်း ထဲသို့ i ကို ပေါင်းထည့်မည်။
+ပေါင်း ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၅၀၅၀
+```
+
 ### Where the rounds run
 
 A native program runs the rounds on OS threads, one for each core of the host, when the
@@ -528,7 +544,7 @@ on the thread of the loop, and the VM also runs them in order.
 - In a native program, the lines that the rounds print come in no fixed order.
 - A trap in a round acts as a trap in a thread does: the rounds of its thread end, the
   other threads finish, and the loop then stops with `thread trapped`. Under
-  `--trap abort`, a program that `zakac build` makes stops at once ([A trap in a
+  `--trap abort`, a native program stops at once ([A trap in a
   thread](#a-trap-in-a-thread)). Rounds that run in order stop at the trap.
 
 ```zaka
@@ -598,9 +614,8 @@ Where a thread runs depends on how the program runs:
   the program with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a
   trap in a thread stop the whole program.
 - **The JIT** of `zakac run`, which runs a source file as native code when it can, runs
-  threads, parallel loops and maps on OS threads, as a native program does. The JIT does
-  not follow `--trap abort`: a trap in a thread still ends that thread alone, as under
-  `unwind`, so we use `zakac run --vm` or a build to test `abort`.
+  threads, parallel loops and maps on OS threads, as a native program does, and
+  `zakac run --trap abort` makes a trap in a thread stop the whole program there too.
 - While a thread runs, a native program collects no rings (objects that reach each other in
   a loop): the collector changes the reference counts with plain operations, so it waits
   until each thread has ended. The buffer still fills, and the end of the program
@@ -637,7 +652,7 @@ chooses what a trap in a thread stops:
 | `--trap` | A trap in a thread |
 | --- | --- |
 | `unwind` (the default) | ends that thread alone: the reason goes to standard error, and the rest of the program goes on |
-| `abort` | stops the whole program, on the VM (`zakac run --vm`) and in a program that `zakac build` makes; the JIT of `zakac run` ignores it and ends the thread alone |
+| `abort` | stops the whole program, on the VM, in the JIT of `zakac run` and in a program that `zakac build` makes |
 
 - Under `unwind`, a wait for a thread that stopped at a trap stops the waiter in turn,
   with the trap `thread trapped`.

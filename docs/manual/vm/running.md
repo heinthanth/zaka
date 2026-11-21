@@ -38,9 +38,8 @@ A plain `zakac run` of a source file goes to the VM in these cases too:
   `--target-arch` or `--target-abi` names another host;
 - the program has a construct the native target does not build at present.
 
-The native run keeps `--max-depth`, `--max-heap`, the rights and the arguments after
-`--`. It does not keep `--trap`: a trap in a thread ends just that thread, so we
-add `--vm` to get `--trap abort`. [Commands](../compiler/commands.md#run) lists each flag,
+The native run keeps `--max-depth`, `--max-heap`, `--trap`, the rights and the
+arguments after `--`. [Commands](../compiler/commands.md#run) lists each flag,
 and [Checks in the VM and in native code](../concepts/checked.md) tells which checks
 native code keeps. We can force the VM with `--vm`:
 

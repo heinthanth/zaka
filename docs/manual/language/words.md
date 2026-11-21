@@ -452,6 +452,7 @@ of them is the same word as one written with another.
 | `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး`, `ပြီးပါပြီ` | the block closer | |
 | `မင်မိုရီ`, `မှတ်ဉာဏ်` | "storage" | |
 | `တွင်`, `၌` | "at", "in"; `၌` is the written form | `ထဲ၌`, `ဤနေရာ၌` |
+| `သည်`, `၏` | the end of a verb that ends a sentence; `၏` is the written form. The word `သည်` on its own keeps one spelling, since `၏` on its own is "of" | `ဖြစ်၏`, `ပါဝင်၏`, `တို့ပါဝင်၏` |
 
 The spelling that a word uses changes nothing, but its place does. `ဖြစ်၍` (or `ဖြစ်ပြီး`,
 `ဖြစ်ကာ`) after the data kind of a declaration starts its value when `တန်ဖိုးသည်` follows,

@@ -1,16 +1,16 @@
 _version = 2
 
 [build.about]
-en = "Build a program for a target: the ops of the Zaka VM (vm), or a native executable through C (c)."
+en = "Build a program for a target: the ops of the Zaka VM (vm), or a native executable through C (c) or through Cranelift (native)."
 
 [build.input]
 en = "Input file, or `-` for stdin (default: stdin)"
 
 [build.output]
-en = "Output file, or `-` for stdout: the ops (vm) or the executable (c) (default: beside the input; the asm listing goes to stdout)"
+en = "Output file, or `-` for stdout: the ops (vm) or the executable (c, native) (default: beside the input; the asm listing goes to stdout)"
 
 [build.target]
 en = "The backend to build with: the Zaka VM (vm), a native executable through C (c), or a native executable through Cranelift (native)."
 
 [build.emit]
-en = "What to write. vm: the ops (zkc), the ops as text (zkct), or the asm listing (asm), default zkc. c: an executable (bin), the C files alone (c) or a C lib (lib), default bin."
+en = "What to write. vm: the ops (zkc), the ops as text (zkct), or the asm listing (asm), default zkc. c: an executable (bin), the C files alone (c) or a C lib (lib), default bin. native: an executable (bin), an object file (obj), the Cranelift IR as text (clif) or a C lib (lib), default bin."

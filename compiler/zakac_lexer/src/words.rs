@@ -2,6 +2,7 @@ use bon::Builder;
 use zakac_burmese_segmenter::segmenter::PreLexicalToken;
 use zakac_burmese_segmenter::segmenter::PreLexicalTokenKind;
 use zakac_rust_sugars::extract;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
@@ -9,6 +10,8 @@ use zakac_span::span::Span;
 
 use crate::ident::is_self_delimiting;
 use crate::ident::is_whitespace;
+use crate::reserved::lookup;
+use crate::reserved::split_reserved;
 
 /// Script class of a word.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,7 +26,8 @@ pub enum WordKind
 }
 
 /// A maximal run of pre-tokens with no whitespace, no self-delimiting
-/// character and no change of script inside.
+/// character and no change of script inside; the `၏` that ends a reserved
+/// word, as in `ဖြစ်၏`, remains in the word.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Builder)]
 pub struct Word<'s>
 {
@@ -117,6 +121,7 @@ impl<'s> Grouper<'s>
         extract!(PreClass::Word(kind) = class);
         if let WordKind::Delim(_) = kind
         {
+            ret_if!(self.ends_reserved(idx), self.flush(idx + 1));
             self.flush(idx);
             self.push(idx, idx + 1, kind);
             return;
@@ -124,6 +129,29 @@ impl<'s> Grouper<'s>
         ret_if!(matches!(self.run, Some((_, run_kind)) if run_kind == kind));
         self.flush(idx);
         self.run = Some((idx, kind));
+    }
+
+    /// Whether the delimiter `pre[idx]` is the `၏` that ends a reserved word
+    /// with the Burmese word being built, as in `ဖြစ်၏`. A `၏` after each
+    /// other word is "of", a word of its own: `ကျော်၏`.
+    ///
+    /// # Arguments
+    ///
+    /// * `idx` - Index of the delimiter.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the word with the `၏` reads as reserved words.
+    fn ends_reserved(&self, idx: usize) -> bool
+    {
+        let Some((start, WordKind::Burmese)) = self.run
+        else
+        {
+            return false;
+        };
+        ret_false!(self.pre[idx].lexeme != "၏");
+        let word = self.word(start, idx + 1, WordKind::Burmese);
+        lookup(word.text).is_some() || split_reserved(&word).is_some()
     }
 
     /// End the word being built, if one is.
@@ -150,15 +178,31 @@ impl<'s> Grouper<'s>
     /// * `kind` - Script class of the word.
     fn push(&mut self, start: usize, end: usize, kind: WordKind)
     {
+        let word = self.word(start, end, kind);
+        self.words.push(word);
+        self.joined = true;
+    }
+
+    /// The word made of `pre[start..end]`, joined as the next word is.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Index of the first pre-token.
+    /// * `end` - Index one past the last pre-token.
+    /// * `kind` - Script class of the word.
+    ///
+    /// # Returns
+    ///
+    /// The word.
+    fn word(&self, start: usize, end: usize, kind: WordKind) -> Word<'s>
+    {
         let span = Span::new(self.pre[start].span.lo, self.pre[end - 1].span.hi);
         let lo = (span.lo - self.base) as usize;
         let hi = (span.hi - self.base) as usize;
         let pre = &self.pre[start..end];
-        let joined = self.joined;
         let word =
             Word::builder().pre(pre).text(&self.text[lo..hi]).span(span).kind(kind);
-        self.words.push(word.joined(joined).build());
-        self.joined = true;
+        word.joined(self.joined).build()
     }
 }
 

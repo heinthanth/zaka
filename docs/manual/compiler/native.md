@@ -393,7 +393,7 @@ lowering:
 | rights | the flags of the build, written into the executable | the flags of the run, as the VM uses them |
 | argument 0 | the path of the executable | the input as written, as on the VM |
 | limits | `--checks`, `--max-depth`, `--max-heap` | the `default` checks, `--max-depth`, `--max-heap` |
-| `--trap` | `unwind` or `abort` | ignored at present: a trap in a thread unwinds in each case |
+| `--trap` | `unwind` or `abort` | `unwind` or `abort`, as on the VM |
 
 Both give the output fact `"native"` to a [compile-time
 conditional](../language/compile-time.md), and both link the runtime that the C target

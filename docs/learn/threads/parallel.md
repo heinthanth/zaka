@@ -97,6 +97,21 @@ adding to a running sum, is the error ZK0728:
 error[ZK0728]: a round of a parallel loop writes "စု", a variable from outside the loop, and each round writes the cell of its own number alone
 ```
 
+To keep a running sum, we use an [atomic number](sharing.md#atomic-numbers) in its place.
+Each round adds to it with `ပေါင်းထည့်မည်`, in one step that no other round can split:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စု သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၁၀၀ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ စု ထဲသို့ i ကို ပေါင်းထည့်မည်။
+စု ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၅၀၅၀
+```
+
 A round also cannot stop the whole loop with `ကွင်းဆက် ကို ရပ်မည်။` or return from its
 function, because the other rounds are running at the same time (ZK0729). To end just its
 own round, a round can use `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။`:
@@ -159,8 +174,7 @@ rounds end fast takes more of them. A count of 1 runs the rounds in order.
   returns a new list of the results in the order of the cells.
 - `အပြိုင်` before `ရေတွက်၍` or `ယူ၍` lets the rounds of a loop run at the same time.
 - Each round can write the variables it declares and the cell with the number of the
-  round, and
-  nothing else.
+  round, and it can add to an atomic number from outside the loop.
 - `အပြိုင်လုပ်ငန်း <count> ခုခွဲ၍` chooses the count of threads.
 - The VM runs the rounds in order, while a native program spreads them over the cores.
 

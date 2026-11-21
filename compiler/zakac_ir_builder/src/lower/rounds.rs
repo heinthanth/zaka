@@ -520,12 +520,14 @@ impl Lowerer<'_>
         let index = self.top_count + self.lifted.len() as u32;
         self.lifted.push(None);
         let boxes: Vec<bool> = free.iter().map(|(_, p)| self.is_box(*p)).collect();
+        let atomics: Vec<bool> =
+            free.iter().map(|(_, p)| self.reaches_atomic(*p)).collect();
         let heads = args.len() - free.len();
         let saved = self.set_aside();
         let depth = self.scopes.len();
         let boxed = nested::boxed_in_stmts(&block.stmts);
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret: None, fault: None, depth, edits: HashSet::new(), boxes: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: false });
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret: None, fault: None, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: false });
         let mut stmts = Vec::new();
         self.scoped(|l| {
             let number =
@@ -539,8 +541,9 @@ impl Lowerer<'_>
                     )
                 })
                 .collect();
-            for ((name, _), (arg, boxed)) in
-                free.iter().zip(args[heads.len()..].iter().zip(&boxes))
+            let marks = boxes.iter().zip(&atomics);
+            for ((name, _), (arg, (boxed, atomic))) in
+                free.iter().zip(args[heads.len()..].iter().zip(marks))
             {
                 let ident = ast::Ident::builder().name(*name).span(span).build();
                 let place = l.declare(&ident, arg.kind, Access::Var);
@@ -555,6 +558,9 @@ impl Lowerer<'_>
                 });
                 do_if!(!*boxed, {
                     frame.edits.insert(n);
+                });
+                do_if!(*atomic, {
+                    frame.atomics.insert(n);
                 });
             }
             stmts = l.round_stmts(&head, number, &heads, block, span);

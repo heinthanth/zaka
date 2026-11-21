@@ -542,6 +542,9 @@ struct Frame
     /// The slots that hold the box of a variable a closure shares: each use
     /// of the name reads or writes the cell of the box.
     boxes: HashSet<u32>,
+    /// The slots of a round of a parallel loop that hold the address of an
+    /// atomic number from outside: the kind of the address forgets the mark.
+    atomics: HashSet<u32>,
     /// The names of the locals that live in a box: a function declared
     /// inside this one names them.
     boxed: HashSet<Name>,
@@ -2277,7 +2280,7 @@ impl Lowerer<'_>
         #[rustfmt::skip]
         let boxed = nested::boxed_in(f);
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new(), boxes: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: f.owned_ret });
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: f.owned_ret });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {

@@ -492,7 +492,7 @@ impl Parser<'_>
 
     /// Parse a trait as a constraint or a trait block names it: its name,
     /// with the kinds after the first in the word form before it
-    /// (`<kinds> ကို သုံး၍ <name>`) or in the sign form after it
+    /// (`<kinds> ကို အစားထိုးအသုံးပြုသည့် <name>`) or in the sign form after it
     /// (`<name><<kinds>>`).
     ///
     /// # Returns

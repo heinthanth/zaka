@@ -431,7 +431,10 @@ fn threads_add_to_an_atomic_number_with_no_lock()
         "/../zakac_codegen_target_c/tests/inputs/atomics.zaka"
     ))
     .unwrap();
-    assert_eq!(output(&text), "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n");
+    assert_eq!(
+        output(&text),
+        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n"
+    );
 }
 
 #[test]
@@ -463,7 +466,10 @@ fn a_parallel_map_gives_a_list_in_the_order_of_the_cells()
         &HostData::default(),
     );
     assert!(result.is_ok(), "{result:?}");
-    assert_eq!(String::from_utf8(out).unwrap(), "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n၃၉၆၉\n[၂၅၊ ၃၆]\n"
+    );
     assert_eq!(machine.leaks(), Vec::new());
 }
 

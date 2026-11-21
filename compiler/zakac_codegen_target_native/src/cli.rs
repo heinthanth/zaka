@@ -131,9 +131,12 @@ pub fn run_jit(
         .copied()
         .filter(|_| explicit("max_heap") || !asked);
     let release = matches.try_get_one::<bool>("release").ok().flatten() == Some(&true);
+    let abort = matches.try_get_one::<String>("trap").ok().flatten();
+    let abort = abort.is_some_and(|t| t == "abort");
     #[rustfmt::skip]
     let options = TargetCOptions::builder().overflow(mem.overflow).platform_bits(semcheck.platform_bits)
-        .max_depth(max_depth).max_heap(max_heap.unwrap_or(0)).debug_info(!release).build();
+        .max_depth(max_depth).max_heap(max_heap.unwrap_or(0)).debug_info(!release)
+        .trap_abort(abort).build();
     let grants = zaka_host::Grants::default();
     let lowered = crate::jit::lower(program, source_map.files(), options, &grants);
     let lowered = match lowered

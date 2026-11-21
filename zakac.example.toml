@@ -45,7 +45,8 @@
 # arch = "x86_64"          # --target-arch <ARCH>: the CPU it reads; left out,
                            # the host's
 # bits = 64                # --target-bits <BITS>: bits of the platform-sized
-                           # integer kinds: 8, 16, 32 or 64
+                           # integer kinds: 8, 16, 32 or 64; left out, 32 for
+                           # wasm32 and 64 for the others
 
 # ------------------------------------------------------------- the comptime calls
 # Commands: semcheck, irgen, borrowck, build, run.

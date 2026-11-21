@@ -37,7 +37,7 @@ en = "the program stopped: %{e}"
 en = "no C compiler found: set CC, pass --cc, set cc in a config file, or put gcc, clang or zig on the PATH (on Windows, llvm-mingw, w64devkit or Zig need no Visual Studio)"
 
 [errors.flag_not_for_target]
-en = "%{flag} does not go with --target %{target}"
+en = "%{flag} does not go with --backend %{target}"
 
 [errors.built_for_other_host]
 en = "this program was built for %{built}, and this host is %{host}: build it again with the --target-os, --target-arch and --target-abi of this host"

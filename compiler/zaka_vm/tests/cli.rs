@@ -103,6 +103,22 @@ fn traps_report_on_stderr_and_fail()
     assert!(stderr.contains("zero as divisor"), "{stderr}");
 }
 
+/// A trap that ends a thread alone writes `zaka_vm: thread 1 stopped: …`, as
+/// native code writes it, with no "the program stopped" head: the program
+/// goes on.
+#[test]
+fn a_thread_that_stops_writes_its_own_line()
+{
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let path = root.join("../zakac_codegen_target_c/tests/inputs/thread_trap.zaka");
+    let (code, stdout, stderr) = run_vm(&[path.to_str().unwrap()], "");
+    assert_eq!(code, ExitCode::Failure, "{stderr}");
+    assert_eq!(stdout, "၅\n");
+    let head = "zaka_vm: thread 1 stopped: integer division";
+    assert!(stderr.lines().any(|l| l.starts_with(head)), "{stderr}");
+    assert!(!stderr.contains("the program stopped"), "{stderr}");
+}
+
 #[test]
 fn limits_come_from_flags()
 {

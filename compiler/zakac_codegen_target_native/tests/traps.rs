@@ -147,6 +147,25 @@ fn threads_run_on_os_threads_in_an_aot_build()
     );
 }
 
+/// Through the JIT, a trap in a thread that the start block waits for stops the
+/// waiter under `--trap unwind`, and stops the whole program with the reason of
+/// the thread under `--trap abort`, as an AOT build does.
+#[test]
+fn the_jit_follows_the_trap_mode()
+{
+    let path = c_inputs().join("thread_trap_waited.zaka");
+    let unwind = run_jit(&path, &[]);
+    assert!(unwind.stderr.contains("thread 1 stopped: integer"), "{}", unwind.stderr);
+    let waited = "the program stopped: the thread 1 this waits for stopped at a trap\n";
+    assert_eq!(stop_line(&unwind.stderr), waited);
+    let abort = run_jit(&path, &["--trap", "abort"]);
+    assert_eq!(abort.status, Some(1), "{}", abort.stderr);
+    assert!(!abort.stderr.contains("thread 1 stopped"), "{}", abort.stderr);
+    let line =
+        "the program stopped: integer division or remainder with zero as divisor\n";
+    assert_eq!(stop_line(&abort.stderr), line, "{}", abort.stderr);
+}
+
 /// Two threads change one shared object inside lock blocks in an AOT build, and
 /// lose no change.
 #[test]
@@ -186,7 +205,10 @@ fn atomic_adds_of_two_threads_lose_nothing()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n");
+    assert_eq!(
+        run.stdout,
+        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n"
+    );
 }
 
 /// A parallel map runs its rounds on threads in an AOT build and through the
@@ -308,7 +330,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     let jit = run_jit(&path, &[]);
     assert_eq!(
         (jit.status, jit.stdout.as_str()),
-        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n"),
+        (Some(0), "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n၃၉၆၉\n[၂၅၊ ၃၆]\n"),
         "{}",
         jit.stderr
     );
@@ -319,7 +341,7 @@ fn a_parallel_map_runs_its_rounds_on_threads()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
+    assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n၃၉၆၉\n[၂၅၊ ၃၆]\n");
 }
 
 /// What `par_loop.zaka` prints.
