@@ -141,6 +141,8 @@ pub struct Threads
     /// What draws the length and the thread of each turn, when a seed shuffles
     /// them.
     rng: Option<fastrand::Rng>,
+    /// The count of picks with no seed so far, so the picks take turns.
+    picks: usize,
 }
 
 impl Default for Threads
@@ -149,7 +151,7 @@ impl Default for Threads
     {
         #[rustfmt::skip]
         let threads = Threads { list: vec![Thread::default()], pipes: Vec::new(), locks: Vec::new(),
-            now: 0, left: TURN, spare: Vec::new(), rng: None };
+            now: 0, left: TURN, spare: Vec::new(), rng: None, picks: 0 };
         threads
     }
 }
@@ -286,8 +288,9 @@ impl Threads
         Some(free[rng.usize(..free.len())])
     }
 
-    /// Pick one of a count of choices: the first, or with a seed one drawn
-    /// from it.
+    /// Pick one of a count of choices: with no seed, each pick takes the next
+    /// place in turn, so no choice starves and a run repeats; with a seed, one
+    /// drawn from it.
     ///
     /// # Arguments
     ///
@@ -298,7 +301,9 @@ impl Threads
     /// The index of the choice.
     pub(super) fn draw(&mut self, count: usize) -> usize
     {
-        self.rng.as_mut().map_or(0, |r| r.usize(..count))
+        ret_if!(let Some(r) = self.rng.as_mut(), r.usize(..count));
+        self.picks += 1;
+        (self.picks - 1) % count
     }
 
     /// The end of the time limit of the wait on several channels the running

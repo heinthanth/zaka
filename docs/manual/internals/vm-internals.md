@@ -178,8 +178,9 @@ A wait on several channels (`Op::Select`) reads its operands without popping the
 park and run again: the channels go to `Thread::selects`, the end of its time limit to
 `Thread::until` at the first park, and the thread parks with `Waits::Select`. `can_go` lets
 it run once a channel holds a value, each is closed, or the clock passed the end, and
-`first_wake` counts the end as a wake. The pick among channels that hold a value is the
-first, or one drawn from the seed of `--shuffle-thread-order` (`Threads::draw`).
+`first_wake` counts the end as a wake. The pick among channels that hold a value goes
+round in turn (`Threads::picks` counts the picks), or is drawn from the seed of
+`--shuffle-thread-order` (`Threads::draw`).
 
 ### Locks
 

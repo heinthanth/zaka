@@ -152,7 +152,7 @@ fn text_taken_in_a_loop_of_waits_leaves_no_block_held()
     let (machine, result) =
         run_and_keep(&compile(text), &mut out, &options, &HostData::default());
     assert!(result.is_ok(), "{result:?}");
-    assert_eq!(String::from_utf8(out).unwrap(), "က\nဂ\nခ\n");
+    assert_eq!(String::from_utf8(out).unwrap(), "က\nခ\nဂ\n");
     assert_eq!(machine.leaks(), Vec::new());
 }
 
@@ -192,4 +192,15 @@ fn a_loop_of_waits_ends_through_the_closed_arm()
         wait("မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် ဆက် ကို မမှန် ဟု ထားမည်။")
     );
     assert_eq!(output(&program(&lines)), "အလုပ် ၁\nအလုပ် ၂\n");
+}
+
+#[test]
+fn with_no_seed_the_channels_that_hold_a_value_take_turns()
+{
+    // Both channels hold a value at each wait, so a pick of the first arm alone
+    // would print `အလုပ်` four times.
+    let send = "အလုပ် ထဲသို့ ၁ ကို ပို့မည်။\nရပ် ထဲသို့ ၂ ကို ပို့မည်။";
+    let rounds: Vec<String> = (0..4).map(|_| format!("{send}\n{}", wait(""))).collect();
+    let out = output(&program(&rounds.join("\n")));
+    assert_eq!(out, "အလုပ် ၁\nရပ် ၂\nအလုပ် ၁\nရပ် ၂\n");
 }

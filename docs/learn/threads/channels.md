@@ -191,7 +191,7 @@ received. Put the wait in a loop to receive more than one value.
   name; another use is the error ZK0496. A receive, a loop or a close of a value that is
   not a channel is the error ZK0495.
 - **Waiting on several channels.** If several channels hold data, a native program
-  picks one at random. The VM defaults to the first matching arm in source order.
+  picks one at random. The VM takes them in turn, so a run gives the same output.
   Use `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်` to handle a wait whose
   channels are all closed with no values left. Use
   `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit to continue at

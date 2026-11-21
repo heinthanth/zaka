@@ -371,7 +371,8 @@ arm. The first statement outside these forms marks the end of the wait.
 - The wait removes the value from the channel before it runs the matching arm.
   Within that arm, `<pipe> ထဲမှ ဒေတာ` reads the received value.
 - If several channels hold data, a native program picks one of them at random. The
-  VM defaults to the first matching arm in source order. With
+  VM takes them in turn: each pick goes to the next matching arm, so no arm starves
+  and a run gives the same output each time. With
   `--shuffle-thread-order=<seed>`, the VM draws from the channels with data using
   the seed. With a fixed seed, the choices are repeatable.
 - Once all channels in the wait are closed and drained, the wait runs the closed arm,
