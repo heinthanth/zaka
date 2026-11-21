@@ -1051,6 +1051,9 @@ impl Checker
     ) -> Option<Option<DataKind>>
     {
         ret_if!(let Some(ret) = self.wait_call(callee, place, args), Some(ret));
+        let prepositions = written.prepositions;
+        let sleep = self.sleep_call(callee, place, args, prepositions);
+        ret_if!(let Some(ret) = sleep, Some(ret));
         ret_if!(let Some(ret) = self.pipe_call(callee, place, args), Some(ret));
         ret_if!(let Some(ret) = self.atomic_call(callee, place, args), Some(ret));
         let expect = self.call_expect.take();

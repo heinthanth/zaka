@@ -1,6 +1,6 @@
 ---
 title: Threads
-description: Run a function while the rest of the program goes on: start a thread, wait for its result, start a thread that returns nothing, and pass values to it.
+description: Run a function while the rest of the program goes on: start a thread, wait for its result, start a thread that returns nothing, pass values to it, and let a thread sleep.
 ---
 
 # Threads
@@ -16,6 +16,7 @@ it.
 - How threads run on the VM and in a native program.
 - How to start a thread that returns nothing.
 - Which values we can pass to a thread, and what happens when a thread stops.
+- How to let a thread sleep for a while.
 
 ## Starting a thread
 
@@ -187,6 +188,42 @@ its line. Then the wait for `က` stops the program, and the program ends with e
 A program also ends with exit code 1 when one of its threads stopped at a trap and no wait
 saw it.
 
+## Sleeping
+
+A thread can sleep for a while, and the other threads go on while it sleeps. We write the
+count of milliseconds or seconds before `မီလီစက္ကန့်` or `စက္ကန့်`, then `စောင့်မည်။`:
+
+```
+<count> မီလီစက္ကန့် စောင့်မည်။
+<count> စက္ကန့် စောင့်မည်။
+```
+
+```zaka
+အိပ် ဟူသော လုပ်ဆောင်ချက် သည် အမည် ဟူသော စာသား တစ်ခု ကို လည်းကောင်း ကြာ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြာ မီလီစက္ကန့် စောင့်မည်။
+အမည် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ကိန်းရှင် က သည် အိပ် ဟူသော လုပ်ဆောင်ချက်ကို "နှေး" နှင့် ၃၀၀ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အိပ် ဟူသော လုပ်ဆောင်ချက်ကို "မြန်" နှင့် ၂၀ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+"စ" ဟု ပြသမည်။
+က ကို စောင့်မည်။
+ခ ကို စောင့်မည်။
+```
+
+```text
+စ
+မြန်
+နှေး
+```
+
+Word for word, `ကြာ မီလီစက္ကန့် စောင့်မည်` is "for `ကြာ` milliseconds, will wait". The
+thread with the shorter sleep prints first, and the two sleeps run at the same time, so
+the program ends after about 300 milliseconds and not after the sum of the two. The
+program start block can sleep as well. On this page, the examples run with a clock of
+their own, so a sleep ends at once and the lines still come in the same order.
+
 ## Details
 
 - **The data kind of a thread.** A thread that returns nothing has the data kind
@@ -202,7 +239,9 @@ saw it.
   shuffled order, which helps to find a mistake that hangs on the order of the threads
   ([Commands](../../manual/compiler/commands.md#run)).
 - **Deadlock.** When each thread waits and none can go on, the program stops with the trap
-  `deadlock` ([When a program stops](../../manual/vm/traps.md)).
+  `deadlock` ([When a program stops](../../manual/vm/traps.md)). A sleeping thread is not
+  waiting for another thread, so a program with a sleep is no deadlock
+  ([Sleeping](../../manual/language/threads.md#sleeping)).
 
 ## Recap
 
@@ -215,6 +254,8 @@ saw it.
 - A thread gets a duplicate of each argument, and it cannot touch a variable at the top of
   a file or a plain shared object.
 - A trap in a thread ends that thread, and a wait for it stops the waiter.
+- `<count> မီလီစက္ကန့် စောင့်မည်။` and `<count> စက္ကန့် စောင့်မည်။` let a thread sleep while
+  the other threads go on.
 
 ## Hands on
 
@@ -223,5 +264,7 @@ saw it.
 - Wait for the same thread twice and read the message.
 - Build the first example with `zakac build --backend native` and run it a few times. Does
   the output change?
+- Start three threads that sleep for 3, 1 and 2 seconds and then print their names. In
+  which order do the names come, and how long does the program take?
 
 Next: [Channels](channels.md).

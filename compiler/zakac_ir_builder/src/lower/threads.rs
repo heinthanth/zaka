@@ -9,6 +9,7 @@ use zakac_semcheck::threads::ATOMIC_SUB;
 use zakac_semcheck::threads::CLOSE;
 use zakac_semcheck::threads::SEND;
 use zakac_semcheck::threads::WAIT;
+use zakac_semcheck::threads::sleep_unit;
 
 use super::*;
 use crate::ir::Par;
@@ -586,6 +587,38 @@ impl Lowerer<'_>
             do_if!(!leaves, out.extend(l.drops_from(depth, n.span)));
             l.locks.pop();
         });
+    }
+
+    /// Lower a sleep, `<n> မီလီစက္ကန့် စောင့်မည်` or `<n> စက္ကန့် စောင့်မည်`: the count
+    /// in milliseconds, a count of seconds times 1000.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The sleep, or `None` for a call that is no sleep.
+    pub(super) fn sleep_stmt(&mut self, n: &st::CallStmt) -> Option<Stmt>
+    {
+        let unit = sleep_unit(&n.callee, n.place.as_deref(), &n.prepositions)?;
+        let [count] = n.args.as_slice()
+        else
+        {
+            return None;
+        };
+        let count = self.expr(count);
+        let span = n.span;
+        let ms = match unit
+        {
+            1 => count,
+            _ =>
+            {
+                let each = self.usize_const(unit as u32, span);
+                node_expr(DataKind::USIZE, infix_node(InfixOp::Mul, count, each), span)
+            }
+        };
+        Some(Stmt::Sleep { ms, span })
     }
 
     /// Lower a wait for a thread as a statement, its result dropped.

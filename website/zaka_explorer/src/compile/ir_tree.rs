@@ -262,6 +262,10 @@ impl IrTree<'_>
             {
                 self.node("close", blank, span, vec![self.expr(pipe)])
             }
+            Stmt::Sleep { ms, .. } =>
+            {
+                self.node("sleep", blank, span, vec![self.expr(ms)])
+            }
             Stmt::Print { value, .. } =>
             {
                 self.node("print", blank, span, vec![self.print(value, span)])

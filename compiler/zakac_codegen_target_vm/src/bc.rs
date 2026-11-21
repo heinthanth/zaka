@@ -422,6 +422,9 @@ pub enum Op
     /// Pop the `usize` that names a channel and close it; a second close
     /// stops the program.
     PipeClose,
+    /// Pop a `usize` count of milliseconds: the thread sleeps that long, and
+    /// the other threads go on.
+    Sleep,
     /// Pop the address of a shared object and take its lock: the thread waits
     /// while another holds it, and a lock whose holder stopped at a trap stops
     /// the program. A thread that holds the lock takes it once more.
@@ -778,6 +781,7 @@ impl Op
             | Op::Dup
             | Op::ResultAddr
             | Op::PipeClose
+            | Op::Sleep
             | Op::Lock
             | Op::Unlock
             | Op::CharCount

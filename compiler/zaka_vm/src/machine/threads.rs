@@ -49,6 +49,8 @@ pub(super) enum Waits
     Send(usize),
     /// The lock of the object at this address.
     Lock(u64),
+    /// The clock of the world at this count of milliseconds: a sleep.
+    Until(u64),
 }
 
 /// Where a thread stands.
@@ -197,11 +199,12 @@ impl Threads
     /// # Arguments
     ///
     /// * `n` - The number of the thread.
+    /// * `now` - The clock of the world, in milliseconds.
     ///
     /// # Returns
     ///
     /// `true` if it can.
-    fn can_go(&self, n: usize) -> bool
+    fn can_go(&self, n: usize, now: u64) -> bool
     {
         let thread = &self.list[n];
         ret_false!(thread.end != End::Runs);
@@ -220,21 +223,42 @@ impl Threads
             Waits::Receive(p) => self.pipes.get(p).is_none_or(Pipe::can_receive),
             Waits::Lock(obj) => self.locks.iter().all(|h| h.obj != obj || h.broken),
             Waits::Send(p) => self.pipes.get(p).is_none_or(Pipe::can_send),
+            Waits::Until(t) => now >= t,
         }
+    }
+
+    /// The earliest clock at which a sleeping thread wakes.
+    ///
+    /// # Returns
+    ///
+    /// The clock, or `None` when no thread sleeps.
+    fn first_wake(&self) -> Option<u64>
+    {
+        let wake = |j: &Thread| match (&j.end, j.waits)
+        {
+            (End::Runs, Waits::Until(t)) => Some(t),
+            _ => None,
+        };
+        self.list.iter().filter_map(wake).min()
     }
 
     /// The next thread that can run: after the running one in order, the
     /// running one itself last; with a seed, one of those that can run, drawn
     /// from it.
     ///
+    /// # Arguments
+    ///
+    /// * `now` - The clock of the world, in milliseconds.
+    ///
     /// # Returns
     ///
     /// The number of the thread, or `None` when none can run.
-    fn next_to_go(&mut self) -> Option<usize>
+    fn next_to_go(&mut self, now: u64) -> Option<usize>
     {
         let count = self.list.len();
-        let free =
-            (1..=count).map(|k| (self.now + k) % count).filter(|n| self.can_go(*n));
+        let free = (1..=count)
+            .map(|k| (self.now + k) % count)
+            .filter(|n| self.can_go(*n, now));
         let free: Vec<usize> = free.collect();
         let Some(rng) = self.rng.as_mut()
         else
@@ -289,6 +313,8 @@ pub enum ThreadState
     WaitsSend(usize),
     /// It waits for a lock another thread holds.
     WaitsLock,
+    /// It sleeps.
+    Sleeps,
     /// It returned.
     Done,
     /// It stopped at a trap.
@@ -317,6 +343,7 @@ impl Machine
             (_, Waits::Receive(p)) => ThreadState::WaitsReceive(p),
             (_, Waits::Send(p)) => ThreadState::WaitsSend(p),
             (_, Waits::Lock(_)) => ThreadState::WaitsLock,
+            (_, Waits::Until(_)) => ThreadState::Sleeps,
         };
         threads.list.iter().enumerate().map(state).collect()
     }
@@ -432,6 +459,21 @@ impl Machine
     {
         do_if!(let Some(frame) = self.frames.last_mut(), frame.pc -= 1);
         self.threads.list[self.threads.now].waits = waits;
+    }
+
+    /// Sleep: pop a count of milliseconds, and park the running thread until
+    /// the clock of the world reaches it. The op does not run again, so the
+    /// thread goes on after it once it wakes.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap for a stack that lacks the count.
+    pub(super) fn sleep(&mut self) -> Step
+    {
+        let ms = u64::try_from(self.pop_int("sleep")?).unwrap_or(u64::MAX);
+        let wake = self.world.now_ms().saturating_add(ms);
+        self.threads.list[self.threads.now].waits = Waits::Until(wake);
+        Ok(())
     }
 
     /// Wait for a thread: its result is pushed, or copied to the slot under its
@@ -619,7 +661,16 @@ impl Machine
     /// `Ok`, or `Deadlock` when no thread can run.
     fn next_turn(&mut self) -> Step
     {
-        let next = self.threads.next_to_go().ok_or(TrapKind::Deadlock)?;
+        let mut now = self.world.now_ms();
+        let mut next = self.threads.next_to_go(now);
+        // No thread can run but one sleeps: the clock goes on to its wake.
+        while let (None, Some(wake)) = (next, self.threads.first_wake())
+        {
+            self.world.sleep_ms(wake.saturating_sub(now));
+            now = self.world.now_ms();
+            next = self.threads.next_to_go(now);
+        }
+        let next = next.ok_or(TrapKind::Deadlock)?;
         self.threads.list[next].waits = Waits::Nothing;
         self.threads.left = self.threads.turn();
         self.swap_to(next);

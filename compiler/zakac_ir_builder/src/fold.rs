@@ -351,6 +351,7 @@ impl Folder
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
             Stmt::Wait { thread, .. }
             | Stmt::Close { pipe: thread, .. }
+            | Stmt::Sleep { ms: thread, .. }
             | Stmt::Lock { obj: thread, .. }
             | Stmt::Unlock { obj: thread, .. } => self.drop_value(thread),
             Stmt::Send { pipe, value, .. } =>

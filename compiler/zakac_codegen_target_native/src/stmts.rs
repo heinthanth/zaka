@@ -104,6 +104,12 @@ impl<M: Module> FnGen<'_, '_, M>
                 let p = self.expr(pipe);
                 self.rt("zk_pipe_close", &[ptr], &[], &[p]);
             }
+            Stmt::Sleep { ms, .. } =>
+            {
+                let ptr = self.s.ptr;
+                let m = self.expr(ms);
+                self.rt("zk_sleep", &[ptr], &[], &[m]);
+            }
             Stmt::Lock { obj, .. } =>
             {
                 let ptr = self.s.ptr;

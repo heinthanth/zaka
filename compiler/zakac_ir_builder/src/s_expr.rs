@@ -70,6 +70,7 @@ impl ToSexpr for Stmt
                 list("send", [pipe.to_sexpr(), value.to_sexpr()])
             }
             Stmt::Close { pipe, .. } => list("close", [pipe.to_sexpr()]),
+            Stmt::Sleep { ms, .. } => list("sleep", [ms.to_sexpr()]),
             Stmt::Lock { obj, .. } => list("lock", [obj.to_sexpr()]),
             Stmt::Unlock { obj, .. } => list("unlock", [obj.to_sexpr()]),
             Stmt::Rings { act, octets, .. } => list(

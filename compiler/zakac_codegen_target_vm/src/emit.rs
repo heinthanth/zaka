@@ -1009,6 +1009,11 @@ impl<'s> FuncGen<'s>
                 self.expr(pipe);
                 self.op(Op::PipeClose);
             }
+            Stmt::Sleep { ms, .. } =>
+            {
+                self.expr(ms);
+                self.op(Op::Sleep);
+            }
             Stmt::Lock { obj, .. } =>
             {
                 self.expr(obj);

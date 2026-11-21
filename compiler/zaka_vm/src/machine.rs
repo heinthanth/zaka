@@ -1485,6 +1485,7 @@ impl Machine
             Op::PipeSend(kind) => self.pipe_send(kind),
             Op::PipeReceive(kind) => self.pipe_receive(kind),
             Op::PipeClose => self.pipe_close(),
+            Op::Sleep => self.sleep(),
             Op::Lock => self.lock(),
             Op::AtomicAdd(kind, sub) =>
             {

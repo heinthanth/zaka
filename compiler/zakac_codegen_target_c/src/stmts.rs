@@ -73,6 +73,11 @@ impl FnGen<'_, '_>
                 let p = self.expr(pipe);
                 self.line(&format!("zk_pipe_close({p});"));
             }
+            Stmt::Sleep { ms, .. } =>
+            {
+                let m = self.expr(ms);
+                self.line(&format!("zk_sleep({m});"));
+            }
             Stmt::Lock { obj, .. } =>
             {
                 let o = self.expr(obj);

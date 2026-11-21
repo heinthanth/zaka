@@ -38,6 +38,43 @@ use crate::task;
 /// The verb of the core that waits for a thread.
 pub const WAIT: &str = "စောင့်";
 
+/// The preposition of a sleep counted in milliseconds: `<n> မီလီစက္ကန့် စောင့်မည်`.
+pub const MILLIS: &str = "မီလီစက္ကန့်";
+
+/// The preposition of a sleep counted in seconds: `<n> စက္ကန့် စောင့်မည်`.
+pub const SECONDS: &str = "စက္ကန့်";
+
+/// The milliseconds in one unit of a sleep, from the preposition of a call
+/// of the core's `စောင့်` with one argument.
+///
+/// # Arguments
+///
+/// * `callee` - The name at the call.
+/// * `place` - The value a call on a value names, or `None`.
+/// * `prepositions` - The preposition after each argument.
+///
+/// # Returns
+///
+/// 1 for milliseconds, 1000 for seconds, or `None` for a call that is no
+/// sleep.
+pub fn sleep_unit(
+    callee: &Ident, place: Option<&Expr>, prepositions: &[Option<Ident>],
+) -> Option<u64>
+{
+    ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
+    let [Some(unit)] = prepositions
+    else
+    {
+        return None;
+    };
+    match unit.name.as_str()
+    {
+        MILLIS => Some(1),
+        SECONDS => Some(1000),
+        _ => None,
+    }
+}
+
 /// The verb of the core that sends a value to a channel.
 pub const SEND: &str = "ပို့";
 
@@ -298,6 +335,36 @@ impl Checker
         ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
         let task = self.infer(thread, None)?.as_task().filter(|t| t.is_thread())?;
         Some(task.of)
+    }
+
+    /// A sleep, `<n> မီလီစက္ကန့် စောင့်မည်` or `<n> စက္ကန့် စောင့်မည်`: a call of the
+    /// core's `စောင့်` whose one argument is a count of the unsigned kind of the
+    /// platform.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The name at the call.
+    /// * `place` - The value a call on a value names, or `None`.
+    /// * `args` - The arguments.
+    /// * `prepositions` - The preposition after each argument.
+    ///
+    /// # Returns
+    ///
+    /// `Some(None)`, for a sleep gives no value, or `None` for a call that is
+    /// no sleep.
+    pub(crate) fn sleep_call(
+        &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr],
+        prepositions: &[Option<Ident>],
+    ) -> Option<Option<DataKind>>
+    {
+        sleep_unit(callee, place, prepositions)?;
+        let [count] = args
+        else
+        {
+            return None;
+        };
+        self.expect_kind(count, Some(DataKind::USIZE));
+        Some(None)
     }
 
     /// A send, `<pipe> ထဲသို့ <value> ကို ပို့မည်`, or a close, `<pipe> ကို

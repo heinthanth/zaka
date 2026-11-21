@@ -1047,6 +1047,23 @@ pub extern "C" fn zk_pipe_close(n: usize)
     changed(&mut st);
 }
 
+/// Sleep: this OS thread waits for a count of milliseconds, and the other
+/// threads go on. It counts as running, so a wait of another thread is no
+/// deadlock while it sleeps, and as halted, so a collection does not wait for
+/// it.
+///
+/// # Arguments
+///
+/// * `ms` - The count of milliseconds.
+#[unsafe(export_name = stamped!("sleep"))]
+pub extern "C" fn zk_sleep(ms: usize)
+{
+    let ms = u64::try_from(ms).unwrap_or(u64::MAX);
+    crate::seqs::halted_while(|| {
+        std::thread::sleep(std::time::Duration::from_millis(ms))
+    });
+}
+
 /// Wait for each thread at the end of the program, then drop each result the
 /// threads left and each value the channels hold.
 ///

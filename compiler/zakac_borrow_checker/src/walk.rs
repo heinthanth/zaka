@@ -95,6 +95,7 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         Stmt::Set { value, .. } => vec![value],
         Stmt::Wait { thread, .. }
         | Stmt::Close { pipe: thread, .. }
+        | Stmt::Sleep { ms: thread, .. }
         | Stmt::Lock { obj: thread, .. }
         | Stmt::Unlock { obj: thread, .. } => vec![thread],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],
@@ -270,6 +271,7 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         Stmt::Set { value, .. } => vec![value],
         Stmt::Wait { thread, .. }
         | Stmt::Close { pipe: thread, .. }
+        | Stmt::Sleep { ms: thread, .. }
         | Stmt::Lock { obj: thread, .. }
         | Stmt::Unlock { obj: thread, .. } => vec![thread],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],

@@ -1,6 +1,6 @@
 ---
 title: Threads
-description: Run a function on a thread while the rest of the program goes on - starting a thread, the thread kind, waiting for its result, the values a thread can use, channels, objects that threads share and their locks, atomic numbers, parallel loops and maps, threads and OS threads, the turns on the VM, and what a trap in a thread does.
+description: Run a function on a thread while the rest of the program goes on - starting a thread, the thread kind, waiting for its result, sleeping, the values a thread can use, channels, objects that threads share and their locks, atomic numbers, parallel loops and maps, threads and OS threads, the turns on the VM, and what a trap in a thread does.
 ---
 
 # Threads
@@ -152,6 +152,54 @@ running, and then it ends.
 ရှေ့
 နောက်ကွယ်
 ```
+
+## Sleeping
+
+```text
+<count> မီလီစက္ကန့် စောင့်မည်။
+<count> စက္ကန့် စောင့်မည်။
+```
+
+A thread sleeps for a count of milliseconds with `<count> မီလီစက္ကန့် စောင့်မည်။`, or for a
+count of seconds with `<count> စက္ကန့် စောင့်မည်။`, and the other threads go on while it
+sleeps. The program start block can sleep too, as it is a thread of its own.
+
+- The count has the data kind `လက္ခဏာမဲ့ ကိန်းပြည့်`, the unsigned integer of the platform.
+  A count of seconds is turned into milliseconds before the sleep.
+- A sleep is no wait for another thread, so a thread that waits for a sleeping one is no
+  deadlock: the program goes on once the sleep ends.
+- Both forms are sentence calls of the verb `စောင့်` of [the core module](core.md), which a
+  wait for a thread uses too. The preposition `မီလီစက္ကန့်` or `စက္ကန့်` tells a sleep from a
+  wait.
+
+```zaka
+အိပ် ဟူသော လုပ်ဆောင်ချက် သည် အမည် ဟူသော စာသား တစ်ခု ကို လည်းကောင်း ကြာ ဟူသော လက္ခဏာမဲ့ ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြာ မီလီစက္ကန့် စောင့်မည်။
+အမည် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အိပ် ဟူသော လုပ်ဆောင်ချက်ကို "နှေး" နှင့် ၃၀၀ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အိပ် ဟူသော လုပ်ဆောင်ချက်ကို "မြန်" နှင့် ၂၀ တို့ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+"စ" ဟု ပြသမည်။
+က ကို စောင့်မည်။
+ခ ကို စောင့်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+စ
+မြန်
+နှေး
+```
+
+The two sleeps run at the same time, so the program takes about 300 milliseconds, not the
+sum of the two. On the VM, a sleeping thread gives its turn to the next thread; when no
+thread can run and one sleeps, the VM waits for the clock to reach the earliest wake. A
+native program sleeps on the OS thread of the thread. The explorer and the tests of these
+pages run the VM with a clock of their own, which a sleep moves on at once, so the output
+comes at once and in the same order.
 
 ## Values that go to a thread
 
@@ -627,7 +675,8 @@ Where a thread runs depends on how the program runs:
 The VM runs each thread in turns of a fixed count of operations (100), in the order that
 the threads started. Because this order never changes, a program prints the same lines on
 each run. A thread gives its turn to the next thread when it waits for a thread that has
-not ended, receives from an open channel that has no value, or sends to a full channel.
+not ended, receives from an open channel that has no value, sends to a full channel, or
+sleeps ([Sleeping](#sleeping)).
 Each line that a print writes comes out whole, on the VM and on OS threads alike.
 
 A native program runs its threads in a different order on each run, so a mistake that

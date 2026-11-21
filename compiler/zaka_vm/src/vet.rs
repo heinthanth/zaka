@@ -722,7 +722,7 @@ impl Paths<'_, '_>
             {
                 Ok(call_effect(vec![I], Some(DataKind::optional(kind))))
             }
-            Op::PipeClose => Ok(effect(&[I], None)),
+            Op::PipeClose | Op::Sleep => Ok(effect(&[I], None)),
             Op::Lock | Op::Unlock => Ok(effect(&[A], None)),
             Op::AtomicAdd(kind, _) => self.kinded(kind, &[class_of(kind), A], None),
             Op::AtomicCas(kind) =>

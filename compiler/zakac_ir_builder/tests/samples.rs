@@ -76,6 +76,7 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             | Stmt::Rings { octets: Some(e), .. }
             | Stmt::Wait { thread: e, .. }
             | Stmt::Close { pipe: e, .. }
+            | Stmt::Sleep { ms: e, .. }
             | Stmt::Lock { obj: e, .. }
             | Stmt::Unlock { obj: e, .. } => expr_places(e, out),
             Stmt::Send { pipe, value, .. } =>

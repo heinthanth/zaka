@@ -22,9 +22,10 @@ use zakac_rust_sugars::ret_if;
 /// The two ABIs of WASI.
 const ABIS: [&str; 2] = ["wasip1", "wasip2"];
 
-/// Sample groups that hold programs with errors on purpose, and the group
-/// of C functions, which WASI cannot call.
-const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes", "ffi"];
+/// Sample groups that hold programs with errors on purpose, the group of C
+/// functions, which WASI cannot call, and the group of threads, which WASI
+/// cannot start.
+const SKIPPED_GROUPS: &[&str] = &["diagnostics", "mistakes", "ffi", "threads"];
 
 /// The samples the WASI builds do not run, each with the reason.
 const SKIPPED: &[(&str, &str)] =

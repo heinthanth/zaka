@@ -616,6 +616,15 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Sleep: the thread that runs it waits for a count of milliseconds, and
+    /// the other threads go on.
+    Sleep
+    {
+        /// The count of milliseconds.
+        ms: Expr,
+        /// Source region.
+        span: Span,
+    },
     /// Take the lock of a shared object: it waits while another thread holds
     /// it; a lock that a thread held when it stopped at a trap stops the
     /// program.
@@ -864,6 +873,7 @@ impl Stmt
             | Stmt::Wait { span, .. }
             | Stmt::Send { span, .. }
             | Stmt::Close { span, .. }
+            | Stmt::Sleep { span, .. }
             | Stmt::Lock { span, .. }
             | Stmt::Unlock { span, .. }
             | Stmt::AtomicAdd { span, .. }

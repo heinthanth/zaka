@@ -686,6 +686,7 @@ Docs: [Modules](../manual/language/modules.md), [The stdlib](../manual/language/
 | `ရှေ့ ကို စောင့်သော ရလဒ်` | `handle.join()` |
 | `စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း` | `mpsc::channel::<String>()`, `queue.Queue()` |
 | `လမ်း ထဲသို့ "ထမင်း" ကို ပို့မည်။` | `tx.send(…)` |
+| `၅၀၀ မီလီစက္ကန့် စောင့်မည်။` | `thread::sleep(Duration::from_millis(500))`, `time.sleep(0.5)` |
 
 To start a thread, we add `အပြိုင်` to a call, and the long form
 `… အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` returns a value that we can wait on with

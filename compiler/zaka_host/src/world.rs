@@ -147,6 +147,21 @@ pub trait World: Debug + Send + Sync
     /// of the input. A world that cannot take more does nothing.
     fn close_input(&mut self) {}
 
+    /// The milliseconds since the world began, the clock a sleep reads.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn now_ms(&mut self) -> u64;
+
+    /// Let a count of milliseconds pass, while no thread of the program can
+    /// run.
+    ///
+    /// # Arguments
+    ///
+    /// * `ms` - The count.
+    fn sleep_ms(&mut self, ms: u64);
+
     /// A clone of the world in a box, so a VM that holds one can be cloned.
     ///
     /// # Returns
@@ -317,6 +332,10 @@ pub struct MemWorld
     /// The environment, on the name of each variable.
     #[builder(default)]
     pub env: BTreeMap<String, String>,
+    /// The clock of the world, in milliseconds: a sleep moves it on at once,
+    /// so a run in storage never blocks and gives the same output each time.
+    #[builder(default)]
+    pub clock: u64,
 }
 
 // shortcut: MemWorld stores paths as written, with no `.`, `..` or `\` handled;
@@ -488,6 +507,10 @@ impl World for MemWorld
 
     fn close_input(&mut self) { self.open = false; }
 
+    fn now_ms(&mut self) -> u64 { self.clock }
+
+    fn sleep_ms(&mut self, ms: u64) { self.clock = self.clock.saturating_add(ms); }
+
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
     {
         Ok(self.env.get(name).cloned())
@@ -570,6 +593,19 @@ impl World for TermWorld
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
     {
         Ok(std::env::var(name).ok())
+    }
+
+    fn now_ms(&mut self) -> u64
+    {
+        static START: std::sync::OnceLock<std::time::Instant> =
+            std::sync::OnceLock::new();
+        let start = START.get_or_init(std::time::Instant::now);
+        u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)
+    }
+
+    fn sleep_ms(&mut self, ms: u64)
+    {
+        std::thread::sleep(std::time::Duration::from_millis(ms));
     }
 
     fn boxed(&self) -> Box<dyn World> { Box::new(*self) }

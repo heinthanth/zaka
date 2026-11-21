@@ -139,6 +139,7 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
         }
         Stmt::Wait { thread, span, .. }
         | Stmt::Close { pipe: thread, span }
+        | Stmt::Sleep { ms: thread, span }
         | Stmt::Lock { obj: thread, span }
         | Stmt::Unlock { obj: thread, span } =>
         {

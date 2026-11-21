@@ -124,7 +124,7 @@ operator printed as its short name (`add`, `lt`, ...).
 | views | `make_slice stride source`, `slice_cell stride [from f]`: the inner views that a range and a cell of a plain list read through |
 | text | `text t`, `format fmt`, `drop k`, `dup_seqs k`, `deep_seqs k`, `lend_seqs k`, `own k`, `text_eq`, `char_count`, `char_at`, `char_at_octet`, `set_char [from 1]`, `add_text k`, `insert_text k`, `replace_text k [chars]`, `text_edges`, `check_utf8` |
 | ဇယား (map) | `row_find k`, `set_row k`, `remove_row k` |
-| threads | `spawn f`, `wait [k]`, `pipe_new [room]`, `pipe_send k`, `pipe_receive k`, `pipe_close`, `lock`, `unlock`, `atomic_add [sub] k`, `atomic_cas k` |
+| threads | `spawn f`, `wait [k]`, `pipe_new [room]`, `pipe_send k`, `pipe_receive k`, `pipe_close`, `sleep`, `lock`, `unlock`, `atomic_add [sub] k`, `atomic_cas k` |
 | ring collector | `rings act`, `ring_stat n` |
 
 A few of these need a word more:

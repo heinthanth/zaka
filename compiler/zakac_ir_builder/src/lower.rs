@@ -1187,6 +1187,10 @@ impl Lowerer<'_>
             }
             st::Stmt::Call(n) if n.parallel => self.spawn_stmt(n),
             st::Stmt::Call(n) if let Some(wait) = self.wait_stmt(n) => out.push(wait),
+            st::Stmt::Call(n) if let Some(sleep) = self.sleep_stmt(n) =>
+            {
+                out.push(sleep)
+            }
             st::Stmt::Call(n) if let Some(pipe) = self.pipe_stmt(n) => out.push(pipe),
             st::Stmt::Call(n) if let Some(add) = self.atomic_stmt(n) => out.push(add),
             st::Stmt::Call(n) =>

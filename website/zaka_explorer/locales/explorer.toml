@@ -593,6 +593,8 @@ en = "waits for a value of channel %{pipe}"
 en = "waits for room in channel %{pipe}"
 [explorer.run.thread_waits_lock]
 en = "waits for a lock"
+[explorer.run.thread_sleeps]
+en = "sleeps"
 [explorer.run.thread_done]
 en = "ended"
 [explorer.run.thread_trapped]

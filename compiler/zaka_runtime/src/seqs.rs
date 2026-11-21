@@ -769,6 +769,21 @@ pub fn safe_point()
     HALTED.fetch_sub(1, Ordering::SeqCst);
 }
 
+/// Run work that changes no count, such as a sleep, as a halted OS thread: a
+/// collection need not wait for it, and it halts at a safe point after, when
+/// a collection runs then.
+///
+/// # Arguments
+///
+/// * `work` - The work.
+pub(crate) fn halted_while(work: impl FnOnce())
+{
+    HALTED.fetch_add(1, Ordering::SeqCst);
+    work();
+    HALTED.fetch_sub(1, Ordering::SeqCst);
+    safe_point();
+}
+
 /// A safe point the loops of native code reach once the flag reads set:
 /// see [`safe_point`].
 #[unsafe(export_name = stamped!("safe_point"))]

@@ -633,10 +633,11 @@ channel-kind = kind [ digits name ] ( "ပို့နိုင်သော" | "
 - `thread-kind` and `channel-kind` are written-as hints of the core module
   ([Data kinds](#data-kinds)). In a channel kind, `digits name` is the room of a bounded
   channel, as in `၂ ခု`, and a room that is not a whole number above zero is ZK0227.
-- Sending, closing, waiting and adding to an atomic number are sentence calls of
+- Sending, closing, waiting, sleeping and adding to an atomic number are sentence calls of
   functions of the core module, so these forms need no rules here:
   `<pipe> ထဲသို့ <value> ကို ပို့မည်။`, `<pipe> ကို ပိတ်မည်။`, `<thread> ကို စောင့်မည်။`,
-  `<thread> ကို စောင့်သော ရလဒ်` and `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်။`.
+  `<thread> ကို စောင့်သော ရလဒ်`, `<count> မီလီစက္ကန့် စောင့်မည်။`, `<count> စက္ကန့် စောင့်မည်။`
+  and `<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်။`.
 
 See [Threads](../language/threads.md).
 
