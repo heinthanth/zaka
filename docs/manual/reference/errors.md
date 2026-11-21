@@ -233,6 +233,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0415 | an operator not for pointers, such as `*` or `/` on an address | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0416 | pointer kinds differ: comparing or subtracting pointers to different data kinds | [Unsafe Zaka](../language/unsafe.md) |
 | ZK0417 | a heap statement, such as a resize, a duplicate or a fill, that needs a pointer but was given another data kind | [Unsafe Zaka](../language/unsafe.md) |
+| ZK0418 | a while loop whose block is one wait on several channels with the arm of no data and no sleep, which keeps a core at work (a warning) | [Threads](../language/threads.md#waiting-on-several-channels) |
 | ZK0419 | a list literal with more or fewer cells than its data kind | [Static data and counted lists](../../learn/forms/counted-lists.md#a-literal-with-the-wrong-count) |
 | ZK0420 | `စာရင်းအလွတ်` where no list kind is known | [List mistakes](../../learn/lists/mistakes.md#a-blank-list-with-no-data-kind) |
 | ZK0422 | cells of a value that is not a list | [List mistakes](../../learn/lists/mistakes.md#cells-of-a-value-that-is-no-list) |

@@ -9,6 +9,7 @@ use zakac_ast::name::Name;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::LockStmt;
+use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_ast::visit::Visitor;
@@ -502,6 +503,30 @@ impl Checker
         pipe.and_then(result_var)
     }
 
+    /// Warn on a while loop whose block is one wait on several channels with
+    /// the arm of no data and no sleep in any arm: it never waits (ZK0418).
+    ///
+    /// # Arguments
+    ///
+    /// * `block` - The block of the loop.
+    pub(crate) fn check_select_spin(&mut self, block: &BlockStmt)
+    {
+        let [Stmt::Select(wait)] = block.stmts.as_slice()
+        else
+        {
+            return;
+        };
+        let Some(idle) = &wait.idle
+        else
+        {
+            return;
+        };
+        let arms = wait.arms.iter().map(|a| &a.block).chain(&wait.closed);
+        let sleeps = |b: &BlockStmt| b.stmts.iter().any(is_sleep);
+        ret_if!(arms.chain([idle]).any(sleeps));
+        self.report(kd::select_spins(idle.span));
+    }
+
     /// Check the test of an arm of a wait on several channels: it tests a
     /// channel for data, as the condition of `အကယ်၍` does, and the channel is
     /// a name (ZK0495 for a value of another kind).
@@ -890,4 +915,23 @@ impl Checker
             self.report(kd::not_for_threads(span, &kind.name()))
         );
     }
+}
+
+/// Whether a statement is a sleep, `<n> မီလီစက္ကန့် စောင့်မည်။`.
+///
+/// # Arguments
+///
+/// * `s` - The statement.
+///
+/// # Returns
+///
+/// `true` if it is.
+fn is_sleep(s: &Stmt) -> bool
+{
+    let Stmt::Call(c) = s
+    else
+    {
+        return false;
+    };
+    sleep_unit(&c.callee, c.place.as_deref(), &c.prepositions).is_some()
 }

@@ -1374,6 +1374,21 @@ pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::DecimalIndex, msg, span).with_help(t!("codes.ZK0487.help"))
 }
 
+/// A while loop of one wait on several channels that never waits.
+///
+/// # Arguments
+///
+/// * `span` - The arm of no data.
+///
+/// # Returns
+///
+/// The `ZK0418` warning.
+pub fn select_spins(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0418.message");
+    Diagnostic::new(Code::SelectSpins, msg, span).with_help(t!("codes.ZK0418.help"))
+}
+
 /// The mark of objects threads can use on a struct that is no shared object.
 ///
 /// # Arguments

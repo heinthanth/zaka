@@ -364,6 +364,9 @@ PointerOperator = ("ZK0415", Level::Error),
 PointerKindsDiffer = ("ZK0416", Level::Error),
 /// A heap statement is given a value that is not a pointer.
 HeapNeedsPointer = ("ZK0417", Level::Error),
+/// A while loop holds one wait on several channels with the arm of no data and
+/// no sleep: it runs again at once each time no channel holds a value.
+SelectSpins = ("ZK0418", Level::Warning),
 /// A list literal has more or fewer cells than its kind.
 ListCountMismatch = ("ZK0419", Level::Error),
 /// A blank list stands where no list kind is known.

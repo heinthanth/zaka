@@ -1560,6 +1560,15 @@ en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည
 [codes.ZK0492.explain]
 en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
 
+[codes.ZK0418.title]
+en = "a loop of waits that never waits"
+[codes.ZK0418.message]
+en = "this loop runs again at once each time no channel holds a value, so it keeps a core at work"
+[codes.ZK0418.help]
+en = "put a time limit, `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်`, in place of the arm of no data, or a sleep in that arm"
+[codes.ZK0418.explain]
+en = """The arm of no data, `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်`, runs at once when no channel holds a value. A while loop whose block is just such a wait, with no sleep in it, goes round and round while it waits for a value, and keeps a core at work the whole time. A time limit waits for the value and gives the core to the other threads, and so does a sleep in the arm of no data."""
+
 [codes.ZK0493.title]
 en = "the mark of threads on a value"
 [codes.ZK0493.message]

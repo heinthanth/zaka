@@ -386,7 +386,8 @@ arm. The first statement outside these forms marks the end of the wait.
   `usize`, as the count of a [sleep](#sleeping) is.
 - `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` runs at once if no channel holds a
   value and the closed arm does not run. A tight loop around this form can keep a
-  CPU core active.
+  CPU core active: a while loop whose block is just such a wait, with no sleep in any
+  arm, is the warning ZK0418.
 - To receive more than one value, put the wait in a loop.
 - In a native program, a light task that waits gives its OS thread to the other tasks, as
   a receive does.
@@ -489,6 +490,17 @@ value in the channel, and the second finds the value that came between them:
 လမ်း ထဲတွင် ဒေတာ ရှိလျှင် "ရ" ဟု ပြသမည်။
 ၁၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် "ကုန်" ဟု ပြသမည်။
 မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် "မရှိ" ဟု ပြသမည်။
+```
+
+```zaka-warning ZK0418
+ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+လမ်း ထဲသို့ ၁ ကို ပို့မည်။
+ကိန်းရှင် ဆက် သည် မှန် ဖြစ်ပါစေ။
+ဆက် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+လမ်း ထဲတွင် ဒေတာ ရှိလျှင် ဆက် ကို မမှန် ဟု ထားမည်။
+မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် "မရှိသေး" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
 ## Objects threads share

@@ -84,3 +84,34 @@ fn a_wait_with_neither_the_closed_arm_nor_the_arm_of_no_data_can_end_with_no_ret
     let timed = "၁ စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် ၁ ကို ပြန်ပေးမည်။";
     assert_eq!(codes(&returning(timed)), [Code::EndWithoutReturn]);
 }
+
+/// The channel `က` of numbers, then a while loop whose block is a wait on it
+/// with this last arm.
+fn looped(last: &str) -> String
+{
+    format!(
+        "ကိန်းရှင် က သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ဆက် သည် မှန် ဖြစ်ပါစေ။
+ဆက် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{OPENER}
+က ထဲတွင် ဒေတာ ရှိလျှင် ဆက် ကို မမှန် ဟု ထားမည်။
+{last}
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။"
+    )
+}
+
+#[test]
+fn a_loop_of_waits_with_the_arm_of_no_data_and_no_sleep_is_zk0418()
+{
+    let idle = "မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် \"မရှိ\" ဟု ပြသမည်။";
+    assert_eq!(codes(&looped(idle)), [Code::SelectSpins]);
+}
+
+#[test]
+fn a_loop_of_waits_with_a_time_limit_or_a_sleep_waits()
+{
+    let timed = "၁၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် \"မရှိ\" ဟု ပြသမည်။";
+    assert_eq!(codes(&looped(timed)), []);
+    let rests = "မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် ၁၀ မီလီစက္ကန့် စောင့်မည်။";
+    assert_eq!(codes(&looped(rests)), []);
+}

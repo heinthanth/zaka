@@ -2571,6 +2571,7 @@ impl Visitor for Checker
         let changed = self.changed(&n.block.stmts);
         self.forget(changed.clone());
         self.expect_bool(&n.cond);
+        self.check_select_spin(&n.block);
         self.proven_loop(changed, Some(&n.cond), |c| {
             c.in_loop(|c| c.visit_block(&n.block))
         });
