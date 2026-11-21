@@ -47,6 +47,7 @@ mod values;
 mod walk;
 
 pub use threads::crossing_fns;
+pub use threads::light_fns;
 pub use threads::runs_free;
 pub use threads::starts_threads;
 pub use walk::each_stmt;

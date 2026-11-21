@@ -876,6 +876,11 @@ pub struct CallExpr
     #[builder(default)]
     #[serde(default)]
     pub parallel: bool,
+    /// `true` for `... သီးသန့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`: the thread runs on an OS
+    /// thread of its own, never as a light task.
+    #[builder(default)]
+    #[serde(default)]
+    pub apart: bool,
     /// `ကို` or `တို့ကို` before `သုံး၍`, when the arguments come first.
     #[serde(default)]
     pub using: Option<UsingParticle>,

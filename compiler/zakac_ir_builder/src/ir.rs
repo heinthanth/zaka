@@ -1001,6 +1001,10 @@ pub enum ExprNode
         name: String,
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
+        /// Whether the program asked for an OS thread of its own, with
+        /// `သီးသန့် အပြိုင်`; a thread can run on one for other reasons too.
+        #[serde(default)]
+        apart: bool,
     },
     /// Wait for a thread to end; the value is what its function gave back.
     Wait(Box<Expr>),

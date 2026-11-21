@@ -511,9 +511,10 @@ impl IrTree<'_>
             {
                 ("call", name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
-            ExprNode::Spawn { name, args, .. } =>
+            ExprNode::Spawn { name, args, apart, .. } =>
             {
-                ("spawn", name.clone(), args.iter().map(|a| self.expr(a)).collect())
+                let head = tern!(*apart, "spawn-apart", "spawn");
+                (head, name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
             ExprNode::Wait(thread) => ("wait", String::new(), vec![self.expr(thread)]),
             ExprNode::Receive(pipe) =>

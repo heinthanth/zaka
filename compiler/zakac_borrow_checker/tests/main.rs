@@ -11,6 +11,7 @@ mod fixes;
 mod free_rules;
 mod last_use;
 mod leaks;
+mod light;
 mod lists;
 mod loans;
 mod modes;

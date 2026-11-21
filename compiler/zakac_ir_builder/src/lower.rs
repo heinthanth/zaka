@@ -3618,7 +3618,8 @@ impl Lowerer<'_>
     /// The operation.
     fn call_node(&mut self, n: &ast::CallExpr, kind: DataKind) -> ExprNode
     {
-        ret_if!(n.parallel, self.spawn_node(&n.callee, n.place.as_deref(), &n.args));
+        let place = n.place.as_deref();
+        ret_if!(n.parallel, self.spawn_node(&n.callee, place, &n.args, n.apart));
         ret_if!(let Some(wait) = self.wait_node(n), wait);
         ret_if!(let Some(cas) = self.cas_node(n, kind), cas);
         let (target, sig) = self.call_target(&n.callee, n.place.as_deref());

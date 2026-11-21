@@ -597,8 +597,8 @@ not reserved, so the parser reads them through their text. The rules of the othe
 refer to these productions.
 
 ```text
-thread-end   = "အပြိုင်" "လုပ်ဆောင်မည်"              (* a statement that starts the thread *)
-             | "အပြိုင်" "လုပ်ဆောင်သော" "လုပ်ငန်း" ;   (* a value: the thread *)
+thread-end   = [ "သီးသန့်" ] "အပြိုင်" "လုပ်ဆောင်မည်"              (* a statement that starts the thread *)
+             | [ "သီးသန့်" ] "အပြိုင်" "လုပ်ဆောင်သော" "လုပ်ငန်း" ;   (* a value: the thread *)
 parallel     = "အပြိုင်"
              | "အပြိုင်လုပ်ငန်း" notation "ခုခွဲ၍" ;     (* the count of threads *)
 par-map      = "၏" "အကွက်တိုင်း" "ကို" name "ဟူသော" "လုပ်ဆောင်ချက်" "ဖြင့်" parallel

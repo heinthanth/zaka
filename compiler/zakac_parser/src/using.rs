@@ -1069,12 +1069,14 @@ impl Parser<'_>
             stmt && mode == Mode::Expr,
             Err(diag::stmt_verb_in_expr(verb, self.text_of(verb)))
         );
+        let apart = self.apart_at(0);
+        do_if!(apart, _ = self.bump());
         self.bump();
         if stmt
         {
             self.bump();
             let mut node = self.finish_call_stmt(parts)?;
-            do_if!(let Stmt::Call(call) = &mut node, call.parallel = true);
+            do_if!(let Stmt::Call(call) = &mut node, (call.parallel, call.apart) = (true, apart));
             return Ok(Head::Stmt(Box::new(node)));
         }
         self.bump();
@@ -1088,6 +1090,7 @@ impl Parser<'_>
         node.prepositions = prepositions;
         node.phrases = phrases;
         node.parallel = true;
+        node.apart = apart;
         Ok(Head::Expr(call))
     }
 }

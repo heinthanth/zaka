@@ -837,6 +837,8 @@ impl Parser<'_>
     {
         let (start, callee, place, args) = self.parse_call_head()?;
         let parallel = self.parallel_end() == Some(false);
+        let apart = self.apart_at(0);
+        do_if!(apart, _ = self.bump());
         do_if!(parallel, (0..2).for_each(|_| _ = self.bump()));
         let end = tern!(
             parallel,
@@ -845,7 +847,7 @@ impl Parser<'_>
         );
         let pass = end.kind == TokenKind::Kw(Kw::CallGoodResult);
         let mut call = self.call_expr(start.to(&end.span), callee, args, pass);
-        do_if!(let Expr::Call(node) = &mut call, node.parallel = parallel);
+        do_if!(let Expr::Call(node) = &mut call, (node.parallel, node.apart) = (parallel, apart));
         Ok(with_place(call, place))
     }
 

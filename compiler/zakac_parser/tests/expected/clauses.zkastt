@@ -825,6 +825,7 @@ program:
                 hi: 2143
           pass: false
           parallel: false
+          apart: false
           using: null
           prepositions: []
           phrases:

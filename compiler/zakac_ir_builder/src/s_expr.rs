@@ -209,9 +209,9 @@ impl ToSexpr for Expr
                 list(head, [self.kind.name(), operand.to_sexpr()])
             }
             ExprNode::Call { name, args, .. } => call_sexpr(name, args),
-            ExprNode::Spawn { name, args, .. } =>
+            ExprNode::Spawn { name, args, apart, .. } =>
             {
-                list("spawn", [call_sexpr(name, args)])
+                list(tern!(*apart, "spawn-apart", "spawn"), [call_sexpr(name, args)])
             }
             ExprNode::Wait(thread) => list("wait", [thread.to_sexpr()]),
             ExprNode::Receive(pipe) => list("receive", [pipe.to_sexpr()]),

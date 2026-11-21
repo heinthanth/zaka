@@ -87,6 +87,9 @@ pub(crate) fn past_marks(
 /// The word before the call end that runs a call as a thread.
 pub(crate) const PARALLEL: &str = "အပြိုင်";
 
+/// The word before `အပြိုင်` that puts a thread on an OS thread of its own.
+const APART: &str = "သီးသန့်";
+
 /// The word after `လုပ်ဆောင်သော` in the expression that gives the thread.
 pub(crate) const THREAD_NOUN: &str = "လုပ်ငန်း";
 
@@ -139,6 +142,7 @@ impl Parser<'_>
     /// `None` when neither stands there.
     pub(crate) fn parallel_end_at(&self, at: usize) -> Option<bool>
     {
+        let at = at + usize::from(self.apart_at(at));
         let word = |n: usize, text: &str| {
             let tok = self.peek_n(at + n);
             tok.kind == TokenKind::Ident && self.text_of(tok.span) == text
@@ -147,6 +151,21 @@ impl Parser<'_>
         let next = self.peek_n(at + 1).kind;
         ret_if!(next == TokenKind::Kw(Kw::WillDo), Some(true));
         (next == TokenKind::Kw(Kw::CallHead) && word(2, THREAD_NOUN)).then_some(false)
+    }
+
+    /// Whether `သီးသန့် အပြိုင်` stands `at` tokens ahead: the end of a parallel
+    /// call whose thread runs on an OS thread of its own.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn apart_at(&self, at: usize) -> bool
+    {
+        self.is_word_at(at, APART) && self.is_word_at(at + 1, PARALLEL)
     }
 
     /// Whether the end of a long call stands `n` tokens ahead: `လုပ်ဆောင်မည်`,

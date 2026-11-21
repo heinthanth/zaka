@@ -341,6 +341,7 @@ program:
             hi: 1389
       pass: false
       parallel: false
+      apart: false
       using: null
       prepositions: []
       phrases:

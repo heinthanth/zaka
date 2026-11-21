@@ -51,6 +51,9 @@ we can keep it in a variable and wait for it later.
 
 - We write the arguments as for a plain call, with the same prepositions. Neither
   `အပြိုင်` nor `လုပ်ငန်း` is a reserved word.
+- `သီးသန့် အပြိုင်` in place of `အပြိုင်` ("set apart, in parallel") asks for an OS thread
+  of its own for the thread in a native program, as [Threads and OS
+  threads](#threads-and-os-threads) tells. `သီးသန့်` is not a reserved word either.
 - The thread enters the function at once, with its own duplicate of each argument, and
   the program goes on while the thread runs in its own turns.
 - A function that returns nothing can run as a thread too, and a wait for it returns no
@@ -657,7 +660,7 @@ Where a thread runs depends on how the program runs:
   section describes.
 - **A native program**, from the C target or the native target ([Native
   programs](../compiler/native.md)), runs each thread on its own OS thread, with a stack
-  of 64 MiB. The OS threads run at the same time, so the order of their output lines can
+  of 64 MiB, and a thread written `သီးသန့် အပြိုင်` does the same. The OS threads run at the same time, so the order of their output lines can
   change from run to run, but what a thread returns and what a channel carries cannot. A
   wait for a thread, a receive or a send that would wait while no other thread runs stops
   the program with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a

@@ -491,6 +491,7 @@ program:
             args: []
             pass: false
             parallel: false
+            apart: false
             using: null
             prepositions: []
             phrases:
@@ -540,6 +541,7 @@ program:
                       hi: 2403
                 pass: false
                 parallel: false
+                apart: false
                 using: null
                 prepositions: []
                 phrases:

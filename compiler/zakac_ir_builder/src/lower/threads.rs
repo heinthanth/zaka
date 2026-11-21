@@ -25,12 +25,14 @@ impl Lowerer<'_>
     /// * `callee` - The name at the call.
     /// * `place` - The value a call on a value names, or `None`.
     /// * `args` - The arguments.
+    /// * `apart` - Whether the call asks for an OS thread of its own.
     ///
     /// # Returns
     ///
     /// The spawn.
     pub(super) fn spawn_node(
         &mut self, callee: &ast::Ident, place: Option<&ast::Expr>, args: &[ast::Expr],
+        apart: bool,
     ) -> ExprNode
     {
         let (target, sig) = self.call_target(callee, place);
@@ -43,7 +45,7 @@ impl Lowerer<'_>
         {
             unreachable!("the check lets a thread call a declared function alone")
         };
-        ExprNode::Spawn { func, name, args }
+        ExprNode::Spawn { func, name, args, apart }
     }
 
     /// The thread a wait waits for: the one argument of a call of the core's
@@ -94,7 +96,7 @@ impl Lowerer<'_>
     /// * `n` - The call.
     pub(super) fn spawn_stmt(&mut self, n: &st::CallStmt)
     {
-        let node = self.spawn_node(&n.callee, n.place.as_deref(), &n.args);
+        let node = self.spawn_node(&n.callee, n.place.as_deref(), &n.args, n.apart);
         let kind = DataKind::Task(task::make(false, None));
         self.spill(node_expr(kind, node, n.span));
     }

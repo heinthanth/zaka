@@ -859,6 +859,7 @@ program:
                 hi: 3800
           pass: false
           parallel: false
+          apart: false
           using: null
           prepositions: []
           phrases:
@@ -919,6 +920,7 @@ program:
                 hi: 4060
           pass: false
           parallel: false
+          apart: false
           using: null
           prepositions: []
           phrases:

@@ -9,6 +9,7 @@ use zakac_diagnostics::ownership as od;
 use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::HostFn;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::RECORD_HEAD;
@@ -46,6 +47,111 @@ pub(crate) fn check_threads(module: &Module) -> Vec<Diagnostic>
     ret_if!(spawned.is_empty(), Vec::new());
     let reached = reached_fns(module, spawned);
     reached.into_iter().filter_map(|f| global_use(module, f)).collect()
+}
+
+/// The functions whose threads can run as light tasks, small stacks that a pool
+/// of OS threads takes turns on: neither the function nor each function it
+/// reaches, through function values too, calls C, reads standard input or
+/// calls itself again. A thread written `သီးသန့် အပြိုင်` runs on an OS thread of
+/// its own whatever this gives.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// The function numbers, among those some call starts a thread in.
+pub fn light_fns(module: &Module) -> BTreeSet<u32>
+{
+    let taken = taken_fns(module);
+    let calls: Vec<BTreeSet<u32>> = module
+        .funcs
+        .iter()
+        .map(|f| {
+            let mut called = BTreeSet::new();
+            callees(&f.block, &taken, &mut called);
+            called
+        })
+        .collect();
+    let pins: Vec<bool> = module.funcs.iter().map(|f| pins_thread(&f.block)).collect();
+    let light = |f: &u32| {
+        let reached = reach(&calls, *f);
+        let pinned = pins[*f as usize] || reached.iter().any(|g| pins[*g as usize]);
+        let again = |g: &u32| reach(&calls, *g).contains(g);
+        !pinned && !again(f) && !reached.iter().any(again)
+    };
+    spawn_targets(module).into_iter().filter(light).collect()
+}
+
+/// The functions a function reaches through one call or more: the function
+/// itself is among them when it calls itself again.
+///
+/// # Arguments
+///
+/// * `calls` - The functions each function calls.
+/// * `start` - The function.
+///
+/// # Returns
+///
+/// The function numbers.
+fn reach(calls: &[BTreeSet<u32>], start: u32) -> BTreeSet<u32>
+{
+    let mut reached = BTreeSet::new();
+    let mut next: Vec<u32> = calls[start as usize].iter().copied().collect();
+    while let Some(f) = next.pop()
+    {
+        do_if!(reached.insert(f), next.extend(&calls[f as usize]));
+    }
+    reached
+}
+
+/// Whether statements need an OS thread of their own: a call of C, which can
+/// keep state for each OS thread or hold it in a call that blocks, or a read of
+/// standard input, which can wait with no end.
+///
+/// # Arguments
+///
+/// * `block` - The statements.
+///
+/// # Returns
+///
+/// `true` when one stands there.
+fn pins_thread(block: &[Stmt]) -> bool
+{
+    let mut found = false;
+    each_stmt(block, &mut |s| {
+        found |= matches!(s, Stmt::Foreign { .. });
+        let mut note = |e: &Expr| {
+            let read = matches!(e.node, ExprNode::Host { func: HostFn::ReadLine, .. });
+            found |= read || matches!(e.node, ExprNode::Foreign { .. });
+        };
+        do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
+    });
+    found
+}
+
+/// The functions some call starts a thread in.
+///
+/// # Arguments
+///
+/// * `module` - The module.
+///
+/// # Returns
+///
+/// The function numbers.
+fn spawn_targets(module: &Module) -> BTreeSet<u32>
+{
+    let mut found = BTreeSet::new();
+    let mut note = |e: &Expr| {
+        do_if!(let ExprNode::Spawn { func, .. } = &e.node, _ = found.insert(*func));
+    };
+    let bodies = module.funcs.iter().map(|f| &f.block).chain([&module.main]);
+    for block in bodies
+    {
+        each_stmt(block, &mut |s| do_for!(e in stmt_exprs(s), each_expr(e, &mut note)));
+    }
+    found
 }
 
 /// Whether calls of an export of a C lib can run on several OS threads at once
