@@ -39,6 +39,21 @@ thread_local! {
     /// keeps is still the thread's when the thread goes on on another OS
     /// thread.
     static ACTIVE: Cell<*mut ZkCtx> = const { Cell::new(null_mut()) };
+    /// Frees the frame table of [`CTX`] as the OS thread ends; set up the first
+    /// time the table is made, so an OS thread of C that ends frees its own.
+    static OWN_TABLE: OwnTable = const { OwnTable };
+}
+
+/// The frame table of the OS thread's own context, which its drop frees.
+struct OwnTable;
+
+impl Drop for OwnTable
+{
+    fn drop(&mut self)
+    {
+        // SAFETY: the OS thread ends, and no call of it still runs.
+        _ = CTX.try_with(|c| free_table(unsafe { &mut *c.get() }));
+    }
 }
 
 /// The context the calling OS thread runs with: the one of its thread, or its
@@ -104,12 +119,26 @@ pub(crate) fn free_ctx(ctx: *mut ZkCtx)
 {
     ret_if!(ctx.is_null());
     // SAFETY: `new_ctx` boxed it, and no OS thread runs with it now.
-    let ctx = unsafe { Box::from_raw(ctx) };
+    let mut ctx = unsafe { Box::from_raw(ctx) };
+    free_table(&mut ctx);
+}
+
+/// Free the frame table of a context, which then has none.
+///
+/// # Arguments
+///
+/// * `ctx` - The context.
+fn free_table(ctx: &mut ZkCtx)
+{
     ret_if!(ctx.room == 0);
-    // SAFETY: the table is the boxed slice of `room` rows `grow` leaked.
+    // SAFETY: the table is the boxed slice of `room` rows `grow` leaked, and
+    // the code of each call reads `frames` again at each use, so none holds the
+    // table past this.
     drop(unsafe {
         Box::from_raw(std::ptr::slice_from_raw_parts_mut(ctx.frames, ctx.room))
     });
+    ctx.frames = null_mut();
+    ctx.room = 0;
 }
 
 /// The calls in progress on the calling OS thread, with room in the frame table
@@ -129,7 +158,10 @@ pub extern "C" fn zk_ctx() -> *mut ZkCtx
     // The table of a thread is made once, to the size it needs; the OS
     // thread's own grows for a C lib whose limit is deeper.
     let own = ACTIVE.get().is_null();
-    do_if!(ctx.room < want && (own || ctx.room == 0), grow(ctx, want));
+    ret_if!(ctx.room >= want || !(own || ctx.room == 0), at);
+    // The table of the OS thread's own context goes when the OS thread ends.
+    do_if!(own, _ = OWN_TABLE.try_with(|_| ()));
+    grow(ctx, want);
     at
 }
 
@@ -158,17 +190,14 @@ fn wanted_rows() -> usize
 fn grow(ctx: &mut ZkCtx, rows: usize)
 {
     let mut frames = vec![ZkFrame::default(); rows].into_boxed_slice();
-    // SAFETY: the table before holds `room` rows, which live to the end of
-    // the program.
+    // SAFETY: the table before holds `room` rows.
     do_if!(
         ctx.room > 0,
         frames[..ctx.room].copy_from_slice(unsafe {
             std::slice::from_raw_parts(ctx.frames, ctx.room)
         })
     );
-    // shortcut: the table before a growth is never freed, and neither is the
-    // table of an OS thread of C's own that ends; a thread frees its own as it
-    // ends.
+    free_table(ctx);
     ctx.frames = Box::leak(frames).as_mut_ptr();
     ctx.room = rows;
 }
@@ -193,4 +222,25 @@ pub fn set_depth(depth: u32)
 {
     // SAFETY: the context of the OS thread lives as long as the OS thread.
     unsafe { (*zk_ctx()).depth = depth }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn a_growth_keeps_the_calls_and_frees_the_table_before()
+    {
+        let mut ctx = ZkCtx { depth: 2, frames: null_mut(), room: 0 };
+        grow(&mut ctx, 3);
+        // SAFETY: the table has 3 rows.
+        unsafe { (*ctx.frames.add(2)).func = 7 };
+        grow(&mut ctx, 8);
+        assert_eq!(ctx.room, 8);
+        // SAFETY: the table has 8 rows, the first 3 copied.
+        assert_eq!(unsafe { (*ctx.frames.add(2)).func }, 7);
+        free_table(&mut ctx);
+        assert!(ctx.frames.is_null() && ctx.room == 0);
+    }
 }
