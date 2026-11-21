@@ -150,6 +150,9 @@ en = "no row of the ဇယား has this index"
 [target_c.trap.wrong_variant]
 en = "the value is another member than the one read"
 
+[target_c.trap.stack_full]
+en = "the stack of a light task, %{size} octets, ran full"
+
 [target_c.trap.null_deref]
 en = "access through a null address at %{addr}"
 

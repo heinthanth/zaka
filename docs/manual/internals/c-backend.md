@@ -446,11 +446,16 @@ optional into a scratch slot, and a send moves its value through its address.
 ### The runtime side
 
 A light task (`tasks.rs`) runs on a stack of 1 MiB from `fiber.rs`, which the switch
-between stacks reaches through naked functions. Its `Local` carries its call context and
+between stacks reaches through naked functions. Below the stack lie 64 KiB that no access
+can reach; a fault there, which a handler on a signal stack of each OS thread of the pool
+catches, writes the trap `stack full` with no allocation and ends the program. Each other
+fault goes on to the handler that was there before. Its `Local` carries its call context and
 its other cells from one OS thread of the pool to the next. It stops in `wait_until`,
 which drops the lock of the state first, in `zk_sleep`, and in `zk_safe_point` once its
 turn of 10 ms is over while other tasks wait. A parked task counts as not running, as a
-waiting OS thread does, so the deadlock rule below holds for both.
+waiting OS thread does, so the deadlock rule below holds for both. A parked task waits on
+a key (a thread, a channel, a lock, or each change), and a change wakes the tasks of its
+key alone; a woken task counts as halted for the ring collector until it runs again.
 
 The runtime (`zaka_runtime/src/threads.rs`) keeps the threads and channels under one lock
 and one condition. It counts the OS threads that run: the main one (`mark_main`, from

@@ -796,6 +796,24 @@ pub(crate) fn halted_while(work: impl FnOnce())
     safe_point();
 }
 
+/// Count OS threads or light tasks as halted: light tasks put back in the
+/// queue, which change no count until each runs again.
+///
+/// # Arguments
+///
+/// * `count` - The count.
+#[cfg(unix)]
+pub(crate) fn halted_add(count: usize) { HALTED.fetch_add(count, Ordering::SeqCst); }
+
+/// A light task that [`halted_add`] counted runs again: it is no more halted,
+/// and halts at a safe point when a collection runs now.
+#[cfg(unix)]
+pub(crate) fn halted_leave()
+{
+    HALTED.fetch_sub(1, Ordering::SeqCst);
+    safe_point();
+}
+
 /// A safe point the loops of native code reach once the flag reads set:
 /// see [`safe_point`].
 #[unsafe(export_name = stamped!("safe_point"))]

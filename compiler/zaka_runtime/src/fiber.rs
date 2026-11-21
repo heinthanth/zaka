@@ -11,14 +11,23 @@ use std::ptr::null_mut;
 
 use zakac_rust_sugars::ret_if;
 
-/// A stack of its own, with a page at its low end that no access can reach,
-/// so a stack that runs full stops the program in place of writing past it.
+/// The octets at the low end of a stack that no access can reach: more than
+/// the frame of each function a light task can call (the compiler gives a
+/// thread with a larger frame an OS thread), so a stack that runs full meets
+/// them in place of writing past them.
+const GUARD: usize = 64 * 1024;
+
+/// A stack of its own, with [`GUARD`] octets at its low end that no access can
+/// reach, so a stack that runs full stops the program in place of writing
+/// past it.
 pub(crate) struct Stack
 {
-    /// The low end of the mapping, the guard page first.
+    /// The low end of the mapping, the guard first.
     base: *mut u8,
     /// The octets of the mapping.
     size: usize,
+    /// The octets of the guard.
+    guard: usize,
 }
 
 impl Stack
@@ -38,17 +47,40 @@ impl Stack
         // SAFETY: `sysconf` reads a setting of the OS.
         let page =
             usize::try_from(unsafe { libc::sysconf(libc::_SC_PAGESIZE) }).ok()?;
-        let size = size.next_multiple_of(page) + page;
+        let guard = GUARD.next_multiple_of(page);
+        let size = size.next_multiple_of(page) + guard;
         let prot = libc::PROT_READ | libc::PROT_WRITE;
         let flags = libc::MAP_PRIVATE | libc::MAP_ANON;
         // SAFETY: a new private mapping, which no other code reaches.
         let base = unsafe { libc::mmap(null_mut(), size, prot, flags, -1, 0) };
         ret_if!(base == libc::MAP_FAILED, None);
-        // SAFETY: the first page of the mapping above.
-        let guarded = unsafe { libc::mprotect(base, page, libc::PROT_NONE) };
-        let stack = Stack { base: base.cast(), size };
+        // SAFETY: the low end of the mapping above.
+        let guarded = unsafe { libc::mprotect(base, guard, libc::PROT_NONE) };
+        let stack = Stack { base: base.cast(), size, guard };
         (guarded == 0).then_some(stack)
     }
+
+    /// Whether an address lies in the guard of the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The address.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    pub(crate) fn guards(&self, at: usize) -> bool
+    {
+        let base = self.base as usize;
+        (base..base + self.guard).contains(&at)
+    }
+
+    /// The octets a task can use, the guard left out.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    pub(crate) fn room(&self) -> usize { self.size - self.guard }
 
     /// The high end of the stack, where it starts: a stack grows down.
     ///

@@ -148,3 +148,52 @@ fn a_thread_written_apart_runs_on_an_os_thread_of_its_own()
         assert_eq!(run.stdout, "၁၀\n", "{how}");
     });
 }
+
+/// A chain of functions that each keep a list of 1500 cells, 12 KiB, and call
+/// the next: no function calls itself again, so a thread of the first runs as
+/// a light task, and the chain needs more than its stack of 1 MiB.
+fn deep_chain(count: u32) -> String
+{
+    let list =
+        "ကိန်းရှင် ကိန်းများ သည် အကွက် ၁၅၀၀ ရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။";
+    let link = |i: u32| {
+        let ret = match i == count
+        {
+            true => "ကိန်းများ ၏ အကွက် ၀ ကို ပြန်ပေးမည်။".to_string(),
+            false => format!("f{}() + (ကိန်းများ ၏ အကွက် ၀) ကို ပြန်ပေးမည်။", i + 1),
+        };
+        format!(
+            "f{i} ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို \
+             ပြန်ပေးမည်။\n{list}\n{ret}\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n"
+        )
+    };
+    let fns: String = (1..=count).map(link).collect();
+    format!(
+        "{fns}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် f1 ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+က ကို စောင့်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+"
+    )
+}
+
+#[test]
+fn a_light_task_whose_stack_runs_full_stops_with_a_trap()
+{
+    both(&deep_chain(120), |how, run| {
+        let want = "the program stopped: the stack of a light task, 1048576 octets, \
+                    ran full\n";
+        assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
+        assert_eq!(run.status, Some(1), "{how}");
+    });
+}
+
+#[test]
+fn the_same_chain_on_an_os_thread_of_its_own_has_room()
+{
+    let text = deep_chain(120).replace(" အပြိုင် လုပ်ဆောင်သော", " သီးသန့် အပြိုင် လုပ်ဆောင်သော");
+    both(&text, |how, run| {
+        assert_eq!(run.status, Some(0), "{how}: {}", run.stderr);
+        assert_eq!(run.stdout, "၀\n", "{how}");
+    });
+}

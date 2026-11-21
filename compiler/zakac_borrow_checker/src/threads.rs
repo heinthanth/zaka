@@ -9,6 +9,7 @@ use zakac_diagnostics::ownership as od;
 use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
+use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::HostFn;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
@@ -51,9 +52,9 @@ pub(crate) fn check_threads(module: &Module) -> Vec<Diagnostic>
 
 /// The functions whose threads can run as light tasks, small stacks that a pool
 /// of OS threads takes turns on: neither the function nor each function it
-/// reaches, through function values too, calls C, reads standard input or
-/// calls itself again. A thread written `သီးသန့် အပြိုင်` runs on an OS thread of
-/// its own whatever this gives.
+/// reaches, through function values too, calls C, reads standard input,
+/// calls itself again or keeps more than 16 KiB of locals. A thread written
+/// `သီးသန့် အပြိုင်` runs on an OS thread of its own whatever this gives.
 ///
 /// # Arguments
 ///
@@ -74,7 +75,8 @@ pub fn light_fns(module: &Module) -> BTreeSet<u32>
             called
         })
         .collect();
-    let pins: Vec<bool> = module.funcs.iter().map(|f| pins_thread(&f.block)).collect();
+    let pins = module.funcs.iter().map(|f| pins_thread(&f.block) || large_frame(f));
+    let pins: Vec<bool> = pins.collect();
     let light = |f: &u32| {
         let reached = reach(&calls, *f);
         let pinned = pins[*f as usize] || reached.iter().any(|g| pins[*g as usize]);
@@ -104,6 +106,28 @@ fn reach(calls: &[BTreeSet<u32>], start: u32) -> BTreeSet<u32>
         do_if!(reached.insert(f), next.extend(&calls[f as usize]));
     }
     reached
+}
+
+/// The most octets of locals a function of a light task can have: below the
+/// guard of the stack of a task, so a frame never steps past the guard.
+const LIGHT_FRAME: u64 = 16 * 1024;
+
+/// Whether a function keeps more locals than a light task can hold in one
+/// frame.
+///
+/// # Arguments
+///
+/// * `func` - The function.
+///
+/// # Returns
+///
+/// `true` when it does.
+fn large_frame(func: &Func) -> bool
+{
+    // Sizes at 64 bits, the widest platform: a 32-bit one sends more threads
+    // to OS threads, never fewer.
+    let octets: u64 = func.locals.iter().map(|s| u64::from(s.kind.size(64))).sum();
+    octets > LIGHT_FRAME
 }
 
 /// Whether statements need an OS thread of their own: a call of C, which can

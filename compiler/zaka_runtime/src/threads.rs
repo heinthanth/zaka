@@ -118,8 +118,9 @@ struct State
     parked: usize,
     /// The count of changes so far, which tells a waiter its wake is real.
     changes: u64,
-    /// The light tasks that wait for the state to change.
-    parked_tasks: Vec<Box<Task>>,
+    /// The light tasks that wait for the state to change, each with what it
+    /// waits on; each is out of `running` and `parked`.
+    parked_tasks: Vec<(Key, Box<Task>)>,
 }
 
 /// The state of the threads and channels.
@@ -208,7 +209,7 @@ pub(crate) fn recheck_waits()
     ret_if!(!PROGRAM.load(Ordering::SeqCst));
     let mut st = state();
     ret_if!(st.parked == 0);
-    changed(&mut st);
+    changed(&mut st, Key::Each);
 }
 
 /// Whether C holds a closure it can call from an OS thread of its own.
@@ -238,18 +239,57 @@ fn state() -> MutexGuard<'static, State>
     STATE.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// Mark the state changed: each OS thread that waits runs again and looks.
+/// What a wait waits on, so that a change wakes the light tasks it concerns
+/// alone; an OS thread that waits wakes at each change.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Key
+{
+    /// The end of the thread with this number.
+    Thread(usize),
+    /// A value of, or room in, the channel at this index, or its close.
+    Pipe(usize),
+    /// The lock of the object at this address.
+    Lock(usize),
+    /// Each change.
+    Each,
+}
+
+impl Key
+{
+    /// Whether a change of `other` concerns a wait on this.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - What changed.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it does.
+    fn meets(self, other: Key) -> bool
+    {
+        self == other || self == Key::Each || other == Key::Each
+    }
+}
+
+/// Mark the state changed: each OS thread that waits runs again and looks,
+/// and so does each light task that waits on what changed.
 ///
 /// # Arguments
 ///
 /// * `st` - The state.
-fn changed(st: &mut State)
+/// * `what` - What changed.
+fn changed(st: &mut State, what: Key)
 {
     st.running += st.parked;
     st.parked = 0;
     st.changes += 1;
     CHANGED.notify_all();
-    crate::tasks::requeue(std::mem::take(&mut st.parked_tasks));
+    let (woken, waiting): (Vec<_>, Vec<_>) = std::mem::take(&mut st.parked_tasks)
+        .into_iter()
+        .partition(|(k, _)| k.meets(what));
+    st.parked_tasks = waiting;
+    st.running += woken.len();
+    crate::tasks::wake(woken.into_iter().map(|(_, task)| task).collect());
 }
 
 /// Wait until `came` holds; a wait while no other OS thread runs stops the
@@ -258,13 +298,14 @@ fn changed(st: &mut State)
 /// # Arguments
 ///
 /// * `st` - The state, locked.
+/// * `key` - What the wait waits on, for a light task.
 /// * `came` - What the OS thread waits for.
 ///
 /// # Returns
 ///
 /// The state, locked, with `came` holding.
 fn wait_until(
-    mut st: MutexGuard<'static, State>, came: impl Fn(&State) -> bool,
+    mut st: MutexGuard<'static, State>, key: Key, came: impl Fn(&State) -> bool,
 ) -> MutexGuard<'static, State>
 {
     // An OS thread of C is out of the count: it waits and changes no count.
@@ -273,17 +314,16 @@ fn wait_until(
     while !came(&st)
     {
         let seen = st.changes;
-        if counted
-        {
-            st.running -= 1;
-            st.parked += 1;
-        }
+        // A light task that waits is counted through its place in the list of
+        // parked tasks.
+        do_if!(counted, st.running -= 1);
+        do_if!(counted && !task, st.parked += 1);
         if counted && st.running == 0 && !outside_acts()
         {
             drop(st);
             deadlock();
         }
-        st = tern!(task, park_until_changed(st, seen), wait_for_change(st, seen));
+        st = tern!(task, park_until_changed(st, seen, key), wait_for_change(st, seen));
         // An OS thread that wakes during a collection halts first, holding no
         // lock.
         if crate::seqs::halt_asked()
@@ -325,16 +365,17 @@ fn wait_for_change(
 ///
 /// * `st` - The state, locked.
 /// * `seen` - The count of changes so far.
+/// * `key` - What the task waits on.
 ///
 /// # Returns
 ///
 /// The state, locked again.
 fn park_until_changed(
-    st: MutexGuard<'static, State>, seen: u64,
+    st: MutexGuard<'static, State>, seen: u64, key: Key,
 ) -> MutexGuard<'static, State>
 {
     drop(st);
-    crate::tasks::park(seen);
+    crate::tasks::park(seen, key);
     state()
 }
 
@@ -345,13 +386,16 @@ fn park_until_changed(
 ///
 /// * `task` - The task.
 /// * `seen` - The count of changes it saw.
+/// * `key` - What it waits on.
 #[cfg(unix)]
-pub(crate) fn park_task(task: Box<Task>, seen: u64)
+pub(crate) fn park_task(task: Box<Task>, seen: u64, key: Key)
 {
     let mut st = state();
-    ret_if!(st.changes == seen, st.parked_tasks.push(task));
+    ret_if!(st.changes == seen, st.parked_tasks.push((key, task)));
+    // A change came since the task looked: it looks again, counted as running.
+    st.running += 1;
     drop(st);
-    crate::tasks::requeue(vec![task]);
+    crate::tasks::wake(vec![task]);
 }
 
 /// Whether a program runs, as against a C lib, whose OS threads come from C.
@@ -630,7 +674,7 @@ pub(crate) fn thread_ended(n: usize, status: i32)
     let mut st = state();
     st.threads[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
     st.running -= 1;
-    changed(&mut st);
+    changed(&mut st, Key::Thread(n));
 }
 
 /// Wait for a thread to end and take its result: one wait takes it, as the
@@ -658,7 +702,8 @@ pub extern "C" fn zk_thread_wait(n: usize) -> *mut u8
         drop(st);
         stop_owned(trap::THREAD_TRAPPED, vec![named("thread", n)])
     };
-    let mut st = wait_until(st, |s| s.threads[at].end != End::Runs);
+    let ended = |s: &State| s.threads[at].end != End::Runs;
+    let mut st = wait_until(st, Key::Thread(n), ended);
     if st.threads[at].awaited
     {
         drop(st);
@@ -794,7 +839,7 @@ pub extern "C" fn zk_lock(obj: *mut u8)
         };
         while took == Take::Other
         {
-            drop(wait_until(state(), free));
+            drop(wait_until(state(), Key::Lock(obj), free));
             took = take_free(obj, me);
         }
         LOCK_WAITERS.fetch_sub(1, Ordering::SeqCst);
@@ -824,7 +869,7 @@ pub extern "C" fn zk_unlock(obj: *mut u8)
         held.remove(at);
     }
     ret_if!(LOCK_WAITERS.load(Ordering::SeqCst) == 0);
-    changed(&mut state());
+    changed(&mut state(), Key::Lock(obj));
 }
 
 /// Add a value to an atomic number of the platform width, or subtract it,
@@ -1022,7 +1067,8 @@ pub extern "C" fn zk_par_for(
 /// `true` when it ran to its end, `false` when a trap ended it.
 fn thread_ended_well(n: usize) -> bool
 {
-    let mut st = wait_until(state(), |s| s.threads[n - 1].end != End::Runs);
+    let ended = |s: &State| s.threads[n - 1].end != End::Runs;
+    let mut st = wait_until(state(), Key::Thread(n), ended);
     st.threads[n - 1].awaited = true;
     let well = st.threads[n - 1].end == End::Done;
     let os_thread = st.threads[n - 1].os_thread.take();
@@ -1149,7 +1195,7 @@ pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
         let p = &s.pipes[at];
         p.closed || p.room == 0 || p.queue.len() < p.room
     };
-    let mut st = wait_until(st, full);
+    let mut st = wait_until(st, Key::Pipe(at), full);
     if st.pipes[at].closed
     {
         drop(st);
@@ -1161,7 +1207,7 @@ pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
     pipe.queue.push_back(octets.to_vec().into_boxed_slice());
     pipe.kind = k as usize;
     octets.fill(0);
-    changed(&mut st);
+    changed(&mut st, Key::Pipe(at));
 }
 
 /// Write the next value of a channel as an optional: it waits while the
@@ -1180,9 +1226,9 @@ pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
     let st = state();
     let at = pipe_at(&st, n);
     let came = |s: &State| s.pipes[at].closed || !s.pipes[at].queue.is_empty();
-    let mut st = wait_until(st, came);
+    let mut st = wait_until(st, Key::Pipe(at), came);
     let value = st.pipes[at].queue.pop_front();
-    do_if!(value.is_some(), changed(&mut st));
+    do_if!(value.is_some(), changed(&mut st, Key::Pipe(at)));
     drop(st);
     // SAFETY: the optional is `size` octets of the generated code.
     let slot = unsafe { std::slice::from_raw_parts_mut(out, optional.size) };
@@ -1214,7 +1260,7 @@ pub extern "C" fn zk_pipe_close(n: usize)
         stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
     }
     st.pipes[at].closed = true;
-    changed(&mut st);
+    changed(&mut st, Key::Pipe(at));
 }
 
 /// Sleep: this OS thread waits for a count of milliseconds, and the other
@@ -1245,7 +1291,8 @@ pub(crate) fn end() -> bool
 {
     let st = state();
     ret_if!(st.threads.is_empty() && st.pipes.is_empty(), false);
-    let st = wait_until(st, |s| s.threads.iter().all(|j| j.end != End::Runs));
+    let st =
+        wait_until(st, Key::Each, |s| s.threads.iter().all(|j| j.end != End::Runs));
     let mut st = st;
     let os_threads: Vec<_> =
         st.threads.iter_mut().filter_map(|j| j.os_thread.take()).collect();

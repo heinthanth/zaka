@@ -67,6 +67,8 @@ pub enum ZkTrap
     ThreadsNotPositive,
     ThreadWaited,
     WrongVariant,
+    /// The stack of a light task ran full.
+    StackFull,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -110,6 +112,8 @@ pub(crate) mod trap
     pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
     pub(crate) const THREADS_NOT_POSITIVE: i32 = ZkTrap::ThreadsNotPositive as i32;
     pub(crate) const THREAD_WAITED: i32 = ZkTrap::ThreadWaited as i32;
+    #[cfg(unix)]
+    pub(crate) const STACK_FULL: i32 = ZkTrap::StackFull as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.
@@ -412,6 +416,102 @@ fn exit_with(said: Vec<u8>) -> !
     let _ = err.write_all(&line);
     let _ = err.flush();
     std::process::exit(1)
+}
+
+/// Stop the program with the trap `stack full`, from the handler of a fault on
+/// the guard page of a light task: the line is written with no allocation and
+/// no lock, since the fault can come inside either, and the program ends.
+///
+/// # Arguments
+///
+/// * `size` - The octets of the stack.
+#[cfg(unix)]
+pub(crate) fn stack_full_from_signal(size: usize) -> !
+{
+    let mut digits = [0u8; 20];
+    let digits = decimal(size, &mut digits);
+    let p = prog();
+    let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
+    raw_write(name);
+    raw_write(b": ");
+    let reason = row(p.trap_text, trap::STACK_FULL as usize);
+    // The head of the line holds the reason at `%{e}`.
+    let stopped = text(p.stopped_text);
+    let at = stopped.windows(4).position(|w| w == b"%{e}");
+    let (head, tail) =
+        at.map_or((stopped, &b""[..]), |i| (&stopped[..i], &stopped[i + 4..]));
+    raw_write(head);
+    fill_raw(reason, &[(b"size", digits)], &mut |piece| raw_write(piece));
+    raw_write(tail);
+    raw_write(b"\n");
+    // SAFETY: `_exit` ends the process at once, as a trap does.
+    unsafe { libc::_exit(1) }
+}
+
+/// Write octets to standard error with no allocation.
+///
+/// # Arguments
+///
+/// * `octets` - The octets.
+#[cfg(unix)]
+fn raw_write(octets: &[u8])
+{
+    // SAFETY: `write` reads `len` octets of the slice.
+    let _ = unsafe { libc::write(2, octets.as_ptr().cast(), octets.len()) };
+}
+
+/// The decimal digits of a number, in a buffer of the caller.
+///
+/// # Arguments
+///
+/// * `n` - The number.
+/// * `buf` - Room for the digits.
+///
+/// # Returns
+///
+/// The digits, at the end of `buf`.
+#[cfg(unix)]
+fn decimal(mut n: usize, buf: &mut [u8; 20]) -> &[u8]
+{
+    let mut at = buf.len();
+    loop
+    {
+        at -= 1;
+        buf[at] = b'0' + (n % 10) as u8;
+        n /= 10;
+        ret_if!(n == 0, &buf[at..]);
+    }
+}
+
+/// [`fill`] with no allocation: each piece goes to `out` in turn.
+///
+/// # Arguments
+///
+/// * `tmpl` - The template.
+/// * `pairs` - Each name of its slots and its value.
+/// * `out` - Where each piece goes.
+#[cfg(unix)]
+fn fill_raw(tmpl: &[u8], pairs: &[(&[u8], &[u8])], out: &mut dyn FnMut(&[u8]))
+{
+    let mut rest = tmpl;
+    while !rest.is_empty()
+    {
+        let slot = rest.strip_prefix(b"%{").and_then(|s| {
+            let end = s.iter().position(|c| *c == b'}')?;
+            let value = pairs.iter().find(|(n, _)| *n == &s[..end])?.1;
+            Some((value, &s[end + 1..]))
+        });
+        if let Some((value, after)) = slot
+        {
+            out(value);
+            rest = after;
+            continue;
+        }
+        let next =
+            rest[1..].iter().position(|c| *c == b'%').map_or(rest.len(), |i| i + 1);
+        out(&rest[..next]);
+        rest = &rest[next..];
+    }
 }
 
 /// The trap line with its place, with no name of an executable before it.

@@ -367,8 +367,9 @@ Two checks live outside `checks/` and keep their own facts:
   and reports the first read, address or write of a global that is not a constant in
   each one. It runs once the lint levels are set, so ZK0726 is an error at each level.
 - `threads.rs` also gives the codegens `light_fns`: the functions a spawn starts in whose
-  reach, through function values too, holds no call of C, no read of standard input and
-  no function that calls itself again. A thread of one of these runs as a light task, unless its call is
+  reach, through function values too, holds no call of C, no read of standard input, no
+  function that calls itself again and no function with more than 16 KiB of locals (at 64
+  bits), below the guard of 64 KiB under the stack of a task. A thread of one of these runs as a light task, unless its call is
   written `သီးသန့် အပြိုင်`.
 - `init.rs` raises ZK0722 to ZK0724 (see [Set before read](#set-before-read)).
 

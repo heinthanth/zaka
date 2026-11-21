@@ -239,7 +239,7 @@ their own, so a sleep ends at once and the lines still come in the same order.
   ([Commands](../../manual/compiler/commands.md)).
 - **Light tasks.** Tens of thousands of threads fit in a native program, as light tasks.
   The compiler gives a thread an OS thread of its own when it calls C, reads standard
-  input or calls a function again, and we can ask for one with `သီးသန့် အပြိုင်` in place
+  input, calls a function again or keeps large locals, and we can ask for one with `သီးသန့် အပြိုင်` in place
   of `အပြိုင်` ([Light tasks](../../manual/language/threads.md#light-tasks)).
 - **Shuffled turns.** `zakac run --shuffle-thread-order` makes the VM take turns in a
   shuffled order, which helps to find a mistake that hangs on the order of the threads
