@@ -141,6 +141,24 @@ pub fn pa_in_value(span: Span, verb: &str, particle: &str) -> Diagnostic
     Diagnostic::new(Code::PaInValue, msg, span).with_help(help)
 }
 
+/// A verb or a truth value before `မဟုတ်` carries no `သည်`.
+///
+/// # Arguments
+///
+/// * `span` - The word, with its particle.
+/// * `verb` - The word text.
+/// * `particle` - The particle found, blank for none.
+///
+/// # Returns
+///
+/// The `ZK0512` diagnostic, with the `သည်` spelling as a hint.
+pub fn verb_before_not(span: Span, verb: &str, particle: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0512.message", v = verb, p = particle);
+    let help = t!("codes.ZK0512.help", v = verb);
+    Diagnostic::new(Code::VerbBeforeNot, msg, span).with_help(help)
+}
+
 /// A count word uses a classifier other than the kind's own.
 ///
 /// # Arguments

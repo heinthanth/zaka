@@ -140,7 +140,9 @@ fn lint_digits(lint: LintLevels) -> String
     LINT_CODES.iter().map(digit).collect()
 }
 
-/// The lint levels of digits made with [`lint_digits`].
+/// The lint levels of digits made with [`lint_digits`]. A new lint code
+/// joins the end of `LINT_CODES`, so a link made before it has fewer digits,
+/// and each code past them keeps its own level.
 ///
 /// # Arguments
 ///
@@ -151,7 +153,7 @@ fn lint_digits(lint: LintLevels) -> String
 /// The levels, or `None` for other text.
 fn read_lint(digits: &str) -> Option<LintLevels>
 {
-    ret_if!(digits.chars().count() != LINT_CODES.len(), None);
+    ret_if!(digits.is_empty() || digits.chars().count() > LINT_CODES.len(), None);
     let level = |c: char| match c
     {
         '0' => Some(None),

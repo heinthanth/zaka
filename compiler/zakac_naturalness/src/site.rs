@@ -201,6 +201,10 @@ impl FinalWord
     /// The reserved word text.
     pub fn text(self) -> &'static str
     {
+        // A test joins its noun into one word, `ဒေတာ ရှိ`; the verb is `ရှိ`.
+        let test = [VerbOp::HasData, VerbOp::IsGood, VerbOp::IsFault];
+        ret_if!(matches!(self, FinalWord::Verb(op) if test.contains(&op)), "ရှိ");
+        ret_if!(self == FinalWord::Verb(VerbOp::LacksData), "မရှိ");
         let kw = match self
         {
             FinalWord::Verb(op) => VERBS.iter().find(|v| v.op == op).map(|v| v.kw),

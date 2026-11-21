@@ -84,6 +84,11 @@ fn each_particle_rule_writes_the_idiomatic_line()
             "က သည် ၁ နှင့် မညီပါ ဟု ပြသမည်။",
         ),
         (Code::PrintValueWithHu, "က ဟု ပြသမည်။", "က ကို ပြသမည်။"),
+        (
+            Code::VerbBeforeNot,
+            "(က သည် ၁ နှင့် ညီ မဟုတ်) ကို ပြသမည်။",
+            "(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသမည်။",
+        ),
         (Code::RedundantGroup, "(က + ၁) ကို ပြသမည်။", "က + ၁ ကို ပြသမည်။"),
     ];
     for (code, line, want) in cases

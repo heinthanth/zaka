@@ -1,5 +1,6 @@
-//! Rules for the particle warnings (ZK0501 to ZK0508): each finds, in the
-//! source text, the word the warning is about and writes the idiomatic form.
+//! Rules for the particle warnings (ZK0501 to ZK0508, and ZK0512): each finds,
+//! in the source text, the word the warning is about and writes the idiomatic
+//! form.
 
 use zakac_diagnostics::Code;
 use zakac_diagnostics::Diagnostic;
@@ -49,6 +50,7 @@ pub(crate) fn fixes(root: &SourceFile, d: &Diagnostic) -> Vec<Fix>
         Code::PaBeforeAnd | Code::PaInValue => at.swap_tail(PA, THI),
         Code::ParticleBeforeAttached => at.attached(),
         Code::NotWithThi => at.not_forms(),
+        Code::VerbBeforeNot => at.set_tail(THI),
         Code::PrintSentenceWithKo => at.swap_next(KO, HU),
         Code::PrintValueWithHu => at.swap_next(HU, KO),
         Code::RedundantGroup => at.unwrap_group(),
@@ -98,6 +100,16 @@ impl Site<'_>
         {
             return Vec::new();
         };
+        let new = format!("{verb}{to}");
+        vec![rule_fix(self.root, self.message(&new), start, self.hi, new)]
+    }
+
+    /// Give the last word a particle in place of the one it has, or none.
+    fn set_tail(&self, to: &str) -> Vec<Fix>
+    {
+        let start = self.word_start();
+        let word = &self.src()[start..self.hi];
+        let verb = bare(word).unwrap_or(word);
         let new = format!("{verb}{to}");
         vec![rule_fix(self.root, self.message(&new), start, self.hi, new)]
     }

@@ -32,7 +32,7 @@ pub enum LintLevel
 /// The codes whose level `--lint-allow`, `--lint-warn` and `--lint-error` set:
 /// the pointer lint, the warnings of the checks that a proof can leave in
 /// doubt, and the naturalness rules.
-pub const LINT_CODES: [Code; 24] = [
+pub const LINT_CODES: [Code; 25] = [
     Code::BadFree,
     Code::BorrowStored,
     Code::InvalidatedLoan,
@@ -57,6 +57,7 @@ pub const LINT_CODES: [Code; 24] = [
     Code::ClassifierMismatch,
     Code::SpokenForm,
     Code::MixedForms,
+    Code::VerbBeforeNot,
 ];
 
 /// The spoken spellings. Their mix with the written ones (ZK0511) is no
@@ -76,6 +77,7 @@ const NATURALNESS_CODES: &[Code] = &[
     Code::ClassifierMismatch,
     Code::SpokenForm,
     Code::MixedForms,
+    Code::VerbBeforeNot,
 ];
 
 /// A named set of lint codes, for `--lint-allow`, `--lint-warn` and

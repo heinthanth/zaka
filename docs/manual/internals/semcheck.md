@@ -246,6 +246,7 @@ matters when two rules overlap.
 | ZK0506 | a plain value printed with `ဟု` | `ကို` |
 | ZK0507 | parentheses that add nothing | none |
 | ZK0508 | a clause that has a value ends in `ပါ` or `ပါသည်` | `သည်` |
+| ZK0512 | a verb or a truth value before `မဟုတ်`, with no particle or `ပါ` | `သည်` |
 
 A run of `"မင်္ဂလာပါ" ကို ပြသမည်။` produces `warning[ZK0505]` with the help `write "... ဟု
 ပြသမည်။"`. The natural wording is a matter of the language, and

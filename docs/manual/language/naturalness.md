@@ -45,6 +45,7 @@ When two rules fit one place, the check reports the first one in the table below
 | ZK0507 | parentheses that change nothing | `အသက် + ၁ ကို ပြသမည်` | `(အသက် + ၁) ကို ပြသမည်` |
 | ZK0508 | a sentence used as a value | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
 | ZK0509 | the measure word (classifier) after a data kind | `ကိန်းပြည့် တစ်ခု`, `လူ တစ်ယောက်` ([Measure words](kinds.md#measure-words)) | `ကိန်းပြည့် တစ်ယောက်` |
+| ZK0512 | a verb before `မဟုတ်` ("not") | `ညီသည် မဟုတ်` | `ညီ မဟုတ်` |
 
 The right-hand column is still valid Zaka, but it sounds less natural. The "not" verbs are
 `မညီ`, `မကြီး`, `မငယ်`, `မမှန်` and `မဟုတ်`.
@@ -112,6 +113,24 @@ The negation that comes after a clause ends in `ပါ` or in nothing at all. `�
 
 ```text
 warning[ZK0503]: "မဟုတ်သည်" reads better as "မဟုတ်ပါ" or "မဟုတ်"
+```
+
+### ZK0512: a verb before "မဟုတ်"
+
+The negation `မဟုတ်` comes after a whole clause, so the verb that closes the clause ends in
+`သည်` before it, as in `ညီသည် မဟုတ်`. The same holds for the test of an optional or a
+result: `R ထဲတွင် ဒေတာ ရှိသည် မဟုတ်လျှင်`. A verb with no particle, or with `ပါ`, before
+`မဟုတ်` gets the warning.
+
+```zaka-warning ZK0512
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
+(အသက် သည် ၁၈ နှင့် ညီ မဟုတ်) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+warning[ZK0512]: "ညီ" before "မဟုတ်" reads better as "ညီသည်"
 ```
 
 ### ZK0504: "ပါ" before "ဖြစ်၍"

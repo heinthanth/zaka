@@ -64,6 +64,7 @@ fn next_ctx(tok: &Token) -> NextCtx
         TokenKind::Kw(Kw::WhileIs) => NextCtx::WhileIs,
         TokenKind::Kw(Kw::And) | TokenKind::Punct(Punct::AndAnd) => NextCtx::And,
         TokenKind::Punct(Punct::RParen) => NextCtx::Close,
+        TokenKind::Kw(Kw::Not) => NextCtx::Not,
         _ => NextCtx::Other,
     }
 }

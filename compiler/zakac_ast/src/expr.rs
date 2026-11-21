@@ -54,6 +54,8 @@ pub enum NextCtx
     And,
     /// `)`
     Close,
+    /// The postfix negation `မဟုတ်`.
+    Not,
 }
 
 /// An expression.

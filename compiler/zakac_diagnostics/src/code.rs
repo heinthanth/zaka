@@ -524,6 +524,8 @@ SpokenForm = ("ZK0510", Level::Error),
 /// A file that writes some words in their spoken spelling and others in
 /// their written one.
 MixedForms = ("ZK0511", Level::Warning),
+/// A verb or a truth value before `မဟုတ်` carries no `သည်`.
+VerbBeforeNot = ("ZK0512", Level::Warning),
 
 // constant folding: ZK06xx
 /// An operation on constants gives a value outside its kind.

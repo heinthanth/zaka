@@ -353,6 +353,10 @@ fn build(code: Code, site: &Site) -> Diagnostic
         {
             diag::not_with_thi(n.span, particle_text(n.particle))
         }
+        (Code::VerbBeforeNot, Site::Final(n)) =>
+        {
+            diag::verb_before_not(n.span, n.word.text(), particle_text(n.particle))
+        }
         (Code::PaBeforeAnd, Site::Final(n)) =>
         {
             diag::pa_before_and(n.span, n.word.text(), particle_text(n.particle))

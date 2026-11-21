@@ -75,6 +75,7 @@ column is still valid Zaka that runs the same, but sounds less natural:
 | ZK0507 | parentheses that change nothing | `က + ၁ ကို ပြသမည်` | `(က + ၁) ကို ပြသမည်` |
 | ZK0508 | a sentence used as a value (stored, returned, passed) | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
 | ZK0509 | the measure word (classifier) after a data kind | `လူ တစ်ယောက်` | `လူ တစ်ခု`, for a struct counted with `ယောက်` |
+| ZK0512 | a verb before `မဟုတ်` (not) | `ညီသည် မဟုတ်` | `ညီ မဟုတ်` |
 
 ## Before "or"
 

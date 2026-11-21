@@ -132,7 +132,7 @@ its text comes back as a plain `= help:` line. The stage commands `lex`, `parse`
 
 | Message | Fix |
 | --- | --- |
-| a wording warning, ZK0501 to ZK0508 | the natural particle, or the parentheses removed |
+| a wording warning, ZK0501 to ZK0508 and ZK0512 | the natural particle, or the parentheses removed |
 | a measure word (classifier), ZK0509 | the measure word of the data kind |
 | a missing word, ZK0201 | the word the parser expected, when it names one word |
 | an undeclared name, ZK0301 | the closest names of the file; `ဝ` and `၀`, `ဥ` and `ဉ` count as one letter |

@@ -1916,6 +1916,15 @@ en = "write \"%{w}\", as most of the file does"
 [codes.ZK0511.explain]
 en = """A file that allows the spoken spellings can still mix them with the written ones, as in \"ထားမယ်\" on one line and \"ထားမည်\" on the next. The program means the same in both forms, but it reads better in one. The message points at the first word of the form the file uses less. It comes when the spoken spellings are allowed; \"--lint-allow ZK0511\" turns it off."""
 
+[codes.ZK0512.title]
+en = "a verb before \"မဟုတ်\" without \"သည်\""
+[codes.ZK0512.message]
+en = "\"%{v}%{p}\" before \"မဟုတ်\" reads better as \"%{v}သည်\""
+[codes.ZK0512.help]
+en = "write \"%{v}သည် မဟုတ်\""
+[codes.ZK0512.explain]
+en = """The negation \"မဟုတ်\" comes after a whole clause, and the clause ends in \"သည်\" before it: \"အသက် သည် ၁၈ နှင့် ညီသည် မဟုတ်\", \"R ထဲတွင် ဒေတာ ရှိသည် မဟုတ်လျှင်\". A verb with no particle, or with \"ပါ\", before \"မဟုတ်\" is grammatical but does not sound natural."""
+
 # -------------------------------------------------------------- folding ZK06xx
 
 [codes.ZK0601.title]

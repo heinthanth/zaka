@@ -223,3 +223,26 @@ fn function_kinds_check_the_classifier_of_their_result()
     let fine = param.replace("တစ်ယောက် ကို ပြန်ပေးသော", "တစ်ခု ကို ပြန်ပေးသော");
     clean(&fine);
 }
+
+#[test]
+fn a_verb_before_not_wants_thi()
+{
+    let bare = "(က သည် ၁ နှင့် ညီ မဟုတ်) ကို ပြသမည်။";
+    assert_eq!(warns(bare), [Code::VerbBeforeNot]);
+    let pa = "(က သည် ၁ နှင့် ညီပါ မဟုတ်) ကို ပြသမည်။";
+    assert_eq!(warns(pa), [Code::VerbBeforeNot]);
+    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်) ကို ပြသမည်။");
+    clean("(က သည် ၁ နှင့် ညီသည် မဟုတ်ပါ) ဟု ပြသမည်။");
+    clean("(က မဟုတ်) ကို ပြသမည်။");
+}
+
+#[test]
+fn a_test_before_not_wants_thi()
+{
+    let bare = "အကယ်၍ R ထဲတွင် ဒေတာ ရှိ မဟုတ်လျှင် \"x\" ဟု ပြသမည်။";
+    assert_eq!(warns(bare), [Code::VerbBeforeNot]);
+    clean("အကယ်၍ R ထဲတွင် ဒေတာ ရှိသည် မဟုတ်လျှင် \"x\" ဟု ပြသမည်။");
+    clean("အကယ်၍ R ထဲတွင် ရလဒ်ကောင်း ရှိသည် မဟုတ်လျှင် \"x\" ဟု ပြသမည်။");
+    clean("အကယ်၍ R ထဲတွင် အမှားအယွင်း ရှိသည် မဟုတ်လျှင် \"x\" ဟု ပြသမည်။");
+    clean("အကယ်၍ R ထဲတွင် ဒေတာ ရှိလျှင် \"x\" ဟု ပြသမည်။");
+}

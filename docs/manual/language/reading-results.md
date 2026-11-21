@@ -71,7 +71,8 @@ whether it contains an error value. We can write these words in other forms:
 | `မအောင်မြင်သည့်သတင်း` in place of `အမှားအယွင်း` | the same test |
 | `ရှိနေ` in place of `ရှိ` | the same test, as in the tests of an optional |
 | `ရှိလျှင်`, `ရှိနေလျှင်`, `ရှိနေသရွေ့` | the test, with `လျှင်` or `သရွေ့` joined to it |
-| `ရှိ မဟုတ်လျှင်` | the opposite of the test |
+| `ရှိသည်` in place of `ရှိ` | the same test, which takes `မဟုတ်` after it |
+| `ရှိသည် မဟုတ်လျှင်` | the opposite of the test |
 
 A result has no `မရှိ`: to ask the opposite, we test the other part, or put `မဟုတ်` after
 the test.

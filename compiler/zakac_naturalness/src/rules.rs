@@ -32,6 +32,7 @@ pub static RULES: &[Rule] = &[
     Rule { code: Code::NegativeBeforeOr, fires: negative_before_or },
     Rule { code: Code::ParticleBeforeAttached, fires: particle_before_attached },
     Rule { code: Code::NotWithThi, fires: not_with_thi },
+    Rule { code: Code::VerbBeforeNot, fires: verb_before_not },
     Rule { code: Code::PaBeforeAnd, fires: pa_before_and },
     Rule { code: Code::PrintSentenceWithKo, fires: print_sentence_with_ko },
     Rule { code: Code::PrintValueWithHu, fires: print_value_with_hu },
@@ -115,6 +116,19 @@ fn not_with_thi(site: &Site) -> bool
         return false;
     };
     n.word == FinalWord::Not && matches!(n.particle, Particle::Thi | Particle::PaThi)
+}
+
+/// A verb or a truth value before `မဟုတ်` carries a particle other than
+/// `သည်`, or none.
+fn verb_before_not(site: &Site) -> bool
+{
+    let Some(n) = as_final(site)
+    else
+    {
+        return false;
+    };
+    ret_false!(n.word == FinalWord::Not || n.next != NextCtx::Not);
+    n.particle != Particle::Thi
 }
 
 /// A word before `ဖြစ်၍` carries `ပါ` or `ပါသည်`.

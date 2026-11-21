@@ -53,7 +53,7 @@ A fix comes from one of two places:
   `Diagnostic::with_fix` to attach a fix, or `Diagnostic::help_as_fix` to turn the help
   text into the message of the fix.
 - **The rules of `zakac_diagnostics_fixes`**, which read the source text. `particles.rs`
-  handles the particle warnings (ZK0501 to ZK0508) and finds the clause-final word at
+  handles the particle warnings (ZK0501 to ZK0508, and ZK0512) and finds the clause-final word at
   the end of the span, and `names.rs` proposes the closest names of the file for an
   undeclared name (ZK0301).
 

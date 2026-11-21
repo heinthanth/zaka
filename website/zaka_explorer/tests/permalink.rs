@@ -68,7 +68,7 @@ fn links_keep_the_stage_and_the_ast_view()
     assert!(
         shown.starts_with(
             "10.64.7.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
-             000000000000000000000000.parse.graph.folded."
+             0000000000000000000000000.parse.graph.folded."
         ),
         "{shown}"
     );
@@ -92,7 +92,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
             assert!(
                 hash.starts_with(&format!(
                     "10.64.{n}.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
-                     000000000000000000000000.lower."
+                     0000000000000000000000000.lower."
                 )),
                 "{hash}"
             );
@@ -136,7 +136,7 @@ fn links_keep_the_result_mode()
         assert!(
             hash.starts_with(&format!(
                 "10.64.7.warn.4.{word}.apart.vm.63.linux.x86_64.usual.\
-                 000000000000000000000000."
+                 0000000000000000000000000."
             )),
             "{hash}"
         );
@@ -156,7 +156,7 @@ fn links_keep_the_scratch_mode()
         assert!(
             hash.starts_with(&format!(
                 "10.64.7.warn.4.in-place.{word}.vm.63.linux.x86_64.usual.\
-                 000000000000000000000000."
+                 0000000000000000000000000."
             )),
             "{hash}"
         );
@@ -212,6 +212,19 @@ fn links_keep_the_target_os_the_cpu_the_abi_and_the_lint()
     // A format 9 link holds no ABI, and opens with the usual one of its OS.
     let old = hash.replacen("10.", "9.", 1).replace(".msvc.", ".");
     assert_eq!(decode(&old).map(|l| l.options.abi), Some(None));
+}
+
+#[test]
+fn a_link_from_before_a_new_lint_code_opens_with_its_own_level()
+{
+    let lint = LintLevels::default().set(Code::SpokenForm, Some(LintLevel::Off));
+    let options = Options::builder().lint(lint).build();
+    let link = Link::builder().source("x").options(options).build();
+    let hash = encode(&link);
+    // The last digit is the newest code; a link made before it has none.
+    let old = hash.replacen("0.lex.", ".lex.", 1);
+    assert_ne!(old, hash);
+    assert_eq!(decode(&old), Some(link));
 }
 
 #[test]
@@ -348,8 +361,8 @@ fn links_keep_the_overflow_mode_in_the_mem_flags()
     }
     assert_eq!(
         decode(
-            "9.64.7.warn.8.in-place.apart.vm.63.linux.x86_64.000000000000000000000000.\
-             lex.tree.folded.eA"
+            "9.64.7.warn.8.in-place.apart.vm.63.linux.x86_64.\
+             0000000000000000000000000.lex.tree.folded.eA"
         ),
         None
     );

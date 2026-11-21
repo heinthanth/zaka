@@ -1,8 +1,10 @@
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
 
 use crate::token::Kw;
+use crate::token::Particle;
 use crate::token::Token;
 use crate::token::TokenKind;
 
@@ -88,6 +90,13 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     // <x> ထဲတွင် အမှားအယွင်း / မအောင်မြင်သည့်သတင်း ရှိ(နေ) — whether a result failed
     (&[Kw::Fault, Kw::Located], Kw::HasFault),
     (&[Kw::FailureNews, Kw::Located], Kw::HasFault),
+    // the same tests with `ရှိသည်`, whose `သည်` the joined word keeps as its
+    // particle: `<x> ထဲတွင် ဒေတာ ရှိသည် မဟုတ်`
+    (&[Kw::Data, Kw::Has], Kw::HasData),
+    (&[Kw::GoodResult, Kw::Has], Kw::HasGood),
+    (&[Kw::SuccessNews, Kw::Has], Kw::HasGood),
+    (&[Kw::Fault, Kw::Has], Kw::HasFault),
+    (&[Kw::FailureNews, Kw::Has], Kw::HasFault),
     // <x> ထဲမှ အမှားအယွင်း ဒေတာ — the error value of a result
     (&[Kw::Fault, Kw::Data], Kw::FaultData),
     // T သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်
@@ -108,7 +117,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
 /// Replace each run of tokens that spells a phrase with one token.
 ///
 /// The joined token spans the whole run, is joined when the first piece is,
-/// and keeps the particle of the last piece.
+/// and keeps the particle of the last piece; a last piece `ရှိသည်` gives
+/// `သည်`.
 ///
 /// # Arguments
 ///
@@ -247,10 +257,12 @@ fn joined_token(run: &[Token], kw: Kw) -> Token
 {
     let first = run[0];
     let last = run[run.len() - 1];
+    let particle =
+        tern!(last.kind == TokenKind::Kw(Kw::Has), Particle::Thi, last.particle);
     #[rustfmt::skip]
     return Token::builder()
         .kind(TokenKind::Kw(kw)).span(first.span.to(&last.span))
-        .particle(last.particle).joined(first.joined).build();
+        .particle(particle).joined(first.joined).build();
 }
 
 /// Turn each `ဒေတာ` back into a name, save one after `ထဲမှ`, `ထဲတွင်` or

@@ -314,6 +314,7 @@ See [Natural Zaka](../../learn/natural-zaka/README.md) and [Natural wording](../
 | ZK0509 | a warning: a data kind, a heap size or a struct literal counted with a word that is not the measure word of its data kind | [Measure words](../language/kinds.md#measure-words), [Struct mistakes](../../learn/structs/mistakes.md#the-wrong-measure-word) |
 | ZK0510 | a word in its spoken spelling, such as `ထားမယ်` for `ထားမည်`, in a program that does not allow them | [Spoken Burmese](../language/spoken.md) |
 | ZK0511 | a warning: a file that allows the spoken spellings writes some words spoken and others written | [Spoken Burmese](../language/spoken.md#mixing-the-two) |
+| ZK0512 | a verb before `မဟုတ်` without `သည်` | [Natural Zaka](../../learn/natural-zaka/README.md#the-rules) |
 
 ### ZK06: working out constants
 
