@@ -1,13 +1,22 @@
 ---
 title: Ranges
-description: Take a run of cells from a list or from text as a list or text of its own.
+description: Take a run of cells from a list or from text as a separate list or text.
 ---
 
 # Ranges
 
-`x ၏ အကွက် <start> မှစ၍ <length> ကွက်` ("`length` cells of `x`, starting at cell
-`start`") is a *range*: a run of cells, counted from 0. A range of a list is a list of its
-own, and a range of text is text of its own:
+A *range* (slice) is a run of cells that we take from a list or from text, counted from
+0. A range of a list is a new list, and a range of text is new text, so we can store,
+print and pass a range like each other list or text.
+
+## You will learn
+
+- How to take a range of a list.
+- How a write to a range leaves the list unchanged.
+- How to take a range of text, and where it must start and end.
+- What happens when a range runs past the end.
+
+## A range of a list
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -24,21 +33,33 @@ l ၏ အကွက် ၅ မှစ၍ ၀ ကွက် ကို ပြသမ�
 []
 ```
 
+To take a range, we write the list, `၏ အကွက်`, the first cell and `မှစ၍`, then the
+number of cells and `ကွက်`:
+
+```
+<list> ၏ အကွက် <start> မှစ၍ <count> ကွက်
+```
+
 | Zaka | Reads as |
 | --- | --- |
+| `l ၏` | "of `l`" |
 | `အကွက် ၁ မှစ၍` | "starting at cell 1" |
 | `၃ ကွက်` | "three cells" |
 
+The first line of the output has three cells from cell 1, which are cells 1, 2 and 3. A
+count of `၀` gives a list with no cells, as the last line shows.
+
 ## A range is a duplicate
 
-A range holds copies of the cells, so a write to it leaves the list as it was, and the
-list can grow while the range is in use:
+A range has duplicates (copies) of the cells, so it is separate from the list it came
+from. A write to the range leaves the list as it was, and the list can grow while we use
+the range:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် အလယ် သည် က ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
-က ထဲသို့ ၄ ကို ထည့်မည်။               // fine: the range is a list of its own
+က ထဲသို့ ၄ ကို ထည့်မည်။               // fine: the range is a separate list
 အလယ် ၏ အကွက် ၀ ကို ၀ ဟု ထားမည်။
 အလယ် ကို ပြသမည်။
 က ကို ပြသမည်။
@@ -50,13 +71,19 @@ list can grow while the range is in use:
 [၁၊ ၂၊ ၃၊ ၄]
 ```
 
-A range goes wherever a list of its kind goes: into a variable, a function, a result. A
-function that takes `ကိန်းပြည့် စာရင်း` takes a range as it takes a whole list.
+We can use a range wherever a list of its data kind fits: in a variable, as an argument
+or as a result. A function with a `ကိန်းပြည့် စာရင်း` parameter accepts a range the same as
+a whole list.
 
-## Part of text
+## A range of text
 
-The cells of text are its u8s: a Latin letter takes one cell and a Burmese letter three,
-as [Cells](../text/characters.md#cells) shows.
+```
+<text> ၏ အကွက် <start> မှစ၍ <count> ကွက်
+```
+
+The cells of text are its u8s (bytes), so a Latin letter takes one cell and a Burmese
+letter takes three, as [Cells](../text/characters.md#cells) shows. In `"Zaka စံကား"`, the
+first four cells are `Zaka`, and the Burmese word starts at cell 5, after the space:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -71,9 +98,10 @@ Zaka
 စံကား
 ```
 
-A range of text must start and end between two characters, so that text holds whole
-characters at each step. `ကမ္ဘာ` takes 15 cells, three for each of its five characters,
-so six cells from cell 0 are its first two characters, and two cells cut one in half:
+Text must contain whole characters at each point, so a range of text must start and end
+between two characters. `ကမ္ဘာ` takes 15 cells, three for each of its five characters, so
+six cells from cell 0 are its first two characters, while two cells would cut the first
+character in half, and the program stops:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -90,7 +118,7 @@ the program stopped: a range of text at 0x1002 starts or ends inside a character
 
 ## Past the end
 
-A range past the end of its list stops the program:
+When a range runs past the end of its list, the program stops:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -103,8 +131,9 @@ l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသမ�
 the program stopped: 2 cells from cell 2 pass the end of 3 cells
 ```
 
-On a [counted list](counted-lists.md), whose count the compiler knows, a range of
-constant numbers past the end is an error before the program runs:
+A [counted list](counted-lists.md) has a count that the compiler knows, so when the start
+and the count of the range are fixed numbers, the compiler reports a range past the end
+as an error before the program runs:
 
 ```zaka-error ZK0605
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -113,9 +142,34 @@ l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသမ�
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
+```text
+error[ZK0605]: 2 cells from cell 2 pass the end of a list of 3 cells
+```
+
+## Details
+
+- **A range of a value.** We can take a range of a variable, a field, a cell or a
+  parameter, and also of a literal, of a call result or of another range ([Ranges of
+  lists](../../manual/language/lists.md#ranges)).
+- **No parentheses needed.** The start and the count each run up to the word after them,
+  so `x ၏ အကွက် i + ၁ မှစ၍ န - ၁ ကွက်` works as written. Both must be integers (ZK0423).
+- **The cost.** A range duplicates its cells when it is made, so it costs time and
+  storage in its length.
+- **Text known in advance.** When the text, the start and the count are all known to the
+  compiler, as for a text constant, a range that cuts a character is the error ZK0607
+  ([Ranges of text](../../manual/language/text.md#ranges)).
+
+## Recap
+
+- `<list> ၏ အကွက် <start> မှစ၍ <count> ကွက်` takes a range, counted from cell 0.
+- A range is a separate list or text, so a write to it does not change the source.
+- A range of text counts u8s, and must start and end between two characters.
+- A range past the end stops the program, or, on a counted list with fixed numbers, is an
+  error before it runs.
+
 ## Hands on
 
-- Write a function that takes a list and prints its largest cell, and call it with a
+- Write a function that receives a list and prints its largest cell, and call it with a
   whole list and with the last two cells of it.
 - Print the first two characters of a Burmese word with a range, then take one cell less.
 - Set each cell of a range to 0, then print the range and the list it came from.

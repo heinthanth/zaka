@@ -1,16 +1,25 @@
 ---
 title: Modules
-description: Split a program into files, share names with အများသုံး, and bring them into another file with ထည့်သွင်းမည်.
+description: Split a program into several files, share names with အများသုံး, and bring them into another file with ထည့်သွင်းမည်.
 ---
 
 # Modules
 
-A program can grow past one file. Each `.zaka` file keeps its names to itself, except the
-ones it marks `အများသုံး` ("for common use"). Another file brings those names in with an
-*import*.
+When a program grows, we can split it into several files, and each `.zaka` file is a
+module (module, one source file). A module keeps its names to itself, except the names
+that we mark for sharing, and another file can bring those names in with an import.
 
-The two files below sit in one folder. A page cannot run a program of two files, so save
-them and run the second one with `zakac run`.
+## You will learn
+
+- How to share a function, a struct, a variable or a constant with other files.
+- How to import names from another file, or each name that it shares.
+- What a file that other files import can contain.
+- How to pass imported names on to other files.
+
+## Two files
+
+The two files below sit in one folder. A Learn page cannot run a program of two files, so
+save them and run the second one with `zakac run`:
 
 ```zaka-file
 // math.zaka
@@ -34,19 +43,36 @@ $ zakac run main.zaka
 ၄၉
 ```
 
+In `math.zaka`, we write `အများသုံး` after `ဟူသော` to share the function, and in
+`main.zaka`, we write an import sentence to bring it in:
+
+```
+<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် …
+"<file>" မှ <name> ကို ထည့်သွင်းမည်။
+```
+
 | Zaka | Reads as |
 | --- | --- |
-| `အများသုံး လုပ်ဆောင်ချက် နှစ်ထပ်` | "the function `နှစ်ထပ်`, for common use" |
+| `နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက်` | "the function `နှစ်ထပ်`, for common use" |
 | `"math.zaka" မှ` | "from `math.zaka`" |
-| `နှစ်ထပ် ကို ထည့်သွင်းမည်` | "please bring in `နှစ်ထပ်`" |
+| `နှစ်ထပ် ကို ထည့်သွင်းမည်` | "bring in `နှစ်ထပ်`" |
 
 ## Sharing names
 
 A function, a struct, a variable or a constant at the top level of a file belongs to that
-file. `အများသုံး` before it shares it, and on a function, a struct or an enumeration it goes
-after `ဟူသော`, as in `နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...` or
-`နေရာ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...`: other files can then import it. Each name without
-the mark remains private, so a file can keep helpers that no other file sees.
+file, and we use `အများသုံး` ("for common use") to share it with other files. On a
+function, a struct or an enumeration, we write it after `ဟူသော`, and on a variable or a
+constant, we write it at the start:
+
+```
+<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် …
+<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် …
+အများသုံး ကိန်းရှင် <name> သည် …
+အများသုံး ကိန်းသေ <name> သည် …
+```
+
+A name without `အများသုံး` remains private, so a file can keep helper functions
+that no other file sees:
 
 ```zaka-file
 // math.zaka
@@ -60,7 +86,7 @@ the mark remains private, so a file can keep helpers that no other file sees.
 က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// private: math.zaka alone can call it
+// private: just math.zaka can call it
 ကျော်လွန် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
@@ -85,41 +111,57 @@ $ zakac run main.zaka
 ၁၀၀
 ```
 
-`main.zaka` cannot import `ကျော်လွန်`: the import of a private name is an error, as
+`main.zaka` cannot import `ကျော်လွန်`, because an import of a private name is an error, as
 [Module mistakes](mistakes.md#a-name-the-file-does-not-export) shows.
 
 ## Importing names
 
-An import names a file and the names it takes from it:
+An import sentence names a file and the names that it brings in from that file:
 
-```zaka-file
-"math.zaka" မှ ကန့်သတ် နှင့် အများဆုံး တို့ကို ထည့်သွင်းမည်။
-"math.zaka" မှ ကန့်သတ် ကို ထည့်သွင်းမည်။
+```
+"<file>" မှ <name> ကို ထည့်သွင်းမည်။
+"<file>" မှ <name> နှင့် <name> တို့ကို ထည့်သွင်းမည်။
 ```
 
-- One name takes `ကို`. Two or more take `တို့ကို` after the last, with `နှင့်` before the
-  last and `၊` between the others.
-- The imports of a file come first, above each declaration and statement.
-- The file name is relative to the folder of the file that imports it, so
-  `"lib/point.zaka"` is the file `point.zaka` in the folder `lib` beside it.
-- An imported name works as if the file had declared it: call the function, read or set
-  the variable, use the struct as a kind.
-- An import brings the names it lists and nothing else. The names that `math.zaka`
-  itself imports remain in `math.zaka`; a file that needs them imports them from their
-  own file.
+```zaka-file
+"math.zaka" မှ ကန့်သတ် ကို ထည့်သွင်းမည်။
+"math.zaka" မှ ကန့်သတ် နှင့် အများဆုံး တို့ကို ထည့်သွင်းမည်။
+```
 
-An import with no names brings each name the file exports:
+- For one name, we use `ကို`. For two or more, we put `နှင့်` before the last name, `၊`
+  between the others, and `တို့ကို` after the last one.
+- The imports of a file come first, above each declaration and sentence.
+- The file name is relative to the folder of the file that imports it, so
+  `"lib/point.zaka"` is the file `point.zaka` in the folder `lib` next to it.
+- An imported name works as if the file had declared it: we can call the function, read
+  or set the variable, and use the struct as a data kind (type).
+- An import brings in the names that it lists and nothing else. The names that
+  `math.zaka` imports for itself remain in `math.zaka`, and a file that needs them imports
+  them from their own file.
+
+To bring in each name that a file shares, we leave the names out:
+
+```
+"<file>" ကို ထည့်သွင်းမည်။
+```
 
 ```zaka-file
 "math.zaka" ကို ထည့်သွင်းမည်။
 ```
 
-When two such imports bring one name from two files, the program cannot tell which one
-it means, and a use of that name is the error ZK0262. A named import of it from one file settles
-it.
+When two such whole imports bring in the same name from two files, the program cannot
+tell which one we mean, and a use of that name is the error ZK0262. A named import of it
+from one of the two files settles it.
 
-A file can pass the names it imports on to the files that import it. This sharing suits
-a file that gathers several files into one:
+## Passing names on
+
+A file can pass the names that it imports on to the files that import it, which suits a
+file that gathers several files into one. We use `ပြန်လည် မျှဝေမည်` ("share again"):
+
+```
+"<file>" ကို ပြန်လည် မျှဝေမည်။
+<name> ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။
+```
 
 ```zaka-file
 // shapes.zaka
@@ -128,27 +170,20 @@ a file that gathers several files into one:
 စက်ဝိုင်း ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။
 ```
 
-The first line shares each name `point.zaka` exports, without bringing them into
-`shapes.zaka`. The last line shares `စက်ဝိုင်း`, which `shapes.zaka` imports. A file
-that imports `shapes.zaka` now reaches both. [Modules](../../manual/language/modules.md#sharing-imported-names)
-has the full rules.
+The first line shares each name that `point.zaka` shares, without bringing those names
+into `shapes.zaka`. The last line shares `စက်ဝိုင်း`, which `shapes.zaka` imports. A file
+that imports `shapes.zaka` can then use both.
 
-A file is read once, however often other files import it. A variable it declares exists once,
-so each file that imports it sees the same value: when one file changes it, the others
-see the change.
+## What an imported file contains
 
-## What an imported file holds
-
-A file that another file imports holds declarations: functions, structs, variables and
-constants, and the imports it needs. The statements that print, loop, call or set
-values belong in the file that is run, the one given to `zakac run`.
+A file that another file imports contains declarations: functions, structs, variables,
+constants, and the imports that it needs. The sentences that print, loop, call or set
+values belong in the file that we run, which is the one that we give to `zakac run`.
 
 The variables and constants of an imported file get their starting value before the
 program runs, so the value must be known at compile time: a literal, a constant, or
-operators on them, as in `၁၀ * ၃`. A value from a function call is not allowed there for
-now. A file run as a module has no start block to set its variables later, so each one
-gets its value in its declaration; one with no value is the error ZK0483 ([Globals of a
-module](../../manual/language/modules.md#globals-of-a-module)).
+operators on them, as in `၁၀ * ၃`. Such a file has no program start block that could set
+its variables later, so each variable gets its value in its declaration:
 
 ```zaka-file
 // counter.zaka
@@ -181,15 +216,51 @@ $ zakac run main.zaka
 ၂၅
 ```
 
-The third call would take `အကြိမ်` past `အများဆုံး`, so `တိုး` leaves it alone.
+The third call would take `အကြိမ်` past `အများဆုံး`, so `တိုး` leaves it as it is.
 
-## One name in two files
+The compiler reads each file once, however often other files import it. So a variable
+that a file declares exists once, and each file that imports it sees the same value: when
+one file changes it, the others see the change.
 
-Two files can each keep a private function or variable of one name; each file uses its
-own. Struct names are different: a struct name is declared once in the whole program, so
-two files cannot each declare a struct `လူ`, even a private one.
+## Details
 
-## Where imports do not work
+- **Starting values.** A starting value from a call of a plain function is not known at
+  compile time, so it is the error ZK0604, while a call of a [comptime
+  function](../functions/compile-time.md) is fine ([A starting value that needs a
+  call](mistakes.md#a-starting-value-that-needs-a-call)). A variable of an imported file
+  without a value is the error ZK0483 ([Globals of a
+  module](../../manual/language/modules.md#globals-of-a-module)).
+- **One name in two files.** Two files can each have a private function or variable of the
+  same name, and each file uses its own. Struct names are different: we declare a struct
+  name once in the whole program, so two files cannot each declare a struct `လူ`, even a
+  private one.
+- **Programs without a file.** A program on a Learn page, in the compiler explorer, or given
+  to `zakac run` on standard input has no folder, so it cannot import
+  ([Imports outside a file](mistakes.md#imports-outside-a-file)).
+- **The stdlib.** We import a module of the stdlib (standard library) in the same form, with
+  a path that starts with `စံကား/`, as in `"စံကား/စာရင်း" မှ ဖယ် ကို ထည့်သွင်းမည်။`
+  ([The stdlib](../stdlib/README.md)).
+- **The full rules.** [Modules](../../manual/language/modules.md) has the full rules,
+  including [passing imported names
+  on](../../manual/language/modules.md#sharing-imported-names).
 
-A program written on a Learn page, in the compiler explorer, or given to `zakac run` on
-standard input has no folder, so it cannot import. Save it in a file first.
+## Recap
+
+- Each `.zaka` file is a module, and its names are private unless we mark them with
+  `အများသုံး`.
+- `"<file>" မှ <name> ကို ထည့်သွင်းမည်။` imports a name, and `"<file>" ကို ထည့်သွင်းမည်။`
+  imports each name that the file shares.
+- Imports come first in a file, and the file name is relative to the folder of the file.
+- An imported file contains declarations, and its variables get values that are known at
+  compile time.
+- `ပြန်လည် မျှဝေမည်` passes imported names on to other files.
+
+## Hands on
+
+- Move the function `ကျော်လွန်` into a third file, share it from there, and import it into
+  `math.zaka`.
+- Change the import of `main.zaka` to a whole import, then add a constant to
+  `counter.zaka` and print it from `main.zaka`.
+- Import a private name and read the error.
+
+Next: [Module mistakes](mistakes.md).

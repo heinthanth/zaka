@@ -1,0 +1,237 @@
+---
+title: Threads
+description: Run a function while the rest of the program goes on: start a thread, wait for its result, start a thread that returns nothing, and pass values to it.
+---
+
+# Threads
+
+A thread (`အပြိုင်လုပ်ငန်း`) runs a function while the rest of the program goes on, much as
+a cook puts rice on the fire and cuts the onions while the rice boils. We start a thread
+when two pieces of work do not need each other, and we wait for its result once we need
+it.
+
+## You will learn
+
+- How to start a function as a thread and wait for its result.
+- How threads run on the VM and in a native program.
+- How to start a thread that returns nothing.
+- Which values we can pass to a thread, and what happens when a thread stops.
+
+## Starting a thread
+
+Here the program starts two threads, and each one adds up a list:
+
+```zaka
+စုပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် ဂဏန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
+ဂဏန်းများ ၏ အကွက်တိုင်း ကို ဂ အနေဖြင့် ယူ၍ စု ကို စု + ဂ ဟု ထားမည်။
+စု ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+// start two threads, then go on at once
+ကိန်းရှင် ရှေ့ သည် စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို [၁၊ ၂၊ ၃] ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် နောက် သည် စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို [၄၊ ၅၊ ၆] ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+"နှစ်ခု စတင်ပြီ" ဟု ပြသမည်။
+// wait for both threads and add their results
+(ရှေ့ ကို စောင့်သော ရလဒ်) + (နောက် ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+နှစ်ခု စတင်ပြီ
+၂၁
+```
+
+To start a thread, we write a long call of the function and end it with
+`အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` in place of `လုပ်ဆောင်သော ရလဒ်`. To get the result, we
+wait for the thread with `ကို စောင့်သော ရလဒ်`:
+
+```
+<function> ဟူသော လုပ်ဆောင်ချက်ကို <arguments> ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း
+<thread> ကို စောင့်သော ရလဒ်
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို` | "the function called `စုပေါင်း`" |
+| `[၁၊ ၂၊ ၃] ဖြင့်` | "with `[1, 2, 3]`" |
+| `အပြိုင်` | "side to side", "in parallel" |
+| `လုပ်ဆောင်သော လုပ်ငန်း` | "the work that runs it": the thread |
+| `ရှေ့ ကို စောင့်သော ရလဒ်` | "the result of waiting for `ရှေ့`" |
+
+The variable `ရှေ့` contains the thread, not the sum. Its data kind (type) is
+`ကိန်းပြည့် ပြန်ပေးမည့် အပြိုင်လုပ်ငန်း`, "a thread that returns an integer". The program
+prints its first line while the threads still work, and each wait returns the sum that
+its thread made: `၆` and `၁၅`.
+
+## The VM and a native program
+
+A thread runs side to side with the rest of the program, but what that means depends on
+where the program runs:
+
+- **The VM** (`zakac run`) runs all the threads on one OS thread and takes turns between
+  them: it runs one thread for a short while, then the next one, in the same fixed
+  order each time. So a program prints the same lines in the same order on each run.
+- **A native program** (`zakac build --backend native` or `--backend c`, or
+  `zakac run --jit`) runs each thread on a separate OS thread. The threads then run at
+  the same time on several cores of the computer, so the work can finish sooner, but the
+  lines that two threads print can come in a different order from one run to the next.
+
+A thread returns the same result on both, so a program should depend on results and
+channels, not on the order of the lines that two threads print.
+
+## A thread that returns nothing
+
+When we do not need a result, we end the call with `အပြိုင် လုပ်ဆောင်မည်။` and keep no
+name for the thread. The program waits for each such thread before it ends:
+
+```
+<function> ဟူသော လုပ်ဆောင်ချက်ကို <arguments> ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+```
+
+```zaka
+ပြ ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စာ ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို "နောက်ကွယ်မှ" ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+"ရှေ့မှ" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရှေ့မှ
+နောက်ကွယ်မှ
+```
+
+On the VM, the program start block keeps its turn, so its line comes first. To wait for
+a thread that we kept in a variable and drop its result, we write
+`<thread> ကို စောင့်မည်။`.
+
+## Waiting once
+
+A wait moves the result of the thread to the waiter, so we can wait for each thread just
+once. To use the result in several places, we keep it in a variable:
+
+```zaka
+အော် ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"{စာ}!" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို "မင်္ဂလာ" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+ကိန်းရှင် ရ သည် က ကို စောင့်သော ရလဒ် ဖြစ်ပါစေ။
+ရ ကို ပြသမည်။
+ရ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာ!
+မင်္ဂလာ!
+```
+
+A second wait for the same thread stops the program with the trap `thread waited`.
+
+## What a thread can use
+
+A thread gets a duplicate (copy) of each argument, so a write on one side never reaches
+the other. Numbers, text, lists, plain structs and results can all go to a thread. Three
+rules make sure that two threads never change one value at the same time:
+
+- We cannot pass a plain shared object to a thread (ZK0494), because both threads could
+  write to it. [Sharing between threads](sharing.md) shows the objects that we can pass.
+- A thread starts in a function that the program declares, not in a function value or a
+  closure (ZK0497), and that function has no mutable parameter (`inout`) or writable
+  parameter (`out`) (ZK0498).
+- A thread cannot read or write a variable at the top of a file (ZK0726), because that
+  variable belongs to the main thread. We pass the value as an argument instead.
+
+```zaka-error ZK0726
+ကိန်းရှင် ကြိမ် သည် ၀ ဖြစ်ပါစေ။
+
+တိုး ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြိမ် ကို ကြိမ် + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+တိုး ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+A thread returns what it makes through its result, or through a
+[channel](channels.md).
+
+## When a thread stops
+
+When a thread stops at a [trap](../../manual/vm/traps.md) (runtime error), just that
+thread ends: the reason goes to standard error, and the rest of the program goes on. A
+wait for that thread then stops the waiter too:
+
+```zaka-stop
+စား ဟူသော လုပ်ဆောင်ချက် သည် န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၁၀ / န ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် စား ဟူသော လုပ်ဆောင်ချက်ကို ၀ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+"ဆက်လုပ်" ဟု ပြသမည်။
+က ကို စောင့်သော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ဆက်လုပ်
+the program stopped: the thread 1 this waits for stopped at a trap
+```
+
+The thread divides with zero and stops, while the program start block goes on and prints
+its line. Then the wait for `က` stops the program, and the program ends with exit code 1.
+A program also ends with exit code 1 when one of its threads stopped at a trap and no wait
+saw it.
+
+## Details
+
+- **The data kind of a thread.** A thread that returns nothing has the data kind
+  `အပြိုင်လုပ်ငန်း`. A duplicate of a thread value names the same thread
+  ([Threads](../../manual/language/threads.md)).
+- **The words.** `အပြိုင်` and `လုပ်ငန်း` are not reserved words, and `စောင့်` is a verb
+  of the core module, so a program can declare a function of the same name
+  ([Threads](../../manual/language/threads.md)).
+- **Stopping the whole program.** We can build a native program with `--trap abort`, and a
+  trap in one thread then stops the whole program
+  ([Commands](../../manual/compiler/commands.md)).
+- **Shuffled turns.** `zakac run --shuffle-thread-order` makes the VM take turns in a
+  shuffled order, which helps to find a mistake that hangs on the order of the threads
+  ([Commands](../../manual/compiler/commands.md#run)).
+- **Deadlock.** When each thread waits and none can go on, the program stops with the trap
+  `deadlock` ([When a program stops](../../manual/vm/traps.md)).
+
+## Recap
+
+- We end a long call with `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` to start a thread, and we use
+  `<thread> ကို စောင့်သော ရလဒ်` to wait for its result.
+- The VM takes turns between threads on one OS thread, while a native program runs each
+  thread on a separate OS thread.
+- `… အပြိုင် လုပ်ဆောင်မည်။` starts a thread that we do not wait for, and the program waits
+  for it before it ends.
+- A thread gets a duplicate of each argument, and it cannot touch a variable at the top of
+  a file or a plain shared object.
+- A trap in a thread ends that thread, and a wait for it stops the waiter.
+
+## Hands on
+
+- Start three threads that each add up a different list, and print the sum of the three
+  results.
+- Wait for the same thread twice and read the message.
+- Build the first example with `zakac build --backend native` and run it a few times. Does
+  the output change?
+
+Next: [Channels](channels.md).

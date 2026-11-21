@@ -1,11 +1,20 @@
 ---
 title: Lists of lists
-description: Build tables and grids from lists whose cells are lists.
+description: Build grids from lists whose cells are lists.
 ---
 
 # Lists of lists
 
-A cell can hold a whole list. A list of rows is a table:
+A cell (element) of a list can contain a whole list, so a list of lists can
+keep a grid of rows and columns. We reach a single value with two cell numbers, one for
+the row and one for the column.
+
+## You will learn
+
+- how to write the data kind of a list of lists
+- how to read and set a cell inside a row
+- how to write a list of lists as a literal
+- how much storage a list uses
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -25,14 +34,33 @@ A cell can hold a whole list. A list of rows is a table:
 ၃
 ```
 
-`ကိန်းပြည့် စာရင်း စာရင်း` is a list whose cells are integer lists: the first `စာရင်း`
-makes a row of integers, and the second a list of such rows. Messages write this kind as
-`isize[][]`. Lists nest as deep as needed.
+We write `စာရင်း` twice to get a list of lists, and we add one more `၏ အကွက်` to reach a
+cell inside a row:
+
+```text
+<kind> စာရင်း စာရင်း
+<list> ၏ အကွက် <row> ၏ အကွက် <column>
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ကိန်းပြည့် စာရင်း` | "an integer list", which is one row |
+| `ကိန်းပြည့် စာရင်း စာရင်း` | "a list of integer lists", the rows together |
+| `ဂရစ် ၏ အကွက် ၁` | "cell 1 of the grid", which is a whole row |
+| `ဂရစ် ၏ အကွက် ၁ ၏ အကွက် ၂` | "cell 2 of cell 1 of the grid" |
+
+Error messages write this data kind (type) as `isize[][]`. Lists can nest as deep as we
+need, so `ကိန်းပြည့် စာရင်း စာရင်း စာရင်း` is a list of grids.
 
 ## Nested literals
 
-In the word form, each inner list literal goes in parentheses. Each row takes its cells
-from the value, so rows can hold different counts.
+```text
+(<value> နှင့် <value> တို့ပါသော စာရင်း)၊ (…) နှင့် (…) တို့ပါသော စာရင်း
+```
+
+When we write a list of lists in words, we put each inner list literal in parentheses.
+Each row gets its cells from the literal, and when we set one row to another, the whole row
+is duplicated (copied):
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -50,6 +78,10 @@ from the value, so rows can hold different counts.
 [[၅၊ ၆]၊ [၃၊ ၄]၊ [၅၊ ၆]]
 ```
 
+## Rows of different lengths
+
+Each row is a separate list, so the rows do not need to have the same number of cells:
+
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဂရစ် သည် ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [[၁၊ ၂၊ ၃]၊ [၄၊ ၅]] ဖြစ်ပါစေ။
@@ -65,9 +97,14 @@ from the value, so rows can hold different counts.
 
 ## The size of a list
 
-`အရွယ်အစား` gives the size of a kind, in octets. A list is three words, whatever its
-count: where its cells are, the count, and the room it has for more. A list of lists is
-three words too, since each row keeps its cells apart:
+```text
+<kind> တစ်ခု ၏ အရွယ်အစား
+```
+
+We can use `အရွယ်အစား` to get the size of a data kind in octets (bytes). A list uses three
+words of storage, whatever its count: one for where its cells are, one for the count, and
+one for the room it has for more cells. A list of lists also uses three words, because the
+cells of each row are kept elsewhere:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -81,13 +118,28 @@ three words too, since each row keeps its cells apart:
 ၂၄
 ```
 
-Part II adds counted lists, which keep their cells in place: see [Static data and counted
-lists](../forms/counted-lists.md#the-size-of-a-counted-list).
+## Details
+
+- A row can grow and shrink like each other list, with `ထည့်မည်` and `ဖျက်မည်` ([Growing a
+  list inside a list](growing.md#growing-a-list-inside-a-list)).
+- In the bracket form, inner lists need no parentheses: `[[၁၊ ၂]၊ [၃၊ ၄]]`.
+- Part II adds counted lists, which keep their cells in place, so the size of a counted
+  list is its count times the size of one cell ([The size of a counted
+  list](../forms/counted-lists.md#the-size-of-a-counted-list)).
+- The full rules are in [Lists of lists](../../manual/language/lists.md#lists-of-lists).
+
+## Recap
+
+- `<kind> စာရင်း စာရင်း` is a list whose cells are lists, and each row can have its own
+  number of cells.
+- `<list> ၏ အကွက် <row> ၏ အကွက် <column>` reaches one value of a grid.
+- In the word form, each inner list literal goes in parentheses.
+- A plain list uses three words of storage, whatever its count.
 
 ## Hands on
 
-- Fill a 3 x 3 table so that each cell holds its row number times its column number,
-  and print it.
-- Walk a row of a table with an each-cell loop and add up its cells.
+- Fill a 3 x 3 grid so that each cell has its row number times its column number, and
+  print it.
+- Walk a row of a grid with an each-cell loop and add up its cells.
 
 Next: [List mistakes](mistakes.md).

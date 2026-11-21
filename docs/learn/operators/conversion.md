@@ -1,13 +1,21 @@
 ---
-title: Converting between kinds
-description: Turn a value of one kind into another with ပြောင်းလဲသော ရလဒ်.
+title: Converting between data kinds
+description: Turn a value of one data kind into another with ပြောင်းလဲသော ရလဒ်.
 ---
 
-# Converting between kinds
+# Converting between data kinds
 
-Sometimes a value comes in one kind but the program needs another: an integer count to
-divide as a decimal, a decimal score to round down to a whole number, or a character's
-Unicode number. *Converting* gives the value in the new kind.
+Sometimes a value comes in one data kind (type) while the program needs another, for
+example an integer count that we want to divide as a decimal number, or a character whose
+Unicode number we want. A conversion (cast) returns the same value in the new data kind,
+and Zaka writes it as a Burmese phrase, with no sign form.
+
+## You will learn
+
+- how to convert a value to another data kind
+- which conversions can lose part of the value
+- which conversions Zaka refuses
+- when Zaka converts a value on its own, and when we must write the conversion
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -31,23 +39,40 @@ B
 ၁
 ```
 
-The phrase reads "the result of changing *x* into *kind*":
+To convert a value, we use this pattern:
+
+```text
+<value> ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်
+```
 
 | Zaka | Reads as |
 | --- | --- |
-| `အသက်` | "age" — the value to convert |
-| `ကို` | (object) |
-| `ဒဿမကိန်း` | the target kind |
+| `<value> ကို` | "`<value>`", the value to convert |
+| `<kind> တစ်ခု` | "one `<kind>`", the data kind we want |
 | `အဖြစ်` | "as", "into" |
-| `ပြောင်းလဲသော ရလဒ်` | "the changed result" |
+| `ပြောင်းလဲသော ရလဒ်` | "the result of changing" |
+
+So the whole phrase means "the result of changing the value into the data kind". We write
+the data kind with its measure word (classifier), the same as in a declaration, so a
+for a character we write `တစ်လုံး`: `၆၆ ကို စာလုံး တစ်လုံး အဖြစ် ပြောင်းလဲသော ရလဒ်`.
+
+| From | To | Example | Result |
+| --- | --- | --- | --- |
+| integer | decimal number | `၃၇` | `၃၇.၀` |
+| decimal number | integer | `၉.၇၅` | `၉` |
+| character | integer | `'A'` | `၆၅` |
+| integer | character | `၆၆` | `B` |
+| true/false value | integer | `မှန်` | `၁` |
 
 ## Converting can lose data
 
-Each conversion has to be written out, because it can change the value:
+Zaka asks us to write each conversion out, because a conversion can change the value:
 
-- Decimal to integer drops the fraction, toward zero: `၉.၇၅` becomes `၉`, `-၂.၇` becomes `-၂`.
-- A number too big for a smaller kind wraps around: 300 as `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` is 44.
-- A negative number as an unsigned kind wraps too: `-၁` becomes 255.
+- A decimal number becomes an integer with the fraction dropped toward zero, so `၉.၇၅`
+  becomes `၉` and `-၂.၇` becomes `-၂`.
+- A number too big for a smaller integer data kind wraps around, so 300 as a
+  `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` is 44.
+- A negative number in an unsigned data kind wraps too, so `-၁` becomes 255.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -63,7 +88,10 @@ Each conversion has to be written out, because it can change the value:
 ၂၅၅
 ```
 
-Some conversions make no sense and are refused. A number cannot become true or false:
+## Conversions that Zaka refuses
+
+Some conversions make no sense, so Zaka refuses them. A number cannot become a true/false
+value, for example, and the compiler stops with an error:
 
 ```zaka-error ZK0408
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -75,11 +103,13 @@ Some conversions make no sense and are refused. A number cannot become true or f
 error[ZK0408]: cannot convert isize to bool
 ```
 
-## Automatic conversion
+To turn a number into a true/false value, we compare it instead: `န != ၀`.
 
-When nothing can be lost, Zaka converts on its own. A smaller kind goes into a bigger
-one: an `၈ ဘစ် ကိန်းပြည့်` into a `ကိန်းပြည့်`, or into a decimal
-number. These are called *widening* conversions.
+## Converting on its own
+
+When nothing can be lost, Zaka converts the value on its own, with no phrase. This
+happens when a smaller data kind goes into a bigger one, such as an `၈ ဘစ် ကိန်းပြည့်`
+into a `ကိန်းပြည့်` or into a decimal number, and it is called *widening*.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -96,8 +126,9 @@ number. These are called *widening* conversions.
 ၁၀.၀
 ```
 
-A plain `ကိန်းပြည့်` does **not** go into a decimal on its own. It has 64 bits, and a
-decimal cannot hold all 64-bit integers without loss:
+A plain `ကိန်းပြည့်` does **not** go into a decimal number on its own. It has 64 bits,
+and a decimal number cannot keep all 64-bit integers without loss, so the compiler stops
+with an error:
 
 ```zaka-error ZK0401
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -110,7 +141,14 @@ decimal cannot hold all 64-bit integers without loss:
 error[ZK0401]: expected f64, found isize
 ```
 
-Write the conversion out. Here is an average that keeps its fraction:
+## A conversion inside a sum
+
+```text
+(<value> ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) / <value>
+```
+
+To work out an average that keeps its fraction, we convert both integers before we divide
+them. A conversion is a word phrase, so inside a sum with signs we put it in parentheses:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -130,12 +168,35 @@ Write the conversion out. Here is an average that keeps its fraction:
 ၂.၅
 ```
 
-The parentheses let a conversion phrase sit inside a `/` sum. The next page explains
-the reason.
+The next page, [Grouping and order](grouping.md), explains the reason for the parentheses.
+
+## Details
+
+- **Which pairs convert.** Integers, decimal numbers, characters and true/false values
+  convert between some pairs and not others, and the full table is on [Which pairs
+  convert](../../manual/language/conversions.md#which-pairs-convert).
+- **The exact result.** Each pair has a fixed rule for values that do not fit, such as
+  a decimal number too large for an integer ([What happens to the
+  value](../../manual/language/conversions.md#what-happens-to-the-value)).
+- **Which data kinds widen.** The full list of conversions that Zaka makes on its own is
+  on [Widening](../../manual/language/conversions.md#widening-the-change-that-needs-no-words).
+- **Text to a number.** Text such as `"၄၂"` converts to an integer through a function of
+  the stdlib, and the conversion can fail ([Conversions through
+  functions](../../manual/language/conversions.md#conversions-through-functions)).
+- **Same data kind.** A conversion to the data kind that the value has changes nothing.
+
+## Recap
+
+- We write `<value> ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` to convert a value.
+- A conversion can drop a fraction or wrap a number around.
+- Zaka refuses conversions that make no sense, such as a number to a true/false value.
+- A smaller data kind widens into a bigger one on its own, but a plain `ကိန်းပြည့်` needs
+  a conversion to become a decimal number.
 
 ## Hands on
 
 - Print the Unicode number of `'က'`.
 - Print the character whose number is 4160.
+- Work out the average of 7 and 8 as a decimal number.
 
 Next: [Grouping and order](grouping.md).

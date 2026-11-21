@@ -5,17 +5,54 @@ description: Verb last, particles after each part, and two forms for writing a s
 
 # Zaka sentences
 
-Zaka follows Burmese word order: first the things the sentence talks about, **then the
-verb**. English puts it as "show 42"; Zaka puts it as "42 show": `၄၂ ကို ပြသမည်။`
+Zaka uses Burmese sentences, and Burmese puts the verb at the end, so the English "show
+42" becomes "42 show" in Zaka: `၄၂ ကို ပြသမည်။`. A small word called a particle
+(postposition) comes after each part of the sentence (statement) to show the role of that
+part.
 
-The verb comes last and decides what the sentence means. A small word called a
-*particle* follows each part and tells the role of that part.
+## You will learn
+
+- The order of a Zaka sentence: the parts first, the verb last.
+- How particles show the role of each part.
+- The difference between an expression, which has a value, and a statement, which does
+  something.
+- How to write a sum with words or with signs such as `+`.
 
 ```zaka
-// "the sum of 3 and 4" — then show it
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
+```text
+၇
+```
+
+Word for word, the sentence means "3 and 4, their sum, show it". To add two numbers in
+words, we write the two numbers with `နှင့်` and `၏` and then the word for the sum:
+
+```
+<number> နှင့် <number> ၏ ပေါင်းလဒ်
+```
+
+| Zaka | Reads as | Role |
+| --- | --- | --- |
+| `၃` | 3 | a number |
+| `နှင့်` | "and", "with" | comes after the first of the two numbers |
+| `၄` | 4 | a number |
+| `၏` | "of" | comes after the last number |
+| `ပေါင်းလဒ်` | "the sum" | adds the two numbers |
+| `ကို` | (the object) | comes after the value that `ပြသမည်` prints |
+| `ပြသမည်` | "please show" | the verb: print |
+| `။` | full stop | ends the sentence |
+
+## The verb comes last
+
+Each of these sentences puts the numbers first and the verb last, and the particles
+between them show what each number does:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "the product of 3 and 4"
 ၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသမည်။
 
@@ -28,39 +65,35 @@ The verb comes last and decides what the sentence means. A small word called a
 ```
 
 ```text
-၇
 ၁၂
 ၅
 မှန်
 ```
 
-Read the first line one word at a time:
+The [Particles](particles.md) page goes through each of these particles.
 
-| Zaka | Reads as | Role |
-| --- | --- | --- |
-| `၃` | 3 | a number |
-| `နှင့်` | "and", "with" | marks the first of two things |
-| `၄` | 4 | a number |
-| `၏` | "of" | marks the last of the things |
-| `ပေါင်းလဒ်` | "the sum" | the verb: adds the two numbers |
-| `ကို` | (object) | marks what the next verb acts on |
-| `ပြသမည်` | "please show" | the verb: print |
-| `။` | full stop | ends the statement |
+## Values and commands
 
-## Two kinds of verbs
+A sentence can have two sorts of verb, and the two sorts do different things:
 
 - A verb that **makes a value** forms an *expression*. `ပေါင်းလဒ်` (the sum) and `ကြီး`
-  (is greater) are such verbs. An expression is something with a value, like `၃ + ၄`.
-- A verb that **gives a command** forms a *statement*. `ပြသမည်` (show) is one. A statement
-  does something and ends with `။`.
+  (is greater) are verbs of this sort. An expression is something with a value, such as
+  `၃ + ၄`.
+- A verb that **gives a command** forms a *statement*. `ပြသမည်` (show) is one. A
+  statement does something, and we end it with `။`.
 
-An expression can sit inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။`, the sum is
-worked out first. Then its value, `၇`, takes the particle `ကို` and is shown.
+We can put an expression inside a statement. In `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။`, the
+computer works out the sum first, and then it prints the value `၇`, which comes before
+`ကို`.
 
 ## Words or signs
 
-Most operations can also be written with the signs from school maths. Both forms give
-the same result, and the two can be mixed:
+We can also write most operations with the signs from school maths. Both forms give the
+same result, and we can mix the two in one sentence:
+
+```
+<number> + <number>
+```
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -78,9 +111,31 @@ the same result, and the two can be mixed:
 
 The [Operators](../operators/README.md) chapter lists each word and sign.
 
+## Details
+
+- **A sentence can cover several lines.** A sentence ends at `။` and not at the end of a
+  line, so one sentence can run over several lines, and several sentences can share a
+  line. See [Sentences and the full
+  stop](../../manual/language/words.md#sentences-and-the-full-stop).
+- **Commas.** Between the items of a list we use `၊`, the Burmese comma, and a `,` is an
+  error (ZK0101).
+- **The verbs that end a sentence.** A sentence that does not end in a verb that Zaka
+  knows, such as `ပြသမည်` or `ထားမည်`, is the error ZK0203. [The verb ends the
+  sentence](../../manual/language/statements.md#the-verb-ends-the-sentence) lists these
+  verbs.
+
+## Recap
+
+- A Zaka sentence puts its parts first and its verb last, and ends with `။`.
+- A particle comes after each part and shows its role.
+- An expression has a value, and a statement does something; an expression can go
+  inside a statement.
+- We can write most operations in words, such as `ပေါင်းလဒ်`, or with signs, such as `+`.
+
 ## Hands on
 
 - Print the sum of 100 and 23 with words, then with `+`.
 - Print the product of 6 and 7 with `မြှောက်လဒ်`.
+- Split `၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။` over three lines. Does it still run?
 
 Next: [Particles](particles.md).

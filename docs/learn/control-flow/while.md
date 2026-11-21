@@ -1,13 +1,19 @@
 ---
 title: While loops
-description: Repeat statements as long as a condition holds.
+description: Repeat sentences as long as a condition is true.
 ---
 
 # While loops
 
-A *loop* runs its inner part again and again. A *while loop* keeps going as long as a
-condition is true. In Zaka: "as long as *condition*, do the following":
-`<condition> နေသရွေ့ <action>`.
+A loop runs its inner part again and again. A `while` loop keeps going as long as a
+condition is true, and in Zaka we write it as "as long as *condition*, do the following".
+
+## You will learn
+
+- how to repeat sentences while a condition is true
+- how a while loop runs, one round at a time
+- how to use a true/false value as the condition
+- how to stop a program whose loop never ends
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -34,23 +40,35 @@ condition is true. In Zaka: "as long as *condition*, do the following":
 ပြီးပြီ
 ```
 
-Each round goes like this:
+To repeat sentences while a condition is true, we use this pattern:
 
-1. Test the condition. If it is false, the loop ends, and the program goes on after it.
-2. Run the inner part.
-3. Go back to step 1.
-
-After 64 is printed, the number is doubled to 128. Then the test "128 is less than 100"
-is false, so the loop ends and 128 is never printed.
+```text
+<a> သည် <b> အောက် ငယ်နေသရွေ့ <inner part>
+```
 
 | Zaka | Reads as |
 | --- | --- |
-| `နေသရွေ့` | "as long as"; joined to the condition's last verb (`ငယ်နေသရွေ့`) |
-| `ဖြစ်နေသရွေ့` | "as long as it is so"; a separate word, used after a variable or a full sentence |
+| `<a> သည် <b> အောက် ငယ်` | "`<a>` is less than `<b>`", a comparison in words |
+| `နေသရွေ့` | "as long as"; it joins the last verb of the condition, as in `ငယ်နေသရွေ့` |
+| `<inner part>` | one sentence, or a block |
 
-## One-statement loops
+## How a loop runs
 
-The inner part can be a single statement:
+Each round of the loop goes like this:
+
+1. Zaka tests the condition. When it is false, the loop ends, and the program goes on
+   with the sentence after the loop.
+2. Zaka runs the inner part.
+3. Zaka goes back to step 1.
+
+In the first example, after the loop prints 64, it doubles the number to 128. The test
+"128 is less than 100" is then false, so the loop ends and never prints 128. Because Zaka
+tests the condition before each round, a loop whose condition is false at the start runs
+zero times.
+
+## One-sentence loops
+
+The inner part can be a single sentence, written right after `နေသရွေ့`:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -64,7 +82,15 @@ The inner part can be a single statement:
 ၀
 ```
 
-## A boolean as the condition
+## A true/false value as the condition
+
+```text
+<true/false value> ဖြစ်နေသရွေ့ <inner part>
+```
+
+When the condition is a true/false variable or a comparison in signs, it has no verb for
+`နေသရွေ့` to join, so we write `ဖြစ်နေသရွေ့` ("as long as it is so") as a separate word
+after it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -83,18 +109,40 @@ The inner part can be a single statement:
 ၈
 ```
 
-The loop stops in the round where `အကြိမ် * အကြိမ်` first reaches 50 or more: 8 × 8 = 64.
+The loop stops in the round where `အကြိမ် * အကြိမ်` first reaches 50 or more, which is
+8 × 8 = 64.
 
 ## Loops that never end
 
-If the condition never becomes false, the loop runs forever. Make sure the inner part
-changes something the condition depends on. In the Explorer, press **Stop** to end a
-program that will not stop. In a terminal, press `Ctrl`+`C`.
+When the condition never becomes false, the loop runs forever, so the inner part must
+change something that the condition depends on. To end a program that does not stop, we
+press **Stop** in the Explorer, or `Ctrl`+`C` in a terminal.
+
+## Details
+
+- **A whole sentence as the condition.** After a full comparison that ends in `သည်`, such
+  as `က သည် ၀ ထက် ကြီးသည်`, we also write `ဖြစ်နေသရွေ့` as a separate word
+  ([While loops](../../manual/language/control-flow.md#while-loops)).
+- **Leaving in the middle.** To leave a loop in the middle of a round, see [Break and
+  continue](break-continue.md).
+- **Counting.** For a loop over a range of numbers, a [counted loop](counted-loops.md) is
+  shorter.
+- **The condition must be true or false.** A number as the condition is the error ZK0402,
+  the same as in an [if](if-else.md).
+
+## Recap
+
+- We write `<condition>နေသရွေ့ <inner part>` to repeat sentences while a condition is
+  true.
+- Zaka tests the condition before each round, so a loop can run zero times.
+- After a true/false variable or a comparison in signs, we write `ဖြစ်နေသရွေ့` as a
+  separate word.
+- The inner part must change what the condition tests, or the loop never ends.
 
 ## Hands on
 
 - Print the numbers 10 down to 1 with a while loop.
-- Starting from 1000, keep halving the number while it is greater than 1. How often
-  does it get halved?
+- Start from 1000 and keep halving the number while it is greater than 1. How often does
+  it get halved?
 
 Next: [Counted loops](counted-loops.md).

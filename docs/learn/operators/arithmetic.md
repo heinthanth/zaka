@@ -1,9 +1,31 @@
 ---
 title: Arithmetic
-description: Addition, subtraction, multiplication, division, remainder and negation.
+description: Addition, subtraction, multiplication, division, remainder and negation, in signs and in words.
 ---
 
 # Arithmetic
+
+Arithmetic operators do addition, subtraction, multiplication and division, the same as
+a calculator does. Each one has a sign form, such as `+`, and a word form, such as
+`<a> နှင့် <b> ၏ ပေါင်းလဒ်` ("the sum of a and b"), and both forms work on integers and on
+decimal numbers (floats).
+
+## You will learn
+
+- how to write addition, subtraction, multiplication, division and negation, in signs
+  and in words
+- what happens to the fraction when we divide two integers, and how to get the remainder
+- what happens when we divide with zero, or when a result does not fit its data kind (type)
+- which numbers we can mix in one sum
+
+| Sign | Words | Reads as | Operation |
+| --- | --- | --- | --- |
+| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | "the sum of a and b" | addition |
+| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | "the difference of a and b" | subtraction |
+| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | "the product of a and b" | multiplication |
+| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | "a divided with b: the quotient" | division |
+| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | "a divided with b: the remainder" | remainder |
+| `-a` | `အနုတ် a` | "minus a" | negation |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -43,21 +65,35 @@ description: Addition, subtraction, multiplication, division, remainder and nega
 -၁၇
 ```
 
-| Sign | Words | Reads as | Operation |
-| --- | --- | --- | --- |
-| `a + b` | `a နှင့် b ၏ ပေါင်းလဒ်` | "the sum of a and b" | addition |
-| `a - b` | `a နှင့် b ၏ နုတ်လဒ်` | "the difference of a and b" | subtraction |
-| `a * b` | `a နှင့် b ၏ မြှောက်လဒ်` | "the product of a and b" | multiplication |
-| `a / b` | `a ကို b ဖြင့် စားသော စားလဒ်` | "a over b: the quotient" | division |
-| `a % b` | `a ကို b ဖြင့် စားသော စားကြွင်း` | "a over b: the remainder" | remainder |
-| `-a` | `အနုတ် a` | "minus a" | negation |
+The word forms follow two patterns. Addition, subtraction and multiplication join the
+two numbers with `နှင့်` and `၏`, while division and the remainder name the number we
+divide and the number we divide with:
+
+```text
+<a> နှင့် <b> ၏ <result word>
+<a> ကို <b> ဖြင့် စားသော <result word>
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `<a> နှင့် <b> ၏` | "of `<a>` and `<b>`" |
+| `<a> ကို` | "`<a>`", the number we divide |
+| `<b> ဖြင့်` | "with `<b>`", the number we divide with |
+| `စားသော` | "that divides" |
+| `ပေါင်းလဒ်`, `နုတ်လဒ်`, `မြှောက်လဒ်` | "sum", "difference", "product" |
+| `စားလဒ်`, `စားကြွင်း` | "quotient", "remainder" |
 
 ## Dividing integers
 
-Dividing two integers gives an integer. The fraction is dropped, so `၁၇ / ၅` is `၃`, not
-`၃.၄`. The remainder `%` gives what is left over: 17 = 3 × 5 + **2**.
+```text
+<integer> / <integer>
+<integer> % <integer>
+```
 
-To keep the fraction, divide decimal numbers: `၁၇.၀ / ၅` is `၃.၄`.
+When we divide two integers, the result is an integer too, so Zaka drops the fraction:
+`၁၇ / ၅` is `၃`, not `၃.၄`. To get what is left over, we use `%`, the remainder: 17 is
+3 × 5 + **2**, so `၁၇ % ၅` is `၂`. To keep the fraction, we divide decimal numbers
+instead, and `၁၇.၀ / ၅` is `၃.၄`.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -75,8 +111,11 @@ To keep the fraction, divide decimal numbers: `၁၇.၀ / ၅` is `၃.၄`.
 -၁
 ```
 
-Division with zero as the divisor has no answer. If the compiler can see the zero, the
-program does not run:
+With a negative number, the fraction is dropped toward zero, so `-၇ / ၂` is `-၃`, and the
+remainder has the sign of the number we divide.
+
+Division with zero as the divisor has no answer. When the compiler can see the zero, it
+stops with an error and the program does not run:
 
 ```zaka-error ZK0602
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -88,7 +127,7 @@ program does not run:
 error[ZK0602]: / with the constant zero as divisor
 ```
 
-If the zero first appears while the program runs, the program stops at that point:
+When the zero shows up while the program runs, the program stops at that point:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -104,12 +143,13 @@ If the zero first appears while the program runs, the program stops at that poin
 the program stopped: integer division or remainder with zero as divisor
 ```
 
-## Mixing kinds
+## Mixing data kinds
 
-Two integers, or two decimal numbers, combine with no extra step. The smaller kind
-is widened to the larger one. An `၈ ဘစ် ကိန်းပြည့်` plus a `ကိန်းပြည့်` gives a `ကိန်းပြည့်`. But a plain
-integer and a decimal number need an explicit [conversion](conversion.md), because a
-large integer could lose digits as a decimal:
+We can add two integers, or two decimal numbers, with no extra step, even when their data
+kinds have different sizes: Zaka widens the smaller data kind to the larger one,
+so an `၈ ဘစ် ကိန်းပြည့်` plus a `ကိန်းပြည့်` returns a `ကိန်းပြည့်`. An integer variable
+and a decimal variable do not mix, though, because a large integer could lose digits as a
+decimal number, so we need to write a [conversion](conversion.md) to combine them:
 
 ```zaka-error ZK0404
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -123,13 +163,14 @@ large integer could lose digits as a decimal:
 error[ZK0404]: cannot combine isize and f64 without a conversion
 ```
 
-Numbers written straight into the program bend to fit: `၃ + ၀.၅` is `၃.၅`.
+A number that we write straight into the program gets the data kind that fits, so
+`၃ + ၀.၅` is `၃.၅` with no conversion.
 
-## Too big for the kind
+## Too big for the data kind
 
-Each integer kind has a largest and a smallest value (see [Integers](../values/integers.md)).
-If a result goes past the edge while the program runs, the program stops there and names
-the operation and the kind:
+Each integer data kind has a largest and a smallest value (see
+[Integers](../values/integers.md)). When a result goes past that edge while the program
+runs, the program stops there, and the message names the operation and the data kind:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -142,11 +183,12 @@ the operation and the kind:
 the program stopped: the result of + does not fit i8
 ```
 
-Pick a kind big enough for the numbers at hand. Plain `ကိန်းပြည့်` is a safe choice.
+To avoid this, we pick a data kind that is big enough for the numbers at hand, and plain
+`ကိန်းပြည့်` is a safe choice.
 
-Some programs want the result to *wrap around* to the other end instead, like a car's
-odometer rolling over. Compile them with `--overflow wrap`, or turn off **Stop on
-overflow** in the explorer:
+Some programs want the result to wrap around to the other end instead, like a car's
+odometer that rolls over. To get that, we compile them with `--overflow wrap`, or turn off
+**Stop on overflow** in the Explorer:
 
 ```zaka overflow=wrap
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -162,11 +204,42 @@ overflow** in the explorer:
 ၂၅၅
 ```
 
-See [Overflow](../../manual/language/expressions.md#arithmetic) in the Docs.
+## Details
+
+- **Negation.** `-` and `အနုတ်` need a signed integer or a decimal number, so `-က` on an
+  unsigned `က` is the error ZK0403 ([Arithmetic](../../manual/language/expressions.md#arithmetic)).
+- **Other data kinds.** A true/false value or a character does not work with arithmetic
+  (ZK0403), while `+` in either form joins two pieces of text into new text
+  ([Text](../../manual/language/text.md#joining)).
+- **Decimal numbers and zero.** Dividing a decimal number with zero does not stop the
+  program: `၁.၀ / ၀.၀` is `inf`, and `၀.၀ / ၀.၀` is `NaN`. The remainder of decimal
+  numbers works too, so `၁၇.၅ % ၅` is `၂.၅`
+  ([Arithmetic](../../manual/language/expressions.md#arithmetic)).
+- **Constants.** When all the numbers in a sum are constants, the compiler works the sum
+  out before the program runs, so a result that does not fit is the error ZK0601 rather
+  than a stop ([Constants are worked out
+  first](../../manual/language/expressions.md#constants-are-worked-out-first)).
+- **A warning ahead of time.** When the compiler can see that an operation overflows for
+  each value its variables can have, it warns with ZK0719
+  ([Arithmetic](../../manual/language/expressions.md#arithmetic)).
+- **Which numbers mix.** The full rules for mixing data kinds are on [Mixing data kinds in an
+  operation](../../manual/language/conversions.md#mixing-data-kinds-in-an-operation).
+
+## Recap
+
+- Each arithmetic operator has a sign form (`က + ခ`) and a word form
+  (`က နှင့် ခ ၏ ပေါင်းလဒ်`).
+- Dividing two integers drops the fraction, and `%` returns the remainder.
+- Dividing with zero is an error when the compiler can see the zero, and it stops the
+  program otherwise.
+- An integer variable and a decimal variable need a conversion before we can combine them.
+- A result that does not fit its data kind stops the program, unless we compile with
+  `--overflow wrap`.
 
 ## Hands on
 
 - Work out the average of 4, 7 and 10 as a decimal number.
-- Use `%` to print whether 2026 over 4 leaves a remainder.
+- Use `%` to print whether 2026 divided with 4 leaves a remainder.
+- Print the quotient and the remainder of 100 divided with 7, in words.
 
 Next: [Comparison](comparison.md).

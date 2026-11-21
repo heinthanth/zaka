@@ -1,14 +1,16 @@
 ---
 title: Text
-description: The text kind, string literals and their template slots, joining, cells and characters, changing a character, adding to text and removing its last character, then folding, ranges, text from u8s, copies, the drops the compiler adds, static text, and the errors.
+description: The text data kind, string literals and their template slots, the text of a value, joining, comparing and printing text, cells and characters, ranges, changing text, text from u8s, and the errors.
 ---
 
 # Text
 
-Text in Zaka is a value of the kind `စာသား`: UTF-8 text that is copied as a number is. A
-string literal is text, and a pair of braces in it is a *template slot* that holds an
-expression. [Text](../../learn/text/README.md) in the Learn book shows the same rules in
-small steps.
+Text (string) in Zaka is a value of the data kind (type) `စာသား`: UTF-8 text that is
+duplicated (copied) on assignment, as a number is. A string literal is text, and a pair of
+braces in it is a *template slot* with an expression inside. This page covers how we
+write, read and change text; [How text is stored](text-storage.md) covers its heap blocks,
+duplicates, drops and static text. The Learn book teaches the same rules in small steps
+in [Text](../../learn/text/README.md).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -35,31 +37,35 @@ v ၏ အကွက်အရေအတွက် ကို ပြသမည်။
 { မဟုတ် }
 ```
 
-## The kind
+## The data kind
 
 | Burmese | In messages | What it is |
 | --- | --- | --- |
 | `စာသား` | `text` | UTF-8 text |
 
-- `စာသား` is three words: the address of its u8s, their count, and its *room*, the size of
-  the heap block that holds them. A room of 0 means that the u8s belong to no block of
-  this text: the u8s sit in static storage, or a parameter reads the caller's u8s. On a 64-bit
-  platform the kind takes 24 octets.
-- Text does not widen to a list of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း` (`u8[]`): the
-  cells of a list can be written, which would break the UTF-8 of the text. A plain list
-  of u8s converts to text, with a check of its UTF-8; see [Text from u8s](#text-from-u8s).
-- A `စာသား` declared with no value holds no text until the program sets it
-  ([Set before read](statements.md#set-before-read)); its
-  [initial value](kinds.md#initial-values), `ကနဦးတန်ဖိုး`, is blank text, with no u8s.
-- `စာသား` can be the kind of a variable, a constant, a parameter, a result, a struct field
-  and the cells of a list.
+- We can use `စာသား` as the data kind of a variable, a constant, a parameter, a result,
+  a struct field and the cells of a list.
+- A `စာသား` declared with no value has no text until the program sets it ([Set before
+  read](declarations.md#set-before-read)). Its [initial value](kinds.md#initial-values)
+  (default value), `ကနဦးတန်ဖိုး`, is blank text, with no octets.
+- Text does not widen to a list of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း` (`u8[]`),
+  because we can write the cells of a list, and that would break the UTF-8 of the text.
+  A plain list of u8s converts to text, with a check of its UTF-8; see [Text from
+  u8s](#text-from-u8s).
+- `စာသား` is three words: the address of its octets (bytes), their count, and its room,
+  the size of the heap block that contains them. On a 64-bit platform the data kind needs
+  24 octets. [How text is stored](text-storage.md#the-three-words) states the rest.
 
 ## String literals
 
-A string literal is text in double quotes, and its kind is `စာသား`, whether or not it has
-template slots. It can be stored, passed, returned, joined and printed. The escapes of
-[Source text and words](words.md#characters-and-strings) work in it, and it must close on
-the line where it opens (ZK0104).
+```text
+"<text>"
+```
+
+A string literal is text in double quotes, and its data kind is `စာသား` whether or not it
+has template slots. We can store it, pass it, return it, join it and print it. The
+escapes of [Source text and words](words.md#characters-and-strings) work in it, and it
+must close on the line where it opens (ZK0104).
 
 ```zaka
 ချီးမွမ်း ဟူသော လုပ်ဆောင်ချက် သည်
@@ -80,20 +86,26 @@ the line where it opens (ZK0104).
 
 ## Template literals
 
-A `{...}` in a string literal that is not an escape name is a template slot. It holds one
-expression of each kind: a name, a sum, a field, a call.
+```text
+"… {<expression>} …"
+```
 
-- A template slot ends at the `}` that matches its `{` on the same line. String and character
-  literals inside it are skipped whole, so a template slot can hold a template literal
-  of its own, to each depth: `"a {"b {x}"} c"`. A template slot that does not close on its line
-  is ZK0106.
-- `{{` and `}}` write a brace. A lone `}`, and a `{` with no `}` after it on the line, are
-  ZK0106.
-- `{နောက်တစ်ကြောင်း}` and `{ယူနီကုဒ် HHHH}` remain escapes.
-- The expression of a template slot is checked as each other expression is, and a mistake in it
-  is reported at its place inside the quotes: `"{မသိ}"` is ZK0301, an undeclared name,
-  and `"{}"` is ZK0202, an operand missing.
-- In a character literal, `{...}` is not a template slot: `'{က}'` is ZK0106.
+A `{...}` in a string literal that is not an escape name is a template slot (string
+interpolation). We can put one expression of each data kind in it: a name, a sum, a
+field or a call.
+
+| Case | What happens | Code |
+| --- | --- | --- |
+| a template slot | ends at the `}` that matches its `{` on the same line; string and character literals inside it are skipped whole, so a slot can contain another template literal, to each depth: `"a {"b {x}"} c"` | |
+| a template slot that does not close on its line | an error | ZK0106 |
+| `{{` and `}}` | write a brace | |
+| a lone `}`, or a `{` with no `}` after it on the line | an error | ZK0106 |
+| `{နောက်တစ်ကြောင်း}` and `{ယူနီကုဒ် HHHH}` | remain escapes | |
+| `{...}` in a character literal, as in `'{က}'` | not a template slot: an error | ZK0106 |
+
+The compiler checks the expression in a template slot as it checks each other expression,
+and reports a mistake in it at its place inside the quotes: `"{မသိ}"` is ZK0301, a name
+that is not declared, and `"{}"` is ZK0202, an operand missing.
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -111,12 +123,13 @@ error[ZK0301]: "မသိ" is not declared
 
 ## The text of a value
 
-A template slot writes its value as [`ပြသမည်`](statements.md#printing) prints it:
+A template slot writes its value in the same form that
+[`ပြသမည်`](statements.md#printing) prints it:
 
 | Value | Written as |
 | --- | --- |
 | an integer | Burmese digits: `၂၅`, `-၅` |
-| a decimal number | the shortest text that reads back: `၁.၅`, `inf` |
+| a decimal number | the shortest text that reads back as the same number: `၁.၅`, `inf` |
 | a true/false value | `မှန်` or `မမှန်` |
 | a character | itself |
 | the null address | `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` |
@@ -148,13 +161,13 @@ Text inside a list or a struct is written in quotes, so that its edges show.
 
 ```text
 <text> + <text>
-<text> (၊ <text>)+ တို့ကို ဆက်ထားသည့် စာသား
+<text>၊ <text> နှင့် <text> တို့ကို ဆက်ထားသည့် စာသား
 ```
 
-`a + b` joins two pieces of text into new text. The
-verbal form joins two or more pieces in order: `a၊ b နှင့် c တို့ကို ဆက်ထားသည့် စာသား` is the same
-text as `a + b + c`, and folds alike. Other operators do not take text, and a join
-takes nothing else with it: `t + ၁` and a number among the pieces of the verbal form are
+We use `a + b` to join two pieces of text into new text. To join two or more pieces in
+order, we can also use the word form: `a၊ b နှင့် c တို့ကို ဆက်ထားသည့် စာသား` is the same
+text as `a + b + c`, and it folds in the same manner. Other operators do not work on text,
+and a join accepts text alone: `t + ၁`, or a number among the pieces of the word form, is
 ZK0403.
 
 ```zaka
@@ -181,10 +194,17 @@ error[ZK0403]: + needs a number, found text
 
 ## Comparing
 
-`a == b` and `a != b`, and the word forms `a သည် b နှင့် ညီသည်` and `မညီ`, compare two pieces
-of text. Two texts are equal when the two hold the same u8s: the
-compare is exact, with no normal form, so two spellings of one word that differ in their
-code points are not equal. `<` and the other orderings do not take text (ZK0403).
+```text
+<text> == <text>
+<text> != <text>
+<text> သည် <text> နှင့် ညီသည်
+<text> သည် <text> နှင့် မညီ
+```
+
+We can compare two pieces of text with `==` and `!=`, or with the word forms `ညီ` and
+`မညီ`. Two texts are equal when the two have the same octets. The comparison is precise,
+with no normal form, so two spellings of one word that differ in their code points are
+not equal. `<` and the other orderings do not work on text (ZK0403).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -202,31 +222,42 @@ code points are not equal. `<` and the other orderings do not take text (ZK0403)
 
 ## Printing
 
-`ပြသမည်` prints text as it is, with no quotes. A string literal, or a `+` join that holds
-one, is quoted with `ဟု`; a text variable, a range or a call is a plain value and takes
-`ကို`. The other choice still runs, with the warning ZK0505 or ZK0506 ([Natural
-wording](naturalness.md)).
+```text
+"<text>" ဟု ပြသမည်။
+<value> ကို ပြသမည်။
+```
+
+`ပြသမည်` prints text as it is, with no quotes. We quote a string literal, or a `+` join
+with a literal in it, with `ဟု`; a text variable, a range or a call is a plain value, so
+we use `ကို` with it. The other choice still runs, with the warning ZK0505 or ZK0506
+([Natural wording](naturalness.md)).
 
 ## Cells
 
-A cell of text is one u8 of its UTF-8. A Latin letter takes one cell, a Burmese letter
-three.
+```text
+<text> ၏ အကွက် <number>
+<text> ၏ <number> ခုမြောက်အကွက်
+<text> ၏ အကွက်အရေအတွက်
+```
+
+A cell of text is one octet of its UTF-8. A Latin letter needs one cell, and a Burmese
+letter three.
 
 | Written | Means |
 | --- | --- |
-| `t ၏ အကွက်အရေအတွက်` | the count of u8s, a `လက္ခဏာမဲ့ ကိန်းပြည့်` |
+| `t ၏ အကွက်အရေအတွက်` | the count of octets, a `လက္ခဏာမဲ့ ကိန်းပြည့်` |
 | `t ၏ အကွက် n` | cell `n`, counted from 0, a `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` |
 | `t ၏ n ခုမြောက်အကွက်` | cell `n`, counted from 1 |
 | `t ၏ အကွက် s မှစ၍ n ကွက်` | new text of `n` cells from cell `s`; see [Ranges](#ranges) |
 
 - A cell number or a range outside the text stops the program when it runs.
-- Text holds whole characters, as in Rust: a range must start and end at the edge of a
-  character. When the text, the start and the length are each known, as for a text
+- Text contains whole characters, as in Rust, so a range must start and end at the edge
+  of a character. When the text, the start and the length are all known, as for a text
   constant, a range that cuts a character is ZK0607; otherwise it stops the program when
   it runs.
-- The cells of text cannot be written: the assignment is
-  ZK0429, since one u8 alone can break the UTF-8 of the text. A whole character can be
-  written: see [Changing text](#changing-text).
+- We cannot write the cells of text: the assignment is ZK0429, since one octet alone can
+  break the UTF-8 of the text. We can write a whole character instead: see [Changing
+  text](#changing-text).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -275,14 +306,17 @@ error[ZK0607]: 2 u8s from u8 0 start or end inside a character of the text
 <text> ၏ <number> ခုမြောက်စာလုံး
 ```
 
-The characters of text are its Unicode scalar values, the values of `စာလုံး`. The count
-`၏ စာလုံးအရေအတွက်` is a `လက္ခဏာမဲ့ ကိန်းပြည့်`; `၏ စာလုံး n` is the character at number `n`,
-counted from 0, and `၏ n ခုမြောက်စာလုံး` the character at number `n` counted from 1, each a
-`စာလုံး`, as `၏ အကွက် n` and `၏ n ခုမြောက်အကွက်` are for cells. Each takes text, and each walks the text from its start, since a character takes from one to four
-u8s: a counted loop that reads each character through its number takes time in the
-square of the count. An [each-character loop](statements.md#loops), `စာ ၏ စာလုံးတိုင်း ကို
-စ အနေဖြင့် ယူ၍ ...`, walks the u8s once. A number outside the text stops the program
-when it runs.
+The characters of text are its Unicode scalar values, the values of the character
+(`char`) data kind `စာလုံး`. `၏ စာလုံးအရေအတွက်` is the count of characters, a
+`လက္ခဏာမဲ့ ကိန်းပြည့်`. `၏ စာလုံး n` is the character at number `n` counted from 0, and
+`၏ n ခုမြောက်စာလုံး` the character at number `n` counted from 1, each a `စာလုံး`, in the
+same manner as `၏ အကွက် n` and `၏ n ခုမြောက်အကွက်` for cells. A number outside the text
+stops the program when it runs.
+
+A character needs from one to four octets, so each of these forms walks the text from its
+start. A counted loop that reads each character through its number therefore takes time
+in the square of the count, while an [each-character loop](control-flow.md#each-cell-loops),
+`စာ ၏ စာလုံးတိုင်း ကို စ အနေဖြင့် ယူ၍ ...`, walks the octets once.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -303,6 +337,55 @@ when it runs.
 o
 ```
 
+A character is a Unicode code point, not a letter as it is written on the page. `ကျွန်`
+is five characters, `က`, `ျ`, `ွ`, `န` and `်`, so a write at number 0 replaces the `က`
+alone and keeps the marks on it.
+
+## Ranges
+
+```text
+<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်
+```
+
+A range (substring) of text is new text with `<length>` octets from octet `<start>`,
+duplicated. It is separate from the text it came from, as a [range of a
+list](lists.md#ranges) is, so a later edit of either one leaves the other unchanged.
+
+- The cells count octets from 0. The start and the length must be integers (ZK0423).
+- The source can be each text value: a variable, a constant, a field, a cell, a
+  parameter, a literal, a call result or another range.
+- A range must start and end at the edge of a character, because text contains whole
+  characters. When the text, the start and the length are all known, as for a text
+  constant, a range that cuts a character is ZK0607; otherwise the program stops when it
+  runs. A range past the end stops the program too.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် စာ သည် "Zaka စံကား" ဖြစ်ပါစေ။
+ကိန်းရှင် ပိုင်း သည် စာ ၏ အကွက် ၅ မှစ၍ ၁၅ ကွက် ဖြစ်ပါစေ။
+ပိုင်း ထဲသို့ "!" ကို ထည့်မည်။
+စာ ထဲသို့ "?" ကို ထည့်မည်။
+ပိုင်း ကို ပြသမည်။
+စာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+စံကား!
+Zaka စံကား?
+```
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကမ္ဘာ သည် "ကမ္ဘာ" ဖြစ်ပါစေ။
+ကမ္ဘာ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+the program stopped: a range of text at 0x1002 starts or ends inside a character
+```
+
 ## Changing text
 
 ```text
@@ -316,52 +399,17 @@ o
 <text> ၏ <start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို <value> ဖြင့် အစားထိုးမည်။
 ```
 
-Text changes in place through four statements: the assignment writes one character, the
-add statement adds at its end or in front of a character, the remove statement takes its
-last character off, and the replace statement puts a value in place of a range.
-
-- **A character write** takes `၏ စာလုံး n` (counted from 0) or `၏ n ခုမြောက်စာလုံး`
-  (counted from 1) as its place. The text is a place that can be set, as for each
-  assignment: a variable, a field, a cell of a list, or `ပ ၏ တန်ဖိုး` through a pointer;
-  a constant is ZK0306. The number is an integer (ZK0423), and the value a `စာလုံး`
-  (ZK0401). A number outside the text stops the program when it runs, with the trap that
-  a read of a character outside the text gives.
-- The write walks the text from its start, as a read of a character does. The new
-  character can take more or fewer u8s than the old one: the u8s after it shift, and the
-  count of u8s changes with them.
-- **An add** takes text or a `စာလုံး`, and adds its u8s at the end. Each
-  other value is ZK0401 ("expected text"). The value is read before the text changes, so
-  `t ထဲသို့ t ကို ထည့်မည်။` doubles `t`.
-- **An add in front of a character**, `t ၏ စာလုံး n ၏ အရှေ့တွင် v ကို ထည့်မည်။`, takes the
-  same values and puts their u8s in front of character `n` (from 0, or from 1 for
-  `n ခုမြောက်စာလုံး`). The number can also be the character count, which adds at the end;
-  a larger one stops the program.
-- **A remove**, `t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။`, takes the last character off; text with no
-  characters stops the program: "the text holds no characters, so it has no last character
-  to remove". `နောက်ဆုံးအကွက်` names the last cell of a list, and on text it is ZK0437;
-  `နောက်ဆုံးစာလုံး` on a list is ZK0403.
-- **A replace** puts a value in place of a range of the text, both ends included. With
-  `အကွက် <start> မှ <end> ထိကို`, the ends count u8 cells from 0, as a range of cells
-  does; an end that falls inside a character stops the program, as such a range does (see
-  [Ranges](#ranges)). With `<start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို`, the
-  ends count characters from 1 (`ခုမြောက်` is a second spelling of `လုံးမြောက်`). The value
-  takes the values of an add, and can be longer or shorter than the range, or blank. The
-  value is read before the text changes, so it can be a range of the same text. The ends
-  are integers (ZK0423); an end outside the text stops the program, and so does an end
-  before the start: "the range from 2 to 1 ends before it starts". A range of a list is
-  ZK0403, and a range on its own, outside a replace statement, is ZK0206.
-- The cells (u8s) of text still cannot be written one at a time (ZK0429, see
-  [Cells](#cells)); a whole character can, and a replace can write a range of cells.
-
-A character is a Unicode code point, not a letter as it is written. `ကျွန်` is five characters,
-`က`, `ျ`, `ွ`, `န`, `်`, so a write at number 0 replaces the `က` alone and keeps the marks
-on it.
+We can change text in place with four statements: an assignment writes one character, an
+add puts new text at the end or in front of a character, a remove takes the last
+character off, and a replace puts a value in place of a range. In each of them, the text
+must be a place we can set, as for each assignment: a variable, a field, a cell of a
+list, or `ပ ၏ တန်ဖိုး` through a pointer. A constant is ZK0306.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 စာ ၏ စာလုံး ၀ ကို 'A' ဟု ထားမည်။
-စာ ၏ ၂ ခုမြောက်စာလုံး ကို 'က' ဟု ထားမည်။      // three u8s in place of one
+စာ ၏ ၂ ခုမြောက်စာလုံး ကို 'က' ဟု ထားမည်။      // three octets in place of one
 စာ ထဲသို့ "!" ကို ထည့်မည်။
 စာ ထဲသို့ '?' ကို ထည့်မည်။
 စာ ကို ပြသမည်။
@@ -385,7 +433,52 @@ Aကc!?Aကc!?
 မချွန
 ```
 
-A replace of cells and a replace of characters:
+### Writing a character
+
+To write one character, we use `၏ စာလုံး n` (counted from 0) or `၏ n ခုမြောက်စာလုံး`
+(counted from 1) as the place. The number must be an integer (ZK0423), and the value a
+`စာလုံး` (ZK0401). A number outside the text stops the program when it runs, with the
+same trap as a read of a character outside the text. The write walks the text from its
+start, as a read of a character does. The new character can need more or fewer octets
+than the old one, so the octets after it shift, and the count of octets changes with
+them.
+
+### Adding
+
+An add accepts text or a `စာလုံး` and puts its octets at the end. Each other value is
+ZK0401 ("expected text"). The value is read before the text changes, so
+`t ထဲသို့ t ကို ထည့်မည်။` doubles `t`.
+
+To add in front of a character, we write `t ၏ စာလုံး n ၏ အရှေ့တွင် v ကို ထည့်မည်။`. It
+accepts the same values and puts their octets in front of character `n`, counted from 0,
+or from 1 for `n ခုမြောက်စာလုံး`. The number can also equal the count of characters,
+which adds at the end; a larger number stops the program. In front of a cell of text,
+`t ၏ အကွက် n ၏ အရှေ့တွင်`, the add is ZK0437, because a cell is one octet.
+
+### Removing the last character
+
+`t ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` takes the last character off. On text with no
+characters it stops the program: "the text holds no characters, so it has no last
+character to remove". `နောက်ဆုံးအကွက်` names the last cell of a list and is ZK0437 on
+text, while `နောက်ဆုံးစာလုံး` on a list is ZK0403.
+
+### Replacing a range
+
+A replace puts a value in place of a range of the text, both ends included. There are
+two forms:
+
+| Form | The ends count | When an end is wrong |
+| --- | --- | --- |
+| `အကွက် <start> မှ <end> ထိကို` | octet cells from 0, as a range of cells does | an end inside a character stops the program, as such a range does ([Ranges](#ranges)) |
+| `<start> လုံးမြောက်စာလုံးမှ <end> လုံးမြောက်စာလုံးထိကို` | characters from 1; `ခုမြောက်` is a second spelling of `လုံးမြောက်` | |
+
+- The value accepts the same values as an add, and can be longer or shorter than the
+  range, or blank.
+- The value is read before the text changes, so it can be a range of the same text.
+- The ends must be integers (ZK0423). An end outside the text stops the program, and so
+  does an end before the start: "the range from 2 to 1 ends before it starts".
+- A replace on a list is ZK0403, and a range in this form outside a replace
+  statement is ZK0206.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -439,13 +532,13 @@ t ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်�
 error[ZK0437]: text cannot grow or shrink here: "ထည့်မည်" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်မည်" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်မည်" text
 ```
 
-When it runs, text with a room of 0 (static text, or a parameter that reads the caller's
-u8s), and text whose block another text shares, first takes a heap block of its own with
-the same u8s. A literal is never written, copied text shares nothing once it changes,
-and a function that edits its parameter leaves the caller's text as it was (see
-[Copies](#copies)). The new u8s go into the block when it has
-room; else the text moves to a block twice its size, 16 u8s at the least. A run of adds
-therefore copies the text a few times, not once for each add.
+### Edits and duplicates
+
+An edit never writes a literal, and it never reaches a duplicate: text that shares its
+octets with other text, or with the caller through a parameter, first gets its own heap
+block. So a function that edits its parameter leaves the text of the caller as it was.
+[Edits and the heap block](text-storage.md#edits-and-the-heap-block) states how the block
+grows.
 
 ```zaka
 အော် ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -470,109 +563,6 @@ l ကို ပြသမည်။
 ["ab!"၊ "Xd"]
 ```
 
-## Folding
-
-With expression folding on (the default; `--fold` holds `exprs`), a literal whose template slots
-each fold to a constant becomes static text when the program is compiled, and it takes
-no heap. A template slot folds when it holds a literal, a constant, or constant arithmetic on
-them. A `+` of two pieces of constant text folds in the same manner.
-
-A template slot with another value, such as a variable or a list, makes the literal a *format*:
-the program builds its text on the heap when it runs.
-Under `--fold none` each template literal is built when the program runs. The output
-is the same in both cases.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းသေ အကျယ် သည် ၈ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-"အကျယ် {အကျယ်}၊ ဧရိယာ {အကျယ် * အကျယ်}" ဟု ပြသမည်။       // static text
-ကိန်းရှင် i သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-"အဆင့် {i}" ဟု ပြသမည်။                                // built when it runs
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-အကျယ် ၈၊ ဧရိယာ ၆၄
-အဆင့် ၃
-```
-
-A `ကိန်းသေ` of kind `စာသား` (or a list or struct that holds text) is static text in
-each build, as a constant plain list is static data ([Lists](lists.md#static-data)): its
-value must fold at compile time, whatever `--fold` holds. Its value can
-use literals, other constants, template slots of these, `+` and calls of
-[comptime functions](compile-time.md#comptime-functions). A value that needs the program
-to run, such as a variable in a template slot, a call of another function, a cell or a field, is ZK0606, reported at
-the first part that does not fold. `--fold` changes how the IR shows the reads of the
-constant, never whether it is valid.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
-ကိန်းသေ နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ဟေး {အမည်}" + "!" ဖြစ်ပါစေ။
-နှုတ်ဆက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-ဟေး မမ!
-```
-
-```zaka-error ZK0606
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် n သည် ၃ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းသေ အဆင့် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {n}" ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0606]: a constant that holds text or a plain list must be known at compile time
-```
-
-## Ranges
-
-```text
-<text> ၏ အကွက် <start> မှစ၍ <length> ကွက်
-```
-
-A range of text is new text that holds `length` u8s from u8 `start`, copied. It stands
-apart from the text it came from, as a [range of a list](lists.md#ranges) does, and a
-later edit of either one leaves the other as it was.
-
-- The cells count u8s from 0. The start and the length are integers (ZK0423).
-- The source is a text place: a variable, a constant, a field, a cell or a parameter. A
-  literal, a call result or another range is ZK0411.
-- A range must start and end at the edge of a character, as text holds whole characters.
-  When the text, the start and the length are each known, as for a text constant, a range
-  that cuts a character is ZK0607; otherwise the program stops when it runs. A range past
-  the end stops the program too.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် စာ သည် "Zaka စံကား" ဖြစ်ပါစေ။
-ကိန်းရှင် ပိုင်း သည် စာ ၏ အကွက် ၅ မှစ၍ ၁၅ ကွက် ဖြစ်ပါစေ။
-ပိုင်း ထဲသို့ "!" ကို ထည့်မည်။
-စာ ထဲသို့ "?" ကို ထည့်မည်။
-ပိုင်း ကို ပြသမည်။
-စာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-စံကား!
-Zaka စံကား?
-```
-
-```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကမ္ဘာ သည် "ကမ္ဘာ" ဖြစ်ပါစေ။
-ကမ္ဘာ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-the program stopped: a range of text at 0x1002 starts or ends inside a character
-```
-
 ## Text from u8s
 
 ```text
@@ -580,10 +570,10 @@ the program stopped: a range of text at 0x1002 starts or ends inside a character
 ```
 
 A plain list of u8s, `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် စာရင်း`, converts to text. The VM checks
-that the u8s are UTF-8 (the op `check_utf8`) and stops the program when the u8s are not; the
-new text holds a copied set of the u8s, so a later write into the list does not reach it.
-A counted list of u8s, or a list of another cell kind, does not convert (ZK0408), and
-neither does text into a list.
+that the octets are UTF-8 (the operation `check_utf8`) and stops the program when the
+octets are not. The new text gets a duplicate of the octets, so a later write into the list does
+not reach it. A counted list of u8s, or a list of another cell kind, does not convert
+(ZK0408), and neither does text into a list.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -615,146 +605,24 @@ b ကို စာသား တစ်ခု အဖြစ် ပြောင်�
 the program stopped: the u8s at 0x1021 are not UTF-8 text
 ```
 
-## Copies
-
-`စာသား` is copied, as a number is. Setting one text place from another
-(`ခ ကို က ဟု ထားမည်။`), declaring a variable from one, passing one to a `စာသား` parameter,
-returning one, and putting one into a list or a struct field each give the new place text
-of its own, and the old place keeps its text. A list or a struct with text in it is
-copied alike.
-
-The copied text costs nothing at first: the two places share one heap block, and the
-block counts the texts that hold it. The first [edit](#changing-text) of either one gives
-it a block of its own with the same u8s, and the other keeps the old block. Static text is
-shared in the same manner, with no count: nothing writes it, so copied static text takes
-no block, and its first edit gives it a heap block of its own.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမည် ဖြစ်ပါစေ။
-ခ ကို ပြသမည်။
-အမည် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-မမ
-မမ
-```
-
-When the place read is not read again, the compiler moves the text instead, and the
-count does not change: the new place takes the block, and the old one is left blank. The
-move is never seen, since nothing reads the old place. It is not made for a parameter,
-whose text can belong to the caller; for a global read inside a function; for a global
-that a call of the same statement sets; for a place whose address unsafe code takes; or
-for a place the same statement reads twice.
-
-Text given to a function that is still read after the call is lent to the parameter with
-a room of 0: the parameter reads the caller's u8s for the length of the call, and the
-count does not change. The function sees a value of its own all the same. Setting the
-parameter gives it new text, an edit of it first copies the caller's u8s into a block of
-its own, and returning it, storing it or setting another place from it makes a copied text
-there. The text is shared through the count at the call instead when the function, or a
-call inside the same arguments, sets the global given, or when unsafe code takes the
-address of the place.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်ပါစေ။
-ခ ကို က ဟု ထားမည်။
-ခ ကို ခ + "!" ဟု ထားမည်။
-က ကို ပြသမည်။
-ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-abc
-abc!
-```
-
-## Drops
-
-Text is *managed*: the compiler frees it, and a program has no statement for it. A place
-whose kind holds text (a `စာသား` variable or parameter, a struct with a `စာသား` field, a
-list of `စာသား`) drops its text. The drops come:
-
-- at the end of its block;
-- at the end of each round of a loop;
-- before `ကွင်းဆက် ကို ရပ်မည်`, before `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်` and before a return;
-- before a new value replaces the old one;
-- for a top-level variable, at the end of the program.
-
-A short-lived text, such as a join, a range or a format that is printed or used in a
-template slot, is dropped right after its use. A drop takes one off the count of the heap
-block, and frees the block when the count reaches 0. It leaves alone static text (room 0)
-and text that was moved out. `zakac run --leaks` lists none of these blocks. A pointer
-beside the text in a struct or a list is not dropped: the block behind it, if it came from
-a heap statement, is for unsafe code to give back ([Unsafe Zaka](unsafe.md)).
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် i သည် ၁ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-i သည် ၁၀ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် လိုင်း သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် {i}: {i * i}" ဖြစ်ပါစေ။
-အကယ်၍ i သည် ၄ နှင့် ညီလျှင် ကွင်းဆက် ကို ရပ်မည်။
-လိုင်း ကို ပြသမည်။
-i ကို i + ၁ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-အဆင့် ၁: ၁
-အဆင့် ၂: ၄
-အဆင့် ၃: ၉
-```
-
-## Static text
-
-The compiled module has one table of static texts, and each distinct text sits in it
-once: string literals, folded formats and the texts that print instructions write all
-share it. Before `main` starts, the VM puts each in a static block of its own, and the
-block is frozen. Text made from a literal points into that block with a room of 0;
-nothing is copied.
-
-A write inside a frozen block stops the program. The compiler forbids a cell write
-(ZK0429), and a character write or an add first moves text with a room of 0 to a block
-of its own, so a pointer that unsafe code takes around the check is the one road to it:
-
-```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် t သည် "abc" ဖြစ်ပါစေ။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် p သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် t ၏ လိပ်စာ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
-ကိန်းရှင် q သည် p ၏ တန်ဖိုး ဖြစ်ပါစေ။
-q ၏ တန်ဖိုး ကို ၁၂၀ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-the program stopped: write at 0x1000 inside static data, which cannot change
-```
-
-[Instructions](../vm/instructions.md) lists the ops that build and drop text, and [When
-a program stops](../vm/traps.md) the trap.
-
-## The errors
+## Errors at a glance
 
 | Code | Raised when |
 | --- | --- |
+| ZK0104 | a string literal that does not close on its line |
 | ZK0106 | a lone brace, an unclosed `{`, or `{...}` in a character literal |
-| ZK0301 | a template slot names something not declared |
-| ZK0401 | text and a list of u8s in place of each other, a character write with no character, or an add of a value that is no text and no character |
-| ZK0403 | `+` of text and a non-text value, or an operator other than `+`, `==` and `!=` on text |
+| ZK0202 | a template slot with no expression, `"{}"` |
+| ZK0206 | a range form of a replace outside a replace statement |
+| ZK0301 | a template slot names something that is not declared |
+| ZK0306 | a change to the text of a constant |
+| ZK0401 | text and a list of u8s in place of each other, a character write with no character, or an add of a value that is not text or a character |
+| ZK0403 | `+` of text and a value that is not text, an operator other than `+`, `==` and `!=` on text, `နောက်ဆုံးစာလုံး` on a list, or a replace on a list |
 | ZK0408 | a conversion to text of a counted list of u8s or of another list, or of text to a list |
-| ZK0411 | a range of a literal, a call result or another range |
-| ZK0423 | a character write whose number is no integer |
+| ZK0423 | a character number, a start, a length or an end that is not an integer |
 | ZK0429 | a write to a cell of text |
-| ZK0437 | `နောက်ဆုံးအကွက်` on text |
-| ZK0439 | `၏ အရှေ့တွင်` after a value that is no character of text, and no cell of a list |
-| ZK0606 | a constant that holds text, whose value needs the program to run |
+| ZK0437 | `နောက်ဆုံးအကွက်` on text, or an add in front of a cell of text |
+| ZK0439 | `၏ အရှေ့တွင်` after a value that is not a character of text or a cell of a list |
+| ZK0505 | a warning: text printed with `ကို` instead of `ဟု` |
+| ZK0506 | a warning: a plain value printed with `ဟု` instead of `ကို` |
+| ZK0606 | a constant with text in it, whose value needs the program to run ([Folding](text-storage.md#folding)) |
 | ZK0607 | a range of known text, start and length that cuts a character |

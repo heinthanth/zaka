@@ -1,17 +1,17 @@
 ---
 title: Fibonacci numbers
-description: A fast Fibonacci with a generic loop, and the golden ratio with decimals.
+description: A fast Fibonacci with a generic loop, and the golden ratio with decimal numbers.
 ---
 
 # Fibonacci numbers
 
-Each Fibonacci number is the sum of the two before it: 0, 1, 1, 2, 3, 5, 8, ... The
-[Recursion](../functions/recursion.md) page computed them with a function that calls
-itself twice, which soon gets slow. This version walks forward with a loop and keeps
+Each Fibonacci number is the sum of the two before it: 0, 1, 1, 2, 3, 5, 8, and so on. The
+[Recursion](../functions/recursion.md) page worked them out with a function that calls
+itself twice, which soon gets slow, so this version walks forward with a loop and keeps
 just the last two numbers.
 
-Take the ratio of a Fibonacci number to the one before it, and the answer gets closer
-and closer to the *golden ratio*, about 1.618.
+When we divide a Fibonacci number with the one before it, the answer comes nearer
+and nearer to the *golden ratio*, about 1.618, and the program prints that too.
 
 ```zaka
 /// The n-th Fibonacci number, worked out with a loop.
@@ -67,19 +67,22 @@ and closer to the *golden ratio*, about 1.618.
 
 ## How it works
 
-- **`ဖီဘိုနာချီ`** keeps two numbers: `အဖြေ` (the current one, starting at 0)
-  and `နောက်` (the next one, starting at 1). Each round of the
-  [generic loop](../control-flow/generic-loops.md) moves both one step forward. After n
-  rounds, `အဖြေ` holds the n-th number, and the function
-  [gives it back](../functions/results.md#returning-the-result).
-- `လာမည့်` ("coming") is declared inside the loop's block, so it is a fresh variable
-  each round.
-- **`အချိုး`** ("ratio") [converts](../operators/conversion.md) both numbers to decimals
-  before dividing. Integer division would drop the fraction and print `၁`.
-- The 50th number, 12,586,269,025, is far too big for a 32-bit integer, but fits with
-  room to spare in a plain `ကိန်းပြည့်`.
+- **`ဖီဘိုနာချီ`** keeps two numbers: `အဖြေ` (the current one, starting at 0) and
+  `နောက်` (the next one, starting at 1). Each round of the [generic
+  loop](../control-flow/generic-loops.md) moves both one step forward, so after n rounds,
+  `အဖြေ` has the n-th number, and the function [returns
+  it](../functions/results.md#returning-the-result).
+- **`လာမည့်`** ("coming") is declared inside the block of the loop, so it is a new
+  variable in each round.
+- **`အချိုး`** ("ratio") [converts](../operators/conversion.md) both numbers to decimal
+  numbers (floats) before it divides them, because integer division would drop the
+  fraction and print `၁`.
+- **The 50th number**, 12,586,269,025, is far too big for a 32-bit integer, but it fits
+  with room to spare in a plain `ကိန်းပြည့်`, which has 64 bits.
 
 ## Hands on
 
-- Print the 90th Fibonacci number. Then print the 93rd. What happens, and what is the
-  reason? (See [Too big for the kind](../operators/arithmetic.md#too-big-for-the-kind).)
+- Print the 90th Fibonacci number, then the 93rd. What happens, and what is the reason?
+  (See [Too big for the data kind](../operators/arithmetic.md#too-big-for-the-data-kind).)
+
+Next: [The Collatz sequence](collatz.md).

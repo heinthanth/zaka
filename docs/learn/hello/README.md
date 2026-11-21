@@ -5,8 +5,19 @@ description: A first Zaka program, and how to run it.
 
 # Hello, world
 
-A *program* is a list of instructions for the computer. Tradition holds that the first
-program in a new language prints a greeting. Here it is in Zaka:
+A *program* is a list of instructions for the computer. A first program in a new
+language often prints a greeting, so we start with one here and then see how to run it.
+
+## You will learn
+
+- How to write a sentence (statement) that prints a line of text (string).
+- Where a program starts and where it ends: the program start block (entry point, `main`).
+- How to run a program in the Explorer or with the compiler, `zakac`.
+- What happens when a sentence has no full stop.
+
+## The first program
+
+Here is the greeting in Zaka:
 
 ```zaka
 // The rest of a line after "//" is a comment for people. The computer skips it.
@@ -23,65 +34,68 @@ program in a new language prints a greeting. Here it is in Zaka:
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-The line in the middle reads as a Burmese sentence: *"Hello, world" — thus, please
-show.* Each part has a job:
+The middle line is a sentence (statement) in Burmese, and word for word it means
+*"Hello, world" — thus, please show.* To print a line of text (string), we write the
+text in double quotes and follow it with `ဟု ပြသမည်။`:
 
-| Zaka | Reads as | Job |
+```
+"<text>" ဟု ပြသမည်။
+```
+
+We can put other text between the quotes, while the rest of the sentence does not change.
+The table shows what each part does:
+
+| Zaka | Reads as | What it does |
 | --- | --- | --- |
 | `"မင်္ဂလာပါ ကမ္ဘာကြီး"` | "Hello, world" | the text to print, in double quotes |
-| `ဟု` | "so" (quoting) | marks the words before it as a quote |
+| `ဟု` | "so" (quoting) | turns the words before it into a quote |
 | `ပြသမည်` | "please show" | the command: print a line |
 | `။` | full stop | ends the sentence |
 
-Each Zaka statement ends with `။`, the Burmese full stop. A line break does **not** end
-a statement; `။` alone does.
+We end each Zaka sentence with `။`, the Burmese full stop. A new line does **not** end a
+sentence, so we need the `။` even at the end of a line.
 
 ## Where the program starts
 
-The first and the last line hold the program together. The program starts at
-`ပရိုဂရမ်သည်`, runs the statements after it one after another, and ends at the closer.
+Each program needs a program start block (entry point, `main`), and we write it with
+two fixed lines: `ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။` to start the program and
+`ပရိုဂရမ် ပြီးဆုံးပါပြီး။` to end it. The sentences we want to run go between them:
+
+```
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+<sentences>
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
 | Zaka | Reads as |
 | --- | --- |
 | `ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "the program will do the following" |
 | `ပရိုဂရမ် ပြီးဆုံးပါပြီး။` | "the program is done" |
 
-This is the *start block*. Each program has one and no more, and each statement that
-runs goes inside it. The examples on these pages all start like this; [Where a program
-starts](../programs/start.md) shows what more a start block can do.
-
-The closer has other accepted spellings, such as `ပရိုဂရမ် ပြီးပါပြီ။`: see [Four closing
-forms](../variables/scope.md#four-closing-forms).
+When the program runs, it starts at `ပရိုဂရမ်သည်` and runs the sentences one after
+another until it reaches the last line, which we call the block closer (end of a block). A program has
+just one program start block, and each sentence that runs must go inside it. All the
+examples in this book begin and end with these two lines, and [Where a program
+starts](../programs/start.md) shows what else a program start block can do.
 
 ## Running it
 
-1. Open the [Zaka Explorer](/explorer/), paste the program, and
-   press **Run**. Or:
+We can run a program in two places:
+
+1. Open the [Zaka Explorer](/explorer/), paste the program, and press **Run**.
 2. Save the program as `hello.zaka` and run it with the compiler:
 
    ```sh
    zakac run hello.zaka
    ```
-3. Or run it as machine code of the computer it is on, with no VM:
 
-   ```sh
-   zakac run --jit hello.zaka
-   ```
-4. Or build it into a program of its own. `--backend native` makes the machine code with
-   Cranelift, inside the compiler; `--backend c` writes C and compiles it. Both link with a
-   C compiler on the PATH, such as GCC, Clang or `zig cc`:
-
-   ```sh
-   zakac build --backend native hello.zaka
-   ./hello
-   ```
-
-   [Native programs](../../manual/compiler/native.md) tells what such a program checks.
+Both print `မင်္ဂလာပါ ကမ္ဘာကြီး`. To build `zakac` on a computer, see [How to run the
+examples](../README.md#how-to-run-the-examples).
 
 ## More than one line
 
-A start block runs from top to bottom, one statement after another. A program can also
-print numbers, and it can do sums before it prints them.
+A program start block runs from top to bottom, one sentence at a time. Besides text, we
+can print numbers, and we can work out a sum such as `၆ * ၇` before we print it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -99,13 +113,18 @@ print numbers, and it can do sums before it prints them.
 ၄၂
 ```
 
-Text in quotes takes `ဟု`; a number takes `ကို` ("show *this*"). The page on
-[printing](printing.md) explains the difference.
+We use `ဟု` after text in quotes, and `ကို` ("show *this*") after a number:
+
+```
+<number> ကို ပြသမည်။
+```
+
+The page on [printing](printing.md) explains when to use each one.
 
 ## Forgetting the full stop
 
-If a statement has no `။`, the program does not run. The compiler stops and reports what
-it expected:
+When we leave out the `။`, the sentence does not end, so the compiler cannot make sense
+of the program and stops with an error:
 
 ```zaka-error ZK0204
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -117,33 +136,54 @@ it expected:
 error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
 
+The message points at `ပြသမည်`, which is the last word before the missing `။`. Once we
+add the `။` back, the program runs.
 
-When the compiler knows the change that fixes a message, it shows the line as the
-change leaves it, with `~` under the new text:
+## Details
 
-```console
-$ zakac run hello.zaka
-error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
- --> hello.zaka:3:1
-  |
-3 | ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-  | ^^^^^^^^^^^^^^^^
-  = help: insert "။"
-  |
-2 | "မင်္ဂလာပါ" ဟု ပြသမည်။
-  |                  ~
-```
+- **Other spellings of the block closer.** We can also write the last line in other
+  forms, such as `ပရိုဂရမ် ပြီးပါပြီ။`. See [Four closing forms](../variables/scope.md#four-closing-forms).
+- **Error codes.** Each error message comes with a code such as `ZK0204`, and the [error
+  messages](../../manual/reference/errors.md) page lists the common ones.
+- **Fix hints.** When the compiler knows how to fix an error, it shows the line with the
+  fix in place and puts `~` under the new text. In this example, the `။` at the end of
+  the last line is missing:
 
-The compiler never makes the change itself; the edit is left to the programmer.
+  ```console
+  $ zakac run hello.zaka
+  error[ZK0201]: expected "။", found end of input
+   --> hello.zaka:4:1
+    |
+  4 |
+    | ^
+    = help: insert "။"
+    |
+  3 | ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+    |                 ~
+  ```
 
-Each message has a code such as `ZK0201`. The [error messages](../../manual/reference/errors.md)
-page lists the common ones.
+  The compiler does not change the file, so we still make the edit ourselves.
+- **Native code and the VM.** `zakac run` runs a source file as native code when it can,
+  and on the VM (virtual machine) otherwise. We can use `zakac run --vm` to run it on the
+  VM, which checks more while the program runs, and `zakac build --backend native` or
+  `--backend c` to build a standalone program. Both backends need a C compiler on the
+  PATH to link the program. See [Native programs](../../manual/compiler/native.md).
+
+## Recap
+
+- We end each sentence with `။`, because a new line does not end it.
+- We use `"<text>" ဟု ပြသမည်။` to print a line of text and `<number> ကို ပြသမည်။` to
+  print a number.
+- Each program has one program start block, from `ပရိုဂရမ်သည်` to
+  `ပရိုဂရမ် ပြီးဆုံးပါပြီး။`, and its sentences run from top to bottom.
+- We can run a program in the [Zaka Explorer](/explorer/) or with `zakac run`.
+- When a `။` is missing, the compiler stops and prints an error with its code.
 
 ## Hands on
 
 - Change the greeting so that it greets a friend instead of the world.
 - Add a line that prints `၁၀၀ + ၂၃`.
-- Put two statements on the same line. Does it still run?
-- Move a statement above `ပရိုဂရမ်သည်`. What does the compiler report?
+- Put two sentences on the same line. Does the program still run?
+- Move a sentence above `ပရိုဂရမ်သည်`. What does the compiler report?
 
 Next: [Comments](comments.md).

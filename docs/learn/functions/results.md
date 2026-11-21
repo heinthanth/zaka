@@ -1,13 +1,20 @@
 ---
 title: Results
-description: Functions that work out a value and give it back.
+description: Functions that work out a value and return it to the caller.
 ---
 
 # Results
 
 The functions so far *do* something, such as printing. A lot of functions instead *work
-out* a value and hand it back to the caller: the area of a rectangle, the larger of two
-numbers. The value handed back is the function's *result*.
+out* a value and return it to the caller, such as the area of a rectangle or the larger of
+two numbers. The value that a function returns is its *result* (return value).
+
+## You will learn
+
+- how to declare a function with a result, and how to return the result
+- how to use the result of a call as a value
+- the short sign form of a call, `<name>(<arguments>)`
+- the mistakes a function with a result can have
 
 ```zaka
 // "Function square, accepting an integer k, doing the following,
@@ -28,31 +35,51 @@ numbers. The value handed back is the function's *result*.
 ၄၉
 ```
 
-Two things change compared with a function that has no result:
+In the function signature, we can use `<kind> တစ်ခု ကို ပြန်ပေးမည်` to define the return
+value, and inside the function we write `<value> ကို ပြန်ပေးမည်။` to return it:
+
+```text
+<name> ဟူသော လုပ်ဆောင်ချက် သည်
+<parameters> လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်။
+<value> ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `အောက်ပါတို့ကို လုပ်ဆောင်ကာ` | "doing the following, and" |
+| `ကိန်းပြည့် တစ်ခု ကို` | "one integer" |
+| `ပြန်ပေးမည်` | "will return" |
+| `<value> ကို ပြန်ပေးမည်။` | "will return `<value>`" |
+| `… လုပ်ဆောင်သော ရလဒ်` | "the result of running …", a value |
+
+So three things change compared with a function that has no result:
 
 | Where | No result | With a result |
 | --- | --- | --- |
-| header | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` ("will do the following") | `အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်။` ("doing the following, will return one value of the kind") |
-| inside | no return of a value | `<value> ကို ပြန်ပေးမည်။` ("give back *value*") |
-| call | `... လုပ်ဆောင်မည်။` ("run it") | `... လုပ်ဆောင်သော ရလဒ်` ("the result of running it"), a value |
+| function signature | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | `အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်။` |
+| inside | no return of a value | `<value> ကို ပြန်ပေးမည်။` |
+| call | `… လုပ်ဆောင်မည်။`, a statement | `… လုပ်ဆောင်သော ရလဒ်`, a value |
 
-The word after `တစ်` is the one the kind takes: `ခု` for most kinds, `လုံး` for a character.
+The word after `တစ်` is the measure word (classifier) of the result's data kind (type),
+which is `ခု` for most data kinds and `လုံး` for a character.
 
 ## Returning the result
 
-`<value> ကို ပြန်ပေးမည်။` ("give back *value*") ends the function at once and hands the
-value to the caller. A function with a result gives a value back on each path that
-reaches its end, so it ends with a return, or each branch before it returns.
+`<value> ကို ပြန်ပေးမည်။` ends the function at once and hands the value to the caller. A
+function with a result must return a value on each path to its end, so it ends with a
+return, or each branch before the end returns:
 
 ```zaka
-// area: give back the product, which ends the function
+// area: return the product, which ends the function
 ဧရိယာ ဟူသော လုပ်ဆောင်ချက် သည်
 အလျား ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း အနံ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အလျား * အနံ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// larger: give back as soon as the answer is known
+// larger: return as soon as the answer is known
 ပိုကြီး ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
@@ -73,8 +100,12 @@ reaches its end, so it ends with a return, or each branch before it returns.
 
 ## Using a result
 
-A call with `လုပ်ဆောင်သော ရလဒ်` is a value. Use it wherever a value fits: print it, store
-it, pass it to another function, or use it in a sum:
+```text
+<name> ဟူသော လုပ်ဆောင်ချက်ကို <arguments> ဖြင့် လုပ်ဆောင်သော ရလဒ်
+```
+
+A call that ends in `လုပ်ဆောင်သော ရလဒ်` is a value, so we can use it wherever a value fits:
+we can print it, store it, pass it to another function, or use it in a sum:
 
 ```zaka
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -102,17 +133,21 @@ it, pass it to another function, or use it in a sum:
 ၁၆
 ```
 
-Notice the parentheses in the sum. A statement that begins with `လုပ်ဆောင်ချက်` is read
-as a call statement, so a sum that *starts* with a call needs the call in parentheses.
-A call later in the sum, or a call on its own, needs none.
-
-To discard a result, call the function as a statement with `လုပ်ဆောင်မည်။`.
+Note the parentheses in the sum. Zaka treats a statement that starts with a call in the
+word form as a call statement, so when a sum *starts* with a call, we put that call in
+parentheses. A call later in the sum, or a call on its own, needs none. To drop a result,
+we call the function as a statement with `လုပ်ဆောင်မည်။`.
 
 ## The sign form
 
-A call inside a sum or inside another call takes a lot of words. The *sign form* writes
-the same call in fewer: the name, then the arguments in parentheses, with `၊` between
-them. It is the same call, as `+` is the same sum as the word form.
+```text
+<name>(<argument>၊ <argument>)
+```
+
+A call inside a sum or inside another call needs a lot of words, so we can use the *sign
+form* to write the same call in fewer: the name, then the arguments in parentheses, with
+`၊` between them. It is the same call, just as `+` is the same sum as its word form, and
+it looks like a call in most other languages.
 
 ```zaka
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -135,13 +170,17 @@ them. It is the same call, as `+` is the same sum as the word form.
 ၁၆
 ```
 
-Write the `(` right after the name, with no space. A call whose result is dropped still
-takes the statement form, `လုပ်ဆောင်မည်။`.
+We write the `(` right after the name, with no space. The sign form is a value, so a call
+whose result we drop still needs the statement form, `လုပ်ဆောင်မည်။`.
 
 ## Arguments first, with a result
 
-The arguments-first call of [Parameters](parameters.md#arguments-first) gives back the
-result when it ends with `သည့် ရလဒ်` ("the result that ...") in place of `မည်`:
+```text
+<arguments> ကို သုံး၍ <name> သည့် ရလဒ်
+```
+
+The arguments-first call of [Parameters](parameters.md#arguments-first) returns the result
+when we end it with `သည့် ရလဒ်` ("the result that …") in place of `မည်`:
 
 ```zaka
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -163,10 +202,10 @@ result when it ends with `သည့် ရလဒ်` ("the result that ...") in 
 ၆၄
 ```
 
-## Results of other kinds
+## Results of other data kinds
 
-A result can be of whatever kind the function needs, lists and structs included (see
-[Lists as results](../lists/passing.md#lists-as-results)). This one gives back true or
+A result can have whatever data kind the function needs, including lists and structs (see
+[Lists as results](../lists/passing.md#lists-as-results)). This function returns true or
 false:
 
 ```zaka
@@ -188,7 +227,7 @@ false:
 
 ## Mistakes
 
-A function without a result has nothing to use as a value:
+A function without a result has no value for a call to use:
 
 ```zaka-error ZK0315
 ပြ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -205,7 +244,8 @@ A function without a result has nothing to use as a value:
 error[ZK0315]: function "ပြ" returns nothing and cannot be used as a value
 ```
 
-A function with a result must give a value back whenever it returns:
+A function with a result must return a value each time it returns, so a bare
+`ပြန်ပေးမည်။` is an error there:
 
 ```zaka-error ZK0313
 တစ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -221,8 +261,8 @@ A function with a result must give a value back whenever it returns:
 error[ZK0313]: function "တစ်" returns isize, but no value is returned
 ```
 
-A function with a result whose block can reach its end with no return is an error too,
-since the caller would be left with no value:
+When a function with a result can reach the end of its block without a return, the caller
+would be left with no value, so that is an error too:
 
 ```zaka-error ZK0339
 ဆယ်ကျော် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -239,10 +279,39 @@ since the caller would be left with no value:
 error[ZK0339]: function "ဆယ်ကျော်" gives back a result, but its block can reach its end without giving one back
 ```
 
+## Details
+
+- Returning a value from a function without a result is the error ZK0312, and a value that
+  does not fit the result's data kind is ZK0401 ([Results and
+  return](../../manual/language/functions-results.md#return-statements)).
+- A function signature with no measure word after `တစ်` is ZK0234, and a measure word that
+  does not fit the data kind gets the warning ZK0509 ([Results and
+  return](../../manual/language/functions-results.md#declaring-a-result)).
+- A function has no variable named `ရလဒ်`: we return the value with
+  `<value> ကို ပြန်ပေးမည်။`.
+- A loop at the end does not count as a return, because its test can be false at the start;
+  a loop whose test is `မှန်` and that no break leaves does count, since it never ends
+  ([Results and return](../../manual/language/functions-results.md#each-path-returns)).
+- `သော ရလဒ်` and `မည့် ရလဒ်` mean the same as `သည့် ရလဒ်` at the end of an arguments-first
+  call ([Arguments first](../../manual/language/functions-calls.md#arguments-first)).
+- A function can also fail and return an error value instead of a result: [Errors and
+  results](../error-handling/README.md) teaches it.
+
+## Recap
+
+- In the function signature, we write `အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> တစ်ခု ကို ပြန်ပေးမည်။`
+  to give the function a result.
+- Inside, `<value> ကို ပြန်ပေးမည်။` returns the value and ends the function, and each path
+  must return one.
+- A call that ends in `လုပ်ဆောင်သော ရလဒ်` or `သည့် ရလဒ်` is a value, and so is the sign form
+  `<name>(<arguments>)`.
+- When a sum starts with a word-form call, we put that call in parentheses.
+
 ## Hands on
 
 - Write a function that returns the smallest of three numbers.
 - Write a function that returns true for multiples of 4 that are not multiples of 100,
   and also for multiples of 400. This is the leap rule of the Gregorian calendar.
+- Rewrite the sum `3² + 4²` with the arguments-first form.
 
-Next: [Recursion](recursion.md).
+Next: [Prepositions](prepositions.md).

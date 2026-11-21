@@ -11,11 +11,11 @@ use zaka_host::MemWorld;
 use zaka_vm::machine::FrameMode;
 use zaka_vm::machine::Held;
 use zaka_vm::machine::HostData;
-use zaka_vm::machine::JobState;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::PackedVar;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::State;
+use zaka_vm::machine::ThreadState;
 use zaka_vm::mem::Block;
 use zaka_vm::mem::Mem;
 use zaka_vm::mem::Origin;
@@ -640,7 +640,7 @@ pub struct Session
     /// How the variables of each run sit in the address space.
     #[builder(default)]
     frames: FrameMode,
-    /// Whether each run shuffles the turns of its jobs, from a seed of its
+    /// Whether each run shuffles the turns of its threads, from a seed of its
     /// own.
     #[builder(default)]
     shuffled: bool,
@@ -740,8 +740,8 @@ fn temp_rows(values: &[Value]) -> Vec<ValueRow>
 /// * `ops` - The ops.
 /// * `max_heap` - The cap on live heap octets.
 /// * `frames` - How the variables sit in the address space.
-/// * `seed` - The seed that shuffles the turns of the jobs, or `None` for the
-///   fixed turns.
+/// * `seed` - The seed that shuffles the turns of the threads, or `None` for
+///   the fixed turns.
 ///
 /// # Returns
 ///
@@ -1027,7 +1027,7 @@ impl Session
         self.reset();
     }
 
-    /// Set whether each run shuffles the turns of its jobs; a change starts
+    /// Set whether each run shuffles the turns of its threads; a change starts
     /// the run again.
     ///
     /// # Arguments
@@ -1047,17 +1047,17 @@ impl Session
     /// The seed, or `None` for the fixed turns.
     pub fn seed(&self) -> Option<u64> { self.seed }
 
-    /// What each job of the run does, the main job first, and the number of
-    /// the job that runs now.
+    /// What each thread of the run does, the main thread first, and the number
+    /// of the thread that runs now.
     ///
     /// # Returns
     ///
     /// The states and the number; none without ops.
-    pub fn jobs(&self) -> (Vec<JobState>, usize)
+    pub fn threads(&self) -> (Vec<ThreadState>, usize)
     {
         self.machine
             .as_ref()
-            .map_or((Vec::new(), 0), |m| (m.job_states(), m.running_job()))
+            .map_or((Vec::new(), 0), |m| (m.thread_states(), m.running_thread()))
     }
 
     /// Whether there are ops to run.

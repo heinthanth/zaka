@@ -5,13 +5,22 @@ description: Text, paths, lists and files with the modules the compiler carries 
 
 # The stdlib
 
-Zaka carries a few modules of functions, the *stdlib*. A program imports the names
-it needs from each, as from a file of its own ([Modules](../modules/README.md)). The
-functions of text, paths and lists are written in Zaka; each call reads as a sentence.
+The compiler comes with a few modules of prepared functions, the stdlib (standard
+library). We import the names we need from a module, the same as from a file of our own
+([Modules](../modules/README.md)), and then call them like the functions we write. This
+page shows the modules for text, paths, lists, and files and folders.
+
+## You will learn
+
+- How to import a function from the stdlib and call it in a sentence.
+- How to find, split, join and change text, and read text as an integer.
+- How to build a path and take it apart.
+- How to sort and reverse a list, and how to make folders and list them.
 
 ## Text
 
-`"စံကား/စာသား"` finds, splits, joins and changes text:
+This program imports four functions of the text module, `"စံကား/စာသား"`, and calls each
+one:
 
 ```zaka
 "စံကား/စာသား" မှ ပါမပါစစ်၊ ခွဲ၊ ဆက် နှင့် စာလုံးကြီးပြောင်း တို့ကို ထည့်သွင်းမည်။
@@ -32,9 +41,38 @@ functions of text, paths and lists are written in Zaka; each call reads as a sen
 ZAKA
 ```
 
-The module also reads text as an integer. Import `ကိန်းပြည့်အဖြစ်ပြောင်း`, and the
-conversion `ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` works on text: it gives a result,
-good or failed, as [Errors and results](../error-handling/README.md) shows.
+Each call is a sentence: we write the arguments, each followed with its preposition, then
+the name of the function and `သည့် ရလဒ်` to use its result. To split text, for example, we
+write:
+
+```
+<text> ကို <separator> ဖြင့် ခွဲ သည့် ရလဒ်
+```
+
+| Zaka | Reads as | What it does |
+| --- | --- | --- |
+| `"ပန်း၊ငှက်ပျော၊သရက်" ကို` | "the text" (object) | the text to split |
+| `"၊" ဖြင့်` | "with `၊`" | the separator |
+| `ခွဲ` | "split" | the function |
+| `သည့် ရလဒ်` | "its result" | the value of the call: a list of text |
+
+The other calls follow the same pattern: `ပါမပါစစ်` ("is it there or not?") tells whether
+the first text is inside the second, `ဆက်` ("join") joins a list of text with a separator
+between each two, and `စာလုံးကြီးပြောင်း` ("to capitals") turns each Latin letter into a
+capital.
+
+## Text as an integer
+
+When we import `ကိန်းပြည့်အဖြစ်ပြောင်း` from the text module, the conversion
+`ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` also works on text:
+
+```
+<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်
+```
+
+Text might not have a number in it, so the conversion returns a result (result type) that
+has either the number or an error value, as [Errors and
+results](../error-handling/README.md) shows:
 
 ```zaka
 "စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း ကို ထည့်သွင်းမည်။
@@ -50,10 +88,20 @@ good or failed, as [Errors and results](../error-handling/README.md) shows.
 အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း)
 ```
 
+`"လေးဆယ်"` is the number 40 written as a word, not in digits, so the second conversion
+fails with "a character that is not a digit".
+
 ## Paths
 
-`"စံကား/လမ်းကြောင်း"` reads the parts of a path. After `၏`, a function reads like a field
-of the path:
+```
+<path> ကို <path> နှင့် ဖိုင်လမ်းကြောင်းဆက် သည့် ရလဒ်
+<path> ၏ ဖိုင်အမည်
+```
+
+The path module, `"စံကား/လမ်းကြောင်း"`, builds the path of a file and takes it apart.
+`ဖိုင်လမ်းကြောင်းဆက်` joins two paths with a `/` between them, and when a function needs
+just one argument, we can also call it with `၏`, as if we were reading a field of the
+path:
 
 ```zaka
 "စံကား/လမ်းကြောင်း" မှ ဖိုင်အမည်၊ ဖိုင်အမည်နောက်တွဲ နှင့် ဖိုင်လမ်းကြောင်းဆက် တို့ကို ထည့်သွင်းမည်။
@@ -72,10 +120,20 @@ photos/ပန်း.jpg
 ဒေတာ("jpg")
 ```
 
+`ဖိုင်အမည်` ("file name") is the last part of the path, and `ဖိုင်အမည်နောက်တွဲ` ("file name
+ending") is the extension without its dot. A file name might have no extension, so the
+extension comes as an optional value (option type), and the output shows it inside
+`ဒေတာ(...)` ([Optional values](../optionals/README.md)).
+
 ## Lists
 
-`"စံကား/စာရင်း"` sorts, removes, finds and reverses. Each function gives back a new list:
-the list it takes stands as it was.
+```
+<list> ကို ငယ်စဉ်ကြီးလိုက်စီ သည့် ရလဒ်
+```
+
+The list module, `"စံကား/စာရင်း"`, sorts a list, removes a cell, finds a value and
+reverses the order of the cells. Each function returns a new list and leaves the list we
+pass in unchanged, as the last line of the output shows:
 
 ```zaka
 "စံကား/စာရင်း" မှ ငယ်စဉ်ကြီးလိုက်စီ၊ ဖယ် နှင့် ပြောင်းပြန်စီ တို့ကို ထည့်သွင်းမည်။
@@ -96,11 +154,23 @@ the list it takes stands as it was.
 [၇၀၊ ၉၅၊ ၆၁၊ ၈၈]
 ```
 
+| Zaka | Reads as |
+| --- | --- |
+| `ငယ်စဉ်ကြီးလိုက်စီ` | "sort from small to large" |
+| `<list> မှ ၀ အကွက်ကို ဖယ်` | "remove cell 0 from the list" |
+| `ပြောင်းပြန်စီ` | "sort in reverse", from the last cell to the first |
+
 ## Files and folders
 
-`"စံကား/အဝင်အထွက်"`, the module of [Input and output](../io/README.md), makes folders, adds
-to files and lists what a folder holds. Each of these can fail, so the program prints the
-whole result:
+```
+<path> နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ် သည့် ရလဒ်
+<text> ကို <path> ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ်
+<path> ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု သည့် ရလဒ်
+```
+
+The module of [Input and output](../io/README.md), `"စံကား/အဝင်အထွက်"`, can also make a
+folder, add text at the end of a file and list the names inside a folder. Each of these
+calls can fail, so this program prints the whole result of each one:
 
 ```zaka
 "စံကား/အဝင်အထွက်" မှ ဖိုင်တွဲတစ်ခုပြုလုပ်၊ နောက်ဆုံးမှဆက်ရေး နှင့် စု တို့ကို ထည့်သွင်းမည်။
@@ -118,4 +188,48 @@ whole result:
 ရလဒ်ကောင်း(["day.txt"])
 ```
 
-[The stdlib](../../manual/language/stdlib.md) in Docs lists each function with its rules.
+| Zaka | Reads as |
+| --- | --- |
+| `"notes" နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ်` | "make a folder at notes" |
+| `"notes/day.txt" ၏ နောက်ဆုံးမှဆက်ရေး` | "write on at the end of notes/day.txt" |
+| `"notes" ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု` | "collect the names inside the folder at notes" |
+
+`နောက်ဆုံးမှဆက်ရေး` makes the file when it is not there, which is the reason the folder
+lists `day.txt` afterwards.
+
+## Details
+
+- **More functions.** Each module has more functions than this page shows: for example,
+  `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
+  and `စီ` sorts a list with a function that compares two cells. [The
+  stdlib](../../manual/language/stdlib.md) lists each function with its rules and its cost.
+- **The sign form.** Each stdlib function also works in the sign form, such as
+  `ခွဲ("က၊ခ"၊ "၊")` ([The sign form](../functions/results.md#the-sign-form)).
+- **Places in text count u8s.** A function that returns a place in text, such as `ရှာ`,
+  counts the u8s (bytes) of the text, so a Burmese letter takes three ([Cells](../text/characters.md#cells)).
+- **Paths as a data kind.** A path that the module returns is a `ဖိုင်လမ်းကြောင်း`, which
+  prints as its text, and each function accepts text as well
+  ([Paths](../../manual/language/stdlib.md#paths)).
+- **Generic list functions.** The list functions work on a list of each data kind, because
+  each one is generic ([Generics](../generics/README.md)).
+- **The rest of the file calls.** The I/O module can also remove, move and test a path:
+  see [Files and folders](../../manual/language/io.md#files-and-folders).
+
+## Recap
+
+- We import stdlib functions with `"စံကား/<module>" မှ <names> တို့ကို ထည့်သွင်းမည်။`.
+- We call each function as a sentence, with the arguments and their prepositions first and
+  `သည့် ရလဒ်` after the name.
+- `"စံကား/စာသား"` works on text, `"စံကား/လမ်းကြောင်း"` on paths, `"စံကား/စာရင်း"` on lists,
+  and `"စံကား/အဝင်အထွက်"` on files and folders.
+- The text and list functions return new values and leave their arguments unchanged.
+
+## Hands on
+
+- Split a sentence on `" "` into words, print the number of words, then join the words
+  again with `"-"`.
+- Sort a list of five numbers, then reverse the sorted list so that the largest comes first.
+- Join three folder names into one path with `ဖိုင်လမ်းကြောင်းဆက်`, and print its last part.
+- Convert `"၁၂၃"` and `"abc"` to integers and print both results.
+
+Next: [Natural Zaka](../natural-zaka/README.md).

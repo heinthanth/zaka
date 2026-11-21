@@ -5,17 +5,19 @@ description: How the VM sets out its storage in blocks, how it checks each acces
 
 # Addresses and blocks
 
-The storage of the VM is a flat run of addresses, and each part of it belongs to a
-*block*: a run of octets with a start, a length and a state. A global, a local, and
-each piece of heap is a block. The VM keeps a table of the blocks, and each read or
-write through an address looks the address up in that table before it touches an octet.
-This page tells how the addresses are laid out, how a block lives and dies, and how the
-two *frame modes* differ.
+The storage (memory) of the VM (virtual machine) is a flat run of addresses (pointers),
+and each part of it belongs to a *block* (allocation): a run of octets (bytes) with a
+start, a length and a state. Each global, each local and each piece of heap is a block.
+The VM keeps a table of the blocks, and each read or write through an address looks the
+address up in that table before it touches an octet. This page covers how the addresses
+are laid out, how a block lives and ends, and how the two *frame modes* differ. Learn
+shows the same checks from the side of a program in [Pointer
+mistakes](../../learn/pointers/mistakes.md).
 
 ## The address space
 
-The space holds `2^bits` addresses for a platform of `bits` bits (at most `2^64`). It is
-laid out upward from address 0:
+The space has `2^bits` addresses for a platform of `bits` bits (at most `2^64`), laid out
+upward from address 0:
 
 ```text
  0x0000 ┌──────────────────────────────┐
@@ -34,25 +36,30 @@ laid out upward from address 0:
  end    └──────────────────────────────┘
 ```
 
-- **Reserved.** An address below 4096 is never part of a block. The null pointer, address 0, and each small
-  offset from it fall here, so a read through a null pointer cannot find a block
-  through luck. On a platform of 8 bits the reserved part is 1/16 of the space, 16 addresses.
-- **Static.** Before `main` starts, each global gets a block of zeros, then each static
-  text of the module gets a block that holds its UTF-8, and then each static list a block
-  that holds its cells ([Lists](../language/lists.md#static-data)). Static blocks last
-  until the end. A static text or list block is *frozen*: a read works, and a write traps with
-  `write at ADDR inside static data, which cannot change`. Each literal of the same text
-  points into the one block, so a write would change them all. The compiler forbids such a
-  write ([Text](../language/text.md)), and an edit of text or of a plain list, or the
-  address of one of its cells, first copies static cells into a heap block; a pointer made
-  from an integer in unsafe code alone can reach one.
-- **Stack region.** It opens right after the statics. Its size is `--max-stack` or half
-  of the room left, whichever is smaller; the heap starts at its end.
-- **Heap.** New blocks go above all the blocks made so far.
+| Part | What it contains |
+| --- | --- |
+| reserved | no block at all: an address below 4096 (below 1/16 of the space on a small platform, 16 addresses on an 8-bit one) |
+| static | the globals, the static texts and the static lists, in that order, for the whole run |
+| stack region | the locals of the calls in progress; its size is `--max-stack` or half of the room left, whichever is smaller |
+| heap | the blocks of the allocate statement, each one above all the blocks made so far |
 
-With two integer globals, no text and the default limits, the stack region runs from `0x1040` to
-`0x101040`, and the first heap block starts at `0x101040`. A pointer prints as its
-address, so the arrangement can be seen:
+The null address, 0, and each small offset from it fall in the reserved part, so a read
+through the null address cannot find a block through luck.
+
+Before `main` starts, each global gets a block of zeros, then each static text of the
+module gets a block that contains its UTF-8, and then each static list gets a block with
+its cells ([Static data](../language/counted-lists.md#static-data)). Static blocks last until the end of
+the run. A static text or list block is *frozen*: a read works, and a write stops the
+program with `write at ADDR inside static data, which cannot change`. Each literal of the
+same text points into the one block, so a write would change them all. The compiler
+forbids such a write ([Text](../language/text.md)), and an edit of text or of a plain
+list, or taking the address of one of its cells, first copies the static cells into a heap
+block. Just an address made from an integer in unsafe code can reach a frozen block.
+
+The stack region opens right after the statics, and the heap starts at its end. With two
+integer globals, no text and the default limits, the stack region runs from `0x1040` to
+`0x101040`, and the first heap block starts at `0x101040`. An address prints as a number,
+so we can see where each block starts:
 
 ```zaka
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
@@ -75,10 +82,11 @@ address, so the arrangement can be seen:
 0x101060
 ```
 
-The second block is not at the address of the first, although the first was given back.
-The reason is in [the life of a heap block](#the-life-of-a-heap-block).
+The second block does not reuse the address of the first, although the first was freed.
+[The life of a heap block](#the-life-of-a-heap-block) explains the reason. These
+addresses come from the VM: native code prints the addresses of the host instead.
 
-## What a block holds
+## What a block contains
 
 | Field | Meaning |
 | --- | --- |
@@ -86,19 +94,22 @@ The reason is in [the life of a heap block](#the-life-of-a-heap-block).
 | length | the octet count; kept after the block is freed |
 | contents | the octets; dropped when the block is freed |
 | origin | `heap`, `stack` (a local or parameter of a call), or `static` (a global or a static text) |
-| live | whether the block is in use; a freed block stands in the table as a record |
-| frozen | whether a write inside the block traps; set for static text |
+| live | whether the block is in use; a freed block remains in the table as a record |
+| frozen | whether a write inside the block stops the program; set for static text |
 | owner | the call depth that made a stack block; 0 for heap and static blocks |
-| count | the number of values that hold a counted block (text, a plain list, a shared object, a box, the record of a closure); the last to let go frees it, and a block from a heap statement has none |
-| cell kind | the kind of each cell of a counted block, so the ring collector can walk the blocks its cells hold |
-| pinned | whether an address of one of its cells was taken; a duplicate of a pinned block copies its cells and never shares them |
+| count | the number of values that share a counted block (text, a plain list, a shared object, a box, the record of a closure); the last one to let go frees it, and a block from a heap statement has no count |
+| cell kind | the data kind (type) of each cell of a counted block, so the ring collector can walk the blocks its cells point at |
+| pinned | whether a program took the address of one of its cells; a duplicate (copy) of a pinned block copies its cells and never shares them |
 
-The table is kept in order of start. To check an access of `n` octets at `a`, the VM takes
-the last block that starts at or below `a` and asks whether `a + n` remains inside it.
+The VM keeps the table in order of start. To check an access of `n` octets at `a`, it
+takes the last block that starts at or below `a` and checks that `a + n` is still inside
+it.
 
-**Red zones.** A gap of at least 16 addresses, which belong to no block, follows each
-block. A read or write just past the end of a block lands in the gap, never in the
-next block, so a mistake of one box too far is caught instead of reading a neighbour:
+### Red zones
+
+A gap of at least 16 addresses, which belong to no block, follows each block. A read or
+write just past the end of a block lands in the gap, never in the next block, so a
+mistake of one cell too far is caught instead of reading a neighbour:
 
 ```text
   block A                gap                      block B
@@ -108,23 +119,27 @@ next block, so a mistake of one box too far is caught instead of reading a neigh
           a read at 0x1008 lands in the gap: out of bounds
 ```
 
-**The order of the checks.** One function checks each load and store, in this order, and
-the first failure is the trap:
+### The order of the checks
 
-1. the address is below the reserved part: `null address`
-2. the address is not a multiple of the alignment of the kind: `misaligned`
-3. no block holds the address, or the access runs past the end of the block it starts
-   in: `out of bounds`
-4. the block is freed: `use after free`
-5. the octets read hold no value of the kind: `bad value`
+One function checks each load and store, in this order, and the first check that fails
+stops the program:
 
-[When a program stops](traps.md) gives each message with an example.
+| Check | Trap |
+| --- | --- |
+| 1. the address is below the reserved part | `null address` |
+| 2. the address is not a multiple of the alignment of the data kind | `misaligned` |
+| 3. no block contains the address, or the access runs past the end of the block it starts in | `out of bounds` |
+| 4. the block is freed | `use after free` |
+| 5. the octets read are no value of the data kind | `bad value` |
 
-**Forming an address is free.** Moving a pointer does not read an octet, so the VM
-checks just that a step remains inside the block the pointer started in, one past its end
-included. A step that leaves the block traps at once, since no offset leads from one
-block into another. A subtraction of two pointers needs both in one live block, again
-counting the end.
+[Stops in unsafe code](traps-unsafe.md#addresses) shows each message with an example.
+
+### Forming an address is free
+
+Moving an address does not read an octet, so the VM checks just that each step remains
+inside the block the address started in, one past its end included. A step that leaves
+the block stops the program at once, since no offset leads from one block into another. A
+subtraction of two addresses needs both in one live block, again counting the end.
 
 ## The life of a heap block
 
@@ -136,33 +151,33 @@ counting the end.
                        │ made, and this one is       │ and its start joins the queue
                        │ freed                       │ of freed blocks: the quarantine
                        ▼                             ▼
-              reads and writes work         reads, writes and frees trap
+              reads and writes work         reads, writes and frees stop the program
 ```
 
 1. **Allocate.** A new block gets the lowest fresh address above each block made so far,
-   filled with zeros, and counts against the heap cap. If the cap or the space has no
-   room, the statement leaves the null pointer.
-2. **Free.** The block becomes *freed*: its contents are dropped, but its start and
-   length remain in the table, and its start joins a queue of freed blocks, oldest first.
-   This is the *quarantine*. An access that lands in a freed block is a use after free,
-   and freeing it again is a double free.
-3. **Reuse.** The VM takes fresh addresses first. When the space is full, and not before, it
-   takes the oldest freed block that is long enough. On a 64-bit platform that does not
-   happen in practice, so a stale pointer keeps pointing at a record of a freed block,
-   and the mistake is caught however late the pointer is used. On a small platform the
+   filled with zeros, and counts against the heap cap. When the cap or the space has no
+   room, the statement leaves the null address.
+2. **Free.** The block becomes *freed*: its contents are dropped, but its start and length
+   remain in the table, and its start joins a queue of freed blocks, oldest first. This is
+   the *quarantine*. An access that lands in a freed block is a use after free, and
+   freeing it again is a double free.
+3. **Reuse.** The VM takes fresh addresses first, and takes the oldest freed block that is
+   long enough just when the space is full. On a 64-bit platform that does not happen in
+   practice, so a stale address keeps pointing at the record of a freed block, and the VM
+   catches the mistake however late the address is used. On a small platform the
    quarantine is shorter, and a use after free can go unseen once the block is reused.
 4. **Resize.** A resize makes a new block each time, copies as much of the old contents as
-   fits, zeroes the rest, and frees the old block. The new block can sit at another
-   address, so a pointer taken before the resize points into a freed block afterwards.
+   fits, sets the rest to zero, and frees the old block. The new block can sit at another
+   address, so an address taken before the resize points into a freed block afterwards.
 
-The cap counts live heap octets. A free lowers the count, and the VM remembers the
-peak, which the Explorer shows.
+The cap counts live heap octets. A free lowers the count, and the VM remembers the peak,
+which the Explorer shows.
 
 ## Blocks of the stack region
 
-A call takes one block for each local, parameters first, at the top of the stack region.
-Each is aligned to 16 and has its red zone after it. When the call returns, its blocks are
-marked freed and the top of the stack moves back to where it was before the call:
+A call puts one block for each local, parameters first, at the top of the stack region.
+Each is aligned to 16 and has its red zone after it. When the call returns, the VM marks
+its blocks freed and moves the top of the stack back to where it was before the call:
 
 ```text
  stack region, growing upward
@@ -178,28 +193,29 @@ marked freed and the top of the stack moves back to where it was before the call
 
 A freed stack block has no quarantine. It remains in the table until a later call takes its
 room, and the table then forgets it. Until then, a read through the address of a local of
-a function that has returned traps as a use after free, and the message names the
-variable and its function. After another call has taken the room, the read finds the new
-local, as it would in a native program. This is the reason the compiler warns about a
-function that returns the address of its own variable (ZK0706): see [Unsafe
+a function that has returned stops the program as a use after free, and the message names
+the variable and its function. After another call has taken the room, the read finds the
+new local, as it would in a native program. This is the reason the compiler warns about a
+function that returns the address of one of its locals (ZK0706): see [Unsafe
 Zaka](../language/unsafe.md).
 
-A call whose locals do not fit in what is left of the region traps with `stack full`.
+A call whose locals do not fit in what is left of the region stops the program with
+`stack full`.
 
 ## Checked and packed variables
 
-The VM can set out the variables of a run in two forms, picked with `--frames`:
+The VM can place the variables of a run in two forms, and we pick one with `--frames`:
 
-| | checked, the default | packed |
+| | `checked`, the default | `packed` |
 | --- | --- | --- |
 | globals | one static block each | one static block for all, at C struct offsets |
 | locals of a call | one stack block each | one stack block for all, at C struct offsets |
 | a step past a variable | lands in its red zone: the program stops | reads or changes the next variable |
-| a step past the whole frame, or past a heap block | stops | stops |
+| a step past the whole frame, or past a heap block | the program stops | the program stops |
 | a trap names | `x of f`, `global x` | `frame of f`, `globals` |
 
 ```text
- checked: each variable is a block of its own
+ checked: each variable is a block
 
    0x1000        0x1020        0x1040
   ┌──────┐ gap  ┌──────┐ gap  ┌──────┐
@@ -214,16 +230,18 @@ The VM can set out the variables of a run in two forms, picked with `--frames`:
   └──────┴──────┴──────┘
 ```
 
-Packed puts each variable at the next multiple of its alignment, in the order the
+`packed` puts each variable at the next multiple of its alignment, in the order the
 variables are declared, with parameters first. It is the shape a C compiler gives to the
-locals of a function, and the shape a native Zaka program would give them (see [Checks in
-the VM and in native code](../concepts/checked.md)). A program with no mistakes prints
-the same in both modes.
+locals of a function, and the shape a native Zaka program gives them (see [Checks in the
+VM and in native code](../concepts/checked.md)). A program with no mistakes prints the
+same in both modes.
 
-The addresses of two globals show the difference:
+The addresses of two globals show the difference. Here `program.zaka` declares two
+integers `က` and `ခ` one after the other at its top level, and an unsafe block in its
+program start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`:
 
 ```console
-$ zakac run program.zaka
+$ zakac run --vm program.zaka
 0x1000
 0x1020
 $ zakac run --frames packed program.zaka
@@ -231,15 +249,15 @@ $ zakac run --frames packed program.zaka
 0x1008
 ```
 
-Here `program.zaka` declares two integers `က` and `ခ` one after the other at its top
-level, and an unsafe block in its start block prints `က ၏ လိပ်စာ` and `ခ ၏ လိပ်စာ`. The checked run leaves 24 addresses between them, and the packed run
-leaves none.
+The checked run leaves 24 addresses between the end of `က` and the start of `ခ`, and the
+packed run leaves none. `--frames` is a flag of the VM alone, so it sends the run to the
+VM without `--vm`.
 
-The difference shows when a mistake is made. An unsafe block takes the address of `က`,
-writes `၉` one box past it, and the program prints `ခ`:
+The difference matters when a program makes a mistake. Here an unsafe block takes the
+address of `က`, writes `၉` one cell past it, and the program then prints `ခ`:
 
 ```console
-$ zakac run program.zaka
+$ zakac run --vm program.zaka
 warning[ZK0710]: offset 1 is past the end of a block of 1 elements
 zaka_vm: the program stopped: access of 8 octets at 0x1008 lands outside each live block (in ပရိုဂရမ်, at program.zaka:6:1); block at 0x1000, 8 octets, global က
 $ zakac run --frames packed program.zaka
@@ -247,14 +265,14 @@ warning[ZK0710]: offset 1 is past the end of a block of 1 elements
 ၉
 ```
 
-Checked stops at the write. Packed writes `၉` over `ခ`, so the program prints it, and the program goes wrong far
-from the line at fault. Keep the checked mode to find such mistakes; use packed to see
-what the checks protect from. [Pointer mistakes](../../learn/pointers/mistakes.md) walks
-through such a program in Learn.
+The checked mode stops at the write. The packed mode writes `၉` over `ခ`, so the program
+prints it and goes wrong far from the line at fault, as native code would. We keep the
+checked mode to find such mistakes, and use the packed mode to see what the checks
+protect us from.
 
 ## Looking at the blocks
 
-The [Explorer](/explorer/) draws the table of blocks while a
-program steps, with each block's start, length, origin and state. `zakac run --leaks`
-lists the live heap blocks at the end of a run, once the ring collector has run: a block
-that is still live then was never given back.
+The [Explorer](/explorer/) draws the table of blocks while a program steps, with the
+start, length, origin and state of each block. `zakac run --leaks` lists the live heap
+blocks at the end of a run, once the ring collector has run, and each block that is still
+live then was never freed ([Leaks](running.md#how-a-run-ends)).

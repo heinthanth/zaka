@@ -1,34 +1,38 @@
 ---
 title: Conversions
-description: Turn a value of one kind into another - the conversion expression, which pairs convert, what happens to the value, and the widening that needs no words.
+description: Turn a value of one data kind into another - the conversion expression, which pairs convert, what happens to the value, and the widening that needs no words.
 ---
 
 # Conversions
 
-A value of one kind can take the place of another kind through two means. A *conversion*
-is written out: the program names the kind it wants and the value is changed to fit. A
-*widening* happens with no words, but just where the new kind holds each value of the old
-one. Each other change of kind is an error.
+A value of one data kind (type) can take the place of another data kind through a
+conversion or a widening. A conversion (cast) is written out: we name the data kind we
+want, and the value is changed to fit it. A widening happens with no words, but just
+where the new data kind can contain each value of the old one. Each other change of data
+kind is an error.
 
-The [Learn chapter](../../learn/operators/conversion.md) shows conversions with gentle
-examples. This page gives the rules.
+[Converting between data kinds](../../learn/operators/conversion.md) in the Learn book
+shows conversions with gentle examples. This page states the rules.
 
 ## The conversion expression
 
 ```text
-<value>  ကို  <kind> တစ်<word>  အဖြစ်  ပြောင်းလဲသော ရလဒ်
- operand      target kind, counted     the verb
+<value>  ကို  <kind> တစ်<measure word>  အဖြစ်  ပြောင်းလဲသော ရလဒ်
+ operand       target data kind, counted         the verb
 ```
 
-It reads "the result of changing the value into the kind". The verb `ပြောင်းလဲသော ရလဒ်`
-closes a [clause](expressions.md): the value takes `ကို` and the kind, with its
-[measure word](kinds.md#measure-words), takes `အဖြစ်`; a kind with no word there is ZK0234. The
-result has the target kind, and it can take a particle of its own, so a conversion can
-be the first part of a longer phrase.
+| Words | Reads as |
+| --- | --- |
+| `<value> ကို` | "the value" (the object) |
+| `<kind> တစ်ခု အဖြစ်` | "as one `<kind>`" |
+| `ပြောင်းလဲသော ရလဒ်` | "the result of changing" |
 
-A part of a [whole result](error-handling.md#reading-a-whole-result) of a function that
-can fail is no conversion: `x ထဲမှ ဒေတာ` gives its good result, and `x ထဲမှ အမှားအယွင်း ဒေတာ` its
-error value, as [Errors and results](error-handling.md) states.
+To convert a value, we write `<value> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်`.
+The verb `ပြောင်းလဲသော ရလဒ်` closes a [clause](expressions.md#three-tiers), so the value
+gets `ကို`, and the target data kind, with its [measure word](kinds.md#measure-words),
+gets `အဖြစ်`. A data kind with no measure word there is ZK0234. The result has the target
+data kind and can get its own particle, so a conversion can be the first part of a longer
+phrase.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -45,13 +49,18 @@ error value, as [Errors and results](error-handling.md) states.
 ၀.၅
 ```
 
-A conversion is a clause, so inside a sum written with signs it needs parentheses, as the
-third line shows. A conversion to the kind that the value has changes nothing.
-The compiler works out a conversion of a constant.
+- Because a conversion is a clause, it needs parentheses inside a sum written with signs,
+  as the third line shows.
+- A conversion to the data kind that the value has changes nothing.
+- The compiler works out a conversion of a constant before the program runs.
+- Reading a part of a [whole result](reading-results.md#the-whole-result) of a function
+  that can fail is not a conversion: `x ထဲမှ ဒေတာ` returns its good result, and
+  `x ထဲမှ အမှားအယွင်း ဒေတာ` its error value, as [Errors and results](error-handling.md)
+  states.
 
 ## Which pairs convert
 
-A conversion is allowed between the pairs below, and in no other pair (ZK0408):
+A conversion works between the pairs in this table and between no others (ZK0408):
 
 | From \ To | integer | decimal number | `စာလုံး` | `မှန်မှားတန်ဖိုး` |
 | --- | --- | --- | --- | --- |
@@ -60,17 +69,18 @@ A conversion is allowed between the pairs below, and in no other pair (ZK0408):
 | `စာလုံး` | allowed | refused | allowed | refused |
 | `မှန်မှားတန်ဖိုး` | allowed | refused | refused | allowed |
 
-An integer is never turned into a true/false value. Test it with a comparison instead:
-`n != ၀`. Conversions between pointers and integers, between pointer kinds, and between
-a shared object and a pointer, have rules of their own and need unsafe code (ZK0468
-outside it), in [Unsafe Zaka](unsafe.md). The conversion verb takes one list: a plain
-list of `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` converts to text, and the VM checks that its u8s are
-UTF-8, stopping the program when the u8s are not ([Text](text.md)). Each other list is
-ZK0408; a counted list becomes a plain list on its own where a value goes into a place, as
-[Lists](lists.md#forms) states. A member of an enumeration converts to its value
-kind, which gives its value, and a member whose value is a number, a character or a
-true/false value converts to each kind its value converts to, as
-[Enumerations](enums.md#values-of-an-enumeration) states; nothing converts to a member.
+An integer never becomes a true/false value, so to test an integer we compare it instead:
+`n != ၀`. A few more pairs follow their own rules:
+
+| From | To | Rule |
+| --- | --- | --- |
+| a plain list of `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` | `စာသား` | allowed; the VM checks that the u8s are UTF-8 and stops the program when the u8s are not ([Text](text.md)) |
+| each other list | a data kind | ZK0408 |
+| a counted list | a plain list | needs no conversion: it happens where a value goes into a place ([Counted lists and storage](counted-lists.md#forms)) |
+| a member of an enumeration | its value kind | allowed, and returns the member's value ([Enumerations](enums.md#values-of-an-enumeration)) |
+| a member whose value is a number, a character or a true/false value | each data kind that its value converts to | allowed |
+| a data kind | a member of an enumeration | refused |
+| a pointer and an integer, two pointer kinds, a shared object and a pointer | | allowed in unsafe code alone, and ZK0468 outside it ([Unsafe Zaka](unsafe.md)) |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -98,28 +108,38 @@ error[ZK0408]: cannot convert isize to bool
 ## Conversions through functions
 
 ```text
-<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်
-<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
+<value> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်
+<value> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
 ```
 
-When the table above has no pair for two kinds, a conversion goes through a function the
-file sees: one whose name ends in `အဖြစ်ပြောင်း`, that takes one value of the source kind,
-and gives the target kind, or a result whose good side is the target kind. The
-stdlib names such a function `<K>အဖြစ်ပြောင်း`, with the word of the target kind
-for `K`. The conversion is then the call of that function: its value is the result of the
-call, and `ပြောင်းလဲသော ရလဒ်ကောင်း` passes a failure on, as `သည့် ရလဒ်ကောင်း` does for a
-call. `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair the table converts is ZK0444, since that conversion
-cannot fail. With no such function, the conversion is ZK0408, as before.
+When the table has no pair for two data kinds, a conversion goes through a function that
+the file can see. The function must have a name that ends in `အဖြစ်ပြောင်း`, have one
+parameter of the source data kind, and return the target data kind, or a result whose
+good side is the target data kind. The stdlib names such a function `<K>အဖြစ်ပြောင်း`, with
+the word of the target data kind for `K`.
 
-- `"စံကား/စာသား"` gives `ကိန်းပြည့်အဖြစ်ပြောင်း`, which reads text as an integer: an optional
-  `-`, then the digits `0`-`9` or `၀`-`၉`. Its failure is a member of
-  `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`: `ဗလာစာသား` (blank text),
-  `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is no digit) or
-  `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest `ကိန်းပြည့်`).
-- `"စံကား/လမ်းကြောင်း"` gives `ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း`, text to a path, and
-  `စာသားအဖြစ်ပြောင်း`, a path to text.
-- A struct converts through a function of its own of the same shape, and a kind alias
-  converts as the kind it names.
+The conversion is then a call of that function, and its value is the result of the call.
+With `ပြောင်းလဲသော ရလဒ်ကောင်း`, the conversion passes a failure on, the same as
+`သည့် ရလဒ်ကောင်း` does for a call.
+
+| Case | Code |
+| --- | --- |
+| `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair that the table converts, because that conversion cannot fail | ZK0444 |
+| no pair in the table and no such function | ZK0408 |
+
+The stdlib has these conversion functions:
+
+| Module | Function | Converts |
+| --- | --- | --- |
+| `"စံကား/စာသား"` | `ကိန်းပြည့်အဖြစ်ပြောင်း` | text to an integer: an optional `-`, then the digits `0`-`9` or `၀`-`၉` |
+| `"စံကား/လမ်းကြောင်း"` | `ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း` | text to a path |
+| `"စံကား/လမ်းကြောင်း"` | `စာသားအဖြစ်ပြောင်း` | a path to text |
+
+The failure of `ကိန်းပြည့်အဖြစ်ပြောင်း` is a member of `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`:
+`ဗလာစာသား` (blank text), `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is not a
+digit) or `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest `ကိန်းပြည့်`). A struct converts
+through a function with the same shape, written for that struct, and a kind alias converts
+as the data kind that it names.
 
 ```zaka
 "စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း နှင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
@@ -147,17 +167,17 @@ cannot fail. With no such function, the conversion is ZK0408, as before.
 
 ## What happens to the value
 
-A conversion is the one place where Zaka changes a value without an error, even if the
-new kind cannot hold the old value. Each pair has one fixed rule.
+A conversion is the one place where Zaka changes a value without an error, even when the
+new data kind cannot contain the old value. Each pair has one fixed rule:
 
 | From | To | Rule |
 | --- | --- | --- |
-| integer | integer | the low bits are kept; the sign is read again in the new kind |
+| integer | integer | the low bits are kept, and the sign is read again in the new data kind |
 | integer | decimal number | the nearest value; big integers lose their low digits |
-| decimal number | integer | the fraction is dropped toward zero; a value outside the range becomes the smallest or the largest of the kind; `NaN` becomes `၀` |
-| decimal number | decimal number | the nearest value; one too large becomes `inf` |
+| decimal number | integer | the fraction is dropped toward zero; a value outside the range becomes the smallest or the largest of the data kind; `NaN` becomes `၀` |
+| decimal number | decimal number | the nearest value; one that is too large becomes `inf` |
 | `စာလုံး` | integer | the code point, cut to the width as an integer is |
-| integer | `စာလုံး` | the character with that code point; a value that is no Unicode scalar value (negative, a surrogate, above `10FFFF`) gives `U+FFFD` |
+| integer | `စာလုံး` | the character with that code point; a value that is not a Unicode scalar value (negative, a surrogate, above `10FFFF`) gives `U+FFFD` |
 | `မှန်မှားတန်ဖိုး` | integer | `၁` for `မှန်` and `၀` for `မမှန်` |
 
 ```zaka
@@ -184,11 +204,13 @@ new kind cannot hold the old value. Each pair has one fixed rule.
 ၉၂၂၃၃၇၂၀၃၆၈၅၄၇၇၅၈၀၇
 ```
 
-Going from an integer to a wider kind keeps the value: a signed integer is extended with
-its sign, an unsigned one with zeros. Going to a narrower kind cuts the high bits, which
-gives `၃၀၀` the result `၄၄` (300 - 256) in a `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
+Going from an integer to a wider data kind keeps the value: a signed integer is extended
+with its sign, and an unsigned one with zeros. Going to a narrower data kind cuts the high
+bits, which is the reason `၃၀၀` becomes `၄၄` (300 - 256) in a
+`လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`.
 
-Characters, true/false values and decimal numbers of other widths:
+The next example converts characters, true/false values and decimal numbers of other
+widths:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -210,10 +232,10 @@ A
 
 ## Widening: the change that needs no words
 
-A value goes into a place of another kind with no conversion just when the place's
-kind holds each value of the value's kind. The places are the initial value of a
-declaration, the new value of an assignment, an argument, a returned value, and the
-operands of an operator (the next section). The cases:
+A value goes into a place of another data kind with no conversion when the place's data
+kind can contain each value of the value's data kind. The places are the initial value of
+a declaration, the new value of an assignment, an argument, a returned value, and the
+operands of an operator ([the next section](#mixing-data-kinds-in-an-operation)).
 
 | From | To | When |
 | --- | --- | --- |
@@ -221,11 +243,15 @@ operands of an operator (the next section). The cases:
 | integer | decimal number | the integer's width is at most the bits of the float's significand: 24 for `f32`, 53 for `f64` |
 | decimal number | decimal number | the target is wider |
 
-So `u8` goes into `i16`, `i16` into `f32`, `i32` into `f64`, and `f32` into `f64`.
-These do not widen: signed to unsigned, a narrower target, `isize` or `usize` (64 bits)
-into `f64`, `i32` into `f32`, and `isize` into `i64` (the two kinds are the same width
-but differ). A `စာလုံး` and a `မှန်မှားတန်ဖိုး` never widen. A pointer widens to the
-pointer kinds described in [Unsafe Zaka](unsafe.md) and to nothing else.
+So `u8` goes into `i16`, `i16` into `f32`, `i32` into `f64`, and `f32` into `f64`. These
+pairs do not widen:
+
+- signed to unsigned, and a narrower target;
+- `isize` or `usize` (64 bits) into `f64`, and `i32` into `f32`;
+- `isize` into `i64`, because the two data kinds have the same width but are different;
+- a `စာလုံး` or a `မှန်မှားတန်ဖိုး` into another data kind;
+- a pointer into a data kind other than the pointer kinds that [Unsafe Zaka](unsafe.md)
+  describes.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -245,7 +271,7 @@ pointer kinds described in [Unsafe Zaka](unsafe.md) and to nothing else.
 ၂၀၀.၀
 ```
 
-A widening that is missing is ZK0401, which names both kinds and suggests the
+A widening that is missing is ZK0401, which names both data kinds and suggests the
 conversion:
 
 ```zaka-error ZK0401
@@ -260,20 +286,20 @@ error[ZK0401]: expected f64, found isize
  = help: convert the value with "ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်"
 ```
 
-## Mixing kinds in an operation
+## Mixing data kinds in an operation
 
-An operator with two operands joins them as follows (see [Expressions](expressions.md)).
+An operator with two operands joins their data kinds as follows ([Expressions](expressions.md)):
 
-- If both have one kind, the result has that kind.
-- If one kind widens to the other, the narrower operand is widened first and the result
-  has the wider kind: `u8 + i16` is an `i16`.
-- If neither widens to the other, there is no common kind and the program does not
-  compile (ZK0404). A signed and an unsigned integer of one width are such a pair.
+| Operands | Result |
+| --- | --- |
+| both of one data kind | that data kind |
+| one data kind widens to the other | the narrower operand is widened first, and the result has the wider data kind: `u8 + i16` is an `i16` |
+| neither widens to the other, as with a signed and an unsigned integer of one width | no common data kind, and the program does not compile (ZK0404) |
 
-A literal without a kind after it takes the kind of the other operand, so `က + ၁` with a
-`u8` named `က` adds a `u8`. When both sides are literals, a fraction or an exponent
-in either makes both of them decimal numbers: `၃ + ၀.၅` is `၃.၅`. A literal that does not
-fit the kind it must take is ZK0406.
+A literal without a data kind after it gets the data kind of the other operand, so
+`က + ၁` with a `u8` named `က` adds a `u8`. When both sides are literals, a fraction or an
+exponent in either one makes both of them decimal numbers, so `၃ + ၀.၅` is `၃.၅`. A literal
+that does not fit the data kind it must get is ZK0406.
 
 ```zaka-error ZK0404
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -298,7 +324,7 @@ error[ZK0404]: cannot combine i8 and u8 without a conversion
 error[ZK0406]: the literal 300 does not fit i8
 ```
 
-Convert one side to join two kinds that do not widen:
+To join two data kinds that do not widen, we convert one side:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -316,8 +342,9 @@ Convert one side to join two kinds that do not widen:
 
 | Code | Raised when |
 | --- | --- |
-| ZK0401 | a value of the wrong kind goes into a variable, parameter or result |
-| ZK0403 | an operator gets an operand it does not take, such as `မှန် + ၁` |
-| ZK0404 | the two operands of an operator have no common kind |
-| ZK0406 | a literal does not fit the kind that its place gives it |
-| ZK0408 | a conversion between two kinds that cannot convert |
+| ZK0401 | a value of the wrong data kind goes into a variable, a parameter or a result |
+| ZK0403 | an operator gets an operand that it does not work on, such as `မှန် + ၁` |
+| ZK0404 | the two operands of an operator have no common data kind |
+| ZK0406 | a literal does not fit the data kind that its place gives it |
+| ZK0408 | a conversion between two data kinds that cannot convert |
+| ZK0444 | `ပြောင်းလဲသော ရလဒ်ကောင်း` on a conversion that cannot fail |

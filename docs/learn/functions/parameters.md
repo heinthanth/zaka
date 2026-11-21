@@ -1,12 +1,21 @@
 ---
 title: Parameters
-description: Pass values into a function.
+description: Pass values into a function, and let a function change or set the caller's variables.
 ---
 
 # Parameters
 
-A function becomes far more useful when it receives values to work with. The values a
-function accepts are its *parameters*. The values passed in a call are the *arguments*.
+A function becomes far more useful when it gets values to work with. The values that a
+function accepts are its *parameters*, and the values that a call passes in are the
+*arguments*. A parameter can also be a mutable parameter (`inout`) or a writable parameter
+(`out`), which lets the function change or set a variable of the caller.
+
+## You will learn
+
+- how to give a function one or more parameters, and how to pass arguments in a call
+- how to write the arguments before the function name
+- how to let a function change a variable of the caller, or set one for it
+- what happens when a call does not match the function
 
 ```zaka
 // "Function count-up, accepting an integer amount, will do the following"
@@ -33,23 +42,42 @@ function accepts are its *parameters*. The values passed in a call are the *argu
 ၂
 ```
 
-Inside the function, `အရေအတွက်` is a variable that holds whatever value the call passed
-in: 3 the first time, 2 the second.
+Inside the function, `အရေအတွက်` is a variable that has the value the call passed in, so it
+is 3 in the first call and 2 in the second. In the function signature, we can use
+`<name> ဟူသော <kind> တစ်ခု ကို` to define a parameter, and in the call we write the argument
+before `ဖြင့်`:
+
+```text
+<name> ဟူသော လုပ်ဆောင်ချက် သည်
+<parameter> ဟူသော <kind> တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+
+<name> ဟူသော လုပ်ဆောင်ချက်ကို <argument> ဖြင့် လုပ်ဆောင်မည်။
+```
 
 | Zaka | Reads as |
 | --- | --- |
-| `အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` | "accepting an integer called amount, and ..." |
+| `အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု` | "an integer called `အရေအတွက်`" |
+| `ကို` | (the object particle) |
 | `လက်ခံပြီး` | "having accepted" |
 | `၃ ဖြင့်` | "with 3" |
 
+The word after `တစ်` is the measure word (classifier) of the data kind (type), which is `ခု`
+for most data kinds.
+
 ## Several parameters
 
-Write each parameter as `<name> ဟူသော <kind> တစ်ခု ကို`, the kind counted with its measure
-word, and end each one with `လည်းကောင်း` ("and also") when there are two or more. Pass the
-arguments in the same order:
+```text
+<parameter> ဟူသော <kind> တစ်ခု ကို လည်းကောင်း <parameter> ဟူသော <kind> တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+<name> ဟူသော လုပ်ဆောင်ချက်ကို <argument> နှင့် <argument> တို့ဖြင့် လုပ်ဆောင်မည်။
+```
+
+When a function has two or more parameters, we end each one with `လည်းကောင်း` ("and
+also"). In the call, we pass the arguments in the same order, with `နှင့်` ("and") before
+the last one and `တို့ဖြင့်` ("with these") after it:
 
 ```zaka
-// rectangle: print the area of a length × width rectangle
+// print the area of a length × width rectangle
 ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက် သည်
 အလျား ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း အနံ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -58,7 +86,7 @@ arguments in the same order:
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် ၄ တို့ဖြင့် လုပ်ဆောင်မည်။
-ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက်ကို ၁၀ နှင့် ၂ + ၃ တို့ဖြင့် လုပ်ဆောင်မည်။     // arguments can be sums
+ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက်ကို ၁၀ နှင့် ၂ + ၃ တို့ဖြင့် လုပ်ဆောင်မည်။     // an argument can be a sum
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -67,19 +95,25 @@ arguments in the same order:
 ၅၀
 ```
 
-| Number of parameters | Each ends in | Example |
-| --- | --- | --- |
-| one | `ကို` | `က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` |
-| two or more | `ကို လည်းကောင်း` | `က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး` |
+| Count | Each parameter ends in | The arguments end in | Example call |
+| --- | --- | --- | --- |
+| one | `ကို` | `ဖြင့်` | `… ၃ ဖြင့် လုပ်ဆောင်မည်။` |
+| two | `ကို လည်းကောင်း` | `နှင့် … တို့ဖြင့်` | `… ၃ နှင့် ၄ တို့ဖြင့် လုပ်ဆောင်မည်။` |
+| three or more | `ကို လည်းကောင်း` | `၊ … နှင့် … တို့ဖြင့်` | `… ၁၊ ၂ နှင့် ၃ တို့ဖြင့် လုပ်ဆောင်မည်။` |
 
-Arguments close with `ဖြင့်` ("with") after one argument, and with `တို့ဖြင့်` ("with
-these") after two or more, which take `နှင့်` before the last: `၃ နှင့် ၄ တို့ဖြင့်`.
+With three or more arguments, we put `၊` between the first ones and `နှင့်` before the last,
+just as in a list of words in a Burmese sentence.
 
 ## Arguments first
 
-A call can also give the arguments first, then name the function, the order a Burmese
-sentence puts an object before its verb. `သုံး၍` ("using") closes the arguments, and
-`မည်` ("will") ends the call:
+```text
+<argument> ကို သုံး၍ <name> မည်။
+<argument> နှင့် <argument> တို့ကို သုံး၍ <name> မည်။
+```
+
+A call can also give the arguments first and the function name last, which is the order of
+a Burmese sentence, where the object comes before its verb. We write `သုံး၍` ("using")
+after the arguments and `မည်` ("will") after the name:
 
 ```zaka
 ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -104,225 +138,18 @@ sentence puts an object before its verb. `သုံး၍` ("using") closes the 
 | --- | --- |
 | `၃ နှင့် ၄ တို့ကို သုံး၍` | "using 3 and 4": `တို့ကို` after several arguments, `ကို` after one |
 | `ဧရိယာပြ မည်` | "area-show will (run)" |
-| `ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်` | "will run the function area-show": the long form |
+| `ဧရိယာပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်` | "will run the function area-show", the long form |
 
-An argument here is a name, a literal, a sum or a sign-form call. A sentence that gives a
-value goes in parentheses. The [Results](results.md) page shows the form of this call
-that gives back a value.
-
-## Prepositions
-
-A parameter can also name the word that follows its argument in a call, its *preposition*, with
-`ဝိဘတ် "<preposition>" ကို သုံး၍` ("using the particle …") after its `ကို`, and a call reads as a Burmese sentence, with no `သုံး၍`:
-
-```zaka
-// "Function write, accepting a text (preposition ကို) and a place (preposition သို့)"
-ရေး ဟူသော လုပ်ဆောင်ချက် သည်
-စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"{နေရာ}: {စာ}" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-// "(I) will write 'hello' to the notebook"
-"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-မှတ်စု: မင်္ဂလာပါ
-```
-
-| Zaka | Reads as |
-| --- | --- |
-| `စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း` | "a text called `စာ`, written with `ကို` in a call" |
-| `နေရာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "သို့" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး` | "a text called `နေရာ`, written with `သို့`; having accepted" |
-| `"မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်` | "will write 'hello' to the notebook" |
-
-Each argument takes the preposition of its parameter, in the order of the parameters. A
-parameter can also have none: then its argument stands right before the next one, or `၊` parts
-them. The [Functions](../../manual/language/functions.md#prepositions)
-page of the manual has the full rules.
-
-## Prepositions of several words
-
-A preposition can be several words, as Burmese often puts a phrase after a noun:
-`"ရန်ကုန်" မှ စ၍` is "starting from Yangon". Write the words in the string of `ဝိဘတ်`,
-with the spaces of the sentence:
-
-```zaka
-// "Function show trip: a start (preposition မှ စ၍) and an end (preposition အထိ)"
-ခရီးစဉ်ပြ ဟူသော လုပ်ဆောင်ချက် သည်
-စ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "မှ စ၍" ကို သုံး၍ လည်းကောင်း ဆုံး ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "အထိ" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"{စ} → {ဆုံး}" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-// "(I) will show the trip starting from Yangon up to Mandalay"
-"ရန်ကုန်" မှ စ၍ "မန္တလေး" အထိ ခရီးစဉ်ပြမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-ရန်ကုန် → မန္တလေး
-```
-
-The call also glues `မည်` to the name: `ခရီးစဉ်ပြမည်` reads as `ခရီးစဉ်ပြ မည်`, since the
-file has a function `ခရီးစဉ်ပြ`. The endings that give a value glue alike, as
-`တွဲသည့်ရလဒ်` below.
-
-The last preposition can start with `၏`, so a call reads "at the end of the text":
-
-```zaka
-// "Function join: a piece (preposition ကို) at the end of a text (preposition ၏ နောက်ဆုံးတွင်)"
-တွဲ ဟူသော လုပ်ဆောင်ချက် သည်
-ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "၏ နောက်ဆုံးတွင်" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
-"{စာ}{ပိုင်း}" ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-// "Show the result of joining 'pa' at the end of 'mingala'"
-"ပါ" ကို "မင်္ဂလာ" ၏ နောက်ဆုံးတွင် တွဲသည့်ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-မင်္ဂလာပါ
-```
-
-`၏` starts the last preposition alone; before another parameter it is ZK0249, and
-elsewhere `x ၏ y` reads a field, as before. A call reads the longest preposition of the
-function that the words after an argument spell, so `မှ စ၍` is one preposition, not `မှ`
-and then a name.
-
-## Phrases: a function as a command
-
-Prepositions follow arguments. A head can also give words that stand before the first
-argument, a *starting phrase*, and words that stand right before the function name, an
-*ending phrase*. Both go right after `သည်`, joined with `နှင့်` and closed with
-`တို့ကို သုံး၍`, or one alone with `ကို သုံး၍`. A function with no parameters can take them
-too, so a call reads as a command:
-
-```zaka
-// "Function read: starting phrase ဖိုင် ('file'), the path (preposition ထဲမှ), ending phrase စာကို ('the text')"
-ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
-အစ စကားစု "ဖိုင်" နှင့် အဆုံး စကားစု "စာကို" တို့ကို သုံး၍
-လမ်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲမှ" ကို သုံး၍ လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
-"{လမ်း} ထဲမှ စာ" ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-// "Function clear: no parameters, the words ဖန်သားပြင်ကို ('the screen') before it"
-ရှင်း ဟူသော လုပ်ဆောင်ချက် သည် အစ စကားစု "ဖန်သားပြင်ကို" ကို သုံး၍
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"ရှင်းပြီ" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-// "Show the result of reading the text from the file 'notes.txt'"
-ဖိုင် "notes.txt" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။
-// "(I) will clear the screen"
-ဖန်သားပြင်ကို ရှင်း မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-notes.txt ထဲမှ စာ
-ရှင်းပြီ
-```
-
-| Words | Reads as |
-| --- | --- |
-| `အစ စကားစု "ဖိုင်"` | "the starting phrase 'file'" |
-| `အဆုံး စကားစု "စာကို"` | "the ending phrase 'the text'" |
-| `ဖိုင် "notes.txt" ထဲမှ စာကို ဖတ်` | "read the text from the file 'notes.txt'" |
-
-A call that writes prepositions writes the phrases too, each in its place; one that leaves
-a phrase out is ZK0352. The other forms, `ဖတ်("notes.txt")` and `ရှင်း မည်`, leave the
-phrases out. The parameters need no preposition beside the phrases: `ကိန်း ၄၊ ၅ ပေါင်း`
-gives two bare arguments. The [Functions](../../manual/language/functions.md#starting-and-ending-phrases)
-page of the manual has the full rules.
-
-## Names that read as calls
-
-Gluing has a cost. In a file with a function `နာ` ("hurt"), the word `နာမည်` ("name") can
-read as `နာ` and `မည်`. Declaring a variable of that name is the warning ZK0251:
-
-```zaka-warning ZK0251
-// "Function hurt": with it in the file, နာမည် ("name") can read as နာ + မည်
-နာ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"အား" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် နာမည် သည် "မောင်" ဖြစ်ပါစေ။
-{နာမည်} ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-A name in braces is a name and nothing else. Declare it as `{နာမည်}`, write `{နာမည်}`
-where the name is meant, and the bare word stands for the call:
-
-```zaka
-နာ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"အား" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် {နာမည်} သည် "မောင်" ဖြစ်ပါစေ။
-{နာမည်} ကို ပြသမည်။
-နာမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-မောင်
-အား
-```
-
-A file that has no function `နာ` reads `နာမည်` as a name, with no warning. The
-[Functions](../../manual/language/functions.md#what-the-flexible-grammar-costs) page of the
-manual lists each cost of these forms.
-
-## One name, several functions
-
-Two functions can share a name when their parameter kinds or their prepositions differ. A call
-runs the one its arguments fit:
-
-```zaka
-ပြ ဟူသော လုပ်ဆောင်ချက် သည်
-န ဟူသော ကိန်းပြည့် တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"ကိန်း {န}" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပြ ဟူသော လုပ်ဆောင်ချက် သည်
-စ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"စာ {စ}" ဟု ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ ကို ပြ မည်။            // the integer one
-"ဟယ်လို" ကို ပြ မည်။      // the text one
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-ကိန်း ၅
-စာ ဟယ်လို
-```
-
-When no function of the name fits the arguments, or two fit, the compiler reports it
-(ZK0332, ZK0333); the [Functions](../../manual/language/functions.md#one-name-several-functions)
-page of the manual has the rules.
+An argument in this form is a name, a literal, a sum or a call in the sign form, which
+[Results](results.md#the-sign-form) teaches. When an argument is a whole sentence that
+gives a value, we put it in parentheses. [Results](results.md) also shows the form of this
+call that returns a value.
 
 ## Parameters are local copies
 
-A parameter is a new variable inside the function. Changing it does not change the
-variable that was passed in:
+A parameter is a new variable inside the function, and it gets a duplicate (copy) of the
+argument. So when the function changes the parameter, the variable that the caller passed
+in does not change:
 
 ```zaka
 တိုးပြ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -346,28 +173,15 @@ variable that was passed in:
 
 ## Changing the caller's variable
 
-To change the variable a caller holds, return the new value and set the variable from it:
-
-```zaka
-နောက်တစ် ဟူသော လုပ်ဆောင်ချက် သည်
-က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-က + ၁ ကို ပြန်ပေးမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
-ခ ကို နောက်တစ်(ခ) ဟု ထားမည်။
-ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
 ```text
-၆
+<parameter> ဟူသော <kind> တစ်ခု ကို ဒေတာ ပြောင်းလဲရန်
 ```
 
-When a function must change the variable itself, write `ဒေတာ ပြောင်းလဲရန်` ("to change the data") after the
-`ကို` of the parameter, and pass the variable as usual:
+One method to change the caller's variable is to return the new value and set the variable
+from it, which [Results](results.md) shows. When a function must change the variable
+itself, we write `ဒေတာ ပြောင်းလဲရန်` ("to change the data") after the `ကို` of the
+parameter, which makes it a *mutable parameter* (`inout`), and the call passes the variable
+as before:
 
 ```zaka
 တိုး ဟူသော လုပ်ဆောင်ချက် သည်
@@ -387,17 +201,27 @@ When a function must change the variable itself, write `ဒေတာ ပြေ�
 ၆
 ```
 
-The function works on its own value, which goes back to the variable when the call
-returns. The argument must be a variable, a field or a cell, and it cannot appear twice in
-one call. The function can read it, so the caller gives it a value first. See
-[Changed parameters](../../manual/language/functions.md#changed-parameters) in the Docs.
+| Zaka | Reads as |
+| --- | --- |
+| `ဒေတာ` | "data" |
+| `ပြောင်းလဲရန်` | "to change" |
+
+The function works on its own value, and that value goes back to the caller's variable when
+the call returns, as with `inout` in Swift. The argument must be something we can assign
+to, which is a variable, a field or a cell, and because the function can read it, the
+caller gives it a value before the call.
 
 ## Filling the caller's variable
 
-A function that writes a variable and never reads it first marks the parameter
-`ဒေတာ ထည့်ပေးရန်` ("to put the data in"). The caller can declare the variable with no
-value; after the call it holds what the function put in it. So one call gives back
-two values:
+```text
+<parameter> ဟူသော <kind> တစ်ခု ကို ဒေတာ ထည့်ပေးရန်
+```
+
+When a function sets a variable of the caller and never reads it first, we write
+`ဒေတာ ထည့်ပေးရန်` ("to put the data in") after the `ကို` of the parameter, which makes it
+a *writable parameter* (`out`). The caller can then declare the variable with no value,
+and after the call the variable has the value that the function put in it. This lets one
+call return two values:
 
 ```zaka
 စားခွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -419,36 +243,14 @@ two values:
 ၃ ၂
 ```
 
-A list can come in as well. The next example uses lists, which [Lists](../lists/README.md)
-teaches later; come back to it after that chapter.
+| Zaka | Reads as |
+| --- | --- |
+| `ဒေတာ` | "data" |
+| `ထည့်ပေးရန်` | "to put in" |
 
-```zaka
-အစွန်းများ ဟူသော လုပ်ဆောင်ချက် သည်
-ကိန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လည်းကောင်း အငယ် ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း အကြီး ဟူသော ကိန်းပြည့် တစ်ခု ကို ဒေတာ ထည့်ပေးရန် လည်းကောင်း လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အငယ် ကို ကိန်းများ ၏ အကွက် ၀ ဟု ထားမည်။
-အကြီး ကို ကိန်းများ ၏ အကွက် ၀ ဟု ထားမည်။
-ကိန်းများ ၏ အကွက်တိုင်း ကို န အနေဖြင့် ယူ၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အကယ်၍ န သည် အငယ် အောက် ငယ်လျှင် အငယ် ကို န ဟု ထားမည်။
-အကယ်၍ န သည် အကြီး ထက် ကြီးလျှင် အကြီး ကို န ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် နိမ့် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် မြင့် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-အစွန်းများ ဟူသော လုပ်ဆောင်ချက်ကို [၄၊ ၉၊ ၂၊ ၇]၊ နိမ့် နှင့် မြင့် တို့ဖြင့် လုပ်ဆောင်မည်။
-"{နိမ့်} {မြင့်}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၂ ၉
-```
-
-Inside the function the parameter starts with no value, so the function must set it
-before it reads it, and on each path before it returns. A path that leaves it unset is
-refused:
+Inside the function, a writable parameter starts with no value, so the function must set
+it before it reads it, and it must set it on each path before it returns. When a path can
+leave it unset, the compiler stops with an error:
 
 ```zaka-error ZK0725
 အပေါင်းဖြစ်လျှင်ထား ဟူသော လုပ်ဆောင်ချက် သည်
@@ -465,12 +267,13 @@ refused:
 error[ZK0725]: "လဒ်" is marked "ဒေတာ ထည့်ပေးရန်", so the function must set it on each path, but a path reaches this return without setting it
 ```
 
-See [Filled parameters](../../manual/language/functions.md#filled-parameters) in the Docs.
+When the number is 0 or less, the function reaches its end without setting `လဒ်`, so the
+fix is to set `လဒ်` in that case too.
 
 ## Matching the call to the function
 
-The call must pass the same number of arguments as the function has parameters, and
-each must fit its parameter's kind:
+A call must pass one argument for each parameter of the function, and each argument must
+fit the data kind of its parameter:
 
 ```zaka-error ZK0314
 ပြ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -488,10 +291,48 @@ each must fit its parameter's kind:
 error[ZK0314]: function "ပြ" takes 1 arguments, 2 given
 ```
 
+An argument of the wrong data kind, such as `မှန်` for an integer parameter, is the error
+ZK0401.
+
+## Details
+
+- After a lone parameter, `လည်းကောင်း` is optional. With two or more parameters, a
+  parameter that does not end in `လည်းကောင်း` is the error ZK0201, and two parameters of
+  one function with the same name are ZK0305
+  ([Parameters](../../manual/language/functions-parameters.md#writing-a-parameter)).
+- An argument is a whole expression, and `၊` ends it, so an argument needs no parentheses
+  in the `ဖြင့်` form ([Calls](../../manual/language/functions-calls.md#arguments)).
+- A value that widens without loss, such as a 32-bit integer for a `ကိန်းပြည့်` parameter,
+  converts on its own; other differences need a conversion
+  ([Converting between data kinds](../operators/conversion.md)).
+- The argument of a mutable or writable parameter must be a variable, a field or a cell
+  (ZK0410), not a constant (ZK0306), with the same data kind as the parameter and no
+  widening (ZK0401), and it cannot appear in a second argument of the same call (ZK0433)
+  ([Mutable parameters](../../manual/language/functions-parameters.md#mutable-parameters)).
+- The argument of a mutable parameter must have a value before the call (ZK0722), and a
+  writable parameter that the function reads before it sets it is ZK0722 too ([Writable
+  parameters](../../manual/language/functions-parameters.md#writable-parameters)).
+- A struct or a list can be a mutable parameter as well, as [Structs](../structs/README.md#passing-to-a-function)
+  and [Passing and comparing lists](../lists/passing.md#lists-as-parameters) show.
+- Parameters can also have prepositions, which let a call read as a Burmese sentence:
+  [Prepositions](prepositions.md) teaches them after [Results](results.md).
+
+## Recap
+
+- In the function signature, we use `<name> ဟူသော <kind> တစ်ခု ကို` for each parameter,
+  with `လည်းကောင်း` after each one when there are two or more, and then `လက်ခံပြီး`.
+- A call passes the arguments in the same order, closed with `ဖြင့်` or `တို့ဖြင့်`, or
+  before the name with `ကို သုံး၍` or `တို့ကို သုံး၍`.
+- A parameter is a duplicate of its argument, so a change to it remains inside the function.
+- `ဒေတာ ပြောင်းလဲရန်` makes a mutable parameter (`inout`), which changes the caller's
+  variable, and `ဒေတာ ထည့်ပေးရန်` makes a writable parameter (`out`), which sets it.
+
 ## Hands on
 
-- Write a function that takes a number and prints its times table from 1 to 10.
-- Give `ရေတွက်ပြ` a guard: `အကယ်၍ အရေအတွက် သည် ၁ အောက် ငယ်လျှင် ပြန်ပေးမည်။`, then call it
+- Write a function that accepts a number and prints its times table from 1 to 10.
+- Give `ရေတွက်ပြ` a guard, `အကယ်၍ အရေအတွက် သည် ၁ အောက် ငယ်လျှင် ပြန်ပေးမည်။`, then call it
   with `၀`.
+- Write a function with two mutable parameters that swaps the values of two variables.
+- Call `စားခွဲ` with a constant in place of `ဆ`, and read the error.
 
 Next: [Results](results.md).

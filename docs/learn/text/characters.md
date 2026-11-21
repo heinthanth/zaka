@@ -5,14 +5,27 @@ description: Read the u8 cells and the characters of text, take its characters i
 
 # Cells and characters
 
-Text is a row of cells, and a row of characters on top of them. This page reads both, and
-writes a whole character.
+Text is stored as a row of small numbers, its *cells*, and the cells make up its
+*characters* (Unicode scalar values). We can read both, take the characters one at a time
+with a loop, and write a whole character in place of another.
+
+## You will learn
+
+- how text is stored, and how to read its cells
+- how to count and read its characters
+- how to take each character in turn with a loop
+- how to change one character
 
 ## Cells
 
-Text is stored as UTF-8, a row of small numbers from 0 to 255. Each of them is a *cell*
-of kind `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်`. A Latin letter takes one cell, and a Burmese letter
-takes three.
+```text
+<text> ၏ အကွက်အရေအတွက်
+<text> ၏ အကွက် <number>
+```
+
+Text is stored as UTF-8, a row of numbers from 0 to 255. Each of them is a cell (byte) of
+the data kind `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` (`u8`). A Latin letter needs one cell, and a
+Burmese letter needs three.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -27,9 +40,17 @@ takes three.
 ၉၀
 ```
 
-The cells of text can be read but not written, since one cell alone can break a Burmese
-letter in two. A whole character can be written: see [Changing a
-character](#changing-a-character).
+| Zaka | Reads as |
+| --- | --- |
+| `စာ ၏ အကွက်အရေအတွက်` | "the count of cells of `စာ`" |
+| `စာ ၏ အကွက် ၀` | "cell 0 of `စာ`", counted from 0 |
+
+The text has 20 cells: four for `Zaka`, one for the space, and three for each of the five
+characters of `စံကား`. Cell 0 is `၉၀`, the code of `Z`.
+
+We can read the cells of text, but we cannot write them, because a single cell can break a
+Burmese letter in two. We can write a whole character instead, as [Changing a
+character](#changing-a-character) shows.
 
 ```zaka-error ZK0429
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -44,9 +65,15 @@ error[ZK0429]: the cells of text cannot be written
 
 ## Characters
 
-Text is stored as UTF-8: a Latin letter takes one u8, a Burmese letter three. Its cells
-(`၏ အကွက်`) are those u8s; its characters are read with `၏ စာလုံး`, counted from 0, or
-`၏ n ခုမြောက်စာလုံး`, counted from 1, and counted with `၏ စာလုံးအရေအတွက်`:
+```text
+<text> ၏ စာလုံးအရေအတွက်
+<text> ၏ စာလုံး <number>
+<text> ၏ <number> ခုမြောက်စာလုံး
+```
+
+To work with the characters of text rather than its cells, we use `စာလုံး` ("character")
+in place of `အကွက်`. We write `၏ စာလုံးအရေအတွက်` to count the characters, `၏ စာလုံး <number>`
+to read one counted from 0, and `၏ <number> ခုမြောက်စာလုံး` to read one counted from 1:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -65,8 +92,23 @@ Text is stored as UTF-8: a Latin letter takes one u8, a Burmese letter three. It
 မ
 ```
 
-An *each-character loop* takes the characters in turn, "taking each character of the
-text as *c*, do ...":
+| Zaka | Reads as |
+| --- | --- |
+| `စာ ၏ စာလုံးအရေအတွက်` | "the count of characters of `စာ`" |
+| `စာ ၏ စာလုံး ၀` | "character 0 of `စာ`" |
+| `စာ ၏ ၂ ခုမြောက်စာလုံး` | "the 2nd character of `စာ`" |
+
+The word `ကမ္ဘာ` has 5 characters in 15 cells, three cells for each character.
+
+## Each character in turn
+
+```text
+<text> ၏ စာလုံးတိုင်း ကို <name> အနေဖြင့် ယူ၍ <sentence>
+```
+
+To visit the characters one after another, we use an *each-character loop* (for-each loop),
+which means "taking each character of the text as `<name>`, do `<sentence>`". A list has the
+same loop for its cells, as [Walking a list](../lists/README.md#walking-a-list) shows later.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -82,12 +124,23 @@ text as *c*, do ...":
 ာ
 ```
 
-A Burmese letter and each mark on it are characters of their own.
+| Zaka | Reads as |
+| --- | --- |
+| `စာလုံးတိုင်း ကို` | "each character" |
+| `စ အနေဖြင့် ယူ၍` | "taking it as `စ`" |
+
+As the output shows, a Burmese letter and each mark on it are separate characters.
 
 ## Changing a character
 
-A character of text is a place, as a variable is: the assignment writes a new
-character there. `၏ စာလုံး` counts from 0, and `၏ n ခုမြောက်စာလုံး` from 1.
+```text
+<text> ၏ စာလုံး <number> ကို <character> ဟု ထားမည်။
+<text> ၏ <number> ခုမြောက်စာလုံး ကို <character> ဟု ထားမည်။
+```
+
+A character of a text variable is a place that we can assign to, as we assign to a variable.
+We use `ထားမည်` to write a new character there, with `၏ စာလုံး` counting from 0 and
+`၏ n ခုမြောက်စာလုံး` counting from 1:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -104,8 +157,8 @@ bat
 bad
 ```
 
-The new value must be a character, in single quotes. Text in double quotes is an error,
-even with one character in it:
+The new value must be a character in single quotes. Text in double quotes is a mistake,
+even when it contains a single character:
 
 ```zaka-error ZK0401
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -118,9 +171,9 @@ even with one character in it:
 error[ZK0401]: expected char, found text
 ```
 
-A character is one Unicode code point, not a letter as it is written. `ကျွန်` reads as one
-sound, but it is five characters: `က`, `ျ`, `ွ`, `န` and `်`. A write replaces one of
-them and keeps the rest:
+A character is one Unicode code point, not a letter as we see it on the screen. In speech,
+`ကျွန်` is one sound, but it has five characters: `က`, `ျ`, `ွ`, `န` and `်`. So a write
+replaces one of them and keeps the rest:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -136,7 +189,7 @@ them and keeps the rest:
 ချွန်
 ```
 
-A number past the last character stops the program, as a read there does:
+A number past the last character stops the program, for a write as for a read:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -149,10 +202,34 @@ A number past the last character stops the program, as a read there does:
 the program stopped: character 3 is outside the text, whose characters run from 1 to 2
 ```
 
+## Details
+
+- We can also read a cell counted from 1, with `၏ n ခုမြောက်အကွက်`, and a cell number
+  outside the text stops the program ([Cells](../../manual/language/text.md#cells)).
+- `၏ အကွက် <start> မှစ၍ <count> ကွက်` makes new text from a range of cells, which must start
+  and end at the edge of a character ([Ranges](../../manual/language/text.md#ranges)).
+- A read of a character through its number walks the text from its start, because a
+  character can need from one to four cells. So a counted loop that reads each character
+  through its number is slow on long text, while the each-character loop walks the text
+  once ([Characters](../../manual/language/text.md#characters)).
+- The new character can need more or fewer cells than the old one: the cells after it move,
+  and the count of cells changes with them. A write to a text constant is ZK0306
+  ([Changing text](../../manual/language/text.md#changing-text)).
+
+## Recap
+
+- Text is stored as UTF-8 cells, and we read them with `၏ အကွက်`, but we cannot write them.
+- We count characters with `၏ စာလုံးအရေအတွက်`, and read one with `၏ စာလုံး <number>`
+  (from 0) or `၏ <number> ခုမြောက်စာလုံး` (from 1).
+- `၏ စာလုံးတိုင်း ကို <name> အနေဖြင့် ယူ၍` visits each character in turn.
+- We use `ထားမည်` to write a whole character in place of another, and a Burmese mark is a
+  character too.
+
 ## Hands on
 
-- Count the cells of a Burmese word. Divide the count with three.
+- Count the cells of a Burmese word, and divide the count with three.
 - Change the first character of `"မောင်"` to `'ခ'`, and count its characters first: which
   marks does the write keep?
+- Print each character of a Burmese word, with a number before each one.
 
 Next: [Changing text](changing.md).

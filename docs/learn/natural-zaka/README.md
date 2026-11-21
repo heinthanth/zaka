@@ -5,10 +5,23 @@ description: Choose the sentence endings and particles a Burmese reader expects.
 
 # Natural Zaka
 
-Zaka accepts each of the endings `သည်`, `ပါ`, `ပါသည်`, or none at all, on a verb. The
-program runs in all these cases. But a Burmese speaker picks the ending from what comes
-next, and some choices sound wrong. Zaka's *naturalness check* points these out as
-**warnings**. A warning never stops the program. It suggests a more natural spelling.
+Zaka accepts more spellings than a Burmese speaker would write, so a verb can end with
+`သည်`, `ပါ`, `ပါသည်` or no ending at all, and the program runs the same in each case. A
+Burmese speaker, though, picks the ending from the word that comes next, and some choices
+sound wrong. The *naturalness check* (a lint) points these out as warnings, which never
+stop the program and suggest a spelling that sounds more natural.
+
+## You will learn
+
+- What a naturalness warning looks like and how to follow its `help` line.
+- Which ending goes before "or", "and" and an attached `လျှင်`.
+- When to print with `ဟု` and when with `ကို`.
+- How to turn the warnings into errors.
+
+## A first warning
+
+In this program, `ကြီးသည်လျှင်` ("if it is greater") has the ending `သည်` before
+`လျှင်`, which a Burmese speaker would not write:
 
 ```zaka-warning ZK0502
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -22,7 +35,20 @@ warning[ZK0502]: "ကြီးသည်" before "လျှင်" reads better w
 help: write "ကြီးလျှင်", or keep the particle and write "ဖြစ်လျှင်"
 ```
 
-Follow the `help` line and the warning disappears:
+The warning comes with a code and a `help` line. The `help` line suggests two fixes: we
+can drop the particle and write `ကြီးလျှင်`, or keep it and add `ဖြစ်` before `လျှင်`:
+
+```
+<verb>လျှင်
+<verb>သည် ဖြစ်လျှင်
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ကြီးလျှင်` | "if greater" |
+| `ကြီးသည် ဖြစ်လျှင်` | "if it is the case that it is greater" |
+
+When we follow the `help` line, the warning disappears:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -39,22 +65,29 @@ Follow the `help` line and the warning disappears:
 
 ## The rules
 
+Each rule has its own code. The "Write" column is the natural spelling, and the "Not"
+column is still valid Zaka that runs the same, but sounds less natural:
+
 | Code | When | Write | Not |
 | --- | --- | --- | --- |
 | ZK0501 | a "not" verb before `သို့မဟုတ်` (or) | `မငယ်ပါ သို့မဟုတ်` | `မငယ်သည် သို့မဟုတ်` |
-| ZK0502 | before attached `လျှင်` or `နေသရွေ့` | `ကြီးလျှင်`, `ကြီးနေသရွေ့` | `ကြီးသည်လျှင်` |
+| ZK0502 | before an attached `လျှင်` or `နေသရွေ့` | `ကြီးလျှင်`, `ကြီးနေသရွေ့` | `ကြီးသည်လျှင်` |
 | ZK0503 | on `မဟုတ်` (not) | `မဟုတ်ပါ` or `မဟုတ်` | `မဟုတ်သည်` |
 | ZK0504 | before `ဖြစ်၍` (and) | `ကြီးသည် ဖြစ်၍` | `ကြီးပါ ဖြစ်၍` |
 | ZK0505 | printing text or a whole sentence | `"..." ဟု ပြသမည်` | `"..." ကို ပြသမည်` |
 | ZK0506 | printing a plain value | `အသက် ကို ပြသမည်` | `အသက် ဟု ပြသမည်` |
 | ZK0507 | parentheses that change nothing | `က + ၁ ကို ပြသမည်` | `(က + ၁) ကို ပြသမည်` |
 | ZK0508 | a sentence used as a value (stored, returned, passed) | `... ကြီးသည် ဖြစ်ပါစေ` | `... ကြီးပါ ဖြစ်ပါစေ` |
+| ZK0509 | the measure word (classifier) after a data kind | `လူ တစ်ယောက်` | `လူ တစ်ခု`, for a struct counted with `ယောက်` |
 
-The "Not" column is still valid Zaka. It just sounds less natural.
+## Before "or"
 
-## More examples
+```
+<not verb>ပါ သို့မဟုတ် <sentence>
+```
 
-"Not" verbs (`မညီ`, `မကြီး`, `မငယ်`, `မမှန်`, `မဟုတ်`) take `ပါ` before "or":
+The "not" verbs are `မညီ`, `မကြီး`, `မငယ်`, `မမှန်` and `မဟုတ်`, and before `သို့မဟုတ်`
+("or") we end them with `ပါ`:
 
 ```zaka-warning ZK0501
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -67,7 +100,15 @@ The "Not" column is still valid Zaka. It just sounds less natural.
 warning[ZK0501]: "မငယ်သည်" before "သို့မဟုတ်" reads better as "မငယ်ပါ"
 ```
 
-A sentence joined with "and", or one used as a value, takes `သည်`:
+## Before "and", and as a value
+
+```
+<verb>သည် ဖြစ်၍ <sentence>
+... တန်ဖိုးသည် <sentence ending in သည်> ဖြစ်ပါစေ။
+```
+
+When we join two sentences with `ဖြစ်၍` ("and"), or use a sentence as a value, we end the
+verb with `သည်`, not `ပါ`. This program gets both wrong, so it gets two warnings:
 
 ```zaka-warning ZK0504 ZK0508
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -82,7 +123,7 @@ warning[ZK0504]: "ကြီးပါ" before "ဖြစ်၍" reads better as "
 warning[ZK0508]: "ကြီးပါ" as a value reads better as "ကြီးသည်"
 ```
 
-The same program, in its natural form:
+Here are the programs of this section and the one before it, in their natural form:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -102,18 +143,44 @@ The same program, in its natural form:
 
 ## Strict mode
 
-To treat these warnings as errors, so that a program with one or more of them does not
-run, pass `--lint-error naturalness`:
+To treat these warnings as errors, so that a program with one of them does not run, we
+pass `--lint-error naturalness` to the compiler:
 
 ```sh
 zakac run --lint-error naturalness program.zaka
 ```
 
-This is useful once the rules feel familiar and each new program should sound natural.
+This helps once the rules feel familiar and we want each new program to sound natural.
+
+## Details
+
+- **One warning for each place.** When two rules fit the same word, the compiler reports
+  the first rule in the table alone, so `မဟုတ်သည်` before `သို့မဟုတ်` gets ZK0501 and not
+  ZK0503 ([Natural wording](../../manual/language/naturalness.md#what-the-check-looks-at)).
+- **Spacing does not matter.** The check looks at the words of the program, not at the
+  spaces between them.
+- **One rule at a time.** `--lint-allow`, `--lint-warn` and `--lint-error` also accept a
+  single code, and a code wins over its group: `--lint-error naturalness --lint-warn
+  ZK0505` keeps ZK0505 a warning ([Strict
+  mode](../../manual/language/naturalness.md#strict-mode)).
+- **Spoken Burmese.** Spoken forms of the words, and a mix of spoken and written forms in
+  one file, have their own codes, ZK0510 and ZK0511 ([Spoken
+  Burmese](../../manual/language/spoken.md)).
+
+## Recap
+
+- The naturalness check gives warnings, not errors, and the program still runs.
+- Before `သို့မဟုတ်` ("or"), a "not" verb ends with `ပါ`.
+- Before `ဖြစ်၍` ("and") and in a sentence used as a value, a verb ends with `သည်`.
+- Before an attached `လျှင်`, a verb has no ending, or we write `သည် ဖြစ်လျှင်`.
+- `--lint-error naturalness` turns the warnings into errors.
 
 ## Hands on
 
-- Take a program from an earlier chapter and change the endings until it warns. Then
+- Take a program from an earlier chapter and change the endings until it warns, then
   follow the `help` lines back.
+- Print a number with `ဟု` and text with `ကို`, and read both warnings.
+- Run one of the warning programs on this page with `--lint-error naturalness`, and see
+  how the output changes.
 
 Next: [Example programs](../programs/README.md).

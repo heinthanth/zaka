@@ -5,8 +5,23 @@ description: Combine true/false answers with and, or, and not.
 
 # Logic
 
-Real questions often have parts: "Is it raining **and** have I no umbrella?" The
-*logical operators* join or flip booleans.
+A question often has more than one part, such as "is it raining **and** do I have no
+umbrella?" Logical operators join two true/false values (booleans) into one answer, or
+turn a single answer into its opposite, and like the other operators, each one has a
+sign form and a word form.
+
+## You will learn
+
+- how to write and, or and not, in words and in signs
+- how to join two comparisons into one question
+- when a logical expression needs parentheses
+- which part of an "and" or an "or" Zaka skips
+
+| Sign | Words | Reads as | True when |
+| --- | --- | --- | --- |
+| `a && b` | `a ဖြစ်၍ b` | "a, and b" | both are true |
+| `a \|\| b` | `a သို့မဟုတ် b` | "a or b" | at least one is true |
+| `!a` | `a မဟုတ်` | "not a" | a is false |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -32,18 +47,32 @@ Real questions often have parts: "Is it raining **and** have I no umbrella?" The
 မှန်
 ```
 
-| Sign | Words | Reads as | True when |
-| --- | --- | --- | --- |
-| `a && b` | `a ဖြစ်၍ b` | "a, and b" | both are true |
-| `a \|\| b` | `a သို့မဟုတ် b` | "a or b" | at least one is true |
-| `!a` | `a မဟုတ်` | "not a" | a is false |
+We can use these three patterns to write and, or and not in words:
 
-Notice that `မဟုတ်` ("not") comes **after** what it negates, as it does in Burmese.
+```text
+<a> ဖြစ်၍ <b>
+<a> သို့မဟုတ် <b>
+<a> မဟုတ်
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ဖြစ်၍` | "it is so, and"; both sides must be true |
+| `သို့မဟုတ်` | "or" |
+| `မဟုတ်` | "is not" |
+
+`မဟုတ်` comes **after** the value it turns around, as it does in Burmese, while the sign
+`!` comes before it.
 
 ## Parentheses when printing
 
-A logical expression must be wrapped in parentheses before `ကို` or `ဟု`. Without them,
-Zaka cannot tell where the expression ends and the print statement begins:
+```text
+(<logical expression>) ကို ပြသမည်။
+```
+
+To print a logical expression, we put it in parentheses before `ကို` or `ဟု`. Without
+them, Zaka cannot tell where the expression ends and the print sentence begins, so the
+compiler stops with an error:
 
 ```zaka-error ZK0204
 ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
@@ -56,7 +85,8 @@ error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expres
 
 ## Joining comparisons
 
-The most common use is to join comparisons. Is the age between 18 and 60?
+The most common use of logic is to join two comparisons, for example to check whether an
+age is between 18 and 60. We can write the comparisons in words or in signs:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -67,7 +97,7 @@ The most common use is to join comparisons. Is the age between 18 and 60?
 // not (age is 30)
 (အသက် သည် ၃၀ နှင့် ညီသည် မဟုတ်) ကို ပြသမည်။
 
-// a logical expression can also be stored
+// a logical expression can also be kept in a variable
 ကိန်းရှင် ထွက်သင့် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အသက် > ၁၈ ဖြစ်၍ အသက် < ၆၀) ဖြစ်ပါစေ။
 ထွက်သင့် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -80,23 +110,46 @@ The most common use is to join comparisons. Is the age between 18 and 60?
 မှန်
 ```
 
+When `မဟုတ်` comes after a comparison, it turns the whole comparison around, so
+`အသက် သည် ၃၀ နှင့် ညီသည် မဟုတ်` means "age is not 30".
+
 ## Which goes first
 
-"Not" binds tightest, then "and", then "or", just as × goes before + in maths.
-`က သို့မဟုတ် ခ ဖြစ်၍ ဂ` means `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)`. Add parentheses when a
-different grouping is meant, or when it helps the reader.
+"Not" binds tightest, then "and", then "or", the same as × goes before + in maths. So
+`က သို့မဟုတ် ခ ဖြစ်၍ ဂ` means `က သို့မဟုတ် (ခ ဖြစ်၍ ဂ)`. When we want a different grouping,
+or when it makes the line clearer, we add parentheses.
 
 ## Skipping the right side
 
-`ဖြစ်၍` and `သို့မဟုတ်` stop as soon as the answer is known. If the left side of
-"and" is false, the whole thing is false, so the right side is never worked out. If the
-left side of "or" is true, the right side is skipped. This is called *short-circuit*
-evaluation. It matters once the right side does work, such as calling a
-[function](../functions/README.md).
+`ဖြစ်၍` and `သို့မဟုတ်` stop as soon as the answer is known. When the left side of an
+"and" is false, the whole answer is false, so Zaka never works out the right side, and
+when the left side of an "or" is true, it skips the right side too. This is called
+short-circuit evaluation, and it matters once the right side does some work, such as
+calling a [function](../functions/README.md).
+
+## Details
+
+- **Operands.** Both sides of "and" and "or", and the value after `!` or before `မဟုတ်`,
+  must be true/false values, or the compiler reports ZK0403
+  ([Logic](../../manual/language/expressions.md#logic)).
+- **`!` and `မဟုတ်` are not the same in a comparison.** `က == ခ မဟုတ်` means `!(က == ခ)`,
+  while `!က == ခ` means `(!က) == ခ`, because `!` binds to the one value right after it
+  ([Logic](../../manual/language/expressions.md#logic)).
+- **Short-circuit with a function.** The [Logic](../../manual/language/expressions.md#logic)
+  section in Docs has an example where the right side calls a function, and the call does
+  not happen.
+
+## Recap
+
+- `ဖြစ်၍` (`&&`) is "and", `သို့မဟုတ်` (`||`) is "or" and `မဟုတ်` (`!`) is "not".
+- `မဟုတ်` comes after the value, while `!` comes before it.
+- We put a logical expression in parentheses to print it.
+- "And" and "or" skip the right side when the left side settles the answer.
 
 ## Hands on
 
-- Print whether both 3 and 5 divide 15 (`%` gives `၀` when the division is clean).
-- Print whether a character `'ခ'` is between `'က'` and `'င'`.
+- Print whether both 3 and 5 divide 15 (`%` returns `၀` when the division leaves nothing
+  over).
+- Print whether the character `'ခ'` is between `'က'` and `'င'`.
 
 Next: [Bitwise operators](bitwise.md).

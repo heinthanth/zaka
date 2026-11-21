@@ -1,13 +1,20 @@
 ---
 title: Text
-description: Text in double quotes is a value of the kind စာသား - store it, fill template slots in it with values, join it, compare it and duplicate it.
+description: Text in double quotes is a value of the data kind စာသား. Store it, put values inside it with template slots, join it, compare it and duplicate it.
 ---
 
 # Text
 
-Text in double quotes, such as `"မင်္ဂလာပါ"`, is a *string literal*. Its kind is `စာသား`
-("text"). A program can print text, store it in a variable, pass it to a function,
-return it from one, and join two pieces of it.
+Text (string) is a row of characters in double quotes, such as `"မင်္ဂလာပါ"`, and its
+data kind (type) is `စာသား` ("text"). We can print text, store it in a variable, pass it to
+a function, return it from one, and join two pieces of it into one.
+
+## You will learn
+
+- how to write text and store it in a variable
+- how to put values inside text with template slots
+- how to join two pieces of text and compare them
+- what happens when we assign text to another variable
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -24,13 +31,30 @@ return it from one, and join two pieces of it.
 ဒုတိယကြောင်း
 ```
 
-Strings use the same [escape sequences](../values/characters.md#escape-sequences) as characters.
-Print a string literal with `ဟု`, which quotes it, rather than `ကို`.
+Text that we write in double quotes is a *string literal*:
+
+```text
+"<characters>"
+```
+
+| Zaka | Reads as | What it does |
+| --- | --- | --- |
+| `"…"` | the text itself | a string literal, of the data kind `စာသား` |
+| `\"` | a double quote | puts a `"` inside the text |
+| `{နောက်တစ်ကြောင်း}` | "next line" | starts a new line inside the text |
+
+A string literal uses the same [escape sequences](../values/characters.md#escape-sequences)
+as a character does. When we print a string literal, we write `ဟု` after it, which quotes
+it, rather than `ကို`.
 
 ## Storing text
 
-A variable of the kind `စာသား` holds text. The variable is a plain value, so a print marks
-it with `ကို`, as it would a number.
+```text
+ကိန်းရှင် <name> သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "<characters>" ဖြစ်ပါစေ။
+```
+
+We declare a text variable as we declare a number variable, with `စာသား` as the data kind.
+The variable is a plain value, so we print it with `ကို`, the same as a number.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -46,12 +70,19 @@ it with `ကို`, as it would a number.
 အောင်အောင်
 ```
 
-`ကနဦးတန်ဖိုး` for `စာသား` is `""`, text with no characters, which prints as a blank line.
+The initial value (`ကနဦးတန်ဖိုး`) of `စာသား` is `""`, text with no characters, which
+prints as a blank line.
 
 ## Template literals
 
-A pair of braces inside a string is a *template slot*. It holds an expression, and the program
-writes the value of that expression in its place, the same as `ပြသမည်` would print it.
+```text
+"… {<expression>} …"
+```
+
+To put a value inside text, we write an expression in braces inside the quotes. The pair of
+braces is a *template slot*, and text with slots in it is a *template literal* (string
+interpolation). When the program runs, it writes the value of the expression in place of
+the slot, the same as `ပြသမည်` would print it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -71,8 +102,9 @@ writes the value of that expression in its place, the same as `ပြသမည�
 { မဟုတ် }
 ```
 
-A template slot ends at the `}` that matches its `{`, so a template slot can hold text in quotes with
-template slots of its own:
+To write a brace as part of the text, we double it: `{{` and `}}`. The escape names, such as
+`{နောက်တစ်ကြောင်း}`, keep their meaning and are not slots. A slot ends at the `}` that
+matches its `{`, so we can put a string literal with slots inside a slot:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -85,10 +117,8 @@ template slots of its own:
 ရလဒ်: အမှတ် ၉၅ (အောင်)
 ```
 
-A brace that is part of the text is doubled: `{{` and `}}`. The escape names, such as
-`{နောက်တစ်ကြောင်း}`, keep their old meaning.
-
-A mistake inside a template slot is reported at its place inside the quotes:
+When the expression in a slot has a mistake, the compiler points at its place inside the
+quotes:
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -100,12 +130,9 @@ A mistake inside a template slot is reported at its place inside the quotes:
 error[ZK0301]: "မသိ" is not declared
 ```
 
-When each template slot holds a value the compiler knows, such as a literal or a
-[constant](../variables/constants.md), the compiler writes the whole text itself, and the
-program does no work for it when it runs.
-
-A text constant is such text too. Its value must be known when the program is compiled,
-and each read of it is a duplicate, so it is never left blank:
+A text constant can use slots too, as long as each slot contains a value that is known when
+the program is compiled, such as a literal or another constant. Each read of the constant
+is a fresh duplicate of its text, so the constant keeps its value:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -121,12 +148,14 @@ and each read of it is a duplicate, so it is never left blank:
 မမ
 ```
 
-A text constant built from a variable is an error (ZK0606): declare such text with
-`ကိန်းရှင်`.
-
 ## Joining text
 
-`+` joins two pieces of text into new text.
+```text
+<text> + <text>
+<text>၊ <text> နှင့် <text> တို့ကို ဆက်ထားသည့် စာသား
+```
+
+We use `+` to join two pieces of text into new text:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -143,8 +172,8 @@ A text constant built from a variable is an error (ZK0606): declare such text wi
 မင်္ဂလာပါ မောင်မောင်!
 ```
 
-Several pieces join in one sentence too: `၊` between them, `နှင့်` before the last, and
-`တို့ကို ဆက်ထားသည့် စာသား` ("the text that joins these") after it:
+To join several pieces in one sentence, we can also use the word form: `၊` between the
+pieces, `နှင့်` before the last one, and `တို့ကို ဆက်ထားသည့် စာသား` after it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -157,7 +186,13 @@ Several pieces join in one sentence too: `၊` between them, `နှင့်` b
 မင်္ဂလာပါ မောင်မောင်!
 ```
 
-Text joins to text alone. `+` with a number is an error:
+| Zaka | Reads as |
+| --- | --- |
+| `တို့ကို` | "these" |
+| `ဆက်ထားသည့်` | "that joins" |
+| `စာသား` | "text" |
+
+We can join text to text alone, so `+` with a number is a mistake:
 
 ```zaka-error ZK0403
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -170,11 +205,16 @@ Text joins to text alone. `+` with a number is an error:
 error[ZK0403]: + needs a number, found text
 ```
 
-To put a number into text, use a template slot: `"အဆင့် {၁}"`.
+To put a number into text, we use a template slot instead: `"အဆင့် {၁}"`.
 
 ## Comparing text
 
-`==` and `!=` tell whether two pieces of text hold the same characters:
+```text
+<text> == <text>
+<text> != <text>
+```
+
+We use `==` and `!=` to check whether two pieces of text have the same characters:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -189,10 +229,11 @@ To put a number into text, use a template slot: `"အဆင့် {၁}"`.
 မှန်
 ```
 
-## Copies of text
+## Duplicating text
 
-A `စာသား` variable owns its text. Putting it into another variable *copies* the text: each
-variable then holds its own, and a change to one leaves the other as it was.
+A `စာသား` variable owns its text. When we assign it to another variable, the text is
+duplicated (copied), so each variable has its own text, and a change to one leaves the other
+as it was:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -210,17 +251,44 @@ Zaka
 Zaka!
 ```
 
-Passing text to a function copies it too, so a function cannot change the caller's
-variable, not even with a character write or an add. When the first variable is not read again, nothing is copied: the compiler
-hands its text over to the second. Part II tells what copies cost: see
-[What a duplicate costs](../forms/costs.md).
+When we pass text to a function, the parameter gets a duplicate too, so the function cannot
+change the caller's variable, even when it writes a character or adds to the text. When the
+first variable is not read again, nothing is duplicated, because the compiler hands its
+text over to the second. Part II explains the cost in [What a duplicate
+costs](../forms/costs.md).
 
-The stdlib holds no helper to split text, so a program writes that for now: see
-[What the stdlib holds](../../manual/language/io.md#what-the-stdlib-holds).
+## Details
+
+- A string literal must close on the line where it opens (ZK0104), and so must a template
+  slot (ZK0106). A slot with nothing in it, `"{}"`, is ZK0202 ([Template
+  literals](../../manual/language/text.md#template-literals)).
+- When each slot contains a literal or a constant, the compiler builds the whole text, so
+  the program does no work for it when it runs ([Folding](../../manual/language/text-storage.md#folding)).
+- A text constant whose slot needs the program to run, such as a slot with a variable,
+  is ZK0606, so we declare such text with `ကိန်းရှင်` ([Constants of text and
+  lists](../forms/counted-lists.md#constants-of-text-and-lists)).
+- `==` compares the text as it is stored, so two spellings of one word whose code points
+  differ are not equal. `<` and the other orderings do not work on text (ZK0403)
+  ([Comparing](../../manual/language/text.md#comparing)).
+- A string literal, or a join with `+` that contains one, is printed with `ဟု`, while a
+  variable or a call is printed with `ကို`. The other choice still runs, with the warning
+  ZK0505 or ZK0506 ([Printing](../../manual/language/text.md#printing)).
+- The text module of the stdlib, `"áá¶áá¬á¸/áá¬áá¬á¸"`, has functions to split text, to join it
+  and to search it ([The stdlib](../stdlib/README.md#text)).
+
+## Recap
+
+- We write text in double quotes, and its data kind is `စာသား`.
+- We write `{<expression>}` inside the quotes to put a value into the text, and `{{` or `}}`
+  for a brace.
+- We use `+`, or `… နှင့် … တို့ကို ဆက်ထားသည့် စာသား`, to join pieces of text, and `==` or
+  `!=` to compare them.
+- Assigning text or passing it to a function makes a duplicate, so the original does not
+  change.
 
 ## Hands on
 
-- Print a short poem, one line per `ပြသမည်`.
+- Print a short poem, one line for each `ပြသမည်`.
 - Print the same poem with a single `ပြသမည်`, using `{နောက်တစ်ကြောင်း}`.
 - Store a name and an age, and print a sentence about them with two template slots.
 - Put a name into a second variable, change the second, and print both.

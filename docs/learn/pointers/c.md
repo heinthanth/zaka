@@ -1,21 +1,26 @@
 ---
 title: C functions and addresses
-description: Pass an address to a C function, read the text that C gives back, and lend C a closure for a call.
+description: Pass an address to a C function, read the text that C returns, and lend C a closure for one call.
 ---
 
 # C functions and addresses
 
-[Calling C](../functions/c.md) declares C functions on numbers, structs of numbers,
-text, lists of numbers and function values. Each C function is declared `စိတ်မချရသော`,
-and its calls go in unsafe code, since Zaka cannot check what C does. This page adds the
-C functions that take or give an address, a pointer into the program's storage, and the
-text that C gives back ([below](#text-that-c-gives-back)).
+[Calling C](../functions/c.md) declares C functions that use numbers, structs of numbers,
+text, lists of numbers and function values. This page adds the C functions that accept or
+return an address (pointer), which points into the storage of the program, and the text
+that C returns.
 
-## Writing through an address
+## You will learn
 
-A C function that gives back more than one value takes the address of a place to write
-the rest. `frexp` splits a number into a fraction and a power of two: it gives the
-fraction back and writes the power through its `int *`.
+- how to pass the address of a variable to a C function, so that C can write a second
+  result into it
+- how text from C arrives as an optional value, and when Zaka frees it
+- how to lend a closure to a C function for the length of one call
+- what C can still break, since the VM cannot see inside it
+
+A C function that returns more than one value often accepts the address of a place to
+write the rest. `frexp` splits a number into a fraction and a power of two: it returns the
+fraction and writes the power through its `int *` parameter.
 
 ```zaka
 // frexp(x, &e): x is the fraction times two to the power e
@@ -36,10 +41,22 @@ frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ �
 ၄
 ```
 
-8.0 is 0.5 times 2 to the power 4, so the call gives `၀.၅` and `ထပ်ကိန်း` holds `၄` after
-it. [Calling C](../functions/c.md#c-writes-into-a-list) does the same with no address in
-the program, through a `ဒေတာ ထည့်ပေးရန်` list of one cell. A C declaration without the word
-is an error:
+8.0 is 0.5 times 2 to the power 4, so the call returns `၀.၅`, and `ထပ်ကိန်း` (the power)
+is `၄` after it. To declare a C parameter that accepts an address, we give it a pointer
+kind, and in the call we pass the address of a variable:
+
+```text
+<name> ဟူသော <kind> လိပ်စာ တစ်ခု ကို
+<variable> ၏ လိပ်စာ
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `e ဟူသော ၃၂ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ကို` | "a 32-bit integer address called `e`": C's `int *e` |
+| `ထပ်ကိန်း ၏ လိပ်စာ` | "the address of the power" |
+
+Each C function must be declared with `စိတ်မချရသော`, and its calls go in unsafe code,
+because Zaka cannot check what C does. A C declaration without the word is an error:
 
 ```zaka-error ZK0472
 frexp ဟူသော လုပ်ဆောင်ချက် သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -53,12 +70,17 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 error[ZK0472]: "frexp" is a C function, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
-## Text that C gives back
+## Text that C returns
 
-Text comes back as an [optional](../optionals/README.md): C gives NULL when it has no
-text, and that is the blank optional `အလွတ်`. Zaka copies the text into a new one of its
-own, and C keeps what it gave, so the program never holds the address. `strstr` finds a part in a text and gives the
-rest, or NULL when the part is absent:
+```text
+စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်
+```
+
+C returns NULL when it has no text, so we declare a text result as an
+[optional](../optionals/README.md) (option type), and NULL arrives as the blank optional
+`အလွတ်`. Zaka duplicates the text into new text of the program, while C keeps what it
+returned, so the program never sees the address. `strstr` finds a part in a text and
+returns the rest of the text from there, or NULL when the part is not in it:
 
 ```zaka
 strstr ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -77,9 +99,17 @@ strstr ဟူသော လုပ်ဆောင်ချက်ကို "abc" �
 အလွတ်
 ```
 
-`strstr` gives a part of a string that C keeps. `strdup` makes a new string and hands it
-over, so its header writes `အပိုင်အနေဖြင့်` ("as its own") before `ပြန်ပေးမည်`, and Zaka frees
-the string with C's `free` once it holds the text:
+## Text that C hands over
+
+```text
+စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်
+```
+
+`strstr` returns a part of a string that C keeps, but `strdup` makes a new string and
+hands it over to the caller. To declare that, we write `အပိုင်အနေဖြင့်` ("as its own")
+before `ပြန်ပေးမည်`, the same as for an [owned result](ownership.md#owned-results-and-parameters),
+and Zaka then frees the string with C's `free` once it has the text. Windows names the
+function `_strdup`, so this program picks the name at compile time:
 
 ```zaka
 // Windows names it _strdup
@@ -109,18 +139,19 @@ strdup ဟူသော လုပ်ဆောင်ချက်ကို "စံ�
 ဒေတာ("စံကား")
 ```
 
-Leave the word out for a string C hands over, and the string is never freed; write it for
-a string C keeps, and the program frees what is not its own. A safe wrapper, a plain
-function with the unsafe call inside, gives the rest of the program the result in safe
-code, as on
-[Owned pointers](ownership.md#a-safe-wrapper).
+When we leave the word out for a string that C hands over, the string is never freed,
+and when we write it for a string that C keeps, the program frees something that is not
+its own. On Windows, `strdup` here is a safe wrapper, a plain function with the unsafe
+call inside, which gives the rest of the program the result in safe code, as on [Owned
+pointers](ownership.md#a-safe-wrapper).
 
 ## A closure for a call
 
-A C function that takes a function, as `qsort` takes the function that compares two cells,
-calls it while the call runs. A [closure](../function-values/closures.md) can stand there,
-and the call needs no more: the closure is lent to it. This one counts its calls in a
-variable around it:
+A C function that accepts a function, as `qsort` accepts the function that compares two
+cells, calls it while the call runs. We can pass a
+[closure](../function-values/closures.md) there, and the call needs nothing more, because
+the closure is lent to C for that one call. This closure counts its calls in a variable
+around it:
 
 ```zaka
 qsort ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -153,21 +184,35 @@ qsort ဟူသော လုပ်ဆောင်ချက်ကို ကိန
 မှန်
 ```
 
-The program prints whether `qsort` called the function (`မှန်`), not the count of its
-calls, since that count belongs to the C lib. A C function that keeps the function for a
-later call needs a leave, which [Calling C](../functions/c.md#a-function-c-keeps) shows.
+The program prints whether `qsort` called the function (`မှန်`) and not the count of
+its calls, because that count depends on the C lib (library).
 
-## What C does
+## Details
 
-C does what C does. A C function that writes past the place it was given harms the run as
-it would harm a C program, and the VM cannot see inside it. A closure crosses to C as a
-function value does, and a C function that keeps it needs leave to call it later (see
-[a closure for a call](#a-closure-for-a-call)).
+- A run that calls C needs the FFI right, so from a terminal we run it with `zakac run --allow-ffi`
+  ([Permissions](../../manual/vm/running.md#permissions)).
+- C does what C does. A C function that writes past the place it was given harms the run
+  as it would harm a C program, and the VM cannot see inside it to stop it.
+- A C function that keeps a function for a later call needs our leave to call it, which
+  [Callbacks and handles](../functions/c-callbacks.md#a-function-c-keeps) shows.
+- [Calling C](../functions/c.md#c-writes-into-a-list) gets a second result from C with no
+  address in the program, through a `ဒေတာ ထည့်ပေးရန်` list of one cell.
+- The full rules for C parameters and results, addresses included, are in [C
+  functions](../../manual/language/functions-c.md#c-functions).
+
+## Recap
+
+- We declare a C parameter with a pointer kind to accept an address, and pass
+  `<variable> ၏ လိပ်စာ` in the call.
+- Each C function is declared `စိတ်မချရသော`, and its calls go in unsafe code.
+- Text from C arrives as an optional value, with `အလွတ်` for NULL, and `အပိုင်အနေဖြင့်` on
+  the result tells Zaka to free a string that C hands over.
+- A closure can go to a C function for the length of one call with nothing more.
 
 ## Hands on
 
 - Declare `modf` from `"libm"`, which splits a number into its whole and fractional parts
   and writes the whole part through a `double *`. Print both parts of 3.25.
-- Call `strstr` and print the text it finds, or `""` when C gives the blank optional.
+- Call `strstr` and print the text it finds, or `""` when C returns the blank optional.
 
 Next: [Pointer mistakes](mistakes.md).

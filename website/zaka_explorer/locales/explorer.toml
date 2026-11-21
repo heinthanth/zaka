@@ -128,13 +128,13 @@ en = "Checked gives each variable a block of its own, so reading or writing past
 en = "Checked"
 [explorer.settings.frames_packed]
 en = "Packed, as C"
-[explorer.settings.job_order]
-en = "Turns of jobs"
-[explorer.settings.job_order_note]
-en = "Fixed gives the jobs their turns in one order, the same on each run. Shuffled draws the length and the job of each turn from a seed each run takes, so a mistake that hangs on the order shows; the JOB register tells the seed."
-[explorer.settings.job_order_fixed]
+[explorer.settings.thread_order]
+en = "Turns of threads"
+[explorer.settings.thread_order_note]
+en = "Fixed gives the threads their turns in one order, the same on each run. Shuffled draws the length and the thread of each turn from a seed each run takes, so a mistake that hangs on the order shows; the THREAD register tells the seed."
+[explorer.settings.thread_order_fixed]
 en = "Fixed"
-[explorer.settings.job_order_shuffled]
+[explorer.settings.thread_order_shuffled]
 en = "Shuffled"
 [explorer.settings.mem_check]
 en = "Pointer check"
@@ -577,27 +577,27 @@ en = "Program counter: the address of the op that runs next"
 en = "Stack pointer: the free slot over the top of the stack, where the next value goes"
 [explorer.run.bp_note]
 en = "Base pointer: where the frame of the innermost call starts on the stack"
-[explorer.run.job_note]
-en = "The job that runs now, of the jobs of the program; the main job is 0."
-[explorer.run.job_runs]
+[explorer.run.thread_note]
+en = "The thread that runs now, of the threads of the program; the main thread is 0."
+[explorer.run.thread_runs]
 en = "runs"
-[explorer.run.job_queued]
+[explorer.run.thread_queued]
 en = "waits for its turn"
-[explorer.run.job_waits_job]
-en = "waits for job %{job}"
-[explorer.run.job_waits_each]
-en = "waits for the other jobs to end"
-[explorer.run.job_waits_receive]
+[explorer.run.thread_waits_thread]
+en = "waits for thread %{thread}"
+[explorer.run.thread_waits_each]
+en = "waits for the other threads to end"
+[explorer.run.thread_waits_receive]
 en = "waits for a value of channel %{pipe}"
-[explorer.run.job_waits_send]
+[explorer.run.thread_waits_send]
 en = "waits for room in channel %{pipe}"
-[explorer.run.job_waits_lock]
+[explorer.run.thread_waits_lock]
 en = "waits for a lock"
-[explorer.run.job_done]
+[explorer.run.thread_done]
 en = "ended"
-[explorer.run.job_trapped]
+[explorer.run.thread_trapped]
 en = "stopped at a trap"
-[explorer.run.job_seed]
+[explorer.run.thread_seed]
 en = "turns shuffled with seed %{seed}"
 [explorer.run.frames]
 en = "Stack frames"

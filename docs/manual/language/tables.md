@@ -1,15 +1,16 @@
 ---
 title: Tables
-description: The ဇယား kind, rows found through an index: the kind, literals, reading, setting and removing a row, writing inside a row, the count, the loops over rows, index kinds, equal tables, copies, and how a ဇယား is stored.
+description: The table data kind, which finds each row through its index - the data kind, literals, reading, setting and removing a row, writing inside a row, the count, the loops over rows, index kinds, equal tables, duplicates, and how a table is stored.
 ---
 
 # Tables
 
-A ဇယား ("table") holds rows. Each row has an index (`အညွှန်း`), which finds it, and a value
-(`တန်ဖိုး`). No two rows of one ဇယား have equal indexes. A list reaches a value through the
-number of its cell; a ဇယား reaches it through the index, which can be text, a number, a
-struct or another kind that can be hashed. The rows keep the order in which their indexes
-were first added. The Learn book starts in small steps with [Tables](../../learn/tables/README.md).
+A table (map) keeps rows (entries), and each row has an index (key), which finds it, and a
+value. We write the data kind with the word `ဇယား`. No two rows of one table have equal
+indexes. A list reaches a value through the number of its cell, while a table reaches it
+through the index, which can be text, a number, a struct or another data kind (type) that
+can be hashed. The rows keep the order in which their indexes were first added. The Learn
+book teaches tables in small steps in [Tables](../../learn/tables/README.md).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -28,30 +29,34 @@ were first added. The Learn book starts in small steps with [Tables](../../learn
 အလွတ်
 ```
 
-## The ဇယား kind
+## The data kind
 
 ```text
 <index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား
 ```
 
-| Kind | In messages |
+To write the data kind of a table, we put the index kind first, then `ဖြင့် ညွှန်းသော`
+("indexed with"), then the value kind, then `ဇယား`. We can also write `ဖြင့်` joined to
+the index kind. Error messages show the data kind in a short form:
+
+| Data kind | In messages |
 | --- | --- |
 | `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား` | `map<text, isize>` |
 | `ကိန်းပြည့် ဖြင့် ညွှန်းသော စာသား စာရင်း ဇယား` | `map<isize, text[]>` |
 | `စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား စာရင်း` | `map<text, isize>[]` |
 
-- The index kind comes first, then `ဖြင့် ညွှန်းသော` ("indexed with"), then the value kind,
-  then `ဇယား`. `ဖြင့်` can be written joined to the index kind.
-- The phrase is the [written-as hint](generics.md#written-as-hints) of the core's
-  `ဇယား`, a name and not a reserved word, so the long form
-  `စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် ဇယား` and `ဇယား<စာသား၊ ကိန်းပြည့်>`
-  name the same kind.
-- The value kind is each kind: a list, a struct, an optional, a shared object or another ဇယား.
-  The index kind is a kind that can be hashed (see [Index kinds](#index-kinds)).
-- A ဇယား counts with `ခု` (ZK0509). The index kind and the value kind take no measure word,
-  as a list cell does not.
-- Levels after `ဇယား` wrap the ဇယား itself: `… ဇယား စာရင်း` is a list of tables.
-- The initial value, `ကနဦးတန်ဖိုး`, is a ဇယား with no rows.
+- The phrase is the [written-as hint](generics.md#written-as-hints) of `ဇယား` in the
+  core module, which is a name and not a reserved word. So the long form
+  `စာသား နှင့် ကိန်းပြည့် တို့ကို အစားထိုးအသုံးပြုသည့် ဇယား` and the form
+  `ဇယား<စာသား၊ ကိန်းပြည့်>` name the same data kind.
+- The value kind can be each data kind: a list, a struct, an optional, a shared object or
+  another table. The index kind must be a data kind that can be hashed (see [Index
+  kinds](#index-kinds)).
+- A table is counted with the measure word (classifier) `ခု`, and another word is the
+  warning ZK0509. The index kind and the value kind need no measure word, as with the
+  cell kind of a list.
+- Words after `ဇယား` wrap the table itself, so `… ဇယား စာရင်း` is a list of tables.
+- The initial value (default value), `ကနဦးတန်ဖိုး`, is a table with no rows.
 
 ## Literals
 
@@ -62,9 +67,10 @@ were first added. The Learn book starts in small steps with [Tables](../../learn
 [:]
 ```
 
-The sentence form names each row as `<index> အနေဖြင့် <value>` ("with the index, the value");
-the notation form, the form a ဇယား prints in, writes `<index>: <value>`. The two forms mean the
-same. `ဇယားအလွတ်` ("blank table") and `[:]` are a ဇယား with no rows.
+We can write a table value in two forms that mean the same. In the word form, we write
+each row as `<index> အနေဖြင့် <value>` ("with the index, the value"). In the notation
+form, which is also how a table prints, we write each row as `<index>: <value>`.
+`ဇယားအလွတ်` ("blank table") and `[:]` are a table with no rows.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -83,14 +89,15 @@ same. `ဇယားအလွတ်` ("blank table") and `[:]` are a ဇယား
 [:]
 ```
 
-- The rows are set in order. A later row with the index of an earlier one gives that row its
-  value and keeps its place: `"နီ"` remains first in `ခ` above, with the value 9.
-- Without a written kind, a literal takes the ဇယား kind of its place, or else the kinds of its
-  first row.
-- A literal of either form can take its kind after it, `ဟူသော <kind> တစ်ခု`, as in
-  `[:] ဟူသော စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား တစ်ခု`; a kind that is no ဇယား is ZK0222.
-- `ဇယားအလွတ်` and `[:]` with no kind from their place and none written are ZK0486.
-- An index and a value are notation expressions, as a list cell is; a clause goes in
+- The rows are set in order. A later row with the index of an earlier one gives that row
+  its value and keeps its place, so `"နီ"` remains first in `ခ` above, with the value 9.
+- Without a written data kind, a literal gets the table kind of its place, or else the
+  data kinds of its first row.
+- To give a literal its data kind, we write `ဟူသော <kind> တစ်ခု` after it, as in
+  `[:] ဟူသော စာသား ဖြင့် ညွှန်းသော ကိန်းပြည့် ဇယား တစ်ခု`. A data kind that is not a table
+  is ZK0222.
+- `ဇယားအလွတ်` and `[:]` with no data kind from their place and none written are ZK0486.
+- An index and a value are notation expressions, as a list cell is, so a clause goes in
   parentheses.
 
 ```zaka-error ZK0486
@@ -110,13 +117,14 @@ error[ZK0486]: a blank ဇယား needs a ဇယား kind from its place
 <optional> ထဲမှ ဒေတာ၊ မရှိလျှင် <value>
 ```
 
-`<table> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး` ("from the table, the value of the index") reads the
-row of an index. The read is an [optional](optionals.md) of the value kind: the value of the
-row, or `အလွတ်` when no row holds the index. A read never stops the run.
+To read the row of an index, we write `<table> ထဲမှ အညွှန်း <index> ၏ တန်ဖိုး` ("from the
+table, the value of the index"). The result is an [optional](optionals.md) of the value
+kind: the value of the row, or `အလွတ်` when no row has the index. So a read never stops
+the program.
 
-The optional is tested and read as each optional is. `၊ မရှိလျှင် <value>` ("if none, the
-value") after `ထဲမှ ဒေတာ` gives the data, or the value when the optional holds none. It works
-on each optional, not on a row alone.
+We test and read this optional as we do each other optional. To get the data, or a
+fallback value when there is none, we write `၊ မရှိလျှင် <value>` ("if none, the value")
+after `ထဲမှ ဒေတာ`. This form works on each optional, not on a row alone.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -135,13 +143,13 @@ on each optional, not on a row alone.
 ၅၀၁
 ```
 
-- The index after `အညွှန်း` is a notation expression, so it ends before the `၏`: a clause
-  goes in parentheses. It converts to the index kind (ZK0401).
-- The value after `မရှိလျှင်` is one operand, a prefix operator and its operand included, as a
-  read binds tighter than an operator: `x ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to the data or to
-  0. It runs when the optional holds no data, and at no other time, and it converts to the
-  kind of the data.
-- `ထဲမှ အညွှန်း` after a value that is no ဇယား is ZK0484.
+- The index after `အညွှန်း` is a notation expression, so it ends before the `၏`, and a
+  clause goes in parentheses. It converts to the index kind (ZK0401).
+- The value after `မရှိလျှင်` is one operand, together with a prefix operator on it,
+  because a read binds tighter than an operator: `x ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to
+  the data or to 0. The fallback runs when the optional has no data and at no other time,
+  and it converts to the data kind of the data.
+- `ထဲမှ အညွှန်း` after a value that is not a table is ZK0484.
 
 ```zaka-error ZK0484
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -161,9 +169,10 @@ error[ZK0484]: isize[] is no ဇယား, so it has no rows
 <table> ထဲမှ အညွှန်း <index> ကို ဖျက်မည်။
 ```
 
-A set gives the row of the index its value: a row that holds the index keeps its place and
-takes the new value, and with no such row, a new last row holds the index and the value. A
-remove takes the row of the index out; with no such row, nothing happens.
+We use `ထားမည်` to give the row of an index its value. When a row has the index, it keeps
+its place and gets the new value; when no row has it, a new last row is added with the
+index and the value. We use `ဖျက်မည်` to remove the row of an index; when no row has the
+index, nothing happens.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -180,14 +189,15 @@ remove takes the row of the index out; with no such row, nothing happens.
 ["ခ": ၂၀၊ "ဂ": ၃၊ "က": ၁၀]
 ```
 
-- The ဇယား is a place that can be set: a variable, a field, a cell of a list, or the value of
-  a row of another ဇယား. A constant is ZK0306.
-- The index and the value go in as an assigned value goes into a place: text, lists, structs
-  and tables are copied, and a shared object is shared ([Values and objects](objects.md)).
-- The index and the value are worked out before the ဇယား changes.
-- `ကို ဖျက်မည်` after a value that is no row, `<table> ထဲမှ အညွှန်း <index>`, fits no sentence
-  of `ဖျက်` (ZK0332), and the help lists them. A list
-  loses its last cell through `နောက်ဆုံးအကွက်ကို ဖျက်မည်` ([Lists](lists.md#adding-and-removing-cells)).
+- The table must be a place we can set: a variable, a field, a cell of a list, or the
+  value of a row of another table. A constant is ZK0306.
+- The index and the value go in as an assigned value goes into a place: text, lists,
+  structs and tables are duplicated (copied), and a shared object is shared ([Values and
+  objects](objects.md)).
+- The index and the value are worked out before the table changes.
+- `ကို ဖျက်မည်` after a value that is not a row, `<table> ထဲမှ အညွှန်း <index>`, fits no
+  sentence of `ဖျက်` (ZK0332), and the help lists the sentences that fit. A list loses its
+  last cell through `နောက်ဆုံးအကွက်ကို ဖျက်မည်` ([Lists](lists.md#adding-and-removing-cells)).
 
 ```zaka-error ZK0306
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -211,12 +221,11 @@ error[ZK0306]: "ဇ" is a constant and cannot be assigned
 error[ZK0332]: no function "ဖျက်" takes these arguments
 ```
 
-
 ## Writing inside a row
 
-A statement can write inside the value of a row where it stands: a field or a cell of it, an
-add to it, or a remove from it, as it writes inside a variable. The row must be there: when no
-row holds the index, the run stops with `no row of the ဇယား has this index`, in the VM and in a
+We can write inside the value of a row in place, as we write inside a variable: set a
+field or a cell of it, add to it, or remove from it. The row must exist: when no row has
+the index, the program stops with `no row of the ဇယား has this index`, in the VM and in a
 native program alike.
 
 ```zaka
@@ -250,11 +259,12 @@ native program alike.
 the program stopped: no row of the ဇယား has this index
 ```
 
-- A write through a row writes the value in the ဇယား, not a duplicate of it, as a write
-  through a cell does.
-- A ဇယား held in a row is written the same: `ဇ ထဲမှ အညွှန်း "က" ၏ တန်ဖိုး ထဲမှ အညွှန်း "ခ" ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။`
-  sets a row of the ဇယား in the row `"က"`.
-- No address of a row can be taken in unsafe code, so no row is ever pinned.
+- A write through a row writes the value inside the table, not a duplicate of it, as a
+  write through a cell does.
+- A table inside a row is written in the same manner:
+  `ဇ ထဲမှ အညွှန်း "က" ၏ တန်ဖိုး ထဲမှ အညွှန်း "ခ" ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။` sets a row of
+  the table in the row `"က"`.
+- Unsafe code cannot take the address of a row, so a row is never pinned.
 
 ## Counting and walking the rows
 
@@ -265,9 +275,9 @@ the program stopped: no row of the ဇယား has this index
 <table> ၏ အညွှန်းတိုင်းကို <index name> နှင့် <value name> အနေဖြင့် ယူ၍ BODY
 ```
 
-`အညွှန်းအရေအတွက်` ("index count") is the number of rows, a `usize`. A loop over
-`အညွှန်းတိုင်း` ("each index") takes the index of each row, and a loop over `အတန်းတိုင်း`
-("each row") takes the value; with two names, either one takes the index and then the value.
+`အညွှန်းအရေအတွက်` ("index count") is the number of rows, a `usize`. To walk the indexes,
+we loop over `အညွှန်းတိုင်း` ("each index"); to walk the values, we loop over
+`အတန်းတိုင်း` ("each row"). With two names, either loop gets the index and then the value.
 The rows come in their order, the first added first.
 
 ```zaka
@@ -293,13 +303,16 @@ The rows come in their order, the first added first.
 ပြာ = ၃
 ```
 
-- A loop walks the ဇယား as it was when the loop began: it holds a duplicate, so a set or a
-  remove in its BODY changes the ဇယား and not the rows the loop walks.
-- Each name holds a duplicate of the index or the value, as the variable of an each-cell loop
-  holds a duplicate of a cell. The [loop rule](statements.md#loops) is the same for lists,
-  text and tables.
-- `အညွှန်းတိုင်း` or `အတန်းတိုင်း` on a value that is no ဇယား is ZK0484, and `အကွက်တိုင်း` on a
-  ဇယား is ZK0434.
+- A loop walks the table as it was when the loop began, because the loop works on a
+  duplicate. So a set or a remove in its BODY changes the table and not the rows the loop
+  walks.
+- Each name gets a duplicate of the index or the value, as the variable of an each-cell
+  loop gets a duplicate of a cell. The [loop rule](control-flow.md#each-cell-loops) is the same for
+  lists, text and tables.
+- `အညွှန်းတိုင်း` or `အတန်းတိုင်း` on a value that is not a table is ZK0484, and
+  `အကွက်တိုင်း` or `စာလုံးတိုင်း` on a table is ZK0434.
+
+Since the loop walks a duplicate, we can remove each row inside it:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -315,10 +328,10 @@ The rows come in their order, the first added first.
 
 ## Index kinds
 
-An index kind is a kind whose values can be hashed and compared as whole values: integers,
-characters, true/false, text, enumerations, decimal numbers, and lists and structs whose parts
-are all index kinds. Two indexes are one when their parts are equal, text through its
-characters and a list through its cells.
+An index kind is a data kind whose values can be hashed and compared as whole values:
+integers, characters, true/false values, text, enumerations, decimal numbers, and lists
+and structs whose parts are all index kinds. Two indexes are the same index when their
+parts are equal, text through its characters and a list through its cells.
 
 ```zaka
 အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
@@ -338,9 +351,9 @@ characters and a list through its cells.
 [[၁၊ ၂]: "ညာ၊ အောက်"]
 ```
 
-Shared objects, function values, pointers, optionals, results and tables are not index kinds:
-each stands for something that can change, or has no one value to compare. An index kind that
-holds one of them is ZK0485.
+Shared objects, function values, pointers, optionals, results and tables are not index
+kinds, because each of them can change or has no single value to compare. An index kind
+that contains one of them is ZK0485.
 
 ```zaka-error ZK0485
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -354,13 +367,14 @@ error[ZK0485]: optional isize cannot index the rows of a ဇယား: optional 
 
 ### Decimal indexes
 
-A decimal number can index rows, with the rule of JS `Map`: each NaN is one index, and `-0.0`
-and `0.0` are one index; each other value is compared as `==` compares it. The row keeps the
-index it was first added with. `==` on decimal numbers does not change.
+A decimal number can index rows, with the rule of the JS `Map`: all NaN values are one
+index, `-0.0` and `0.0` are one index, and the other values are compared as `==` compares
+them. The row keeps the index it was first added with. `==` on decimal numbers does not
+change.
 
-Each index kind that holds a decimal number gets the warning ZK0487: `၀.၁ + ၀.၂` and `၀.၃` are
-two rows, since rounding sets them apart. An index that counts in whole steps, such as cents
-for a price, keeps the rows apart as written.
+Each index kind that contains a decimal number gets the warning ZK0487, because
+`၀.၁ + ၀.၂` and `၀.၃` are two rows when rounding sets them apart. An index that counts in
+whole steps, such as cents for a price, keeps the rows apart as written.
 
 ```zaka-warning ZK0487
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -377,13 +391,14 @@ for a price, keeps the rows apart as written.
 warning[ZK0487]: f64 holds a decimal number, so two values that round apart are two rows
 ```
 
-The ဇယား it prints holds three rows: `[၀.၃၀၀၀၀၀၀၀၀၀၀၀၀၀၀၀၀၄: "က"၊ ၀.၃: "ခ"၊ -၀.၀: "ဃ"]`. The sum
-and `၀.၃` are two rows, and `၀.၀` gives its value to the row of `-၀.၀`, which keeps its index.
+The table it prints has three rows: `[၀.၃၀၀၀၀၀၀၀၀၀၀၀၀၀၀၀၀၄: "က"၊ ၀.၃: "ခ"၊ -၀.၀: "ဃ"]`.
+The sum and `၀.၃` are two rows, and `၀.၀` gives its value to the row of `-၀.၀`, which
+keeps its index.
 
 ## Equal tables
 
-Two tables are `==` when the two hold equal indexes with equal values, whatever the order of
-their rows. The order of rows shows in a print and in a loop alone.
+Two tables are `==` when the two have equal indexes with equal values, whatever the order of
+their rows. The order of the rows shows in a print and in a loop alone.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -400,12 +415,12 @@ their rows. The order of rows shows in a print and in a loop alone.
 မမှန်
 ```
 
-## Copies
+## Duplicates
 
-A ဇယား is a value, as a list is: assigning one, passing it or returning it gives the other side
-a ဇယား of its own. The two share their rows until one side writes; the write then copies the
-rows first. A ဇယား that the program wants one of, seen through several names, goes in a field
-of a shared object ([Values and objects](objects.md)).
+A table is a value, as a list is. When we assign a table, pass it or return it, the other
+side gets a duplicate (copy). The two share their rows until one side writes, and the
+write then duplicates the rows first. To see one table through several names, we put it
+in a field of a shared object ([Values and objects](objects.md)).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -422,14 +437,14 @@ of a shared object ([Values and objects](objects.md)).
 ["တစ်": ၁၊ "နှစ်": ၂]
 ```
 
-## How a ဇယား is stored
+## How a table is stored
 
-A ဇယား is a struct of three parts: its rows, a plain list in their order; its slots, a plain
-list of `u32`; and its count of live rows. A row holds the hash of its index, a live mark, the
-index and the value.
+A table is a struct of three parts: its rows, a plain list in their order; its slots, a
+plain list of `u32`; and its count of live rows. Each row has the hash of its index, a
+live mark, the index and the value.
 
 ```text
-  table: map<text, isize>, holding ["နီ": 1, "ပြာ": 2]
+  table: map<text, isize>, with the rows ["နီ": 1, "ပြာ": 2]
 
   rows   (plain list)    +------+------+-------+-------+   +------+------+--------+-------+
                          | hash | live | "နီ"  |   1   |   | hash | live | "ပြာ"  |   2   |
@@ -438,24 +453,29 @@ index and the value.
   live                   2
 ```
 
-- A slot holds 0 when no row has used it, 1 when its row was removed, and 2 more than the number
-  of its row otherwise. The count of slots is a power of two, at least 8.
-- An index goes to the slot its hash names, or to the next slot after it that holds no other
-  row; a find walks the same slots, so it ends at a slot that holds 0.
-- At least a third of the slots hold 0. An add that would fill more moves the live rows
-  together, in their order, and builds the slots again, twice the count the live rows need.
-- A remove drops the index and the value of the row, leaves the row as zero octets, and marks
-  its slot 1. A ဇယား left with no live row gives back its blocks.
-- The hash is FNV-1a over 64 bits on the parts of the index, so a print and a loop never
+- A slot is 0 when no row has used it, 1 when its row was removed, and otherwise 2 more
+  than the number of its row. The count of slots is a power of two, at least 8.
+- An index goes to the slot that its hash names, or to the next slot after it that has
+  no other row. A search walks the same slots, so it ends at a slot that is 0.
+- At least a third of the slots are 0. An add that would fill more moves the live rows
+  together, in their order, and builds the slots again, with twice the count that the
+  live rows need.
+- A remove drops the index and the value of the row, leaves the row as zero octets, and
+  marks its slot 1. A table left with no live row frees its blocks.
+- The hash is FNV-1a over 64 bits on the parts of the index, so a print and a loop do not
   depend on it: the order of the rows is the order of their adds.
 
 ## Errors at a glance
 
 | Code | What went wrong |
 | --- | --- |
-| ZK0484 | a row read, a count or a loop of rows on a value that is no ဇယား |
-| ZK0485 | an index kind that cannot be hashed and compared as a whole value |
-| ZK0486 | a blank ဇယား with no kind from its place |
-| ZK0487 | a warning: an index kind that holds a decimal number |
-| ZK0434 | `အကွက်တိုင်း` or `စာလုံးတိုင်း` on a ဇယား |
+| ZK0222 | a data kind after a literal that is not a table |
 | ZK0306 | a set or a remove of a row of a constant |
+| ZK0332 | `ကို ဖျက်မည်` after a value that is not a row |
+| ZK0401 | an index that does not convert to the index kind |
+| ZK0434 | `အကွက်တိုင်း` or `စာလုံးတိုင်း` on a table |
+| ZK0484 | a row read, a count or a loop of rows on a value that is not a table |
+| ZK0485 | an index kind that cannot be hashed and compared as a whole value |
+| ZK0486 | a blank table with no data kind from its place |
+| ZK0487 | a warning: an index kind that contains a decimal number |
+| ZK0509 | a warning: a measure word other than `ခု` after a table kind |

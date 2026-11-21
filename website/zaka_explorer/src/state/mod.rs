@@ -73,8 +73,8 @@ const HEAP_CAP_STORE: &str = "zaka-explorer-heap-cap";
 /// space.
 const FRAMES_STORE: &str = "zaka-explorer-frames";
 
-/// Local storage name of the switch that shuffles the turns of the jobs.
-const SHUFFLE_STORE: &str = "zaka-explorer-shuffle-jobs";
+/// Local storage name of the switch that shuffles the turns of the threads.
+const SHUFFLE_STORE: &str = "zaka-explorer-shuffle-threads";
 
 /// Local storage name of the stage view switch.
 const STAGE_STORE: &str = "zaka-explorer-stage-open";
@@ -184,9 +184,9 @@ pub struct AppState
     pub frames: Signal<FrameMode>,
     /// Choose how the variables of a run sit in the address space.
     pub set_frames: WriteSignal<FrameMode>,
-    /// Whether each run shuffles the turns of its jobs.
+    /// Whether each run shuffles the turns of its threads.
     pub shuffled: Signal<bool>,
-    /// Choose whether each run shuffles the turns of its jobs.
+    /// Choose whether each run shuffles the turns of its threads.
     pub set_shuffled: WriteSignal<bool>,
     /// Whether ops run in batches, one batch a frame.
     pub going: RwSignal<bool>,

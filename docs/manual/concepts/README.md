@@ -1,33 +1,33 @@
 ---
 title: Concepts
-description: The ideas behind Zaka, explained with scenarios: sentences, Burmese text, storage and the checks.
+description: The ideas behind Zaka, explained through examples: sentences, Burmese text, storage and the checks.
 ---
 
 # Concepts
 
-The other chapters of the manual state rules. These pages tell the reasons. Each one
-takes a single idea of the design, states what problem it answers, walks through a
-scenario, and names the cost.
+The other chapters of the Docs state the rules, and these pages explain the reasons behind
+them. Each page picks one idea of the design, describes the problem it solves, works
+through an example, and names what it costs.
 
 | Page | The question it answers |
 | --- | --- |
-| [The case for sentences](sentences.md) | What is the reason a program reads as Burmese sentences, with the verb last? |
+| [The case for sentences](sentences.md) | Zaka uses Burmese sentences, with the verb at the end. What does that give us? |
 | [Finding words in Burmese](segmenting.md) | Burmese has no spaces between words. How does the compiler find where a word ends? |
-| [Storage, explained](storage.md) | How are values and objects counted and freed, what does the ring collector do, and what is left to unsafe code? |
-| [Checks in the VM and in native code](checked.md) | Which mistakes are found before the run, which during it, and which once a native build exists? |
+| [Storage, explained](storage.md) | How does Zaka count and free values and objects, what does the ring collector do, and what is left to unsafe code? |
+| [Checks in the VM and in native code](checked.md) | Which mistakes are found before the run, which during it, and which are lost in a native build? |
 
 ```text
  a sentence             a word               a block                a check
  ──────────             ──────               ───────                ───────
- operands, then         where does it        who gives it back,     found before the run,
+ operands, then         where does it        who frees it,          found before the run,
  the verb               end?                 and when?              during it, or not at all
      │                      │                    │                      │
  sentences.md          segmenting.md         storage.md             checked.md
 ```
 
-The pages can be read in a free order. The last two go together: counted storage is what keeps safe
-code free of storage mistakes, and the checks page tells what the compiler finds in unsafe
-code before the run and what is left for the VM.
+We can read the pages in a free order, but the last two go together: counted storage is
+what keeps safe code free of storage mistakes, and the checks page explains what the
+compiler finds in unsafe code before the run and what it leaves to the VM.
 
-For the rules themselves, see [the language](../language/README.md); for the VM
-that runs a program, see [the VM](../vm/README.md).
+For the rules themselves, see [the language](../language/README.md), and for the VM
+(virtual machine) that runs a program, see [the VM](../vm/README.md).

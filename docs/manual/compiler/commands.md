@@ -1,43 +1,47 @@
 ---
 title: Commands
-description: Each zakac command, what it reads, what it writes, and each of its options.
+description: Each zakac command, what it reads and writes, and each of its flags with its default.
 ---
 
 # Commands
 
-`zakac` has one command for each stage of the compiler, one to build a program for a
-target, and one to run a program. These share one shape:
+`zakac` has one command for each stage (compiler pass), one to build a program for a
+target and one to run it. This page lists each command with its flags and defaults.
+[Building programs](build.md) covers the C and native targets of `build` in full, and
+[Hello, world](../../learn/hello/README.md#running-it) shows the first run.
 
-```console
-$ zakac <command> [options] [INPUT]
+All the commands share one form:
+
+```text
+zakac <command> [flags] [INPUT]
 ```
 
-`INPUT` is a source file, or `-` for standard input (the default when it is left out).
-A stage command reads the source, runs the stages up to its own, and writes what that
-stage made, the *artifact*. The `run` command goes to the end and runs the program.
-[Stages](stages.md) tells what each artifact holds.
+`INPUT` is a source file, or `-` for standard input, which is also what we get when we
+leave it out. A stage command runs each stage up to its own and writes what that stage
+made, the *artifact*, while `run` goes to the end and runs the program.
 
-| Command | Runs up to | Writes | Raw / text file |
+| Command | Purpose | Writes | Raw / text file |
 | --- | --- | --- | --- |
-| `segment` | the word segmenter | the pieces of the text | `.zkseg` / `.zksegt` |
-| `lex` | the lexer | the tokens | `.zktok` / `.zktokt` |
-| `parse` | the parser | the tree | `.zkast` / `.zkastt` |
-| `semcheck` | names, kinds and natural wording | the tree and the kind of each expression | `.zksem` / `.zksemt` |
-| `irgen` | the IR builder and constant folding | the IR | `.zkir` / `.zkirt` |
-| `borrowck` | the checker: the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
-| `build` | the code generator of a target | the ops of the VM (`--backend vm`), an executable through C (`--backend c`), or one through Cranelift (`--backend native`) | `.zkc` / `.zkct` |
-| `run` | the VM | nothing: the program runs | |
-| `lsp` | the checker, for each file an editor holds open | errors, colors and hovers, to the editor | |
+| `segment` | cut the text into pieces | the pieces | `.zkseg` / `.zksegt` |
+| `lex` | turn the pieces into tokens | the tokens | `.zktok` / `.zktokt` |
+| `parse` | build the tree of sentences | the tree | `.zkast` / `.zkastt` |
+| `semcheck` | resolve names and check data kinds (types) and natural wording | the tree and the data kind of each expression | `.zksem` / `.zksemt` |
+| `irgen` (or `mkir`) | lower the tree to the IR and fold its constants | the IR | `.zkir` / `.zkirt` |
+| `borrowck` (or `mkbck`) | run the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
+| `build` | build the program for a target | the operations (instructions) of the VM, an executable or a lib (library) | `.zkc` / `.zkct` for the VM |
+| `run` | run the program | nothing: the program runs | |
+| `lsp` | serve an editor | errors, colors and hovers, to the editor | |
 
-Each stage also builds as a program of its own (`zakac_lexer`, `zakac_parser`,
-`zakac_semcheck`, `zakac_ir_builder`, `zakac_borrow_checker`, `zakac_burmese_segmenter`,
-`zaka_vm`) with the same options as its command. Each target of `build` does too:
-`zakac_codegen_target_vm` and `zakac_codegen_target_c`; and so does the language server,
-`zakac_lsp`.
+[Stages](stages.md) shows what each artifact contains. Each stage also builds as a
+program apart from `zakac`, with the same flags as its command: `zakac_burmese_segmenter`,
+`zakac_lexer`, `zakac_parser`, `zakac_semcheck`, `zakac_ir_builder`,
+`zakac_borrow_checker` and `zaka_vm` (for `run`). So do the targets of `build`
+(`zakac_codegen_target_vm`, `zakac_codegen_target_c` and `zakac_codegen_target_native`)
+and the language server, `zakac_lsp`.
 
 ## A small session
 
-Here is a program that adds up two numbers and prints the sum:
+Here is a program that adds two numbers and prints the sum:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -49,8 +53,9 @@ Here is a program that adds up two numbers and prints the sum:
 ၃
 ```
 
-Saved as `sum.zaka`, it runs with one command. The second command stops after the code
-generator and prints a listing of the ops, not the ops:
+We save it as `sum.zaka` and run it with one command. The second command stops after the
+code generator and prints a listing of the VM's operations instead of the operations
+themselves:
 
 ```console
 $ zakac run sum.zaka
@@ -68,35 +73,45 @@ fn f1 main (params 0)
      1  ret
 ```
 
-The sum was worked out at compile time, so the VM just pushes `၃`.
+The compiler worked out the sum at compile time, so the VM just pushes `၃`.
 [Stages](stages.md) follows this sentence through each stage.
+
+## Flags of each command
+
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `-h`, `--help` | | | print the flags of the command |
+| `-v`, `--version` | | | print the version of `zakac` |
+| `--config` | `<FILE>` | | read defaults from this config file, on top of the files the command finds; see [Configuration](configuration.md) |
+
+`zakac --help` lists the commands, and `zakac <command> --help` lists the flags of one.
 
 ## Input and output
 
-All the stage commands take these three:
+The stage commands, from `segment` to `borrowck`, all use these:
 
-| Option | Meaning |
-| --- | --- |
-| `[INPUT]` | the source file, or `-` for standard input |
-| `-o`, `--output <FILE>` | where to write the artifact: a file, a folder, or `-` for standard output (the default) |
-| `--output-format <FORMAT>` | `text` or `raw`; when left out, the format follows the output |
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `[INPUT]` | a file, or `-` | standard input | the source file |
+| `-o`, `--output` | `<FILE>` | standard output | where to write the artifact: a file, a folder, or `-` for standard output |
+| `--output-format` | `text` or `raw` | from the output | the form of the artifact |
 
-The format is picked in this order:
+The command picks the form in this order:
 
-1. `--output-format`, when it is given.
-2. Standard output gets `text`, a readable YAML file.
-3. A file name that ends in the text extension of the stage (`.zkirt`) gets `text`; one that
-   ends in the raw extension (`.zkir`) gets `raw`.
-4. A folder (an existing one, or a path ending in `/`) gets a file named after the input,
-   with the raw extension, unless `--output-format text` is given.
-5. Each other file name gets `raw`.
+1. `--output-format`, when we give it.
+2. Standard output gets `text`, a YAML file we can read.
+3. A file name that ends in the text extension of the stage (`.zkirt`) gets `text`, and one
+   that ends in the raw extension (`.zkir`) gets `raw`.
+4. A folder (one that exists, or a path that ends in `/`) gets a file named after the
+   input, with the raw extension, unless we give `--output-format text`.
+5. All other file names get `raw`.
 
-The raw form is compact and quick to load; the text form is for reading and for diffs.
-Both hold the same data.
+Both forms contain the same data: the raw form is compact and quick to load, and the text
+form is for reading and for diffs.
 
-`build` follows these rules for `-o` as well, with two changes: `--emit` picks what it
-writes in place of `--output-format`, and with no `-o` it writes beside the source file
-(see [build](#build)).
+`build` follows the same rules for `-o`, with two changes: `--emit` picks what it writes
+in place of `--output-format`, and with no `-o` it writes beside the source file (see
+[build](#build)).
 
 ```console
 $ zakac build age.zaka -o out/age.zkc
@@ -106,13 +121,14 @@ $ ls out
 age.zkc  age.zkct
 ```
 
-A stage writes its artifact even when it finds errors; the errors are in the artifact
-too, and the exit code is 1. See [Diagnostics](diagnostics.md).
+A stage writes its artifact even when it finds errors. The errors go into the artifact
+too, and the exit code is 1 (see [Diagnostics](diagnostics.md)).
 
 ### What `run` reads
 
-`run` takes a source file, or the ops of `zakac build` in either form (`.zkc` or
-`.zkct`). It tells them apart from the first octets of the input, not from the file name:
+`run` reads a source file, or the operations that `zakac build` wrote, in either form
+(`.zkc` or `.zkct`). It tells them apart from the first octets of the input, not from the
+file name:
 
 ```console
 $ zakac build age.zaka
@@ -122,58 +138,105 @@ $ zakac run age.zaka
 ၂၀
 ```
 
-The other artifacts are not programs: `run` reads one of them as source and reports
-errors at once. Running an artifact skips the compile, and the checks that were made when
-it was written are the checks it carries.
+The other artifacts are not programs, so `run` reads one of them as source and reports
+errors at once. Running an artifact skips the compile, and the program keeps the checks
+that were made when the artifact was written.
 
 ## Options of the compile stages
 
-These options belong to `semcheck` and the stages after it, and to `run`.
+The flags below steer the stages from `semcheck` on. Each group belongs to the stage named
+in its heading, to the stages after it, and to `build` and `run`.
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--target-bits <BITS>` | `32` for `wasm32`, else `64` | the bit count of the platform-sized integer kinds, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်`: 8, 16, 32 or 64 |
-| `--target-os <OS>` | the host's | the OS a [compile-time conditional](../language/compile-time.md) reads: `windows`, `macos`, `linux` or `wasi`; `wasi` takes the CPU `wasm32` when `--target-arch` is not given, and `--backend c` builds a WebAssembly program for it ([Native programs](native.md#wasi)) |
-| `--target-arch <ARCH>` | the host's | the CPU a compile-time conditional reads: `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` |
-| `--target-abi <ABI>` | the usual one of the OS | the ABI a compile-time conditional reads: `gnu`, `msvc`, `apple`, `wasip1` or `wasip2`; left out, `apple` on macOS, `gnu` on Linux, `wasip1` on WASI, and on Windows the ABI `zakac` was built for. The VM and `--jit` take the ABI of `zakac` alone; an executable on Windows takes `gnu` or `msvc` ([Native programs](native.md#windows)) |
-| `--lint-allow <NAME>`, `--lint-warn <NAME>`, `--lint-error <NAME>` | | set the level of a lint group or code, as below; the front end reads the groups `naturalness` and `spoken` |
+### From `semcheck` on: the platform, lints and comptime rights
 
-These belong to `irgen` and the stages after it, and to `run`:
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--target-bits` | `8`, `16`, `32` or `64` | `32` for `wasm32`, else `64` | the bit count of the platform-sized integers, `ကိန်းပြည့်` and `လက္ခဏာမဲ့ ကိန်းပြည့်` |
+| `--target-os` | `windows`, `macos`, `linux` or `wasi` | the host's | the OS that a [compile-time conditional](../language/compile-time.md) sees; `wasi` sets the CPU to `wasm32` when we leave out `--target-arch`, and `--backend c` then builds a WebAssembly program ([WASI](native.md#wasi)) |
+| `--target-arch` | `x86_64`, `aarch64`, `x86`, `arm`, `riscv64` or `wasm32` | the host's | the CPU that a compile-time conditional sees |
+| `--target-abi` | `gnu`, `msvc`, `apple`, `wasip1` or `wasip2` | the common one of the OS | the ABI that a compile-time conditional sees; see below |
+| `--lint-allow` | a group or a code | | leave out each finding of a lint group or code |
+| `--lint-warn` | a group or a code | | report each finding of a lint group or code as a warning |
+| `--lint-error` | a group or a code | | report each finding of a lint group or code as an error |
+| `--comptime-allow-read` | `[=<PATHS>]` | none | let the runs of [comptime calls](../language/compile-time.md#what-a-run-can-do) read files: all of them, or those under a comma list of paths; a path in the program starts from its folder |
+| `--comptime-allow-write` | `[=<PATHS>]` | none | let them write, remove and move files and make folders |
+| `--comptime-allow-env` | `[=<NAMES>]` | none | let them read environment variables: all of them, or those named |
+| `--comptime-allow-ffi` | | off | let them call C functions |
+| `--comptime-allow-all` | | off | grant all four |
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--fold <LIST>` | `all` | the foldings to run: `all`, `none`, or a comma list of `exprs`, `consts` and `branches` |
-| `--no-unsafe` | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
-| `--comptime-allow-read[=<PATHS>]` | none | let the runs of [comptime calls](../language/compile-time.md#what-a-run-can-do) read files: each one, or those under the paths of a comma list; a path of the program starts from its folder |
-| `--comptime-allow-write[=<PATHS>]` | none | let them write, remove, move files and make folders |
-| `--comptime-allow-env[=<NAMES>]` | none | let them read variables of the environment: each one, or those named |
-| `--comptime-allow-ffi` | off | let them call C functions |
-| `--comptime-allow-all` | off | grant each of the four |
+When we leave out `--target-abi`, the ABI is `apple` on macOS, `gnu` on Linux, `wasip1` on
+WASI, and on Windows the ABI that `zakac` itself was built for. The VM and the Cranelift
+runs of `zakac run` use the ABI of `zakac` alone, while an executable for Windows can use
+`gnu` or `msvc` ([Windows](native.md#windows)).
 
-`--fold` changes the IR, not what the program does. `exprs` replaces an operation on
-constants with its value, `consts` replaces a read of a `ကိန်းသေ` that was set to a
-constant, and `branches` keeps the branch of an `if` that is taken and drops a loop whose
-condition is false. Under `exprs`, a string literal whose template slots each hold a constant
-becomes static text, and so does a `+` of constant text; with `--fold none` the program
-builds that text when it runs, with the same output. Errors in constant operations, such as a division with the constant
-zero as divisor (ZK0602), are reported with `--fold none` too.
+We give a lint flag again, or a comma list, to name more than one group or code. The
+front end reads the groups `naturalness` and `spoken`, and the checker reads the rest;
+[Lint names](#lint-names) lists them.
+
+### From `irgen` on: folding and unsafe code
+
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--fold` | `all`, `none`, or a comma list of `exprs`, `consts` and `branches` | `all` | the foldings to run |
+| `--no-unsafe` | | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
+
+`--fold` changes the IR, not what the program does:
+
+- `exprs` replaces an operation on constants with its value. It also turns a text
+  (string) literal whose template slots each contain a constant into static text, and so
+  for a `+` of constant text. With `--fold none` the program builds that text when it
+  runs, with the same output.
+- `consts` replaces a read of a `ကိန်းသေ` that was set to a constant.
+- `branches` keeps the branch of an `if` that is taken and drops a loop whose condition is
+  false.
+
+The compiler reports errors in constant operations, such as a division with the constant
+zero as divisor (ZK0602), under `--fold none` too.
 
 ```console
 $ zakac irgen --fold none sum.zaka
 ```
 
-With `--fold none` the IR of `sum.zaka` keeps `add` with `1` and `2` as its two sides;
-without it, the IR holds the constant `3`.
+With `--fold none`, the IR of `sum.zaka` keeps `add` with `1` and `2` as its two sides;
+without it, the IR has the constant `3`.
 
-These belong to `borrowck` and the stages after it, and to `run`. These are explained
-in [Compiler checks](checks.md).
+### From `borrowck` on: overflow
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--overflow <MODE>` | `stop` | what integer arithmetic does with a result outside its kind: `stop` stops the program and warns about an operation that overflows for each value it can see (ZK0719), `wrap` wraps it around; see [Overflow](../language/expressions.md#arithmetic) |
-| `--lint-allow <NAME>` | | leave out each finding of a lint group or code; give it again, or a comma list, for more |
-| `--lint-warn <NAME>` | | report each finding of a lint group or code as a warning |
-| `--lint-error <NAME>` | | report each finding of a lint group or code as an error |
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--overflow` | `stop` or `wrap` | `stop` | what integer arithmetic does with a result outside its data kind: `stop` stops the program and warns (ZK0719) about an operation that overflows for each value the checker can see, and `wrap` wraps the result around; see [Arithmetic](../language/expressions.md#arithmetic) |
+
+[Compiler checks](checks.md) shows what this flag and the lint flags change.
+
+### For the VM: results and scratch values
+
+These two belong to `build --backend vm` and to `run`, and change how the VM sets out its
+frames:
+
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--results` | `in-place` or `duplicate` | `in-place` | how a list or struct result reaches the caller: `in-place` builds it in the caller's slot, and `duplicate` keeps it in the function's frame and duplicates it on return |
+| `--scratch` | `apart` or `shared` | `apart` | where a list or struct that a statement builds and uses up lives, such as a printed literal or a range passed to a function: `apart` gives each one a slot apart, and `shared` lets a later statement reuse the slot of an earlier one |
+
+The program prints the same in each mode. `duplicate` costs one more pass over each list
+or struct result, `shared` leaves fewer slots in a frame, and `apart` shows each scratch
+value as a separate block in the explorer's RAM view. See [Lists and structs as
+results](../language/functions-results.md#lists-and-structs-as-results).
+
+### Release builds
+
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--release` | | off | build for release: leave out the source region of each operation, the embedded source, the imported files and the diagnostics of the artifact |
+
+`--release` belongs to each target of `build` and to `run`. A stop in a release build
+names the function and the index of the operation instead of the line (see [How a run
+ends](../vm/running.md#how-a-run-ends)), while a `.zkc` or `.zkct` built without
+`--release` keeps its lines, so `zakac run age.zkct` shows them. For the C and native
+targets, `--release` also leaves out the debug info: [Building
+programs](build.md#debug-info-and-release) has the details.
+
+## Lint names
 
 A lint name is a group or a code:
 
@@ -190,12 +253,18 @@ A lint name is a group or a code:
 | `naturalness` | the [natural wording](../language/naturalness.md) rules, ZK0501 to ZK0511 |
 | `spoken` | ZK0510, a word in its [spoken spelling](../language/spoken.md); `--lint-allow spoken` lets a program use them |
 
-A code wins over a group. Between two names of one tier, the later flag wins, and a flag
-on the command line wins over a [config file](configuration.md). ZK0709, ZK0710 and
-ZK0711 take the level inside unsafe code alone; outside it, the three remain errors. The
-doubtful findings (ZK0711, and the leaks the checker cannot prove) show once a name sets
-the group `doubts`, as `--lint-warn doubts`. A code outside the table, such as ZK0701 or
-ZK0722, keeps its level: those findings keep safe code safe.
+The rules for two names that meet:
+
+- A code wins over a group.
+- Between two names of the same tier, the later flag wins, and a flag on the command line
+  wins over a [config file](configuration.md).
+- ZK0709, ZK0710 and ZK0711 use the level inside unsafe code alone. Outside it, the three
+  keep their level: ZK0709 and ZK0710 are errors, and ZK0711 a warning.
+- The doubtful findings (ZK0711, and the leaks the checker cannot prove) show once a name
+  sets a level for ZK0711: `doubts`, `nulls`, `mem` or the code itself. So
+  `--lint-warn mem` shows more than the default, which sets no name.
+- A code that is not in the table, such as ZK0701 or ZK0722, keeps its level, because
+  those findings keep safe code safe.
 
 ```console
 $ zakac run --lint-error leaks leak.zaka
@@ -204,42 +273,18 @@ $ zakac run --lint-error mem --lint-allow ZK0708 leak.zaka
 ၇
 ```
 
-These belong to `build --backend vm` and to `run`:
-
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--results <MODE>` | `in-place` | how a list or struct result reaches the caller: `in-place` builds it in the caller's slot, `duplicate` keeps it in the function's frame and duplicates it on return |
-| `--scratch <MODE>` | `apart` | where a list or struct that a statement builds and uses up lives, such as a printed literal or a range passed to a function: `apart` gives each one a slot of its own, `shared` lets a later statement take the slot of one before it |
-
-The program prints the same in each mode. `duplicate` costs one more pass over each
-list or struct result. `shared` leaves fewer slots in a frame, and `apart` shows each
-scratch value as a block of its own in the explorer's RAM view. See [Lists and structs
-as results](../language/functions.md#lists-and-structs-as-results).
-
-`--release` also belongs to each target of `build` and to `run`:
-
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--release` | off | build for release: leave out the source region of each op, the embedded source, the imported files and the diagnostics of the artifact, so a stop names the function and the index of the op, not the line; see [Release builds](../vm/running.md#how-a-run-ends) |
-
-`zakac build --backend c --release` writes no table of places and no marks for them, so a stop
-names the function alone (`(in addfee)`) and each backtrace line is a function name. It also
-leaves out the debug info: a build with no `--release` writes a `#line` before each
-statement and compiles with `-g` (`/Z7`, and `/DEBUG` for the link, for MSVC), and the native
-target writes a DWARF line table and the Zaka name of each function into its object, so
-lldb and gdb stop on a line of Zaka (see [Debuggers](native.md#debuggers)). The native
-target and `zakac run --jit` leave out the same table under `--release`. A `.zkc` or `.zkct` built with no `--release` keeps its
-lines, so `zakac run age.zkct` shows them.
-
 ## segment
 
-```console
-$ zakac segment [--coalesce-non-burmese] [INPUT]
+Cut the text into the pieces the lexer starts from: Burmese words, digits and the other
+characters.
+
+```text
+zakac segment [--coalesce-non-burmese] [-o FILE] [--output-format FORMAT] [INPUT]
 ```
 
-Cuts the text into the pieces the lexer starts from: Burmese words, digits, and the other
-characters. `--coalesce-non-burmese` joins a run of characters that are not Burmese into
-one piece.
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--coalesce-non-burmese` | | off | join a run of characters that are not Burmese into one piece |
 
 ```console
 $ echo 'abc ၁' | zakac segment --coalesce-non-burmese
@@ -254,297 +299,133 @@ $ echo 'abc ၁' | zakac segment --coalesce-non-burmese
   lexeme: "\n"
 ```
 
-(The `span` of each piece is left out here.) See [Finding words in
+The `span` of each piece is left out here. See [Finding words in
 Burmese](../concepts/segmenting.md).
 
 ## lex, parse, semcheck, irgen, borrowck
 
-These five take the input and output options and the compile options listed above for
-their stage (`lex` and `parse` have none), and nothing else. `lex` segments the text
-first, `parse` lexes first, and so on, so a command never needs the artifact of the stage
-before it: it starts from the source.
+Run the stages up to the one named, and write its artifact.
 
-From `parse` on, a command reads the files its input imports as well, and its artifact
-holds them under `imports` ([Modules](../language/modules.md)). `segment` and
-`lex` work on the one file given to them.
+```text
+zakac lex      [-o FILE] [--output-format FORMAT] [INPUT]
+zakac parse    [-o FILE] [--output-format FORMAT] [INPUT]
+zakac semcheck [compile flags] [-o FILE] [--output-format FORMAT] [INPUT]
+zakac irgen    [compile flags] [-o FILE] [--output-format FORMAT] [INPUT]
+zakac borrowck [compile flags] [-o FILE] [--output-format FORMAT] [INPUT]
+```
+
+These five use the [input and output](#input-and-output) flags, plus the [compile
+flags](#options-of-the-compile-stages) of their stage (`lex` and `parse` have none), and
+nothing else. `irgen` also answers to `mkir`, and `borrowck` to `mkbck`.
+
+Each command starts from the source: `lex` segments the text first, `parse` lexes it
+first, and so on, so we never need the artifact of the stage before. From `parse` on, a
+command also reads the files that its input imports, and its artifact lists them under
+`imports` ([Modules](../language/modules.md)). `segment` and `lex` work on the one file we
+give them.
 
 ## build
 
-```console
-$ zakac build [--backend vm|c|native] [--emit WHAT] [options] [INPUT]
+Build the program for a target: the operations of the VM, or an executable or a C lib
+through C or Cranelift.
+
+```text
+zakac build [--backend vm|c|native] [--emit WHAT] [flags] [-o FILE] [INPUT]
 ```
 
-`build` runs each stage, then the code generator of a target:
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--backend` | `vm`, `c` or `native` | `vm` | the target: the VM, a native executable through C, or one through Cranelift |
+| `--emit` | see the table below | `zkc` for `vm`, `bin` for `c` and `native` | what to write |
+| `-o`, `--output` | `<FILE>`, a folder, or `-` | beside the input | where to write it; the `asm` listing goes to standard output |
+
+Each target also uses all the [compile flags](#options-of-the-compile-stages) and
+`--release`. The VM target adds `--results` and `--scratch`, and the C and native targets
+add their own flags, which [Building programs](build.md#flags-of-the-c-and-native-targets)
+lists: `--checks`, `--max-depth`, `--max-heap`, `--trap`, `--cache`, `--cc`, `--linker`,
+`--cc-flag`, `--ld-flag`, `--no-default-flags`, `--lib-name`, `--runtime-lib` and the
+rights (`--allow-read` and the rest). A flag of another target, or an `--emit` word of
+another target, stops the build with an error and exit code 3:
+
+```console
+$ zakac build --backend c --results duplicate age.zaka
+build: --results does not go with --target c
+```
 
 | Target | Makes | `--emit` | Output with no `-o` |
 | --- | --- | --- | --- |
-| `vm` (the default) | the ops of the VM, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
-| `c` | an executable, through C and a C compiler; or a C lib | `bin` (default), `c`, `lib` | `<name>` beside the source (`<name>.exe` on Windows); for `lib`, `lib<name>.a`, the shared lib and `<name>.h` |
-| `native` | an executable, through Cranelift and the linker of a C compiler; or a C lib | `bin` (default), `obj`, `clif`, `lib` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif`; for `lib`, as for the C target |
+| `vm` | the VM's operations, which `run` runs | `zkc` (default), `zkct`, `asm` | `<name>.zkc` or `<name>.zkct` beside the source; the listing goes to standard output |
+| `c` | an executable through C and a C compiler, or a C lib | `bin` (default), `c`, `lib` | `<name>` beside the source (`<name>.exe` on Windows); for `lib`, `lib<name>.a`, the shared lib and `<name>.h` |
+| `native` | an executable through Cranelift and the linker of a C compiler, or a C lib | `bin` (default), `obj`, `clif`, `lib` | `<name>` beside the source (`<name>.exe` on Windows), `<name>.o` or `<name>.clif`; for `lib`, the same files as the C target |
 
-A source read from standard input writes the ops to standard output. Each target
-takes all the compile options above, and the options of its own; an option of another
-target, or an `--emit` word of another target, stops the build with an error.
-
-### The VM target
-
-`--emit zkc` writes the raw ops, `zkct` the text form (a header line, then YAML),
-and `asm` a listing of the ops. The listing is plain text, for reading; it goes to
-standard output, or to the file in `-o`. Here is the listing of a program with a variable
-(`age.zaka`), for a 32-bit platform:
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-အသက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၂၀
-```
+A source read from standard input writes the operations to standard output.
 
 ```console
-$ zakac build --target-bits 32 --emit asm age.zaka
-; zakac asm listing v1, platform 32 bits
-
-fn f0 ပရိုဂရမ် (params 0)
-locals
-  l0 အသက် isize
-     0  local_addr l0        ; အသက်
-     1  push 20:isize
-     2  store isize
-     3  local_addr l0        ; အသက်
-     4  load isize
-     5  print
-     6  ret
-
-fn f1 main (params 0)
-     0  call f0              ; ပရိုဂရမ်
-     1  ret
-```
-
-The ops are listed in [Instructions](../vm/instructions.md).
-
-### The C target
-
-`--backend c` writes a C file for each module of the program, then compiles and links
-them with a C compiler; `--emit c` stops after the C files. The C is plain C11, so GCC,
-Clang, MinGW and `zig cc` each build it, and so does MSVC on Windows (`--target-abi msvc`,
-see [Native programs](native.md#windows)). `--target-os wasi` builds a WebAssembly program
-with the Clang of wasi-sdk ([WASI](native.md#wasi)).
-[Native programs](native.md) tells what the executable checks, and where its output
-differs from the VM.
-
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--checks <LIST>` | `default` | the run-time checks of the executable: a level, then checks to add (`+name` or `name`) or drop (`-name`), in order, as a comma list or the flag given again; see below |
-| `--max-depth <CALLS>` | `4096` | the most nested calls before the executable stops with `more than N nested calls`, as `--max-depth` of the VM does; counted while the `depth` check is on |
-| `--max-heap <OCTETS>` | `0` | the most heap octets the executable holds, no cap when 0: a counted block (text, a plain list, a box, a closure record) past it stops the run with `no heap room for N octets`, as `--max-heap` of the VM does; a raw allocation of unsafe code past it gives the null address; see [Native programs](native.md#checks) |
-| `--trap <MODE>` | `unwind` | what a trap in a [job](../language/jobs.md#a-trap-in-a-job) of the executable does: `unwind` ends that job alone, and `abort` stops the whole program |
-| `--cache <DIR>` | the cache of the user | the folder for the C files, the objects and the runtime lib (`libzaka_runtime.a`, or `zaka_runtime.lib` for MSVC, which `zakac` carries inside it and writes there); when left out, `zakac/<folder>/<name>-<hash>` in `XDG_CACHE_HOME` or `~/.cache` (`%LOCALAPPDATA%` on Windows), or `.zakac_c_cache` beside the source when that folder cannot be made |
-| `--cc <CMD>` | `CC`, then `cc` of a config file, then the first of `cc`, `gcc`, `clang` and `zig cc`; for `--target-abi msvc`, `cl`, `clang-cl`, then the `cl` of Visual Studio; for WASI, `--cc` alone, then `wasm32-wasip1-clang` or `wasm32-wasip2-clang` in the `bin` folder of `WASI_SDK_PATH`, then on the PATH | the C compiler, with the words before its flags |
-| `--linker <CMD>` | the C compiler | the program that links the objects, such as `clang -fuse-ld=lld` |
-| `--cc-flag <FLAG>` | | one more flag for the C compiler; give it again for more |
-| `--ld-flag <FLAG>` | | one more flag for the linker; give it again for more |
-| `--no-default-flags` | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC) |
-| `--lib-name <NAME>` | the name of the files | the name of a C lib (`--emit lib`) in `zk_reset_<NAME>`, `zk_last_trap_from_<NAME>` and the names it links under: ASCII letters, digits and `_`, starting with a letter or `_`; a file name C cannot take needs it |
-| `--runtime-lib <FILE>` | the runtime lib `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; with a C compiler for that target in `--cc`, the C and native targets build for its OS and CPU (see [Cross builds](native.md#cross-builds)); the build reads the names the lib links its functions under from it, so a lib from other sources or another build of `zakac` serves too |
-| `--allow-read[=<PATHS>]`, `--allow-write[=<PATHS>]`, `--allow-env[=<NAMES>]`, `--allow-ffi`, `-A`, `--no-permission-prompt` | none | the rights the executable holds, written into it, as `zakac run` grants them to a run; the executable asks for a right it lacks on a terminal, as the VM does; see [Permissions](../vm/running.md#permissions) |
-
-Each run-time check is one kind of stop. A level sets each check: `none` turns all of
-them off (as C, the fastest), `default` turns on the checks of the language, and `mem`
-turns on all of them.
-
-| Check | Stops the program at | In |
-| --- | --- | --- |
-| `divide` | a zero divisor | `default`, `mem` |
-| `shift` | a shift as wide as its kind or wider | `default`, `mem` |
-| `bounds` | a cell, a place, a slice or a range outside its list or its text | `default`, `mem` |
-| `text` | a range of text that cuts a character, and u8s that hold no UTF-8 | `default`, `mem` |
-| `step` | a loop step that is not positive, in a counted loop and a parallel one alike; with it off, a parallel loop given a step of 0 stops on the `divide` check as it counts its rounds | `default`, `mem` |
-| `depth` | more nested calls than `--max-depth` | `default`, `mem` |
-| `null` | an access through the null address | `mem` |
-| `overlap` | a block copied onto a block it overlaps | `mem` |
-| `sanitizers` | the address and undefined-behavior sanitizers of the C compiler | `mem` |
-
-The list starts from `default` and takes each item in turn, so a level in it starts over:
-
-```console
-$ zakac build --backend c --checks mem,-sanitizers,-depth age.zaka
-$ zakac build --backend c --checks none,+bounds age.zaka
-$ zakac build --backend c --checks=+null age.zaka
-```
-
-Integer overflow is not one of these: `--overflow` picks it.
-
-The flags reach the C compiler in this order: `-std=c11`, the default flags, `-g` unless
-`--release`, `CFLAGS`,
-then each `--cc-flag`. The linker gets the objects and the runtime lib, `-lm`, the OS libs the runtime lib needs (`-liconv` on macOS, for one), the `-lX` of each lib that the [C functions](../language/functions.md#c-functions) of the program name (but libc and libm; a lib given as a path goes as it is, with a run path), `LDFLAGS`, then each `--ld-flag`. MSVC takes the same order in its own form: `/std:c11` and
-its default flags, then `X.lib` for each lib, and the options of the linker after `/link`. A later
-flag wins where the compiler keeps the last one, so `--cc-flag -O3` replaces `-O2`. `-w`
-silences warnings wherever it stands, so warnings need `--no-default-flags`.
-
-```console
+$ zakac build age.zaka
+$ zakac build --emit zkct age.zaka
 $ zakac build --backend c age.zaka
 $ ./age
 ၂၀
-$ CFLAGS=-O3 zakac build --backend c --linker 'clang -fuse-ld=lld' age.zaka
-```
-
-#### A C lib
-
-`--emit lib` builds a C lib of the functions marked `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော`
-([Functions C can call](../language/functions.md#functions-c-can-call)), for C, Rust and
-each language that calls C; `--backend native --emit lib` builds the same lib from
-Cranelift code, with the wrappers in C beside it. The program needs no start block, and a
-program with none of those functions is an error. The build writes three files in one
-folder, named after the input or the last part of `-o`:
-
-| File | What it holds |
-| --- | --- |
-| `lib<name>.a` (`<name>.lib` for MSVC) | the static lib: the objects of the program with the runtime lib inside it |
-| `lib<name>.so`, `lib<name>.dylib` or `<name>.dll` | the shared lib, which gives C these functions, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_free_all_from_<name>`, `zk_last_trap`, `zk_free` and `zk_free_all` alone; MSVC writes its import lib as `<name>.dll.lib` |
-| `<name>.h` | the declaration of each function under its C name, of each struct those functions take or give back under its C name, with a check of its size, the id of each trap (`ZK_TRAP_OVERFLOW`, ...), the `zk_trap` struct, `zk_last_trap_from_<name>`, `zk_reset_<name>`, `zk_free_from_<name>`, `zk_free_all_from_<name>`, `zk_last_trap`, `zk_free` and `zk_free_all` |
-
-Each function returns an `int32_t` status and gives its result through a last
-parameter, an address it writes unless it is NULL. The status is `ZK_OK` (0), `1 +` the id
-of the trap the call stopped on, or `ZK_STOPPED` (-1) for each call after a trap that
-stopped the lib. A trap stops the lib when its function, itself or through each function
-it calls, reaches a mutable global, calls C or a function value, or starts a job, since
-the trap can leave the heap and the globals half written; a trap in each other function
-fails that call alone. `zk_last_trap_from_<name>()` gives
-that trap as a `zk_trap`: its id (`code`), its short name (`kind`), its line
-(`message`), the lib, the call it stopped in (`where`: the function, the file, the line
-and the column) and each call in progress (`frames`, the innermost first; none in a
-`--release` build). It remains valid until the next trap of the lib or its reset;
-`zk_last_trap()` gives the last trap of each lib of the program: each lib writes its traps
-to one slot the linker keeps for all of them, `zk_trap_slot_v1`, whichever build of `zakac`
-made it. A shared lib keeps its own slot on Windows and macOS, so there
-`zk_last_trap_from_<name>()` names the lib. A trap puts back what its call found: the
-depth of the calls, the closures it lent to C, the sink of the output and the queues of
-the drops, so the calls around it go on.
-`zk_reset_<name>()` starts the lib again. The first call starts the runtime and sets the
-globals. Text comes in as a
-`const char *`; an address or a handle as a `void *`; a struct whole, as the header
-declares it; a plain list as `zk_list_<cells>`, named after its cells (`zk_list_int32_t`,
-`zk_list_text`, `zk_list_person`, `zk_list_list_text`), with the C form of each cell. Text
-a function gives back is a `char *`, a plain list `zk_list_<cells>`. Each block the lib
-gives C carries the kind and the count of its cells in front of it: C frees one block with
-`zk_free`, or a block with each block its cells point at, at each depth, with
-`zk_free_all` (`zk_free_all_from_<name>` with the C runtime of the lib). Threads can call
-the lib. The functions whose trap fails the call alone run on several threads at once,
-with no lock: such a function reads constants alone, and the counts of the heap turn
-atomic at its first call. The rest run one call at a time, under one lock for each lib of
-the runtime; the first call of the lib sets its globals under that lock, and a reset waits
-for the calls with no lock to end before the next call sets them again. A call that waits
-in a C function lets go of the lock, so other threads go into the libs while it waits,
-and takes it back once C returns, as Python lets go of its lock around C. While it waits
-another thread can change a global; as Rust does, the check counts a call to C as a change
-of each global, so a function that reaches C takes globals as duplicates, never as loans,
-and no value a call holds is freed under it. A global the call reads again after C can
-hold a new value. C can call a function of the program
-on each thread: on a thread that waits in C, the call goes on as part of that call; on
-another thread it runs as a call of the lib, and a trap there stops the lib and gives C a
-result of zeros.
-
-Several Zaka libs link into one program, static or shared. `<name>` is the name of the
-files, or `--lib-name`: ASCII letters, digits and `_`. Each name a lib links under that C
-never calls takes the form `zk_<name>_<hash>_...`, with a hash of the lib name, its
-program and the runtime, so two libs never clash. The runtime links its names as
-`zk_rt_<version>_<hash>_...`, and the header maps `zk_free` and `zk_last_trap` to them:
-the static libs from one `zakac` share one runtime, and libs from two builds of `zakac`
-each keep their own; the build of each runtime joins its hash to the metadata of each Rust
-crate in it, so no name of one clashes with the other. A trap stops, or fails a call of,
-the lib it came from alone. `--max-heap` caps each lib on its own: a block counts in the count of the lib whose
-call made it, and text and lists a lib gives to C count in none, since C frees them.
-`zk_free_from_<name>()` frees with the C runtime the lib was built with: on Windows a lib
-of GNU and a lib of MSVC each have their own, so a program that loads both frees what each
-gave back with its own. Each lib carries the
-calls of the libs it calls through C on top of its own, and a trap lists the calls of its
-own lib alone. A program that links the static lib
-links the OS libs of the runtime with it, which the comment at the top of the header
-lists.
-
-```console
-$ zakac build --backend c --emit lib -o out/mathlib mathlib.zaka
-$ cc -Iout main.c out/libmathlib.a -liconv -lm -o main
-```
-
-The shared lib of macOS names itself `@rpath/lib<name>.dylib`, so a program finds it
-through its run path (`-Wl,-rpath,<folder>`). Beside the shared lib, the linker of macOS
-takes it for `-l<name>`: give the static lib as a path, or keep it in a folder of its
-own, as a Rust build does with `-L <folder> -l static=<name>`. See
-[A lib for C](../../learn/functions/c-lib.md).
-
-### The native target
-
-`--backend native` lowers the program with [Cranelift](https://cranelift.dev) to an object
-file for the target, then links it with the runtime lib through the C compiler, as the C
-target links. It runs the same checks as the C target and takes the same options, and
-it gives the same output; `--cc-flag`, `--no-default-flags` and `CFLAGS` change nothing, as
-there is no C to compile.
-[Native programs](native.md#cranelift) tells where it differs.
-
-- `--emit obj` writes the object file alone, and `--emit clif` the Cranelift IR of each
-  function, for reading.
-- The CPU is `x86_64`, `aarch64` or `riscv64`; the others stop the build with an error.
-- An executable is linked for the OS and the CPU of the host alone, with either ABI on
-  Windows. `--emit obj` and `--emit clif` take another `--target-os`, `--target-arch` or
-  `--target-abi`, to link the object there.
-- The `sanitizers` check has no effect: Cranelift code holds no marks for them.
-
-```console
 $ zakac build --backend native age.zaka
-$ ./age
-၂၀
-$ zakac build --backend native --emit obj --target-os linux --target-arch x86_64 age.zaka
 ```
+
+[Building programs](build.md) covers each target in full: the listing of the VM target,
+the flags and checks of the C target, C libs, and the native target.
 
 ## run
 
-```console
-$ zakac run [options] [INPUT] [-- ARGS...]
+Run a program: a source file, or the operations that `build` wrote.
+
+```text
+zakac run [flags] [INPUT] [-- ARGS...]
 ```
 
-`run` takes the compile options and the two checks above, and it reads the files a
-source file imports, as `parse` and the stages after it do. It adds limits on the VM,
-which stop a program that goes too far, and two options to look at the use of the heap and the stack:
+`run` uses all the [compile flags](#options-of-the-compile-stages), `--overflow`,
+`--results`, `--scratch` and `--release`, and reads the files a source file imports, as
+`parse` and the stages after it do. It adds these:
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--max-depth <CALLS>` | `4096` | the most nested calls before the program stops |
-| `--max-steps <OPS>` | no limit | the most ops to run before the program stops |
-| `--max-heap <OCTETS>` | `268435456` | the most live heap octets before an allocation fails |
-| `--max-stack <OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
-| `--frames <MODE>` | `checked` | `checked` gives each variable a block of its own; `packed` puts the locals of a call next to each other, as C does |
-| `--trap <MODE>` | `unwind` | what a trap in a [job](../language/jobs.md#a-trap-in-a-job) does: `unwind` ends that job alone, and `abort` stops the whole program |
-| `--leaks` | off | list the heap blocks left unfreed when the program ends |
-| `--shuffle-job-order[=<SEED>]` | off | shuffle the [turns of the jobs](../language/jobs.md#turns-on-the-vm): each turn takes 1 to 200 ops and goes to a job that can run, both drawn from `SEED`; with no `SEED` the run draws one and writes it to standard error. The same seed gives the same order again. Not with `--jit` |
-| `--jit` | off | run the program through Cranelift, and report a program it cannot build; see below |
-| `--vm` | off | run the program on the VM; `--jit` wins over it |
-| `--allow-read[=<PATHS>]` | none | let the program read files, list folders and tell what a path holds: each path, or those under the paths of a comma list; see [Permissions](../vm/running.md#permissions) |
-| `--allow-write[=<PATHS>]` | none | let it write, add to, remove and move files and make folders |
-| `--allow-env[=<NAMES>]` | none | let it read variables of the environment, and give the start block the environment: each variable, or those named |
-| `--allow-ffi` | off | let it call C functions |
-| `-A`, `--allow-all` | off | grant each of the four |
-| `--no-permission-prompt` | off | ask nothing on a terminal: an effect with no right is denied at once |
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `--max-depth` | `<CALLS>` | `4096` | the most nested calls before the program stops |
+| `--max-steps` | `<OPS>` | no limit | the most operations to run before the program stops |
+| `--max-heap` | `<OCTETS>` | `268435456` | the most live heap octets before an allocation fails |
+| `--max-stack` | `<OCTETS>` | `1048576` | the most octets of the stack region, where the locals of each call live |
+| `--frames` | `checked` or `packed` | `checked` | `checked` gives each variable a separate block, and `packed` puts the locals of a call next to each other, as C does |
+| `--trap` | `unwind` or `abort` | `unwind` | what a trap in a [thread](../language/threads.md#a-trap-in-a-thread) does: `unwind` ends that thread alone, and a wait for it traps in turn, while `abort` stops the whole program; at present the VM alone reads it, so a Cranelift run unwinds the thread under `abort` too (see [The VM or Cranelift](#the-vm-or-cranelift)) |
+| `--shuffle-thread-order` | `[=<SEED>]` | off | shuffle the [turns of the threads](../language/threads.md#turns-on-the-vm) on the VM; see below |
+| `--leaks` | | off | list the heap blocks left unfreed when the program ends |
+| `--jit` | | off | run the program as native code through Cranelift, and report a program it cannot build as an error; see [The VM or Cranelift](#the-vm-or-cranelift) |
+| `--vm` | | off | run the program on the VM; `--jit` wins over it |
+| `--allow-read` | `[=<PATHS>]` | none | let the program read files, list folders and see what a path is: all paths, or those under a comma list; see [Permissions](../vm/running.md#permissions) |
+| `--allow-write` | `[=<PATHS>]` | none | let it write, append to, remove and move files and make folders |
+| `--allow-env` | `[=<NAMES>]` | none | let it read environment variables, and give the program start block the environment: all variables, or those named |
+| `--allow-ffi` | | off | let it call C functions |
+| `-A`, `--allow-all` | | off | grant all four |
+| `--no-permission-prompt` | | off | ask nothing on a terminal, so an effect with no right is denied at once |
 
-A program that passes a limit stops with a message from the VM, listed in [When a
-program stops](../vm/traps.md). `--frames` is explained in [Checked and packed
-blocks](../vm/blocks.md).
+A program that passes a limit stops with a message, listed in [When a program
+stops](../vm/traps.md). [Addresses and blocks](../vm/blocks.md) explains `--frames`.
 
-The words after `--` are the arguments of the program. Its [start
-block](../language/functions.md#the-start-block) gets them as a text list after the name
-of the program (the input as written, or `-`), as in C, together with the environment
-variables of `zakac`. A program with no start block ignores them.
+```console
+$ zakac run age.zaka
+၂၀
+$ zakac run --vm --max-steps 1000 age.zaka
+၂၀
+```
+
+### Arguments and input
+
+The words after `--` are the arguments of the program. Its [program start
+block](../language/functions-start-block.md) gets them as a text list after the name of
+the program (the input as written, or `-`), as in C, together with the environment
+variables of `zakac`. A program with no program start block ignores them.
 
 ```console
 $ zakac run greet.zaka -- ကက ခခ
 ```
 
 A program that uses the stdlib module [`"စံကား/အဝင်အထွက်"`](../language/io.md) reads the
-standard input of `zakac`, and reads and writes files on disk, relative to the folder the
+standard input of `zakac`, and reads and writes files on disk relative to the folder the
 command runs in:
 
 ```console
@@ -554,10 +435,27 @@ $ printf 'က\nခ\n' | zakac run echo.zaka
 စာကြောင်း ၂ ကြောင်း
 ```
 
+### Shuffled turns of threads
+
+`--shuffle-thread-order` shuffles the turns of the threads on the VM: each turn runs 1 to
+200 operations and goes to a thread that can run, and both are drawn from `SEED`. With no
+`SEED`, the run draws one and writes it to standard error, and the same seed gives the
+same order again. The seed must follow `=`:
+
+```console
+$ zakac run --shuffle-thread-order age.zaka
+the turns of the threads are shuffled with the seed 16788843531747065664; --shuffle-thread-order=16788843531747065664 runs the same order again
+၂၀
+$ zakac run --shuffle-thread-order=16788843531747065664 age.zaka
+၂၀
+```
+
+### Leaks
+
 `--leaks` writes one line to standard error for each block that was never given back.
-The VM frees each counted block on its own, text, lists and shared objects among them,
-and runs the ring collector at the end, so the blocks that show here are those of the
-[heap statements](../language/unsafe.md#heap-statements) that unsafe code never gave back:
+The VM frees each counted block itself, text, lists and shared objects among them, and
+runs the ring collector at the end, so the blocks that show here come from the [heap
+statements](../language/heap.md#heap-statements) of unsafe code:
 
 ```console
 $ zakac run --leaks leak.zaka
@@ -566,100 +464,98 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
-`zakac run` of a source file runs it through Cranelift: it lowers the program as `build
---backend native` does, with the output fact `"native"`, and runs it in the `zakac` process,
-as a native executable runs, with the checks of the `default` level. `--max-depth` and
-`--max-heap` set its limits, as for the VM; the rights come from the flags above, and the
-arguments from `--`. The VM runs the program instead when one of these holds:
+## The VM or Cranelift
 
-- `--vm` is given;
-- the input is an artifact (`.zkc` or `.zkct`) or standard input;
-- a flag of the VM alone is given: `--max-steps`, `--max-stack`, `--frames`, `--leaks`,
-  `--shuffle-job-order`, `--results` or `--scratch`;
-- the CPU of the host is not one Cranelift builds for (`x86_64`, `aarch64`, `riscv64`),
-  `--target-bits` is not the width of an address of the host, or the program holds a
-  construct the native target does not build at present.
+With neither `--jit` nor `--vm`, `zakac run` runs a source file as native code when it
+can, and on the VM otherwise. The native run lowers the program as `build --backend
+native` does, with the output fact `"native"`, and runs it inside the `zakac` process with
+the checks of the `default` level, as a native executable runs. `--max-depth` and
+`--max-heap` set its limits, as for the VM, the rights come from the flags of [run](#run), and the
+arguments come after `--`.
 
-`--jit` asks for Cranelift alone: a program it cannot build is an error, and `--max-heap`
-caps the heap when given and not otherwise. The `zaka_vm` program carries no Cranelift and runs each
-program on the VM.
+The VM runs the program instead when one of these is true:
+
+- we give `--vm`;
+- the input is not a file that ends in `.zaka`: an artifact (`.zkc` or `.zkct`), or
+  standard input;
+- we give a flag that the VM alone has: `--max-steps`, `--max-stack`, `--frames`,
+  `--leaks`, `--shuffle-thread-order`, `--results` or `--scratch`;
+- the CPU of the host is not one that Cranelift builds for (`x86_64`, `aarch64`,
+  `riscv64`), `--target-bits` is not the width of an address on the host, or the program
+  has a construct that the native target cannot build at present.
+
+The two runs print the same, but the VM and native code do not catch the same
+mistakes. Native code checks what the `default` level of `--checks` checks, so a read through the null address or past
+the end of a block in unsafe code does what it does in C, while the VM checks each access
+and stops the program at the bad one. To see the VM's checks on such a program, we give
+`--vm`. [Checks in the VM and in native code](../concepts/checked.md) sorts each mistake.
+
+The Cranelift run also ignores `--trap` at present: a trap in a thread ends that thread
+alone even under `--trap abort`, and the rest of the program goes on. To stop the whole
+program at the first trap of a thread, we give `--vm --trap abort`, or build an executable
+with `zakac build --backend c --trap abort`. Here `trap.zaka` starts a thread that divides
+with zero as divisor, counts to 20000, then prints `ပြီး`:
 
 ```console
-$ zakac run age.zaka
-၂၀
-$ zakac run --vm --max-steps 1000 age.zaka
-၂၀
+$ zakac run --vm --trap abort trap.zaka
+zaka_vm: the program stopped: integer division or remainder with zero as divisor (in စား, at trap.zaka:3:1)
+$ zakac run --trap abort trap.zaka
+trap.zaka: thread 1 stopped: integer division or remainder with zero as divisor (in စား, at trap.zaka:3:1)
+ပြီး
 ```
+
+`--jit` asks for Cranelift alone: a program it cannot build is an error, `--max-heap` caps
+the heap when we give it and not otherwise, and `--shuffle-thread-order` cannot go with
+it. The `zaka_vm` program carries no Cranelift and runs each program on the VM.
+
+## lsp
+
+Serve the Language Server Protocol to an editor.
+
+```text
+zakac lsp [--config FILE]
+```
+
+`zakac lsp` reads no input file. It serves the protocol over standard input and output
+until the editor shuts it down. [Editors](editors.md) shows what it does and how to set it
+up.
 
 ## Config file
 
-Each option can also be set in a TOML config file: `zakac.toml` beside the sources, a file
-of the user, `/etc/zakac/config.toml`, or the file `--config <FILE>` names. An option on the
-command line wins over each file. [Configuration](configuration.md) tells where the files
-are, which one wins, and how each option is named in them; `zakac.example.toml` at the
+We can also set each flag in a TOML config file: `zakac.toml` beside the sources, a file of
+the user, `/etc/zakac/config.toml`, or the file that `--config <FILE>` names. A flag on the
+command line wins over each file. [Configuration](configuration.md) shows where the files
+are, which one wins and how each flag is named in them, and `zakac.example.toml` at the
 root of the repo lists each setting with its default.
 
 ## Environment
 
-| Name | Meaning |
+| Variable | What it does |
 | --- | --- |
-| `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off` leaves them out, `codepoint` draws them with one cell per code point, `cluster` draws them with a consonant and its `ေ`, `ျ` or `ြ` as two cells, `flow` places them where a terminal that draws Burmese text at its natural width puts the text; when unset, the compiler picks one for the terminal it knows, else `off` |
+| `ZAKAC_CARETS` | the rows under a marked span on a color terminal: `off`, `codepoint`, `cluster` or `flow`; when unset, the compiler picks one for the terminal, else `off` (see [Carets on a terminal](diagnostics.md#carets-on-a-terminal)) |
 | `ZAKAC_LEARN` | `true`, `1` or `on` turns on learner mode: each message also explains its code, once a run, and links to the page that teaches it (see [Learner mode](diagnostics.md#learner-mode)) |
 | `NO_COLOR` | when it is set, color is off |
-| `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` each call, `0` none; when unset or another value, a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
-| `CC` | the C compiler of `build --backend c` and `--backend native` when `--cc` is left out |
-| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --backend c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them; `--backend native` reads `LDFLAGS` |
-| `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when `--cache` is left out |
+| `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` lists each call and `0` none; unset or another value gives a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
+| `CC` | the C compiler of `build --backend c` and `--backend native` when we leave out `--cc` |
+| `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --backend c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them, and `--backend native` reads `LDFLAGS` |
+| `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when we leave out `--cache` |
 | `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
-| `ZAKAC_NO_CONFIG` | when it is set, the commands read no config file but the one `--config` names (see [Where the files are](configuration.md#where-the-files-are)) |
+| `ZAKAC_NO_CONFIG` | when it is set, the commands read no config file except the one `--config` names (see [Where the files are](configuration.md#where-the-files-are)) |
+| `LC_ALL`, `LC_MESSAGES`, `LANG`, `LANGUAGE` | the language of the messages (see [The language of messages](diagnostics.md#the-language-of-messages)) |
 
-A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`, `ZAKAC_LEARN`, `ZAKA_BACKTRACE`, `NO_COLOR`,
-`CFLAGS` and `LDFLAGS` too; a variable that is set wins over the file.
-
-Terminals do not agree on the cells a Burmese sign takes, so a `^^^^` row can drift from
-the text it points at. On a color terminal the span is marked inside the source line. The
-compiler draws the rows there when it knows how the terminal draws Burmese text, and
-leaves them out otherwise; `ZAKAC_CARETS` overrides the choice. Pick `codepoint` for the
-VS Code terminal, iTerm or Terminal.app, and `cluster` for Ghostty, kitty or foot.
-
-So far the compiler knows Ghostty. When `TERM_PROGRAM` is `ghostty`, it runs
-`ghostty +show-config` and picks the rows from what that lists:
-
-- [saturngod's Ghostty fork](https://ghostty.myanmars.app) lists the setting
-  `myanmar-prompt-width`. It draws Burmese text at the natural width of its font and
-  pushes the rest of the line right, so the compiler uses `flow`: it shapes the line with
-  the Burmese font the fork draws with (the first installed of Noto Sans Myanmar, Myanmar
-  MN, Myanmar Text and Padauk) and places the rows under the text. Where none of these
-  fonts is installed, the rows are left out.
-- Ghostty itself puts Burmese text on its cell grid and gives a grapheme cluster its
-  cells, so the compiler uses `cluster`; with `grapheme-width-method = legacy` it uses
-  `codepoint`.
-
-Other terminals are measured. The compiler asks the terminal where the cursor is, prints
-`ကျော` hidden, asks again, and erases the word. A terminal that gives each code point its
-cells moves the cursor four columns and gets `codepoint`; one that gives a grapheme
-cluster its cells moves it three and gets `cluster`. The VS Code terminal, iTerm,
-Terminal.app, kitty and tmux all go through this measure. A terminal that does not
-answer within a tenth of a second, or moves the cursor another distance, gets no rows.
-
-Without color, as in a pipe, the rows are drawn, one cell per code point. See [How a
-message is set out](diagnostics.md#how-a-message-is-set-out).
-
-## lsp
-
-`zakac lsp` takes no input and no options: it serves the Language Server Protocol over
-standard input and output until the editor shuts it down. [Editors](editors.md) tells
-what it shows and how to set it up.
+A [config file](configuration.md#settings-that-variables-hold) can set `ZAKAC_CARETS`,
+`ZAKAC_LEARN`, `ZAKA_BACKTRACE`, `NO_COLOR`, `CFLAGS` and `LDFLAGS` too, and a variable
+that is set wins over the file.
 
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
-| 1 | an error in the program, or the VM stopped the program |
-| 2 | the command line holds a mistake |
-| 3 | a file could not be read or written, or a config file holds a mistake, a wrong value among them |
-| other | for `run`, the result of the start block, its lowest 8 bits |
+| 1 | an error in the program, or the program stopped |
+| 2 | a mistake on the command line, such as an unknown flag or a value the flag does not accept |
+| 3 | a file could not be read or written, a config file has a mistake (a wrong value among them), or a flag does not go with the target of `build` |
+| other | for `run`, the result of the program start block, its lowest 8 bits |
 
-Messages go to standard error and the artifact or the program output to standard output,
-so `zakac build age.zaka -o -` can be piped while the messages still show.
+Messages go to standard error, and the artifact or the program's output go to standard
+output, so we can pipe `zakac build age.zaka -o -` while the messages still show.

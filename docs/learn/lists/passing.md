@@ -1,14 +1,21 @@
 ---
 title: Passing and comparing lists
-description: Lists are values, so each assignment and argument gives a duplicate, and a function gives a list back as its result.
+description: A list is a value, so each assignment and each argument makes a duplicate, and a function can return a list as its result.
 ---
 
 # Passing and comparing lists
 
-A list is a value, like an integer, as a list is in PHP and unlike a list in Java or
-JavaScript. Setting one list to another gives a duplicate, and the two lists stand apart
-afterwards. The duplicate is cheap: the two share their cells until one of them writes, and
-that write copies the cells first.
+A list (dynamic array) is a value, the same as an integer, so when we assign a list to
+another variable or pass it to a function, we get a duplicate (copy), and the two lists
+are separate from then on. This page shows lists as parameters and results, and how to
+compare two lists.
+
+## You will learn
+
+- what happens when we assign a list to another variable
+- how to pass a list to a function, and how to let the function change it
+- how to return a list from a function
+- how to compare two lists
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -26,11 +33,21 @@ that write copies the cells first.
 [၁၀၀၊ ၂၊ ၃]
 ```
 
+After `ပွား ကို မူရင်း ဟု ထားမည်။`, the list `ပွား` (the duplicate) has the same cells as
+`မူရင်း` (the original), and when we change a cell of `ပွား`, `မူရင်း` does not change.
+The duplicate does not cost much, because the two lists share their cells until one of
+them writes, and that write copies the cells first.
+
 ## Lists as parameters
 
-A list parameter gets a duplicate of the list passed in, just as an integer parameter
-does. A change inside the function remains inside. A plain list parameter takes lists of
-each count:
+```text
+<name> ဟူသော <kind> စာရင်း တစ်ခု ကို လက်ခံပြီး
+<name> ဟူသော <kind> စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+```
+
+A list parameter gets a duplicate of the list we pass in, just as an integer parameter
+does, so a change inside the function remains inside it. A parameter of a plain list
+accepts a list with a different number of cells on each call:
 
 ```zaka
 // the parameter is a duplicate of the list passed in
@@ -55,9 +72,10 @@ each count:
 [၀၊ ၅၊ ၆၊ ၇]
 ```
 
-To let a function change the caller's list, write the parameter with `ဒေတာ ပြောင်းလဲရန်`, as
-for [the caller's variable](../functions/parameters.md#changing-the-callers-variable). The cells are
-reached through it with `အကွက်` as before:
+To let a function change the caller's list, we write `ဒေတာ ပြောင်းလဲရန်` in the parameter,
+which makes it a mutable parameter (`inout`), as for [the caller's
+variable](../functions/parameters.md#changing-the-callers-variable). Inside the function,
+we reach the cells with `အကွက်` as before:
 
 ```zaka
 // the function can change the caller's list
@@ -79,16 +97,22 @@ reached through it with `အကွက်` as before:
 [၂၊ ၄၊ ၆]
 ```
 
-Part III passes the address of the list instead: see [Lists and structs through
-addresses](../pointers/structs.md).
+The function checks first whether the list has no cells, because the last cell number,
+`အကွက်အရေအတွက် - ၁`, cannot go below 0 ([A list with no cells and the last
+number](mistakes.md#a-list-with-no-cells-and-the-last-number)).
 
 ## Lists as results
 
-A function can also give back a list: it builds one in a variable and returns it. Here
-`အဖြေ` starts with no cells, `[]`, and the loop adds one for each square:
+```text
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
+```
+
+A function can also return a list. In this example, the function builds the list in the
+variable `အဖြေ` (answer), which starts with no cells, `[]`, and the loop adds one cell for
+each square:
 
 ```zaka
-// a function that builds a list and gives it back
+// a function that builds a list and returns it
 နှစ်ထပ်များ ဟူသော လုပ်ဆောင်ချက် သည်
 အရေ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် စာရင်း တစ်ခု ကို ပြန်ပေးမည်။
@@ -107,13 +131,13 @@ A function can also give back a list: it builds one in a variable and returns it
 [၀၊ ၁၊ ၄၊ ၉]
 ```
 
-The caller gets a list of its own, as with an assignment. See [Lists and structs as
-results](../../manual/language/functions.md#lists-and-structs-as-results) for the full rules.
+The caller gets a list that is separate from all others, the same as with an assignment.
 
 ## List literals as arguments
 
-A list literal in words is one argument, but its cells join with the same words as the
-arguments, so it goes in parentheses when another argument comes before it:
+A list literal in words is a single argument, but it joins its cells with `နှင့်` and
+`တို့`, the same words that join the arguments of a call. So when another argument comes
+before it, we put the list literal in parentheses:
 
 ```zaka
 // a list literal after another argument goes in parentheses
@@ -135,10 +159,18 @@ arguments, so it goes in parentheses when another argument comes before it:
 ၁၀၆
 ```
 
+A bracket literal such as `[၁၊ ၂၊ ၃]` needs no parentheses.
+
 ## Comparing lists
 
-`==` and `!=`, and the verbs `ညီ` and `မညီ`, compare two lists of the same kind, one cell
-at a time:
+```text
+<list> == <list>
+<list> != <list>
+<list> သည် <list> နှင့် ညီသည်
+```
+
+We can use `==` and `!=`, or the verbs `ညီ` ("equal") and `မညီ` ("not equal"), to compare
+two lists of the same data kind (type), which checks them one cell at a time:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -157,15 +189,36 @@ at a time:
 မှန်
 ```
 
-Two lists compare at each count: lists of different counts are not equal. Lists of
-different kinds do not compare, such as `isize[]` and `f64[]`. Lists have no order, so
-`<` and `>` do not take them.
+Two lists with different cell counts are never equal.
+
+## Details
+
+- Lists of different data kinds, such as `isize[]` and `f64[]`, cannot be compared at all
+  ([Passing and comparing](../../manual/language/lists.md#passing-and-comparing)).
+- Lists have no order, so `<` and `>` do not work on them.
+- For programmers who know other languages: a Zaka list behaves like an array in PHP, and
+  not like a list in Java or JavaScript, where an assignment shares the one list. When we
+  want that sharing in Zaka, we use a [shared object](../structs/objects.md) (reference
+  type).
+- Part III passes the address of a list instead of a duplicate ([Lists and structs through
+  addresses](../pointers/structs.md)), and Part II shows how to get a run of cells from a list
+  ([Ranges](../forms/ranges.md)).
+- The full rules for results are in [Lists and structs as
+  results](../../manual/language/functions-results.md#lists-and-structs-as-results).
+
+## Recap
+
+- Assigning a list or passing it to a function makes a duplicate, and the duplicate copies
+  the cells at its first write.
+- A parameter with `ဒေတာ ပြောင်းလဲရန်` lets the function change the caller's list.
+- A function can return a list with `ပြန်ပေးမည်`, and the caller gets a separate list.
+- A list literal in words goes in parentheses after another argument.
+- `==` and `!=` compare two lists one cell at a time.
 
 ## Hands on
 
 - Write a function that can change a list of integers, and adds 1 to each cell.
 - Duplicate a list, change the duplicate, and compare the two.
-
-Part II takes a run of cells from a list: see [Ranges](../forms/ranges.md).
+- Write a function that returns the cells of a list in reverse order.
 
 Next: [Lists of lists](grids.md).

@@ -1,14 +1,20 @@
 ---
 title: Functions
-description: Name a group of statements and run it whenever it is needed.
+description: Give a group of statements a name, and run it through that name whenever the program needs it.
 ---
 
 # Functions
 
-A *function* is a named group of statements. Write it once, then run it through its
-name as often as needed. Running a function is called *calling* it. Functions keep
-programs short (no copies of the same lines) and readable (the name tells what the
-lines do).
+A *function* is a group of statements with a name, so we write the statements once and
+then run them through the name as often as we need. Running a function is called *calling*
+it. Functions keep a program short, because the same lines do not appear twice, and
+functions make it simpler to follow, because a good name shows what the lines are for.
+
+## You will learn
+
+- how to declare a function and how to call it
+- where functions go in a file, and how to put one function inside another
+- how to leave a function before its end
 
 ```zaka
 // Declare a function named နှုတ်ဆက် (greet)
@@ -32,12 +38,12 @@ lines do).
 နေကောင်းလား
 ```
 
-Declaring a function does not run it. The statements inside run when the function is
-called, and not before.
+The first part of the file declares the function, and the program start block (entry
+point, `main`) calls it twice. Declaring a function does not run it: the statements inside
+run each time the function is called, and not before. We can use this pattern to declare a
+function:
 
-## Declaring
-
-```
+```text
 <name> ဟူသော လုပ်ဆောင်ချက် သည်
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 <statements>
@@ -46,48 +52,62 @@ called, and not before.
 
 | Zaka | Reads as |
 | --- | --- |
-| `နှုတ်ဆက်` | the chosen name |
+| `နှုတ်ဆက်` | the name we choose |
 | `ဟူသော` | "called" |
 | `လုပ်ဆောင်ချက်` | "function" |
-| `သည်` | (subject) |
+| `သည်` | (the subject particle) |
 | `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "will do the following" |
 | `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` | "the tasks are done" |
 
-The head reads "the function called နှုတ်ဆက်": the name comes first, as it does in the
-head of a [struct](../structs/README.md).
+The first two lines are the *function signature*, and the last line is
+the block closer (end of a block). The name comes first, then `ဟူသော`, the same as in the
+declaration of a [struct](../structs/README.md). The next pages add parameters and a result
+to the function signature.
 
-The line breaks in the header are there to help the reader. The header can also sit on
-one line.
+## Calling a function
 
-## Calling
-
-```
+```text
 <name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
+<name> မည်။
 ```
 
-"The function called *name*: will perform it." The name comes first, then
-`ဟူသော လုပ်ဆောင်ချက်ကို` ("the function called … "), then `လုပ်ဆောင်မည်` ("will perform").
-`မည့်` can stand for `ဟူသော`: `<name> မည့် လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` is the same call.
+To call a function, we write its name, then `ဟူသော လုပ်ဆောင်ချက်ကို` ("the function
+called …") and `လုပ်ဆောင်မည်` ("will perform"). The second line is a short form of the same
+call, where we write the name and then `မည်` ("will"):
+
+```zaka
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+"မင်္ဂလာပါ" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။   // the long form
+နှုတ်ဆက် မည်။                                // the short form
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ
+မင်္ဂလာပါ
+```
 
 | Zaka | Reads as |
 | --- | --- |
 | `နှုတ်ဆက်` | the name |
-| `ဟူသော လုပ်ဆောင်ချက်ကို` | "the function called …" (object) |
+| `ဟူသော လုပ်ဆောင်ချက်ကို` | "the function called …" (the object) |
 | `လုပ်ဆောင်မည်။` | "will perform" |
-
-A shorter call names the function and ends with `မည်` ("will"): `နှုတ်ဆက် မည်။` runs the
-same call. Keep a space between the name and `မည်`: `နှုတ်ဆက်မည်` reads as one name.
+| `နှုတ်ဆက် မည်။` | "will greet" |
 
 ## Where functions go
 
-- Declare functions at the top level of the program. A function can also stand inside the
-  start block or another function (see below).
-- A function can be called before its declaration appears. A lot of programs put the
-  start block at the top and the functions below it.
+We declare most functions at the top level of the file, outside the program start block.
+There, the order does not matter: a call can come before the declaration of its function,
+so a lot of programs put the program start block at the top and the functions below it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။        // called before it is declared: fine
+မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။        // called before its declaration: fine
 "ခေါင်းစဉ်" ဟု ပြသမည်။
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -107,14 +127,16 @@ same call. Keep a space between the name and `မည်`: `နှုတ်ဆက
 
 ## A function inside a function
 
-A function can be declared inside the start block or inside another function. It can use
-the variables declared above it in the block around it, as in JavaScript or Python: it
-reads and changes those variables themselves, not copies of them.
+We can also declare a function inside the program start block or inside another function,
+which makes it a *nested function*. A nested function can use the variables declared above
+it in the block around it, as in JavaScript or Python, and it reads and changes those
+variables themselves, not duplicates (copies) of them. The example uses a parameter, `က`,
+which the [next page](parameters.md) explains: it is the number that each call passes in.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ၀ ဖြစ်ပါစေ။
-// a function inside the start block: it changes စုစုပေါင်း
+// a function inside the program start block: it changes စုစုပေါင်း
 ပေါင်းထည့် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စုစုပေါင်း ကို စုစုပေါင်း + က ဟု ထားမည်။
@@ -129,15 +151,18 @@ reads and changes those variables themselves, not copies of them.
 ၁၂
 ```
 
-`ပေါင်းထည့်` can be called from its declaration to the end of the block that holds it.
-The start block itself, and a function that comes from outside, remain at the top level.
-A function that uses the variables around it is a *closure*, and it can even leave its
-block: see [Closures](../function-values/closures.md).
+We can call `ပေါင်းထည့်` from its declaration to the end of the block around it. A function
+that uses the variables around it is a *closure*, and [Closures](../function-values/closures.md)
+shows how one can even leave its block.
 
 ## Leaving before the end
 
-`ပြန်ပေးမည်။` ("will return") leaves the function at once. The program goes back to
-where the function was called:
+```text
+ပြန်ပေးမည်။
+```
+
+We write `ပြန်ပေးမည်။` ("will return") to leave a function at once, and the program then goes
+back to the place of the call:
 
 ```zaka
 စမ်း ဟူသော လုပ်ဆောင်ချက် သည်
@@ -158,12 +183,44 @@ where the function was called:
 ပြီး
 ```
 
-On its own this does little. Together with [if](../control-flow/if-else.md) and
-[parameters](parameters.md), it lets a function stop when there is nothing left to do.
+A return at a fixed place does little on its own, but together with
+[if](../control-flow/if-else.md) and [parameters](parameters.md) it lets a function stop
+when there is nothing left to do.
+
+## Details
+
+- The line breaks in a function signature are plain spaces, so we can also write the whole
+  function signature on one line ([Declaring a
+  function](../../manual/language/functions.md#declaring-a-function)).
+- In a call, we can write `မည့်` in place of `ဟူသော`:
+  `နှုတ်ဆက် မည့် လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` is the same call
+  ([Calls](../../manual/language/functions-calls.md#the-word-forms)).
+- When the file has a function of that name, the short call also works with no space:
+  `နှုတ်ဆက်မည်။` calls `နှုတ်ဆက်`. In a file with no such function, `နှုတ်ဆက်မည်` is just one
+  name ([What the flexible grammar
+  costs](../../manual/language/functions-sentences.md#what-the-flexible-grammar-costs)).
+- The block closer has other spellings too, such as `လုပ်ဆောင်စရာများ ပြီးပါပြီ။` ([Four
+  closing forms](../variables/scope.md#four-closing-forms)).
+- A call to a name that no function has is the error ZK0303, and two functions with the
+  same name and the same parameters are ZK0304 ([Declaring a
+  function](../../manual/language/functions.md#declaring-a-function)).
+- `ပြန်ပေးမည်။` outside of a function is the error ZK0311.
+
+## Recap
+
+- We write `<name> ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။` to start a
+  function and `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` to end it, and its statements run when
+  we call it.
+- We call a function with `<name> ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` or the short
+  form `<name> မည်။`.
+- At the top level, a call can come before the declaration of its function.
+- A nested function can use and change the variables around it.
+- `ပြန်ပေးမည်။` leaves the function at once.
 
 ## Hands on
 
 - Write a function that prints a box made of three lines of `#`, and call it twice.
-- Call a function whose name was never declared. Read the message.
+- Call a function whose name was never declared, and read the message.
+- Call the box function with the short form, with and without the space before `မည်`.
 
 Next: [Parameters](parameters.md).

@@ -1,13 +1,13 @@
 ---
 title: FizzBuzz
-description: A classic counting game, built from functions, booleans and if/else.
+description: A classic counting game, built from functions, true/false values and if/else.
 ---
 
 # FizzBuzz
 
-FizzBuzz is a counting game. Count up from 1. Call out **Fizz** for multiples of 3,
+FizzBuzz is a counting game: we count up from 1 and call out **Fizz** for multiples of 3,
 **Buzz** for multiples of 5, **FizzBuzz** for multiples of both, and the number itself
-for all the rest.
+for all the rest. This program runs the game up to 15.
 
 ```zaka
 /// Does d divide n with nothing left over?
@@ -56,18 +56,21 @@ FizzBuzz
 
 ## How it works
 
-- **`ပြတ်သလား`** ("does it divide?") returns a [boolean](../values/booleans.md): whether
-  `န % ဆခွဲ` is zero. Its name is a question, which keeps the code readable.
-- **`FizzBuzz`** stores the two answers in variables `သုံးပြတ်` ("3 divides it") and
-  `ငါးပြတ်` ("5 divides it"), then picks one of four outputs with an
-  [if / else-if / else](../control-flow/if-else.md) chain.
-- The **test order matters**. "Both" must come first. 3 divides 15, so if the Fizz test
-  came first, 15 would print Fizz.
-- The **start block** is two lines: a [constant](../variables/constants.md) for where to
-  stop, and a [counted loop](../control-flow/counted-loops.md) that calls `FizzBuzz` once
-  per number.
+- **`ပြတ်သလား`** ("does it divide?") returns a [true/false value](../values/booleans.md)
+  (boolean): whether `န % ဆခွဲ`, the remainder, is zero. Its name is a question, so a
+  call to it sounds like one.
+- **`FizzBuzz`** keeps the two answers in the variables `သုံးပြတ်` ("3 divides it") and
+  `ငါးပြတ်` ("5 divides it"), then picks one of four outputs with an [if / else-if /
+  else](../control-flow/if-else.md) chain.
+- **The order of the tests matters.** The test for both must come first: 3 divides 15, so
+  if the Fizz test came first, 15 would print Fizz.
+- **The program start block** has two sentences: a [constant](../variables/constants.md)
+  for the last number, and a [counted loop](../control-flow/counted-loops.md) that calls
+  `FizzBuzz` once for each number.
 
 ## Hands on
 
 - Change `အဆုံး` to 100.
 - Add a rule: print **Bazz** for multiples of 7.
+
+Next: [Greatest common divisor](gcd.md).

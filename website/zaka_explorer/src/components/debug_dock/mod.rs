@@ -17,7 +17,7 @@ use leptos_scoped_style::ComponentStyle;
 use leptos_use_storage::UseStorageOptions;
 use leptos_use_storage::use_local_storage_with_options;
 use strum::IntoStaticStr;
-use zaka_vm::machine::JobState;
+use zaka_vm::machine::ThreadState;
 use zaka_vm::trap::hex;
 use zaka_web_ui_common::icon::chevron;
 use zaka_web_ui_common::sheet;
@@ -342,12 +342,12 @@ fn registers_view(state: AppState) -> impl IntoView
         register("PC", "explorer.run.pc_note", pc),
         register("SP", "explorer.run.sp_note", sp),
         register("BP", "explorer.run.bp_note", bp),
-        job_register(state),
+        thread_register(state),
     ))
 }
 
-/// The register of the jobs: the number of the job that runs now and the
-/// count of jobs; its tooltip tells what each job does, and the seed of a
+/// The register of the threads: the number of the thread that runs now and the
+/// count of threads; its tooltip tells what each thread does, and the seed of a
 /// run that shuffles the turns.
 ///
 /// # Arguments
@@ -357,52 +357,58 @@ fn registers_view(state: AppState) -> impl IntoView
 /// # Returns
 ///
 /// The view.
-fn job_register(state: AppState) -> impl IntoView
+fn thread_register(state: AppState) -> impl IntoView
 {
-    let jobs = Memo::new(move |_| state.debug.with(|s| (s.jobs(), s.seed())));
+    let threads = Memo::new(move |_| state.debug.with(|s| (s.threads(), s.seed())));
     let value = move || {
-        jobs.with(|((states, now), _)| {
+        threads.with(|((states, now), _)| {
             tern!(states.len() > 1, format!("{now}/{}", states.len()), "-".to_string())
         })
     };
-    let title = move || jobs.with(|((states, _), seed)| jobs_note(states, *seed));
+    let title = move || threads.with(|((states, _), seed)| threads_note(states, *seed));
     div().class(ClassName::RUN_REG).title(title).child((
-        span().class(ClassName::RUN_REG_NAME).child("JOB"),
+        span().class(ClassName::RUN_REG_NAME).child("THREAD"),
         span().class(ClassName::RUN_REG_VALUE).child(value),
     ))
 }
 
-/// The tooltip of the register of the jobs: what it holds, a line for each
-/// job, and the seed of a shuffled run.
+/// The tooltip of the register of the threads: what it holds, a line for each
+/// thread, and the seed of a shuffled run.
 ///
 /// # Arguments
 ///
-/// * `states` - What each job does, the main job first.
+/// * `states` - What each thread does, the main thread first.
 /// * `seed` - The seed that shuffles the turns, if one does.
 ///
 /// # Returns
 ///
 /// The text.
-fn jobs_note(states: &[JobState], seed: Option<u64>) -> String
+fn threads_note(states: &[ThreadState], seed: Option<u64>) -> String
 {
-    let line = |(n, s): (usize, &JobState)| {
+    let line = |(n, s): (usize, &ThreadState)| {
         let what = match *s
         {
-            JobState::Runs => t!("explorer.run.job_runs"),
-            JobState::Queued => t!("explorer.run.job_queued"),
-            JobState::WaitsJob(k) => t!("explorer.run.job_waits_job", job = k),
-            JobState::WaitsEach => t!("explorer.run.job_waits_each"),
-            JobState::WaitsReceive(p) => t!("explorer.run.job_waits_receive", pipe = p),
-            JobState::WaitsSend(p) => t!("explorer.run.job_waits_send", pipe = p),
-            JobState::WaitsLock => t!("explorer.run.job_waits_lock"),
-            JobState::Done => t!("explorer.run.job_done"),
-            JobState::Trapped => t!("explorer.run.job_trapped"),
+            ThreadState::Runs => t!("explorer.run.thread_runs"),
+            ThreadState::Queued => t!("explorer.run.thread_queued"),
+            ThreadState::WaitsThread(k) =>
+            {
+                t!("explorer.run.thread_waits_thread", thread = k)
+            }
+            ThreadState::WaitsEach => t!("explorer.run.thread_waits_each"),
+            ThreadState::WaitsReceive(p) =>
+            {
+                t!("explorer.run.thread_waits_receive", pipe = p)
+            }
+            ThreadState::WaitsSend(p) => t!("explorer.run.thread_waits_send", pipe = p),
+            ThreadState::WaitsLock => t!("explorer.run.thread_waits_lock"),
+            ThreadState::Done => t!("explorer.run.thread_done"),
+            ThreadState::Trapped => t!("explorer.run.thread_trapped"),
         };
         format!("{n}: {what}")
     };
-    let mut lines = vec![t!("explorer.run.job_note").to_string()];
+    let mut lines = vec![t!("explorer.run.thread_note").to_string()];
     lines.extend(states.iter().enumerate().map(line));
-    do_if!(let Some(s) = seed, lines.push(t!("explorer.run.job_seed", seed = s).to_string()));
+    do_if!(let Some(s) = seed, lines.push(t!("explorer.run.thread_seed", seed = s).to_string()));
     lines.join("\n")
 }
 

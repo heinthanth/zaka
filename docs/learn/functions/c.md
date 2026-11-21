@@ -5,16 +5,17 @@ description: Declare a function of a shared lib, such as libc or libm, and call 
 
 # Calling C
 
-Each lib on a computer holds functions written in C: `libc` has `abs`, `libm` has the
-math functions. Zaka can call them. The header of the function names the lib in place of
-`ပြင်ပ` ("outside"), and the rest is a header like the ones before.
+Each lib (library) on a computer has functions written in C: `libc` has `abs`, and `libm`
+has the math functions. Zaka can call these C functions through a foreign function
+interface (FFI): we declare each one with the lib it comes from, and then we call it like
+a function of the program.
 
-Zaka cannot see what C code does: C can read and write each part of the program's
-storage, and Zaka checks none of it. So each C function is unsafe, as
-[Unsafe Zaka](../pointers/README.md) put it: its header starts with `စိတ်မချရသော` ("not to
-be trusted"), and each call of it stands in an unsafe block. The words mark the places
-where the program trusts C, and the rest of the program remains safe code. This page needs
-no pointer; [C functions and addresses](../pointers/c.md) adds them.
+## You will learn
+
+- how to declare a C function and call it in an unsafe block
+- which data kinds a call can pass to C, and how text and lists go to C
+- how C can write into a list of the program
+- how to declare different C functions on each OS
 
 ```zaka
 // "Function abs, not to be trusted, coming from the lib libc, accepting a
@@ -33,27 +34,43 @@ abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ ဖ
 ၄၂
 ```
 
-The declaration has no statements: the function is the C function of the same name, so its name
-is written as C writes it, in ASCII letters, digits and `_`. The text before `မှလာသော` is
-the lib. Each C function names its lib, `libc` too. A call is a call like each other.
+In the function signature, we write `"<lib>" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍` after `သည်` to
+show that the function comes from a lib, and we leave out the statements and the block
+closer, because the function is the C function of the same name:
 
-| Part | Reads as |
+```text
+<C name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "<lib>" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+<parameters> လက်ခံပြီး <kind> တစ်ခု ကို ပြန်ပေးမည်။
+```
+
+| Zaka | Reads as |
 | --- | --- |
-| `စိတ်မချရသော` | "not to be trusted": the function is unsafe |
 | `abs` | the name in C |
+| `စိတ်မချရသော` | "not to be trusted": the function is unsafe |
 | `"libc" မှလာသော` | "coming from the lib libc" |
+| `လုပ်ဆောင်ချက်ဖြစ်၍` | "being a function, and" |
 | `n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး` | "accepting a 32-bit integer called n" |
-| `၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။` | "will return a 32-bit integer result" |
+| `၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။` | "will return a 32-bit integer" |
 
-## Kinds C knows
+We write the name the same as C does, in ASCII letters, digits and `_`, and each C
+function names its lib, `libc` too. Zaka cannot see what C code does, because C can read
+and write each part of the program's storage (memory) and Zaka checks none of it. So each C
+function is unsafe, as [Unsafe Zaka](../pointers/README.md) explained: its function
+signature starts with `စိတ်မချရသော`, and each call to it goes in an unsafe block. These
+words mark the places where the program trusts C, and the rest of the program remains safe
+code. This page needs no pointer, and [C functions and addresses](../pointers/c.md) adds
+them later.
 
-C has integers, floats and addresses. A call can pass integers of 8 to 64 bits,
-decimal numbers, true and false, structs made of these, text, lists of numbers and
-function values. A result is nothing, one of those numbers, or a struct of them.
+## Data kinds C knows
 
-Text goes in as C wants it. C reads a string up to a zero octet, so the call hands C a
-duplicate of the text with a zero octet at its end, and drops the duplicate once C is done.
-`strlen` counts the u8s of the text, and a Burmese letter takes three of them:
+C has integers, floats and addresses. A call can pass integers of 8 to 64 bits, decimal
+numbers, true and false, structs made of these, text (strings), lists of numbers and
+function values, and a C function can return nothing, one of those numbers, or a struct of
+them.
+
+C reads a string up to a zero octet (byte), so the call hands C a duplicate of the text with
+a zero octet at its end, and drops the duplicate once C is done. Here `strlen` counts the
+octets of the text, and each Burmese letter has three of them:
 
 ```zaka
 strlen ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -70,8 +87,8 @@ strlen ဟူသော လုပ်ဆောင်ချက်ကို "မေ�
 ၁၅
 ```
 
-Text cannot come back with this form, since C can give NULL for it. A bare `စာသား` result
-is refused:
+Text cannot come back as a plain `စာသား`, because C can return NULL in its place, so a
+plain `စာသား` result is an error:
 
 ```zaka-error ZK0465
 getenv ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -86,9 +103,9 @@ error[ZK0465]: a C function cannot take or give back a value of the kind "text"
   = help: C can give back NULL: write the result as an optional, "<kind> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်"
 ```
 
-The form the help line names is an [optional](../optionals/README.md): the text, or `အလွတ်`
-when C gives NULL. Zaka copies the text, so the program never
-holds the address. A test reads it as for each optional:
+The help line asks for an [optional](../optionals/README.md) (option type), which has the
+text, or `အလွတ်` when C returns NULL. Zaka duplicates the text, so the program never has
+the address, and we test the optional the same as each other optional:
 
 ```zaka
 getenv ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -106,15 +123,14 @@ name ဟူသော စာသား တစ်ခု ကို လက်ခံ�
 မရှိပါ
 ```
 
-[C functions and addresses](../pointers/c.md#text-that-c-gives-back) shows `strstr` and
-`strdup`, with the C functions that take addresses.
+[C functions and addresses](../pointers/c.md#text-that-c-returns) shows `strstr` and
+`strdup`, together with the C functions that use addresses.
 
 ## Lists of numbers
 
-
 A list whose cells are integers of up to 64 bits or decimal numbers goes to C as the
-address of its first cell, as C passes the cells of a list. A list of other cells, such as a list of
-text, is refused (ZK0465):
+address of its first cell, which is how C passes an array. A list of other cells, such as a
+list of text, is the error ZK0465:
 
 ```zaka
 // strlen reads u8s up to a zero, so a list of u8s that ends in 0 will do
@@ -135,12 +151,16 @@ strlen ဟူသော လုပ်ဆောင်ချက်ကို စာ �
 
 ## C writes into a list
 
+```text
+<parameter> ဟူသော <kind> စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန်
+<C name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "<lib>" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ <parameters> လက်ခံမည်။
+```
 
-C writes a list parameter marked
-[`ဒေတာ ပြောင်းလဲရန်`](parameters.md#changing-the-callers-variable) in place, as a C function writes
-the cells it was given. The list gets cells
-of its own first, so a duplicate of it never sees the writes. `memset` sets a run of u8s, and
-its header has no result, so it ends in `လက်ခံမည်` ("will accept"):
+When a list parameter is a [mutable parameter](parameters.md#changing-the-callers-variable)
+(`inout`), marked with `ဒေတာ ပြောင်းလဲရန်`, C writes into the list in place, as a C
+function writes into the cells it gets. Before the call, the list gets cells that it does
+not share, so a duplicate of the list never sees the writes. `memset` sets a run of octets,
+and because it has no result, its function signature ends in `လက်ခံမည်` ("will accept"):
 
 ```zaka
 memset ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -153,7 +173,7 @@ b ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ�
 memset ဟူသော လုပ်ဆောင်ချက်ကို စာ၊ ၇ နှင့် ၂ တို့ဖြင့် လုပ်ဆောင်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 စာ ကို ပြသမည်။
-မိတ္တူ ကို ပြသမည်။                 // stands as it was
+မိတ္တူ ကို ပြသမည်။                 // unchanged
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -162,11 +182,12 @@ memset ဟူသော လုပ်ဆောင်ချက်ကို စာ�
 [၁၊ ၂၊ ၃]
 ```
 
-A C function that writes one value through a pointer takes a counted list of one cell in
-the same manner. `frexp` splits a number into a fraction and a power of two: it gives the
-fraction back and writes the power into the list. It never reads the list first, so the
-list is marked [`ဒေတာ ထည့်ပေးရန်`](parameters.md#filling-the-callers-variable), and the
-caller declares it with no value; the mark promises that C writes it.
+A C function that writes one value through a pointer can get a counted list of one cell in
+the same manner. `frexp` splits a number into a fraction and a power of two: it returns the
+fraction and writes the power into the list. It never reads the list first, so we make the
+list a [writable parameter](parameters.md#filling-the-callers-variable) (`out`), marked
+with `ဒေတာ ထည့်ပေးရန်`, and the caller declares it with no value. For a C function, this
+mark is our promise that C writes the list, because the compiler cannot check it.
 
 ```zaka
 frexp ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -186,16 +207,19 @@ frexp ဟူသော လုပ်ဆောင်ချက်ကို ၈.၀ �
 ၄
 ```
 
-8.0 is 0.5 times 2 to the power 4. A struct marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်`
-goes to C as its address too, so C can fill its fields. Either mark on a parameter of
-another kind is refused (ZK0466).
+8.0 is 0.5 times 2 to the power 4. A struct marked with `ဒေတာ ပြောင်းလဲရန်` or
+`ဒေတာ ထည့်ပေးရန်` goes to C as its address too, so that C can fill its fields.
 
 ## Other values
 
-`printf` takes a format, then the values the format asks for. Its header ends the
-parameters with `အခြားတန်ဖိုးများနှင့်အတူ` ("together with other values") before
-`လက်ခံပြီး`, each parameter before it closed with `လည်းကောင်း`, and a call gives the format,
-then the values:
+```text
+<parameter> ဟူသော <kind> တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး
+```
+
+`printf` accepts a format and then the values that the format asks for, which C writes as
+`...`. To declare such a function, we end the parameters with `အခြားတန်ဖိုးများနှင့်အတူ`
+("together with other values") before `လက်ခံပြီး`, with `လည်းကောင်း` after each parameter
+before it, and a call passes the format and then the values:
 
 ```zaka-file
 // hello.zaka
@@ -214,10 +238,9 @@ x is 42
 ```
 
 The format must fit the values, as in C: `%lld` for a `ကိန်းပြည့်`, which has 64 bits (a C
-`long`, which `%ld` reads, has 32 bits on Windows), `%d` for a `၃၂ ဘစ် ကိန်းပြည့်`, `%f` for a
-decimal number and `%s` for text.
-
-A C function that takes other values can still mark a list `ဒေတာ ပြောင်းလဲရန်`:
+`long`, which `%ld` reads, has 32 bits on Windows), `%d` for a `၃၂ ဘစ် ကိန်းပြည့်`, `%f` for
+a decimal number and `%s` for text. A function that accepts other values can still have a
+mutable list parameter:
 
 ```zaka-file
 // buffer.zaka
@@ -226,118 +249,25 @@ buf ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပ
 fmt ဟူသော စာသား တစ်ခု ကို လည်းကောင်း အခြားတန်ဖိုးများနှင့်အတူ လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ```
 
-## A function C keeps
-
-
-A function of the program that has captures, a [closure](../function-values/closures.md),
-goes to a C function as a function value too. Some C functions keep the function and call
-it later: `signal` keeps a handler, and `raise` makes the signal come. A closure that C
-calls after the call that gave it ended needs *leave* from the program. The first
-statement below reads "allow C to call it", and the last reads "take back the leave for
-C":
-
-```zaka
-signal ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
-sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း handler ဟူသော (၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လည်းကောင်း လက်ခံမည်။
-raise ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ sig ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံမည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ဖမ်းကြိမ် သည် ၀ ဖြစ်ပါစေ။
-ဖမ်း ဟူသော လုပ်ဆောင်ချက် သည် s ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ဖမ်းကြိမ် ကို ဖမ်းကြိမ် + ၁ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြုမည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-signal ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ နှင့် ဖမ်း ဟူသော လုပ်ဆောင်ချက် တို့ဖြင့် လုပ်ဆောင်မည်။
-raise ဟူသော လုပ်ဆောင်ချက်ကို ၁၅ ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ဖမ်းကြိမ် ကို ပြသမည်။
-ဖမ်း ဟူသော လုပ်ဆောင်ချက်ကို ပြင်ပမှ ခေါ်ဆိုခွင့် ပြန်လည်ရုပ်သိမ်းမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၁
-```
-
-A closure that C calls with no call running and no leave stops the program, with the
-[closure escape trap](../../manual/vm/traps.md). A function with no captures needs no
-leave. [Function values](../../manual/language/function-values.md#nested-functions-and-closures)
-has the full rules, and [C functions and addresses](../pointers/c.md#a-closure-for-a-call)
-shows a closure that C calls while a call runs.
-
-C can call back with more than numbers. A parameter of the function can be a plain struct,
-which C passes as a whole value; text, copied from the `char *` C passes; or a handle around a
-struct C keeps. When C can pass NULL, write the parameter as an optional, such as
-`စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, and test it before reading it: a NULL for plain text stops
-the program. A handle that C passed is C's, so the function cannot close it outside unsafe
-code. The [Docs](../../manual/language/functions.md#c-functions) list each kind.
-
-## A struct C keeps
-
-
-Some libs keep a struct of their own and give the program a pointer to it: a counter, a
-database connection. Zaka names such a struct with a kind that comes from outside, and a
-value of it is a *handle*. The declaration reads `<name> ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်`, then lists
-the C fields the program wants to read, from the start of the C struct:
-
-```zaka-file
-// counter.zaka
-ရေတွက်စက် ဟူသော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင်
-count ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု၊ step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် label ဟူသော စာသား တစ်ခု တို့ပါဝင်သည်။
-
-counter_open ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
-step ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ရေတွက်စက် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
-counter_next ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
-c ဟူသော ရေတွက်စက် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-counter_close ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libcounter" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
-c ဟူသော ရေတွက်စက် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံမည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် စက် သည် counter_open ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ် ထဲမှ ဒေတာ ဖြစ်ပါစေ။
-counter_next ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
-"{စက် ၏ count} {စက် ၏ step}" ဟု ပြသမည်။
-စက် ၏ label ကို ပြသမည်။
-counter_close ဟူသော လုပ်ဆောင်ချက်ကို စက် ဖြင့် လုပ်ဆောင်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-The program opens a counter, steps it once, reads two fields and its label, and closes it:
-
-- `counter_open` gives a handle, or `အလွတ်` when C gives NULL: its result is an
-  optional of the handle. A plain `ရေတွက်စက်` result would promise that C never gives
-  NULL, so a NULL would stop the run. The program never holds the address inside the
-  handle.
-- `စက် ၏ count` reads the field from C's storage each time, so it shows what C holds now.
-- `စက် ၏ label` is an optional of text, since a `char *` can be NULL.
-- Safe code cannot write a field. A write such as `စက် ၏ count ကို ၀ ဟု ထားမည်` is refused
-  there (ZK0474); a C function changes the struct.
-- A program cannot make a handle, duplicate the struct behind it or print it (ZK0473).
-
-Closing is the program's work. `counter_close` marks its parameter `အပိုင်အနေဖြင့်` ("as
-its own"): the C function takes the handle over. After the call, each variable that shares
-the handle reads as closed, and a call or a field read through one stops the program with
-the [closed handle trap](../../manual/vm/traps.md#c-functions). Close a handle once, and
-leave it alone after that.
-
-[Kinds from outside the program](../../manual/language/functions.md#c-functions) has the
-full rules.
-
 ## The lib
 
-The text before `မှလာသော` names the lib, as `"libc"` does, or gives the path to its file,
-as `"./libpair.so"` does. A path that does not start at `/` starts at the folder of the
-program file.
+The text before `မှလာသော` is the name of the lib, such as `"libc"`, or the path to its
+file, such as `"./libpair.so"`. A path that does not start at `/` starts at the folder of
+the program file.
 
 ## Each OS its own lib
 
-A lib is not named and laid out the same on each OS: the UCRT of Windows calls `strdup`
-`_strdup`. `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင်` is a conditional the compiler settles before
-the program runs: it keeps the arm whose condition holds for the target, so each OS
-declares its own C functions. Its conditions read the facts of the target, constants
-the core declares, as `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`:
+```text
+အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "<OS>" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+```
+
+A lib does not have the same name and the same functions on each OS: the UCRT of Windows,
+for example, calls `strdup` `_strdup`. To handle that, we use `အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင်`,
+a [compile-time conditional](compile-time.md#conditions-that-call-comptime-functions) that
+the compiler settles before the program runs. It keeps the arm whose condition is true for
+the target, so each OS can declare its own C functions. The condition can test the facts of
+the target, which are constants of the core module (prelude), such as
+`အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`:
 
 ```zaka
 အကယ်၍ ကွန်ပိုင်းလုပ်ချိန်တွင် အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ် == "windows" ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -370,17 +300,10 @@ strdup ဟူသော လုပ်ဆောင်ချက်ကို s ဖြ
 ဒေတာ("စံကား")
 ```
 
-`ကူး` is a *safe wrapper*: a plain function whose unsafe block holds the C call. The
-start block calls `ကူး` from safe code, so the unsafe block stands in one place, wherever
-the program copies text.
-
-The arm the target drops is never checked, so it can name a C function this host lacks.
-[Compile-time conditionals](../../manual/language/compile-time.md) has the full rules.
-
-## Addresses
-
-A C function can also take or give an address, a pointer into the program's storage.
-[C functions and addresses](../pointers/c.md) teaches them in the last part of Learn.
+`ကူး` is a *safe wrapper*: a plain function with the C call inside its unsafe block. The
+program start block calls `ကူး` from safe code, so the unsafe block is in one place, however
+often the program duplicates text. The compiler never checks the arm that it drops for the
+target, so that arm can name a C function that this computer does not have.
 
 ## Where the call runs
 
@@ -388,12 +311,39 @@ A C function can also take or give an address, a pointer into the program's stor
   `zakac run --jit` opens it before the program starts.
 - `zakac build --backend c` and `zakac build --backend native` link the lib into the
   executable.
-- The explorer in the browser cannot open a lib, so a program that calls C stops there
-  with a message. Run it with `zakac run`.
+- The explorer in the browser cannot open a lib, so a program that calls C stops there with
+  a message, and we run it with `zakac run` instead.
+
+## Details
+
+- A C function is declared at the top level of a file and nowhere else (ZK0214), and
+  without `စိတ်မချရသော` its declaration is an error ([C
+  functions](../../manual/language/functions-c.md#c-functions)).
+- A parameter or result of a data kind that C does not know is ZK0465, and
+  `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` on a parameter that is neither a list of numbers
+  nor a struct is ZK0466 ([C functions](../../manual/language/functions-c.md#c-functions)).
+- `အပိုင်အနေဖြင့်` on the result of `strdup` means that the program takes over the text that
+  C hands it and frees it with the `free` of libc ([C functions and
+  addresses](../pointers/c.md#text-that-c-hands-over)).
+- A C function can also accept or return an address, a pointer into the program's storage,
+  which [C functions and addresses](../pointers/c.md) teaches.
+- The facts of the target that a compile-time condition can test are listed in [The facts
+  of the target](../../manual/language/compile-time.md#the-facts-of-the-target).
+
+## Recap
+
+- We declare a C function with `<C name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "<lib>" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍`,
+  its parameters and its result, and with no statements.
+- Each call to a C function goes in an unsafe block.
+- Text goes to C with a zero octet at its end, text from C comes back as an optional, and a
+  list of numbers goes to C as the address of its first cell.
+- A mutable or writable list parameter lets C write into the list.
+- A compile-time conditional can declare different C functions on each OS.
 
 ## Hands on
 
 - Declare `labs` from `"libc"` over 64-bit integers and call it with a negative number.
 - Declare `sqrt` from `"libm"` over decimal numbers and print the square root of 2.0.
+- Write a safe wrapper around `abs`, and call it from safe code.
 
-Next: [A lib for C](c-lib.md).
+Next: [Callbacks and handles](c-callbacks.md).

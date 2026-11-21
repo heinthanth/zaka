@@ -1,12 +1,20 @@
 ---
 title: If and else
-description: Run statements when a condition is true.
+description: Run sentences when a condition is true, and others when it is false.
 ---
 
 # If and else
 
-An `if` statement runs its inner part when a condition is true, and skips it otherwise.
-In Zaka: "if *condition*, then *do this*": `အကယ်၍ <condition> လျှင် <action>`.
+An `if` statement runs its inner part when a condition is true and skips it when the
+condition is false. In Zaka we write it as a Burmese sentence, "if *condition*, then *do
+this*", and we can add an `else` part that runs when the condition is false.
+
+## You will learn
+
+- how to run a sentence just when a condition is true
+- how to add an "otherwise" part (`else`)
+- how to choose between more than two cases (`else if`)
+- how to put several sentences, or another `if`, inside a branch
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -24,21 +32,57 @@ In Zaka: "if *condition*, then *do this*": `အကယ်၍ <condition> လျ�
 ကလေး
 ```
 
+The age is 15, so the first sentence prints `ကလေး` ("child"), while the second one prints
+nothing, because 15 is not greater than 60. To run a sentence when a condition is true,
+we use this pattern:
+
+```text
+အကယ်၍ <a> သည် <b> အောက် ငယ်လျှင် <inner part>
+```
+
 | Zaka | Reads as |
 | --- | --- |
 | `အကယ်၍` | "if" |
-| `လျှင်` | "then"; joined to the condition's last verb (`ငယ်လျှင်`) |
-| `ဖြစ်လျှင်` | "if so, then"; a separate word, used after a variable or a full sentence |
-| `ထိုသို့မဟုတ်ဘဲ` | "if not so, but"; else if |
-| `သို့မဟုတ်ပါက` | "otherwise"; else |
+| `<a> သည် <b> အောက် ငယ်` | "`<a>` is less than `<b>`", a comparison in words |
+| `လျှင်` | "then"; it joins the last verb of the condition, as in `ငယ်လျှင်` |
+| `<inner part>` | one sentence, or a block |
 
-The condition must be a [boolean](../values/booleans.md): a comparison, a logical
-expression, or a boolean variable. With a boolean variable, use `ဖြစ်လျှင်`:
-`အကယ်၍ အောင် ဖြစ်လျှင် ...`.
+The condition is a comparison in words, the same as on the [Comparison](../operators/comparison.md)
+page, except that its verb ends in `လျှင်` in place of `သည်`.
+
+## A true/false value as the condition
+
+```text
+အကယ်၍ <true/false value> ဖြစ်လျှင် <inner part>
+```
+
+The condition can also be a true/false value (boolean), such as a variable or a
+comparison in signs. A value like this has no verb for `လျှင်` to join, so we write
+`ဖြစ်လျှင်` ("if it is so, then") as a separate word after it:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။ // passed?
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
+အကယ်၍ အောင် ဖြစ်လျှင် "အောင်ပါသည်" ဟု ပြသမည်။
+အကယ်၍ အမှတ် > ၇၀ ဖြစ်လျှင် "ကောင်းပါသည်" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အောင်ပါသည်
+ကောင်းပါသည်
+```
 
 ## Otherwise
 
-`သို့မဟုတ်ပါက` ("otherwise") names what to run when the condition is false:
+```text
+အကယ်၍ <condition>လျှင် <inner part>
+သို့မဟုတ်ပါက <inner part>
+```
+
+To run something when the condition is false, we add a line that starts with
+`သို့မဟုတ်ပါက` ("otherwise"), which works like `else` in other languages:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -54,8 +98,15 @@ expression, or a boolean variable. With a boolean variable, use `ဖြစ်လ
 
 ## More than two choices
 
-`ထိုသို့မဟုတ်ဘဲ` ("if not so, but ...") adds another condition. Zaka tests the conditions
-from top to bottom and runs the **first** branch whose condition is true:
+```text
+အကယ်၍ <condition>လျှင် <inner part>
+ထိုသို့မဟုတ်ဘဲ <condition>လျှင် <inner part>
+သို့မဟုတ်ပါက <inner part>
+```
+
+To check another condition when the first one is false, we add a line that starts with
+`ထိုသို့မဟုတ်ဘဲ` ("if not so, but"), which works like `else if`. Zaka tests the
+conditions from top to bottom and runs the **first** branch whose condition is true:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -71,11 +122,12 @@ from top to bottom and runs the **first** branch whose condition is true:
 အဆင့် ခ
 ```
 
-73 is also at least 40, but Zaka stops at the first branch that matches.
+73 is at least 40 too, but Zaka stops at the first branch that matches, so it prints
+`အဆင့် ခ` alone. We can add more `ထိုသို့မဟုတ်ဘဲ` lines when we need more choices.
 
-## Branches with several statements
+## Branches with several sentences
 
-To run several statements, make the branch a block:
+To run several sentences in a branch, we make the inner part a block:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -100,8 +152,8 @@ To run several statements, make the branch a block:
 
 ## An if inside an if
 
-A one-statement branch cannot be another `if`. That would make it unclear which `if` an
-`otherwise` belongs to:
+A one-sentence branch cannot be another `if`, because it would then be unclear which `if`
+an "otherwise" belongs to, so the compiler stops with an error:
 
 ```zaka-error ZK0215
 အကယ်၍ မှန် ဖြစ်လျှင် အကယ်၍ မမှန် ဖြစ်လျှင် ၁ ကို ပြသမည်။
@@ -111,7 +163,7 @@ A one-statement branch cannot be another `if`. That would make it unclear which 
 error[ZK0215]: a single-statement block cannot be another conditional
 ```
 
-Put the inner `if` in a block instead:
+To put an `if` inside an `if`, we write the inner one in a block:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -128,10 +180,33 @@ Put the inner `if` in a block instead:
 ဂုဏ်ထူး
 ```
 
+## Details
+
+- **The condition must be true or false.** A number or other value as the condition is
+  the error ZK0402 ([If](../../manual/language/control-flow.md#if)).
+- **A whole sentence as the condition.** After a full comparison that ends in `သည်`, such
+  as `က သည် ၀ ထက် ကြီးသည်`, we also write `ဖြစ်လျှင်` as a separate word
+  ([If](../../manual/language/control-flow.md#if)).
+- **Otherwise with no if.** A `ထိုသို့မဟုတ်ဘဲ` or `သို့မဟုတ်ပါက` line with no `အကယ်၍` before
+  it is the error ZK0211 ([If](../../manual/language/control-flow.md#if)).
+- **Logic in a condition.** We can join comparisons in a condition with `ဖြစ်၍` and
+  `သို့မဟုတ်`, as on the [Logic](../operators/logic.md) page.
+
+## Recap
+
+- We write `အကယ်၍ <condition>လျှင် <inner part>` to run something when a condition is
+  true.
+- After a true/false variable or a comparison in signs, we write `ဖြစ်လျှင်` as a
+  separate word.
+- `သို့မဟုတ်ပါက` ("otherwise") runs when no condition was true, and `ထိုသို့မဟုတ်ဘဲ`
+  adds another condition.
+- Zaka runs the first branch whose condition is true and skips the rest.
+- An `if` inside a one-sentence branch must go in a block.
+
 ## Hands on
 
 - Print whether a number is positive, negative, or zero.
-- Print `"FizzBuzz"` if 15 divides a number, `"Fizz"` if 3 divides it, `"Buzz"` if 5
+- Print `"FizzBuzz"` when 15 divides a number, `"Fizz"` when 3 divides it, `"Buzz"` when 5
   does, and the number itself otherwise. Check 9, 10, 15 and 7. Does the order of the
   tests matter?
 

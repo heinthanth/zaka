@@ -1,13 +1,26 @@
 ---
 title: Where a program starts
-description: The start block, the arguments a program gets on the command line, its environment and its exit code.
+description: The program start block, the arguments a program gets on the command line, its environment and its exit code.
 ---
 
 # Where a program starts
 
-Each program so far starts in its *start block*, `ပရိုဂရမ်သည်`. This page shows the
-rest of what a start block can do: it gets the command line it was run with, the name of
-the program first, and its result tells the shell how the run went.
+Each program so far has started in its program start block (entry point, `main`), the
+block from `ပရိုဂရမ်သည်` to `ပရိုဂရမ် ပြီးဆုံးပါပြီး။`. This page shows what else that
+block can do: it can receive the command line that the program was run with, and it can
+return an exit code that tells the shell how the run went.
+
+## You will learn
+
+- How the program start block receives the arguments of the command line.
+- How to return an exit code.
+- How to read the environment variables of the run.
+- Where the sentences that run must go.
+
+## The arguments of the command line
+
+This program greets each name that we give it on the command line, and when we give it
+no names, it explains how to use it:
 
 ```zaka
 /// Greet one person.
@@ -32,8 +45,9 @@ the program first, and its result tells the shell how the run went.
 အသုံးပြုပုံ: main.zaka <အမည်>...
 ```
 
-The Run button gives the program its name, `main.zaka`, and nothing more, so it tells
-how to use it. On the command line, the arguments come after `--`:
+The Run button gives the program its name, `main.zaka`, and no other arguments, so the
+program prints how to use it (`အသုံးပြုပုံ`, "usage"). On the command line, we write the
+arguments after `--`:
 
 ```console
 $ zakac run greet.zaka -- မောင်မောင် အေးအေး
@@ -41,27 +55,39 @@ $ zakac run greet.zaka -- မောင်မောင် အေးအေး
 မင်္ဂလာပါ အေးအေး
 ```
 
-## The parts of a start block
+The program start block works like a function with no name. In place of
+`<name> ဟူသော လုပ်ဆောင်ချက် သည်`, we start it with `ပရိုဂရမ်သည်`, and the rest of the
+function signature follows:
 
-The start block reads like a function with no name. In place of
-`<name> ဟူသော လုပ်ဆောင်ချက် သည်`, it opens with `ပရိုဂရမ်သည်`, "the program":
+```
+ပရိုဂရမ်သည်
+<name> ဟူသော စာသား စာရင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+<sentences>
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
-- `အမည်များ ဟူသော စာသား စာရင်း တစ်ခု ကို လက်ခံပြီး` names the list of arguments, one text for each
-  word. The name is `အမည်များ` here, but each name works.
-- The first cell holds the name of the program, as in C, Rust and Python, and the
-  arguments start at the second. The counted loop starts at `၂` for that reason.
-- `ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်` gives the start block an integer result: the *exit
-  code*.
-- The block ends with `ပရိုဂရမ် ပြီးဆုံးပါပြီး။`, "the program is done", where a function ends with `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`.
+| Zaka | Reads as | What it does |
+| --- | --- | --- |
+| `ပရိုဂရမ်သည်` | "the program" | starts the program start block |
+| `အမည်များ ဟူသော စာသား စာရင်း တစ်ခု ကို လက်ခံပြီး` | "receives a list of text called `အမည်များ`" | the arguments, one text for each word |
+| `အောက်ပါတို့ကို လုပ်ဆောင်ကာ` | "does the following, and" | the sentences follow |
+| `ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်` | "will return an integer" | the exit code |
+| `ပရိုဂရမ် ပြီးဆုံးပါပြီး။` | "the program is done" | the block closer, in place of `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။` |
 
-The count of the list, `အမည်များ ၏ အကွက်အရေအတွက်`, is at least 1: a run with no
-arguments still has the name of the program.
+We can pick a different name than `အမည်များ` for the list. The first cell has the name of
+the program, as in C, Rust and Python, and the arguments start at the second cell, which
+is the reason the counted loop starts at `၂`. So the list has at least one cell, even
+when we give no arguments.
 
 ## The exit code
 
+```
+<number> ကို ပြန်ပေးမည်။
+```
+
 A shell reads the exit code of each program it runs: `0` means that all went well, and
-another number means that something failed. Here the program returns `၁` when it gets
-no name:
+other numbers mean that something failed. Our program returns `၁` when it gets no names:
 
 ```console
 $ zakac run greet.zaka
@@ -70,12 +96,18 @@ $ echo $?
 1
 ```
 
-A start block with no result ends the run with `0`.
+The return also ends the program start block at once, the same as in a function. When
+the block has no result, or reaches its end without a return, the program ends with `0`.
 
 ## The environment
 
-A second parameter gets the environment variables of the run, one `NAME=VALUE` text for
-each:
+```
+ပရိုဂရမ်သည်
+<name> ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း <name> ဟူသော စာသား စာရင်း တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+```
+
+A second parameter receives the environment variables of the run, as one `NAME=VALUE`
+text for each variable. This program prints their count:
 
 ```text
 ပရိုဂရမ်သည်
@@ -85,16 +117,17 @@ each:
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-The Run buttons of these pages give a blank environment. `zakac run` gives the
-environment to a program granted it, with `--allow-env`; with no grant, the program stops
-before its first statement and names the flag.
+The Run buttons of these pages give a blank environment. `zakac run` passes the
+environment just to a program that has the right, which we grant with `--allow-env`.
+Without the flag, the program stops before its first sentence, and the message names the
+flag.
 
-## The top level beside a start block
+## Sentences outside the block
 
-The top level of a file declares things and runs nothing: functions, structs, variables
-and constants. The starting values of the variables are set
-first, and then the start block runs. A statement that runs at the top level belongs
-inside the start block:
+The top level of a file, outside each block, is for declarations: functions, structs,
+variables and constants. When the program starts, the top-level variables get their
+first values, and then the program start block runs. A sentence that does something, such
+as a print, must go inside the program start block or a function:
 
 ```zaka-error ZK0326
 "ဟိုင်း" ဟု ပြသမည်။
@@ -106,5 +139,42 @@ inside the start block:
 error[ZK0326]: a statement that runs goes inside the start block, not at the top level
 ```
 
-The full rules, and the errors of a wrong header, are in [The start
-block](../../manual/language/functions.md#the-start-block).
+## Details
+
+- **One program start block.** A program has one program start block, in the file that we
+  run: a second one is ZK0325, a file with none is ZK0327, and an imported file cannot
+  have one ([The start
+  block](../../manual/language/functions-start-block.md)).
+- **The parameters.** The block can have none, one or two parameters, and each one must
+  be a `စာသား စာရင်း`; other parameters are ZK0440.
+- **The result.** The result must be an integer, or the compiler reports ZK0441. The
+  OS keeps the lowest 8 bits of it, so `-၁` ends the run with 255, and a run that stops
+  at run time ends with 1 ([The start
+  block](../../manual/language/functions-start-block.md)).
+- **No failure to pass on.** The program start block cannot fail, so it cannot pass a
+  failure on, and it reads the whole result of a call that can fail instead ([Passing a
+  failure on](../error-handling/passing.md)).
+- **Other block closers.** We can also end the block with `ပရိုဂရမ် ပြီးဆုံးပါပြီ။`,
+  `ပရိုဂရမ် ပြီးပါပြီး။` or `ပရိုဂရမ် ပြီးပါပြီ။` ([Four closing
+  forms](../variables/scope.md#four-closing-forms)).
+- **The name in the first cell.** With `zakac run`, the first cell has the path of the
+  program as we wrote it, and the Explorer gives the name `explorer.zaka`.
+
+## Recap
+
+- The program start block works like a function with no name, from `ပရိုဂရမ်သည်` to
+  `ပရိုဂရမ် ပြီးဆုံးပါပြီး။`.
+- A `စာသား စာရင်း` parameter receives the command line: the name of the program first,
+  then the arguments.
+- An integer result is the exit code, and a block with no result ends the run with `0`.
+- A second `စာသား စာရင်း` parameter receives the environment, with `--allow-env`.
+- The top level has declarations alone, and sentences that run go inside a block.
+
+## Hands on
+
+- Run the greeting program with `zakac run` and three names, then with none, and print
+  the exit code each time.
+- Change the program so that it returns `၂` when it gets more than five names.
+- Print each environment variable of a run with `--allow-env`, one on each line.
+
+Next: [Copies and storage](../forms/README.md).

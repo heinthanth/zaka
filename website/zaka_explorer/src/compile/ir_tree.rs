@@ -231,9 +231,9 @@ impl IrTree<'_>
             {
                 self.node("set", self.place_text(*place), span, vec![self.expr(value)])
             }
-            Stmt::Wait { job, .. } =>
+            Stmt::Wait { thread, .. } =>
             {
-                self.node("wait", blank, span, vec![self.expr(job)])
+                self.node("wait", blank, span, vec![self.expr(thread)])
             }
             Stmt::Send { pipe, value, .. } =>
             {
@@ -511,7 +511,7 @@ impl IrTree<'_>
             {
                 ("spawn", name.clone(), args.iter().map(|a| self.expr(a)).collect())
             }
-            ExprNode::Wait(job) => ("wait", String::new(), vec![self.expr(job)]),
+            ExprNode::Wait(thread) => ("wait", String::new(), vec![self.expr(thread)]),
             ExprNode::Receive(pipe) =>
             {
                 ("receive", String::new(), vec![self.expr(pipe)])

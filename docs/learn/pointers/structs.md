@@ -5,15 +5,22 @@ description: Reach fields and cells through addresses, walk rows with pointers, 
 
 # Lists and structs through addresses
 
-Safe Zaka changes a caller's list or struct with a [`ဒေတာ ပြောင်းလဲရန်`
-parameter](../functions/parameters.md#changing-the-callers-variable), and links values to
-each other with [shared objects](../structs/objects.md). Addresses do the same work in the
-open, as C does: a pointer to a field or a cell, and structs in heap blocks that the
-program asks for.
+Safe Zaka changes a caller's list or struct with a [mutable
+parameter](../functions/parameters.md#changing-the-callers-variable) (`inout`), and links
+values to each other with [shared objects](../structs/objects.md) (reference types).
+Addresses (pointers) do the same work in the open, as C does, with a pointer to a field or
+a cell, and with structs in heap blocks that the program asks for.
 
-## Fields through addresses
+## You will learn
 
-A field is a place, so it has an address too: a pointer to a value of the field's kind.
+- how to take the address of a field or a cell, and how to reach a field through the
+  address of a struct
+- how a pointer steps through the rows of a counted list
+- how to put structs on the heap
+- how to build a linked list from structs that point at each other
+
+A field is a place in RAM, so it has an address too, and the data kind of that address is
+a pointer to the data kind of the field:
 
 ```zaka
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
@@ -32,11 +39,28 @@ A field is a place, so it has an address too: a pointer to a value of the field'
 ၂၅
 ```
 
+To take the address of a field, we write the field as before and add `၏ လိပ်စာ`:
+
+```text
+<variable> ၏ <field> ၏ လိပ်စာ
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `ကျော် ၏ အသက်` | "the age of `ကျော်`" |
+| `၏ လိပ်စာ` | "the address of" it |
+
 ## A struct through its address
 
-A struct name goes in front of `လိပ်စာ` to make a pointer kind. Through a pointer, a field
-is reached with `တန်ဖိုး` first: `သူ ၏ တန်ဖိုး ၏ အသက်`. A function that takes the address
-reads and writes the caller's struct itself:
+```text
+<struct> လိပ်စာ
+<pointer> ၏ တန်ဖိုး ၏ <field>
+```
+
+To write a pointer to a struct, we put `လိပ်စာ` after the struct name, the same as for
+other data kinds. Through such a pointer, we reach a field with `တန်ဖိုး` first, as in
+`သူ ၏ တန်ဖိုး ၏ အသက်` ("the age of the value at him"), and a function that accepts the
+address can then read and write the caller's struct itself:
 
 ```zaka
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
@@ -60,9 +84,9 @@ reads and writes the caller's struct itself:
 ၂၁
 ```
 
-`အသက်ကြီး` is an unsafe function, so its call needs unsafe code too. A field is not reached through
-the pointer itself. `သူ ၏ အသက်`, with no `တန်ဖိုး`, reads a field of the address, and an
-address has none:
+`အသက်ကြီး` is an unsafe function, so its call needs unsafe code too. We cannot reach a
+field through the pointer itself, because `သူ ၏ အသက်`, with no `တန်ဖိုး`, asks for a field
+of the address, and an address has no fields:
 
 ```zaka-error ZK0426
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -82,10 +106,14 @@ error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is 
 
 ## Rows and cells through addresses
 
-The address of a counted list points at the whole list, so its kind holds the count:
-`အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, or `isize[3]&` in messages. The rows of a table
-of counted lists sit one after another, so adding 1 to the address of a row moves one
-whole row:
+```text
+အကွက် <count> ခုရှိသော <kind> စာရင်း လိပ်စာ
+```
+
+The address of a counted list (fixed-size array) points at the whole list, so its data
+kind includes the count: `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း လိပ်စာ`, which messages
+write as `isize[3]*`. The rows of a grid of counted lists sit one after another, so when
+we add 1 to the address of a row, the pointer moves one whole row:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -106,16 +134,17 @@ whole row:
 ၆
 ```
 
-A plain list keeps its cells in a heap block of its own, so the step from one row to the
-next works on counted rows alone. The address of one cell is a plain pointer, and [pointer
-arithmetic](arithmetic.md) walks the cells after it, in a list of each form.
+A plain list keeps its cells in a separate heap block, so this step from one row to the
+next works on counted rows alone. The address of one cell is a plain pointer, and in a
+list of either form, [pointer arithmetic](arithmetic.md) walks the cells after it.
 
 ## The address of a cell pins the list
 
-A duplicate of a list shares its cells until one side writes. A pointer could write a cell with
-no warning to the duplicate, so taking the address of a cell first gives the list cells of its
-own, and *pins* them: a duplicate made later copies the cells at once. A write through the
-pointer then reaches this list alone:
+A duplicate (copy) of a list shares its cells with the original until one side writes. A
+write through a pointer would give the duplicate no chance to notice, so when we take the
+address of a cell, Zaka first gives the list its own cells and *pins* them, which means
+that a duplicate made later duplicates the cells at once. A write through the pointer then
+reaches this one list:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -140,9 +169,9 @@ pointer then reaches this list alone:
 [၂၊ ၃၊ ၅၊ ၇]
 ```
 
-The same holds for the cells of text. An add can still move the cells to a larger block,
-so a cell address must not be used after the list grows. The compiler warns (ZK0704),
-and the VM stops the read:
+The cells of text work the same. When we add to a list, Zaka can still move its cells to
+a larger block, so we must not use a cell address after the list grows. The compiler warns
+about it (ZK0704), and the VM stops the read:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -161,8 +190,13 @@ the program stopped: access at 0x101020 inside a freed block
 
 ## A range of a heap block
 
-A heap block has no count in its kind. A [range](../forms/ranges.md) writes the count
-once, and gives a list of its own, with copies of the cells:
+```text
+<pointer> ၏ အကွက် <number> မှစ၍ <count> ကွက်
+```
+
+A heap block has no count in its data kind, so to turn some of its cells into a list, we
+write the count once in a [range](../forms/ranges.md). The range gives a separate list
+with duplicates of the cells, so the list remains after the block is gone:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -172,7 +206,7 @@ once, and gives a list of its own, with copies of the cells:
 ပ + ၂ ၏ တန်ဖိုး ကို ၉ ဟု ထားမည်။
 ကိန်းရှင် ကိန်းများ သည် ပ ၏ အကွက် ၀ မှစ၍ ၃ ကွက် ဖြစ်ပါစေ။
 လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ကိန်းများ ကို ပြသမည်။                        // the list stands after the block is gone
+ကိန်းများ ကို ပြသမည်။                        // the list remains after the block is gone
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -183,8 +217,9 @@ once, and gives a list of its own, with copies of the cells:
 
 ## Structs on the heap
 
-A struct name goes in front of a count to ask the heap for room, as a kind does. The size
-counts with the [count word](../structs/README.md#count-words) of the struct:
+To ask the heap for room for structs, we put the struct name in front of the count, the
+same as for other data kinds, and we count with the [measure
+word](../structs/README.md#measure-words) (classifier) of the struct:
 
 ```zaka
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အတန်း ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
@@ -209,9 +244,9 @@ p ၏ တန်ဖိုး ကို ပြသမည်။
 ၁၆
 ```
 
-Adding 1 to the address of a struct moves one whole struct, here 16 octets. A heap size
-with another count word gives the warning of [The wrong
-classifier](../structs/mistakes.md#the-wrong-classifier):
+When we add 1 to the address of a struct, the pointer moves one whole struct, which here
+is 16 octets. A heap size with another measure word gives the warning of [The wrong
+measure word](../structs/mistakes.md#the-wrong-measure-word):
 
 ```zaka-warning ZK0509
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
@@ -231,9 +266,10 @@ warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 
 ## A linked list
 
-A struct cannot hold itself, but it can hold the address of its own kind, so a chain of
-nodes forms a linked list. The `နောက်` ("next") field holds the null address at the last node, and
-the program gives back each node itself:
+A struct cannot contain itself, but it can contain the address of a struct of the same
+data kind, so a chain of nodes that point at each other forms a linked list. The `နောက်`
+("next") field of the last node has the null address, and the program frees each node
+itself:
 
 ```zaka
 အဆစ် ဟူသော ဒေတာအစုအဝေးတွင် တန်ဖိုးရင်း ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် လိပ်စာ တစ်ခု တို့ပါဝင်သည်။
@@ -272,14 +308,38 @@ the program gives back each node itself:
 ၁
 ```
 
-A duplicate of a struct that holds a pointer copies the address, not the block it points at,
-so two structs can then reach one block. The same list built from a [shared
-object](../structs/objects.md) needs no unsafe code and frees itself.
+Each new node goes in front of the old head, so the list prints the squares from the
+last one to the first. The same list built from [shared
+objects](../structs/objects.md#objects-that-point-at-each-other) needs no unsafe code and
+frees itself.
+
+## Details
+
+- A duplicate of a struct that contains a pointer duplicates the address, not the block
+  that it points at, so two structs can then reach one block ([Taking an
+  address](../../manual/language/pointers.md#taking-an-address)).
+- Keeping the address of a variable in a heap block, behind a pointer, or in a top-level
+  variable from a function is the mistake ZK0703, because the variable can end before the
+  block does ([Errors at a
+  glance](../../manual/language/unsafe.md#errors-at-a-glance)).
+- How fields are laid out in RAM, and so how far `+ ၁` moves on a struct, is in [How a
+  struct is stored](../../manual/language/structs.md#how-a-struct-is-stored).
+
+## Recap
+
+- We write `<variable> ၏ <field> ၏ လိပ်စာ` or `<list> ၏ အကွက် <number> ၏ လိပ်စာ` to take
+  the address of a field or a cell.
+- Through the address of a struct, we reach a field with
+  `<pointer> ၏ တန်ဖိုး ၏ <field>`.
+- Taking the address of a cell pins the list, and a cell address must not be used after
+  the list grows.
+- We ask the heap for structs with the struct name and its measure word, and a struct
+  can point at another struct of the same data kind, which gives a linked list.
 
 ## Hands on
 
-- Write an unsafe function that takes the address of a `လူ` and sets both of its fields,
-  then compare it with a `ဒေတာ ပြောင်းလဲရန်` parameter.
+- Write an unsafe function that accepts the address of a `လူ` and sets both of its fields,
+  then compare it with a mutable parameter, `ဒေတာ ပြောင်းလဲရန်`.
 - Ask the heap for room for two structs, set a field of each, and print both.
 - Add a function to the linked list that sums the `တန်ဖိုးရင်း` of each node.
 

@@ -6,12 +6,12 @@ description: Euclid's method, with a while loop and functions that call function
 # Greatest common divisor
 
 The *greatest common divisor* (GCD) of two numbers is the largest number that divides
-both. The GCD of 48 and 18 is 6. Long ago, in ancient Greece, Euclid found a fast
-method to compute it: replace the pair (a, b) with (b, a mod b) until b is zero, and a
-is the answer.
+both, so the GCD of 48 and 18 is 6. Long ago, in ancient Greece, Euclid found a fast
+method to work it out: we replace the pair (a, b) with (b, a mod b) until b is zero, and
+then a is the answer.
 
-The *least common multiple* (LCM), the smallest number both divide into, follows from
-it: LCM = a / GCD × b.
+The *least common multiple* (LCM), the smallest number that both numbers divide, follows
+from the GCD: LCM = a / GCD × b. This program prints both for two pairs of numbers.
 
 ```zaka
 /// The greatest common divisor of k and kh, with Euclid's method.
@@ -64,15 +64,17 @@ it: LCM = a / GCD × b.
 ## How it works
 
 - **`ဘုံဆခွဲကိန်း`** (GCD) runs a [while loop](../control-flow/while.md) as long as `ခ` is
-  not zero. Each round it computes the remainder, then shifts the pair along. The
-  parameters `က` and `ခ` are changed in place; that is fine, because
-  [parameters are local copies](../functions/parameters.md#parameters-are-local-copies).
-- **`ဘုံဆတိုးကိန်း`** (LCM) calls `ဘုံဆခွဲကိန်း` inside a sum. The call is in parentheses
-  so that the division happens before the multiplication. Dividing first keeps the
-  numbers small.
-- **`နှစ်ခုပြ`** ("show both") has no result. It prints headings and calls the other two.
+  not zero. In each round, it works out the remainder, then moves the pair along one step.
+  The loop changes the parameters `က` and `ခ`, which is fine, because each parameter is a
+  local duplicate (copy) of the argument ([Parameters are local
+  copies](../functions/parameters.md#parameters-are-local-copies)).
+- **`ဘုံဆတိုးကိန်း`** (LCM) calls `ဘုံဆခွဲကိန်း` inside a sum. We put the call in
+  parentheses so that the division happens before the multiplication, and dividing first
+  keeps the numbers small.
+- **`နှစ်ခုပြ`** ("show both") has no result: it prints the headings and calls the other
+  two functions.
 
-Tracing GCD(48, 18):
+This table traces GCD(48, 18), one round of the loop on each row:
 
 | Round | က | ခ | remainder |
 | --- | --- | --- | --- |
@@ -86,3 +88,5 @@ Tracing GCD(48, 18):
 - Print the GCD of 1071 and 462.
 - Rewrite `ဘုံဆခွဲကိန်း` with [recursion](../functions/recursion.md): GCD(a, 0) = a, and
   GCD(a, b) = GCD(b, a mod b).
+
+Next: [Fibonacci numbers](fibonacci.md).

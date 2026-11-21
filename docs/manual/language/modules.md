@@ -1,14 +1,14 @@
 ---
 title: Modules
-description: How a program spans several files - the export mark, the import sentence, what an imported file holds, how names meet across files - and the errors ZK0229 to ZK0232, ZK0322 to ZK0324, ZK0483 and ZK0604.
+description: How a program spans several files - the export mark, the import sentence, whole imports, shares, what an imported file can contain, how names meet across files - and the errors ZK0229 to ZK0232, ZK0261, ZK0262, ZK0322 to ZK0324, ZK0483 and ZK0604.
 ---
 
 # Modules
 
-A program can span several files. Each file keeps its top-level names to itself unless
-it marks them `အများသုံး`, and a file takes marked names from another file with an
-import. [Modules](../../learn/modules/README.md) in the Learn book
-shows the same rules with examples.
+A program can span several files, and each file is a module. A file keeps its top-level
+names to itself unless it marks them `အများသုံး` (exported), and another file uses those
+names through an import. The Learn book shows the same rules with examples in
+[Modules](../../learn/modules/README.md).
 
 ```zaka-file
 // math.zaka
@@ -31,13 +31,13 @@ shows the same rules with examples.
 
 ## The files of a program
 
-- A program is the file that is run and each file it imports, at once or through other
-  files.
-- Each file is read once, however often other files import it. Two spellings of one path, as
-  `lib/a.zaka` and `lib/../lib/a.zaka`, name one file.
-- The compiler reads the imports of a file before the file itself, in the order the
-  imports are written, so each imported file comes ahead of the files that import it and
-  the file that is run comes last.
+- A program is the file that we run, together with each file that it imports, straight
+  or through other files.
+- Each file is read once, however often other files import it. Two spellings of one
+  path, such as `lib/a.zaka` and `lib/../lib/a.zaka`, refer to one file.
+- The compiler reads the imports of a file before the file itself, in the order that the
+  imports are written, so each imported file comes ahead of the files that import it, and
+  the file that we run comes last.
 
 ## The export mark
 
@@ -50,22 +50,27 @@ shows the same rules with examples.
 အများသုံး ကိန်းသေ <name> သည် ...
 ```
 
-- `အများသုံး` exports a function, a struct, an enumeration, a [kind alias](aliases.md),
-  a variable or a constant at the top level of a file. On a function it stands after `ဟူသော`,
-  with the other marks of the function; on a struct or an enumeration it stands after
-  `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော`; on the others it comes first. Other files can then import it. A declaration without the mark is private to
-  its file.
-- The mark in another place is ZK0229: before a statement, before a generic loop
-  that starts with `ကိန်းရှင်`, or before a declaration inside a block, a loop, a
-  conditional or a function.
-- The mark exports a declaration of the file itself. A name the file imports is not
+We write `အများသုံး` to export a function, a struct, an enumeration, a [kind
+alias](aliases.md), a variable or a constant at the top level of a file, so that other
+files can import it. A declaration without the mark is private to its file.
+
+| Declaration | Where `အများသုံး` goes |
+| --- | --- |
+| a function | after `ဟူသော`, together with the other marks of the function |
+| a struct or an enumeration | after `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော` |
+| a kind alias, a variable, a constant | first |
+
+- The mark in another place is ZK0229: before a statement, before a generic loop that
+  starts with `ကိန်းရှင်`, or before a declaration inside a block, a loop, a conditional or
+  a function.
+- The mark exports a declaration of the file itself. A name that the file imports is not
   exported again, unless a [share](#sharing-imported-names) passes it on.
-- Each struct that the kinds of an exported declaration name must be usable from other
-  files: the parameters and the result of a function, the kind of a variable or
-  constant, and the fields of a struct, through each pointer and list level. A struct
-  the file declares without the mark there is ZK0324. A struct the file imports is
-  fine, since its own file exports it.
-- The mark exports a generic function, a generic struct and a trait too; the rules of
+- Each struct that the data kinds (types) of an exported declaration name must be usable
+  from other files. This covers the parameters and the result of a function, the data kind
+  of a variable or a constant, and the fields of a struct, through each pointer and list
+  level. A struct that the file declares without the mark is ZK0324 there. A struct that
+  the file imports is fine, because its own file exports it.
+- The mark exports a generic function, a generic struct and a trait too, and the rules of
   [Generics in modules](generics.md#generics-in-modules) tell what an instance sees.
 
 ## The import sentence
@@ -76,35 +81,37 @@ shows the same rules with examples.
 "<file>" ကို ထည့်သွင်းမည်။
 ```
 
-The first two forms are named imports; the third is a
-[whole import](#whole-imports).
+We use the first two forms, the named imports, to bring the names we list from a file,
+and the third form, a [whole import](#whole-imports), to bring each name that the file
+exports.
 
 - The file is a string. Its path is relative to the folder of the importing file, with
-  `/` between folders; `..` names the folder above.
-- A path that starts with `စံကား/` names a module of the stdlib, such as
-  `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)): the compiler carries its source, so
-  it is never read from disk, and a program read from storage can import it too.
-  Another name after `စံကား/` is ZK0238.
-- The imports of a file come first, with its [shares](#sharing-imported-names). An
-  import or a share after a declaration or a statement, or inside a block, is ZK0230.
-- Each name of a named import brings each exported item of that name from the file: a function (each
-  exported function of the name, when the file declares several), a variable or
-  constant, and a struct, an enumeration or a kind alias. A name the file does not
-  export is ZK0322, with
-  help when the file declares the name without the mark.
-- The imported names join the top-level names of the importing file. A declaration of
-  the same name in that file, or a second import of it, is ZK0302 for a variable or
-  constant and ZK0304 for a function.
-- A named import brings the names it lists and nothing more. The names that the imported
-  file itself imports remain there, unless it shares them: the importing file imports
+  `/` between folders, and `..` is the folder above.
+- A path that starts with `စံကား/` names a module of the stdlib (standard library), such
+  as `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)). The compiler carries its source, so
+  it is never read from disk, and a program read from storage can import it too. Another
+  name after `စံကား/` is ZK0238.
+- The imports of a file come first, together with its
+  [shares](#sharing-imported-names). An import or a share after a declaration or a
+  statement, or inside a block, is ZK0230.
+- Each name of a named import brings each exported item of that name from the file: a
+  function (each exported function of the name, when the file declares several), a
+  variable or a constant, and a struct, an enumeration or a kind alias. A name that the
+  file does not export is ZK0322, with help when the file declares the name without the
+  mark.
+- The imported names join the top-level names of the importing file. A declaration of the
+  same name in that file, or a second import of it, is ZK0302 for a variable or a constant
+  and ZK0304 for a function.
+- A named import brings the names it lists and nothing else. The names that the imported
+  file imports itself remain there, unless it shares them, so the importing file imports
   them from their own file, or it gets ZK0322.
-- Files that import each other, at once or through other files, are ZK0231. The message
-  names the files along the circle.
+- Files that import each other, straight or through other files, are ZK0231, and the
+  message names the files along the circle.
 - When the file cannot be read, the compiler stops with the error of a missing or
-  unreadable file, as it does for the file that is run. That error has no code.
+  unreadable file, as it does for the file that we run. That error has no code.
 
-An imported variable is the same variable in each file that imports it: when one file
-sets it, the others read the new value.
+An imported variable is the same variable in each file that imports it, so when one file
+sets it, the other files read the new value.
 
 ## Whole imports
 
@@ -112,19 +119,22 @@ sets it, the others read the new value.
 "<file>" ကို ထည့်သွင်းမည်။
 ```
 
-- A whole import brings each name the file exports: its own exported declarations and
-  each name it [shares](#sharing-imported-names). The names join the top-level names
-  of the importing file, as the names of a named import do.
-- A name the importing file declares itself keeps its own meaning: the whole import leaves that
-  name out. A name a named import of the file brings comes from that import.
-- Two whole imports that bring one name from two different declarations clash. The name
-  is then left out of both, and a use of it in the importing file is ZK0262, which names
-  the two files. A clash the file never uses is no error. A named import of the name,
-  or a declaration of it, settles it.
-- A name two whole imports bring from one declaration, as when one file shares what the
-  other declares, is brought once and does not clash.
+A whole import brings each name that the file exports: its own exported declarations and
+each name that it [shares](#sharing-imported-names). The names join the top-level names of
+the importing file, as the names of a named import do.
+
+- A name that the importing file declares itself keeps its own meaning, so the whole import
+  leaves that name out. A name that a named import of the file brings comes from that
+  import.
+- When two whole imports bring one name from two different declarations, the name clashes.
+  It is then left out of both imports, and a use of it in the importing file is ZK0262,
+  which names the two files. A clash that the file never uses is not an error, and a named
+  import or a declaration of the name settles it.
+- When two whole imports bring a name from the same declaration, as when one file shares
+  what the other declares, the name is brought once and does not clash.
 - Functions of one name from two whole imports clash as well, even with different
-  parameters: named imports of the name from both files join them as overloads.
+  parameters. To join them as overloads, we write a named import of the name from both
+  files.
 
 ```zaka-file
 // main.zaka
@@ -140,15 +150,16 @@ sets it, the others read the new value.
 "<file>" ကို ပြန်လည် မျှဝေမည်။
 ```
 
-- A share passes names a file imports on to the files that import it, as if the file
-  exported them. A file that imports the sharing file, through a named or a whole import,
-  gets the declaration of the file the name comes from.
-- The first two forms share names the file imports, through a named or a whole import.
-  A name the file does not import is ZK0261; a declaration of the file itself takes the
-  mark `အများသုံး` instead.
-- The third form shares each name another file exports, and brings none of them: the
-  sharing file does not see them, and imports what it uses itself. The compiler reads
-  that file, as it reads an imported one.
+A share (re-export) passes names that a file imports on to the files that import it, as if
+the file exported them. A file that imports the sharing file, through a named or a whole
+import, gets the declaration from the file where the name comes from.
+
+- We use the first two forms to share names that the file imports, through a named or a
+  whole import. A name that the file does not import is ZK0261, and a declaration of the
+  file itself uses the mark `အများသုံး` instead.
+- We use the third form to share each name that another file exports, without bringing one
+  of them in: the sharing file does not see them, and imports what it uses itself. The
+  compiler reads that file, as it reads an imported one.
 - Shares come first, among the imports of the file (ZK0230).
 
 ```zaka-file
@@ -158,37 +169,37 @@ sets it, the others read the new value.
 စက်ဝိုင်း ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။
 ```
 
-## What an imported file holds
+## What an imported file can contain
 
-- The top level of an imported file holds imports, shares, functions, structs, enumerations,
-  kind aliases, variables and constants. Each other statement there, such as a print, a
-  loop, a call or an assignment, is ZK0323. The file that is run holds statements as
-  before.
-- A variable of an imported file needs its value at its declaration, as the next section
-  states (ZK0483).
+- The top level of an imported file can contain imports, shares, functions, structs,
+  enumerations, kind aliases, variables and constants. Each other statement there, such
+  as a print, a loop, a call or an assignment, is ZK0323. The file that we run can contain
+  statements as before.
+- A variable of an imported file needs its value where it is declared, as the next section
+  explains (ZK0483).
 - The starting value of a variable or a constant of an imported file must be known at
   compile time. Known values are literals, `ကနဦးတန်ဖိုး`, `အလွတ်`, the null address,
-  constants of known value, the size of a
-  kind, a [function named as a value](function-values.md#a-function-as-a-value),
-  operators on known values, list and struct literals of known values, and calls of
-  comptime functions with known arguments. Each other
-  starting value is ZK0604; a call of a function that is not
-  [comptime](compile-time.md#comptime-functions) is the usual case, and so is the value of a
-  `ကိန်းရှင်`, since a variable can change.
-- The check works out the values with each folding on, so the `--fold` option of a build
+  constants of known value, the size of a data kind, a [function named as a
+  value](function-values.md#a-function-as-a-value), operators on known values, list and
+  struct literals of known values, and calls of comptime functions with known arguments.
+  Each other starting value is ZK0604. The common cases are a call of a function that is
+  not a [comptime function](compile-time.md#comptime-functions), and the value of a
+  `ကိန်းရှင်`, because a variable can change.
+- The check works out the values with all folding on, so the `--fold` option of a build
   does not change which programs compile.
 - The variables of the imported files get their starting values before the statements of
-  the file that is run, one file after another in the order the program reads them.
+  the file that we run, one file after another in the order that the program reads them.
 
 ## Globals of a module
 
-A variable at the top level of an imported file, a module, needs its value where it is
-declared: `ကိန်းရှင် ရေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။` there is ZK0483. The file that is
-run can declare a global with no value and set it in its start block, since the check
-follows the start block ([Globals and calls](statements.md#globals-and-calls)); a module has
-no start block, so nothing would set the global before a function of another file reads
-it. `ကနဦးတန်ဖိုး` gives the [initial value](kinds.md#initial-values) where no other value
-fits.
+A variable at the top level of an imported file (a global of a module) needs its value
+where it is declared, so `ကိန်းရှင် ရေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။` there is ZK0483. The
+file that we run can declare a global without a value and set it in its program start
+block, because the check follows the program start block ([Globals and
+calls](declarations.md#globals-and-calls)). A module has no program start block, so nothing
+would set the global before a function of another file reads it. We can use
+`ကနဦးတန်ဖိုး` to give the [initial value](kinds.md#initial-values) (default value) where no
+other value fits.
 
 ```zaka-file
 // counter.zaka
@@ -197,42 +208,44 @@ fits.
 
 ## Names across files
 
-- Function, variable and constant names belong to their file. Two files can each declare
-  a private function or variable of one name, and each file uses its own.
-- Struct names belong to the whole program, as enumeration and kind alias names do: two
-  files that each declare a struct `လူ` are ZK0316, exported or not. A variable, function or parameter named like a struct of
-  another file is ZK0319 as well.
-- In the IR and in the ops, a function of an imported file is named `<name>@<file>`, the
-  file being its name without folder or extension, so two functions of one name remain apart.
+- Function, variable and constant names belong to their file. Two files can each declare a
+  private function or variable with the same name, and each file uses its own.
+- Struct names belong to the whole program, and so do enumeration and kind alias names.
+  Two files that each declare a struct `လူ` are ZK0316, exported or not. A variable,
+  function or parameter with the name of a struct of another file is ZK0319.
+- In the IR and in the operations, a function of an imported file is named
+  `<name>@<file>`, where the file is its name without folder or extension, so two
+  functions with the same name remain apart.
 
 ## Programs not read from a file
 
 A program on standard input, in the compiler explorer or on a Learn page has no folder.
-Each import in it is ZK0232, and the program does not go on to the check.
+Each import in it is ZK0232, and the program does not go on to the check. An import from
+the stdlib is the exception ([Input and output](io.md#the-rules)).
 
 ## The compiler
 
-- `parse`, `semcheck`, `irgen`, `borrowck`, `codegen` and `run` read the imports
-  of their input. `segment` and `lex` work on the one file given to them.
-- The artifacts of those stages hold each imported file, its name and its text, under
+- `parse`, `semcheck`, `irgen`, `borrowck`, `codegen` and `run` read the imports of their
+  input, while `segment` and `lex` work on the one file that is given to them.
+- The artifacts of those stages contain each imported file, its name and its text, under
   `imports`, so a saved artifact can still show the line of a diagnostic in an imported
   file.
 
 ## The errors
 
-| Code | Raised when |
+| Code | When |
 | --- | --- |
-| ZK0229 | `အများသုံး` stands before something other than a top-level declaration |
-| ZK0230 | an import comes after a declaration or statement, or inside a block |
-| ZK0231 | files import each other |
-| ZK0232 | a program that was not read from a file has an import |
-| ZK0261 | a share names a name the file does not import |
-| ZK0262 | a name two whole imports bring from two files is used |
-| ZK0322 | an import names something the file does not export |
-| ZK0323 | an imported file holds a statement |
-| ZK0324 | the kind of an exported declaration names a private struct of its file |
-| ZK0483 | a variable of an imported file declared with no value |
-| ZK0604 | a variable or constant of an imported file starts with a value not known at compile time |
+| ZK0229 | `အများသုံး` before something other than a top-level declaration |
+| ZK0230 | an import or a share after a declaration or a statement, or inside a block |
+| ZK0231 | files that import each other |
+| ZK0232 | an import in a program that was not read from a file |
+| ZK0261 | a share of a name that the file does not import |
+| ZK0262 | a use of a name that two whole imports bring from two files |
+| ZK0322 | an import of something that the file does not export |
+| ZK0323 | a statement in an imported file |
+| ZK0324 | the data kind of an exported declaration names a private struct of its file |
+| ZK0483 | a variable of an imported file declared without a value |
+| ZK0604 | a variable or a constant of an imported file whose starting value is not known at compile time |
 
 [Module mistakes](../../learn/modules/mistakes.md) shows each one with the files that
 cause it.

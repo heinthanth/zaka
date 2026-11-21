@@ -1,40 +1,44 @@
 ---
 title: The case for sentences
-description: The reason for Burmese sentence order in Zaka, how it maps onto a grammar, and what it costs.
+description: The reason Zaka uses the order of a Burmese sentence, how that order maps onto a grammar, and what it costs.
 ---
 
 # The case for sentences
 
-Most programming languages take their order from English: a verb first, then its
-objects, as in `print(age)`. Burmese puts the verb last. Zaka takes the Burmese order
-as the shape of its grammar, so a statement reads as a Burmese sentence and a Burmese
-reader can read it aloud.
+Most programming languages take their word order from English, with the verb first and its
+objects after it, as in `print(age)`. Burmese puts the verb at the end. Zaka uses the
+Burmese order as the shape of its grammar, so each statement is a Burmese sentence, and a
+Burmese speaker can read a program aloud.
 
-This page tells how that order works, how it maps onto a grammar a compiler can read,
-and what it costs.
+This page explains how that order works, how a compiler can parse it, and what it costs.
+The rules are in [Expressions](../language/expressions.md) and
+[Statements](../language/statements.md), and Learn teaches the sentences in [Zaka
+sentences](../../learn/sentences/README.md).
 
 ## Subject, object, verb
 
-A Burmese sentence names the things it talks about first, and ends with the verb. A small
-word, a *particle*, follows each thing and tells its role: `သည်` marks the
-subject, `ကို` the object, `နှင့်` "and" or "with", `ဖြင့်` "using", `၏` "of".
+A Burmese sentence names the things it is about first, and ends with the verb. After each
+of these things comes a small word, a *particle* (postposition), which shows its role:
+`သည်` for the subject, `ကို` for the object, `နှင့်` for "and" or "with", `ဖြင့်` for
+"using" and `၏` for "of".
 
 ```text
  အသက်  ကို  ပြသမည် ။
  age   OBJ  show    .
   │     │     │
-  │     │     └── the verb ends the sentence and tells what is done
-  │     └── a particle marks the role of what came before it
+  │     │     └── the verb comes last and names the action
+  │     └── a particle shows the role of the word before it
   └── the thing the sentence is about
 ```
 
-The same pattern covers a statement that commands, `အသက် ကို ပြသမည်`, and a verb that
-makes a value, `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` ("the sum of 3 and 4"). A verb that makes a value
-gives an expression. A verb that commands gives a statement, which ends with `။`.
+One pattern covers both a statement that gives a command, such as `အသက် ကို ပြသမည်`, and a
+verb that makes a value, such as `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` ("the sum of 3 and 4"). A verb that
+makes a value gives us an expression, and a verb that gives a command gives us a statement,
+which ends with `။`.
 
 ## Compared with C
 
-| Zaka | C-like code | What the Zaka sentence tells |
+| Zaka | C-like code | The Zaka sentence, word for word |
 | --- | --- | --- |
 | `အသက် ကို ပြသမည်။` | `print(age);` | age, as the object, show |
 | `ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။` | `int age = 20;` | the variable age is an integer, and its value is 20 |
@@ -45,12 +49,12 @@ gives an expression. A verb that commands gives a statement, which ends with `�
 | `အကယ်၍ အသက် သည် ၁၈ အောက် ငယ်လျှင် ...` | `if (age < 18) ...` | if age is smaller than 18, then |
 | `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ်` | `twice(k)` | the result of doing the function with k |
 | `ပ ၏ တန်ဖိုး ကို ၇ ဟု ထားမည်။` | `*p = 7;` | the value of p, as the object, set to 7 |
-| `မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room worth 2 integers, will keep the address in p |
-| `လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, will give back |
+| `မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။` | `p = malloc(2 * sizeof(int));` | taking room for 2 integers, keep the address in p |
+| `လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။` | `free(p);` | the block at the address in p, release |
 
-Where C-like code uses punctuation, a Zaka sentence uses a word that tells what the
-punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` and
-`၃ နှင့် ၄ ၏ ပေါင်းလဒ်` mean the same, and the two forms can be mixed in one line.
+Where C-like code uses punctuation, a Zaka sentence uses a word with the same meaning.
+The signs are still there for arithmetic, so `၃ + ၄` and `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` mean the same
+thing, and we can mix the two forms in one line.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -72,21 +76,22 @@ punctuation would mean. The signs are still there for arithmetic: `၃ + ၄` an
 
 ## How a sentence maps onto a grammar
 
-A compiler has to read a sentence without knowing Burmese. It needs two things: a
+A compiler has to parse a sentence without knowing Burmese, so it needs two things: a
 closed list of particles and verbs, and a rule for combining them. Zaka has both.
 
-A clause is a run of operands, each with the particle its role needs after it, closed with a
-verb:
+A clause is a run of operands, each followed with the particle that its role needs, and
+a verb at the end:
 
 ```text
  clause    :=  ( operand  particle )*  verb
  operand   :=  a notation expression: 2 + 3 * 4, a name, a number, (...)
 ```
 
-The verb tells which particles it needs and the count of operands. The compiler reads the
-sentence from left to right, and keeps the operands waiting on a stack. A verb takes the
-operands it needs from the top, checks their particles, and puts its result back. The
-result carries the particle that follows the verb, so clauses nest:
+Each verb knows which particles it needs and the number of its operands. The compiler reads the
+sentence from left to right and keeps the operands waiting on a stack. When it reaches a
+verb, the verb pops the operands it needs from the top of the stack, checks their
+particles, and pushes its result back. The result gets the particle that follows the
+verb, so clauses can nest:
 
 ```text
  ၂ နှင့် ၃ နှင့် ၄ ၏ မြှောက်လဒ် ၏ ပေါင်းလဒ်
@@ -94,11 +99,11 @@ result carries the particle that follows the verb, so clauses nest:
   read ၂ [နှင့်]                   waiting: ၂[နှင့်]
   read ၃ [နှင့်]                   waiting: ၂[နှင့်] ၃[နှင့်]
   read ၄ [ကို]                     waiting: ၂[နှင့်] ၃[နှင့်] ၄[ကို]
-  verb မြှောက်: takes ၃ and ၄      waiting: ၂[နှင့်] (၃*၄)[ကို]
-  verb ပေါင်း: takes both          result: ၂ + (၃*၄) = ၁၄
+  verb မြှောက်: pops ၃ and ၄       waiting: ၂[နှင့်] (၃*၄)[ကို]
+  verb ပေါင်း: pops both           result: ၂ + (၃*၄) = ၁၄
 ```
 
-Moving one verb changes the meaning, because the verb takes what is waiting at that
+Moving one verb changes the meaning, because a verb uses whatever is waiting at that
 moment:
 
 ```text
@@ -118,16 +123,15 @@ moment:
 ၂၀
 ```
 
-Three levels share this one mechanism. The *notation* level is the signs (`+ - * /`,
-comparisons) with the precedence of C; it makes the operands. The *clause* level is the
-particle-and-verb pattern above. The *logical* level joins clauses with `ဖြစ်၍` (and),
-`သို့မဟုတ်` (or) and a postfix `မဟုတ်` (not). The full rules are in
-[Expressions](../language/expressions.md) and [Statements](../language/statements.md).
+Three levels share this one mechanism. The *notation* level is the signs (`+ - * /` and
+the comparisons) with the precedence of C, and it builds the operands. The *clause* level
+is the pattern of particles and verbs above. The *logical* level joins clauses with
+`ဖြစ်၍` (and), `သို့မဟုတ်` (or) and `မဟုတ်` (not) after a clause.
 
 ## What the pattern gives the compiler
 
-**The particles check the sentence.** A verb names the particles it wants, so a wrong
-particle is found where it is written, with a message that names it:
+**The particles check the sentence.** Each verb lists the particles it wants, so the
+compiler finds a wrong particle where we wrote it, and the message names it:
 
 ```zaka-error ZK0206
 ၃ ကို ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
@@ -137,7 +141,7 @@ particle is found where it is written, with a message that names it:
 error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after operand 1, found ကို
 ```
 
-An operand with no verb to take it is found at the end of the sentence:
+When no verb uses an operand, the compiler finds it at the end of the sentence:
 
 ```zaka-error ZK0204
 ၃ နှင့် ၄ ကို ပြသမည်။
@@ -147,38 +151,40 @@ An operand with no verb to take it is found at the end of the sentence:
 error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
 
+**The verb is the last word.** The compiler knows what a sentence does when it reaches the
+verb, and `။` ends the statement, so it never has to guess where one statement stops.
 
-**The verb is the last word.** The compiler knows what a sentence does when it reaches
-the verb, and `။` ends the statement. No guess is needed about where one statement stops.
+**Expressions and statements work the same.** `ပေါင်းလဒ်` makes a value and `ပြသမည်` gives
+a command, but both get their operands from the same stack, so a statement is a clause
+whose verb is a command.
 
-**Expressions and statements are one machine.** `ပေါင်းလဒ်` makes a value and `ပြသမည်`
-commands, but both take operands through the same stack. A statement is a clause whose
-verb is a command.
-
-**No word list.** The grammar is bounded: a counted list of reserved words, a counted list
-of particles, and the rest are names. No word list of Burmese is needed. [Finding words
-in Burmese](segmenting.md) tells how that works when the text has no spaces.
+**No word list.** The grammar is closed: a fixed list of reserved words, a fixed list of
+particles, and names for the rest. The compiler needs no word list of Burmese,
+and [Finding words in Burmese](segmenting.md) explains how that works when the text has
+no spaces.
 
 ## What it costs
 
-- **Longer lines.** `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` is longer than `3 + 4`. The signs are kept for
-  arithmetic, so a long sum need not be nested in words, and a line can mix both forms.
+- **Longer lines.** `၃ နှင့် ၄ ၏ ပေါင်းလဒ်` is longer than `3 + 4`. Zaka keeps the signs for
+  arithmetic, so a long sum does not need to be nested in words, and a line can mix both
+  forms.
 - **Spaces matter more.** Burmese is written without spaces between words, and the
-  compiler has no word list, so a name must be separated from the particle after it:
-  `အသက် ကို`, never `အသက်ကို`. The next page is about this.
-- **A fixed set of shapes.** Zaka reads the sentence shapes of its grammar, not
-  Burmese in general. A sentence that a speaker finds fine can still be a compile error
-  if its words or order are not in the table.
-- **Endings are a matter of taste.** A verb accepts `သည်`, `ပါ`, `ပါသည်`, or none, but a
-  speaker prefers one from what follows. The compiler warns about the odd ones (ZK05xx)
-  and never fails a program for them; see [Natural wording](../language/naturalness.md).
-- **Input and showing.** Burmese needs an input method, and its signs stack and
-  reorder. The compiler fixes the order of the marks before it reads the text, so that
-  one word has one spelling in the table. [Source text and words](../language/words.md)
-  has the rule.
-- **Two languages in one place.** The program is Burmese, while the compiler's messages
-  and this manual are English.
+  compiler has no word list, so we must separate a name from the particle after it with a
+  space: `အသက် ကို`, never `အသက်ကို`. The next page explains this.
+- **A fixed set of shapes.** Zaka accepts the sentence shapes of its grammar, not Burmese
+  in general, so a sentence that sounds fine to a speaker can still be a compile error
+  when its words or its order are not in the grammar.
+- **Endings are a matter of taste.** A verb accepts `သည်`, `ပါ`, `ပါသည်` or no ending at
+  all, but a speaker prefers one of them from what follows. The compiler warns about the
+  odd ones (ZK05xx) and never fails a program for them (see [Natural
+  wording](../language/naturalness.md)).
+- **Input and rendering.** Burmese needs an input method, and its marks stack and reorder.
+  The compiler puts the marks in a fixed order before it reads the text, so that each word
+  has one spelling in the list of reserved words, and [Source text and
+  words](../language/words.md) has the rule.
+- **Two languages in one place.** The program is in Burmese, while the messages of the
+  compiler and these pages are in English.
 
-The bet is that a program a person can read aloud is a program that person can follow, and
-that the order of the language that person speaks is a good guide to the order of the
-program. [Learn](../../learn/sentences/README.md) teaches the sentences one after another.
+The bet is that a program a person can read aloud is a program that person can follow,
+and that the word order of the language a person speaks is a good guide to the order of a
+program.

@@ -1,14 +1,21 @@
 ---
 title: Enumeration mistakes
-description: The mistakes enumerations and switches make possible, and how Zaka catches each one.
+description: The common mistakes with enumerations and switches, the message Zaka shows for each one, and the fix.
 ---
 
 # Enumeration mistakes
 
-## An enumeration declared inside a block
+This page goes through the common mistakes with enumerations (enums) and switches, and Zaka
+catches each of them before the program runs. For each mistake, we show the program, the
+message from the compiler, the reason and the fix.
 
-An enumeration is declared at the top level and nowhere else: not in a block, a loop, a
-conditional or a function.
+## You will learn
+
+- the mistakes in declaring an enumeration and in giving its members (variants) values
+- the mistakes in naming a member
+- how the compiler checks that a switch covers each member
+
+## An enumeration declared inside a block
 
 ```zaka-error ZK0235
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -19,6 +26,10 @@ conditional or a function.
 ```text
 error[ZK0235]: enumerations can be declared at the top level and nowhere else
 ```
+
+We can declare an enumeration at the top level of a file alone, and not inside a block, a
+loop, a conditional or a function. The fix is to move the declaration above the program
+start block.
 
 ## One member name twice
 
@@ -33,10 +44,10 @@ error[ZK0235]: enumerations can be declared at the top level and nowhere else
 error[ZK0328]: the enumeration "အရောင်" names the member "နီ" twice
 ```
 
-## Two members with one value
+Each member of an enumeration needs a different name, so the fix is to rename or remove
+the second `နီ`.
 
-Each member stands for a value of its own. A member with no value written takes the value
-of the member before it plus one, which can land on a value written later:
+## Two members with one value
 
 ```zaka-error ZK0457
 အဆင့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နိမ့်၊ အလယ် နှင့် တန်ဖိုးအနေဖြင့် ၁ ရှိသည့် မြင့် တို့ပါဝင်သည်။
@@ -49,10 +60,11 @@ of the member before it plus one, which can land on a value written later:
 error[ZK0457]: the member "မြင့်" has the value of "အလယ်"
 ```
 
-## No member marked as the initial one
+Each member needs a different value. A member with no value written gets the value of the
+member before it plus one, so here `အလယ်` is 1, which is the value written for `မြင့်`.
+The fix is to give `မြင့်` a value that no other member has, such as 2.
 
-`ကနဦးတန်ဖိုး` stands for the member marked `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်`. With no member marked, the
-enumeration has no initial value:
+## No member marked as the initial one
 
 ```zaka-error ZK0479
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -66,11 +78,12 @@ enumeration has no initial value:
 error[ZK0479]: "အရောင်" has no initial value: no member of "အရောင်" is marked "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်"
 ```
 
-Write the member in full, as `အရောင်များထဲမှ နီ`, or mark one: `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ဝါ၊ စိမ်း`.
+`ကနဦးတန်ဖိုး` means the member that we mark with `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်`, and here
+no member has the mark, so the enumeration has no initial value. The fix is to write the
+member in full, as `အရောင်များထဲမှ နီ`, or to mark one member:
+`ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ဝါ နှင့် စိမ်း`.
 
 ## Two members marked as the initial one
-
-One member alone can be the initial one:
 
 ```zaka-error ZK0480
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် နီ၊ ဝါ နှင့် ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် စိမ်း တို့ပါဝင်သည်။
@@ -83,10 +96,10 @@ One member alone can be the initial one:
 error[ZK0480]: "အရောင်" marks a second member with "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်"
 ```
 
-## A member value that is not a constant
+An enumeration can have just one initial member, so the fix is to remove one of the two
+marks.
 
-A member value is worked out when the program compiles, so it cannot read a variable,
-whose value is known when the program runs:
+## A member value that is not a constant
 
 ```zaka-error ZK0456
 ကိန်းရှင် စတင် သည် ၁၀ ဖြစ်ပါစေ။
@@ -100,10 +113,11 @@ whose value is known when the program runs:
 error[ZK0456]: the value of the member "နိမ့်" must work out when the program compiles
 ```
 
-## A member with no value that cannot count on
+The compiler works out each member value when the program compiles, but the value of a
+variable is known when the program runs. The fix is to declare `စတင်` as a constant with
+`ကိန်းသေ`.
 
-Members count on from the member before them when their values are integers. Text and
-each other kind need each value written:
+## A member with no value that cannot count on
 
 ```zaka-error ZK0461
 အမိန့် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် "go" ရှိသည့် သွား နှင့် ရပ် တို့ပါဝင်သည်။
@@ -115,6 +129,10 @@ each other kind need each value written:
 ```text
 error[ZK0461]: the member "ရပ်" needs a value: no text value follows the member before it
 ```
+
+Members count on from the member before them when their values are integers, but text and
+the other data kinds (types) have no next value. The fix is to write the value of each
+member, such as `တန်ဖိုးအနေဖြင့် "stop" ရှိသည့် ရပ်`.
 
 ## A member the enumeration does not have
 
@@ -130,10 +148,10 @@ error[ZK0461]: the member "ရပ်" needs a value: no text value follows the m
 error[ZK0329]: the enumeration "အရောင်" has no member "ပြာ"
 ```
 
-## A member written without the plural mark
+`အရောင်` has no member `ပြာ` (blue). The fix is to use one of its members, or to add `ပြာ`
+to the declaration.
 
-A member takes the enumeration name with `များ` before `ထဲမှ`. The help line gives the
-spelling to write.
+## A member written without the plural mark
 
 ```zaka-error ZK0330
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -148,9 +166,10 @@ error[ZK0330]: "အရောင်" before "ထဲမှ" names no enumeration
   = help: write "အရောင်များထဲမှ"
 ```
 
-## A switch that misses a member
+To name a member, we write the enumeration name with `များ` before `ထဲမှ`. The help line
+shows the fix: `အရောင်များထဲမှ နီ`.
 
-A switch over an enumeration names each member in an arm, or ends with the default arm.
+## A switch that misses a member
 
 ```zaka-error ZK0458
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -167,9 +186,10 @@ error[ZK0458]: no arm of this switch names "ဝါ"
   = help: name each member in an arm, or add "တခြား အရောင် တစ်ခု ဖြစ်လျှင်" last
 ```
 
-## A default arm of the wrong kind
+A switch over an enumeration must name each member in an arm, or end with the default
+arm. The fix is to add an arm for `ဝါ`, or the default arm, as the help line shows.
 
-The default arm names the kind of the subject, with its measure word.
+## A default arm of the wrong data kind
 
 ```zaka-error ZK0459
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -183,10 +203,10 @@ The default arm names the kind of the subject, with its measure word.
 error[ZK0459]: the default arm names "text", but the subject of the switch is "isize"
 ```
 
-## An arm after the default arm
+The default arm names the data kind of the subject, with its measure word (classifier).
+The subject `ရက်` is an integer, so the fix is `တခြား ကိန်းပြည့် တစ်ခု ဖြစ်လျှင်`.
 
-The default arm runs when no case before it equals the subject, so an arm after it could
-never run.
+## An arm after the default arm
 
 ```zaka-error ZK0236
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -201,10 +221,10 @@ never run.
 error[ZK0236]: the default arm "တခြား ... တစ်ခု ဖြစ်လျှင်" comes last in a switch
 ```
 
-## One case twice
+The default arm runs when no case before it equals the subject, so an arm after it could
+never run. The fix is to move the default arm to the end.
 
-A switch runs the first arm whose case equals the subject, so a second arm with an equal
-case could never run.
+## One case twice
 
 ```zaka-error ZK0460
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -217,5 +237,18 @@ case could never run.
 ```text
 error[ZK0460]: an arm before this one has this case
 ```
+
+A switch runs the first arm whose case equals the subject, and `၃ + ၃` equals `၆`, so the
+second arm could never run. The fix is to remove the second arm, or to change its case.
+
+## Recap
+
+- An enumeration is declared at the top level, and each member has a different name and
+  a different value.
+- Member values are constants, and members with text or other non-integer values each need
+  a value written.
+- A member is named with `<name>များထဲမှ <member>`, with `များ` before `ထဲမှ`.
+- A switch over an enumeration names each member or ends with the default arm, which comes
+  last and names the data kind of the subject.
 
 Next: [Functions as values](../function-values/README.md).

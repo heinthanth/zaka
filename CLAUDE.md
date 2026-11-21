@@ -29,8 +29,8 @@ A program passes through: segmenter → lexer → parser → naturalness → nam
 (semcheck) → lower to IR → fold constants → checker (flow facts, and the lint of marked
 code) → codegen → VM. `zakac build
 --backend vm|c|native` picks the codegen: ops for the VM (`.zkc` / `.zkct`), C and a native
-executable, or Cranelift and a native executable; `zakac run --jit` runs the Cranelift
-code at once.
+executable, or Cranelift and a native executable; `zakac run` runs a source file as
+Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` pick one.
 
 ## Commands
 
@@ -73,6 +73,28 @@ and one set of tests serve both books.
     (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
+- A Zaka term carries its standard term in parentheses, as in "data kind (type)" or "table
+  (map)": at its first use on a page, and again at the first use under a `##` head
+  whose topic it is. The Zaka term stands first and remains the main word; later
+  mentions stand alone. The pairs come from `manual/reference/terms.md`; a new Zaka
+  term gets a row there.
+- Terms the books use: "data kind" (not a bare "kind" as the term), "thread" (not
+  "job"), "function signature" (not "header"), "mutable parameter" and "writable
+  parameter" (not "changed" and "filled"), "operation" (not "op"), "core module" (not
+  "the core"), "program start block" (not "start block"), "block closer" (not "closer").
+- A Learn page has one shape: a short intro, `## You will learn`, the smallest example
+  that runs with its pattern line (`<name> ဟူသော <kind> တစ်ခု`) and a word-for-word gloss,
+  one idea in each `##` section, `## Details` for the edge rules (with links to Docs),
+  `## Recap`, `## Hands on`, then `Next:`. `learn/tour.md` is the fast path for a reader
+  who knows another language.
+- Write the prose in plain English, the words a developer would use when talking to a
+  workmate: "Zaka uses Burmese sentences", not "Zaka reads as Burmese". Sentences of
+  medium length that join related ideas, not a row of short ones. Say how a form is used,
+  not what it "names": "In the function signature, we can use `<name> ဟူသော <kind>` to
+  define a parameter and `ပြန်ပေးမည်` to define a return value." Speak as "we", or use the
+  passive ("a variable is declared with `ကိန်းရှင်`") or the imperative in steps ("save
+  the file, then run it"). When the no-`y` rule rules a word out, pick another common
+  word or reshape the sentence; never an odd or bookish phrase.
 - Learn shows; Docs states the rules in full. When the code and a note disagree, the
   code wins: check claims against the compiler before writing them down.
 
@@ -84,9 +106,13 @@ touches:
 
 - **Learn and Docs** (`docs/learn/`, `docs/manual/`): the language page of the feature
   and its Learn page, both `CONTENTS.md` files, `reference/errors.md` (codes and short
-  kind names), `reference/reserved-words.md`, `compiler/commands.md` (flags),
-  `vm/instructions.md` and `vm/traps.md` (ops and traps), and the `internals/` page of
-  each stage the change touches.
+  kind names), `reference/reserved-words.md`, `reference/grammar.md` (productions),
+  `reference/terms.md` (a new Zaka term), `compiler/commands.md` and `compiler/build.md`
+  (flags), `vm/instructions.md`, `vm/traps.md` and `vm/traps-unsafe.md` (operations and
+  traps), `learn/tour.md` when a feature changes what a newcomer sees, and the
+  `internals/` page of each stage the change touches. Long topics are split into sibling
+  pages (`language/functions-*.md`, `internals/parser-*.md`): find the page with
+  `CONTENTS.md`.
 - **Internal notes** (`docs/*.internal.md`): the design note of the feature (record what
   was built and where the build left the plan), `ROADMAP.internal.md` (the status of the
   milestone), the checklist in `LANGUAGE.internal.md` §9, and the note of each stage the
@@ -122,6 +148,11 @@ Exceptions, because we cannot rename them:
 - Proper nouns and format names imposed from outside (`Myanmar Sabae`, `TrueType`,
   `WebAssembly`, `@keyframes`, ...).
 - Zaka code in examples and the output it prints.
+- Standard computing terms in the prose of Learn and Docs (`type`, `array`, `memory`,
+  `syntax`, `library`, `copy`, `key`, `byte`, `body`, `binary`, `entry point`, ...), so
+  that a reader who knows another language finds the word known to them. Each such term
+  has a row on `docs/manual/reference/terms.md`. Identifiers, file names, comments in
+  code and locale strings keep the rule.
 
 Never reuse an exception in names we choose ourselves. Do not rename `Cargo.lock`
 entries or sample data. This file follows the rule too; other agent instruction files

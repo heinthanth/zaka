@@ -1,13 +1,20 @@
 ---
 title: Adding and removing cells
-description: Add a cell at the end of a list or in front of a cell, and remove its last cell.
+description: Add a cell at the end of a list or in front of a cell, and remove the last cell.
 ---
 
 # Adding and removing cells
 
-A plain list can grow and shrink a cell at a time. `ထည့်မည်` ("please
-add") puts a value in a new last cell, and `ဖျက်မည်` ("please remove") takes the last
-cell off:
+A plain list (dynamic array) can grow and shrink while the program runs. We can add a new
+cell (element) at the end or in front of another cell, and we can remove the last cell, so
+the number of cells changes as we go.
+
+## You will learn
+
+- how to add a value at the end of a list, and how to remove the last cell
+- how to add a value in front of a cell
+- how to build a list with a loop
+- how to let a function add to the caller's list
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -27,21 +34,33 @@ cell off:
 ၁
 ```
 
+We use `ထည့်မည်` ("please add") to put a value in a new last cell, and `ဖျက်မည်` ("please
+remove") to take the last cell off:
+
+```text
+<list> ထဲသို့ <value> ကို ထည့်မည်။
+<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
+```
+
 | Zaka | Reads as |
 | --- | --- |
-| `ကိန်းများ ထဲသို့ ၃ ကို ထည့်မည်` | "please add 3 into the numbers" |
-| `ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်` | "please remove the last cell of the numbers" |
-| `ထဲသို့` | "into" |
-| `နောက်ဆုံးအကွက်` | "the last cell" |
+| `ကိန်းများ ထဲသို့` | "into the numbers" |
+| `၃ ကို ထည့်မည်` | "please add 3" |
+| `ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို` | "the last cell of the numbers" |
+| `ဖျက်မည်` | "please remove" |
 
-`နောက်ဆုံးအကွက်` names the last cell for a remove alone: it comes right after `၏`, and
-`ကို ဖျက်မည်` follows it. To read the last cell, use its number, as in [Cell
-numbers](README.md#cell-numbers).
+We can use `နောက်ဆုံးအကွက်` ("the last cell") just with `ဖျက်မည်`, right after `၏`. To
+read the last cell, we use its number instead, as in [Cell numbers](README.md#cell-numbers).
 
 ## Adding in the middle
 
-`၏ အရှေ့တွင်` ("in front of") after a cell puts the new value in front of it. The value
-takes the number of that cell, and the cells from there on move one cell on:
+```text
+<list> ၏ အကွက် <number> ၏ အရှေ့တွင် <value> ကို ထည့်မည်။
+```
+
+To add a value in front of a cell, we write `၏ အရှေ့တွင်` ("in front of") after that
+cell. The new value gets the number of that cell, and each cell from there on moves along
+one place:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -58,16 +77,16 @@ takes the number of that cell, and the cells from there on move one cell on:
 
 | Zaka | Reads as |
 | --- | --- |
-| `ကိန်းများ ၏ အကွက် ၁ ၏ အရှေ့တွင် ၂၀ ကို ထည့်မည်` | "please add 20 in front of cell 1 of the numbers" |
-| `အရှေ့တွင်` | "in front of" |
+| `ကိန်းများ ၏ အကွက် ၁` | "cell 1 of the numbers" |
+| `၏ အရှေ့တွင်` | "in front of" |
+| `၂၀ ကို ထည့်မည်` | "please add 20" |
 
-The number can also be the count, which puts the value at the end, as `ထဲသို့` does. A
-larger number stops the program.
+The cell number can also be the cell count, which puts the value at the end, the same as
+`ထဲသို့`, while a larger number stops the program.
 
 ## Building a list
 
-A loop can fill a list that starts with no cells, `[]`. `ကနဦးတန်ဖိုး` gives the
-same list with no cells:
+A program often starts with a list with no cells, `[]`, and adds the cells in a loop:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -81,8 +100,9 @@ same list with no cells:
 [၁၊ ၄၊ ၉၊ ၁၆၊ ၂၅]
 ```
 
-The value has the kind of a cell, and it goes in as an assigned value does: text and lists
-are duplicated, so the list holds a value of its own:
+The value we add must have the data kind (type) of a cell, and it goes into the list the
+same as with `ထားမည်`: text and lists are duplicated (copied), so a later change to the
+variable does not reach the list. `ကနဦးတန်ဖိုး` is also a list with no cells:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -99,24 +119,10 @@ are duplicated, so the list holds a value of its own:
 ["မောင်"၊ "မြ"]
 ```
 
-The value is worked out before the list changes, so a value that reads the list reads it
-as it was:
+## Growing a list inside a list
 
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ကိန်းများ သည် လက္ခဏာမဲ့ ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇] ဖြစ်ပါစေ။
-ကိန်းများ ထဲသို့ ကိန်းများ ၏ အကွက်အရေအတွက် ကို ထည့်မည်။     // the count before the add: 1
-ကိန်းများ ထဲသို့ ကိန်းများ ၏ အကွက်အရေအတွက် ကို ထည့်မည်။     // 2
-ကိန်းများ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-[၇၊ ၁၊ ၂]
-```
-
-The list can be each place a value can be set in: a variable, a cell of another list, or
-a field of a struct:
+We can add to each list that we can set, which includes a variable, a cell of another list
+and a field of a struct. Here the rows of a list of lists grow and shrink one at a time:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -134,10 +140,14 @@ a field of a struct:
 
 ## Lists in functions
 
-A list parameter is a duplicate of the list passed in, so a function that adds to it
-leaves the caller's list as it was. To grow the caller's list, mark the parameter and the
-argument as [the caller's variable](../functions/parameters.md#changing-the-callers-variable)
-is marked:
+```text
+<name> ဟူသော <kind> စာရင်း တစ်ခု ကို ဒေတာ ပြောင်းလဲရန် လက်ခံပြီး
+```
+
+A list parameter gets a duplicate of the list we pass in, so when a function adds to it,
+the caller's list does not change. To let a function grow the caller's list, we write
+`ဒေတာ ပြောင်းလဲရန်` in the parameter to make it a mutable parameter (`inout`), just as for
+[the caller's variable](../functions/parameters.md#changing-the-callers-variable):
 
 ```zaka
 // the parameter is a duplicate of the list passed in
@@ -170,14 +180,28 @@ is marked:
 [၁၊ ၂၊ ၉]
 ```
 
-## Which lists grow
+## Details
 
-Text takes an add too, of text or a character, at its end or in front of a character, and
-it loses its last character with `နောက်ဆုံးစာလုံး` (see [Adding in the middle and removing
-the end](../text/changing.md#adding-in-the-middle-and-removing-the-end));
-`နောက်ဆုံးအကွက်` on text is an error (see [List mistakes](mistakes.md#removing-from-text)). A remove from a
-list with no cells left stops the program when it runs: see [List
-mistakes](mistakes.md#removing-from-a-list-with-no-cells).
+- The value is worked out before the list changes, so a value that reads the list sees it
+  as it was before the add: `ကိန်းများ ထဲသို့ ကိန်းများ ၏ အကွက်အရေအတွက် ကို ထည့်မည်။` adds
+  the count from before the add ([Adding and removing
+  cells](../../manual/language/lists.md#adding-and-removing-cells)).
+- Removing the last cell of a list with no cells stops the program ([Removing from a list
+  with no cells](mistakes.md#removing-from-a-list-with-no-cells)).
+- Text can grow too, with text or a character at its end or in front of a character, and we
+  remove its last character with `နောက်ဆုံးစာလုံး` ([Adding in the middle and removing the
+  end](../text/changing.md#adding-in-the-middle-and-removing-the-end)). `နောက်ဆုံးအကွက်` on
+  text is an error ([Removing from text](mistakes.md#removing-from-text)).
+- The counted lists of Part II never grow or shrink ([Adding to a counted
+  list](../forms/counted-lists.md#adding-to-a-counted-list)).
+
+## Recap
+
+- `<list> ထဲသို့ <value> ကို ထည့်မည်။` adds a value as the new last cell.
+- `<list> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။` removes the last cell.
+- `<list> ၏ အကွက် <number> ၏ အရှေ့တွင် <value> ကို ထည့်မည်။` adds a value in front of a
+  cell.
+- A function adds to the caller's list when its parameter has `ဒေတာ ပြောင်းလဲရန်`.
 
 ## Hands on
 

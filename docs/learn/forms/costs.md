@@ -1,21 +1,29 @@
 ---
 title: What a duplicate costs
-description: Where text and lists are copied, when the compiler shares or moves them instead, what an edit of text costs, and how a program steers the ring collector.
+description: Where text and lists are duplicated, when the compiler shares or moves them instead, what an edit of text costs, and how a program steers the ring collector.
 ---
 
 # What a duplicate costs
 
-Each assignment, each argument and each result gives a value of its own: a *duplicate*. For a
-number, a duplicate costs next to nothing. Text and lists built while the program runs keep
-their cells in a heap block, and a full duplicate of one asks the heap for a new block and
-copies each cell into it. The program means the same thing whatever the compiler does
-about it; this page tells when the work happens.
+Each assignment, each argument and each result makes a separate value, a *duplicate*
+(copy). For a number, a duplicate costs next to nothing, but text and lists that are built
+while the program runs keep their cells in a block on the heap (dynamic memory), and a
+full duplicate of one needs a new block and a copy of each cell. The program means the
+same thing whatever the compiler does about it, and this page shows when the work
+happens.
+
+## You will learn
+
+- How a duplicate shares its cells until one side writes (copy on write).
+- Where a duplicate is made, and where the compiler skips it.
+- What an edit of text costs.
+- How to pause, run and read the ring collector.
 
 ## A duplicate shares until a write
 
-A duplicate of text or of a list does not duplicate the cells at once. The two share one block,
-which keeps a count of the values that hold it, and the first write to either of them
-copies the cells, so that the other stands still:
+A duplicate of text or of a list does not copy the cells at once. The two values
+share one block, which keeps a count of the values that use it, and the first write to
+either value copies the cells, so that the other value does not change:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -33,22 +41,23 @@ copies the cells, so that the other stands still:
 [၉၊ ၂၊ ၃]
 ```
 
-In the Explorer, with debug mode on, the heap view shows one block for the two lists
-until the write, and a new block at it. A program that copies a long list and never writes the duplicate
-spends nothing on it.
+In the Explorer, with debug mode on, the heap view shows one block for the two lists until
+the write, and a new block at the write. So a program that duplicates a long list and
+never writes the duplicate spends nothing on it.
 
 ## Where a duplicate is made
 
-A duplicate is made where a value goes into another place:
+A duplicate is made wherever a value goes into another place:
 
-- a declaration or a set from another variable: `ခ ကို က ဟု ထားမည်။`;
-- an argument, given to a parameter;
-- a result, given back to the caller;
-- a value added to a list, or put into a cell or a field;
-- an each loop that changes its list or text, which walks a duplicate of it.
+- a declaration or an assignment from another variable: `ခ ကို က ဟု ထားမည်။`;
+- an argument, which goes to a parameter;
+- a result, which goes back to the caller;
+- a value that we add to a list, or put into a cell or a field;
+- a loop over each cell or character that changes its list or text, which walks a
+  duplicate of it.
 
-The last one shows in a run: the loop below writes cell 0 of the list each round, and the
-loop still reads the cells the list held when the loop began.
+The last case shows in this program: the loop writes cell 0 of the list in each round,
+but the loop still reads the cells that the list had when the loop began:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -68,43 +77,47 @@ loop still reads the cells the list held when the loop began.
 [၃၊ ၂၊ ၃]
 ```
 
-A [shared object](../structs/objects.md) is never copied in these places: each of them
-shares the one object.
+A [shared object](../structs/objects.md) (reference type) is never duplicated in these
+places: each of them shares the one object.
 
 ## Where nothing is copied
 
 The compiler skips the work where the program cannot tell the difference:
 
 - **A duplicate that is never written** shares its cells for good, as above.
-- **The last use moves.** When the place read is not read again, the new place takes its
-  cells, and the count of the block does not even change.
-- **Literals stand still.** A text literal, a list literal of known values and a constant
-  of either sit in the program itself, and nothing writes them, so a duplicate of one takes
-  no block until its first edit (see [Static data and counted lists](counted-lists.md#where-the-cells-live)).
-- **A loop that reads alone** walks the cells in place.
-- **A parameter the function never writes** reads the caller's cells. A function that
-  writes its parameter copies the cells at the first write.
+- **The last use moves.** When the place that we read is not read again, the new place
+  takes its cells, and the count of the block does not even change.
+- **Literals do not move.** A text literal, a list literal of known values and a constant of
+  either one sit in the program itself, and nothing writes them, so a duplicate of one
+  needs no block until its first edit (see [Static data and counted
+  lists](counted-lists.md#where-the-cells-live)).
+- **A loop that just reads** walks the cells in place.
+- **A parameter that the function never writes** reads the caller's cells. A function
+  that writes its parameter copies the cells at the first write.
 
-So a program that gives its lists to functions that read them, as the
+So a program that passes its lists to functions that just read them, as the
 [Scores](../programs/scores.md) program does, copies no cell at all.
 
 ## The cost of an edit
 
 A [character write](../text/characters.md#changing-a-character) and an
-[add](../text/changing.md#adding-to-text) change text in place, and each has a cost of
-its own:
+[add](../text/changing.md#adding-to-text) change text in place, and each one has its own
+cost:
 
-- **The first edit copies shared text.** A literal, a duplicate of text, and text given to a
-  parameter share their cells with another place. Their first edit copies the cells into
-  a new heap block, so the literal and the caller's text stand still.
-- **An add fills spare room first.** The new cells go into the block when the block has room. When
-  it has none, the text moves to a block twice its size, 16 cells at the least, so a loop
-  of adds copies the text a few times, not once for each round.
-- **A character of another size shifts the rest.** `'a'` takes one cell and `'က'` three, so
-  a write of one in place of the other moves each cell after it.
-- **A character write walks from the start.** A write finds its character as a read does,
-  from the first cell, so a counted loop that writes each character in turn takes time in
-  the square of the count.
+- **The first edit copies shared text.** A literal, a duplicate of text, and text passed
+  to a parameter share their cells with another place, so their first edit copies the
+  cells into a new heap block, and the literal and the caller's text do not change.
+- **An add fills spare room first.** The new cells go into the block when it has room.
+  When it has none, the text moves to a block twice its size, at least 16 cells, so a loop
+  of adds copies the text a few times, not once in each round.
+- **A character of another size shifts the rest.** `'a'` takes one cell and `'က'` takes
+  three, so writing one in place of the other moves each cell after it.
+- **A character write walks from the start.** A write finds its character the same as a
+  read does, from the first cell, so a counted loop that writes each character in turn
+  takes time in the square of the count.
+
+In this program, the function adds to its parameter, so the first edit copies the
+caller's cells, and the caller's text does not change:
 
 ```zaka
 အော် ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -126,11 +139,12 @@ its own:
 
 ## Rings on demand
 
-Counting frees most blocks at once; the ring collector frees the objects that hold each
-other in a ring ([Objects that point at each other](../structs/objects.md#objects-that-point-at-each-other)).
-A program can steer the collector: pause it where the program must not halt for it,
-and run it where the program has time. Here a loop leaves 100 rings behind while the
-collector rests, and one statement frees them all:
+Most blocks are freed as soon as their count reaches zero, while the ring collector
+frees the objects that point at each other in a ring ([Objects that point at
+each other](../structs/objects.md#objects-that-point-at-each-other)). The collector runs
+on its own, but we can also steer it: we can pause it where the program must not halt for
+it, and run it where the program has time. Here a loop leaves 100 rings behind while the
+collector rests, and one sentence frees them all:
 
 ```zaka
 အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
@@ -154,15 +168,27 @@ collector rests, and one statement frees them all:
 ပြီး
 ```
 
-A fourth statement, `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။`,
-sets how full the list of waiting blocks gets, in octets, before the collector runs on its
-own. Docs: [When a block is freed](../../manual/language/objects.md#when-a-block-is-freed).
+These four sentences steer the collector:
 
-One expression reads the collector: `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ` gives its stats
-as a struct of the core, `အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ`: the collections
-that ran, the octets the collections freed, the octets waiting in the buffer, the octets that start a
-run, and whether the runs are paused. Each ring here leaves one node waiting, 40 octets,
-and the collection frees both nodes of each ring:
+| Zaka | Reads as | What it does |
+| --- | --- | --- |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ခေတ္တရပ်မည်။` | "will pause the automatic cleanup of memory" | pauses the collector |
+| `မင်မိုရီရှိ မလိုအပ်သော အရာများကို ရှင်းလင်းမည်။` | "will clean the unneeded things in memory" | runs the collector now |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို ပြန်လည်စတင်မည်။` | "will restart the automatic cleanup of memory" | resumes the collector |
+| `အလိုအလျောက် မင်မိုရီ ရှင်းလင်းမှုကို <n> ဘိုက် နှင့်အထက်မှ လုပ်ဆောင်မည်။` | "will do the automatic cleanup from `n` octets and up" | sets how full the list of waiting blocks gets, in octets (bytes), before the collector runs on its own |
+
+## Reading the collector
+
+```
+အလိုအလျောက် မင်မိုရီ ရှင်းလင်းသည့် အခြေအနေ
+```
+
+This expression returns the stats of the collector as a struct of the core module,
+`အလိုအလျောက်မင်မိုရီရှင်းလင်းမှုအခြေအနေပြကိန်းဂဏန်းများ`. Its fields tell the number of
+collections that ran, the octets that the collections freed, the octets waiting in the
+list, the octets that start a run, and whether the runs are paused. In this program, each
+ring leaves one node of 40 octets waiting, and the collection frees both nodes of each
+ring:
 
 ```zaka
 အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
@@ -193,13 +219,43 @@ and the collection frees both nodes of each ring:
 မှန်
 ```
 
+## Details
+
+- **Which blocks wait.** Text, lists of numbers and structs of numbers never wait for the
+  collector, because these cannot be part of a ring ([When a block is
+  freed](../../manual/language/objects.md#when-a-block-is-freed)).
+- **The threshold.** At first, the collector runs when 16,384 octets of blocks are waiting,
+  and again when the program ends. A small threshold keeps the heap small and runs the
+  collector often, and a large one runs it less often and lets more rings wait.
+- **During a pause.** Blocks still wait, and the end of the program still collects. When
+  the list filled up during the pause, the resume collects at once ([When a block is
+  freed](../../manual/language/objects.md#when-a-block-is-freed)).
+- **The field names.** Docs lists each field of the stats struct with its data kind, and
+  the rules for when a block is freed: see [When a block is
+  freed](../../manual/language/objects.md#when-a-block-is-freed).
+- **Two options for the compiler.** `--results` and `--scratch` change where the compiler
+  builds list and struct results and scratch values, without changing what the program
+  prints ([Options of the compile
+  stages](../../manual/compiler/commands.md#options-of-the-compile-stages)).
+
+## Recap
+
+- A duplicate of text or a list shares its cells until one side writes, and the write
+  copies the cells.
+- A duplicate is made at each declaration, assignment, argument, result and add, but the
+  compiler moves the value at its last use and reads in place where nothing writes.
+- The first edit of shared text copies it, and an add grows the block to twice its size
+  when it is full.
+- Four sentences pause, run, resume and tune the ring collector, and one expression reads
+  its stats.
+
 ## Hands on
 
-- Duplicate a list into a second variable, write a cell of the duplicate, and watch the heap view
-  of the Explorer in debug mode.
+- Duplicate a list into a second variable, write a cell of the duplicate, and watch the
+  heap view of the Explorer in debug mode.
 - Write a function that prints a list, and another that sets cell 0 of its list and
   prints it. Which one copies the cells?
-- Change the loop above so that it walks the cell numbers with a counted loop, and compare
-  the output.
+- Change the loop that writes cell 0 so that it walks the cell numbers with a counted
+  loop, and compare the output.
 
 Next: [Unsafe Zaka](../pointers/README.md).

@@ -1,13 +1,19 @@
 ---
 title: Recursion
-description: A function that calls itself.
+description: A function that calls itself, its base case, and what happens when it never stops.
 ---
 
 # Recursion
 
-A function can call itself. This is called *recursion*. It suits problems that contain
-a smaller version of themselves. The *factorial* of n, written n!, is
-n × (n − 1) × ... × 1. So 5! is 5 × 4!, and 4! is 4 × 3!, and so on down to 1! = 1.
+A function can call itself, which is called *recursion*. It suits problems that contain a
+smaller version of themselves, such as the *factorial* of n, written n!, which is
+n × (n − 1) × … × 1. So 5! is 5 × 4!, and 4! is 4 × 3!, and so on down to 1! = 1.
+
+## You will learn
+
+- how a function calls itself
+- the two parts that each recursive function needs
+- what happens when a recursion does not stop
 
 ```zaka
 // factorial
@@ -34,17 +40,26 @@ n × (n − 1) × ... × 1. So 5! is 5 × 4!, and 4! is 4 × 3!, and so on down 
 ၇၂၀
 ```
 
-Each recursive function needs two parts:
+A recursive call is a plain call, written the same as each other call, and nothing in the
+function signature marks the function as recursive. Each recursive function needs two parts:
 
-1. **A base case** that gives the answer without calling itself: `n ≤ 1` gives 1.
-2. **A recursive case** that calls itself on a *smaller* problem: n − 1.
+```text
+အကယ်၍ <base case>လျှင် <answer> ကို ပြန်ပေးမည်။
+… <name> ဟူသော လုပ်ဆောင်ချက်ကို <smaller argument> ဖြင့် လုပ်ဆောင်သော ရလဒ် … ကို ပြန်ပေးမည်။
+```
 
-Each call works on a smaller n, so the calls reach the base case in the end and stop.
+1. A *base case*, which returns the answer without a call to itself: for n ≤ 1, the
+   answer is 1.
+2. A *recursive case*, which calls the function itself on a *smaller* problem: n − 1.
+
+Each call works on a smaller n, so the calls reach the base case in the end and stop. Each
+call also has its own parameters and its own variables, so the `န` of one call does not
+change the `န` of another.
 
 ## Two calls at once
 
-The Fibonacci numbers start 0, 1, and each next number is the sum of the two before it:
-0, 1, 1, 2, 3, 5, 8, ... A recursive function can follow that rule word for word:
+The Fibonacci numbers start with 0 and 1, and each next number is the sum of the two before
+it: 0, 1, 1, 2, 3, 5, 8, … A recursive function can follow that rule word for word:
 
 ```zaka
 // fibonacci
@@ -74,14 +89,15 @@ The Fibonacci numbers start 0, 1, and each next number is the sum of the two bef
 ၅၅
 ```
 
-This version is simple to read but slow for large n, because it works out the same
-numbers again and again. The [Fibonacci numbers](../programs/fibonacci.md) program uses
+This version is simple to follow, but it is slow for a large n, because it works out the
+same numbers again and again. The [Fibonacci numbers](../programs/fibonacci.md) program uses
 a loop instead.
 
 ## Recursion without an end
 
-If the base case is missing or never reached, the function calls itself forever. Zaka
-stops a program after 4096 calls that are still waiting to return:
+When the base case is missing or the calls never reach it, the function keeps calling
+itself. Zaka stops the program once more than 4096 calls are waiting to return at the same
+time:
 
 ```zaka-stop
 အဆုံးမဲ့ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -99,10 +115,28 @@ stops a program after 4096 calls that are still waiting to return:
 the program stopped: more than 4096 nested calls
 ```
 
+## Details
+
+- `zakac run --max-depth <calls>` sets a different limit in place of 4096, and a native
+  program, built with `--backend c` or `--backend native` or run with `--jit`, counts
+  calls in the same manner ([Recursion](../../manual/language/functions-calls.md#recursion)).
+- Two functions can also call each other, such as one that tests for an even number and
+  one that tests for an odd number, each through the other
+  ([Recursion](../../manual/language/functions-calls.md#recursion)).
+
+## Recap
+
+- A function can call itself with a plain call.
+- Each recursive function needs a base case, which returns without a call, and a recursive
+  case, which calls the function on a smaller problem.
+- Each call has its own parameters and variables.
+- More than 4096 calls waiting at the same time stop the program.
+
 ## Hands on
 
-- Write a recursive function for the sum 1 + 2 + ... + n.
+- Write a recursive function for the sum 1 + 2 + … + n.
 - Write a recursive function that counts the digits of a number (hint: n / 10 has one
   digit fewer).
+- Remove the base case from `ဖက်တိုရီယယ်` and run it.
 
 Next: [Compile time](compile-time.md).

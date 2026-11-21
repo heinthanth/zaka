@@ -1,14 +1,22 @@
 ---
 title: Struct mistakes
-description: The mistakes structs make possible, and how Zaka catches each one.
+description: The common mistakes with structs, the message Zaka shows for each one, and the fix.
 ---
 
 # Struct mistakes
 
-## A struct declared inside a block
+This page goes through the common mistakes with structs (records), and Zaka catches each
+of them before the program runs. For each mistake, we show the program, the message from
+the compiler, the reason and the fix.
 
-A struct is declared at the top level and nowhere else: not in a block, a loop, a
-conditional or a function.
+## You will learn
+
+- where a struct can be declared, and which names it can share
+- the mistakes in reading a field and in writing a struct literal
+- what a struct cannot contain and cannot do
+- what happens when we use the wrong measure word (classifier)
+
+## A struct declared inside a block
 
 ```zaka-error ZK0228
 အကယ်၍ မှန် ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -19,6 +27,10 @@ conditional or a function.
 ```text
 error[ZK0228]: structs can be declared at the top level and nowhere else
 ```
+
+We can declare a struct at the top level of a file alone, and not inside a block, a loop,
+a conditional or a function. The fix is to move the declaration out of the block, above
+the program start block.
 
 ## One name for two structs
 
@@ -34,9 +46,11 @@ error[ZK0228]: structs can be declared at the top level and nowhere else
 error[ZK0316]: "လူ" names a struct, an enumeration or a kind alias declared before
 ```
 
-## One name for two fields
+Two structs cannot have the same name, and neither can a struct and an enumeration or a
+kind alias. The fix is to give the second struct a different name, or to merge the fields
+into one struct.
 
-A field is found through its name, so two fields of one struct need two names:
+## One name for two fields
 
 ```zaka-error ZK0317
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အသက် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
@@ -49,9 +63,10 @@ A field is found through its name, so two fields of one struct need two names:
 error[ZK0317]: "လူ" names the field "အသက်" twice
 ```
 
-## A name that is no struct
+We reach a field through its name, so two fields of the same struct need two different
+names.
 
-A kind that names a struct no declaration gives is refused:
+## A name that is no struct
 
 ```zaka-error ZK0318
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -65,12 +80,10 @@ A kind that names a struct no declaration gives is refused:
 error[ZK0318]: no struct or enumeration named "လုပ်" is declared
 ```
 
-Check the spelling of the name against the declaration.
+The data kind (type) `လုပ်` is not declared at all, because the struct is named `လူ`.
+The fix is to check the spelling of the name against the declaration.
 
 ## A struct name that is also a value name
-
-A struct name starts a kind wherever a value can stand, as in `လူ တစ်ခု ၏ အရွယ်အစား`, so the
-same name cannot name a variable, a constant, a parameter, a field or a function too:
 
 ```zaka-error ZK0319
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -83,6 +96,10 @@ same name cannot name a variable, a constant, a parameter, a field or a function
 ```text
 error[ZK0319]: "လူ" names a struct or an enumeration, so it cannot name a value or a function too
 ```
+
+We can use a struct name in places where a value is expected, as in `လူ တစ်ခု ၏
+အရွယ်အစား`, so the same name cannot also name a variable, a constant, a parameter, a field
+or a function. The fix is to pick a different name for the variable.
 
 ## A field the struct does not have
 
@@ -99,9 +116,10 @@ error[ZK0319]: "လူ" names a struct or an enumeration, so it cannot name a va
 error[ZK0320]: "လူ" has no field named "အရပ်"
 ```
 
-## One field set twice
+`လူ` has the field `အသက်` alone. The fix is to use a field from the declaration, or to add
+the field to the struct. A struct literal that names a missing field gives the same error.
 
-A struct literal gives each field one value:
+## One field set twice
 
 ```zaka-error ZK0321
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -115,11 +133,10 @@ A struct literal gives each field one value:
 error[ZK0321]: the "လူ" literal sets the field "အသက်" twice
 ```
 
-A struct literal that names a field the struct does not have is ZK0320, as above.
+A struct literal gives each field one value, so the fix is to remove one of the two
+values.
 
 ## A field left out
-
-A struct literal gives each field a value. Zaka fills in no field on its own:
 
 ```zaka-error ZK0482
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
@@ -134,13 +151,11 @@ A struct literal gives each field a value. Zaka fills in no field on its own:
 error[ZK0482]: "လူ" needs a value for "အမြင့်"
 ```
 
-Give the field its value, or `ကနဦးတန်ဖိုး` for its initial value:
-`လူ(အသက်: ၂၀၊ အမြင့်: ကနဦးတန်ဖိုး)`.
+A struct literal needs a value for each field, and Zaka does not fill in a missing field.
+The fix is to give the field a value, or `ကနဦးတန်ဖိုး` for its initial value (default
+value): `လူ(အသက်: ၂၀၊ အမြင့်: ကနဦးတန်ဖိုး)`.
 
 ## A struct read before each field is set
-
-A struct declared with no value counts as set once each field is. A read before then is
-refused, since one field would hold no value:
 
 ```zaka-error ZK0722
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် အမြင့် ဟူသော ဒဿမကိန်း တစ်ခု တို့ပါဝင်သည်။
@@ -156,9 +171,11 @@ refused, since one field would hold no value:
 error[ZK0722]: "ကျော်" can be unset here: a path reaches this read with no value given to it
 ```
 
-Set `ကျော် ၏ အမြင့်` too before the read, or declare the struct with a value, such as
-`ကနဦးတန်ဖိုး`. The rules in full are in [Set before
-read](../../manual/language/statements.md#set-before-read).
+A struct declared without a value counts as set once all of its fields are set. Here
+`အမြင့်` has no value when the program prints the whole struct. The fix is to set
+`ကျော် ၏ အမြင့်` too before the read, or to declare the struct with a value such as
+`ကနဦးတန်ဖိုး`. The full rules are in [Set before
+read](../../manual/language/declarations.md#set-before-read).
 
 ## A field of a value that is no struct
 
@@ -173,28 +190,30 @@ read](../../manual/language/statements.md#set-before-read).
 error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is isize, not a struct
 ```
 
-## A field read in a sum
+`က` is an integer, and an integer has no fields. The fix is to declare `က` as a struct
+that has the field `အသက်`.
 
-A field inside an operator expression goes in parentheses. Without them, the sentence
-does not read:
+## A field read in a sum
 
 ```zaka-error ZK0204
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
-ကိန်းရှင် ကျော် သည် လူ တစ်ခု ဖြစ်ပါစေ။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကျော် သည် လူ(အသက်: ၂၀) ဖြစ်ပါစေ။
 ကျော် ၏ အသက် + ၁ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
 ```
 
+A field read with `၏` is a word phrase, and a word phrase cannot go straight inside a sum
+with signs, so the compiler cannot make sense of the sentence ([Grouping and
+order](../operators/grouping.md)). The fix is to put the field in parentheses:
+`(ကျော် ၏ အသက်) + ၁`.
 
-Write `(ကျော် ၏ အသက်) + ၁`.
-
-## A struct that holds itself
-
-A field sits inside its struct, so a struct that holds itself would be larger than
-itself:
+## A struct that contains itself
 
 ```zaka-error ZK0427
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် သူ ဟူသော လူ တစ်ခု တို့ပါဝင်သည်။
@@ -207,13 +226,12 @@ itself:
 error[ZK0427]: "လူ" holds itself, so it would have no end
 ```
 
-Part III shows how a struct reaches another of its kind through an address: see [A linked
-list](../pointers/structs.md#a-linked-list).
+A field is stored inside its struct, so a struct that contains itself would need to be
+larger than itself. To link one struct to another of the same data kind, Part III uses
+an address, in [A linked list](../pointers/structs.md#a-linked-list), and a [shared
+object](objects.md#an-object-that-can-be-missing) can do it with an optional field.
 
 ## Ordering structs
-
-`==` and `!=` take two structs of one kind, but `<`, `>` and the like do not: a struct has
-no order of its own. Compare the field that gives the order:
 
 ```zaka-error ZK0403
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -229,14 +247,11 @@ no order of its own. Compare the field that gives the order:
 error[ZK0403]: < needs a number or a character, found လူ
 ```
 
-Write `က ၏ အသက် < ခ ၏ အသက်` instead.
+We can compare two structs with `==` and `!=`, but `<`, `>` and the other order operators
+do not work on structs, because Zaka cannot know which field should decide the order. The
+fix is to compare that field: `က ၏ အသက် < ခ ၏ အသက်`.
 
-## The wrong classifier
-
-Burmese counts things with a classifier. A struct is counted with the word its
-declaration names, `ခု` when it names none, `စာလုံး` with `လုံး`, and each other kind
-with `ခု`.
-Another word gives a warning, and the program still runs, since the meaning is the same:
+## The wrong measure word
 
 ```zaka-warning ZK0509
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
@@ -250,8 +265,12 @@ Another word gives a warning, and the program still runs, since the meaning is t
 warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 ```
 
-The same warning comes for `ယောက်` after a kind such as `ကိန်းပြည့်`, wherever the kind is
-counted:
+Burmese counts things with a measure word (classifier). A struct uses the measure word in
+its declaration, or `ခု` when the declaration gives none, while `စာလုံး` uses `လုံး` and
+each other data kind uses `ခု`. The wrong word gives a warning, and the program still runs
+because the meaning is the same. The fix is to write `လူ တစ်ယောက်`.
+
+We get the same warning when we use `ယောက်` with a data kind such as `ကိန်းပြည့်`:
 
 ```zaka-warning ZK0509
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
@@ -265,7 +284,8 @@ counted:
 warning[ZK0509]: isize is counted with "ခု", not "ယောက်"
 ```
 
-A struct literal counts its struct with the same word, after `တစ်`:
+A struct literal uses the same measure word after `တစ်`, so `လူတစ်ခု` here gives the
+warning too:
 
 ```zaka-warning ZK0509
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
@@ -279,10 +299,20 @@ A struct literal counts its struct with the same word, after `တစ်`:
 warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
 ```
 
+## Recap
+
+- A struct is declared at the top level, with a name that no other struct, enumeration,
+  kind alias or value uses.
+- A struct literal gives each field one value, and `ကနဦးတန်ဖိုး` fills a field with its
+  initial value.
+- A field in a sum goes in parentheses, and structs compare with `==` and `!=` alone.
+- A struct cannot contain itself.
+- The wrong measure word gives a warning, not an error.
+
 ## Hands on
 
 - Declare a struct with a field `အသက်`, then read a field `အရပ်` and read the message.
-- Give a struct the classifier `ယောက်`, declare a variable of it with `တစ်ခု`, and
+- Give a struct the measure word `ယောက်`, declare a variable of it with `တစ်ခု`, and
   compare the warning with the ones above.
 
 Next: [Shared objects](objects.md).

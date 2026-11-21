@@ -5,59 +5,123 @@ description: Give a value a name with ကိန်းရှင် ... ဖြစ�
 
 # Variables
 
-A *variable* is a named box that holds a value. Create it once, then use its name
-wherever the value is needed. Creating a variable is called *declaring* it.
+A *variable* (mutable variable) is a name for a value that the program keeps, so that we
+can use the name wherever we need the value. We create a variable once, with its data
+kind (type) and its value, and creating it is called *declaring* the variable.
+
+## You will learn
+
+- How to declare a variable with `ကိန်းရှင်` and give it a value.
+- How to write a data kind with its measure word (classifier), as in `ကိန်းပြည့် တစ်ခု`.
+- How to let the value choose the data kind, and how to start from the initial value
+  `ကနဦးတန်ဖိုး`.
+- That a variable must get a value before we read it.
 
 ```zaka
-// "Let the variable age be one integer, and its value be 18."
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
+အသက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
+```text
+၁၈
+```
+
+The second line declares a variable `အသက်` (age), an integer with the value `၁၈`, and the
+third line prints it. To declare a variable, we write `ကိန်းရှင်`, the name, the data kind
+and the value:
+
+```
+ကိန်းရှင် <name> သည် <kind> တစ်ခု ဖြစ်၍ တန်ဖိုးသည် <value> ဖြစ်ပါစေ။
+```
+
+Word for word, the line means "let the variable age be one integer, and its value be 18":
+
+| Zaka | Reads as | Part |
+| --- | --- | --- |
+| `ကိန်းရှင်` | "variable" | starts the declaration |
+| `အသက်` | "age" | the name we choose |
+| `သည်` | (the subject) | |
+| `ကိန်းပြည့်` | "integer" | the data kind of the value |
+| `တစ်ခု` | "one" | counts the data kind, as Burmese counts a thing |
+| `ဖြစ်၍` | "is, and" | joins the data kind and the value |
+| `တန်ဖိုးသည်` | "its value" | |
+| `၁၈` | 18 | the value |
+| `ဖြစ်ပါစေ` | "let it be" | the verb of the declaration |
+| `။` | full stop | |
+
+A variable keeps its data kind for its whole life, so a `ကိန်းပြည့်` variable
+contains an integer and nothing else.
+
+## Using variables
+
+Once we declare a variable, we can use its name in place of its value, even in the value
+of another variable:
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "Let the variable price be one decimal number, and its value be 2.5."
 ကိန်းရှင် ဈေး သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂.၅ ဖြစ်ပါစေ။
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 
-// The initial value can be worked out from other variables.
+// The value can be worked out from other variables.
 ကိန်းရှင် နှစ်ဆ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် * ၂ ဖြစ်ပါစေ။
 
-အသက် ကို ပြသမည်။
 ဈေး ကို ပြသမည်။
 နှစ်ဆ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-၁၈
 ၂.၅
 ၃၆
 ```
 
-A declaration reads like a Burmese sentence:
+## Measure words
 
-| Zaka | Reads as | Part |
-| --- | --- | --- |
-| `ကိန်းရှင်` | "variable" | announces a new variable |
-| `အသက်` | "age" | the chosen name |
-| `သည်` | (subject) | |
-| `ကိန်းပြည့်` | "integer" | the kind of value it holds |
-| `တစ်ခု` | "one" | counts the kind, as Burmese counts a thing |
-| `ဖြစ်၍` | "is, and" | joins the kind and the value |
-| `တန်ဖိုးသည်` | "its value" | |
-| `၁၈` | 18 | the initial value |
-| `ဖြစ်ပါစေ` | "let it be" | the verb that declares |
-| `။` | full stop | |
+```
+<kind> တစ်<measure word>
+```
 
-Burmese counts a thing with `တစ်` ("one") and a *classifier*, a word that fits the thing
-counted. Most kinds take `ခု`; `စာလုံး` (a character) takes `လုံး`. Leave the count word out
-and the compiler stops with ZK0234.
+Burmese counts a thing with `တစ်` ("one") and a measure word (classifier) that fits the
+thing, much as English counts "one *sheet* of paper". In Zaka we count a data kind in the
+same form, so we write `ကိန်းပြည့် တစ်ခု` ("one integer"). Most data kinds use `ခု`, and
+`စာလုံး` (a character) uses `လုံး`:
 
-Each variable has a kind, and it keeps that kind for its whole life. A `ကိန်းပြည့်`
-variable holds an integer, and nothing else.
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အက္ခရာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။
+အက္ခရာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
 
-## Letting the value give the kind
+```text
+က
+```
 
-When the value is written, the kind can be left out: the variable takes the kind of its
-value. A whole number gives `ကိန်းပြည့်`, a number with a point gives `ဒဿမကိန်း`, and text
-in quotes gives `စာသား`.
+When we leave out the measure word, the compiler stops, and it shows the words to add:
+
+```zaka-error ZK0234
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ကိန်းပြည့် ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0234]: a kind here takes "တစ်" and a classifier
+help: write "ကိန်းပြည့် တစ်ခု"
+```
+
+## Letting the value choose the data kind
+
+```
+ကိန်းရှင် <name> သည် <value> ဖြစ်ပါစေ။
+```
+
+When we write the value, we can leave the data kind out, and the variable gets the data
+kind of its value. A whole number gives `ကိန်းပြည့်`, a number with a point gives
+`ဒဿမကိန်း`, and text in quotes gives `စာသား`:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -75,15 +139,21 @@ in quotes gives `စာသား`.
 ၃၆
 ```
 
-Write the kind when the value alone would pick another one, such as a small integer kind:
+We write the data kind when the value alone would choose another one, such as a small
+integer kind:
 `ကိန်းရှင် ဘိုက် သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀၀ ဖြစ်ပါစေ။`
 
 ## The initial value
 
-`ကနဦးတန်ဖိုး` ("the initial value") stands for a starting value of each kind. It takes
-its kind from where it stands, so the declaration names the kind:
+```
+ကိန်းရှင် <name> သည် <kind> တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+```
 
-| Kind | `ကနဦးတန်ဖိုး` is |
+When we want a plain starting value, we can write `ကနဦးတန်ဖိုး` ("the initial value"), the
+initial value (default value) of the data kind. The declaration must write the data kind,
+because the data kind decides what the initial value is:
+
+| Data kind | `ကနဦးတန်ဖိုး` is |
 | --- | --- |
 | integers and decimal numbers | `၀` (zero) |
 | `မှန်မှားတန်ဖိုး` | `မမှန်` (false) |
@@ -107,15 +177,17 @@ its kind from where it stands, so the declaration names the kind:
 ၀.၀
 ```
 
-Each line writes the kind with its count word, then `ကနဦးတန်ဖိုး` as the value. Without a kind to take, as in `ကနဦးတန်ဖိုး ကို ပြသမည်။`, the compiler stops
-with ZK0478. Later pages give the initial value of lists, structs and the other kinds; the
-rules in full are in [Initial values](../../manual/language/kinds.md#initial-values).
+Later pages give the initial value of lists, structs and the other data kinds.
 
 ## Set before read
 
-A declaration can also leave the value out. The variable then holds no value until the
-program gives it one, and no zero fills it in on the quiet. A read before then is a
-mistake:
+```
+ကိန်းရှင် <name> သည် <kind> တစ်ခု ဖြစ်ပါစေ။
+```
+
+We can also declare a variable with no value at all. The variable then has no value until
+the program gives it one, and Zaka does not fill in a zero in secret, so a read before
+then is a mistake:
 
 ```zaka-error ZK0722
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -128,8 +200,8 @@ mistake:
 error[ZK0722]: "အရေအတွက်" can be unset here: a path reaches this read with no value given to it
 ```
 
-Set the variable first, with `ထားမည်` from [Changing a variable](assignment.md), and the
-read is fine:
+When we set the variable first, with `ထားမည်` from [Changing a variable](assignment.md),
+the read works:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -143,16 +215,19 @@ read is fine:
 ၃
 ```
 
-Once a program can choose between paths, with [If and
-else](../control-flow/if-else.md), each path that leads to a read sets the variable
-before it. The rules in full are in [Set before
-read](../../manual/language/statements.md#set-before-read).
+Once a program can choose between paths, with [If and else](../control-flow/if-else.md),
+each path that leads to a read must set the variable before it.
 
-## A value with its kind
+## A value with its data kind
 
-A number can hold its kind after it, `<value> ဟူသော <kind> တစ်ခု` ("the value called a
-`<kind>`"), and a declaration of that value alone takes the kind. These two lines declare
-the same kind of variable with the same value:
+```
+ကိန်းရှင် <name> သည် <value> ဟူသော <kind> တစ်ခု ဖြစ်ပါစေ။
+```
+
+We can write a number with its data kind after it, as `<value> ဟူသော <kind> တစ်ခု` ("the
+value, which is a `<kind>`"), and a declaration with that value alone gets the same data
+kind.
+These two lines declare two variables of the same data kind with the same value:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -168,12 +243,12 @@ the same kind of variable with the same value:
 ၁၈
 ```
 
-The first form keeps the kind and the value apart, which reads better when the value is
-long. These pages use it.
+The first form keeps the data kind and the value apart, which is clearer when the value
+is long, so these pages use it.
 
-## The value must fit the kind
+## The value must fit the data kind
 
-The initial value must suit the variable's kind. A decimal number cannot go into an
+The value must suit the data kind of the variable, so a decimal number cannot go into an
 integer variable:
 
 ```zaka-error ZK0401
@@ -186,13 +261,14 @@ integer variable:
 error[ZK0401]: expected isize, found f64
 ```
 
-`isize` is the compiler's short name for plain `ကိန်းပြည့်`, and `f64` for `ဒဿမကိန်း`.
-The [Error messages](../../manual/reference/errors.md) page lists all these short names.
+`isize` is the compiler's short name for plain `ကိန်းပြည့်`, and `f64` is the short name
+for `ဒဿမကိန်း`. The [Error messages](../../manual/reference/errors.md) page lists all
+these short names.
 
 ## Using a name before declaring it
 
-A variable exists from its declaration onward, and not before. Using a name that was
-never declared is an error:
+A variable exists from its declaration onward, and not before, so a name that was never
+declared is an error:
 
 ```zaka-error ZK0301
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -204,11 +280,38 @@ never declared is an error:
 error[ZK0301]: "အသက်" is not declared
 ```
 
+## Details
+
+- **The wrong measure word.** A measure word that does not fit the data kind, such as
+  `စာလုံး တစ်ခု`, is the warning ZK0509, and the program still runs. Structs can choose
+  their own measure word. See [Measure words](../../manual/language/kinds.md#measure-words).
+- **No data kind to find.** `ကနဦးတန်ဖိုး` needs a data kind from its place, so
+  `ကိန်းရှင် က သည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။` and `ကနဦးတန်ဖိုး ကို ပြသမည်။` are the error
+  ZK0478. See [Initial values](../../manual/language/kinds.md#initial-values).
+- **Other spellings of `ဖြစ်၍`.** `ဖြစ်ပြီး` and `ဖြစ်ကာ` mean the same as `ဖြစ်၍`. See
+  [Second spellings](../../manual/language/words.md#second-spellings).
+- **A value cannot use its own name.** The compiler checks the value before it adds the
+  name, so `ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က + ၁ ဖြစ်ပါစေ။` is ZK0301. See
+  [Declaring a name](../../manual/language/scope.md#declaring-a-name).
+- **Set before read in full.** The rules for each path of a program are in [Set before
+  read](../../manual/language/declarations.md#set-before-read).
+
+## Recap
+
+- We write `ကိန်းရှင် <name> သည် <kind> တစ်ခု ဖြစ်၍ တန်ဖိုးသည် <value> ဖြစ်ပါစေ။` to declare
+  a variable.
+- We count a data kind with `တစ်` and its measure word: `ကိန်းပြည့် တစ်ခု`,
+  `စာလုံး တစ်လုံး`.
+- We can leave the data kind out when the value shows it, and we can use `ကနဦးတန်ဖိုး`
+  for the initial value of a data kind.
+- A variable must get a value before the program reads it.
+
 ## Hands on
 
 - Declare a variable for a height in centimetres and print it.
 - Declare a `ဒဿမကိန်း` variable with no value, print it, and read the mistake. Then give it
   `ကနဦးတန်ဖိုး`.
 - Declare a `မှန်မှားတန်ဖိုး` variable with the value `၅ သည် ၃ ထက် ကြီးသည်` and print it.
+- Declare a `စာလုံး` variable with `တစ်ခု` in place of `တစ်လုံး`, and read the warning.
 
 Next: [Constants](constants.md).

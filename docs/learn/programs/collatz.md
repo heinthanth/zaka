@@ -1,16 +1,17 @@
 ---
 title: The Collatz sequence
-description: A simple rule, an unsolved puzzle, and two functions that share a helper.
+description: A short rule, an unsolved puzzle, and two functions that share a helper.
 ---
 
 # The Collatz sequence
 
-Pick a whole number. If it is even, halve it. If it is odd, triple it and add 1.
-Repeat. Each number ever tried has reached 1 in the end, but no one has proved that this
-holds for all numbers. It is one of the most famous unsolved problems in mathematics.
+We pick a whole number, and if it is even, we halve it, while if it is odd, we triple it
+and add 1. Then we repeat. Each number that people have tried reaches 1 in the end, but
+no one has proved that this is true for all numbers, which makes it one of the most famous
+unsolved problems in mathematics.
 
 Starting from 27, the sequence takes 111 steps and climbs as high as 9,232 before it
-falls to 1.
+falls to 1. This program works out both numbers.
 
 ```zaka
 /// The next number: half of an even number, or 3n + 1 for an odd one.
@@ -65,15 +66,21 @@ falls to 1.
 
 ## How it works
 
-- **`နောက်တစ်ဆင့်`** ("next step") holds the rule in one place. For even numbers, it
-  [gives back at once](../functions/results.md#returning-the-result).
+- **`နောက်တစ်ဆင့်`** ("next step") has the rule, in one place. For an even number, it
+  [returns at once](../functions/results.md#returning-the-result), so the last sentence
+  runs for odd numbers alone.
 - **`အဆင့်အရေအတွက်`** ("number of steps") and **`အမြင့်ဆုံး`** ("highest") both loop
-  until `န` reaches 1, and both call `နောက်တစ်ဆင့်`. Sharing the helper means the rule is
-  written once.
-- `အဆင့်အရေအတွက်` counts in `အဖြေ`, which starts at 0 and is given back when the loop
-  ends. `အမြင့်ဆုံး` starts `အဖြေ` at `န` and raises it whenever a bigger number shows up.
+  until `န` reaches 1, and both call `နောက်တစ်ဆင့်`. Because the two share the helper,
+  we write the rule just once.
+- **`အဆင့်အရေအတွက်`** counts in `အဖြေ`, which starts at 0 and is returned when the loop
+  ends. **`အမြင့်ဆုံး`** starts `အဖြေ` at `န` and raises it each time a bigger number
+  comes up.
+- **Each function changes its parameter `န`**, which is fine, because the parameter is a
+  local duplicate (copy) and the caller's `စမ်းကိန်း` does not change.
 
 ## Hands on
 
-- Find the number below 100 that takes the most steps. (Use a counted loop and keep the
-  best so far in two variables.)
+- Find the number below 100 that takes the most steps. (Use a counted loop, and keep the
+  best number so far and its steps in two variables.)
+
+Next: [Scores](scores.md).

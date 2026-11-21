@@ -5,10 +5,11 @@ description: The enumeration declaration, member names and values, the initial m
 
 # Enumerations
 
-An enumeration is a kind whose values are a fixed list of named *members*. Each member
-stands for a constant value of one kind, an `isize` unless the first member gives
-another. The Learn book starts in small steps with
-[Enumerations and switches](../../learn/enums/README.md).
+An enumeration (enum, tagged union) is a data kind (type) whose values are a fixed list of
+named members (variants). Each member has a constant value, which is an `isize` unless the
+first member gives a value of another data kind. Members have no fields, so a Zaka
+enumeration is more like an `enum` of C than a tagged union. The Learn book teaches
+enumerations in small steps in [Enumerations and switches](../../learn/enums/README.md).
 
 ```zaka
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -35,27 +36,36 @@ another. The Learn book starts in small steps with
 member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>
 ```
 
-- An enumeration opens with its name and `ဟူသော`, then `ဒေတာအမျိုးအစားကွဲ` or
-  `အချက်အလက်အမျိုးအစားကွဲ` (one word, as `ဒေတာ` and `အချက်အလက်` are), where a struct has
-  `ဒေတာအစုအဝေး` ([Structs](structs.md)). `တွင်` can stand joined to the word or apart.
-- A declaration stands at the top level of a file. Inside a block, a loop, a conditional
-  or a function it is ZK0235. An enumeration can be used above its declaration, since the
-  declarations are read first.
-- An enumeration has at least one member. The members are a
-  [list in words](words.md#lists-in-words): names with `၊` between them and `နှင့်` before
-  the last, and the list closes with `တို့ပါဝင်သည်`; a lone member closes with `ပါဝင်သည်`.
-  `တို့` after one member, or none after several, is ZK0201, and a list without its
-  `နှင့်` is ZK0245.
-- `တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်` at the end, or `ပါဝင်ပြီး ...` after a lone
-  member, names the classifier the enumeration counts with, as a struct does; with none it
-  counts with `ခု` ([Measure words](kinds.md#measure-words)).
-- The member names of one enumeration differ from each other (ZK0328).
-- An enumeration and a struct share one set of names: a name declared twice, as either, is
-  ZK0316. An enumeration name cannot also name a variable, a constant, a parameter, a
-  field or a function (ZK0319), and a kind that names neither is ZK0318.
-- `အများသုံး` after `ဟူသော` exports it, as it does a struct; see [Modules](modules.md).
+To declare an enumeration, we write its name, `ဟူသော`, the word `ဒေတာအမျိုးအစားကွဲတွင်` and
+its members, in the same shape as a [struct](structs.md#declaring-a-struct) with
+`ဒေတာအမျိုးအစားကွဲ` in place of `ဒေတာအစုအဝေး`. The members form a [list in
+words](words.md#lists-in-words), so we put `၊` between the names and `နှင့်` before the
+last one, and we end the list with `တို့ပါဝင်သည်`, or with `ပါဝင်သည်` after a single
+member. To give the enumeration a measure word (classifier), as a struct can, we end with
+`တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်`, or with `ပါဝင်ပြီး …` after a single member.
+Without one, the enumeration is counted with `ခု` ([Measure words](kinds.md#measure-words)).
+
+An enumeration needs at least one member. We declare it at the top level of a file, and the
+rest of the program can use it even above the declaration, because the compiler reads all
+declarations first. `အချက်အလက်အမျိုးအစားကွဲ` is the same word as `ဒေတာအမျိုးအစားကွဲ`, as
+`အချက်အလက်` and `ဒေတာ` are, and we can join `တွင်` to the word or write it apart. To export
+an enumeration, we put `အများသုံး` after `ဟူသော`, as for a struct ([Modules](modules.md)).
+
+| Mistake | Code |
+| --- | --- |
+| `တို့` after a single member, or no `တို့` after several | ZK0201 |
+| a list of members with no `နှင့်` before the last one | ZK0245 |
+| a declaration inside a block, a loop, a conditional or a function | ZK0235 |
+| two members of one enumeration with the same name | ZK0328 |
+| a name declared twice, as an enumeration or a struct, which share one set of names | ZK0316 |
+| an enumeration name that also names a variable, a constant, a parameter, a field or a function | ZK0319 |
+| a name in the place of a data kind that names no enumeration and no struct | ZK0318 |
 
 ### Member values
+
+```text
+တန်ဖိုးအနေဖြင့် <value> ရှိသည့် <member>
+```
 
 ```zaka
 ကိန်းသေ အခြေခံ သည် ၁၀၀ ဖြစ်ပါစေ။
@@ -73,43 +83,49 @@ member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံ�
 stop
 ```
 
-- Each member stands for a constant value, written `တန်ဖိုးအနေဖြင့် <value> ရှိသည့်` in front
-  of its name ("that has `<value>` as its value"). A value is each
-  expression the folder works out: a literal, a constant, even one declared below the
-  enumeration, or an operation on them. A value that does not work out, such as a
-  variable, is ZK0456.
-- The value of the first member gives the *value kind* of the enumeration, the kind
-  of each member value: a number, a character, a true/false value, text, a list or a
-  struct. With no value on the first member, the kind is `isize`. Each other value
-  converts to that kind, as the value of a declaration does (ZK0401).
-- A member with no value takes the value of the member before it plus one, the first 0,
-  when the value kind is an integer. Another kind needs each value written, and so
-  does a member past the largest value of its integer kind (ZK0461).
-- Two members of one enumeration have different values (ZK0457), so a print or a switch
-  can tell each member apart.
-- Text works out as each constant text does: a literal, a text constant, a template whose
-  slots work out, written as a print writes them, or text joined with `+` or
-  `ဆက်ထားသည့် စာသား`. A list or a struct can hold such text.
+To give a member a value, we write `တန်ဖိုးအနေဖြင့် <value> ရှိသည့်` ("that has `<value>`
+as its value") before its name. The value can be each expression that the folder can work
+out at compile time: a literal, a constant, even one declared below the enumeration, or an
+operation on them. A value that cannot be worked out, such as a variable, is ZK0456.
+
+The value of the first member sets the *value kind* of the enumeration, which is the data
+kind of all member values: a number, a character, a true/false value, text, a list or a
+struct. When the first member has no value, the value kind is `isize`. Each other value
+converts to the value kind, as the value of a declaration does (ZK0401).
+
+- When the value kind is an integer, a member with no value gets the value of the member
+  before it plus one, and the first member gets 0. A member with no value that cannot count
+  on is ZK0461: its value kind is not an integer, or the next value would go past the
+  largest value of the integer kind. In both cases, we write the value.
+- Two members of one enumeration must have different values (ZK0457), so that printing
+  and a switch can tell the members apart.
+- Text values work out as all constant text does: a literal, a text constant, a template
+  whose slots work out, written as a print writes them, or text joined with `+` or
+  `ဆက်ထားသည့် စာသား`. A list or a struct can contain such text.
 
 ## The initial member
 
-No member of an enumeration is a default. One member can take the mark
-`ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` ("to be used as the initial value") in front of its name and
-its value, which makes it the [initial value](kinds.md#initial-values) of the
-kind: the member that `ကနဦးတန်ဖိုး` gives, and the one that a struct or a counted list
-holding the enumeration takes when it is filled with `ကနဦးတန်ဖိုး`.
+```text
+ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <member>
+```
+
+No member of an enumeration is a default on its own. To choose one, we put the mark
+`ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` ("to be used as the initial value") before its name and its
+value, and that member becomes the [initial value](kinds.md#initial-values) (default
+value) of the data kind. It is the member that `ကနဦးတန်ဖိုး` gives, and the one that a
+struct or a counted list of the enumeration gets when it is filled with `ကနဦးတန်ဖိုး`.
 
 ```text
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် တန်ဖိုးအနေဖြင့် ၁ ရှိသည့် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် တန်ဖိုးအနေဖြင့် ၀ ရှိသည့် စိမ်း နှင့် တန်ဖိုးအနေဖြင့် ၂ ရှိသည့် ပြာ တို့ပါဝင်သည်။
 ```
 
-- The mark goes on one member at most: a second mark is ZK0480. With a value, the mark
-  comes first and the value after it.
-- The mark changes no value and no order: a member with no value still counts on from the
-  member before it, and the first member still gives the value kind.
-- An enumeration with no marked member has no initial value: `ကနဦးတန်ဖိုး` for it, or
-  for a struct or a list that holds it, is ZK0479.
-- `ကနဦးတန်ဖိုး` is a reserved word, so no member takes it as a name.
+- We can mark a single member, and a second mark is ZK0480. When the member also has a
+  value, the mark comes first and the value after it.
+- The mark changes no value and no order, so a member with no value still counts on from
+  the member before it, and the first member still sets the value kind.
+- An enumeration with no marked member has no initial value, so `ကနဦးတန်ဖိုး` for it, or
+  for a struct or a list that contains it, is ZK0479.
+- `ကနဦးတန်ဖိုး` is a reserved word, so no member can use it as a name.
 
 ```zaka
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့် ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -155,10 +171,11 @@ error[ZK0479]: "အရောင်" has no initial value: no member of "အရ�
 
 ## The name and its stem
 
-The *stem* of an enumeration name is the name with a closing `များ`, the plural mark,
-taken off: `အရောင်` for `အရောင်`, and `အမှား` for `အမှားများ`. The stem names the
-enumeration too, so `ကိန်းရှင် မ သည် အမှား တစ်ခု ဖြစ်ပါစေ။` declares a variable of
-`အမှားများ`. The stem joins the names that ZK0316 and ZK0319 guard.
+The *stem* of an enumeration name is the name with a final `များ`, the plural ending, taken
+off: `အရောင်` for `အရောင်`, and `အမှား` for `အမှားများ`. The stem names the enumeration
+too, so `ကိန်းရှင် မ သည် အမှား တစ်ခု ဖြစ်ပါစေ။` declares a variable of `အမှားများ`. The stem
+also counts as a name for ZK0316 and ZK0319, so no other struct, enumeration or value can
+use it.
 
 ## Members
 
@@ -166,19 +183,21 @@ enumeration too, so `ကိန်းရှင် မ သည် အမှား �
 <stem>များထဲမှ <member>
 ```
 
-reads "`<member>` from among the `<stem>`s": `အရောင်များထဲမှ နီ`, `အမှားများထဲမှ မတွေ့`.
+To refer to a member, we write the stem, `များထဲမှ` and the member name, which means
+"`<member>` from among the `<stem>`s", as in `အရောင်များထဲမှ နီ` and `အမှားများထဲမှ မတွေ့`.
 
-- The name before `ထဲမှ` is the stem with `များ` after it, and nothing else. A name that
-  is no enumeration, or an enumeration written without its `များ`, is ZK0330; the help
-  line of the message gives the spelling to write.
-- A member the enumeration does not have is ZK0329.
-- `ထဲမှ` can stand apart from the name or join it: `အရောင်များ ထဲမှ နီ` and
-  `အရောင်များထဲမှ နီ` are one form. The lexer splits a name written joined to `ထဲမှ`, so
-  no name of a program ends in `ထဲမှ`.
-- A member is a constant: it can give a `ကိန်းသေ` its value, and the folder works it out.
+- Before `ထဲမှ` we write the stem with `များ` after it, and nothing else. A name that is not
+  an enumeration, or an enumeration written without its `များ`, is ZK0330, and the help
+  line of the message gives the right spelling.
+- A member that the enumeration does not have is ZK0329.
+- We can write `ထဲမှ` apart from the name or joined to it, so `အရောင်များ ထဲမှ နီ` and
+  `အရောင်များထဲမှ နီ` are the same. The lexer splits a name written joined to `ထဲမှ`, so no
+  name in a program can end in `ထဲမှ`.
+- A member is a constant, so it can be the value of a `ကိန်းသေ`, and the folder works it
+  out at compile time.
 
-A name in Latin letters, or in mixed scripts, splits from `ထဲမှ` just as a
-Burmese name does:
+A name in Latin letters, or in mixed scripts, splits from `ထဲမှ` the same as a Burmese
+name:
 
 ```zaka
 Delivery ဟူသော ဒေတာအမျိုးအစားကွဲတွင် Waiting၊ Moving နှင့် Arrived တို့ပါဝင်သည်။
@@ -195,27 +214,28 @@ Deliveryများထဲမှ Moving
 
 ## Values of an enumeration
 
-- A value of an enumeration holds the value of its member, as a value of the value
-  kind is held: it has the size and the arrangement of that kind. A text member holds static
-  text.
-- `==` and `!=` compare two members of one enumeration, as `==` compares their values. A
-  member and a value of another kind, or members of two enumerations, do not compare
-  (ZK0404); `<`, `>` and the other order operators do not take members (ZK0403).
-- The conversion `<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်` turns a member into its
-  value: to the value kind, and when the value is a number, a character or a
-  true/false value, to each kind the value converts to; see [Conversions](conversions.md). No conversion goes
-  from a value to a member.
-- A variable of an enumeration declared with no value holds no member until the program
-  sets it ([Set before read](statements.md#set-before-read)). No member is a default:
-  `ကနဦးတန်ဖိုး` gives the member the declaration marks ([The initial
-  member](#the-initial-member)). A heap block starts at zero octets, as with each kind,
-  and those octets can be no member at all.
-- A member is copied, never moved, and holds no address; a field, a cell, a parameter and a
-  function result can each hold one.
-- Printing a member, with `ပြသမည်` or in a template slot, writes `<stem>များထဲမှ <member>`,
-  the form that reads back. Inside a list or a struct it is written the same. A value that
-  no member stands for, from a heap block that starts at zero octets, prints as its
-  value.
+A value of an enumeration keeps the value of its member in the same form as a value of the
+value kind, with the same size and arrangement, and a text member keeps static text. A
+member is duplicated, never moved, and has no address, and a field, a cell, a parameter
+and a function result can each contain one.
+
+- We can use `==` and `!=` on two members of one enumeration, which compares their values.
+  A member and a value of another data kind, or members of two different enumerations,
+  cannot be compared (ZK0404), and `<`, `>` and the other ordering operators do not work
+  on members (ZK0403).
+- The conversion `<value> ကို <kind> တစ်<word> အဖြစ် ပြောင်းလဲသော ရလဒ်` turns a member into
+  its value. It converts to the value kind, and when the value is a number, a character or
+  a true/false value, also to each data kind that the value converts to
+  ([Conversions](conversions.md)). There is no conversion from a value back to a member.
+- A variable of an enumeration declared with no value has no member until the program sets
+  it ([Set before read](declarations.md#set-before-read)). No member is a default, and
+  `ကနဦးတန်ဖိုး` gives the member that the declaration marks ([The initial
+  member](#the-initial-member)). A heap block starts at zero octets (bytes), as for all
+  data kinds, and those octets might match no member at all.
+- When we print a member, with `ပြသမည်` or in a template slot, the output is
+  `<stem>များထဲမှ <member>`, which is also the form that we write in code. Inside a list or
+  a struct, a member prints the same. A value that matches no member, from a heap block
+  that starts at zero octets, prints as its value.
 
 ```zaka
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -243,33 +263,40 @@ Deliveryများထဲမှ Moving
 တခြား <kind> တစ်<word> ဖြစ်လျှင် <block>
 ```
 
-A switch compares its subject with the case of each arm, top to bottom, with `==`, and runs
-the block of the first arm whose case equals it. When none does, it runs the block of the
-default arm `တခြား <kind> တစ်<word> ဖြစ်လျှင်`, or nothing when there is none. The subject is worked
-out once.
+A switch (`switch`, `match`) compares its subject with the case of each arm, from top to
+bottom, using `==`, and runs the block of the first arm whose case equals the subject.
+When none does, it runs the block of the default arm `တခြား <kind> တစ်<word> ဖြစ်လျှင်`, or
+nothing when there is no default arm. The switch works out the subject once.
 
-- An arm takes one case, or several with `၊` between them and `တို့` after the last; it
-  runs when the subject equals one of them. A list literal is one case in each form:
-  `[a၊ b]`, `a နှင့် b တို့ပါသော စာရင်း`, or either in parentheses.
-- The first arm names the subject with `သည်`; each arm after it is a case alone. The block
-  of an arm is one statement or a block, as in a conditional. A one-statement arm cannot be a
-  conditional or another switch (ZK0215), so each arm after it belongs to one switch.
+- An arm has one case, or several with `၊` between them and `တို့` after the last, and it
+  runs when the subject equals one of them. A list literal is one case in each of its
+  forms: `[a၊ b]`, `a နှင့် b တို့ပါသော စာရင်း`, or either one in parentheses.
+- The first arm names the subject with `သည်`, and each arm after it has a case alone. The
+  block of an arm is one statement or a block, as in a conditional.
 - The switch ends after its default arm, or at the first sentence that is not an arm. An
-  arm is a sentence that reaches `ဖြစ်လျှင်` before its full stop, with no `သည်` before
-  it and no statement word at its start; a sentence with a `သည်` starts a new switch.
-- The subject is a value of each kind that `==` takes: a number, a character, a true/false
-  value, text, a list, a struct, a pointer or an enumeration. Each case
-  is a value that `==` takes with the subject; another kind is the error `==` gives, such
-  as ZK0404.
-- Over an enumeration, a case written as a bare name, such as `နီ`, is that member of the
-  subject's enumeration, before a variable of that name. A name that is neither a member
-  nor a variable is ZK0329. `<stem>များထဲမှ <member>` works as a case too.
-- Two cases that fold to one value are ZK0460: the second arm could never run.
-- The default arm names the kind of the subject with its measure word (ZK0459); for an
-  enumeration, its name or its stem: `တခြား အမှား တစ်ခု ဖြစ်လျှင်`. It comes last (ZK0236).
-- Over an enumeration, the cases name each member, or the switch has a default arm
-  (ZK0458). A case that does not fold, such as a variable, names no member here. Over
-  other kinds, the default arm can be left out.
+  arm is a sentence that reaches `ဖြစ်လျှင်` before its full stop, with no `သည်` before it
+  and no statement word at its start, so a sentence with a `သည်` starts a new switch.
+- The subject can be a value of each data kind that `==` works on: a number, a character,
+  a true/false value, text, a list, a struct, a pointer or an enumeration. Each case is a
+  value that `==` accepts together with the subject.
+- In a switch over an enumeration, a case written as a bare name, such as `နီ`, is that
+  member of the subject's enumeration, even when a variable has the same name. We can
+  also write the full form `<stem>များထဲမှ <member>` as a case.
+- In the default arm, we write the data kind of the subject with its measure word, and
+  for an enumeration we can use its name or its stem: `တခြား အမှား တစ်ခု ဖြစ်လျှင်`.
+- A switch over an enumeration must name each member in its cases or end with a default
+  arm. A case that the folder cannot work out, such as a variable, does not count as
+  naming a member. Over other data kinds, we can leave out the default arm.
+
+| Mistake | Code |
+| --- | --- |
+| a one-statement arm that is a conditional or another switch, which would make it unclear which switch the next arms belong to | ZK0215 |
+| a case of a data kind that `==` does not accept with the subject | the error of `==`, such as ZK0404 |
+| a bare name that is neither a member nor a variable | ZK0329 |
+| two cases that fold to one value, so the second arm could never run | ZK0460 |
+| a default arm whose data kind is not the data kind of the subject | ZK0459 |
+| a default arm that is not the last arm | ZK0236 |
+| a switch over an enumeration that misses a member and has no default arm | ZK0458 |
 
 ```zaka
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
@@ -300,5 +327,31 @@ out once.
 ခ
 ```
 
-The switch lowers to the chain of tests a conditional lowers to, one `==` per arm, so it
-costs what the conditional costs; see [IR and code](../internals/codegen.md).
+A switch lowers to the same chain of tests as a conditional, with one `==` for each arm, so
+it costs the same as the conditional ([The IR](../internals/codegen.md)).
+
+## Errors at a glance
+
+| Code | Problem |
+| --- | --- |
+| ZK0201 | `တို့` after a single member, or no `တို့` after several |
+| ZK0215 | a one-statement arm that is a conditional or another switch |
+| ZK0235 | an enumeration declared inside a block |
+| ZK0236 | a default arm that is not the last arm |
+| ZK0245 | a list of members with no `နှင့်` before the last one |
+| ZK0316 | a name declared twice, as an enumeration or a struct |
+| ZK0318 | a name in the place of a data kind that names no enumeration and no struct |
+| ZK0319 | an enumeration name that also names a value or a function |
+| ZK0328 | two members of one enumeration with the same name |
+| ZK0329 | a member that the enumeration does not have |
+| ZK0330 | a name before `ထဲမှ` that is not an enumeration, or one without its `များ` |
+| ZK0403 | an ordering operator on members |
+| ZK0404 | members of two enumerations, or a member and another value, compared |
+| ZK0456 | a member value that the folder cannot work out |
+| ZK0457 | two members with the same value |
+| ZK0458 | a switch over an enumeration that misses a member and has no default arm |
+| ZK0459 | a default arm whose data kind is not the data kind of the subject |
+| ZK0460 | two cases that fold to one value |
+| ZK0461 | a member with no value that cannot count on from the member before it |
+| ZK0479 | `ကနဦးတန်ဖိုး` for an enumeration with no initial member |
+| ZK0480 | a second member marked as the initial member |

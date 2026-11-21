@@ -1,19 +1,15 @@
 ---
-title: The core
-description: The stdlib module each file sees with no import, the compiler mark, the built-in traits, and operators on structs.
+title: The core module
+description: The stdlib module that each file sees with no import - its parts, the compiler mark, what it declares, the verbs a program can take over, and operators on structs.
 ---
 
-# The core
+# The core module
 
-The core, `"စံကား/အခြေခံအုတ်မြစ်"`, is the stdlib module each file sees with no import
-sentence. Its source is the `core` folder of the `stdlib` folder of the source tree:
-`mod.zaka` [shares](modules.md#sharing-imported-names) each of the four parts, and a
-program cannot import a part on its own. `kinds.zaka` holds the built-in kinds,
-`traits.zaka` the built-in traits, `verbs.zaka` the verbs and counts the compiler gives,
-and `heap.zaka` the [heap sentences](unsafe.md#heap-statements). A
-sentence of a verb, such as `က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်`, is a call of the function its
-head declares, written as a sentence, and its arguments are whole clauses. Their declarations hold the compiler mark: the compiler gives their
-meaning. A trait of the core names the function a struct gives for an operator.
+The core module (prelude), `"စံကား/အခြေခံအုတ်မြစ်"`, is the stdlib module that each file
+sees without an import sentence. It declares the built-in data kinds (types), the built-in
+traits, the verbs of the language and the facts of the target, and a trait of the core
+module names the function that a struct needs for an operator. The Learn book meets it in
+[Generics and traits](../../learn/generics/traits.md).
 
 ```zaka
 နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
@@ -35,11 +31,25 @@ T တွင် ပေါင်းနိုင်သော ဂုဏ်သတ္�
 ဟယ်ဟယ်
 ```
 
-## The compiler mark
+## The parts of the core module
 
-`ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` ("included inside the compiler") marks a kind, a
-trait or a function of the core. In the head of a kind or a trait, `အများသုံး` stands
-right before the noun, after the mark; in the head of a function it stands after `ဟူသော`:
+The source of the core module is the `core` folder inside the `stdlib` folder of the
+source tree. Its `mod.zaka` [shares](modules.md#sharing-imported-names) four parts, and a
+program cannot import one part on its own:
+
+| File | What it declares |
+| --- | --- |
+| `kinds.zaka` | the built-in data kinds, and the facts of the target |
+| `traits.zaka` | the built-in traits |
+| `verbs.zaka` | the verbs and the counts that the compiler provides |
+| `heap.zaka` | the [heap statements](heap.md#heap-statements) |
+
+A verb is a function that we call as a sentence, such as `က နှင့် ခ ၏ ပေါင်းလဒ် ကို
+ပြသမည်`. Its arguments are whole clauses, and its function signature in the core module
+gives the prepositions that the sentence uses. These declarations have the compiler mark,
+because the compiler provides their meaning.
+
+## The compiler mark
 
 ```text
 <kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား (ဖြစ်သည်။|ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။|ဖြစ်၍ <params> ၎င်းကို ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။)
@@ -48,55 +58,69 @@ right before the noun, after the mark; in the head of a function it stands after
 [အများသုံး] ကိန်းသေ <name> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော <kind> တစ်<word> ဖြစ်သည်။
 ```
 
-`<params>` is the word form of the kind parameters, `ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍`.
+We write `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` ("included inside the compiler") to mark a
+data kind, a trait, a function or a constant of the core module. In the declaration of a
+data kind or a trait, `အများသုံး` goes right before the noun, after the mark, and in a
+function signature it goes after `ဟူသော`. `<params>` is the word form of the kind
+parameters, `ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍`.
 
-- A marked kind names a built-in kind for its doc comment: `ကိန်းပြည့်`, `ဒဿမကိန်း`,
-  `စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, and, with their kind parameters, the list `စာရင်း`
-  and the table `ဇယား`. Those two end in a [written-as hint](generics.md#written-as-hints),
-  `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`, which tells how a program writes them.
-- A marked trait: the built-in kinds have it through the compiler's rule, and each
-  kind a program declares has it through its functions, with the rule of
-  [Traits](generics.md#traits).
-- A marked function has no block: a sentence of the language stands for each call of it,
-  and its prepositions are the words of that sentence. `ပြသ` is `<value> ကို ပြသမည်။` (or `ဟု`);
-  `ထည့်`, `ဖျက်` and `အစားထိုး` are the sentences that add, remove and replace; and
-  `အကွက်အရေအတွက်`, `စာလုံးအရေအတွက်` and `အညွှန်းအရေအတွက်` are the counts read after `၏`.
-  A function a file declares with one of these names joins the overloads, as below.
-- A marked constant names no value: the compiler gives it the value of the target it
-  builds for. The four of the core are the facts a
-  [compile-time conditional](compile-time.md) reads, and a file that names one sees it
-  with no import.
-- The mark belongs to the modules of the stdlib, the core among them: in another
-  file it is ZK0349.
+| What is marked | What the mark means |
+| --- | --- |
+| a data kind | names a built-in data kind, so that it can have a doc comment: `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, and, with their kind parameters, the list `စာရင်း`, the table `ဇယား`, the thread `အပြိုင်လုပ်ငန်း` and the channel `ဒေတာလမ်းကြောင်း`. Those four end in a [written-as hint](generics.md#written-as-hints), such as `A စာရင်း` or `K ဖြင့် ညွှန်းသော V ဇယား`, which shows how a program writes them. |
+| a trait | the built-in data kinds have the trait through a rule of the compiler, and each data kind that a program declares has it through its functions, under the rules of [Traits](traits.md) |
+| a function | the function has no block, because each call of it is written as a sentence of the language, and its prepositions are the words of that sentence |
+| a constant | the constant has no value in the source, and the compiler gives it the value of the target that it builds for |
 
-## What the core declares
+The marked functions are the verbs and the counts:
+
+- `ပြသ` is the sentence `<value> ကို ပြသမည်။` (or `ဟု`).
+- `ထည့်`, `ဖျက်` and `အစားထိုး` are the sentences that add, remove and replace, and
+  `ကူးထည့်` is the sentence that puts a duplicate (copy) of a value into a place, or a
+  duplicate of all with `အကုန်ကူးထည့်` ([Values and objects](objects.md)).
+- `စောင့်`, `ပို့`, `ပိတ်`, `ပေါင်းထည့်` and `နုတ်ယူ`, with a second `အစားထိုး`, are the
+  sentences of [threads](threads.md): wait, send, close, and the steps on an atomic
+  number.
+- `အကွက်အရေအတွက်`, `စာလုံးအရေအတွက်` and `အညွှန်းအရေအတွက်` are the counts that we read
+  after `၏`.
+
+A function that a file declares with one of these names joins the overloads of the verb,
+as [Verbs on structs](#verbs-on-structs) shows. The five marked constants are the facts
+that a [compile-time conditional](compile-time.md#the-facts-of-the-target) reads, and a
+file that names one sees it without an import.
+
+The mark belongs to the modules of the stdlib, which include the core module, and in
+another file it is ZK0349.
+
+## What the core module declares
 
 | Declaration | What it is |
 | --- | --- |
-| `ပေါင်းနိုင်သော`, `နုတ်နိုင်သော`, `မြှောက်နိုင်သော`, `စားနိုင်သော` | the kinds that take `+`, `-`, `*` and `/`: the numbers, text for `+`, and each kind with the function |
-| `နံပါတ်နှင့်တူသော` | the kinds with the four traits above |
-| `အကြွင်းရှာနိုင်သော` | the kinds that take `%`: the numbers, and each kind with `အကြွင်းရှာ` |
-| `ဘစ်ဆုံနိုင်သော`, `ဘစ်ပေါင်းစုနိုင်သော`, `ဘစ်ခြားနားနိုင်သော`, `ဘစ်ပြောင်းပြန်ပြောင်းလဲနိုင်သော` | the kinds that take `&`, `\|`, `^` and `~`: the integers, and each kind with the function |
-| `ဘစ်ဘယ်ရွေ့နိုင်သော`, `ဘစ်ညာရွေ့နိုင်သော` | the kinds that take `<<` and `>>`: the integers, and each kind with the function |
-| `အနုတ်ပြောင်းနိုင်သော` | the kinds that take the `-` of one operand: the signed numbers, and each kind with `အနုတ်ပြောင်း` |
-| `နှိုင်းယှဉ်နိုင်သော` | the kinds that take `< > <= >=`: the numbers, the characters, and each kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
-| `တူမတူစစ်ဆေးနိုင်သော` | the kinds that take `==` and `!=`: each kind |
-| `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the kinds `ပြသမည်` prints: each kind but a handle of a kind from outside |
-| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile-time conditionals](compile-time.md)) |
+| `ပေါင်းနိုင်သော`, `နုတ်နိုင်သော`, `မြှောက်နိုင်သော`, `စားနိုင်သော` | the data kinds that work with `+`, `-`, `*` and `/`: the numbers, text for `+`, and each data kind with the function |
+| `နံပါတ်နှင့်တူသော` | the data kinds with all four traits above |
+| `အကြွင်းရှာနိုင်သော` | the data kinds that work with `%`: the numbers, and each data kind with `အကြွင်းရှာ` |
+| `ဘစ်ဆုံနိုင်သော`, `ဘစ်ပေါင်းစုနိုင်သော`, `ဘစ်ခြားနားနိုင်သော`, `ဘစ်ပြောင်းပြန်ပြောင်းလဲနိုင်သော` | the data kinds that work with `&`, `\|`, `^` and `~`: the integers, and each data kind with the function |
+| `ဘစ်ဘယ်ရွေ့နိုင်သော`, `ဘစ်ညာရွေ့နိုင်သော` | the data kinds that work with `<<` and `>>`: the integers, and each data kind with the function |
+| `အနုတ်ပြောင်းနိုင်သော` | the data kinds that work with the `-` of one operand: the signed numbers, and each data kind with `အနုတ်ပြောင်း` |
+| `နှိုင်းယှဉ်နိုင်သော` | the data kinds that work with `< > <= >=`: the numbers, the characters, and each data kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
+| `တူမတူစစ်ဆေးနိုင်သော` | the data kinds that work with `==` and `!=`: all data kinds |
+| `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the data kinds that `ပြသမည်` prints: all data kinds except a handle of a data kind from outside |
+| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile time](compile-time.md#the-facts-of-the-target)) |
 
-A name a file declares hides the core's: a trait named `ပေါင်းနိုင်သော` in a file is
-the file's own. The compiler reads the core for a program that names one of its
-traits or one of its constants. The built-in kinds, verbs and counts are names, not reserved words
-([Reserved words](../reference/reserved-words.md)).
+- A name that a file declares hides the name of the core module, so a trait named
+  `ပေါင်းနိုင်သော` in a file is the file's own trait.
+- The compiler reads the core module for a program that names one of its traits or one of
+  its constants.
+- The built-in data kinds, verbs and counts are names, not reserved words ([Reserved
+  words](../reference/reserved-words.md)).
 
 ## Verbs on structs
 
-A file can declare a function named after a verb or a count of the core. When that
-function takes the operands of a sentence, the sentence calls it; else the sentence keeps
-the meaning the compiler gives. So `လ ကို ပြသမည်။` prints a struct through the file's own
-`ပြသ`, and `၅ ကို ပြသမည်။` prints the number as before. A function with the same kinds
-and prepositions as the core's own takes over each sentence of it in the file, which is the
-warning ZK0350.
+A file can declare a function named after a verb or a count of the core module. When that
+function fits the operands of a sentence, the sentence calls it, and otherwise the sentence
+keeps the meaning that the compiler gives. So `လ ကို ပြသမည်။` prints a struct through the
+file's own `ပြသ`, while `၅ ကို ပြသမည်။` prints the number as before. A function with the
+same data kinds and prepositions as the verb of the core module takes over each sentence of
+that verb in the file, which is the warning ZK0350.
 
 ```zaka
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု ပါဝင်သည်။
@@ -129,12 +153,12 @@ warning ZK0350.
 
 ## Operators on structs
 
-A struct takes an operator through a function of its own, the function the trait of the
+To let a struct work with an operator, we declare the function that the trait of the
 operator names, with two parameters of the struct. The word operators, such as
-`က နှင့် ခ ၏ ပေါင်းလဒ်`, are reserved words of the grammar, as the signs are: on numbers
-`က နှင့် ခ ၏ ပေါင်းလဒ်` is `က + ခ`, and on a struct each one calls the function of the struct,
-as the sign does. The function names are no reserved words: a struct declares `ပေါင်း` as it
-declares each function.
+`က နှင့် ခ ၏ ပေါင်းလဒ်`, are reserved words of the grammar, just as the signs are. On
+numbers, `က နှင့် ခ ၏ ပေါင်းလဒ်` means `က + ခ`, and on a struct each word operator calls
+the function of the struct, as the sign does. The function names are not reserved words,
+so a struct declares `ပေါင်း` as it declares other functions.
 
 | Operator, verb | Function |
 | --- | --- |
@@ -155,13 +179,15 @@ declares each function.
 | `==`, `ညီ`; `!=`, `မညီ` | `ညီမညီစစ်`; its negation |
 | `ပြသမည်`, a template slot | `စာသားအဖြစ်ပြောင်း` |
 
-- The function is the one of the file of the use or of the file of the struct whose
-  parameter kinds are the two kinds of the struct; a test gives back `မှန်မှားတန်ဖိုး`.
-  `~` and the `-` of one operand take the struct alone; a shift takes the struct and
-  the distance, `လက္ခဏာမဲ့ ကိန်းပြည့်`, as the distance of a shift is unsigned.
-- A struct with no `ညီမညီစစ်` compares one field at a time, and one with no
+- The compiler uses the function, from the file of the use or the file of the struct,
+  whose parameter kinds are the two data kinds of the operands. A test returns
+  `မှန်မှားတန်ဖိုး`.
+- `~` and the `-` of one operand pass the struct alone. A shift passes the struct and the
+  distance, which is a `လက္ခဏာမဲ့ ကိန်းပြည့်`, because the distance of a shift is
+  unsigned.
+- A struct without `ညီမညီစစ်` is compared one field at a time, and a struct without
   `စာသားအဖြစ်ပြောင်း` prints its fields, as before.
-- A struct with no function for an operator keeps the rule of the operator: `&` on
+- A struct without a function for an operator keeps the rule of the operator, so `&` on
   such a struct is an error, as before.
 
 ```zaka
@@ -198,3 +224,4 @@ declares each function.
 | Code | When |
 | --- | --- |
 | ZK0349 | the compiler mark outside the modules of the stdlib |
+| ZK0350 | a warning: a function with the name, the data kinds and the prepositions of a verb of the core module, which then takes over each sentence of that verb |

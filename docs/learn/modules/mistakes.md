@@ -1,31 +1,40 @@
 ---
 title: Module mistakes
-description: The mistakes imports and the export mark make possible, and how Zaka catches each one.
+description: The mistakes that imports and the export mark make possible, and how Zaka catches each one.
 ---
 
 # Module mistakes
 
-Most of these mistakes need two files, so this page shows the files and the error as
-text. The ones that fit in one file the page checks as well.
+This page shows the common mistakes with modules (one source file each), the errors that
+the compiler reports for them, and how to fix each one. Most of these mistakes need two
+files, so the page shows the files and the error as text, while the mistakes that fit in
+one file are checked on the page as well.
+
+## You will learn
+
+- Where `အများသုံး` and an import sentence can go in a file.
+- Which names a file can import from another file.
+- What an imported file cannot contain.
+- The reason a program without a file cannot import.
 
 ## The export mark in the wrong place
 
-`အများသုံး` marks a declaration at the top level of a file: a function, a struct, a
-variable or a constant. Before a statement, or before a declaration inside a block, it
-means nothing:
+We can use `အများသုံး` on a declaration at the top level of a file: a function, a struct,
+an enumeration, a variable or a constant. Before a sentence, or before a declaration
+inside a block, it has no meaning, so the compiler stops with the error ZK0229:
 
 ```zaka-error ZK0229
 အများသုံး ၁ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0229]: "အများသုံး" marks a top-level function, struct, enumeration, variable or constant, and nothing else
+error[ZK0229]: "အများသုံး" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after "ဟူသော" in a function, a struct or an enumeration
 ```
 
 ## An import below a statement
 
-The imports of a file come first. An import below a declaration or a statement, or
-inside a block, is refused:
+The imports of a file come first. When we write an import below a declaration or a
+sentence, or inside a block, the compiler stops with the error ZK0230:
 
 ```zaka-error ZK0230
 ၁ ကို ပြသမည်။
@@ -39,8 +48,8 @@ error[ZK0230]: imports go at the top of the file
 
 ## Files that import each other
 
-`a.zaka` imports `b.zaka`, and `b.zaka` imports `a.zaka`. Neither file can be read
-first:
+Here `a.zaka` imports `b.zaka`, and `b.zaka` imports `a.zaka`, so the compiler cannot
+read either file first:
 
 ```zaka-file
 // a.zaka
@@ -61,12 +70,12 @@ first:
 error[ZK0231]: this import goes in a circle: a.zaka → b.zaka → a.zaka
 ```
 
-The circle can pass through more files. Move what both files need to a third file, and
-import it from both.
+The circle can also pass through more files. To fix it, we move what both files need to
+a third file, and import that file from both.
 
 ## A name the file does not export
 
-`math.zaka` shares `နှစ်ထပ်` and keeps `သုံးထပ်` private:
+Here `math.zaka` shares `နှစ်ထပ်` and keeps `သုံးထပ်` private:
 
 ```zaka-file
 // math.zaka
@@ -98,14 +107,15 @@ error[ZK0303]: function "သုံးထပ်" is not declared
   = help: "သုံးထပ်" is declared in "math.zaka"; mark it "အများသုံး" there and import it here
 ```
 
-Mark `သုံးထပ်` with `အများသုံး` in `math.zaka`. A name that `math.zaka` does not
-declare at all gets ZK0322 with no help: check its spelling.
+To fix it, we mark `သုံးထပ်` with `အများသုံး` in `math.zaka`. When `math.zaka` does not
+declare the name at all, we get ZK0322 without the help line, and we check the spelling
+of the name.
 
 ## A private struct in an export
 
-An exported function, variable, constant or struct can be used from other files, so
-each struct its kinds name must be exported too. Here `မူလ` is exported, but its kind,
-`နေရာ`, is private to the file:
+Other files can use an exported function, variable, constant or struct, so each struct
+that its data kinds (types) name must be exported too. Here `မူလ` is exported, but its
+data kind, `နေရာ`, is private to the file:
 
 ```zaka-error ZK0324
 နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
@@ -120,14 +130,14 @@ error[ZK0324]: "မူလ" is exported, but its kind names the private struct "�
   = help: mark "နေရာ" with "အများသုံး" as well, or keep "မူလ" private
 ```
 
-The same holds for the parameters and the result of a function and for the fields of a
-struct, with each pointer and list level around the struct. A struct that the file
-imports from another file was exported there, so naming it is fine.
+The rule is the same for the parameters and the result of a function and for the fields
+of a struct, through each pointer and list around the struct. A struct that the file
+imports from another file was exported there, so a file can name it without a problem.
 
 ## A statement in an imported file
 
-An imported file holds declarations. A statement in it is refused, since the program
-would run it at a moment no one chose:
+An imported file contains declarations. When it contains a sentence, the compiler refuses
+it, because the program would run that sentence at a moment that no one chose:
 
 ```zaka-file
 // counter.zaka
@@ -147,12 +157,12 @@ would run it at a moment no one chose:
 error[ZK0323]: "counter.zaka" is imported, so it holds declarations and no statements
 ```
 
-Move the statement to the file that is run.
+To fix it, we move the sentence to the file that we run.
 
 ## A starting value that needs a call
 
-The variables and constants of an imported file start with a value known at compile
-time. A call of a plain function is not known then:
+The variables and constants of an imported file start with a value that is known at
+compile time, and a call of a plain function is not known then:
 
 ```zaka-file
 // clock.zaka
@@ -177,14 +187,13 @@ error[ZK0604]: the starting value of "တစ်နာရီ" must be known at co
   = help: literals, constants, operators on them and calls of comptime functions are known; another call is not
 ```
 
-Write the value out, as `၆၀ * ၆၀`, or mark `စက္ကန့်` as a
-[comptime function](../functions/compile-time.md), whose call runs while the compiler
-runs.
+To fix it, we write the value out, as `၆၀ * ၆၀`, or we mark `စက္ကန့်` as a [comptime
+function](../functions/compile-time.md), whose call runs while the compiler runs.
 
 ## A variable of a module with no value
 
-A file run as a module has no start block, so nothing in it could set a variable later.
-Each of its variables gets a value in its declaration:
+An imported file has no program start block, so nothing in it could set a variable later.
+For this reason, each of its variables needs a value in its declaration:
 
 ```zaka-file
 // counter.zaka
@@ -205,12 +214,13 @@ error[ZK0483]: "အကြိမ်" is a global of a module, so it needs its val
   = help: give it a value, such as "ကနဦးတန်ဖိုး"
 ```
 
-Write `ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး`, or the value the counter starts from.
+To fix it, we write `ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး`, or the value that the
+counter starts from.
 
 ## Imports outside a file
 
 A program on this page, in the compiler explorer or on standard input has no folder, so
-it cannot import:
+it cannot import, and the compiler stops with the error ZK0232:
 
 ```zaka-error ZK0232
 "math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
@@ -223,3 +233,17 @@ it cannot import:
 ```text
 error[ZK0232]: this program was not read from a file, so it cannot import "math.zaka"
 ```
+
+To fix it, we save the program in a file next to `math.zaka` and run that file.
+
+## Recap
+
+- `အများသုံး` and imports belong at the top level, and the imports come first.
+- Two files cannot import each other, so we move the shared part to a third file.
+- A file can import just the names that the other file marks with `အများသုံး`, and an
+  exported declaration can name just exported structs.
+- An imported file contains declarations, and each of its variables gets a value that is
+  known at compile time.
+- A program without a file cannot import.
+
+Next: [Threads](../threads/README.md).

@@ -1,36 +1,20 @@
 ---
 title: Writing result kinds
-description: Write the kind of a result that can fail, with a good side and an error side, and use it for variables, parameters, fields and function results.
+description: Write the data kind of a result that can fail, with a good side and an error side, and use it for variables, parameters, fields and function results.
 ---
 
 # Writing result kinds
 
-So far a variable that held the result of a call took its kind from the call. A result
-kind can be written out too, wherever a kind goes: in a declaration, in a parameter, in the
-field of a struct and in the result clause of a function. A function that can fail has
-named its whole result kind in its header from the start.
+So far, a variable that kept the result of a call took its data kind (type) from the call.
+We can also write a result kind (result type) out wherever a data kind goes: in a
+declaration, in a parameter, in a field of a struct, and in the result clause of a function.
 
-```text
-<kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <kind> ရှိနိုင်သော ဒေတာဆဲလ်
-```
+## You will learn
 
-reads as "a cell that can hold a value of the first kind, or an error value of the second kind". Each side can also hold no value at all:
-
-| Written | The good side | The error side |
-| --- | --- | --- |
-| `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | text |
-| `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | no value | text |
-| `ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | no value |
-| `အောင်မြင်သည့်သတင်း သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | no value | no value |
-
-`အောင်မြင်သည့်သတင်း` is "news of success" and `မအောင်မြင်သည့်သတင်း` is "news of failure":
-each tells which side was met, and carries nothing more. A side with no error value drops
-`အမှားအယွင်းအနေဖြင့်` as well, so the error side reads `မအောင်မြင်သည့်သတင်း` alone.
-
-## In a clause, a parameter and a variable
-
-The result clause of a function is the written kind, then `တစ်ခု ကို ပြန်ပေးမည်`. The function can
-fail when its result kind is a result kind, and not otherwise:
+- how to write a result kind for a variable or a parameter
+- how to write a side that has no value, with `အောင်မြင်သည့်သတင်း` and `မအောင်မြင်သည့်သတင်း`
+- how to put results in struct fields and lists
+- the mistakes around a side with no value
 
 ```zaka
 စားခွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -60,14 +44,30 @@ R ဟူသော ကိန်းပြည့် သို့မဟုတ် အ
 အမှား: သုညဖြင့် စား၍ မရပါ
 ```
 
-The result kind with `တစ်ခု ကို ပြန်ပေးမည်` after it is the header of a function that can
-fail. A function that fails and has no good result writes the side with no value as its good
-side: `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်`.
+Here the variable `ရ` and the parameter `R` both have a written result kind, which is the
+same one that `စားခွဲ` uses in its result clause:
 
-A result has no [initial value](../variables/README.md#the-initial-value): Zaka never
-picks a success or a failure for the program. A result variable gets its value from a
-call or a return, such as `ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။`, before its first
-read, and `ကနဦးတန်ဖိုး` for a result kind is a mistake:
+```text
+<good kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <error kind> ရှိနိုင်သော ဒေတာဆဲလ်
+```
+
+| Zaka | Reads as |
+| --- | --- |
+| `<good kind>` | the data kind of the good result (`Ok` value) |
+| `သို့မဟုတ်` | "or" |
+| `အမှားအယွင်းအနေဖြင့် <error kind>` | "as an error value, a `<error kind>`" |
+| `ရှိနိုင်သော ဒေတာဆဲလ်` | "a data cell that can contain" |
+
+In a declaration, a parameter or a result clause, we write `တစ်ခု` after the result kind,
+as we do after other data kinds. A function can fail when its result clause has a result
+kind, and it cannot fail otherwise.
+
+## No initial value
+
+A result has no [initial value](../variables/README.md#the-initial-value), because Zaka
+never picks a success or a failure for the program. So a result variable gets its value
+from a call or a return, such as `ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။`, before its
+first read, and `ကနဦးတန်ဖိုး` for a result kind is a mistake:
 
 ```zaka-error ZK0479
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -80,23 +80,43 @@ R ကို ပြသမည်။
 error[ZK0479]: "isize result or text error" has no initial value: a result must hold its good value or its failure
 ```
 
-The same goes for a struct or a list that holds a result: it has no initial value either,
-so each of its fields and cells gets a value written out.
+A struct or a list that contains a result has no initial value either, so we write out a
+value for each of its fields and cells.
 
 ## A side with no value
 
-When a failure has nothing to tell, write `မအောင်မြင်သည့်သတင်း` for the error side. The
-function ends with a failure through its own sentence, which is a return as
-`ပြန်ပေးမည်` is:
+```text
+<good kind> သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်
+အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <error kind> ရှိနိုင်သော ဒေတာဆဲလ်
+```
+
+Sometimes a side has nothing to tell. When a failure has no value, we write
+`မအောင်မြင်သည့်သတင်း` ("news of failure") as the whole error side, without
+`အမှားအယွင်းအနေဖြင့်`. When a success has no value, we write `အောင်မြင်သည့်သတင်း` ("news of
+success") as the good side. Each tells which side the call met, and nothing more:
+
+| Zaka | The good side | The error side |
+| --- | --- | --- |
+| `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | text |
+| `အောင်မြင်သည့်သတင်း သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ်` | no value | text |
+| `ကိန်းပြည့် သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | an integer | no value |
+| `အောင်မြင်သည့်သတင်း သို့မဟုတ် မအောင်မြင်သည့်သတင်း ရှိနိုင်သော ဒေတာဆဲလ်` | no value | no value |
+
+To end a function with a side that has no value, we use one of these sentences, which
+return at once, as `ပြန်ပေးမည်` does:
 
 ```text
 လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်။
+လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။
 ```
 
-reads as "mark the function as not succeeded". The good side with no value is the same
-for success: `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။` ends the function with a good
-result that holds nothing, as a bare `ပြန်ပေးမည်` does. Printing a whole result of
-such a side shows the news, with no value in brackets:
+| Zaka | Reads as |
+| --- | --- |
+| `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | "will mark the function as not succeeded" |
+| `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` | "will mark the function as succeeded" |
+
+When we print a whole result with such a side, the output shows the news word alone, with
+no value in brackets:
 
 ```zaka
 ရှာ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -133,15 +153,14 @@ such a side shows the news, with no value in brackets:
 ရှာ၍ မတွေ့
 ```
 
-The test `R ထဲတွင် အမှားအယွင်း ရှိလျှင်` is true for a failure with no value too. What a side with no
-value cannot do is be read: there is no value to read. `ရ ထဲမှ အမှားအယွင်း ဒေတာ`
-on such a side is an error, shown in [Mistakes](#mistakes).
+The test `R ထဲတွင် အမှားအယွင်း ရှိလျှင်` is true for a failure with no value too. What we
+cannot do is read a side with no value, because there is nothing to read, as
+[Mistakes](#mistakes) shows.
 
-Passing on works as before. A failure with no value counts as an error side of its own:
-a function that fails with no value passes its failure on to a caller that fails with
-no value, and a caller that fails with text is the mistake ZK0446. The start block cannot
-fail, so it keeps the whole result. Reading the good result of one that holds a failure
-stops the run:
+We pass a failure on as before. A failure with no value is a separate error kind, so a
+function that fails with no value can pass its failure on to a caller that also fails with
+no value, and a caller that fails with text is the mistake ZK0446. Reading the good result
+of a result that contains a failure stops the program:
 
 ```zaka-stop
 ရှာ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -177,13 +196,13 @@ stops the run:
 the program stopped: the result holds a failure, not a good result
 ```
 
-The message is `the result holds a failure, not a good result`; with an error value to show,
-the message ends with the value.
+When the failure has an error value, the message ends with that value, as on [Reading a
+whole result](results.md#reading-the-wrong-part).
 
 ## Struct fields
 
-A field of a struct can hold a result kind. The structs here are the good side and the
-error side, and the field holds either of them:
+A field of a struct can have a result kind. Here the good side and the error side are both
+structs, and the field contains one of them:
 
 ```zaka
 ဖိုင်ရလဒ် ဟူသော ဒေတာအစုအဝေးတွင် အရွယ် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -210,24 +229,27 @@ error side, and the field holds either of them:
 အမှားအယွင်း(ဖိုင်အမှားအယွင်း(စာ: "မရှိ"))
 ```
 
-A struct on either side is written like each other kind: `ဖိုင်ရလဒ်` is the good side and
-`အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း` is the error side. The function above gives back
-a struct value for the good side with a plain return, and a struct value for the error side
-with `ဟူသော အမှားအယွင်း`.
+We write a struct on either side the same as other data kinds: `ဖိုင်ရလဒ်` is the good side
+and `အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း` is the error side. The function `ဖွင့်` returns a
+struct as its good result with a plain return, and a struct as its error value with
+`ဟူသော အမှားအယွင်း`.
 
 ## Lists of results
 
-A list can be made of results. The word `စာရင်း` goes after the whole result kind, and it
-wraps the whole result: each cell of the list holds a result.
+```text
+<good kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <error kind> ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း
+```
 
-| Written | Is |
+To make a list of results, we write `စာရင်း` after the whole result kind, so each cell of the
+list contains a whole result. For a counted list, we put the count, such as
+`အကွက် ၂ ခုရှိသော`, before the result kind:
+
+| Zaka | Means |
 | --- | --- |
 | `ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a list of results |
 | `အကွက် ၂ ခုရှိသော ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` | a list of 2 results |
 
-A count such as `အကွက် ၂ ခုရှိသော` stands before the result kind, and belongs to the list
-after it. A result kind with no such word after it is one result, as before. The same
-kinds serve a variable, a parameter and a field of a struct:
+We can use these list kinds for a variable, a parameter or a field of a struct:
 
 ```zaka
 ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။
@@ -264,20 +286,15 @@ kinds serve a variable, a parameter and a field of a struct:
 [ရလဒ်ကောင်း(၁၈)]
 ```
 
-A list prints its cells in brackets, each cell as a whole result. A result has no initial
-value, so a list with a count gets each cell written out, as `နှစ်ကွက်` does: a cell
-never set would hold neither a success nor a failure. The cells added with `ထည့်မည်`
-hold what was given. Each cell is read with
-`အကွက်တိုင်း` as for each list, and the test `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` of
-[Reading a whole result](results.md) tells which part a cell holds. Pointers to
-results work the same, and are in
-[Errors and results](../../manual/language/error-handling.md#result-kinds).
+A list prints its cells in brackets, each cell as a whole result. Because a result has no
+initial value, we write out each cell of a counted list, as `နှစ်ကွက်` does, and the cells
+that we add with `ထည့်မည်` contain the results we added. We visit the cells with
+`အကွက်တိုင်း`, as for other lists, and use the test `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` from
+[Reading a whole result](results.md) to find which part each cell contains.
 
-The levels after `ရှိနိုင်သော ဒေတာဆဲလ်` belong to the whole result, so
-`ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် စာရင်း` is
-a list of results, as the program above uses it. A list as the error kind goes before
-`ရှိနိုင်သော ဒေတာဆဲလ်`, as `အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း စာရင်း`, so the error value
-of a function with that clause is a list, and a single `ဖိုင်အမှားအယွင်း` does not fit it:
+The place of `စာရင်း` matters. After `ရှိနိုင်သော ဒေတာဆဲလ်`, it makes a list of whole results,
+as above. Before `ရှိနိုင်သော ဒေတာဆဲလ်`, as in `အမှားအယွင်းအနေဖြင့် ဖိုင်အမှားအယွင်း စာရင်း`,
+it makes the error value a list, so a single `ဖိုင်အမှားအယွင်း` does not fit it:
 
 ```zaka-error ZK0401
 ဖိုင်အမှားအယွင်း ဟူသော ဒေတာအစုအဝေးတွင် စာ ဟူသော စာသား တစ်ခု ပါဝင်သည်။
@@ -300,8 +317,8 @@ error[ZK0401]: expected ဖိုင်အမှားအယွင်း[], foun
 
 ## Mistakes
 
-A side with no value has nothing to read, and a function must give back what its kind names.
-Reading the error value of a failure with no value is ZK0450:
+A side with no value has nothing to read, so reading the error value of a failure with no
+value is the mistake ZK0450:
 
 ```zaka-error ZK0450
 ရှာ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -321,8 +338,9 @@ Reading the error value of a failure with no value is ZK0450:
 error[ZK0450]: the error side of the result is "မအောင်မြင်သည့်သတင်း": it holds no value to read
 ```
 
-A failure in a function whose error side names a kind has to hold a value of that kind
-(ZK0451):
+A function must return what its result kind names. When the error side names a data kind,
+each failure must return an error value of that data kind, so a failure with no value is
+the mistake ZK0451:
 
 ```zaka-error ZK0451
 ရေး ဟူသော လုပ်ဆောင်ချက် သည်
@@ -338,7 +356,8 @@ A failure in a function whose error side names a kind has to hold a value of tha
 error[ZK0451]: the function fails with an error value of the kind "text", so a failure must give one back
 ```
 
-And an error value has no place in a function whose error side holds no value (ZK0476):
+The reverse is a mistake too: when the error side has no value, an error value has no place
+to go (ZK0476):
 
 ```zaka-error ZK0476
 ရေး ဟူသော လုပ်ဆောင်ချက် သည်
@@ -354,14 +373,32 @@ And an error value has no place in a function whose error side holds no value (Z
 error[ZK0476]: an error value goes where a result kind with an error side is wanted
 ```
 
-The full rules, with the other codes, are in
-[Errors and results](../../manual/language/error-handling.md#result-kinds).
+## Details
+
+- `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်။` returns a good result with no value, the same as
+  a bare `ပြန်ပေးမည်။`.
+- When the good side is `အောင်မြင်သည့်သတင်း`, `ရ ထဲမှ ဒေတာ` has nothing to read and is ZK0449.
+- In a message, a result kind is written in English, such as `isize result or text error`,
+  `success or text error` and `isize result or failure`.
+- For a pointer to a result, we write `လိပ်စာ` after the whole result kind, as we write
+  `စာရင်း` for a list, and Part III covers pointers. The full rules and the other mistakes are in [Result
+  kinds](../../manual/language/result-kinds.md).
+
+## Recap
+
+- We write a result kind as `<good kind> သို့မဟုတ် အမှားအယွင်းအနေဖြင့် <error kind> ရှိနိုင်သော ဒေတာဆဲလ်`,
+  and we can use it for a variable, a parameter, a field or a result clause.
+- A result has no initial value, so each result variable, field and cell gets a value from
+  a call or a return.
+- `မအောင်မြင်သည့်သတင်း` is an error side with no value, and `အောင်မြင်သည့်သတင်း` is a good side
+  with no value.
+- We write `စာရင်း` after the whole result kind to make a list of results.
 
 ## Hands on
 
-- Write a function that looks a number up in a list and fails with no value when it is
-  not there; print the whole result for a number that is and one that is not.
-- Take a whole result as a parameter, as `ပြ` does above, and print the good result or the
+- Write a function that looks a number up in a list and fails with no value when the number
+  is not there. Print the whole result for a number that is there and one that is not.
+- Use a whole result as a parameter, as `ပြ` does above, and print the good result or the
   error value with a test in `အကယ်၍`.
 - Make a struct with a field of a result kind, and fill the field with the call of a
   function that can fail.

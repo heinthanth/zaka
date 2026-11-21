@@ -1,37 +1,44 @@
 ---
 title: Unsafe Zaka
-description: Unsafe code, the pointer kind, addresses, pointer arithmetic, the heap statements, owned markers, the conversions to and from pointers, and the checks the compiler runs on unsafe code.
+description: Unsafe functions and unsafe blocks, the work that needs them, safe wrappers, C functions, the checks the compiler runs on unsafe code and the checks the VM still makes.
 ---
 
 # Unsafe Zaka
 
-Safe Zaka has no pointer to read through and no block to give back: each value is
-copied, each shared object is counted, and the VM frees a block when its last use goes
-(see [Values and objects](objects.md)). Unsafe Zaka adds what C has: a pointer kind,
-reads and writes through an address, pointer arithmetic, and heap blocks that the program
-asks for and gives back itself. Each of these needs *unsafe code*, a function or a block
-that states, in words, that the compiler does not vouch for it.
+Safe Zaka has no pointer to read through and no block (allocation) to free: each value is
+duplicated, each shared object is counted, and the VM frees a block when its last use
+ends (see [Values and objects](objects.md)). Unsafe Zaka adds what C has: addresses
+(pointers), reads and writes through an address, pointer arithmetic, and blocks of the
+heap that the program asks for and frees itself. Each of these needs *unsafe code*, which
+is a function or a block that states, in words, that the compiler cannot vouch for it.
 
-"Unsafe" never means that a mistake goes unseen. The VM still checks each read, write and
-give-back through a pointer, and stops the program at the first bad one. What changes is
-the compiler: in unsafe code its findings about pointers are warnings, and it leaves the
-proof to the program. This page states the whole rules. The Learn book builds them up in
-small steps, starting from [the unsafe chapter](../../learn/pointers/README.md).
+"Unsafe" does not mean that a mistake goes unseen. On the VM (virtual machine), each read,
+write and free through a pointer is still checked, and the program stops at the first bad
+one. What changes is the compiler: in unsafe code, its findings about pointers are
+warnings, and it leaves the proof to the program. Native code is different, because it
+runs a pointer mistake as C would (see [Native code](#native-code)).
+
+The rules of unsafe Zaka fill three pages. This page covers unsafe code itself, C
+functions and the checks, [Pointers and addresses](pointers.md) covers the pointer kind
+(pointer type) and the work with addresses, and [The heap and owned pointers](heap.md)
+covers blocks of the heap and owned pointers (owning pointers). The Learn book builds them
+up in small steps, starting from [Unsafe Zaka](../../learn/pointers/README.md).
 
 ## Unsafe code
 
-There are two forms of it. `စိတ်မချရသော` ("not to be trusted") between `ဟူသော` and `လုပ်ဆောင်ချက်` makes a
-whole function unsafe:
-
 ```text
-<name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် ... အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+<name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် … အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။ … လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ```
 
-A function declared inside an unsafe function is unsafe too. The block phrase
-`အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` ("do the following, though it cannot be
-trusted") opens an *unsafe block*, a statement that holds others, as each block does; the
-block ends with `လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`. The word covers the statements of
-the block and nothing past its closer.
+Unsafe code comes in two forms. To make a whole function unsafe, we put `စိတ်မချရသော`
+("not to be trusted") between `ဟူသော` and `လုပ်ဆောင်ချက်`, and a function that we declare
+inside an unsafe function is unsafe too. To make a few statements unsafe, we put them in
+an *unsafe block*, which opens with `အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။` ("do the
+following, though it cannot be trusted") and ends with the block closer
+`လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`. An unsafe block is a statement like each other block,
+and the statements between its opener and its block closer are unsafe code, while nothing
+after the block closer is.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -48,9 +55,39 @@ the block and nothing past its closer.
 ၂၀
 ```
 
-The start block itself cannot be unsafe: `ပရိုဂရမ်သည်` takes the plain
-`အောက်ပါတို့ကို လုပ်ဆောင်မည်။` and nothing else (ZK0201), and `စိတ်မချရသော` before it is
-ZK0257. An unsafe block goes inside it, as above.
+Both forms share the stem `စိတ်မချရ`, so a search for that word finds each place that the
+compiler cannot vouch for, the calls of unsafe functions included.
+
+### Blocks of conditions and loops
+
+The block of a condition, a switch arm or a loop can use the unsafe opener in place of the
+plain one. Its statements are then unsafe code, while the condition and the loop head
+remain safe code.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အကယ်၍ က > ၀ ဖြစ်လျှင် အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ပ ကို က ၏ လိပ်စာ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+၁ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
+ပ ၏ တန်ဖိုး ကို (ပ ၏ တန်ဖိုး) + န ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+က ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၈
+```
+
+### The program start block
+
+The program start block (entry point) cannot be unsafe. After `ပရိုဂရမ်သည်` we must write
+the plain `အောက်ပါတို့ကို လုပ်ဆောင်မည်။` (ZK0201), and `စိတ်မချရသော` before `ပရိုဂရမ်သည်` is
+ZK0257. To use unsafe code there, we put an unsafe block inside the program start block,
+as in the examples above.
 
 ```zaka-error ZK0257
 စိတ်မချရသော ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -72,47 +109,22 @@ error[ZK0257]: "စိတ်မချရသော" marks a function, and the sta
 error[ZK0201]: expected "အောက်ပါ တို့ကို လုပ်ဆောင်မည်" or "အောက်ပါ တို့ကို လုပ်ဆောင်ကာ", found "အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်"
 ```
 
-The block of a conditional, a switch arm or a loop can take the unsafe opener in place of
-the plain one: its statements are then unsafe code, and nothing else of the statement is.
-The condition and the loop head remain safe code.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ၅ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
-အကယ်၍ က > ၀ ဖြစ်လျှင် အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ပ ကို က ၏ လိပ်စာ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-၁ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ပ ၏ တန်ဖိုး ကို (ပ ၏ တန်ဖိုး) + န ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-က ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၈
-```
-
-Both forms share the stem `စိတ်မချရ`, so a search for that word finds each place the
-compiler does not vouch for, the calls of unsafe functions included.
-
 ## What needs unsafe code
 
-A pointer value can pass through safe code: a variable or a field can hold it, `=` and
-arguments pass it on, it prints, and it can be compared with the null address,
-`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`. That is how a safe
-wrapper keeps a handle that a C lib gave it. The work that reaches the storage behind a
-pointer needs unsafe code, and outside it each is ZK0468:
+A pointer value can pass through safe code. Safe code can store it in a variable or a
+field, pass it on with `=` and with arguments, print it, and compare it with the null
+address (null pointer) `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`, which is how a safe wrapper keeps a
+handle that a C lib returned. The work that reaches the storage behind a pointer needs
+unsafe code, and outside unsafe code each of these is ZK0468:
 
-| Work | Written |
-| --- | --- |
-| a read or a write through a pointer | `ပ ၏ တန်ဖိုး`, `*ပ` |
-| pointer arithmetic | `ပ + ၁`, `ပ - မ` |
-| taking an address | `က ၏ လိပ်စာ`, `&က` |
-| the heap statements | asking for, resizing, giving back, writing and filling a block |
-| a conversion to or from a pointer | `ပ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` |
-| a call of an unsafe function, or of a C function declared `စိတ်မချရသော` | `ဂဏန်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` |
+| Work | Written | Rules |
+| --- | --- | --- |
+| a read or a write through a pointer | `ပ ၏ တန်ဖိုး`, `*ပ` | [Reading and writing through a pointer](pointers.md#reading-and-writing-through-a-pointer) |
+| pointer arithmetic | `ပ + ၁`, `ပ - မ` | [Pointer arithmetic](pointers.md#pointer-arithmetic) |
+| taking an address | `က ၏ လိပ်စာ`, `&က` | [Taking an address](pointers.md#taking-an-address) |
+| the heap statements | asking for, resizing, freeing, writing and filling a block | [Heap statements](heap.md#heap-statements) |
+| a conversion to or from a pointer | `ပ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` | [Conversions](pointers.md#conversions) |
+| a call of an unsafe function, or of a C function declared `စိတ်မချရသော` | `ဂဏန်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။` | [Safe wrappers](#safe-wrappers), [C functions](#c-functions) |
 
 ```zaka-error ZK0468
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -126,12 +138,14 @@ pointer needs unsafe code, and outside it each is ZK0468:
 error[ZK0468]: "၏ တန်ဖိုး" needs unsafe code
 ```
 
-The comparison on line 3 is fine in safe code; the read on line 4 is not.
+The comparison on line 3 is fine in safe code, while the read on line 4 is not.
 
-The call rule is the one Rust has: an unsafe function needs unsafe code at each call, so
-unsafe code spreads to the caller until a function takes the risk on itself. A *safe
-wrapper* does that: a function that is not unsafe, whose statements hold an unsafe block, and whose
-callers need no unsafe code at all.
+## Safe wrappers
+
+Zaka follows the rule of Rust for calls: each call of an unsafe function needs unsafe
+code, so unsafe code spreads to the caller until some function takes the risk on itself.
+A *safe wrapper* does that. It is a function that is not unsafe, but contains an unsafe
+block, and its callers need no unsafe code at all.
 
 ```zaka
 ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
@@ -168,7 +182,9 @@ callers need no unsafe code at all.
 ၅
 ```
 
-The same call of `ဂဏန်း` from the start block, outside an unsafe block, is ZK0468:
+Here `ဂဏန်း` returns an owned pointer and `ရှင်း` takes one over, as [Owned
+pointers](heap.md#owned-pointers) describes. The same call of `ဂဏန်း` from the program
+start block, outside an unsafe block, is ZK0468:
 
 ```zaka-error ZK0468
 ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
@@ -187,9 +203,10 @@ The same call of `ဂဏန်း` from the start block, outside an unsafe block
 error[ZK0468]: a call of "ဂဏန်း", an unsafe function, needs unsafe code
 ```
 
-A call through a [function value](function-values.md) is a plain call, which safe
-code can make, so an unsafe function cannot become a value (ZK0469). Take a safe function
-that calls it inside an unsafe block, and make that the value.
+A call through a [function value](function-values.md) is a plain call that safe code can
+make, so an unsafe function cannot become a function value (ZK0469). To pass it around,
+we write a safe function that calls it inside an unsafe block, and we use that function as
+the value.
 
 ```zaka-error ZK0469
 ဂဏန်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
@@ -208,641 +225,17 @@ that calls it inside an unsafe block, and make that the value.
 error[ZK0469]: "ဂဏန်း" is an unsafe function, declared with "စိတ်မချရသော", so it cannot be a function value
 ```
 
-## The pointer kind
-
-A pointer holds an address in the RAM of the VM. Its kind is the kind of the value it
-points at, with `လိပ်စာ` ("address") after it, and a pointer to a pointer adds
-`၏ လိပ်စာ` for each further level. There is one pointer kind for each kind it points at:
-no flavour tells who gives the block back.
-
-| Kind | What it is | Short name in messages |
-| --- | --- | --- |
-| `ကိန်းပြည့် လိပ်စာ` | the address of an integer | `isize*` |
-| `ကိန်းပြည့် လိပ်စာ ၏ လိပ်စာ` | the address of a pointer to an integer | `isize**` |
-| `လိပ်စာ` | an *opaque* address: it points at a value of no known kind | `ptr` |
-
-The kinds of numbers, characters and true/false values are in [Kinds and
-values](kinds.md); each can stand in front of `လိပ်စာ`, and so can a struct or a list.
-The first level also takes the older spelling `ကိန်းပြည့် ၏ လိပ်စာ`, which means the same
-as `ကိန်းပြည့် လိပ်စာ`.
-
-Pointers of different kinds do not mix. A pointer to an integer does not fit a variable
-that points at a smaller integer:
-
-```zaka-error ZK0401
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0401]: expected i8*, found isize*
-```
-
-Two changes of kind need no words: the null address turns into each pointer kind, and a pointer of
-a named kind turns into the opaque `လိပ်စာ` and back. Each other change is a
-[conversion](#conversions).
-
-## The null address
-
-`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` ("the address that points at nothing") is the null
-address: a pointer that points nowhere. The pointer is the one kind of Zaka that can hold
-NULL; a shared object and a function value cannot, and a value that can be missing is an
-[optional](optionals.md#null-is-a-mistake). The phrase is the
-[initial value](kinds.md#initial-values) of each pointer kind, so
-`ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။` sets `ပ` to it. A pointer variable declared with no value holds
-no address at all, not even this one: it is unset until the program sets it ([Set before
-read](statements.md#set-before-read)). Zaka does not treat a pointer as true or false, so a
-test compares with the phrase, which safe code can do. A null pointer prints as the phrase
-too, so the output reads as the source does:
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
-ပ ကို ပြသမည်။
-အကယ်၍ ပ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ
-ဘာမှ မညွှန်ပါ
-```
-
-- The phrase is three reserved words that the lexer joins into one value:
-  `မည်သည်ကိုမှ` ("nothing"), `မညွှန်းသော` ("that points at no"), `လိပ်စာ`.
-- It names no pointer kind of its own, so a declaration with it and no written kind is
-  ZK0430, and it fits no kind but a pointer (ZK0401).
-
-A pointer that holds an address prints as `0x` and the address in hexadecimal. Reading or
-writing through the null address stops the program. When the compiler can prove that a
-pointer is null on each path to a read, it reports ZK0709, and under `--lint-warn doubts` it
-warns (ZK0711) about a pointer that *can* be null, such as a new block that was never
-compared with the phrase. In unsafe code both follow the level of the `mem` lint; see [The checks on unsafe
-code](#the-checks-on-unsafe-code).
-
-## Taking an address
-
-`<place> ၏ လိပ်စာ` is the address of a place, and the short form is `&<place>`. Its kind
-is the kind of the place with `လိပ်စာ` after it. A place that has an address is:
-
-- a variable or a parameter,
-- a value reached through a pointer,
-- a field of a struct, and
-- a cell of a list or of text.
-
-A number such as `၅`, and the result of a sum, are values with no place, so there is no
-address to take (ZK0411). A constant does have a place, but Zaka does not give its
-address out, since a write through it would change a constant. The variable of a counted
-loop is the same (ZK0412).
-
-```zaka-error ZK0411
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-၅ ၏ လိပ်စာ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0411]: the address of a literal cannot be taken; variables and dereferences alone have an address
-```
-
-```zaka-error ZK0412
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
-ကြီးဆုံး ၏ လိပ်စာ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0412]: "ကြီးဆုံး" cannot be changed, so its address cannot be taken
-```
-
-The address of a local variable or a parameter is good until its function returns, and
-the address of a top-level variable is good for the whole run. A function that returns
-the address of its own local or parameter gets the warning ZK0706, whatever its pointer kind, and the VM stops a read through
-that address once the function has returned.
-
-### Pinning
-
-A list or text value shares its cells with its copies until one side writes (see [Values
-and objects](objects.md)). An address of its cells would break that: a write through the
-address would reach each duplicate. So taking the address of a cell first gives the list cells
-of its own, and then *pins* them: a later duplicate of a pinned list gets cells of its own at
-once, and never shares them.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် က ၏ အကွက် ၀ ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။
-ပ ၏ တန်ဖိုး ကို ၉ ဟု ထားမည်။
-က ကို ပြသမည်။
-ခ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-[၉၊ ၂၊ ၃]
-[၁၊ ၂၊ ၃]
-```
-
-A pin lasts as long as the cells do, and a resize keeps it. An add to the list can still
-move its cells to a new block; the VM stops a read through an address of the old cells.
-
-## Reading and writing through a pointer
-
-`<pointer> ၏ တန်ဖိုး` is the value at the address, and the short form is `*<pointer>`.
-The result is a place: it can be read, printed, or assigned to.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ညွှန်း သည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။
-ညွှန်း ၏ တန်ဖိုး ကို ပြသမည်။
-ညွှန်း ၏ တန်ဖိုး ကို ၂၀ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-အသက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၁၈
-၂၀
-```
-
-The two spellings group in a different order, and the difference matters when the pointer
-is part of a sum:
-
-| Written | Reads as |
-| --- | --- |
-| `ပ + ၁ ၏ တန်ဖိုး` | the value at `ပ + ၁`: the verb takes the whole expression before it |
-| `*ပ + ၁` | `(*ပ) + ၁`: the star takes the name right after it |
-| `(ပ ၏ တန်ဖိုး) + ၁` | the same as `*ပ + ၁` |
-
-Reading through something that is not a pointer is ZK0413. The opaque `လိပ်စာ` cannot be
-read through, and cannot be offset, until it is converted to a pointer of a named kind
-(ZK0414):
-
-```zaka-error ZK0414
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ပ ၏ တန်ဖိုး ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0414]: an opaque "လိပ်စာ" cannot be dereferenced or offset
-```
-
-## Pointer arithmetic
-
-A pointer moves in steps of whole values. `ပ + ၁` is the next value, not the next octet,
-and the pointer kind tells the size in octets. These operations alone exist on pointers:
-
-| Form | Kinds | Gives |
-| --- | --- | --- |
-| `ပ + န`, `န + ပ`, `ပ နှင့် န ၏ ပေါင်းလဒ်` | a pointer and an integer | a pointer of the same kind, `န` values on |
-| `ပ - န`, `ပ နှင့် န ၏ နုတ်လဒ်` | a pointer and an integer | a pointer of the same kind, `န` values back |
-| `ပ - မ`, `ပ နှင့် မ ၏ နုတ်လဒ်` | two pointers of one kind | the distance in values, a `ကိန်းပြည့်` |
-| `ပ သည် မ နှင့် ညီ`, `မညီ` | two pointers of one kind, or a pointer and the null address | whether both hold the same address |
-| `ပ သည် မ အောက် ငယ်` and the other orders | two pointers of one kind | which address is lower |
-
-Each other operator on a pointer, such as `*` or `/`, is ZK0415. Pointers of different
-kinds cannot be subtracted or compared (ZK0416). Two pointers into different blocks have
-no distance: the compiler warns (ZK0712) when it knows the blocks differ, and the VM stops
-the subtraction.
-
-```zaka-warning ZK0712
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
-ကိန်းရှင် မ သည် ခ ၏ လိပ်စာ ဖြစ်ပါစေ။
-ပ - မ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-warning[ZK0712]: these pointers point into different blocks and cannot be subtracted
-the program stopped: pointers into different blocks cannot be subtracted
-```
-
-### The one-past-the-end rule
-
-A block of `n` values holds the values `ပ + ၀` to `ပ + (n - ၁)`. The address `ပ + n`, just
-past the last value, is allowed as well: a program can form it, compare against it and
-subtract it. It can never be read or written, since no value is stored there. Each other
-address outside the block is out of bounds: a constant offset past `n` is ZK0710 when the
-pointer is formed, and a read or write at an address outside the block stops the program.
-
-That rule is what a walk through a block needs. A loop stops when the walker meets the
-end:
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၃ ခုစာ နေရာယူ၍ လိပ်စာကို ကိန်းများ တွင် သိမ်းထားမည်။
-၀ မှ ၂ အထိ နံပါတ် အနေဖြင့် ရေတွက်၍ ကိန်းများ + နံပါတ် ၏ တန်ဖိုး ကို နံပါတ် * နံပါတ် ဟု ထားမည်။
-
-ကိန်းရှင် ညွှန်း သည် ကိန်းများ ဖြစ်ကာ ညွှန်း သည် ကိန်းများ + ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ညွှန်း ၏ တန်ဖိုး ကို ပြသမည်။
-ပြီးလျှင် ညွှန်း ကို ညွှန်း + ၁ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-(ကိန်းများ + ၃) - ကိန်းများ ကို ပြသမည်။       // the distance in values
-လိပ်စာ ကိန်းများ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၀
-၁
-၄
-၃
-```
-
-The VM allows the address `ပ + n` likewise: a subtraction of two pointers counts the end
-of the block as inside it. A read at that address stops the program with an access
-outside each live block.
-
-## Size of a kind
-
-`<kind> တစ်<word> ၏ အရွယ်အစား` ("the size of one of the kind") is the number of octets one
-value of the kind takes; the kind takes its [measure word](kinds.md#measure-words). It is a constant, a `လက္ခဏာမဲ့ ကိန်းပြည့်`, and an operand like a number; it
-reads no storage, so safe code can use it.
-
-| Kind | Octets |
-| --- | --- |
-| `N ဘစ် ကိန်းပြည့်`, `N ဘစ် ဒဿမကိန်း` | `N / 8` |
-| `ကိန်းပြည့်`, `လက္ခဏာမဲ့ ကိန်းပြည့်` | 8 |
-| `စာလုံး` | 4 |
-| `မှန်မှားတန်ဖိုး` | 1 |
-| each pointer kind and `လိပ်စာ` | 8 |
-| a counted list | its cell count times the size of one cell, with no gaps |
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-မှန်မှားတန်ဖိုး တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-ကိန်းပြည့် လိပ်စာ တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၈
-၄
-၁
-၈
-```
-
-The numbers are those of the target the program is built for. Each value sits at an
-address that is a multiple of its size, up to 16; the VM stops a program that reads or
-writes at another address.
-
-## Heap statements
-
-Three statements work with blocks of the heap, and [three more](#writing-and-filling-cells)
-write the cells of a block. A block from these statements has no count: the VM never
-frees it on its own, and the program gives it back. In each statement, `မင်မိုရီ` can be
-replaced with `မှတ်ဉာဏ်`. Resizing and giving back start alike, with
-`လိပ်စာ <place> ရှိ မင်မိုရီကို` ("the RAM at the address in the place"); the words after it
-tell the two apart.
-
-Each heap sentence is a [call written as a sentence](functions.md#starting-and-ending-phrases)
-of a function of the [core](core.md), which the compiler gives: `သိမ်းထား`,
-`ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and `ပြောင်းထည့်`. Their names
-are no reserved words, so a file that declares a function of one of these names hides the
-one of the core. As in each sentence call, an argument is a whole clause: a name, a
-number, a size, `ပ ၏ တန်ဖိုး`, a field, or a conversion. A heap sentence gives no value;
-written as one, it is ZK0315.
-
-### Sizes
-
-A request names its size in one of two forms:
-
-| Form | Asks for |
-| --- | --- |
-| `<kind> <count> <word>စာ` | room for `count` values of the kind, `<word>` its [measure word](kinds.md#measure-words): `ကိန်းပြည့် ၃ ခုစာ`, `စာလုံး ၅ လုံးစာ`, `လူ ၂ ယောက်စာ` |
-| `<count> ဘိုက်စာ` | `count` octets |
-
-The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`: a literal fits as it stands, and a variable used as a
-count has that kind. Another `လက္ခဏာမဲ့ ကိန်းပြည့်` value counts octets as well, as
-`n ဘိုက်စာ` does. Both forms are values too, outside the heap statements: the
-[size](kinds.md#the-size-of-a-kind) in octets, a `လက္ခဏာမဲ့ ကိန်းပြည့်`. Each form with a kind multiplies the count with the size of the kind,
-and a product that does not fit counts as running out of room.
-
-### Asking for a block
-
-```text
-မင်မိုရီတွင် <size> နေရာယူ၍ လိပ်စာကို <place> တွင် သိမ်းထားမည်။
-```
-
-The statement reserves a new block and stores its address in the place, which must have a
-pointer kind. The VM fills a new block with zeros, but the language promises nothing about
-what a new block holds, so a program writes before it reads. A size of 0 gives a block
-that is not null and holds nothing. When the heap has no room left, the place gets the
-null address; a careful program compares with `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` before it
-uses the block. The VM has
-256 MiB of heap to start with, and `zakac run --max-heap <octets>` sets another limit.
-
-### Resizing a block
-
-```text
-လိပ်စာ <place> ရှိ မင်မိုရီကို <size> ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
-```
-
-The statement grows or shrinks the block whose address is in the place, and stores the
-address of the result back in the place. The block can move. The values that fit the new
-size are kept, and a larger block holds new room after them. A place that holds the null address
-makes the statement ask for a new block. When the heap has no room for the new size, the
-program stops with "no heap room" rather than setting the place to the null address, which
-would lose the block still held.
-
-### Giving a block back
-
-```text
-လိပ်စာ <place> ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-```
-
-The statement gives the block back and sets the place to the null address. Giving back a
-place that holds the null address does nothing. The place alone is cleared; another pointer to the block would
-point at a block that is gone. The VM stops a program that uses such a pointer, and the
-compiler warns before the program runs when it can see the mistake (ZK0704).
-
-This program asks for a block of two integers, grows it to three, gives it back twice
-(the second time is harmless) and prints the place:
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ပ ၏ တန်ဖိုး ကို ၁၀ ဟု ထားမည်။
-ပ + ၁ ၏ တန်ဖိုး ကို ၂၀ ဟု ထားမည်။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ကိန်းပြည့် ၃ ခုစာ ဖြစ်အောင် နေရာအချဲ့အချုံ့လုပ်မည်။
-ပ + ၂ ၏ တန်ဖိုး ကို ၃၀ ဟု ထားမည်။
-၀ မှ ၂ အထိ န အနေဖြင့် ရေတွက်၍ ပ + န ၏ တန်ဖိုး ကို ပြသမည်။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-ပ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၁၀
-၂၀
-၃၀
-မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ
-```
-
-A heap statement whose place is not a pointer is ZK0417:
-
-```zaka-error ZK0417
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ၈ ဘိုက်စာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0417]: the heap statement needs a pointer, found isize
-```
-
-## Writing and filling cells
-
-Three statements write a whole run of cells at once. Each starts as resizing does, with
-`လိပ်စာ <ptr> ရှိ`, and each has a size, in a form of [the heap statements](#heap-statements), of the cells it handles:
-
-| Statement | Shape |
-| --- | --- |
-| write the cells, no overlap | `လိပ်စာ SRC ရှိ SIZE မင်မိုရီကို လိပ်စာ DST ဆီသို့ ကူးယူမည်။` |
-| write the cells, overlap allowed | `လိပ်စာ SRC ရှိ SIZE မင်မိုရီကို လိပ်စာ DST ဆီသို့ ပြောင်းထည့်မည်။` |
-| fill | `လိပ်စာ DST ရှိ မင်မိုရီကို VALUE ဖြင့် SIZE ဖြည့်မည်။` |
-
-`SIZE` is `<kind> N <word>စာ`, a count of cells of the kind with its measure word, or `N ဘိုက်စာ`, a count of octets.
-The first two write the cells at `SRC` to `DST`, and the third sets each cell at `DST` to
-`VALUE`. `ကူးယူမည်` is the `memcpy` of C: its two ranges must not overlap.
-`ပြောင်းထည့်မည်` is the `memmove` of C: it reads the source in full before it writes, so
-the ranges can overlap, as when a run of cells moves one place on.
-
-```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
-မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
-
-လိပ်စာ က ရှိ မင်မိုရီကို ၇ ဖြင့် ကိန်းပြည့် ၄ ခုစာ ဖြည့်မည်။       // fill
-က ၏ တန်ဖိုး ကို ၁ ဟု ထားမည်။
-က + ၁ ၏ တန်ဖိုး ကို ၂ ဟု ထားမည်။
-က + ၂ ၏ တန်ဖိုး ကို ၃ ဟု ထားမည်။
-လိပ်စာ က ရှိ ကိန်းပြည့် ၄ ခုစာ မင်မိုရီကို လိပ်စာ ခ ဆီသို့ ကူးယူမည်။  // two blocks
-လိပ်စာ က ရှိ ကိန်းပြည့် ၃ ခုစာ မင်မိုရီကို လိပ်စာ က + ၁ ဆီသို့ ပြောင်းထည့်မည်။  // one block
-၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ "{က + န ၏ တန်ဖိုး} {ခ + န ၏ တန်ဖိုး}" ဟု ပြသမည်။
-လိပ်စာ က ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လိပ်စာ ခ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၁ ၁
-၁ ၂
-၂ ၃
-၃ ၇
-```
-
-The rules:
-
-- `SRC` and `DST` are values of each pointer kind, or the opaque `လိပ်စာ`. Neither need
-  be a variable (`က + ၁` serves), since nothing is written back to them. The kinds of
-  `SRC`, `DST` and the cells need not match. A value that is no pointer is ZK0417.
-- The count is a `လက္ခဏာမဲ့ ကိန်းပြည့်`, as for the other heap statements (ZK0401 if it
-  is not).
-- The value of a fill is of the kind of the cells when the size is `<kind> N <word>စာ`, and a
-  `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` when the size is `N ဘိုက်စာ`; with another kind it is ZK0401.
-  A struct value fills as well: `အမှတ်(ဒေါင်: ၁၊ အလျား: ၂) ဖြင့် အမှတ် ၃ ခုစာ`.
-- The value is a notation, as each argument is: `က / ၂ ဖြင့် ၁ ဘိုက်စာ` fills with the
-  quotient, and a clause goes in parentheses, `(က ကို ၂ ဖြင့် စားသော စားလဒ်) ဖြင့် ၁ ဘိုက်စာ`.
-- A count of 0 does nothing, and neither the compiler nor the VM checks the addresses.
-  Else the VM checks that the source range lies in one live block and the destination
-  range in one live block that can be written, and each failure stops the program as an
-  access does: out of bounds, use after free, a null address, a write into static text. A
-  count whose product with the size of a cell does not fit is out of bounds as well.
-- `ကူးယူမည်` whose ranges overlap gets the warning ZK0721 when both addresses point into
-  one block at offsets the compiler knows and the count is known; else the VM stops the
-  program with the trap `overlap` (see [all the traps](../vm/traps.md)). Use
-  `ပြောင်းထည့်မည်` when the ranges can overlap.
-- The cells must hold no counted block (ZK0442): text, a plain list, a shared object, a
-  function value, or a struct that holds one of these. Each such cell holds a count on its
-  block, and a duplicate made octet for octet would give the block a second holder that
-  the count does not know of. The cells are of the kind of the size, or, for a size in
-  octets, of the kind each address points at. Assign such cells one at a time. Cells
-that hold pointers are plain addresses, as in C, and a block write or a fill takes them.
-
-```zaka-error ZK0442
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် စာသား လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-ကိန်းရှင် ခ သည် စာသား လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် စာသား ၂ ခုစာ နေရာယူ၍ လိပ်စာကို က တွင် သိမ်းထားမည်။
-မင်မိုရီတွင် စာသား ၂ ခုစာ နေရာယူ၍ လိပ်စာကို ခ တွင် သိမ်းထားမည်။
-လိပ်စာ က ရှိ စာသား ၂ ခုစာ မင်မိုရီကို လိပ်စာ ခ ဆီသို့ ကူးယူမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0442]: the cells are "text", which hold counted blocks: a raw duplicate or fill would not keep their counts
-```
-
-The compiler sees the destination as a write through the address, as a store through a
-pointer is: a destination that is the null address for sure, or whose first or last cell lies past
-the end of its block, gets a finding, and what the compiler knew about the slots the
-destination names is forgotten. It sees the source as a read through the address, with
-the same checks of its first and last cell. The last cell is known when the count is known
-on each path.
-
-## Owned markers
-
-A pointer tells nothing about who gives its block back. The marker `အပိုင်အနေဖြင့်` ("as
-its own") on a parameter or a result states it, and the compiler checks it.
-
-**An owned parameter** takes the block over. The parameter carries the marker after its
-`ကို` (see [Functions](functions.md#parameters)):
-
-```text
-<name> ဟူသော <kind> လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့်
-```
-
-After the call, the caller's variable holds the null address: the call stores it there, and the
-function is now the one to give the block back, to hand it on, or to store it. An
-argument for an owned parameter must be a place, so that it can be cleared. A read of the
-cleared place after a hand-over on each path is ZK0701, an error in each mode:
-
-```zaka-error ZK0701
-ရှင်း ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည်
-ပ ဟူသော ကိန်းပြည့် လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး
-အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-မင်မိုရီတွင် ကိန်းပြည့် ၁ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
-ရှင်း ဟူသော လုပ်ဆောင်ချက်ကို ပ ဖြင့် လုပ်ဆောင်မည်။
-ပ ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0701]: "ပ" handed its block to a parameter marked "အပိုင်အနေဖြင့်" and now points at nothing
-```
-
-A hand-over on one branch alone leaves the place null on that branch; the compiler is
-silent, and the VM stops a read through it. An argument that another argument of the
-same call also reaches gets the warning ZK0707, since the function can give the block back
-while it still reads it through the other one. With `ဒေတာ ပြောင်းလဲရန်` beside it, the
-function takes the old block, and the caller owns whatever the function writes back.
-
-**An owned result** gives the caller a block:
-
-```text
-<kind> လိပ်စာ တစ်ခု ကို အပိုင်အနေဖြင့် ပြန်ပေးမည်။
-```
-
-The caller is then the one to give it back, hand it on or store it. A function that
-returns a block it asked for, with no marker on its result, gets the leak warning ZK0708
-with a help line that asks for the marker.
-
-The marker hands over a block, so it belongs on pointer kinds alone. On another kind it is
-ZK0470: other values are copied or shared, and hand nothing over. The one other place is a
-parameter of a C function whose kind comes from outside the program, which the C function
-closes ([Functions](functions.md#c-functions)).
-
-```zaka-error ZK0470
-ယူ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို အပိုင်အနေဖြင့် လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-က ကို ပြသမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ယူ ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0470]: "အပိုင်အနေဖြင့်" hands over a block, and "isize" holds no pointer to one
-```
-
-## Conversions
-
-The conversion verb `ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` (see [Conversions](conversions.md))
-turns a pointer into another kind, and other kinds into pointers. Each such conversion
-needs unsafe code:
-
-| From | To | What happens |
-| --- | --- | --- |
-| a pointer | a pointer of another kind, or `လိပ်စာ` | the same address, read as the new kind |
-| a pointer | an integer | the address as a number |
-| an integer | a pointer | the number as an address; the VM checks each use |
-| a shared object | a pointer | the address of the object, and the pointer holds a count of it |
-| a pointer | a shared object | the object again, and the count the pointer held comes back with it |
-
-The last two take an object across a border that knows addresses alone, such as the
-user data of a C callback. The object lives on while the pointer holds its count; a
-pointer that never turns back into an object keeps it alive to the end, and `--leaks`
-lists it.
-
-```zaka
-အကောင့် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု နှင့် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ကိန်းရှင် က သည် အကောင့်(အမည်: "မမ"၊ လက်ကျန်: ၁၀၀) ဖြစ်ပါစေ။
-ကိန်းရှင် ပ သည် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
-အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
-ပ ကို က ကို လိပ်စာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဟု ထားမည်။
-ကိန်းရှင် ခ သည် ပ ကို အကောင့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
-ခ ၏ လက်ကျန် ကို ၅၀ ဟု ထားမည်။
-လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-က ၏ လက်ကျန် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-၅၀
-```
-
-`ခ` is the object `က` names, so the write through `ခ` shows through `က`.
-
 ## C functions
 
-A C function is declared with `"<lib>" မှလာသော လုပ်ဆောင်ချက်` (see [C
-functions](functions.md#c-functions)). The declaration is the point of trust. C runs
-outside the checks of Zaka, so each C declaration must hold the word `စိတ်မချရသော`
-(ZK0472), whatever its kinds, and each call of it then needs unsafe code.
+```text
+<name> ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "<lib>" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍ … ပြန်ပေးမည်။
+```
+
+We declare a C function with `"<lib>" မှလာသော လုပ်ဆောင်ချက်` (see [C
+functions](functions-c.md#c-functions)), and the declaration is the point where we decide to
+trust C. C runs outside the checks of Zaka, so each C declaration must include the word
+`စိတ်မချရသော`, whatever its data kinds (ZK0472), and each call of the function then needs
+unsafe code.
 
 ```zaka-error ZK0472
 frexp ဟူသော လုပ်ဆောင်ချက် သည် "libm" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
@@ -857,52 +250,55 @@ x ဟူသော ဒဿမကိန်း တစ်ခု ကို လည်�
 error[ZK0472]: "frexp" is a C function, so its declaration must be unsafe, with "စိတ်မချရသော"
 ```
 
-In the VM, a pointer that lies in a freed block, passed to a C function, stops the run with
-the use-after-free trap before the call. A null pointer goes to C as NULL, and the contract of
-the C function decides whether NULL is allowed: `frexp` with a NULL address crashes inside
-libm, as it does in C.
+On the VM, when we pass a C function a pointer into a freed block, the VM stops the run
+with the use-after-free trap before the call. A null pointer reaches C as `NULL`, and the
+contract of the C function decides whether `NULL` is allowed: `frexp` with a `NULL`
+address crashes inside libm, as it does in C.
 
-A closure can reach C: it is lent to the call, and a leave lets C keep it (see
-[Closures and C](function-values.md#nested-functions-and-closures)). A call from C to a closure with no
-call running and no leave stops the program (the trap `closure escape`).
+A closure can reach C as well. The closure is lent to the call, and a leave lets C keep it
+(see [Closures and C](closures.md#closures-and-c)). When C calls a
+closure while no call that was given it runs and C has no leave, the program stops with
+the trap `closure escape`.
 
 ## The checks on unsafe code
 
-The compiler follows each pointer of unsafe code through each path, and reports what it
-can prove wrong. These findings are the *pointer lint*:
+The compiler follows each pointer of unsafe code along each path, and reports the
+mistakes it can prove. These findings make up the *pointer lint*:
 
 | Code | Finding |
 | --- | --- |
-| ZK0702 | giving back or resizing through a pointer that can hold the address of a variable, or of a cell or field it holds in place, alone, never a heap block |
-| ZK0703 | an address stored where it can outlast the place it points at |
-| ZK0704 | a block given back or resized while another pointer still reads it, after which that read uses a freed block; a block given back twice |
-| ZK0706 | a function that gives back the address of its own local or parameter |
+| ZK0702 | freeing or resizing through a pointer that can contain the address of a variable, or of a cell or field stored inside a variable, and never a heap block |
+| ZK0703 | an address stored where it can outlive the place it points at |
+| ZK0704 | a block freed or resized while another pointer still reads it, so that the read uses a freed block; a block freed twice |
+| ZK0706 | a function that returns the address of one of its locals or parameters |
 | ZK0707 | an argument for an owned parameter that another argument of the call also reaches |
-| ZK0708 | a block this function asked for that is never given back, handed to an owned parameter, returned as an owned result, or stored in a heap block, a global or a field |
+| ZK0708 | a block that this function asked for and never frees, hands to an owned parameter, returns as an owned result, or stores in a heap block, a global or a field |
 | ZK0709 | a read or a write through a pointer that is the null address on each path |
 | ZK0710 | an offset past the end of a block |
 | ZK0711 | a read or a write through a pointer that can be the null address (with `--lint-warn doubts`) |
 | ZK0712 | two pointers into different blocks subtracted |
 | ZK0721 | the two ranges of `ကူးယူမည်` overlap for certain |
 
-The lint group `mem` takes its level from these options:
+The lint group `mem` gets its level from these options:
 
 | Setting | The lint |
 | --- | --- |
-| `--lint-warn mem` (the default) | warnings: the program runs, and the VM stops it if it reaches the bad access |
+| `--lint-warn mem` (the default) | warnings: the program runs, and on the VM the program stops if it reaches the bad access |
 | `--lint-error mem` | errors: nothing runs |
-| `--lint-allow mem` | nothing: the VM is the one check left |
+| `--lint-allow mem` | nothing: the checks of the VM are the last ones left |
 
-ZK0711 is a warning in the modes `error` and `warn`. ZK0702 to ZK0708, ZK0712 and ZK0721
-come from pointers alone, so the setting moves them wherever the compiler finds them. ZK0709, ZK0710
-and ZK0711 can also come from safe code, from a function value or a list: outside unsafe code these keep
-their own level whatever the setting, and the setting moves them inside unsafe code alone. `--lint-allow`, `--lint-warn` and `--lint-error` set
-one group or code of the lint on its own, over the level of `mem`; see
-[Commands](../compiler/commands.md#options-of-the-compile-stages).
-ZK0701 is an error in each mode.
+ZK0711 is a warning under both `--lint-error mem` and `--lint-warn mem`. ZK0702 to ZK0708,
+ZK0712 and ZK0721 come from pointers alone, so the setting moves them wherever the
+compiler finds them. ZK0709, ZK0710 and ZK0711 can also come from safe code, through a
+function value or a list. Outside unsafe code these three keep their normal level
+whatever the setting, and the setting moves them inside unsafe code alone. We can also
+use `--lint-allow`, `--lint-warn` and `--lint-error` to set the level of one group or code
+of the lint, over the level of `mem` (see
+[Commands](../compiler/commands.md#options-of-the-compile-stages)). ZK0701 is an error in
+each mode.
 
-The default runs a program the lint finds fault with, so the VM shows where it goes
-wrong:
+With the default setting, a program that the lint finds fault with still runs, so the VM
+can show where it goes wrong:
 
 ```zaka-warning ZK0704
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -922,7 +318,9 @@ warning[ZK0704]: the block of "ပ" is freed here, but "မ" still points into i
 the program stopped: access at 0x101000 inside a freed block
 ```
 
-Under `--lint-error mem` the same program does not compile:
+The output above comes from the VM, as with `zakac run --vm`. A plain `zakac run` of the
+same program runs it as native code, which reads the freed block and prints whatever it
+finds there. Under `--lint-error mem`, the same program does not compile:
 
 ```zaka-error ZK0704 lint-error=mem
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -938,7 +336,7 @@ Under `--lint-error mem` the same program does not compile:
 ```
 
 A leak is a warning too. The program runs to its end, and `zakac run --leaks` lists the
-block that was never given back:
+block that the program never freed (`--leaks` runs the program on the VM):
 
 ```zaka-warning ZK0708
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -958,32 +356,51 @@ warning[ZK0708]: the block that "ပ" holds is never given back or handed over o
 leak: block at 0x101000, 8 octets
 ```
 
-The lint cannot find each mistake: an offset that comes from input, or a pointer that a
-C function gave, is out of its reach. [Compiler checks](../compiler/checks.md) shows one
-program under each setting.
+The lint cannot find each mistake, because an offset that comes from input, or a pointer
+that a C function returned, is out of its reach. [Compiler checks](../compiler/checks.md)
+shows one program under each setting.
 
 ## What the VM still stops
 
-In unsafe code as in safe code, the VM checks each read, write and give-back through a
-pointer, and stops the program at the first bad one, with a message that names the block:
+On the VM, unsafe code is checked as safe code is: the VM checks each read, write and free
+through a pointer, and stops the program at the first bad one, with a message that names
+the block. It stops these mistakes:
 
-- a read or a write through the null address;
-- a read or a write outside each live block, past the end of a block among them;
-- a read or a write in a block that was given back, or in the frame of a call that has
-  returned;
-- giving back or resizing an address that is not the start of a live heap block, or a
-  block given back twice;
-- two pointers into different blocks subtracted, and the overlapping ranges of
-  `ကူးယူမည်`;
-- a read or a write at an address that is not a multiple of the size.
+- a read or a write through the null address,
+- a read or a write outside each live block, the address just past the end of a block
+  included,
+- a pointer step that lands further than one past the end of its block, or before its
+  start,
+- a read or a write in a block that the program freed, or in the frame of a call that has
+  returned,
+- freeing or resizing an address that is not the start of a live heap block, or freeing a
+  block twice,
+- a subtraction of two pointers into different blocks, and the overlapping ranges of
+  `ကူးယူမည်`,
+- a read or a write at an address that is not a multiple of the size of its data kind.
 
-[When a program stops](../vm/traps.md) lists each message. A native build behaves as C
-does, with the checks that `--checks` turns on (see [Native programs](../compiler/native.md)).
+[When a program stops](../vm/traps.md) lists each message.
+
+## Native code
+
+`zakac run` with neither `--vm` nor `--jit` runs a source file as native code when it can,
+and on the VM otherwise, and `zakac build --backend c` or `--backend native` builds a native
+program. Native code keeps the checks of the language, such as a cell number outside its
+list, but a pointer is a plain address there, so the mistakes in the list above behave as
+these mistakes do in C: a read through the null address crashes the program, and a read past the
+end of a block or in a freed block prints whatever the octets contain. A build can ask for
+more checks with `--checks` (see [Native programs](../compiler/native.md)).
+
+To see the checks of the VM, we run the program with `zakac run --vm`. The Explorer and
+the tests of these pages also run programs on the VM, and so do the VM flags `--leaks`,
+`--frames`, `--max-steps` and `--max-stack`. [Checks in the VM and in native
+code](../concepts/checked.md) explains the reason for this split.
 
 ## Keeping to safe Zaka
 
-`--no-unsafe` refuses unsafe code, for a lesson or a project that keeps to safe Zaka. Each
-unsafe function and each unsafe block is then ZK0471, an error in each mode:
+With `--no-unsafe`, the compiler refuses unsafe code, for a lesson or a project that keeps
+to safe Zaka. Each unsafe function and each unsafe block is then ZK0471, which is an error
+in each mode:
 
 ```zaka-error ZK0471 no-unsafe=on
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -997,31 +414,34 @@ unsafe function and each unsafe block is then ZK0471, an error in each mode:
 error[ZK0471]: this program keeps to safe Zaka, so it cannot hold unsafe code ("စိတ်မချရသော")
 ```
 
-A program that compiles under `--no-unsafe` never reaches a pointer mistake: the VM
-frees each block, and no read goes through an address the program made.
+A program that compiles under `--no-unsafe` never meets a pointer mistake, on the VM or in
+native code, because the program frees no block itself and no read goes through an
+address that the program made.
 
 ## Errors at a glance
 
-| Code | Mistake |
-| --- | --- |
-| ZK0201 | an unsafe block as the start block |
-| ZK0257 | `စိတ်မချရသော` before the start block |
-| ZK0401 | a pointer of one kind where another kind is wanted |
-| ZK0410 | an assignment to something that is not a variable or a value through a pointer |
-| ZK0411 | the address of a value that has no place, such as `၅` |
-| ZK0412 | the address of a constant or of a counted-loop variable |
-| ZK0413 | a read through a value that is not a pointer |
-| ZK0414 | a read through, or an offset of, the opaque `လိပ်စာ` |
-| ZK0415 | an operator such as `*` or `/` on a pointer |
-| ZK0416 | pointers of different kinds compared or subtracted |
-| ZK0417 | a heap statement given something other than a pointer |
-| ZK0442 | cells that hold a counted block, in a block write or a fill |
-| ZK0468 | pointer work, or a call of an unsafe function, outside unsafe code |
-| ZK0469 | an unsafe function taken as a function value |
-| ZK0470 | `အပိုင်အနေဖြင့်` on a kind that is no pointer |
-| ZK0471 | unsafe code under `--no-unsafe` |
-| ZK0472 | a C declaration not declared unsafe |
-| ZK0701 | a read of a place after it handed its block to an owned parameter |
-| ZK0702 to ZK0712, ZK0721 | the pointer lint, [above](#the-checks-on-unsafe-code) |
+| Code | Mistake | Page |
+| --- | --- | --- |
+| ZK0201 | an unsafe block as the program start block | this page |
+| ZK0257 | `စိတ်မချရသော` before the program start block | this page |
+| ZK0315 | a heap statement used as a value | [The heap](heap.md#heap-statements) |
+| ZK0401 | a pointer of one pointer kind where another data kind is expected | [Pointers](pointers.md#the-pointer-kind) |
+| ZK0410 | an assignment to something that is not a variable or a value through a pointer | [Pointers](pointers.md#reading-and-writing-through-a-pointer) |
+| ZK0411 | the address of a value that has no place, such as `၅` | [Pointers](pointers.md#taking-an-address) |
+| ZK0412 | the address of a constant or of a counted-loop variable | [Pointers](pointers.md#taking-an-address) |
+| ZK0413 | a read through a value that is not a pointer | [Pointers](pointers.md#reading-and-writing-through-a-pointer) |
+| ZK0414 | a read through, or an offset of, the opaque `လိပ်စာ` | [Pointers](pointers.md#reading-and-writing-through-a-pointer) |
+| ZK0415 | an operator such as `*` or `/` on a pointer | [Pointers](pointers.md#pointer-arithmetic) |
+| ZK0416 | pointers of different pointer kinds compared or subtracted | [Pointers](pointers.md#pointer-arithmetic) |
+| ZK0417 | a heap statement given something other than a pointer | [The heap](heap.md#heap-statements) |
+| ZK0430 | a declaration with the null address and no data kind | [Pointers](pointers.md#the-null-address) |
+| ZK0442 | cells that contain a counted block, in a block write or a fill | [The heap](heap.md#writing-and-filling-cells) |
+| ZK0468 | pointer work, or a call of an unsafe function, outside unsafe code | this page |
+| ZK0469 | an unsafe function used as a function value | this page |
+| ZK0470 | `အပိုင်အနေဖြင့်` on a data kind that is not a pointer | [The heap](heap.md#owned-pointers) |
+| ZK0471 | unsafe code under `--no-unsafe` | this page |
+| ZK0472 | a C declaration that is not declared unsafe | this page |
+| ZK0701 | a read of a place after it handed its block to an owned parameter | [The heap](heap.md#owned-pointers) |
+| ZK0702 to ZK0712, ZK0721 | the pointer lint | [above](#the-checks-on-unsafe-code) |
 
 The text of each message is in [Error messages](../reference/errors.md).

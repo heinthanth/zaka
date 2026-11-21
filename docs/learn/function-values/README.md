@@ -1,13 +1,22 @@
 ---
 title: Functions as values
-description: Keep a function in a variable, pass it to another function, and pick one from a table.
+description: Keep a function in a variable, write its function kind, pass it to another function, and pick one from a list.
 ---
 
 # Functions as values
 
-A function can be handed around like a number. `<name> ဟူသော လုပ်ဆောင်ချက်` ("the function
-called *name*") is a function value: keep it in a variable, and a call through the
-variable runs the function.
+A function value (first-class function) is a function that we keep in a variable or pass
+to another function, just as we do with a number. When we call the variable, the function
+in it runs, so one piece of code can run different functions at different times.
+
+## You will learn
+
+- How to keep a function in a variable and call it through the variable.
+- How to write the function kind (function type) of a function value.
+- How to pass a function to another function.
+- How to keep functions in a list, and how to state that a function can be missing.
+
+## A function in a variable
 
 ```zaka
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -31,25 +40,42 @@ variable runs the function.
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်
 ```
 
-Each call form works through the variable: the name after `လုပ်ဆောင်ချက်`, the name before
-`(`, and the arguments-first forms. A function value prints as the phrase that makes it.
+To get a function as a value, we write its name and `ဟူသော လုပ်ဆောင်ချက်`, without a call:
 
-## The kind of a function
+```
+<name> ဟူသော လုပ်ဆောင်ချက်
+```
 
-A function value has a *function kind*. It reads like the header of the function, with
-`သော` ("that") and `လုပ်ဆောင်ချက် အမျိုးအစား` ("function kind") at the end:
-
-| Kind | Reads as |
+| Zaka | Reads as |
 | --- | --- |
-| `ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that accepts an integer and gives back an integer result" |
-| `စာသား တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that accepts text" |
-| `ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that gives back an integer result" |
-| `လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind": no parameters, no result |
+| `နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက်` | "the function called `နှစ်ထပ်`" |
+| `ဖ(၇)` | "`ဖ` of 7": a call through the variable |
 
-The parameters have no names: each is its kind with its measure word and `ကို`, and two
-or more each end in `လည်းကောင်း`, as in
-`ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး`. A declaration
-counts the whole kind with `တစ်ခု`, as other kinds:
+We can call the variable in each form that we use for a plain function: the short form
+`ဖ(၇)`, the long form `ဖ ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ်`, and the forms
+that put the arguments first. When we print a function value, it prints as the phrase
+that makes it.
+
+## The function kind
+
+A function value has a function kind (function type), which lists the data kinds (types)
+of its parameters and its result. We write it like a function signature without names,
+and we end it with `သော လုပ်ဆောင်ချက် အမျိုးအစား`:
+
+```
+<kind> တစ်ခု ကို လက်ခံပြီး <kind> တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား
+```
+
+| Function kind | Reads as |
+| --- | --- |
+| `ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that accepts an integer and returns an integer" |
+| `စာသား တစ်ခု ကို လက်ခံသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that accepts text" |
+| `ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind that returns an integer" |
+| `လုပ်ဆောင်ချက် အမျိုးအစား` | "a function kind": no parameters and no result |
+
+Each parameter is its data kind, its measure word (classifier) and `ကို`. When there are
+two or more parameters, we end each one with `လည်းကောင်း`, the same as in a function
+signature. A variable of a function kind is counted with `တစ်ခု`, like other data kinds:
 
 ```zaka
 ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည်
@@ -70,9 +96,13 @@ counts the whole kind with `တစ်ခု`, as other kinds:
 
 ## Passing a function
 
-A parameter of a function kind takes a function from the caller. In a list of
-parameters, the kind of such a parameter stands in parentheses, so its own parameters
-do not mix with those of the list:
+A parameter can have a function kind, and the caller then passes a function to it. In a
+function signature, we put such a function kind in parentheses, so that its parameters do
+not mix with the parameters around it:
+
+```
+<name> ဟူသော (<function kind>) တစ်ခု ကို
+```
 
 ```zaka
 နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
@@ -85,7 +115,7 @@ do not mix with those of the list:
 က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// a new list: each cell changed with the function the caller gives
+// a new list: each cell changed with the function the caller passes
 ကွက်တိုင်း ဟူသော လုပ်ဆောင်ချက် သည်
 စ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လည်းကောင်း
 ပြောင်း ဟူသော (ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို လည်းကောင်း
@@ -110,9 +140,9 @@ do not mix with those of the list:
 [၁၊ ၄၊ ၉]
 ```
 
-`ကွက်တိုင်း` does not know what each cell turns into: the function it is given decides.
-The same idea sorts a list in each order. The sort asks the function `ရှေ့` ("comes
-first") whether one number comes before another:
+`ကွက်တိုင်း` does not know what each cell turns into, because the function that we pass
+decides that. We can use the same idea to sort a list in either order. Here the sort asks
+the function `ရှေ့` ("comes first") whether one number comes before another:
 
 ```zaka
 ငယ်စဉ် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
@@ -157,10 +187,13 @@ first") whether one number comes before another:
 
 ## Naming a function kind
 
-A function kind is long to write in each header. A [kind
-alias](../structs/README.md#another-name-for-a-kind) names it once, and the name then
-stands where the kind does. The alias is one word, so a list of parameters takes it with no
-parentheses:
+A function kind is long to write in each function signature, so we can give it a short
+name with a [kind alias](../structs/README.md#another-name-for-a-kind) (type alias). The
+alias is one word, so we can use it in a list of parameters without parentheses:
+
+```
+ဒေတာအမျိုးအစား <name> ကို <function kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+```
 
 ```zaka
 ဒေတာအမျိုးအစား တွက်ချက် ကို ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား ဟုလည်း မှတ်ယူနိုင်ပါသည်။
@@ -175,7 +208,7 @@ parentheses:
 က * ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-// join the cells of a list, starting from a value, with the function the caller gives
+// join the cells of a list, starting from a value, with the function the caller passes
 စုစည်း ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လည်းကောင်း အစ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ဖ ဟူသော တွက်ချက် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
@@ -198,11 +231,17 @@ parentheses:
 ၂၄
 ```
 
-## A table of functions
+## A list of functions
 
-A list can hold function values. A call names the cell where it stands, after
-`လုပ်ဆောင်ချက်`, so the table picks the function at run time. Here the cells follow the
-members of an enumeration:
+A list can contain function values, and a call can name a cell of the list in place of a
+function name, so the program picks the function while it runs. We put the cell in
+parentheses before `ဟူသော လုပ်ဆောင်ချက်ကို`:
+
+```
+(<list> ၏ အကွက် <number>) ဟူသော လုပ်ဆောင်ချက်ကို <arguments> ဖြင့် လုပ်ဆောင်သော ရလဒ်
+```
+
+Here the cells follow the members (variants) of an enumeration (enum):
 
 ```zaka
 လုပ်ငန်း ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ပေါင်း၊ နုတ် နှင့် မြှောက် တို့ပါဝင်သည်။
@@ -238,14 +277,16 @@ members of an enumeration:
 လုပ်ငန်းများထဲမှ နုတ်: ၃
 ```
 
-A struct field can hold a function value too, and a call names it the same, in
-parentheses: `(ခလုတ် ၏ လုပ်) ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်မည်။`
+Each member of the enumeration converts to its number, `၀`, `၁` or `၂`, and that number
+picks the function from `ဂရစ်`. A struct field can also contain a function value, and we
+call it in the same form, with the field in parentheses:
+`(ခလုတ် ၏ လုပ်) ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်မည်။`
 
 ## A function that can be missing
 
-A function value holds a function on each call; Zaka has no NULL function. A variable of
-a function kind declared with no value gets a function before its first call, as each
-variable does:
+A function value is never without a function, because Zaka has no NULL function. So a
+variable of a function kind that we declare without a value must get a function before
+its first call, the same as each other variable:
 
 ```zaka-error ZK0722
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -258,10 +299,14 @@ variable does:
 error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
 ```
 
-A function kind has no [initial value](../variables/README.md#the-initial-value) either:
-no function is a fair pick for the program, so `ကနဦးတန်ဖိုး` for it is the error ZK0479.
-Where a function can be missing, its kind states it with an
-[optional](../optionals/README.md), and the program asks before the call:
+When a function can be missing, we state it in its data kind with an
+[optional value](../optionals/README.md) (option type), and the program checks for a
+function before the call. We put the function kind in parentheses before
+`ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`:
+
+```
+(<function kind>) ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်
+```
 
 ```zaka
 ပြ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -284,16 +329,39 @@ Where a function can be missing, its kind states it with an
 ၁
 ```
 
-The function kind stands in parentheses before `ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`. A duplicate of a
-function value is the same function, and `ဖ နှင့် ဂ သည် တစ်ခုတည်း ဖြစ်လျှင်` asks whether two
-values are one function, as for [shared objects](../structs/objects.md#equal-or-the-same).
+## Details
+
+- **No initial value.** A function kind has no [initial
+  value](../variables/README.md#the-initial-value) (default value), because no function
+  would be a fair choice, so `ကနဦးတန်ဖိုး` for a function kind is the error ZK0479.
+- **Duplicates.** A duplicate (copy) of a function value is the same function. We can use
+  `ဖ နှင့် ဂ သည် တစ်ခုတည်း ဖြစ်လျှင်` to check whether two values are one function, as for
+  [shared objects](../structs/objects.md#equal-or-the-same).
+- **Prepositions and mutable parameters.** A function kind can also name the prepositions
+  of its parameters, and a mutable parameter (`inout`) with `ဒေတာ ပြောင်းလဲရန်`
+  ([Function values](../../manual/language/function-values.md)).
+- **Unsafe functions.** An unsafe function cannot be a function value
+  ([Owned pointers](../pointers/ownership.md)).
+
+## Recap
+
+- `<name> ဟူသော လုပ်ဆောင်ချက်` is a function value, and we can keep it in a variable and
+  call it through the variable.
+- A function kind lists the data kinds of the parameters and the result, and it ends with
+  `သော လုပ်ဆောင်ချက် အမျိုးအစား`.
+- A parameter of a function kind lets the caller pass a function, and we write that
+  function kind in parentheses.
+- A kind alias gives a long function kind a short name.
+- A function value is never without a function, so a function that can be missing is an
+  optional value.
 
 ## Hands on
 
-1. Write `နှစ်ကြိမ်`, which takes a function of kind
-   `ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား` and a number,
-   and runs the function twice on the number: given `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်` and `၃`,
-   it gives `၁၂`.
-2. Add `ပိုင်း` ("divide") to the table of functions, and a member for it.
+1. Write `နှစ်ကြိမ်`, which accepts a function of the function kind
+   `ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် အမျိုးအစား`
+   and a number, and runs the function twice on the number. With `နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်`
+   and `၃`, it returns `၁၂`.
+2. Add `ပိုင်း` ("divide") to the list of functions, and a member for it.
+3. Sort a list of numbers so that the even numbers come first.
 
 Next: [Closures](closures.md).

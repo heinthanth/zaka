@@ -1,15 +1,16 @@
 ---
 title: Optional values
-description: The optional kind, a data cell that might contain a value: how it is declared, tested and read, how a function gives one back, and the reason Zaka has it in place of a NULL.
+description: The optional kind, a data cell that might contain a value: how to declare it, test it, read it and return one, and the reason Zaka has it in place of a NULL.
 ---
 
 # Optional values
 
-Some values are there at times and not at others: the age of a person who left it out, the
-first match of a search that found none. Zaka does not give such a value a NULL that each pointer can
-hold. It gives the *optional kind*: a data cell that might contain a value, which the kind
-declares. The program must test the cell before it reads the value in
-it. This page states the rules in full. The Learn book teaches the kind in
+Some values are there at times and missing at others: the age of a person who left it out,
+or the first match of a search that found nothing. Zaka gives no data kind (type) a NULL
+to mark such a value as missing. Instead, we use an *optional kind* (option type, nullable
+type): a data cell that might contain a value, or might be blank (none, null). The optional
+kind shows that the value can be missing, so the program must test the cell before it reads the
+value in it. This page states the full rules, and the Learn book teaches optionals in
 [Optional values](../../learn/optionals/README.md).
 
 ```zaka
@@ -54,12 +55,13 @@ it. This page states the rules in full. The Learn book teaches the kind in
 <kind> ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်
 ```
 
-reads as "a data cell that might contain" a value of the kind. It can be written wherever a kind
-goes: in a declaration, a parameter, a field of a struct and the result clause of a
-function. In a declaration and a result clause `တစ်ခု` follows it, as it follows each
-kind (the measure word has to fit the kind, ZK0509).
+The words mean "a data cell that might contain" a value of `<kind>`. We can write an
+optional kind (option type) wherever a data kind goes: in a declaration, a parameter, a
+field of a struct and the result of a function. In a declaration and a result, `တစ်ခု`
+follows it, as it follows other data kinds, and the measure word must fit the data kind
+(the warning ZK0509).
 
-| Written | Is |
+| Written | Meaning |
 | --- | --- |
 | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | an integer, or nothing |
 | `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | text, or nothing |
@@ -68,24 +70,27 @@ kind (the measure word has to fit the kind, ZK0509).
 | `အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` | a list of 3 integers, or nothing |
 | `ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် လိပ်စာ` | a pointer to an optional, for [unsafe code](unsafe.md) |
 
-List and pointer levels come after `ဒေတာဆဲလ်`, and wrap the whole optional, as the levels of a
-[result kind](error-handling.md#result-kinds) wrap the whole result. Counts written before the
-kind go to its lists innermost first, as in nested lists: first to a list of the data, then
-to the levels after `ဒေတာဆဲလ်`. A list literal fills the data of an optional.
-In a message the kind reads like
-`optional isize`.
+A list or pointer level that we write after `ဒေတာဆဲလ်` wraps the whole optional, just as
+the levels of a [result kind](result-kinds.md#lists-and-pointers-of-results) wrap the whole
+result. A count written before the data kind goes to its lists from the innermost out, as
+in nested lists: first to a list inside the data, then to the levels after `ဒေတာဆဲလ်`. A
+list literal fills the data of an optional. Messages write the optional kind as `optional isize`.
 
-Two words make a value of the kind:
+### Values of an optional kind
 
-- `အလွတ်` ("blank data") is the value that holds nothing. It stands wherever an optional
-  is wanted: the value of a declaration, a store, an argument, a return, a field of a struct literal,
-  a cell to add to a list. Where no optional is wanted, it is ZK0477.
-- A plain value of the kind inside goes in as it is. A `ကိန်းပြည့်` fits an optional of
-  `ကိန်းပြည့်`, with no word around it: the cell holds it from then on. The same holds for
-  an argument, a store with `ထားမည်`, a field and a return.
+We can put two sorts of value into an optional:
 
-A literal takes the kind inside the optional, so `၁` is an `၈ ဘစ် ကိန်းပြည့်` where an optional of
-that kind is wanted; a literal outside that kind is ZK0406, as it is for a plain variable.
+- `အလွတ်` ("blank data") is the blank value (none), which contains nothing. We can use it
+  wherever an optional is wanted: as the value of a declaration, in an assignment, as an
+  argument, in a return, as a field of a struct literal, or as a cell to add to a list.
+  `အလွတ်` where no optional is wanted is the error ZK0477.
+- A plain value of the data kind inside goes in as it is, with no word around it. A
+  `ကိန်းပြည့်` fits an optional of `ကိန်းပြည့်`, and from then on the cell contains it.
+  This works the same for an argument, an assignment with `ထားမည်`, a field and a return.
+
+A literal gets the data kind inside the optional, so `၁` is an `၈ ဘစ် ကိန်းပြည့်` where
+an optional of that data kind is wanted, and a literal that does not fit that data kind is
+ZK0406, as it is for a plain variable.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -98,10 +103,16 @@ that kind is wanted; a literal outside that kind is ZK0406, as it is for a plain
 ဒေတာ(၁)
 ```
 
-The [initial value](kinds.md#initial-values) of an optional, `ကနဦးတန်ဖိုး`, is `အလွတ်`, so
-`ကနဦးတန်ဖိုး` fills a counted list of optionals with blank cells. A declaration with no value
-holds no `အလွတ်`: it is unset, as a variable of each other kind is, and the program gives
-it a value before it reads it ([Set before read](statements.md#set-before-read)).
+### The initial value and printing
+
+The [initial value](kinds.md#initial-values) (default value) of an optional is `အလွတ်`, so
+`ကနဦးတန်ဖိုး` fills a counted list of optionals with blank cells. A declaration with no
+value does not contain `အလွတ်`, though: the variable is unset, as a variable of each other
+data kind is, and the program must give it a value before it reads it ([Set before
+read](declarations.md#set-before-read)).
+
+An optional prints as `ဒေတာ(<value>)`, or as `အလွတ်` when it is blank. This is the same in
+`ပြသမည်`, in a `{...}` slot, in a list and in a struct.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -127,24 +138,26 @@ it a value before it reads it ([Set before read](statements.md#set-before-read))
 [အလွတ်၊ အလွတ်]
 ```
 
-An optional prints as `ဒေတာ(<value>)`, or as `အလွတ်` when it holds nothing, whether it
-stands in `ပြသမည်`, in a `{...}` slot, in a list or in a struct.
-
 ## Testing
 
-A test tells whether the optional holds data. It is a true or false value, so it stands
-wherever one can: in `အကယ်၍` and `ထိုသို့မဟုတ်ဘဲ`, in the condition of a loop, beside `ဖြစ်၍`
-and `သို့မဟုတ်` (`&&` and `||`), and in a declaration.
+```text
+<x> ထဲတွင် ဒေတာ ရှိ
+<x> ထဲတွင် ဒေတာ မရှိ
+```
 
-| Written | Is true when |
+We use the first test to ask whether the optional `x` contains data, and the second to ask
+whether it is blank. A test is a true/false value (boolean), so we can use it wherever one
+fits: in `အကယ်၍` and `ထိုသို့မဟုတ်ဘဲ`, in the condition of a loop, beside `ဖြစ်၍` and
+`သို့မဟုတ်` (`&&` and `||`), and in a declaration.
+
+We can also write these test words in other forms:
+
+| Form | Meaning |
 | --- | --- |
-| `<x> ထဲတွင် ဒေတာ ရှိ` | `x` holds data |
-| `<x> ထဲတွင် ဒေတာ မရှိ` | `x` holds nothing |
-
-`အချက်အလက်` is another spelling of `ဒေတာ`, and can stand in its place. `ရှိ` and
-`မရှိ` can take `နေ` (`ရှိနေ`, `မရှိနေ`) to read as "is there" and "is not there", and `လျှင်`
-or `သရွေ့` can follow either fused, which ends an `အကယ်၍` condition or a loop condition:
-`ရှိလျှင်`, `မရှိနေလျှင်`, `ရှိနေသရွေ့`, `မရှိနေသရွေ့`.
+| `အချက်အလက်` in place of `ဒေတာ` | the same word in another spelling |
+| `ရှိနေ`, `မရှိနေ` | "is there", "is not there"; the same tests |
+| `ရှိလျှင်`, `မရှိနေလျှင်` | the test, with `လျှင်` joined to it to end an `အကယ်၍` condition |
+| `ရှိနေသရွေ့`, `မရှိနေသရွေ့` | the test, with `သရွေ့` joined to it to end a loop condition |
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -170,9 +183,9 @@ or `သရွေ့` can follow either fused, which ends an `အကယ်၍` co
 မှန်
 ```
 
-The tests of an optional and the tests of a [result](error-handling.md#reading-a-whole-result) are two sets,
-as the two kinds are two. A test word of the other kind is ZK0475: `ရလဒ်ကောင်း` or `အမှားအယွင်း`
-on an optional, and `ဒေတာ` on a result.
+An optional and a [result](reading-results.md#tests) are two different data kinds, so
+each has its own set of tests. A test word of the other set is ZK0475: `ရလဒ်ကောင်း` or
+`အမှားအယွင်း` on an optional, or `ဒေတာ` on a result.
 
 ```zaka-error ZK0475
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -191,11 +204,12 @@ error[ZK0475]: "optional isize" is an optional: test it with "ထဲတွင်
 <x> ထဲမှ ဒေတာ
 ```
 
-is the value the optional holds, of the kind inside. `အချက်အလက်` can stand in place of `ဒေတာ`.
-The read is a value like each other value, so it can be an operand, an argument or a
-condition. The program has to know the cell holds data before it reads: a read of an optional
-that holds nothing stops the run with the trap `the optional holds no data`, in the VM and in a native
-program alike, so the program never reads a value that is not there.
+We write `x ထဲမှ ဒေတာ` to get the value that the optional contains, as a value of the
+data kind inside, and we can write `အချက်အလက်` in place of `ဒေတာ`. The read is a value
+like other values, so we can use it as an operand, an argument or a condition. The program
+must know that the cell has data before it reads it: a read of a blank optional stops the
+program with the trap `the optional holds no data`, in the VM and in a native program
+alike, so the program never reads a value that is not there.
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -211,20 +225,24 @@ program alike, so the program never reads a value that is not there.
 the program stopped: the optional holds no data
 ```
 
-The read of a [result](error-handling.md#reading-a-whole-result) has the same spelling, and it reads the good
-value. An optional has no error side, so `<x> ထဲမှ အမှားအယွင်း ဒေတာ` on one is ZK0475.
+We use the same words to read the good result (`Ok` value) of a
+[result](reading-results.md#reads). An optional has no error side, so
+`<x> ထဲမှ အမှားအယွင်း ဒေတာ` on an optional is ZK0475.
 
-### A fallback
+## A fallback
 
 ```text
 <x> ထဲမှ ဒေတာ၊ မရှိလျှင် <value>
 ```
 
-is the data the optional holds, or the value when it holds none ("if none, the value"). The
-value runs when the optional holds no data, and at no other time, and it converts to the kind
-of the data. It is one operand, a prefix operator and its operand included, as a read binds
-tighter than an operator: `x ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to the data or to 0, and a
-clause goes in parentheses. On a result, the fallback stands in for the error.
+We can use this form to read an optional with a fallback (`unwrap_or`): it is the data in
+`x`, or `<value>` when `x` is blank ("if none, the value"). The program works out `<value>`
+when `x` is blank and at no other time, and the value converts to the data kind of the
+data. On a [result](reading-results.md), the fallback replaces the error value.
+
+The fallback is one operand, with a prefix operator and its operand included, because a
+read binds tighter than an operator. So `x ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ + ၁` adds 1 to the data,
+or to 0, and a clause with an operator goes in parentheses.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -242,18 +260,14 @@ clause goes in parentheses. On a result, the fallback stands in for the error.
 ၉
 ```
 
-A ဇယား gives an optional for each row it reads, so the fallback fills the gap of a missing row
-([Tables](tables.md#reading-a-row)).
+A read of a row of a table (map) returns an optional, so the fallback is also how we fill
+the gap of a missing row ([Tables](tables.md#reading-a-row)).
 
-### A read a test ruled out
+## A read a test ruled out
 
-A test proves what an optional holds, for as long as nothing changes the variable. A read of
-the data that a test proved absent would stop the run each time it ran, so the compiler
-reports it as ZK0454 and does not wait for the run. The proofs and what ends them are those
-of a [result](error-handling.md#reading-a-whole-result): the arms of `အကယ်၍` and of the
-arms after it, `ဖြစ်၍`, `သို့မဟုတ်`, `မဟုတ်`, a guard that ends with `ပြန်ပေးမည်`, `ရပ်မည်` or
-`ကျော်မည်`, a loop condition, and an assignment, a `ဒေတာ ပြောင်းလဲရန်` parameter or an address that
-ends a proof.
+A test proves what an optional contains, for as long as nothing changes the variable. A
+read of data that a test proved absent would stop the program each time it ran, so the
+compiler reports it as ZK0454 and does not wait for the run.
 
 ```zaka-error ZK0454
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -266,24 +280,29 @@ ends a proof.
 error[ZK0454]: "ခ" holds no data here, so reading its data stops the run each time
 ```
 
-When the compiler cannot tell, it reports nothing, and the run checks the read when it
-reaches it, as above.
+The proofs, and what ends them, are the same as for a
+[result](reading-results.md#a-part-the-test-ruled-out): the arm of an `အကယ်၍` and the arms
+after it, `ဖြစ်၍`, `သို့မဟုတ်` and `မဟုတ်` in a condition, a guard that ends with
+`ပြန်ပေးမည်`, `ရပ်မည်` or `ကျော်မည်`, and a loop condition all prove something, while an
+assignment, a `ဒေတာ ပြောင်းလဲရန်` parameter or an address of the variable ends a proof.
+When the compiler cannot tell what the optional contains, it reports nothing, and the
+program checks the read when it reaches it, as [Reading](#reading) shows.
 
 ## Giving one back
-
-A function whose result clause is an optional kind gives back a plain value, or the blank
-value:
 
 ```text
 <value> ကို ပြန်ပေးမည်။
 အလွတ်ကို ပြန်ပေးမည်။
 ```
 
-The first gives the cell that holds the value. The second gives the cell that holds
-nothing. As for each function with a result, each path of the block ends with a return, or
-the compiler reports ZK0339 (see [Giving back a good value](error-handling.md#giving-back-a-good-value)).
-The result kind with an optional in it is no failure: a call of the function needs no
-pass-on, and `?` on it is ZK0444.
+When the result of a function is an optional kind, we use the first form to return a cell
+that contains the value, and the second to return a blank cell. As in other functions with
+a result, each path of the block must end with a return, or the compiler reports ZK0339
+([Giving back a good value](error-handling.md#giving-back-a-good-value)).
+
+An optional result is no failure, so a call of the function needs no pass-on, and `?` on it
+is ZK0444. When a function must give the reason for a miss, it returns a
+[result](error-handling.md) with an error side instead.
 
 ```zaka-error ZK0444
 ရှာ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -305,61 +324,60 @@ pass-on, and `?` on it is ZK0444.
 error[ZK0444]: the call passes a failure on, but "ရှာ" cannot fail
 ```
 
-A function that has to give the reason for a miss gives back a [result](error-handling.md)
-with an error side instead.
-
 ## NULL is a mistake
 
-Tony Hoare put the null reference into ALGOL W in 1965, because it was cheap to build. In his
-talk of 2009 he called it his ***billion-dollar mistake***: the errors, crashes and open doors
-for attackers that it caused, over decades, cost that much or more.
+Tony Hoare added the null reference to ALGOL W in 1965, because it was cheap to build. In
+a talk in 2009 he called it his ***billion-dollar mistake***: over decades, the errors,
+crashes and openings for attackers that it caused cost that much or more.
 
-The mistake is in what a NULL does to a kind. When each pointer can hold NULL, the kind
-`char *` does not tell whether the pointer points at text or at nothing. Each read through a
-pointer can crash, and nothing in the kind tells which reads. The programmer has to
-remember, at each place, whether a check came before, and a check left out shows up as a
-crash far from its cause, or as a read of garbage.
+The mistake is in what a NULL does to a data kind. When each pointer can be NULL, the C
+type `char *` does not tell whether the pointer points at text or at nothing. Each read
+through a pointer can crash, and nothing in the data kind shows which reads can. The
+programmer must remember at each place whether a check came first, and a check that was
+left out shows up as a crash far from its cause, or as a read of garbage.
 
-The optional kind moves the question into the kind:
+The optional kind moves the question into the data kind:
 
-- A plain `စာသား` holds text on each read. No test is needed, and none can be left out.
-- A `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` declares in its kind that it can hold nothing, so the
-  program has to ask first, with `ထဲတွင် ဒေတာ ရှိ`.
-- The check refuses the read of data that a test proved absent (ZK0454).
-- A read that nothing proves safe and nothing proves wrong is still checked at run time: a
-  read of a blank cell stops the run with the trap `the optional holds no data`, in place of
-  reading garbage.
+- A plain `စာသား` contains text on each read. No test is needed, and none can be left out.
+- A `စာသား ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်` shows in its data kind that it can be blank, so
+  the program must ask first, with `ထဲတွင် ဒေတာ ရှိ`.
+- The compiler refuses a read of data that a test proved absent (ZK0454).
+- A read that nothing proves safe and nothing proves wrong is still checked when the
+  program runs: a read of a blank cell stops the program with the trap
+  `the optional holds no data`, instead of reading garbage.
 
-So safe Zaka holds no NULL. Each kind but the pointer holds a value on each read:
+So safe Zaka has no NULL, and each data kind but the pointer has a value on each read:
 
-- A shared object and a function value hold an object or a function at each point. A variable of
-  either kind with no value is unset, and the check refuses a read of it (ZK0722,
-  [Set before read](statements.md#set-before-read)).
-- An object or a function that can be missing is an optional of it, as
-  `ဘူး ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, tested and read like each other optional.
-- A shared kind that names itself in a field ends its chain with an optional field; a kind
-  whose fields lead back to it with no optional on the loop can never be built (ZK0481,
-  [Kinds no program can build](objects.md#kinds-no-program-can-build)).
+- A shared object (reference type) and a function value contain an object or a function at
+  each point. A variable of either data kind with no value is unset, and the compiler
+  refuses a read of it (ZK0722, [Set before read](declarations.md#set-before-read)).
+- An object or a function that can be missing is an optional of it, such as
+  `ဘူး ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, which we test and read like other optionals.
+- A shared data kind that names itself in a field ends its chain with an optional field. A
+  data kind whose fields lead back to it with no optional on the loop can never be built
+  (ZK0481, [Data kinds no program can build](objects.md#data-kinds-no-program-can-build)).
 
-The one NULL left is the null address of a pointer, `မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ`
-("the address that points at nothing"), and it lives where a program works at a low level:
-reading through a pointer needs [unsafe code](unsafe.md#the-null-address), and the check of
-unsafe code looks for the null address there.
+The one NULL left is the null address (null pointer) of a pointer,
+`မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ` ("the address that points at nothing"), and it lives
+where a program works at a low level: a read through a pointer needs [unsafe
+code](pointers.md#the-null-address), and the check of unsafe code looks for the null address
+there.
 
-The optional is also what Zaka gives for a NULL that C hands back. A C function whose text or
-handle result can be NULL declares an optional, and NULL reads as the optional with no data.
-A plain, non-optional handle result promises that C gives no NULL: when C breaks the promise,
-the run stops, as [Functions](functions.md#c-functions) states.
+The optional is also how Zaka receives a NULL from C. When a C function can return NULL
+for a text or handle result, we declare that result as an optional, and NULL arrives as a
+blank optional. A plain handle result that is not optional promises that C returns no
+NULL, and when C breaks the promise the program stops, as
+[Functions](functions-c.md#data-kinds-from-outside-the-program) states.
 
 ## Errors
 
 | Code | Mistake |
 | --- | --- |
-| ZK0444 | a pass-on, `?`, for a call that gives back an optional: an optional is no failure |
-| ZK0454 | a read of data that a test proved absent |
-| ZK0475 | a test word of the other kind: `ရလဒ်ကောင်း` or `အမှားအယွင်း` on an optional, or `ဒေတာ` on a result |
-| ZK0477 | `အလွတ်` where no optional kind is wanted |
 | ZK0339 | a function with an optional result whose block can reach its end with no return |
+| ZK0444 | a pass-on, `?`, for a call that returns an optional: an optional is no failure |
+| ZK0454 | a read of data that a test proved absent |
+| ZK0475 | a test word of the other set: `ရလဒ်ကောင်း` or `အမှားအယွင်း` on an optional, or `ဒေတာ` on a result |
+| ZK0477 | `အလွတ်` where no optional kind is wanted |
 
 ```zaka-error ZK0477
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

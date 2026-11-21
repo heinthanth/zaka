@@ -1,15 +1,21 @@
 ---
 title: Reading a whole result
-description: Keep the good result or the error value of a call, test which one it holds, and read each part.
+description: Keep the good result or the error value of a call, test which one it contains, and read each part.
 ---
 
 # Reading a whole result
 
-A call that can fail, written with no `?` and no `ရလဒ်ကောင်း`, passes no failure on.
-It gives back the *whole result*: the good result or the error value, whichever the call
-met. The first store of such a value is a declaration, and the kind here is taken from the
-value, as the kind of a variable is when it is written with no kind (the next page writes
-the kind out):
+When we call a function that can fail without `?` or `ရလဒ်ကောင်း`, the call passes nothing
+on and returns the *whole result*, which is either the good result (`Ok` value) or the error
+value (error). We can keep the whole result in a variable, test which part it contains, and
+then read that part.
+
+## You will learn
+
+- how to keep a whole result in a variable
+- how to test whether it contains a good result or an error value
+- how to read each part
+- what happens when we read the part that is not there
 
 ```zaka
 စားခွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -34,23 +40,34 @@ the kind out):
 အမှား: သုညဖြင့် စား၍ မရပါ
 ```
 
-The second line of the start block stores another result of the same kinds with `ထားမည်`.
-Two tests and two reads are new:
+The first line of the program start block keeps the whole result in `ရ`, and `ရ` gets its
+data kind (type) from the call, as a variable declared without a data kind does. Later,
+`ထားမည်` puts another result of the same data kind into `ရ`. To test and read a whole
+result, we use these forms:
 
-| Written | Is |
-| --- | --- |
-| `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်` | true when `ရ` holds a good result |
-| `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` | true when `ရ` holds an error value |
-| `ရ ထဲမှ ဒေတာ` | the good result |
-| `ရ ထဲမှ အမှားအယွင်း ဒေတာ` | the error value |
+```text
+<result> ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်
+<result> ထဲတွင် အမှားအယွင်း ရှိလျှင်
+<result> ထဲမှ ဒေတာ
+<result> ထဲမှ အမှားအယွင်း ဒေတာ
+```
 
-The tests are true or false like `ညီ`, so each fits in `အကယ်၍`, in a loop condition
-(`ရ ထဲတွင် ရလဒ်ကောင်း ရှိနေသရွေ့`), and beside `&&` and `||`. `ရှိ` can take `နေ`, as in
-`ရှိနေလျှင်`, with the same meaning. A read is the cell, `ထဲမှ`, and `ဒေတာ` for the good
-result or `အမှားအယွင်း ဒေတာ` for the error value.
+| Zaka | Reads as | What it does |
+| --- | --- | --- |
+| `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်` | "if there is a good result in `ရ`" | true when `ရ` contains a good result |
+| `ရ ထဲတွင် အမှားအယွင်း ရှိလျှင်` | "if there is an error value in `ရ`" | true when `ရ` contains an error value |
+| `ရ ထဲမှ ဒေတာ` | "the data from `ရ`" | the good result |
+| `ရ ထဲမှ အမှားအယွင်း ဒေတာ` | "the error data from `ရ`" | the error value |
 
-A read of the part the result does not hold stops the run, as a conversion that cannot be
-made does. Test first, as the program above does, or be sure of the part:
+The tests are true/false values (booleans), so we can use them with `အကယ်၍`, in a loop
+condition such as `ရ ထဲတွင် ရလဒ်ကောင်း ရှိနေသရွေ့`, and with `&&` and `||`. We can also write
+`ရှိနေလျှင်` in place of `ရှိလျှင်`, with the same meaning.
+
+## Reading the wrong part
+
+When we read the part that the result does not contain, the program stops, as it does for a
+conversion that cannot be made. So we test the result first, as the program above does, or
+we make sure which part it contains:
 
 ```zaka-stop
 စားခွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -73,11 +90,14 @@ made does. Test first, as the program above does, or be sure of the part:
 the program stopped: the result holds an error, not a good result: သုညဖြင့် စား၍ မရပါ
 ```
 
-When a test tells the part, the compiler does not wait for the run. Inside the
-arm of `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်`, `ရ` holds a good result, so a read of its error value there is
-ZK0454. The arms after it get the opposite, and an arm that ends with `ပြန်ပေးမည်`,
-`ရပ်မည်` or `ကျော်မည်` proves the opposite for what follows the whole statement. A change to
-`ရ`, such as `ထားမည်`, ends the proof:
+The reverse, a read of the error value of a good result, stops the program too, with the
+message "the result is a good result, not an error".
+
+## A read that a test rules out
+
+When a test has told the compiler which part a result contains, the compiler does not wait
+for the run. Inside the arm of `ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်`, `ရ` contains a good result,
+so a read of its error value there is the mistake ZK0454:
 
 ```zaka-error ZK0454
 စားခွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -93,19 +113,40 @@ ZK0454. The arms after it get the opposite, and an arm that ends with `ပြန
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-Where the compiler cannot tell, the read is checked in the run, as above. The reverse, a read
-of the error value of a good result, stops the run with "the
-result is a good result, not an error". A function with no result has no good result to
-read, so a read of `ရလဒ်ကောင်း` from its call is a compile error. The full rules are in
-[Errors and results](../../manual/language/error-handling.md#reading-a-whole-result).
+The arms after it (`သို့မဟုတ်ပါက`) know the opposite. When an arm ends with `ပြန်ပေးမည်`,
+`ရပ်မည်` or `ကျော်မည်`, the sentences after the whole `အကယ်၍` know the opposite too. A change
+to `ရ`, such as `ထားမည်`, ends what the compiler knows. Where the compiler cannot tell, the
+program checks the read when it runs, as in the previous section.
+
+## Details
+
+- We can give a fallback for the error case: `ရ ထဲမှ ဒေတာ၊ မရှိလျှင် ၀` is the good result,
+  or `၀` when `ရ` contains an error value ([A fallback](../../manual/language/optionals.md#a-fallback)).
+- A whole result is not a number, so using it as one, such as `ရ + ၁`, is ZK0403.
+- When the good result of a function is `အောင်မြင်သည့်သတင်း`, the function has no good value,
+  so `ရ ထဲမှ ဒေတာ` on its result is ZK0449 ([Writing result kinds](kinds.md)).
+- A `ဒေတာ ပြောင်းလဲရန်` (mutable parameter) argument also ends what the compiler knows about a
+  result, the same as `ထားမည်` does.
+- The full rules are in [Reading a
+  result](../../manual/language/reading-results.md).
+
+## Recap
+
+- A call without `?` or `ရလဒ်ကောင်း` returns the whole result, which we can keep in a
+  variable.
+- We test it with `ထဲတွင် ရလဒ်ကောင်း ရှိလျှင်` or `ထဲတွင် အမှားအယွင်း ရှိလျှင်`.
+- We read the good result with `ထဲမှ ဒေတာ` and the error value with `ထဲမှ အမှားအယွင်း ဒေတာ`.
+- Reading the part that is not there stops the program, or is a compile error when a test
+  rules it out.
 
 ## Hands on
 
-- Write a function that gives back twice a number as a good result, and fails with text
-  for a number below zero. Pass its failure on from a second function, and test the result of
-  that function in the start block.
-- Make the error value a struct with a code and a message, and print it from the trap.
-- Store the result of a call in a variable, and print the good result or the error value
+- Write a function that returns twice a number as a good result, and fails with text for a
+  number below zero. Pass its failure on from a second function, and test the result of
+  that function in the program start block.
+- Make the error value a struct with a code and a message, and print both fields when the
+  test finds an error value.
+- Keep the result of a call in a variable, and print the good result or the error value
   with a test in `အကယ်၍` and `သို့မဟုတ်ပါက`.
 
 Next: [Writing result kinds](kinds.md).

@@ -1,20 +1,27 @@
 ---
 title: List mistakes
-description: The mistakes lists make possible, and how Zaka catches each one.
+description: The common mistakes with lists, the message Zaka shows for each one, and the fix.
 ---
 
 # List mistakes
 
-## A cell number outside the list
+This page goes through the common mistakes with lists (dynamic arrays). Some of them stop
+the compiler with an error, and others stop the program while it runs, because the number
+of cells in a list is known just at that point.
 
-A list of 3 cells has cells 0, 1 and 2. A cell number past them is a mistake, and the
-VM stops the program with the range the list allows:
+## You will learn
+
+- what happens when a cell number (index) is outside the list
+- how to loop over a list that might have no cells
+- which errors the compiler shows for lists, and how to fix each one
+
+## A cell number outside the list
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // cells 0, 1 and 2 hold values; 3 does not exist
+အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // the cells are 0, 1 and 2, so 3 does not exist
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -22,8 +29,10 @@ VM stops the program with the range the list allows:
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
-The count of a list comes when the program runs, so the VM is the one to check it, even
-for a number written in place. Counting from 1 starts at 1, not 0:
+A list of 3 cells has the cells 0, 1 and 2, so the VM stops the program at cell 3 and
+shows the range of cell numbers that the list has. The count of a list is known when the
+program runs, so the VM checks the cell number then, even when we write the number
+straight into the program. The same happens when we count from 1 and start at 0:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -36,11 +45,10 @@ for a number written in place. Counting from 1 starts at 1, not 0:
 the program stopped: cell 0 is outside the list, whose cells run from 1 to 3
 ```
 
-## A list with no cells and the last number
+The fix is a cell number inside the range, and when the number comes from a variable, we
+compare it with `အကွက်အရေအတွက်` before the read.
 
-A counted loop from `၀` to `အကွက်အရေအတွက် - ၁` runs the cells of a list. A list with no
-cells has a count of 0, and `၀ - ၁` cannot be a count, so the VM stops the program at the
-loop:
+## A list with no cells and the last number
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -54,9 +62,13 @@ loop:
 the program stopped: the result of - does not fit usize
 ```
 
-A loop that just reads the cells needs no count: an each-cell loop does nothing for a
-list with no cells. A loop that changes the cells, or needs their numbers, checks for a list
-with no cells first and leaves the function:
+A counted loop from `၀` to `အကွက်အရေအတွက် - ၁` visits each cell number. The cell count is
+an unsigned integer (`usize`), and for a list with no cells, `၀ - ၁` is below 0, so the VM
+stops the program at the loop.
+
+A loop that just reads the cells can use an each-cell loop instead, which does nothing for
+a list with no cells. A loop that changes the cells, or needs their numbers, checks for a
+list with no cells first and leaves the function:
 
 ```zaka
 နှစ်ဆတိုး ဟူသော လုပ်ဆောင်ချက် သည်
@@ -77,10 +89,7 @@ with no cells first and leaves the function:
 []
 ```
 
-## A cell number that takes a sum
-
-The cell number takes the whole operator expression after `အကွက်`, so this reads cell
-`၁ + ၂`, which is outside the list:
+## A cell number with a sum
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -93,11 +102,28 @@ The cell number takes the whole operator expression after `အကွက်`, so 
 the program stopped: cell 3 is outside the list, whose cells run from 0 to 2
 ```
 
-Write `(ကိန်းများ ၏ အကွက် ၁) + ၂` to add 2 to cell 1.
+The cell number includes the whole operator expression after `အကွက်`, so this line reads
+cell `၁ + ၂`, which is outside the list. To add 2 to the value of cell 1, we write
+`(ကိန်းများ ၏ အကွက် ၁) + ၂`.
 
-## A blank list with no kind
+## The cell count, written as two words
 
-`စာရင်းအလွတ်` ("blank list") takes its kind from where it stands. Standing alone, it has none:
+```zaka-error ZK0301
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂] ဖြစ်ပါစေ။
+ကိန်းများ ၏ အကွက် အရေအတွက် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0301]: "အရေအတွက်" is not declared
+```
+
+`အကွက်အရေအတွက်` is one word. With a space, `အကွက် အရေအတွက်` means the cell whose number
+is in a variable named `အရေအတွက်`, and no such variable exists here. The fix is to write
+`အကွက်အရေအတွက်` without the space.
+
+## A blank list with no data kind
 
 ```zaka-error ZK0420
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -108,6 +134,10 @@ Write `(ကိန်းများ ၏ အကွက် ၁) + ၂` to add 2 to 
 ```text
 error[ZK0420]: a blank list needs a list kind from its place
 ```
+
+`စာရင်းအလွတ်` ("blank list") gets its data kind (type) from the place where we write it,
+such as the variable it sets. Alone after `ပြသမည်`, nothing gives it a data kind. The fix
+is to put it in a variable of a list kind first, and print the variable.
 
 ## Cells of a value that is no list
 
@@ -122,10 +152,10 @@ error[ZK0420]: a blank list needs a list kind from its place
 error[ZK0422]: isize is not a list, so it has no cells
 ```
 
-## Removing from text
+`အမှတ်` is an integer, and an integer has no cells. The fix is to declare it as a list,
+such as `ကိန်းပြည့် စာရင်း`, or to read it without `၏ အကွက်`.
 
-Text has no last cell to remove, since a cell of text is one u8 of a character. Its end is
-the last character, `နောက်ဆုံးစာလုံး`:
+## Removing from text
 
 ```zaka-error ZK0437
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -138,16 +168,14 @@ the last character, `နောက်ဆုံးစာလုံး`:
 error[ZK0437]: text cannot grow or shrink here: "ထည့်မည်" takes a plain list or text, "နောက်ဆုံးအကွက်ကို ဖျက်မည်" a plain list, and "နောက်ဆုံးစာလုံးကို ဖျက်မည်" text
 ```
 
-The fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` (see [Adding in the middle and removing the
-end](../text/changing.md#adding-in-the-middle-and-removing-the-end)).
-
-The counted lists of Part II neither grow nor shrink: see [Static data and counted
-lists](../forms/counted-lists.md#adding-to-a-counted-list).
+A cell of text is one `u8` of a character, so text has no last cell to remove. The end of
+text is its last character, so the fix is `စာ ၏ နောက်ဆုံးစာလုံးကို ဖျက်မည်။` (see [Adding
+in the middle and removing the
+end](../text/changing.md#adding-in-the-middle-and-removing-the-end)). The counted lists of
+Part II give the same error, because these never grow or shrink ([Adding to a counted
+list](../forms/counted-lists.md#adding-to-a-counted-list)).
 
 ## Removing from a list with no cells
-
-A list with no cells has no last cell to remove. The count of a plain list comes when the
-program runs, so the VM is the one to stop it:
 
 ```zaka-stop
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -161,12 +189,18 @@ program runs, so the VM is the one to stop it:
 the program stopped: the list holds no cells, so it has no last cell to remove
 ```
 
-Check `ကိန်းများ ၏ အကွက်အရေအတွက်` first when the count is not known.
+After the first remove, the list has no cells, so the second remove has nothing to take
+off. The count of a plain list is known when the program runs, so the VM is the one that
+stops it. When we do not know the count, we check `ကိန်းများ ၏ အကွက်အရေအတွက်` first.
 
-## The cell count, written as two words
+## Recap
 
-`အကွက်အရေအတွက်` is one word. Written with a space, `အကွက် အရေအတွက်` reads as the cell
-numbered with a variable named `အရေအတွက်`.
+- A cell number outside the list, or a remove from a list with no cells, stops the program
+  while it runs.
+- For a list that might have no cells, a counted loop up to `အကွက်အရေအတွက် - ၁` needs a
+  check first, while an each-cell loop needs none.
+- A cell in a sum goes in parentheses, and `အကွက်အရေအတွက်` is one word.
+- Text loses its last character with `နောက်ဆုံးစာလုံး`, not `နောက်ဆုံးအကွက်`.
 
 ## Hands on
 

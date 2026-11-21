@@ -186,9 +186,9 @@ fn compiler_rows(state: AppState, lints_open: RwSignal<bool>) -> impl IntoView
             frames_picker(state),
         ),
         row(
-            t!("explorer.settings.job_order"),
-            t!("explorer.settings.job_order_note"),
-            job_order_picker(state),
+            t!("explorer.settings.thread_order"),
+            t!("explorer.settings.thread_order_note"),
+            thread_order_picker(state),
         ),
         (
             row(
@@ -790,7 +790,7 @@ fn frames_picker(state: AppState) -> impl IntoView
     ))
 }
 
-/// Picker of the order of the turns of the jobs: fixed, or shuffled from a
+/// Picker of the order of the turns of the threads: fixed, or shuffled from a
 /// seed each run draws.
 ///
 /// # Arguments
@@ -800,18 +800,18 @@ fn frames_picker(state: AppState) -> impl IntoView
 /// # Returns
 ///
 /// The view.
-fn job_order_picker(state: AppState) -> impl IntoView
+fn thread_order_picker(state: AppState) -> impl IntoView
 {
     let choice = |value: bool, label: String| {
         Choice::builder().value(value.to_string()).label(label).build()
     };
     let choices = vec![
-        choice(false, t!("explorer.settings.job_order_fixed").to_string()),
-        choice(true, t!("explorer.settings.job_order_shuffled").to_string()),
+        choice(false, t!("explorer.settings.thread_order_fixed").to_string()),
+        choice(true, t!("explorer.settings.thread_order_shuffled").to_string()),
     ];
     let current = Signal::derive(move || state.shuffled.get().to_string());
     let on_pick = move |v: String| state.set_shuffled.set(v == "true");
-    dropdown(picker(t!("explorer.settings.job_order"), choices, current, on_pick))
+    dropdown(picker(t!("explorer.settings.thread_order"), choices, current, on_pick))
 }
 
 /// Picker of what a pointer mistake the checker proves does.
