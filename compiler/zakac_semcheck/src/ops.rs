@@ -230,7 +230,9 @@ pub(crate) fn verb_class(op: VerbOp) -> OpClass
         | VerbOp::HasData
         | VerbOp::LacksData
         | VerbOp::Unwrap
-        | VerbOp::UnwrapFault => OpClass::Result,
+        | VerbOp::UnwrapFault
+        | VerbOp::IsVariant
+        | VerbOp::VariantData => OpClass::Result,
         VerbOp::MakeFault => OpClass::MakeFault,
         VerbOp::Print
         | VerbOp::Assign

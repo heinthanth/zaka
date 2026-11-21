@@ -48,6 +48,9 @@ en = "member of %{name}"
 [lsp.hover_value]
 en = "value %{value}"
 
+[lsp.hover_data]
+en = "holds data of the kind %{kind}"
+
 [lsp.hover_param]
 en = "parameter of %{name}"
 

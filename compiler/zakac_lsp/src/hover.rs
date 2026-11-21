@@ -583,6 +583,11 @@ impl CardMaker<'_>
             kind.and_then(DataKind::as_enum).and_then(|e| e.member(&member_name));
         let value = value.and_then(value_text);
         let value = value.map(|v| t!("lsp.hover_value", value = v).to_string());
+        let data = kind
+            .and_then(DataKind::as_variants)
+            .and_then(|v| v.data(v.position(&member_name)?));
+        let data = data.map(|(_, k)| t!("lsp.hover_data", kind = k.name()).to_string());
+        let value = value.or(data);
         let place = Some(t!("lsp.hover_member", name = name).to_string());
         let code = format!("{}{AMONG} {member_name}", stem_of(&name));
         self.keep(code, vec![place, value], None);

@@ -40,6 +40,14 @@ fn an_optional_with_no_data_stops_the_program_when_read()
     stops_with(&path, &[], "၇\n", "the optional holds no data");
 }
 
+/// A read of the data of another member stops the program.
+#[test]
+fn a_read_of_another_member_stops_the_program()
+{
+    let path = c_inputs().join("wrong_member.zaka");
+    stops_with(&path, &[], "၇\n", "the value is another member than the one read");
+}
+
 /// An overflow stops the program under `--overflow stop`.
 #[test]
 fn an_overflow_stops_the_program()

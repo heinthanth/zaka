@@ -327,6 +327,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::NotGreater
         | Kw::Less
         | Kw::NotLess
+        | Kw::CanBecome
         | Kw::Not
         | Kw::And
         | Kw::Or
@@ -360,6 +361,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Auk
         | Kw::Hu
         | Kw::As
+        | Kw::AsInto
         | Kw::Pa
         | Kw::ListKo
         | Kw::ListWith

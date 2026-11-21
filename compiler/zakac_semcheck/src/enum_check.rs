@@ -3,11 +3,15 @@ use std::collections::HashMap;
 
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::BaseKind;
+use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::EnumDecl;
 use zakac_ast::stmt::EnumMember;
+use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::stmt::StructDecl;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
@@ -28,6 +32,8 @@ use crate::semcheck::Checker;
 use crate::structs::StructTable;
 use crate::value;
 use crate::value::Value;
+use crate::variants::data_field;
+use crate::variants::tag_field;
 
 /// The value kind and the member values of each enumeration that a run
 /// of the check worked out, on the enumeration name.
@@ -61,8 +67,11 @@ pub(crate) fn collect_enums(
             |s| tern!(let Stmt::Struct(d) = s, Some(d.name.name.as_str()), None),
         )
         .collect();
+    let structs: BTreeSet<&str> =
+        structs.into_iter().chain(data_enum_names(program)).collect();
     let mut table = StructTable::new();
-    for decl in program.stmts.iter().filter_map(as_enum)
+    let plain = program.stmts.iter().filter_map(as_enum).filter(|d| !holds_data(d));
+    for decl in plain
     {
         let kind = DataKind::Enum(enum_kind(decl, known, diags));
         let name = decl.name.name.as_str();
@@ -75,6 +84,84 @@ pub(crate) fn collect_enums(
         }
     }
     table
+}
+
+/// Whether an enumeration is one whose members hold data: one of them does,
+/// or it has kind parameters, which data alone can use.
+///
+/// # Arguments
+///
+/// * `decl` - The declaration.
+///
+/// # Returns
+///
+/// `true` for such an enumeration.
+pub(crate) fn holds_data(decl: &EnumDecl) -> bool
+{
+    !decl.kind_params.is_empty() || decl.members.iter().any(|m| m.data.is_some())
+}
+
+/// The names and stems of the enumerations whose variants hold data, which
+/// the struct table holds.
+///
+/// # Arguments
+///
+/// * `program` - The tree.
+///
+/// # Returns
+///
+/// The names.
+fn data_enum_names(program: &Program) -> impl Iterator<Item = &str>
+{
+    let decls = program.stmts.iter().filter_map(as_enum).filter(|d| holds_data(d));
+    decls.flat_map(|d| [d.name.name.as_str(), stem_of(&d.name.name)])
+}
+
+/// The struct the compiler makes from an enumeration whose variants hold
+/// data: the tag, which names the variants, then the data of each variant
+/// that holds some. A member name used twice, a second initial mark, and a
+/// member value beside the data are reported.
+///
+/// # Arguments
+///
+/// * `decl` - The declaration.
+/// * `diags` - Where to report.
+///
+/// # Returns
+///
+/// The struct, or `None` for an enumeration with no data.
+pub(crate) fn variants_decl(
+    decl: &EnumDecl, diags: &mut Vec<Diagnostic>,
+) -> Option<StructDecl>
+{
+    ret_if!(!holds_data(decl), None);
+    let valued = decl.members.iter().find(|m| m.value.is_some());
+    do_if!(let Some(m) = valued, diags.push(rd::value_and_data(m.span, &decl.name.name)));
+    let kept = distinct_members(decl, Some(diags));
+    let initial = initial_member(decl, &kept, diags);
+    let names: Vec<&str> = kept.iter().map(|(_, n)| n.name.as_str()).collect();
+    let span = decl.name.span;
+    let bits = tern!(names.len() <= 256, 8, 16);
+    #[rustfmt::skip]
+    let tag_kind = Kind::builder().base(BaseKind::Int).bits(bits).signed(false).span(span).build();
+    let field = |name: String, kind: Kind| {
+        Param::builder()
+            .kind(kind)
+            .name(Ident::builder().name(name).span(span).build())
+            .span(span)
+            .build()
+    };
+    let tag = field(tag_field(&names, initial), tag_kind);
+    let data = kept.iter().enumerate().filter_map(|(at, (pos, _))| {
+        let kind = decl.members[*pos].data.clone()?;
+        Some(field(data_field(at), kind))
+    });
+    let fields = std::iter::once(tag).chain(data).collect();
+    #[rustfmt::skip]
+    let shape = StructDecl::builder().name(decl.name.clone()).kind_params(decl.kind_params.clone())
+        .fields(fields).maybe_classifier(decl.classifier.clone()).exported(decl.exported)
+        .hint(decl.hint.clone()).span(decl.span).build();
+    Some(shape)
 }
 
 /// The declaration of a top-level enumeration statement.
@@ -206,7 +293,7 @@ impl Checker
     /// * `n` - The declaration.
     pub(crate) fn check_enum(&mut self, n: &EnumDecl)
     {
-        ret_if!(n.members.iter().all(|m| m.value.is_none()));
+        ret_if!(n.members.iter().all(|m| m.value.is_none()) || holds_data(n));
         let first = n.members[0].value.as_ref();
         let Some(under) = first.map_or(Some(DataKind::ISIZE), |e| self.infer(e, None))
         else

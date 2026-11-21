@@ -11,6 +11,7 @@ use zakac_ast::expr::FloatLit;
 use zakac_ast::expr::InfixOp as AstInfix;
 use zakac_ast::expr::IntLit;
 use zakac_ast::expr::LogicOp as AstLogic;
+use zakac_ast::expr::MemberExpr;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp as AstPrefix;
@@ -53,6 +54,8 @@ use crate::value;
 use crate::value::EvalError;
 use crate::value::Value;
 use crate::value::value_text;
+use crate::variants::Variants;
+use crate::variants::data_field;
 
 /// The value of a constant, as far as the check knows it.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -307,6 +310,10 @@ impl Checker
             }
             Expr::BlankList(_) => Ok(Folded::Whole),
             Expr::Str(n) => Ok(self.str_folded(n)),
+            Expr::Member(n) if kind.as_variants().is_some() =>
+            {
+                self.variant_folded(n, kind.as_variants().expect("checked above"))
+            }
             Expr::Member(n) =>
             {
                 let v = kind.as_enum().and_then(|e| e.member(&n.member.name));
@@ -867,6 +874,35 @@ impl Checker
             return Err(NONE);
         };
         Ok(count(items.len() as u128))
+    }
+
+    /// The value of a member of an enumeration whose variants hold data: the
+    /// tag, the data of its variant, and the default of each other field.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The member.
+    /// * `owner` - The enumeration.
+    ///
+    /// # Returns
+    ///
+    /// The fields, or the reason the value has none.
+    fn variant_folded(&self, n: &MemberExpr, owner: Variants) -> Result<Folded, Stop>
+    {
+        let at = owner.position(&n.member.name).ok_or(NONE)?;
+        let tag_kind = owner.tag_kind().int_kind().ok_or(NONE)?;
+        let tag = Folded::Value(Value::int(tag_kind, at as u128, self.platform));
+        let own = data_field(at);
+        let field =
+            |(name, k): &(String, DataKind)| match (name == &own, n.data.as_deref())
+            {
+                (true, Some(d)) => self.item(d, *k),
+                (true, None) => Err(NONE),
+                (false, _) => Ok(default_folded(*k)),
+            };
+        let rest: Result<Vec<_>, _> =
+            owner.shape().fields()[1..].iter().map(field).collect();
+        Ok(Folded::Items(std::iter::once(tag).chain(rest?).collect()))
     }
 
     /// The size of a kind, in octets, as a `usize`; it waits while the

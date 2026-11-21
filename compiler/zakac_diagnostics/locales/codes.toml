@@ -779,6 +779,69 @@ en = "write the call as \"%{w}\""
 [codes.ZK0352.explain]
 en = """A call written as a sentence gives the starting and the ending phrase of the head of its function, in their places: the starting phrase before the first argument, and the ending phrase right before the function name. A call in another form, such as \"f(x)\" or \"f ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်\", leaves the phrases out."""
 
+[codes.ZK0353.title]
+en = "member values and member data"
+[codes.ZK0353.message]
+en = "\"%{e}\" gives some members values and others data"
+[codes.ZK0353.help]
+en = "give each member data with \"ဒေတာအနေဖြင့် <kind> တစ်ခု ရှိသည့်\", or each member a value, not both"
+[codes.ZK0353.explain]
+en = """An enumeration either gives each member a constant value, \"တန်ဖိုးအနေဖြင့် <value> ရှိသည့် <member>\", or lets its members hold data, \"ဒေတာအနေဖြင့် <kind> တစ်ခု ရှိသည့် <member>\". A member value is a constant that storage holds; the data of a member is set when the program runs, so the two do not mix in one enumeration."""
+
+[codes.ZK0354.title]
+en = "member written with no data"
+[codes.ZK0354.message]
+en = "the member \"%{v}\" of \"%{e}\" holds data of the kind \"%{k}\", and none is given"
+[codes.ZK0354.help]
+en = "write \"%{w}(<value>)\""
+[codes.ZK0354.explain]
+en = """A member declared with \"ဒေတာအနေဖြင့် <kind> တစ်ခု ရှိသည့်\" holds a value of that kind in each value of the enumeration. To make such a value, we give the data after the member, \"<stem>များထဲမှ <member>(<value>)\", or before it, \"ဒေတာအနေဖြင့် <value> ရှိသော <stem>များထဲမှ <member>\". In a switch, a case names the member alone."""
+
+[codes.ZK0355.title]
+en = "member with no data"
+[codes.ZK0355.message]
+en = "the member \"%{v}\" of \"%{e}\" holds no data"
+[codes.ZK0355.help]
+en = "write \"%{w}\" with no data"
+[codes.ZK0355.explain]
+en = """A member declared with no \"ဒေတာအနေဖြင့်\" holds no data, so no data can be given to it, read from it with \"<x> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်\", or named with \"<name> ဟူသည့် <member>\". A test of the member, \"<x> သည် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်သည်\", works on it."""
+
+[codes.ZK0356.title]
+en = "member test on no enumeration"
+[codes.ZK0356.message]
+en = "\"%{k}\" is no enumeration, so it has no member to test or read"
+[codes.ZK0356.help]
+en = "test or read a value of an enumeration"
+[codes.ZK0356.explain]
+en = """The test \"<x> သည် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်သည်\" and the read \"<x> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်\" look at the member a value of an enumeration is. A value of another data kind has no members."""
+
+[codes.ZK0357.title]
+en = "name for member data outside a test"
+[codes.ZK0357.message]
+en = "\"%{n}\" names the data of a member outside the condition of a conditional or an arm of a switch"
+[codes.ZK0357.help]
+en = "test the member in the condition of \"အကယ်၍\" or in a switch arm, or read the data with \"<x> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်\""
+[codes.ZK0357.explain]
+en = """\"<name> ဟူသည့် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင်\" gives the data of the member a name in the block the test guards. It is the whole condition of \"အကယ်၍\" or of a switch arm; inside another condition, a declaration or a value, no block follows that could use the name."""
+
+[codes.ZK0358.title]
+en = "read of a member ruled out"
+[codes.ZK0358.message]
+en = "\"%{n}\" is \"%{p}\" here, so reading it as \"%{v}\" stops the run each time"
+[codes.ZK0358.help]
+en = "read \"%{p}\", or test the member first"
+[codes.ZK0358.explain]
+en = """Inside an arm or a branch that tested the member of a variable, the variable is that member while nothing changes it. A read of another member there would stop the run each time it ran, so the check reports it."""
+
+[codes.ZK0359.title]
+en = "switch case with member data"
+[codes.ZK0359.message]
+en = "a case of a switch over \"%{e}\" names a member, with no data"
+[codes.ZK0359.help]
+en = "name the member alone, or give its data a name with \"<name> ဟူသည့် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင်\""
+[codes.ZK0359.explain]
+en = """A switch over an enumeration whose members hold data compares the member alone: \"<member> ဖြစ်လျှင်\" runs for each value of that member, whatever its data. To use the data in the arm, we name it in the arm, or read it with \"<x> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
+
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
 [codes.ZK0338.message]

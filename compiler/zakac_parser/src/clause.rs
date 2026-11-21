@@ -8,6 +8,7 @@ use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::TableRow;
+use zakac_ast::expr::VariantExpr;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AssignStmt;
@@ -187,6 +188,7 @@ fn as_slot(tok: &Token) -> Option<Slot>
         TokenKind::Kw(Kw::Ordinal) => Some(Slot::Ordinal),
         TokenKind::Kw(Kw::Into) => Some(Slot::Into),
         TokenKind::Kw(Kw::Within) => Some(Slot::Within),
+        TokenKind::Kw(Kw::AsInto) => Some(Slot::AsInto),
         _ => None,
     }
 }
@@ -652,6 +654,19 @@ impl Parser<'_>
     /// `Ok`, or a diagnostic from the operand.
     fn push_next_operand(&mut self, stack: &mut Vec<Item>, slot: Slot) -> PResult<()>
     {
+        if slot == Slot::Ko && self.at_variant_target()
+        {
+            let variant = self.parse_variant_operand(false)?;
+            let as_tok = self.bump();
+            let item = Item::builder().operand(Operand::Expr(variant));
+            stack.push(item.slot((Slot::KindAhpjit, as_tok.span)).build());
+            return Ok(());
+        }
+        if let Some(bound) = self.at_variant_operand()
+        {
+            stack.push(Item::expr(self.parse_variant_operand(bound)?));
+            return Ok(());
+        }
         if slot == Slot::Ko && self.starts_kind() && self.slot_then(Kw::As)
         {
             let kind = self.parse_slot_kind()?;
@@ -685,6 +700,68 @@ impl Parser<'_>
         };
         stack.push(Item::expr(item));
         Ok(())
+    }
+
+    /// Whether the target of a read of a variant starts here:
+    /// `<variant> အဖြစ် ပြောင်းလဲသော ရလဒ်`, a name with no measure word.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_variant_target(&self) -> bool
+    {
+        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
+        let convert = kw_of(&self.peek_n(2)) == Some(Kw::Convert);
+        named && kw_of(&self.peek_n(1)) == Some(Kw::As) && convert
+    }
+
+    /// Whether the variant a test names starts here: `<variant> အဖြစ်သို့`,
+    /// or `<name> ဟူသည့် <variant> အဖြစ်သို့`.
+    ///
+    /// # Returns
+    ///
+    /// `Some(true)` with a name for the data, `Some(false)` without one, or
+    /// `None` when no variant starts here.
+    pub(crate) fn at_variant_operand(&self) -> Option<bool>
+    {
+        let named = |p: &Self, n: usize| {
+            matches!(p.peek_n(n).kind, TokenKind::Ident | TokenKind::RawIdent)
+        };
+        let into = |p: &Self, n: usize| kw_of(&p.peek_n(n)) == Some(Kw::AsInto);
+        ret_if!(named(self, 0) && into(self, 1), Some(false));
+        let called = kw_of(&self.peek_n(1)) == Some(Kw::CalledRel);
+        let bound = named(self, 0) && called && named(self, 2) && into(self, 3);
+        tern!(bound, Some(true), None)
+    }
+
+    /// Parse the variant a test or a read names: `[<name> ဟူသည့်] <variant>`.
+    ///
+    /// # Arguments
+    ///
+    /// * `bound` - Whether a name for the data comes first.
+    ///
+    /// # Returns
+    ///
+    /// The variant, or a diagnostic.
+    pub(crate) fn parse_variant_operand(&mut self, bound: bool) -> PResult<Expr>
+    {
+        let start = self.peek().span;
+        let bind = match bound
+        {
+            true =>
+            {
+                let name = self.parse_ident()?;
+                self.bump();
+                Some(name)
+            }
+            false => None,
+        };
+        let variant = self.parse_ident()?;
+        let span = start.to(&variant.span);
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = VariantExpr::builder().id(id).maybe_bind(bind).variant(variant).span(span).build();
+        Ok(Expr::Variant(node))
     }
 
     /// Rebuild a read of the data of a field, `x ၏ f ထဲမှ ဒေတာ`, whose operand
@@ -1347,9 +1424,13 @@ impl Parser<'_>
         let id = self.new_id();
         #[rustfmt::skip]
         let pass = tok.kind == TokenKind::Kw(Kw::ConvertGood);
+        // A conversion to a variant, not a kind, reads the data of the variant.
+        let variant = matches!(exprs.get(1), Some(Expr::Variant(_)));
+        let op =
+            tern!(verb.op == VerbOp::Cast && variant, VerbOp::VariantData, verb.op);
         let node = VerbExpr::builder()
             .id(id)
-            .op(verb.op)
+            .op(op)
             .args(exprs)
             .maybe_kind_arg(kind_arg)
             .maybe_dir(dir)

@@ -69,6 +69,7 @@ pub const SAMPLES: &[Sample] = &[
     sample!("basics", "text"),
     sample!("basics", "interpolation"),
     sample!("basics", "enums"),
+    sample!("basics", "enums_data"),
     sample!("control", "branches"),
     sample!("control", "scopes"),
     sample!("control", "while"),

@@ -254,10 +254,16 @@ phrases joined or with spaces.
 | `အချက်အလက်အမျိုးအစားကွဲ`, `ဒေတာအမျိုးအစားကွဲ` | "data kind of variants": to declare an enumeration (enum), `<name> ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ...` | [Enumerations and switches](../../learn/enums/README.md) |
 | `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` (`ကနဦးတန်ဖိုး`, `အနေဖြင့်`, `သုံးမည့်`) | "to be used as the initial value": in front of a member, to make it the initial member of an enumeration | [The initial member](../language/enums.md#the-initial-member) |
 | `တန်ဖိုးအနေဖြင့်` (`တန်ဖိုး`, `အနေဖြင့်`) | "as its value": to give a member its value, `တန်ဖိုးအနေဖြင့် <value> ရှိသည့် <member>` | [Enumerations](../language/enums.md#declaring-an-enumeration) |
-| `ရှိသည့်` | "that has": after the value of a member | [Enumerations](../language/enums.md#declaring-an-enumeration) |
+| `ရှိသည့်` | "that has": after the value of a member, and after the data kind of a member that holds data | [Enumerations](../language/enums.md#declaring-an-enumeration) |
+| `ပြောင်းလဲနိုင်` | "can become": the verb of the test of a member, `<x> သည် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်သည်`, which takes the endings of a comparison verb | [Members that hold data](../language/enums.md#testing-a-member) |
+| `အဖြစ်သို့` | "into": after the member a test names | [Members that hold data](../language/enums.md#testing-a-member) |
 | `သုံးမည့်` | "to be used": the last word of `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` | [The initial member](../language/enums.md#the-initial-member) |
 | `ထဲမှ` | "from among": to name a member, `<name>များထဲမှ <member>` | [Enumerations and switches](../../learn/enums/README.md#naming-a-member) |
 | `တခြား` | "another": to start the default arm of a switch, `တခြား <kind> တစ်<word> ဖြစ်လျှင်` | [Enumerations and switches](../../learn/enums/README.md#the-default-arm) |
+
+`ဒေတာအနေဖြင့်`, before the data kind of a member that holds data, is `ဒေတာ` and `အနေဖြင့်`,
+and `ဒေတာ` remains a name there, as it is outside the reads of an optional. A name for the
+data of a member is written with `ဟူသည့်` ("called").
 
 We declare an enumeration in the same shape as a struct, with `ဒေတာအမျိုးအစားကွဲ` in place
 of `ဒေတာအစုအဝေး`, and end the member list with `တို့ပါဝင်သည်`, or with `ပါဝင်သည်` after a

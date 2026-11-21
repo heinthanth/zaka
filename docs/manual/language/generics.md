@@ -1,11 +1,11 @@
 ---
 title: Generics
-description: Functions, structs and aliases with kind parameters, data kinds at a use and in calls, the notes block, written-as hints, and how the compiler builds instances.
+description: Functions, structs, enumerations and aliases with kind parameters, data kinds at a use and in calls, the notes block, written-as hints, and how the compiler builds instances.
 ---
 
 # Generics
 
-A generic function, struct or kind alias has kind parameters (type parameters): names that
+A generic function, struct, enumeration or kind alias has kind parameters (type parameters): names that
 take the place of data kinds (types) that the code leaves open. Each use gives each kind
 parameter a data kind, and the compiler builds one instance (monomorphized instance) of
 the generic for each set of data kinds that the program uses, as if we had written the
@@ -238,6 +238,15 @@ values. To write them, we use the word form
   stops at a limit with ZK0342.
 - The compiler checks the constraints of a generic struct for each instance, at its first
   use.
+
+## Generic enumerations
+
+An enumeration whose members hold data can have kind parameters too, in the forms of a
+struct, with `ဒေတာအမျိုးအစားကွဲ` in place of `ဒေတာအစုအဝေး`. A member value works out its
+data kinds from its data or from the place it goes into, and otherwise writes them before
+the member in words or after the enumeration name in signs:
+`စာသား ကို အစားထိုးအသုံးပြုသည့် ဖြစ်နိုင်များထဲမှ မတွေ့`, `ဖြစ်နိုင်<စာသား>များထဲမှ မတွေ့`.
+[Generic enumerations](enums.md#generic-enumerations) gives the rules.
 
 ## Generic aliases
 

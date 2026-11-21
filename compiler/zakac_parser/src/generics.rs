@@ -411,7 +411,8 @@ impl Parser<'_>
         if let Some(len) = self.word_kind_args_len(0, Kw::SubstitutedRel)
         {
             let function = kw_of(&self.peek_n(len + 1)) == Some(Kw::FnValue);
-            return function.then_some(Kw::SubstitutedRel);
+            let member = self.peek_n(len + 1).kind == TokenKind::Kw(Kw::Among);
+            return (function || member).then_some(Kw::SubstitutedRel);
         }
         self.word_kind_args_len(0, Kw::Substituting).map(|_| Kw::Substituting)
     }
@@ -435,7 +436,7 @@ impl Parser<'_>
     {
         match head
         {
-            Head::Expr(e @ (Expr::Call(_) | Expr::FnAddr(_))) =>
+            Head::Expr(e @ (Expr::Call(_) | Expr::FnAddr(_) | Expr::Member(_))) =>
             {
                 Ok(Head::Expr(with_kind_args(e, kind_args, Some(start))))
             }
@@ -467,6 +468,11 @@ fn with_kind_args(mut expr: Expr, kind_args: Vec<Kind>, start: Option<Span>) -> 
 {
     match &mut expr
     {
+        Expr::Member(m) =>
+        {
+            m.kind_args = kind_args;
+            do_if!(let Some(start) = start, m.span = start.to(&m.span));
+        }
         Expr::Call(c) =>
         {
             c.kind_args = kind_args;

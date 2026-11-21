@@ -89,6 +89,21 @@ the alignment and the `holds_*` tests are those of the value kind (`repr` takes 
 An enumeration widens to nothing, converts to its value kind and back from a scalar one,
 and is copied.
 
+An enumeration whose members hold data is no `EnumKind`: `variants_decl` (`enum_check.rs`)
+turns its declaration into a struct declaration that `collect_structs` makes with the other
+structs, so a member that holds the enumeration again through a pointer or a shared struct
+resolves as a struct field does. The first field is the tag, `u8` (`u16` past 256 members),
+whose name `%v|<member>|!<member>|…` lists the members and marks the initial one; each member
+that holds data has a field `%<position>`. No written name starts with `%`. `Variants`
+(`variants.rs`, `DataKind::as_variants`) reads the members, the tag and the data of a member
+off the struct. The buildable check takes one member that can be built, not each field.
+`variant_check.rs` checks a member with its data, the test of a member (`IsVariant`), the
+read of its data (`VariantData`), and the name a test gives the data: the condition of an
+arm marks the test that can name data (`bind_site`), and `with_bind` declares the name in a scope
+around the block. `variants_proven` keeps the member a test proved for a variable, as
+`proven` does for results, so a read of another member is ZK0358. `foreign::crosses` and
+`exchanged` refuse such a value at the edge to C.
+
 A written data kind becomes a `DataKind` with the defaults filled in: no sign word means
 signed, and no bit count means the platform size for an integer and 64 for a float. So the
 plain `ကိန်းပြည့်` is `isize` and the plain `ဒဿမကိန်း` is `f64`. `isize` and `i64` are

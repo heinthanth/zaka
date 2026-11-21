@@ -96,6 +96,7 @@ to the section that explains it.
 | [not fault](#a-whole-result-read-as-the-wrong-part) | `the result is a good result, not an error` | the error value read from a whole result that holds a good result |
 | [no data](#an-optional-read-with-no-data) | `the optional holds no data` | the data read from an [optional](../language/optionals.md) that is blank |
 | [no row](#a-write-through-a-missing-row) | `no row of the ဇယား has this index` | a write inside the value of a [row of a table](../language/tables.md#writing-inside-a-row) that does not exist |
+| [wrong member](#a-read-of-the-data-of-another-member) | `the value is another member than the one read` | the data of a [member](../language/enums.md#reading-the-data) read from a value of an enumeration that is another member |
 | [thread trapped](#threads) | `the thread N this waits for stopped at a trap` | a wait for a thread that stopped, under `--trap unwind` |
 | [thread waited](#threads) | `the thread N this waits for gave its result to an earlier wait` | a second wait for the same thread |
 | [lock broken](#threads) | `the lock of this object is broken: the thread that held it stopped at a trap` | a lock block on an object whose holder stopped inside its lock |
@@ -447,6 +448,30 @@ from the operation `halt`, with the cause `no_data`:
 ```text
 အစ
 the program stopped: the optional holds no data
+```
+
+## A read of the data of another member
+
+The data of a member of an enumeration, `<value> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်`,
+is there when the value is that member. When the value is another member, the run stops
+with the trap `wrong member`. To fix it, we test the member first, or give the data a name
+in the test, `<value> သည် <name> ဟူသည့် <member> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင်`, which reads
+it once the test holds. The stop comes from the operation `halt`, with the cause
+`wrong_variant`:
+
+```zaka-stop
+ပုံ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ဒေတာအနေဖြင့် ကိန်းပြည့် တစ်ခု ရှိသည့် စက်ဝိုင်း နှင့် အမှတ် တို့ပါဝင်သည်။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ပုံများထဲမှ အမှတ် ဖြစ်ပါစေ။
+"အစ" ဟု ပြသမည်။
+ပ ကို စက်ဝိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အစ
+the program stopped: the value is another member than the one read
 ```
 
 ## A write through a missing row

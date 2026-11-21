@@ -52,6 +52,7 @@ is first used, as in "data kind (type)".
 | shared object | reference type, object of a class | `မျှဝေနိုင်သော ဒေတာအစုအဝေး` | [Values and objects](../language/objects.md) |
 | enumeration | enum, tagged union | `ဒေတာအမျိုးအစားကွဲ` | [Enumerations](../language/enums.md) |
 | member (of an enumeration) | variant, enumerator | | [Enumerations](../language/enums.md) |
+| data (of a member) | payload, associated value | `ဒေတာအနေဖြင့်` | [Enumerations](../language/enums.md#members-that-hold-data) |
 | switch, arm | `switch` and `case`, `match` and its arms | `… ဖြစ်လျှင်` | [Enumerations](../language/enums.md) |
 | default arm | default case | | [Enumerations](../language/enums.md) |
 | data cell | the box of an option or a result | `ဒေတာဆဲလ်` | [Optional values](../language/optionals.md) |

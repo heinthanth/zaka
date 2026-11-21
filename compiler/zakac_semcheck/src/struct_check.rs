@@ -18,6 +18,8 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::buildable::report_unbuildable;
+use crate::enum_check::variants_decl;
+use crate::enums::stem_of;
 use crate::fn_kind::FnText;
 use crate::fn_kind::ParamMode;
 use crate::fn_kind::join_fn;
@@ -49,8 +51,18 @@ pub(crate) fn collect_structs(
     program: &Program, enums: &StructTable, diags: &mut Vec<Diagnostic>,
 ) -> StructTable
 {
+    // An enumeration whose variants hold data is a struct of the compiler.
+    let enum_decls = program
+        .stmts
+        .iter()
+        .filter_map(|s| tern!(let Stmt::Enum(d) = s, Some(d), None));
+    let variants: Vec<StructDecl> =
+        enum_decls.clone().filter_map(|d| variants_decl(d, diags)).collect();
     let mut decls: BTreeMap<&str, &StructDecl> = BTreeMap::new();
-    for decl in program.stmts.iter().filter_map(as_struct)
+    // A generic enumeration is a template; its instances are structs of their
+    // own.
+    let plain_variants = variants.iter().filter(|d| d.kind_params.is_empty());
+    for decl in program.stmts.iter().filter_map(as_struct).chain(plain_variants)
     {
         let name = decl.name.name.as_str();
         let twice = decls.contains_key(name);
@@ -60,15 +72,19 @@ pub(crate) fn collect_structs(
     let names: BTreeSet<&str> = decls.keys().copied().collect();
     let shared: BTreeSet<&str> =
         decls.iter().filter(|(_, d)| d.shared).map(|(n, _)| *n).collect();
+    // A field can name an enumeration whose members hold data through its stem.
+    let stems = variants.iter().map(|d| (stem_of(&d.name.name), d.name.name.as_str()));
+    let written: BTreeMap<&str, &str> =
+        names.iter().map(|n| (*n, *n)).chain(stems).collect();
     let known: BTreeSet<&str> =
-        names.iter().copied().chain(enums.keys().map(|n| n.as_str())).collect();
+        written.keys().copied().chain(enums.keys().map(|n| n.as_str())).collect();
     do_for!(decl in decls.values(), check_fields(decl, &known, diags));
     do_for!(f in program.stmts.iter().filter_map(as_fn_name), report_clash(f, &names, diags));
     // A kind from outside holds C's address alone; its written fields are C's,
     // and their names and kinds go into the name of that one field, so two
     // programs that give one name to two C structs make two kinds.
     let held = |decl: &StructDecl| {
-        let texts = field_texts(decl, &names, &shared, enums);
+        let texts = field_texts(decl, &written, &shared, enums);
         ret_if!(!decl.external, texts);
         let field = extern_field(&texts);
         vec![(field, DataKind::handle_pointer().sig_name())]
@@ -87,6 +103,16 @@ pub(crate) fn collect_structs(
     }
     let external = decls.values().filter(|d| d.external);
     do_for!(decl in external, set_c_fields(decl, &table, diags));
+    // An enumeration, an instance of a generic one too, is named through its
+    // stem as well.
+    let stems: Vec<(Name, DataKind)> = table
+        .values()
+        .filter_map(|k| Some((Name::from(k.as_variants()?.stem()), *k)))
+        .collect();
+    for (stem, kind) in stems
+    {
+        do_if!(!table.contains_key(&stem), _ = table.insert(stem, kind));
+    }
     table
 }
 
@@ -261,14 +287,14 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
 /// # Arguments
 ///
 /// * `decl` - The declaration.
-/// * `names` - The struct names.
+/// * `names` - The struct each written struct name names.
 /// * `enums` - The kind of each enumeration, written as its signature.
 ///
 /// # Returns
 ///
 /// Each field name with its kind text.
 fn field_texts(
-    decl: &StructDecl, names: &BTreeSet<&str>, shared: &BTreeSet<&str>,
+    decl: &StructDecl, names: &BTreeMap<&str, &str>, shared: &BTreeSet<&str>,
     enums: &StructTable,
 ) -> Vec<(String, String)>
 {
@@ -282,14 +308,15 @@ fn field_texts(
 /// # Arguments
 ///
 /// * `kind` - The field kind.
-/// * `names` - The struct names.
+/// * `names` - The struct each written struct name names.
 /// * `enums` - The kind of each enumeration, written as its signature.
 ///
 /// # Returns
 ///
 /// The text.
 fn field_text(
-    kind: &Kind, names: &BTreeSet<&str>, shared: &BTreeSet<&str>, enums: &StructTable,
+    kind: &Kind, names: &BTreeMap<&str, &str>, shared: &BTreeSet<&str>,
+    enums: &StructTable,
 ) -> String
 {
     if let Some(sig) = kind.sig.as_deref()
@@ -329,7 +356,7 @@ fn field_text(
     }
     let plain = DataKind::from_ast(kind, enums).sig_name();
     let name = kind.name.as_ref().map(|n| n.name.as_str());
-    let Some(name) = name.filter(|n| names.contains(n))
+    let Some(name) = name.and_then(|n| names.get(n).copied())
     else
     {
         return plain;

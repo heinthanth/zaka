@@ -55,6 +55,7 @@
   - [Struct mistakes](structs/mistakes.md)
   - [Shared objects](structs/objects.md)
 - [Enumerations and switches](enums/README.md)
+  - [Members that hold data](enums/data.md)
   - [Enumeration mistakes](enums/mistakes.md)
 - [Functions as values](function-values/README.md)
   - [Closures](function-values/closures.md)

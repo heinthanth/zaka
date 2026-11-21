@@ -978,3 +978,133 @@ pub fn wrong_phrase(span: Span, name: &str, want: &str) -> Diagnostic
     Diagnostic::new(Code::WrongPhrase, msg, span)
         .with_help(t!("codes.ZK0352.help", w = want))
 }
+
+/// An enumeration gives its members values and its variants data.
+///
+/// # Arguments
+///
+/// * `span` - The first member with a value.
+/// * `owner` - The enumeration name.
+///
+/// # Returns
+///
+/// The `ZK0353` diagnostic.
+pub fn value_and_data(span: Span, owner: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0353.message", e = owner);
+    Diagnostic::new(Code::ValueAndData, msg, span).with_help(t!("codes.ZK0353.help"))
+}
+
+/// A variant that holds data is written with none.
+///
+/// # Arguments
+///
+/// * `span` - The variant.
+/// * `owner` - The enumeration name.
+/// * `variant` - The variant name.
+/// * `kind` - The kind of its data.
+/// * `written` - The variant as written, `<stem>များထဲမှ <variant>`.
+///
+/// # Returns
+///
+/// The `ZK0354` diagnostic.
+pub fn variant_needs_data(
+    span: Span, owner: &str, variant: &str, kind: &str, written: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0354.message", v = variant, e = owner, k = kind);
+    let help = t!("codes.ZK0354.help", w = written);
+    Diagnostic::new(Code::VariantNeedsData, msg, span).with_help(help)
+}
+
+/// Data is given to, read from or named for a variant that holds none.
+///
+/// # Arguments
+///
+/// * `span` - The data, the read or the name.
+/// * `owner` - The enumeration name.
+/// * `variant` - The variant name.
+/// * `written` - The variant as written with no data.
+///
+/// # Returns
+///
+/// The `ZK0355` diagnostic.
+pub fn variant_has_no_data(
+    span: Span, owner: &str, variant: &str, written: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0355.message", v = variant, e = owner);
+    let help = t!("codes.ZK0355.help", w = written);
+    Diagnostic::new(Code::VariantHasNoData, msg, span).with_help(help)
+}
+
+/// A test or a read of a variant looks at a value that is no enumeration.
+///
+/// # Arguments
+///
+/// * `span` - The value.
+/// * `kind` - Its kind.
+///
+/// # Returns
+///
+/// The `ZK0356` diagnostic.
+pub fn not_an_enum_value(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0356.message", k = kind);
+    Diagnostic::new(Code::NotAnEnumValue, msg, span).with_help(t!("codes.ZK0356.help"))
+}
+
+/// A name for the data of a variant stands outside the condition of a
+/// conditional or an arm of a switch.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0357` diagnostic.
+pub fn name_outside_test(span: Span, name: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0357.message", n = name);
+    Diagnostic::new(Code::NameOutsideTest, msg, span).with_help(t!("codes.ZK0357.help"))
+}
+
+/// A read of a variant that a test ruled out.
+///
+/// # Arguments
+///
+/// * `span` - The read.
+/// * `name` - The variable.
+/// * `proven` - The variant the test proved.
+/// * `read` - The variant read.
+///
+/// # Returns
+///
+/// The `ZK0358` diagnostic.
+pub fn wrong_variant_proven(
+    span: Span, name: &str, proven: &str, read: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0358.message", n = name, p = proven, v = read);
+    let help = t!("codes.ZK0358.help", p = proven);
+    Diagnostic::new(Code::WrongVariantProven, msg, span).with_help(help)
+}
+
+/// A case of a switch over an enumeration whose variants hold data gives
+/// the data too.
+///
+/// # Arguments
+///
+/// * `span` - The case.
+/// * `owner` - The enumeration name.
+///
+/// # Returns
+///
+/// The `ZK0359` diagnostic.
+pub fn case_with_data(span: Span, owner: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0359.message", e = owner);
+    Diagnostic::new(Code::CaseWithData, msg, span).with_help(t!("codes.ZK0359.help"))
+}

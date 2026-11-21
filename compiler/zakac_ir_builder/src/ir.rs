@@ -1506,6 +1506,8 @@ pub enum HaltCause
     StepNotPositive,
     /// The count of threads of a parallel loop or map is zero or below.
     ThreadsNotPositive,
+    /// The data of a variant was read from a value of another variant.
+    WrongVariant,
 }
 
 /// The name of a function a reader knows: the name the program writes. The

@@ -36,6 +36,7 @@ use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::structs::StructTable;
+use zakac_semcheck::variants::Variants;
 use zakac_span::span::Span;
 
 use crate::fault::Fault;
@@ -67,6 +68,7 @@ use crate::ir::Stmt;
 use crate::ir::fn_shape;
 use crate::ir::fresh_text;
 use crate::value::Value;
+use crate::variant;
 
 mod nested;
 mod rounds;
@@ -1346,6 +1348,12 @@ impl Lowerer<'_>
             let at = e.initial().expect("the check found the initial member");
             return member_expr(&e.members()[at].1, e.under(), span);
         }
+        if let Some(v) = kind.as_variants()
+        {
+            let at = v.initial().expect("the check found the initial variant");
+            let data = v.data(at).map(|(_, k)| self.initial_value(k, span));
+            return variant::value(v, at, data, self.platform, span);
+        }
         if let Some(shape) = kind.as_object()
         {
             let fields = self.initial_value(DataKind::Struct(shape), span);
@@ -1807,6 +1815,7 @@ impl Lowerer<'_>
     fn switch_stmt(&mut self, n: &st::SwitchStmt, out: &mut Vec<Stmt>)
     {
         let owner = self.shown_kind(&n.subject).as_enum();
+        let variants = self.shown_kind(&n.subject).as_variants();
         let lowered = self.expr(&n.subject);
         let subject = self.switch_subject(lowered, out);
         let arms: Vec<ChainArm> = n
@@ -1815,8 +1824,27 @@ impl Lowerer<'_>
             .enumerate()
             .map(|(i, arm)| {
                 let lower = |l: &mut Self| {
-                    let cond = l.arm_cond(&arm.cases, &subject, owner);
-                    (cond, l.block(&arm.block.stmts), arm.span)
+                    let cond = match variants
+                    {
+                        Some(v) => l.variant_arm_cond(&arm.cases, &subject, v),
+                        None => l.arm_cond(&arm.cases, &subject, owner),
+                    };
+                    let bind = variants.and_then(|v| arm_bind(&arm.cases, v)).map(
+                        |(name, at)| {
+                            let v = variants.expect("a bind names a variant");
+                            (
+                                name,
+                                variant::data_of(
+                                    v,
+                                    subject.clone(),
+                                    at,
+                                    l.platform,
+                                    arm.span,
+                                ),
+                            )
+                        },
+                    );
+                    (cond, l.bound_block(bind, &arm.block.stmts), arm.span)
                 };
                 tern!(i == 0, (Vec::new(), lower(self)), self.with_pre(lower))
             })
@@ -1911,6 +1939,10 @@ impl Lowerer<'_>
             {
                 owner.member(&n.name).map(|v| (v, owner))
             }
+            (ast::Expr::Variant(v), Some(owner)) =>
+            {
+                owner.member(&v.variant.name).map(|m| (m, owner))
+            }
             _ => None,
         };
         let case = match member
@@ -1928,6 +1960,207 @@ impl Lowerer<'_>
         Expr::builder().kind(DataKind::Bool).node(node).span(span).build()
     }
 
+    /// The value of a member of an enumeration whose variants hold data: the
+    /// struct of the variant, which owns its data.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The member.
+    /// * `kind` - The enumeration.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn variant_value(&mut self, n: &ast::MemberExpr, kind: DataKind) -> Expr
+    {
+        let owner = kind.as_variants().expect("the check found the enumeration");
+        let at = owner.position(&n.member.name).expect("the check found the variant");
+        let data =
+            n.data.as_deref().zip(owner.data(at)).map(|(d, (_, k))| self.owned(d, k));
+        variant::value(owner, at, data, self.platform, n.span)
+    }
+
+    /// Lower the test of a variant: the tag of the value `==` the position of
+    /// the variant, or, for an enumeration whose members hold values, the
+    /// value `==` the member.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value tested.
+    /// * `name` - The variant.
+    /// * `span` - The test.
+    ///
+    /// # Returns
+    ///
+    /// The test, a boolean.
+    fn is_variant(&mut self, value: &ast::Expr, name: &str, span: Span) -> Expr
+    {
+        let kind = self.shown_kind(value);
+        let subject = self.expr(value);
+        if let Some(owner) = kind.as_variants()
+        {
+            let at = owner.position(name).expect("the check found the variant");
+            return variant::is(owner, subject, at, self.platform, span);
+        }
+        let owner = kind.as_enum().expect("the check found an enumeration");
+        let member = owner.member(name).expect("the check found the member");
+        let case = member_expr(member, owner.under(), span);
+        let node = ExprNode::Compare {
+            op: CmpOp::Eq,
+            lhs: Box::new(subject),
+            rhs: Box::new(case),
+        };
+        node_expr(DataKind::Bool, node, span)
+    }
+
+    /// Lower the read of the data of a variant: a value that is no read of a
+    /// place goes to a hidden slot, a statement in [`Self::pre`] stops the run
+    /// when the value is another variant, and the value is the data.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value read.
+    /// * `name` - The variant.
+    /// * `span` - The read.
+    ///
+    /// # Returns
+    ///
+    /// The read of the data.
+    fn variant_data(&mut self, value: &ast::Expr, name: &str, span: Span) -> ExprNode
+    {
+        let owner = self
+            .shown_kind(value)
+            .as_variants()
+            .expect("the check found data in the variant");
+        let at = owner.position(name).expect("the check found the variant");
+        let lowered = self.expr(value);
+        let subject = self.held_subject(lowered);
+        let wrong = variant::is(owner, subject.clone(), at, self.platform, span);
+        let wrong = node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, wrong), span);
+        let halt = Stmt::Halt { cause: HaltCause::WrongVariant, value: None, span };
+        self.pre.push(Stmt::If {
+            cond: wrong,
+            then: vec![halt],
+            els: Vec::new(),
+            span,
+        });
+        variant::data_of(owner, subject, at, self.platform, span).node
+    }
+
+    /// A value read more than once: a read of a place or a constant as it
+    /// is, each other value through a hidden slot set in [`Self::pre`].
+    ///
+    /// # Arguments
+    ///
+    /// * `lowered` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The value to read.
+    fn held_subject(&mut self, lowered: Expr) -> Expr
+    {
+        let mut out = Vec::new();
+        let subject = self.switch_subject(lowered, &mut out);
+        self.pre.extend(out);
+        subject
+    }
+
+    /// Lower an arm of an `if` chain whose condition tests a variant and
+    /// names its data: the data takes the name in the block of the arm.
+    ///
+    /// # Arguments
+    ///
+    /// * `arm` - The arm.
+    ///
+    /// # Returns
+    ///
+    /// The condition, the statements and the arm's source region, or `None`
+    /// for an arm that names no data.
+    fn bound_arm(&mut self, arm: &st::IfArm) -> Option<(Expr, Vec<Stmt>, Span)>
+    {
+        let (test, variant) = variant_test(&arm.cond)?;
+        let bind = variant.bind.as_ref()?;
+        let value = &test.args[0];
+        let owner = self.shown_kind(value).as_variants()?;
+        let at = owner.position(&variant.variant.name)?;
+        let lowered = self.expr(value);
+        let subject = self.held_subject(lowered);
+        let cond = variant::is(owner, subject.clone(), at, self.platform, test.span);
+        let data = variant::data_of(owner, subject, at, self.platform, test.span);
+        Some((cond, self.bound_block(Some((bind, data)), &arm.block.stmts), arm.span))
+    }
+
+    /// The test of one arm of a switch over an enumeration whose variants
+    /// hold data: the tag `==` one of its variants.
+    ///
+    /// # Arguments
+    ///
+    /// * `cases` - The cases, each a variant.
+    /// * `subject` - The subject as each arm reads it.
+    /// * `owner` - The enumeration.
+    ///
+    /// # Returns
+    ///
+    /// The test, a boolean.
+    fn variant_arm_cond(
+        &mut self, cases: &[ast::Expr], subject: &Expr, owner: Variants,
+    ) -> Expr
+    {
+        let platform = self.platform;
+        let test = |case: &ast::Expr| {
+            let at = case_name(case)
+                .and_then(|n| owner.position(&n))
+                .expect("the check found the variant");
+            variant::is(owner, subject.clone(), at, platform, case.span())
+        };
+        let mut tests = cases.iter().map(test);
+        let first = tests.next().expect("an arm has a case");
+        tests.fold(first, |lhs, rhs| {
+            let span = lhs.span.to(&rhs.span);
+            let node = ExprNode::Logic {
+                op: LogicOp::Or,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            };
+            node_expr(DataKind::Bool, node, span)
+        })
+    }
+
+    /// Lower a block, with a name for the data of a variant set first in the
+    /// scope of the block: a duplicate of the data, which the name owns.
+    ///
+    /// # Arguments
+    ///
+    /// * `bind` - The name and the read of the data, when one is given.
+    /// * `stmts` - The statements.
+    ///
+    /// # Returns
+    ///
+    /// The lowered statements.
+    fn bound_block(
+        &mut self, bind: Option<(&ast::Ident, Expr)>, stmts: &[st::Stmt],
+    ) -> Vec<Stmt>
+    {
+        let Some((name, data)) = bind
+        else
+        {
+            return self.block(stmts);
+        };
+        let mut out = Vec::new();
+        self.scoped(|l| {
+            let span = name.span;
+            let kind = data.kind;
+            let value = tern!(kind.holds_text(), dup(data), data);
+            let place = l.declare(name, kind, Access::Var);
+            out.push(Stmt::Set { place, value, span });
+            l.scoped_stmts(stmts, &mut out);
+            let leaves = out.last().is_some_and(leaves_scope);
+            let end = stmts.last().map_or(span, |s| s.span());
+            do_if!(!leaves, out.extend(l.drops_from(l.drops.len() - 1, end)));
+        });
+        out
+    }
+
     /// Lower one arm of an `if` chain.
     ///
     /// # Arguments
@@ -1940,6 +2173,7 @@ impl Lowerer<'_>
     fn if_arm(&mut self, arm: &st::IfArm) -> (Expr, Vec<Stmt>, Span)
     {
         ret_if!(let Some(arm) = self.pipe_arm(arm), arm);
+        ret_if!(let Some(arm) = self.bound_arm(arm), arm);
         let cond = self.coerce(&arm.cond, DataKind::Bool);
         (cond, self.block(&arm.block.stmts), arm.span)
     }
@@ -3688,6 +3922,14 @@ impl Lowerer<'_>
             {
                 return tree_expr(&n.value, kind, n.span, self.platform);
             }
+            ast::Expr::Member(n) if self.shown_kind(e).as_variants().is_some() =>
+            {
+                return self.variant_value(n, self.shown_kind(e));
+            }
+            ast::Expr::Variant(_) =>
+            {
+                unreachable!("a variant stands in a test or a read")
+            }
             ast::Expr::Member(n) =>
             {
                 let owner = self.shown_kind(e).as_enum();
@@ -4296,6 +4538,14 @@ impl Lowerer<'_>
                 octet: false,
             };
         }
+        if let (VerbOp::IsVariant, [value, ast::Expr::Variant(v)]) = (n.op, args)
+        {
+            return self.is_variant(value, &v.variant.name, n.span).node;
+        }
+        if let (VerbOp::VariantData, [value, ast::Expr::Variant(v)]) = (n.op, args)
+        {
+            return self.variant_data(value, &v.variant.name, n.span);
+        }
         let [value] = args
         else
         {
@@ -4364,6 +4614,8 @@ impl Lowerer<'_>
             | VerbOp::RowValue
             | VerbOp::OrElse
             | VerbOp::ParMap
+            | VerbOp::IsVariant
+            | VerbOp::VariantData
             | VerbOp::RingStats
             | VerbOp::RemoveRow =>
             {
@@ -4488,6 +4740,74 @@ fn dup(e: Expr) -> Expr
     let (kind, span) = (e.kind, e.span);
     let node = ExprNode::Dup { value: Box::new(e), lent: false, deep: false };
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The name of the variant a case of a switch names.
+///
+/// # Arguments
+///
+/// * `case` - The case.
+///
+/// # Returns
+///
+/// The name, or `None` for a case that names no variant.
+fn case_name(case: &ast::Expr) -> Option<Name>
+{
+    match case
+    {
+        ast::Expr::Variant(v) => Some(v.variant.name),
+        ast::Expr::Name(n) => Some(n.name),
+        ast::Expr::Member(m) => Some(m.member.name),
+        _ => None,
+    }
+}
+
+/// The name an arm of a switch gives the data of its variant, and the
+/// position of the variant.
+///
+/// # Arguments
+///
+/// * `cases` - The cases of the arm.
+/// * `owner` - The enumeration.
+///
+/// # Returns
+///
+/// The name and the position, or `None` when the arm names no data.
+fn arm_bind(cases: &[ast::Expr], owner: Variants) -> Option<(&ast::Ident, usize)>
+{
+    let [ast::Expr::Variant(v)] = cases
+    else
+    {
+        return None;
+    };
+    Some((v.bind.as_ref()?, owner.position(&v.variant.name)?))
+}
+
+/// The test of a variant a condition is, through parentheses.
+///
+/// # Arguments
+///
+/// * `cond` - The condition.
+///
+/// # Returns
+///
+/// The test and the variant it names, or `None` for another condition.
+fn variant_test(cond: &ast::Expr) -> Option<(&ast::VerbExpr, &ast::VariantExpr)>
+{
+    match cond
+    {
+        ast::Expr::Group(n) => variant_test(&n.inner),
+        ast::Expr::Verb(v) if v.op == VerbOp::IsVariant =>
+        {
+            let Some(ast::Expr::Variant(variant)) = v.args.get(1)
+            else
+            {
+                return None;
+            };
+            Some((v, variant))
+        }
+        _ => None,
+    }
 }
 
 /// The stats of the ring collector: the struct of the core, each field read

@@ -128,6 +128,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ငယ်", Kw::Less),
     ("မငယ်", Kw::NotLess),
     ("မဟုတ်", Kw::Not),
+    ("ပြောင်းလဲနိုင်", Kw::CanBecome),
+    ("အဖြစ်သို့", Kw::AsInto),
     ("ဖြစ်၍", Kw::And),
     ("သို့မဟုတ်", Kw::Or),
     // phrase pieces

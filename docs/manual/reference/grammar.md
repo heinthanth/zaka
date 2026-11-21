@@ -202,9 +202,11 @@ handle-decl  = name "ဟူသော" [ "အများသုံး" ] "ဒေ�
 fields       = items(field) ;
 field        = name "ဟူသော" listed-kind ;
 
-enum-decl    = name "ဟူသော" [ "အများသုံး" ] [ threads-mark ] "ဒေတာအမျိုးအစားကွဲ" "တွင်"   (* threads-mark: ZK0263 *)
+enum-decl    = name [ sign-params ] "ဟူသော" [ "အများသုံး" ] [ threads-mark ] "ဒေတာအမျိုးအစားကွဲ"   (* threads-mark: ZK0263 *)
+               ( "တွင်" | "သည်" word-params "တွင်" )   (* kind parameters: members with data *)
                items(variant) closer "။" ;
-variant      = [ "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်" ] [ "တန်ဖိုးအနေဖြင့်" expr "ရှိသည့်" ] name ;
+variant      = [ "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်" ] [ "တန်ဖိုးအနေဖြင့်" expr "ရှိသည့်" ]
+               [ "ဒေတာအနေဖြင့်" slot-kind "ရှိသည့်" ] name ;   (* a value or data, not both: ZK0353 *)
 
 closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word-clause )          (* after one field or variant *)
              | ( "တို့ပါဝင်သည်" | "တို့ပါဝင်ပြီး" word-clause ) ;  (* after two or more *)
@@ -260,9 +262,10 @@ if-stmt      = "အကယ်၍" [ "ကွန်ပိုင်းလုပ်�
                [ "သို့မဟုတ်ပါက" branch ] ;
 then         = "လျှင်" | "ဖြစ်လျှင်" ;
 
-switch-stmt  = value "သည်" cases "ဖြစ်လျှင်" branch
-               { cases "ဖြစ်လျှင်" branch }
+switch-stmt  = value "သည်" ( cases "ဖြစ်လျှင်" | member-test ) branch
+               { ( cases "ဖြစ်လျှင်" | member-test ) branch }
                [ "တခြား" slot-kind "ဖြစ်လျှင်" branch ] ;
+member-test  = [ name "ဟူသည့်" ] name "အဖြစ်သို့" "ပြောင်းလဲနိုင်လျှင်" ;   (* a member, and a name for its data *)
 cases        = expr | expr { "၊" expr } "နှင့်" expr "တို့" ;
 
 while-loop   = expr while branch ;
@@ -372,6 +375,8 @@ value "သည်" value "ထက်" ( "ကြီး" | "မကြီး" )
 value "သည်" value "အောက်" ( "ငယ်" | "မငယ်" )
 value "နှင့်" value "သည်" "တစ်ခုတည်း"
 value "ကို" slot-kind "အဖြစ်" "ပြောင်းလဲသော ရလဒ်"
+value "ကို" name "အဖြစ်" "ပြောင်းလဲသော ရလဒ်"           (* the data of a member *)
+value "သည်" [ name "ဟူသည့်" ] name "အဖြစ်သို့" "ပြောင်းလဲနိုင်"   (* whether a value is a member *)
 value "ထဲတွင်" ( "ဒေတာ" | "ရလဒ်ကောင်း" | "အောင်မြင်သည့်သတင်း"
                 | "အမှားအယွင်း" | "မအောင်မြင်သည့်သတင်း" ) ( "ရှိ" | "ရှိနေ" )
 value "ထဲတွင်" "ဒေတာ" ( "မရှိ" | "မရှိနေ" )
@@ -483,7 +488,9 @@ blank-table  = ( "[" ":" "]" | "ဇယားအလွတ်" ) [ list-kind ] ;  
 struct-lit   = name "(" [ name ":" notation { "၊" name ":" notation } ] ")" ;
 word-struct  = items(name "အနေဖြင့်" notation) ( "ရှိသော" | "ခုရှိသော" ) struct-count ;
 struct-count = name count-word ;                  (* joined, လူတစ်ယောက်, or apart *)
-member       = name "ထဲမှ" name ;                  (* အရောင်များထဲမှ နီ *)
+member       = [ word-kinds ] name [ sign-kinds "များ" ] "ထဲမှ" name [ "(" expr ")" ]   (* ပုံများထဲမှ စက်ဝိုင်း(၅) *)
+             | "ဒေတာအနေဖြင့်" notation "ရှိသော" [ word-kinds ] name "ထဲမှ" name ;
+             (* word-kinds: <kinds> (ကို|တို့ကို) အစားထိုးအသုံးပြုသည့်; sign-kinds: <kind၊ …> *)
 null-word    = "အလွတ်"                             (* an optional with no data *)
              | "ကနဦးတန်ဖိုး"                       (* the initial value of the kind *)
              | "မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ" ;     (* the null address, unsafe code *)

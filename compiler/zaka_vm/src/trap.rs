@@ -274,6 +274,8 @@ pub enum TrapKind
     /// A statement wrote through the value of a row of a ဇယား, and no row had
     /// the index.
     NoRow,
+    /// The data of a variant was read from a value of another variant.
+    WrongVariant,
     /// A range of cells that passes the end of its list or slice.
     SliceOutOfRange
     {
@@ -406,6 +408,7 @@ impl fmt::Display for TrapKind
             TrapKind::NotFault => t!("vm.trap.not_fault"),
             TrapKind::NoData => t!("vm.trap.no_data"),
             TrapKind::NoRow => t!("vm.trap.no_row"),
+            TrapKind::WrongVariant => t!("vm.trap.wrong_variant"),
             TrapKind::SliceOutOfRange { start, len, limit } =>
             {
                 t!(
@@ -478,6 +481,7 @@ impl TrapKind
             | TrapKind::NotFault
             | TrapKind::NoData
             | TrapKind::NoRow
+            | TrapKind::WrongVariant
             | TrapKind::Overflow { .. } => None,
         }
     }

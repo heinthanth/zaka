@@ -202,6 +202,13 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0350 | warning: a function with the same name, data kinds and prepositions as a function of the core module, which then replaces that function in each call | [The core module](../language/core.md#verbs-on-structs) |
 | ZK0351 | warning: a trait block that asks for the defaults of its trait, though no function it leaves out has a default | [Traits](../language/traits.md#trait-blocks) |
 | ZK0352 | a call written as a sentence that leaves out a phrase of its function signature, or uses a different phrase | [Functions](../language/functions-sentences.md#starting-and-ending-phrases) |
+| ZK0353 | an enumeration gives some members constant values and lets others hold data | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0354 | a member that holds data is written with no data | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0355 | data is given to, read from or named for a member that holds none | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0356 | a test or a read of a member looks at a value that is no enumeration | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0357 | a name for the data of a member, `<name> ဟူသည့်`, outside the condition of `အကယ်၍` or a switch arm | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0358 | a read of the data of a member that a test of the variable ruled out | [Enumerations](../language/enums.md#members-that-hold-data) |
+| ZK0359 | a case of a switch over an enumeration whose members hold data gives data | [Enumerations](../language/enums.md#switch) |
 
 ### ZK04: data kinds
 

@@ -30,6 +30,7 @@ use crate::task::ATOMIC;
 use crate::task::PIPE;
 use crate::task::THREAD;
 use crate::task::TaskKind;
+use crate::variants::Variants;
 
 /// The name of the struct a function that can fail gives back; no written
 /// name starts with `%`.
@@ -348,8 +349,8 @@ pub enum InitialGap
     Function,
     /// A handle, which C alone makes.
     Handle,
-    /// An enumeration with no member marked `ကနဦးတန်ဖိုး`.
-    Member(&'static EnumKind),
+    /// An enumeration with no member marked `ကနဦးတန်ဖိုး`, through its name.
+    Member(&'static str),
     /// A result, which must hold its good value or its failure.
     Result,
     /// A part inside the kind with none: the name of a field, or the kind of
@@ -714,6 +715,16 @@ impl DataKind
         self.as_struct().is_some_and(|s| s.fields().iter().any(|(_, k)| k.holds_enum()))
     }
 
+    /// The enumeration whose variants hold data that the kind is.
+    ///
+    /// # Returns
+    ///
+    /// The enumeration, or `None` for another kind.
+    pub fn as_variants(self) -> Option<Variants>
+    {
+        self.as_struct().and_then(Variants::of)
+    }
+
     /// The enumeration part of the kind.
     ///
     /// # Returns
@@ -1071,7 +1082,23 @@ impl DataKind
         ret_if!(self.is_optional(), None);
         if let Some(e) = self.as_enum()
         {
-            return tern!(e.initial().is_some(), None, Some(InitialGap::Member(e)));
+            return tern!(
+                e.initial().is_some(),
+                None,
+                Some(InitialGap::Member(&e.name))
+            );
+        }
+        if let Some(v) = self.as_variants()
+        {
+            // The marked variant is the initial value, with the initial value
+            // of its data.
+            let Some(at) = v.initial()
+            else
+            {
+                return Some(InitialGap::Member(v.name()));
+            };
+            let data = v.data(at).and_then(|(_, k)| k.gap_in(inside));
+            return data.map(|_| InitialGap::Part(v.names()[at].to_string()));
         }
         if let Some(l) = self.as_list()
         {

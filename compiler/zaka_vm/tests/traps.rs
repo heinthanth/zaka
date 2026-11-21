@@ -405,6 +405,16 @@ fn an_empty_optional_read_traps()
 }
 
 #[test]
+fn a_read_of_another_member_traps()
+{
+    let text =
+        include_str!("../../zakac_codegen_target_c/tests/inputs/wrong_member.zaka");
+    let (out, kind, _) = trapped(text, &RunOptions::default());
+    assert_eq!(out, "၇\n");
+    assert_eq!(kind, TrapKind::WrongVariant);
+}
+
+#[test]
 fn a_result_reads_its_part_and_the_other_part_traps()
 {
     let text = format!(

@@ -1,6 +1,7 @@
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::Phrases;
+use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
@@ -34,9 +35,12 @@ use zakac_ast::stmt::SwitchStmt;
 use zakac_ast::stmt::TraitDecl;
 use zakac_ast::stmt::WhileStmt;
 use zakac_ast::threads::USABLE_IN_THREADS;
+use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::spelling::DATA;
+use zakac_lexer::spelling::canonical;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::Token;
@@ -315,6 +319,11 @@ impl Parser<'_>
             {
                 let (subject, case) = *pair;
                 return self.parse_switch(subject, case);
+            }
+            ClauseOut::Expr(Expr::Verb(test))
+                if test.op == VerbOp::IsVariant && self.at(Kw::Then) =>
+            {
+                return self.parse_variant_switch(test);
             }
             ClauseOut::Expr(first) => first,
         };
@@ -1381,7 +1390,7 @@ impl Parser<'_>
         );
         let mut stmt = match kw_of(&word)
         {
-            Some(Kw::EnumWord) => self.parse_enum_decl(start, name)?,
+            Some(Kw::EnumWord) => self.parse_enum_decl(start, name, kind_params)?,
             _ => self.parse_struct_decl(start, name, kind_params)?,
         };
         match &mut stmt
@@ -1643,8 +1652,9 @@ impl Parser<'_>
     }
 
     /// Parse an enumeration declaration after
-    /// `<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ`:
-    /// `တွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`, or with one member
+    /// `<name>[<kind parameters>] ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ`, with
+    /// `သည် <kind parameters> ၎င်း` before `တွင်` in the word form of a generic
+    /// one: `တွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`, or with one member
     /// `တွင် <member> ပါဝင်သည်။`; the `ပြီး` form of the closer, then
     /// `မျိုးပြပစ္စည်းမှာ <classifier> ဖြစ်သည်`, gives its classifier.
     ///
@@ -1652,26 +1662,39 @@ impl Parser<'_>
     ///
     /// * `start` - Where the declaration starts.
     /// * `name` - The enumeration name.
+    /// * `kind_params` - The kind parameters written in the notation form.
     ///
     /// # Returns
     ///
     /// The declaration, or a diagnostic. A declaration inside a block is
     /// parsed and reported.
-    fn parse_enum_decl(&mut self, start: Span, name: Ident) -> PResult<Stmt>
+    fn parse_enum_decl(
+        &mut self, start: Span, name: Ident, mut kind_params: Vec<KindParam>,
+    ) -> PResult<Stmt>
     {
+        if self.eat(Kw::Thi)
+        {
+            kind_params.extend(self.parse_word_params_open()?);
+            self.expect(Kw::Itself)?;
+        }
         self.expect(Kw::At)?;
-        let members = self.parse_word_list(Self::parse_enum_member)?;
+        let added = self.add_kind_names(&kind_params);
+        let members = self.parse_word_list(Self::parse_enum_member);
+        self.drop_kind_names(added);
+        let members = members?;
         self.expect_one_of(member_closers(members.len(), true))?;
-        let (classifier, _, span) = self.parse_decl_end(start, None)?;
+        let hint_of = Some((&name, kind_params.as_slice()));
+        let (classifier, hint, span) = self.parse_decl_end(start, hint_of)?;
         do_if!(self.nested(), self.diags.push(diag::nested_enum(span)));
         #[rustfmt::skip]
-        let node = EnumDecl::builder().name(name).members(members).maybe_classifier(classifier)
-            .span(span).build();
+        let node = EnumDecl::builder().name(name).kind_params(kind_params).members(members)
+            .maybe_classifier(classifier).hint(hint).span(span).build();
         Ok(Stmt::Enum(node))
     }
 
     /// Parse one member of an enumeration:
-    /// `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>`.
+    /// `[ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်]
+    /// [ဒေတာအနေဖြင့် <kind> တစ်<word> ရှိသည့်] <name>`.
     ///
     /// # Returns
     ///
@@ -1690,11 +1713,39 @@ impl Parser<'_>
             }
             false => None,
         };
+        let data =
+            tern!(self.at_variant_data(), Some(self.parse_variant_data()?), None);
         let name = self.parse_ident()?;
         let span = start.to(&name.span);
         #[rustfmt::skip]
-        return Ok(EnumMember::builder().name(name).maybe_value(value).initial(initial)
-            .span(span).build());
+        return Ok(EnumMember::builder().name(name).maybe_value(value).maybe_data(data)
+            .initial(initial).span(span).build());
+    }
+
+    /// Whether the data of a variant starts here: `ဒေတာအနေဖြင့်`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn at_variant_data(&self) -> bool
+    {
+        let tok = self.peek();
+        let data =
+            tok.kind == TokenKind::Ident && canonical(self.text_of(tok.span)) == DATA;
+        data && self.peek_n(1).kind == TokenKind::Kw(Kw::CountAs)
+    }
+
+    /// Parse `ဒေတာအနေဖြင့် <kind> တစ်<word> ရှိသည့်`, the data a variant carries.
+    ///
+    /// # Returns
+    ///
+    /// The kind of the data, or a diagnostic.
+    fn parse_variant_data(&mut self) -> PResult<Kind>
+    {
+        (0..2).for_each(|_| _ = self.bump());
+        let kind = self.parse_slot_kind()?;
+        self.expect_reading(Kw::HavingRel)?;
+        Ok(kind)
     }
 
     /// Parse a switch after its head `<subject> သည် <case>`: the first
@@ -1712,26 +1763,120 @@ impl Parser<'_>
     /// The switch, or a diagnostic.
     fn parse_switch(&mut self, subject: Expr, case: Expr) -> PResult<Stmt>
     {
+        let first = self.parse_switch_arm(case)?;
+        self.parse_switch_from(subject, first)
+    }
+
+    /// Parse a switch whose first arm tests a variant:
+    /// `<subject> သည် [<name> ဟူသည့်] <variant> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင်
+    /// <block>`, once the test is read and `လျှင်` is next.
+    ///
+    /// # Arguments
+    ///
+    /// * `test` - The test, a verb of [`VerbOp::IsVariant`].
+    ///
+    /// # Returns
+    ///
+    /// The switch, or a diagnostic.
+    fn parse_variant_switch(&mut self, test: VerbExpr) -> PResult<Stmt>
+    {
+        let [subject, variant] =
+            <[Expr; 2]>::try_from(test.args).expect("a test has two operands");
+        let first = self.variant_arm_rest(variant)?;
+        self.parse_switch_from(subject, first)
+    }
+
+    /// Parse the arms of a switch after its first arm, then the default arm.
+    /// An arm after the default arm is parsed and reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The value each case is compared with.
+    /// * `first` - The first arm.
+    ///
+    /// # Returns
+    ///
+    /// The switch, or a diagnostic.
+    fn parse_switch_from(&mut self, subject: Expr, first: SwitchArm) -> PResult<Stmt>
+    {
         let start = subject.span();
-        let mut arms = vec![self.parse_switch_arm(case)?];
-        while self.at_switch_arm()
+        let mut arms = vec![first];
+        while let Some(arm) = self.next_switch_arm()?
         {
-            let case = self.inside_word_list(Self::parse_expr)?;
-            arms.push(self.parse_switch_arm(case)?);
+            arms.push(arm);
         }
         let default =
             tern!(self.at(Kw::Other), Some(self.parse_switch_default()?), None);
-        while default.is_some() && self.at_switch_arm()
+        while default.is_some()
         {
-            let case = self.inside_word_list(Self::parse_expr)?;
-            self.diags.push(diag::arm_after_default(case.span()));
-            self.parse_switch_arm(case)?;
+            let Some(arm) = self.next_switch_arm()?
+            else
+            {
+                break;
+            };
+            self.diags.push(diag::arm_after_default(arm.span));
         }
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
         let node = SwitchStmt::builder().subject(subject).arms(arms).maybe_default(default)
             .span(span).build();
         Ok(Stmt::Switch(node))
+    }
+
+    /// Parse the next arm of a switch: `<case> ဖြစ်လျှင် <block>`, or a test of
+    /// a variant, `[<name> ဟူသည့်] <variant> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင် <block>`.
+    ///
+    /// # Returns
+    ///
+    /// The arm, `None` when no arm starts here, or a diagnostic.
+    fn next_switch_arm(&mut self) -> PResult<Option<SwitchArm>>
+    {
+        if let Some(bound) = self.at_variant_arm()
+        {
+            let variant = self.parse_variant_operand(bound)?;
+            return self.variant_arm_rest(variant).map(Some);
+        }
+        ret_if!(!self.at_switch_arm(), Ok(None));
+        let case = self.inside_word_list(Self::parse_expr)?;
+        self.parse_switch_arm(case).map(Some)
+    }
+
+    /// Whether an arm that tests a variant starts here: the variant,
+    /// `အဖြစ်သို့`, `ပြောင်းလဲနိုင်` and `လျှင်`.
+    ///
+    /// # Returns
+    ///
+    /// Whether a name for the data comes first, or `None` at another token.
+    fn at_variant_arm(&self) -> Option<bool>
+    {
+        let bound = self.at_variant_operand()?;
+        let verb = tern!(bound, 4, 2);
+        let test = kw_of(&self.peek_n(verb)) == Some(Kw::CanBecome);
+        let then = kw_of(&self.peek_n(verb + 1)) == Some(Kw::Then);
+        (test && then).then_some(bound)
+    }
+
+    /// Parse the rest of an arm that tests a variant, after the variant:
+    /// `အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင် <block>`, or `လျှင် <block>` once the test
+    /// is read.
+    ///
+    /// # Arguments
+    ///
+    /// * `variant` - The variant the arm names.
+    ///
+    /// # Returns
+    ///
+    /// The arm, or a diagnostic.
+    fn variant_arm_rest(&mut self, variant: Expr) -> PResult<SwitchArm>
+    {
+        do_if!(self.at(Kw::AsInto), {
+            self.bump();
+            self.expect(Kw::CanBecome)?;
+        });
+        self.expect(Kw::Then)?;
+        let block = self.parse_switch_branch()?;
+        let span = variant.span().to(&block.span);
+        Ok(SwitchArm::builder().cases(vec![variant]).block(block).span(span).build())
     }
 
     /// Parse the rest of a switch arm after its first case: the cases as a list

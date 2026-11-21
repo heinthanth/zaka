@@ -5,15 +5,21 @@ use zakac_ast::expr::FieldInit;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::Kind;
+use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
+use zakac_lexer::spelling::DATA;
+use zakac_lexer::spelling::DATA_LOAN;
+use zakac_lexer::spelling::canonical;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::describe::quote;
 use crate::parser::PResult;
 use crate::parser::Parser;
 
@@ -122,6 +128,11 @@ impl Parser<'_>
         let generic = self.word_kind_args_len(0, Kw::SubstitutedRel).is_some();
         let kind_args =
             tern!(generic, self.parse_word_kind_args(Kw::SubstitutedRel)?, Vec::new());
+        let member = self.peek_n(1).kind == TokenKind::Kw(Kw::Among);
+        ret_if!(
+            member && self.peek().kind == TokenKind::Ident,
+            self.variant_words(fields, kind_args)
+        );
         let (name, classifier) = self.parse_struct_count()?;
         let span = start.to(&classifier.span);
         let id = self.new_id();
@@ -129,6 +140,45 @@ impl Parser<'_>
         let lit = StructLit::builder().id(id).name(name).kind_args(kind_args)
             .classifier(classifier).fields(fields).span(span).build();
         Ok(Expr::Struct(lit))
+    }
+
+    /// Finish `ဒေတာအနေဖြင့် <value> ရှိသော <enum>များထဲမှ <variant>`, a variant
+    /// with its data in words, after `ရှိသော`: the one pair holds the data.
+    ///
+    /// # Arguments
+    ///
+    /// * `fields` - The pairs before `ရှိသော`.
+    /// * `kind_args` - The kinds of a generic enumeration written in words
+    ///   after `ရှိသော`.
+    ///
+    /// # Returns
+    ///
+    /// The member, or a diagnostic for pairs other than one `ဒေတာ`.
+    fn variant_words(
+        &mut self, mut fields: Vec<FieldInit>, kind_args: Vec<Kind>,
+    ) -> PResult<Expr>
+    {
+        let one = fields.len() == 1 && canonical(&fields[0].field.name) == DATA;
+        let wanted = format!("\"{DATA_LOAN} အနေဖြင့် <value>\"");
+        ret_if!(
+            !one,
+            Err(diag::expected_token(
+                fields[0].field.span,
+                &wanted,
+                &quote(&fields[0].field.name)
+            ))
+        );
+        let start = fields[0].field.span;
+        let data = fields.remove(0).value;
+        let Expr::Member(mut member) = self.parse_member()?
+        else
+        {
+            unreachable!("a member parses as a member");
+        };
+        member.data = Some(Box::new(data));
+        do_if!(!kind_args.is_empty(), member.kind_args = kind_args);
+        member.span = start.to(&member.span);
+        Ok(Expr::Member(member))
     }
 
     /// Whether a notation struct literal starts here: a struct name and `(`,

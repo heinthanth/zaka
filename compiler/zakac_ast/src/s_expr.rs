@@ -145,7 +145,19 @@ impl ToSexpr for Expr
             Expr::Str(n) => str_sexpr(n),
             Expr::Member(n) => list(
                 "member",
-                [n.qualifier.name.to_string(), n.member.name.to_string()],
+                [
+                    n.qualifier.name.to_string() + &kind_args_text(&n.kind_args),
+                    n.member.name.to_string(),
+                ]
+                .into_iter()
+                .chain(n.data.as_deref().map(ToSexpr::to_sexpr)),
+            ),
+            Expr::Variant(n) => list(
+                "variant",
+                n.bind
+                    .iter()
+                    .map(|b| b.name.to_string())
+                    .chain([n.variant.name.to_string()]),
             ),
             Expr::FnAddr(n) => list(
                 "fn_addr",
@@ -726,10 +738,17 @@ fn enum_sexpr(s: &EnumDecl) -> String
 {
     let member = |m: &crate::stmt::EnumMember| {
         let value = m.value.iter().map(|v| format!(" {}", v.to_sexpr()));
-        format!("{}{}", m.name.name, value.collect::<String>())
+        let data = m.data.iter().map(|k| format!(":{}", k.to_sexpr()));
+        format!(
+            "{}{}{}",
+            m.name.name,
+            data.collect::<String>(),
+            value.collect::<String>()
+        )
     };
     let members: Vec<String> = s.members.iter().map(member).collect();
-    list("enum", [s.name.name.to_string(), format!("[{}]", members.join(", "))])
+    let name = s.name.name.to_string() + &kind_params_text(&s.kind_params);
+    list("enum", [name, format!("[{}]", members.join(", "))])
 }
 
 /// `(trait name<params> fn ...)` for a trait.

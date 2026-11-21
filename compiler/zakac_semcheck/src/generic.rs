@@ -44,6 +44,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::enum_check::variants_decl;
 use crate::fn_kind::FnKind;
 use crate::fn_kind::FnParam;
 use crate::kind::DataKind;
@@ -218,6 +219,7 @@ pub(crate) fn is_template(stmt: &Stmt) -> bool
     {
         Stmt::Fn(d) => !d.kind_params.is_empty() && !d.builtin,
         Stmt::Struct(d) => !d.kind_params.is_empty(),
+        Stmt::Enum(d) => !d.kind_params.is_empty(),
         _ => false,
     }
 }
@@ -243,6 +245,12 @@ pub(crate) fn templates(program: &Program) -> Templates
         {
             Stmt::Fn(d) => found.add_fn(program, d, unit),
             Stmt::Struct(d) => found.add_struct(program, d, unit),
+            // A generic enumeration is the template of the struct it makes.
+            Stmt::Enum(d) =>
+            {
+                let made = variants_decl(d, &mut Vec::new());
+                do_if!(let Some(made) = made, found.add_struct(program, &made, unit));
+            }
             _ => (),
         }
     }

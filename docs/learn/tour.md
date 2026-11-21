@@ -444,12 +444,29 @@ Docs: [Structs](../manual/language/structs.md), [Values and objects](../manual/l
 
 An enumeration (enum) is a set of named constants, as in C, and we refer to a member
 (variant) with `<name>များထဲမှ <member>`, as in `အရောင်များထဲမှ ဝါ`. Each member has a
-number or a text value, which a conversion returns, but members have no fields. In a switch
-(`match`), each arm starts with `<case> ဖြစ်လျှင်`, and the switch must list each member or
-end with a default arm `တခြား <kind> တစ်ခု ဖြစ်လျှင်` (ZK0458). Arms need no `break`, and the
-switch ends at the first sentence that is not an arm.
+number or a text value, which a conversion returns. In a switch (`match`), each arm starts
+with `<case> ဖြစ်လျှင်`, and the switch must list each member or end with a default arm
+`တခြား <kind> တစ်ခု ဖြစ်လျှင်` (ZK0458). Arms need no `break`, and the switch ends at the
+first sentence that is not an arm.
 
-Learn: [Enumerations and switches](enums/README.md).
+A member can hold data (payload) of its own data kind instead, as a Rust `enum` with data
+does. A test names the member and can give the data a name for the block it guards:
+
+```zaka
+ပုံ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ဒေတာအနေဖြင့် ကိန်းပြည့် တစ်ခု ရှိသည့် စက်ဝိုင်း နှင့် အမှတ် တို့ပါဝင်သည်။
+
+ကိန်းရှင် ပ သည် ပုံများထဲမှ စက်ဝိုင်း(၅) ဖြစ်ပါစေ။
+ပ ကို ပြသမည်။
+ပ သည် ရ ဟူသည့် စက်ဝိုင်း အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင် ရ * ၂ ကို ပြသမည်။   // match p { Circle(r) => … }
+အမှတ် ဖြစ်လျှင် "အမှတ်" ဟု ပြသမည်။
+```
+
+```text
+ပုံများထဲမှ စက်ဝိုင်း(၅)
+၁၀
+```
+
+Learn: [Enumerations and switches](enums/README.md), [Members that hold data](enums/data.md).
 Docs: [Enumerations](../manual/language/enums.md).
 
 ## Results and optionals

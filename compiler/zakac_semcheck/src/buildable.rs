@@ -15,6 +15,9 @@ use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
+
+use crate::variants::TAG_FIELD;
 
 /// The struct names each struct needs a value of, one list per struct.
 type Needs<'a> = BTreeMap<&'a str, Vec<&'a str>>;
@@ -34,7 +37,9 @@ pub(crate) fn report_unbuildable(
 )
 {
     let needs: Needs = decls.iter().map(|(n, d)| (*n, needs_of(d, decls))).collect();
-    let built = buildable(&needs);
+    let one_of: BTreeSet<&str> =
+        decls.iter().filter(|(_, d)| is_variants(d)).map(|(n, _)| *n).collect();
+    let built = buildable(&needs, &one_of);
     let mut left: Vec<&str> =
         decls.keys().copied().filter(|n| !built.contains(n)).collect();
     left.sort_by_key(|n| decls[n].span.lo);
@@ -70,7 +75,29 @@ fn needs_of<'a>(
 ) -> Vec<&'a str>
 {
     ret_if!(decl.external, Vec::new());
-    decl.fields.iter().filter_map(|f| required(&f.kind, decls)).collect()
+    let needed: Vec<&str> =
+        decl.fields.iter().filter_map(|f| required(&f.kind, decls)).collect();
+    ret_if!(!is_variants(decl), needed);
+    // A value of an enumeration needs the data of one variant alone, so a
+    // variant that needs no struct makes it at once.
+    let variants = decl.fields[0].name.name.split('|').count() - 1;
+    tern!(needed.len() < variants, Vec::new(), needed)
+}
+
+/// Whether a declaration is the struct of an enumeration whose variants hold
+/// data, which needs the struct of one variant, not of each.
+///
+/// # Arguments
+///
+/// * `decl` - The declaration.
+///
+/// # Returns
+///
+/// `true` for such a struct.
+fn is_variants(decl: &StructDecl) -> bool
+{
+    let first = decl.fields.first().map(|f| f.name.name.as_str());
+    first.is_some_and(|n| n.starts_with(&format!("{TAG_FIELD}|")))
 }
 
 /// The struct a field needs a value of before its own struct can be built.
@@ -101,17 +128,19 @@ fn required<'a>(kind: &'a Kind, decls: &BTreeMap<&str, &StructDecl>)
 /// # Arguments
 ///
 /// * `needs` - The structs each struct needs.
+/// * `one_of` - The structs that need one of their structs, not each.
 ///
 /// # Returns
 ///
 /// The names.
-fn buildable<'a>(needs: &Needs<'a>) -> BTreeSet<&'a str>
+fn buildable<'a>(needs: &Needs<'a>, one_of: &BTreeSet<&str>) -> BTreeSet<&'a str>
 {
     let mut built = BTreeSet::new();
     loop
     {
         let fits = |(n, ns): &(&&'a str, &Vec<&'a str>)| {
-            !built.contains(**n) && ns.iter().all(|x| built.contains(x))
+            let one = one_of.contains(**n) && ns.iter().any(|x| built.contains(x));
+            !built.contains(**n) && (one || ns.iter().all(|x| built.contains(x)))
         };
         let fresh: Vec<&str> = needs.iter().filter(fits).map(|(n, _)| *n).collect();
         ret_if!(fresh.is_empty(), built);

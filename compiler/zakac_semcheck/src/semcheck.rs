@@ -129,6 +129,7 @@ use crate::units::private_in_exports;
 use crate::units::start_rules;
 use crate::units::struct_homes;
 use crate::units::unit_names;
+use crate::variant_check::variant_test;
 
 /// The words of a heap statement in a report.
 const HEAP_WORK: &str = "a heap statement";
@@ -758,6 +759,12 @@ pub(crate) struct Checker
     /// good result.
     #[builder(default)]
     pub proven: HashMap<Name, bool>,
+    /// The variant each variable of an enumeration is proven to hold here.
+    #[builder(default)]
+    pub variants_proven: HashMap<Name, Name>,
+    /// The test of a variant that is the whole condition of the arm checked
+    /// now, which can name the data of the variant.
+    pub bind_site: Option<NodeId>,
     /// The variables that statements changed since the statement around
     /// them started, so what was proven about them before ends.
     #[builder(default)]
@@ -883,7 +890,9 @@ impl Checker
     /// * `ident` - The name.
     /// * `kind` - Its kind, when known.
     /// * `access` - What it allows.
-    fn declare(&mut self, ident: &Ident, kind: Option<DataKind>, access: Access)
+    pub(crate) fn declare(
+        &mut self, ident: &Ident, kind: Option<DataKind>, access: Access,
+    )
     {
         self.report_struct_name(ident);
         let fresh = self.declare_quiet(ident, kind, access);
@@ -992,6 +1001,7 @@ impl Checker
     fn forget(&mut self, names: HashSet<Name>)
     {
         do_for!(name in &names, _ = self.proven.remove(name));
+        do_for!(name in &names, _ = self.variants_proven.remove(name));
         self.touched.extend(names);
     }
 
@@ -2272,6 +2282,7 @@ impl Visitor for Checker
         let access = tern!(n.is_const, Access::Const, Access::Var);
         // A new variable of this name hides what was proven about the old.
         self.proven.remove(&n.name.name);
+        self.variants_proven.remove(&n.name.name);
         self.declare(&n.name, kind, access);
         do_if!(n.exported, self.scopes.mark_exported(&n.name.name));
         let init = n.init.as_ref().filter(|_| n.is_const);
@@ -2441,19 +2452,26 @@ impl Visitor for Checker
     fn visit_if(&mut self, n: &IfStmt)
     {
         let before = self.proven.clone();
+        let variants_before = self.variants_proven.clone();
         let outer = std::mem::take(&mut self.touched);
         let mut ruled_out: Vec<Fact> = Vec::new();
         for arm in &n.arms
         {
             self.proven = before.clone();
+            self.variants_proven = variants_before.clone();
             self.proven.extend(ruled_out.iter().copied());
+            self.bind_site = variant_test(&arm.cond).map(|(t, _)| t.id);
             let pipe = self.check_arm_cond(&arm.cond);
+            self.bind_site = None;
             self.proven.extend(facts_when(&arm.cond, true));
+            self.variants_proven.extend(Self::variant_fact(&arm.cond));
             do_if!(let Some(p) = pipe, self.pipe_reads.push(p));
-            self.visit_block(&arm.block);
+            let bind = self.cond_bind(&arm.cond);
+            self.with_bind(bind, |c| c.visit_block(&arm.block));
             do_if!(pipe.is_some(), _ = self.pipe_reads.pop());
             ruled_out.extend(facts_when(&arm.cond, false));
         }
+        self.variants_proven = variants_before;
         self.proven = before.clone();
         self.proven.extend(ruled_out.iter().copied());
         do_if!(let Some(b) = &n.else_block, self.visit_block(b));
@@ -2475,12 +2493,18 @@ impl Visitor for Checker
         let before = self.proven.clone();
         let outer = std::mem::take(&mut self.touched);
         let mut seen = Vec::new();
+        let variants_before = self.variants_proven.clone();
         for arm in &n.arms
         {
             self.proven = before.clone();
+            self.variants_proven = variants_before.clone();
             do_for!(case in &arm.cases, self.check_case(case, (&n.subject, subject), &mut seen));
-            self.visit_block(&arm.block);
+            let fact = self.arm_fact(&n.subject, subject, &arm.cases);
+            self.variants_proven.extend(fact);
+            let bind = self.arm_bind(subject, &arm.cases);
+            self.with_bind(bind, |c| c.visit_block(&arm.block));
         }
+        self.variants_proven = variants_before;
         self.proven = before.clone();
         self.check_default(n, subject, &seen);
         do_if!(let Some(d) = &n.default, self.visit_block(&d.block));

@@ -321,6 +321,7 @@ is a plain row of `RESERVED`, so each splits off a word it is written against.
 | the mark statements | `အောင်မြင်သည်` (`Succeeded`), `မအောင်မြင်ပါ` (`NotSucceeded`), `သတ်မှတ်မည်` (`WillMark`) |
 | structs and enumerations | `ဒေတာအစုအဝေး` (`StructWord`), `ဒေတာအမျိုးအစားကွဲ` (`EnumWord`), `ရှိသည့်` (`HavingRel`, the end of a member value), `သုံးမည့်` (`ToUse`, the last piece of the initial mark) |
 | switches | `ထဲမှ` (`Among`), `တခြား` (`Other`) |
+| members that hold data | `ပြောင်းလဲနိုင်` (`CanBecome`, the verb of the test of a member, which absorbs a particle as a comparison verb does), `အဖြစ်သို့` (`AsInto`) |
 | data kinds | `အမျိုးအစား` (`KindWord`, a piece of the function kind phrase), `ဒေတာအမျိုးအစား` (`DataKindOpen`, opens a kind alias), `လက္ခဏာရှိ` (`Signed`), `ဘစ်` (`Bit`), `လိပ်စာ` (`Address`) |
 | measure words (classifiers) | `ခုစာ` and `လုံးစာ` (`Items`, the measure word of a heap size), `ကွက်` (`CellWord`), `မျိုးပြပစ္စည်းမှာ` (`ClassifierIs`) |
 | function signatures | `ပြောင်းလဲရန်` (`ToChange`) and `ထည့်ပေးရန်` (`ToFill`), the second words of the parameter marks; `ဝိဘတ်` (`PrepositionWord`); `ဟူသော` (`Called`) after a name or a literal, where the next word decides what it starts (a data kind, the function value, the error value, or the words of a struct or an enumeration); `မည့်` (`Named`); `လက်ခံသော` (`AcceptingRel`) and `ပြန်ပေးသော` (`ReturningRel`) |

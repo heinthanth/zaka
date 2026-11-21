@@ -52,6 +52,8 @@ impl Parser<'_>
     /// `တစ်<classifier>`.
     pub(crate) fn parse_decl_head(&mut self) -> PResult<DeclHead>
     {
+        // A member of a generic enumeration with its kinds starts a value.
+        ret_if!(self.at_generic_member() || self.at_worded_member(), self.value_head());
         ret_if!(self.at_joined_count(), self.counted_head());
         let named = self.named_kind_len().filter(|len| self.is_count_word_at(*len));
         let Some(len) = self.kind_len().or(named)

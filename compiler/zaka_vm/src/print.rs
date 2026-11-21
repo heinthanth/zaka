@@ -17,6 +17,7 @@ use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::FALLIBLE;
 use zakac_semcheck::kind::TABLE;
 use zakac_semcheck::structs::StructKind;
+use zakac_semcheck::variants::Variants;
 
 use crate::mem::Mem;
 use crate::trap::TrapKind;
@@ -112,6 +113,7 @@ fn show(
         let t = text_at(mem, addr)?;
         return done(tasks, tern!(quoted, quoted_text(&t), t));
     }
+    ret_if!(let Some(v) = kind.as_variants(), variant_tasks(mem, addr, v, tasks));
     ret_if!(let Some(s) = kind.as_struct(), struct_tasks(mem, addr, s, tasks));
     if let Some(s) = kind.as_object()
     {
@@ -428,6 +430,44 @@ fn struct_tasks(
         )));
     }
     tasks.push(Task::Piece(format!("{}(", s.name)));
+    Ok(())
+}
+
+/// Push the tasks of a value of an enumeration whose variants hold data, last
+/// first: `<stem>များထဲမှ <variant>`, with its data in parentheses after it
+/// for a variant that holds some.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `addr` - The address of the value.
+/// * `v` - The enumeration.
+/// * `tasks` - The tasks, added to.
+///
+/// # Returns
+///
+/// `Ok`, or the trap a read of the tag hits.
+fn variant_tasks(
+    mem: &Mem, addr: u64, v: Variants, tasks: &mut Vec<Task>,
+) -> Result<(), TrapKind>
+{
+    let platform = mem.platform();
+    let at = |i: usize| addr + u64::from(v.shape().offset(i, platform));
+    let tag = match mem.load(at(0), v.tag_kind())?
+    {
+        Value::Int { raw, .. } => usize::try_from(raw).unwrap_or(usize::MAX),
+        _ => usize::MAX,
+    };
+    let head = v.text_at(tag);
+    let Some((field, kind)) = v.data(tag)
+    else
+    {
+        tasks.push(Task::Piece(head));
+        return Ok(());
+    };
+    tasks.push(Task::Piece(")".to_string()));
+    tasks.push(Task::Show { addr: at(field), kind, quoted: true });
+    tasks.push(Task::Piece(format!("{head}(")));
     Ok(())
 }
 

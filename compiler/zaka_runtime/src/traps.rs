@@ -66,6 +66,7 @@ pub enum ZkTrap
     LockBroken,
     ThreadsNotPositive,
     ThreadWaited,
+    WrongVariant,
     /// The count of ids, the length of a table of them.
     Count,
 }

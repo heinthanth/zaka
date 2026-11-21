@@ -438,6 +438,11 @@ pub enum Kw
     Shift,
     /// `ပြောင်းလဲသော ရလဒ်`
     Convert,
+    /// `ပြောင်းလဲနိုင်`: whether a value of an enumeration is one variant,
+    /// `<x> သည် <variant> အဖြစ်သို့ ပြောင်းလဲနိုင်သည်`
+    CanBecome,
+    /// `အဖြစ်သို့`, after the variant a test names
+    AsInto,
     /// `လုပ်ဆောင်သော ရလဒ်`
     CallResult,
     /// `လုပ်ဆောင်သော ရလဒ်ကောင်း`: a call that passes a failure on
@@ -887,7 +892,8 @@ impl Kw
     }
 
     /// Whether this word takes a sentence-final particle written attached to
-    /// it: the comparison verbs, `မဟုတ်` and the boolean literals.
+    /// it: the comparison verbs, the variant test, `မဟုတ်` and the boolean
+    /// literals.
     ///
     /// Other words do not: in `ပြောင်းလဲသော ရလဒ် သည်` the `သည်` is a subject marker.
     ///
@@ -907,6 +913,7 @@ impl Kw
                 | Kw::Not
                 | Kw::True
                 | Kw::False
+                | Kw::CanBecome
         )
     }
 }

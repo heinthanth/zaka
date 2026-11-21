@@ -382,6 +382,7 @@ fn push_cells(s: &mut Vec<Step>, base: *const u8, cell: *const ZkKind, count: us
 /// * `k` - Its kind.
 fn push_struct(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
 {
+    ret_if!(!k.members.is_null(), push_variant(s, p, k));
     s.push(Step::Piece(b")"));
     let fields = k.field_list();
     for (i, f) in fields.iter().enumerate().rev()
@@ -398,6 +399,48 @@ fn push_struct(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
     }
     s.push(Step::Piece(b"("));
     s.push(piece(k.name));
+}
+
+/// Add the steps that write a value of an enumeration whose variants hold
+/// data, the last first: the text of its variant, which the member at its
+/// tag gives, then its data in parentheses, from the field whose number the
+/// member holds.
+///
+/// # Arguments
+///
+/// * `s` - The steps.
+/// * `p` - The value.
+/// * `k` - Its kind; its first field is the tag.
+fn push_variant(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
+{
+    let fields = k.field_list();
+    // SAFETY: the tag field has the kind of its descriptor.
+    let tag_size = unsafe { (*fields[0].kind).size };
+    let tag_at = at(p, fields[0].offset);
+    let tag = tern!(
+        tag_size == 1,
+        usize::from(ld::<u8>(tag_at)),
+        usize::from(ld::<u16>(tag_at))
+    );
+    // SAFETY: the compiler writes a member for each tag a value can hold.
+    let member = unsafe { &*k.members.add(tag) };
+    let field = std::str::from_utf8(text(member.value))
+        .ok()
+        .and_then(|f| f.parse::<usize>().ok());
+    let Some(field) = field.and_then(|f| fields.get(f))
+    else
+    {
+        return s.push(piece(member.shown));
+    };
+    s.push(Step::Piece(b")"));
+    s.push(Step::Value {
+        a: at(p, field.offset),
+        b: std::ptr::null(),
+        k: field.kind,
+        nested: true,
+    });
+    s.push(Step::Piece(b"("));
+    s.push(piece(member.shown));
 }
 
 /// Add the steps that write a result that can fail, the last first: its good

@@ -71,6 +71,9 @@ pub enum Slot
     /// `ထဲတွင်`, after the optional or the result a test looks in.
     #[strum(serialize = "ထဲတွင်")]
     Within,
+    /// `အဖြစ်သို့`, after the variant a test of an enumeration names.
+    #[strum(serialize = "အဖြစ်သို့")]
+    AsInto,
 }
 
 impl Slot
@@ -158,6 +161,15 @@ pub enum VerbOp
     /// `<x> ထဲတွင် ဒေတာ မရှိ`: whether an optional holds no data.
     #[strum(serialize = "lacks_data")]
     LacksData,
+    /// `<x> သည် <variant> အဖြစ်သို့ ပြောင်းလဲနိုင်`: whether a value of an
+    /// enumeration is the variant; with `<name> ဟူသည့်` before the variant,
+    /// the data of the variant takes the name in the block the test guards.
+    #[strum(serialize = "is_variant")]
+    IsVariant,
+    /// `<x> ကို <variant> အဖြစ် ပြောင်းလဲသော ရလဒ်`: the data of the variant a
+    /// value of an enumeration holds; another variant stops the run.
+    #[strum(serialize = "variant_data")]
+    VariantData,
     /// `<value> ဟူသော အမှားအယွင်း`: an error value of the result kind the
     /// place wants.
     #[strum(serialize = "make_fault")]
@@ -315,6 +327,7 @@ pub static VERBS: &[Verb] = &[
     row(Kw::HasFault, VerbOp::IsFault, &[Slot::Within], false, false),
     row(Kw::HasData, VerbOp::HasData, &[Slot::Within], false, false),
     row(Kw::LacksData, VerbOp::LacksData, &[Slot::Within], false, false),
+    row(Kw::CanBecome, VerbOp::IsVariant, &[Slot::Thi, Slot::AsInto], false, true),
     row(Kw::Address, VerbOp::AddrOf, &[Slot::Ei], false, false),
     row(Kw::Value, VerbOp::Deref, &[Slot::Ei], false, false),
     row(Kw::Cell, VerbOp::Cell, &[Slot::Ei, Slot::Ordinal], false, false),

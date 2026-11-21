@@ -80,6 +80,7 @@ An integer never becomes a true/false value, so to test an integer we compare it
 | a member of an enumeration | its value kind | allowed, and returns the member's value ([Enumerations](enums.md#values-of-an-enumeration)) |
 | a member whose value is a number, a character or a true/false value | each data kind that its value converts to | allowed |
 | a data kind | a member of an enumeration | refused |
+| a value of an enumeration whose members hold data | a member, written with no measure word | the data of the member, or a trap for another member ([Reading the data](enums.md#reading-the-data)) |
 | a pointer and an integer, two pointer kinds, a shared object and a pointer | | allowed in unsafe code alone, and ZK0468 outside it ([Unsafe Zaka](unsafe.md)) |
 
 ```zaka

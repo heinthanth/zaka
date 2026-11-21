@@ -31,6 +31,7 @@ use crate::expr::StrExpr;
 use crate::expr::StructLit;
 use crate::expr::TableLit;
 use crate::expr::UsingParticle;
+use crate::expr::VariantExpr;
 use crate::expr::VerbExpr;
 use crate::kind::FnSig;
 use crate::kind::Kind;
@@ -184,6 +185,7 @@ BlankListLit => "blank_list", visit_blank_list;
 TableLit => "table", visit_table;
 StrExpr => "str_lit", visit_str_expr;
 MemberExpr => "member", visit_member;
+VariantExpr => "variant", visit_variant;
 FnAddrExpr => "fn_addr", visit_fn_addr;
 ComptimeExpr => "comptime", visit_comptime;
 Ident => "ident", visit_ident;
@@ -276,6 +278,7 @@ fn expr_node(n: &Expr) -> &dyn Node
         Expr::Table(e) => e,
         Expr::Str(e) => e,
         Expr::Member(e) => e,
+        Expr::Variant(e) => e,
         Expr::FnAddr(e) => e,
         Expr::Comptime(e) => e,
     }
@@ -451,6 +454,8 @@ pub trait Visitor
     fn visit_str_expr(&mut self, n: &StrExpr) { walk_str_expr(self, n) }
     /// Visit a member of an enumeration.
     fn visit_member(&mut self, n: &MemberExpr) { walk_member(self, n) }
+    /// Visit the variant a test or a read names.
+    fn visit_variant(&mut self, n: &VariantExpr) { walk_variant(self, n) }
     /// Visit the address of a function.
     fn visit_fn_addr(&mut self, n: &FnAddrExpr) { walk_fn_addr(self, n) }
     /// Visit the value of a comptime call.
@@ -828,6 +833,7 @@ pub fn walk_enum_member<V: Visitor + ?Sized>(v: &mut V, n: &EnumMember)
     v.enter(n);
     v.visit_ident(&n.name);
     do_if!(let Some(value) = &n.value, v.visit_expr(value));
+    do_if!(let Some(kind) = &n.data, v.visit_kind(kind));
     v.leave(n);
 }
 
@@ -913,6 +919,7 @@ pub fn walk_expr<V: Visitor + ?Sized>(v: &mut V, n: &Expr)
         Expr::Table(e) => v.visit_table(e),
         Expr::Str(e) => v.visit_str_expr(e),
         Expr::Member(e) => v.visit_member(e),
+        Expr::Variant(e) => v.visit_variant(e),
         Expr::FnAddr(e) => v.visit_fn_addr(e),
         Expr::Comptime(e) => v.visit_comptime(e),
     }
@@ -953,7 +960,18 @@ pub fn walk_member<V: Visitor + ?Sized>(v: &mut V, n: &MemberExpr)
 {
     v.enter(n);
     v.visit_ident(&n.qualifier);
+    do_for!(k in &n.kind_args, v.visit_kind(k));
     v.visit_ident(&n.member);
+    do_if!(let Some(d) = &n.data, v.visit_expr(d));
+    v.leave(n);
+}
+
+/// Visit the name the data takes and the variant name.
+pub fn walk_variant<V: Visitor + ?Sized>(v: &mut V, n: &VariantExpr)
+{
+    v.enter(n);
+    do_if!(let Some(b) = &n.bind, v.visit_ident(b));
+    v.visit_ident(&n.variant);
     v.leave(n);
 }
 
@@ -1474,6 +1492,7 @@ pub fn walk_enum_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut EnumDecl)
         v.visit_span_mut(&mut m.span);
         v.visit_ident_mut(&mut m.name);
         opt_expr_mut(v, &mut m.value);
+        opt_kind_mut(v, &mut m.data);
     }
     do_if!(let Some(word) = &mut n.classifier, v.visit_ident_mut(word));
 }
@@ -1645,7 +1664,15 @@ pub fn walk_expr_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Expr)
         {
             v.visit_span_mut(&mut e.span);
             v.visit_ident_mut(&mut e.qualifier);
+            do_for!(k in &mut e.kind_args, v.visit_kind_mut(k));
             v.visit_ident_mut(&mut e.member);
+            do_if!(let Some(d) = &mut e.data, v.visit_expr_mut(d));
+        }
+        Expr::Variant(e) =>
+        {
+            v.visit_span_mut(&mut e.span);
+            do_if!(let Some(b) = &mut e.bind, v.visit_ident_mut(b));
+            v.visit_ident_mut(&mut e.variant);
         }
         Expr::FnAddr(e) =>
         {

@@ -741,7 +741,7 @@ fn define_descrs<M: Module>(s: &mut Shared<'_, M>)
             define(s.m, id, b.done())?;
             Some(id)
         };
-        let members = if row.tag == 12
+        let members = if !row.members.is_empty()
         {
             let id = s.anon(false);
             let mut b = Blob::new();

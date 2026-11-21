@@ -68,7 +68,16 @@ An operand that is a name with `ထဲမှ` after it is a member of an enumera
 enumeration names and their stems as well, and the alias names, which `Parser::new` finds
 in each declaration (`declares_kind`: `NAME ဟူသော ... ဒေတာအစုအဝေး|ဒေတာအမျိုးအစားကွဲ`, and
 `ဒေတာအမျိုးအစား NAME ကို`), so each of them can start a data kind. `is_struct_at` refuses a
-name with `ထဲမှ` after it, which names a member instead.
+name with `ထဲမှ` after it, which names a member instead. A member with `(<value>)` after it
+keeps the value as its data (`MemberExpr::data`), and so does the words form
+`ဒေတာအနေဖြင့် <value> ရှိသော <member>`, which `parse_struct_lit` reads as a struct literal of
+one field up to `ရှိသော` and finishes in `variant_words`.
+
+In a clause, a name with `အဖြစ်သို့` after it, or `<name> ဟူသည့် <name> အဖြစ်သို့`, is an
+`Expr::Variant` (`at_variant_operand`); `ပြောင်းလဲနိုင်` (`CanBecome`) is the verb row of the
+test, `IsVariant`, with the slots `သည်` and `အဖြစ်သို့`. After `ကို`, a name with `အဖြစ်` and
+the conversion verb after it, and no measure word, is the member a read names
+(`at_variant_target`), and the conversion becomes `VariantData`.
 
 ### Built-in data kind names and sizes
 

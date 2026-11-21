@@ -428,6 +428,10 @@ impl FnGen<'_, '_>
         ret_if!(cause == HaltCause::NoData, self.line("zk_no_data();"));
         ret_if!(cause == HaltCause::NoRow, self.line("zk_plain_trap(ZK_TRAP_NO_ROW);"));
         ret_if!(
+            cause == HaltCause::WrongVariant,
+            self.line("zk_plain_trap(ZK_TRAP_WRONG_VARIANT);")
+        );
+        ret_if!(
             cause == HaltCause::StepNotPositive,
             self.line("if (ZK_CHECK_STEP) zk_step_not_positive();")
         );

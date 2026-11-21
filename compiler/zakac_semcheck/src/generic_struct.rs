@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
+use zakac_ast::expr::MemberExpr;
 use zakac_ast::expr::StructLit;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
@@ -23,6 +24,7 @@ use zakac_ast::visit::walk_expr;
 use zakac_ast::visit::walk_expr_mut;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::resolve as rd;
+use zakac_lexer::reserved::PLURAL;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -37,6 +39,8 @@ use crate::generic::kind_ast;
 use crate::kind::DataKind;
 use crate::semcheck::Checker;
 use crate::structs::StructTable;
+use crate::variants::TAG_FIELD;
+use crate::variants::name_stem;
 
 /// Give each kind and struct value that names a generic struct with known
 /// kinds the name of its instance, and record the instance.
@@ -132,12 +136,53 @@ impl Namer<'_>
     }
 }
 
+impl Namer<'_>
+{
+    /// Name the instance a member of a generic enumeration with its kinds
+    /// written stands for: its qualifier becomes `<stem of the instance>များ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `m` - The member.
+    fn name_member(&mut self, m: &mut MemberExpr)
+    {
+        ret_if!(m.kind_args.is_empty());
+        do_for!(arg in &mut m.kind_args, self.name_kind(arg));
+        let written = m.qualifier.name.as_str();
+        let names = [written.strip_suffix(PLURAL), Some(written)];
+        let template = names.into_iter().flatten().find(|n| {
+            let t = self.templates.get(&Name::new(n));
+            t.is_some_and(|t| {
+                t.fields.first().is_some_and(|f| f.name.name.starts_with(TAG_FIELD))
+            })
+        });
+        let Some(template) = template
+        else
+        {
+            return;
+        };
+        let ident = Ident::builder().name(template).span(m.qualifier.span).build();
+        let Some(name) = self.instance_of(Some(&ident), &m.kind_args)
+        else
+        {
+            return;
+        };
+        m.qualifier.name = Name::from(format!("{}{PLURAL}", name_stem(&name)));
+        m.kind_args.clear();
+        self.changed = true;
+    }
+}
+
 impl VisitorMut for Namer<'_>
 {
     fn visit_kind_mut(&mut self, n: &mut Kind) { self.name_kind(n) }
 
     fn visit_expr_mut(&mut self, n: &mut Expr)
     {
+        if let Expr::Member(m) = n
+        {
+            self.name_member(m);
+        }
         if let Expr::Struct(lit) = n
         {
             do_for!(arg in &mut lit.kind_args, self.name_kind(arg));
@@ -384,7 +429,7 @@ impl Checker
     /// # Returns
     ///
     /// The kinds, or `None` when the place expects no instance of it.
-    fn expected_kinds(
+    pub(crate) fn expected_kinds(
         &self, template: &StructDecl, expect: Option<DataKind>,
     ) -> Option<Vec<DataKind>>
     {

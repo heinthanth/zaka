@@ -308,6 +308,22 @@ InheritsNothing = ("ZK0351", Level::Warning),
 /// A call written as a sentence gives other phrases than the head of its
 /// function.
 WrongPhrase = ("ZK0352", Level::Error),
+/// An enumeration gives its members values and its variants data.
+ValueAndData = ("ZK0353", Level::Error),
+/// A variant that holds data is written with none.
+VariantNeedsData = ("ZK0354", Level::Error),
+/// Data is given to, read from or named for a variant that holds none.
+VariantHasNoData = ("ZK0355", Level::Error),
+/// A test or a read of a variant looks at a value that is no enumeration.
+NotAnEnumValue = ("ZK0356", Level::Error),
+/// A name for the data of a variant stands outside the condition of a
+/// conditional or an arm of a switch.
+NameOutsideTest = ("ZK0357", Level::Error),
+/// A read of a variant that a test ruled out.
+WrongVariantProven = ("ZK0358", Level::Error),
+/// A case of a switch over an enumeration whose variants hold data gives
+/// the data too.
+CaseWithData = ("ZK0359", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

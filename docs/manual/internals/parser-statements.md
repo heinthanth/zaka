@@ -224,6 +224,12 @@ cannot be one sentence that is a conditional or another switch (ZK0215), so each
 after it belongs to one clear switch. The S-expression is
 `(switch subject case {..} case {..} else kind {..})`.
 
+An arm can test a member, `[<name> ဟူသည့်] <member> အဖြစ်သို့ ပြောင်းလဲနိုင်လျှင်`
+(`at_variant_arm`, `variant_arm_rest`); its one case is an `Expr::Variant` with the name.
+A statement whose clause ends in the test of a member, `<subject> သည် … ပြောင်းလဲနိုင်`, with
+`လျှင်` after it, starts a switch whose first arm is that test (`parse_variant_switch`).
+`parse_enum_member` reads `ဒေတာအနေဖြင့် <kind> တစ်<word> ရှိသည့်` into `EnumMember::data`.
+
 ## Functions
 
 ```text

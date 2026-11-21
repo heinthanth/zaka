@@ -428,6 +428,20 @@ enumeration inside a struct or a list kind remains, and the VM looks through it 
 walks fields and cells. The value of a print or a template slot keeps the enumeration
 kind (`shown`), and codegen reads it as the value kind (`stored`) for `print_enum`.
 
+An enumeration whose members hold data is a struct, so the IR keeps no enumeration kind for
+it (`variant.rs`). A member becomes a `List` of the tag, its data, and the zero `blank` of
+each other field (`variant::value`). The test of a member is `Compare Eq` of the tag, a
+`Load` at the `FieldAddr` of field 0, and the position of the member (`variant::is`); a
+switch over such a value tests the tag in each arm (`variant_arm_cond`). The read of the
+data holds a value that is no read of a place in a hidden slot (`held_subject`), stops the
+run with `Halt` and the cause `wrong_variant` when the tag is another member, and loads the
+field of the member. A name for the data (`bound_block`) is a local of the scope of the
+block, set from a duplicate of the data when it holds text. The print of such a struct
+writes `<stem>များထဲမှ <member>(<data>)`: the VM reads the members off the struct
+(`variant_tasks`), and the C and native targets give its descriptor the member table, one
+row for each member with its text and the number of the field of its data, which the
+runtime prints (`push_variant`).
+
 ### Initial values and declarations with no value
 
 `ကနဦးတန်ဖိုး` lowers through `initial_value` to the [initial

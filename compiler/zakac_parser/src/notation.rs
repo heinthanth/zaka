@@ -26,6 +26,7 @@ use zakac_ast::kind::Wrap;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::parser as diag;
+use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
@@ -276,6 +277,7 @@ impl Parser<'_>
             }
             TokenKind::Punct(Punct::LParen) => self.parse_group(),
             TokenKind::Punct(Punct::LBracket) => self.parse_bracket_list(),
+            TokenKind::Ident if self.at_generic_member() => self.parse_member(),
             TokenKind::Ident | TokenKind::RawIdent if self.at_turbofish() =>
             {
                 self.parse_turbofish()
@@ -466,23 +468,85 @@ impl Parser<'_>
         Ok(kind)
     }
 
-    /// Parse `<enum>များထဲမှ <member>`, one member of an enumeration.
+    /// Parse `<enum>[<<kind>၊ …>]များထဲမှ <member>`, one member of an
+    /// enumeration, with `(<value>)` after it for the data of a variant
+    /// that carries a value.
     ///
     /// # Returns
     ///
     /// The member, or a diagnostic.
-    fn parse_member(&mut self) -> PResult<Expr>
+    pub(crate) fn parse_member(&mut self) -> PResult<Expr>
     {
         let tok = self.bump();
-        let qualifier =
+        let mut qualifier =
             Ident::builder().name(self.text_of(tok.span)).span(tok.span).build();
+        let generic = self.at_punct(Punct::Lt);
+        let kind_args = tern!(generic, self.parse_sign_kind_args()?, Vec::new());
+        if generic
+        {
+            let plural = self.bump();
+            let name = format!("{}{}", qualifier.name, self.text_of(plural.span));
+            qualifier =
+                Ident::builder().name(name).span(tok.span.to(&plural.span)).build();
+        }
         self.bump();
         let member = self.parse_ident()?;
-        let span = tok.span.to(&member.span);
+        let data =
+            tern!(self.at_punct(Punct::LParen), Some(self.parse_paren_data()?), None);
+        let end = data.as_ref().map_or(member.span, |_| self.prev_span());
+        let span = tok.span.to(&end);
         let id = self.new_id();
         #[rustfmt::skip]
-        let node = MemberExpr::builder().id(id).qualifier(qualifier).member(member).span(span).build();
+        let node = MemberExpr::builder().id(id).qualifier(qualifier).kind_args(kind_args)
+            .member(member).maybe_data(data.map(Box::new)).span(span).build();
         Ok(Expr::Member(node))
+    }
+
+    /// Whether a member of a generic enumeration with its kinds in the sign
+    /// form starts here: `<name><<kind>၊ …>များထဲမှ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_generic_member(&self) -> bool
+    {
+        let Some(len) = self.angle_len(1)
+        else
+        {
+            return false;
+        };
+        let among = self.peek_n(len + 2).kind == TokenKind::Kw(Kw::Among);
+        among && self.name_at(len + 1, PLURAL)
+    }
+
+    /// Whether a member of a generic enumeration with its kinds in the word
+    /// form starts here: `<kinds> (ကို|တို့ကို) အစားထိုးအသုံးပြုသည့် <name>များထဲမှ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(crate) fn at_worded_member(&self) -> bool
+    {
+        let Some(len) = self.word_kind_args_len(0, Kw::SubstitutedRel)
+        else
+        {
+            return false;
+        };
+        let named = self.peek_n(len).kind == TokenKind::Ident;
+        named && self.peek_n(len + 1).kind == TokenKind::Kw(Kw::Among)
+    }
+
+    /// Parse `(<value>)`, the data of a variant written after its name.
+    ///
+    /// # Returns
+    ///
+    /// The value, or a diagnostic.
+    fn parse_paren_data(&mut self) -> PResult<Expr>
+    {
+        self.bump();
+        let value = self.parse_expr()?;
+        self.expect_punct(Punct::RParen)?;
+        Ok(value)
     }
 
     /// Parse a variable, including the result variable `ရလဒ်`.

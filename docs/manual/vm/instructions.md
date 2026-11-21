@@ -365,6 +365,7 @@ trap, and a cause with a data kind first pops a value to show:
 | `not_fault` | the error value was read from a good result | none | [not fault](traps.md#a-whole-result-read-as-the-wrong-part) |
 | `no_data` | the data was read from a blank [optional](../language/optionals.md) | none | [no data](traps.md#an-optional-read-with-no-data) |
 | `no_row` | a statement wrote inside the value of a row of a table that no row has | none | no row |
+| `wrong_variant` | the data of a member was read from a value of another member | none | wrong member |
 | `closed_handle` | a handle that a C function took over was used | none | closed handle |
 | `null_from_c` | C returned NULL for a handle result written with no optional | none | null from C |
 | `step_not_positive` | the step of a parallel counted loop is zero or negative | none | step not positive |

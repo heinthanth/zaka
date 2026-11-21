@@ -22,6 +22,7 @@ use zakac_diagnostics::kinds::NoInitial;
 use zakac_diagnostics::naturalness as nd;
 use zakac_diagnostics::resolve as rd;
 use zakac_i18n::t;
+use zakac_lexer::reserved::AMONG;
 use zakac_lexer::reserved::CHAR_NAME;
 use zakac_lexer::reserved::PLURAL;
 use zakac_lexer::token::Kw;
@@ -132,7 +133,9 @@ impl Checker
             Expr::BlankList(n) => self.infer_blank(n, expect),
             Expr::Table(n) => self.infer_table(n, expect),
             Expr::Str(n) => self.infer_str(n),
-            Expr::Member(n) => self.infer_member(n),
+            Expr::Member(n) => self.infer_member(n, expect),
+            // A variant stands in a test or a read, which checks it.
+            Expr::Variant(_) => None,
             Expr::FnAddr(n) => self.infer_fn_addr(n, expect),
             Expr::Comptime(n) => Some(self.written_kind(&n.kind, KindUse::Other)),
         }
@@ -148,23 +151,40 @@ impl Checker
     /// # Returns
     ///
     /// The enumeration, or `None` after an error.
-    fn infer_member(&mut self, n: &MemberExpr) -> Option<DataKind>
+    fn infer_member(
+        &mut self, n: &MemberExpr, expect: Option<DataKind>,
+    ) -> Option<DataKind>
     {
         let written = n.qualifier.name.as_str();
-        let found =
-            |name: &str| self.structs.get(&Name::new(name)).and_then(|k| k.as_enum());
+        ret_if!(let Some(t) = self.generic_enum(written), self.generic_member(n, &t, expect));
+        let found = |name: &str| {
+            let kind = self.structs.get(&Name::new(name)).copied()?;
+            let stem = kind
+                .as_enum()
+                .map(|e| e.stem().to_string())
+                .or_else(|| kind.as_variants().map(|v| v.stem()))?;
+            Some((kind, stem))
+        };
         let plain = written.strip_suffix(PLURAL).and_then(found);
-        let exact = plain.filter(|e| format!("{}{PLURAL}", e.stem()) == written);
-        let Some(owner) = exact
+        let exact =
+            plain.clone().filter(|(_, stem)| format!("{stem}{PLURAL}") == written);
+        let Some((kind, _)) = exact
         else
         {
             let near = plain.or_else(|| found(written));
-            let fix = near.map(|e| format!("{}{PLURAL}", e.stem()));
+            let fix = near.map(|(_, stem)| format!("{stem}{PLURAL}"));
             self.report(rd::unknown_enum(n.qualifier.span, written, fix.as_deref()));
             return None;
         };
         let (q, m) = (&n.qualifier, &n.member);
-        do_if!(let Some(d) = self.decls.name(&owner.name), self.refer(&q.name, q.span, d));
+        let owner_name = kind.name();
+        do_if!(let Some(d) = self.decls.name(&owner_name), self.refer(&q.name, q.span, d));
+        ret_if!(let Some(v) = kind.as_variants(), self.infer_variant_member(n, v));
+        let owner = kind.as_enum().expect("an enumeration or one with data");
+        do_if!(let Some(d) = &n.data, {
+            let written = format!("{}{PLURAL}{AMONG} {}", owner.stem(), m.name);
+            self.report(rd::variant_has_no_data(d.span(), &owner.name, &m.name, &written));
+        });
         let member = self.decls.member(&owner.name, &m.name);
         do_if!(let Some(d) = member, self.refer(&m.name, m.span, d));
         ret_if!(owner.member(&n.member.name).is_some(), Some(DataKind::Enum(owner)));
@@ -504,6 +524,14 @@ impl Checker
         match (n.op, n.args.as_slice())
         {
             (VerbOp::CharCount, [text]) => return self.infer_chars(text, None),
+            (VerbOp::IsVariant, [value, Expr::Variant(v)]) =>
+            {
+                return self.infer_is_variant(n, value, v);
+            }
+            (VerbOp::VariantData, [value, Expr::Variant(v)]) =>
+            {
+                return self.infer_variant_data(value, v);
+            }
             (VerbOp::Row | VerbOp::RowValue, [table, index]) =>
             {
                 return self.infer_row(n, table, index);
@@ -697,7 +725,7 @@ impl Checker
         {
             InitialGap::Function => NoInitial::Function,
             InitialGap::Handle => NoInitial::Handle,
-            InitialGap::Member(e) => NoInitial::Member(&e.name),
+            InitialGap::Member(e) => NoInitial::Member(e),
             InitialGap::Result => NoInitial::Result,
             InitialGap::Part(p) => NoInitial::Part(p),
             InitialGap::Thread => NoInitial::Thread,

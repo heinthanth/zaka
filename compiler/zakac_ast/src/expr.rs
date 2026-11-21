@@ -114,6 +114,9 @@ pub enum Expr
     Str(StrExpr),
     /// `<enum>များထဲမှ <member>`: one member of an enumeration.
     Member(MemberExpr),
+    /// `[<name> ဟူသည့်] <variant>`: the variant a test or a read of an
+    /// enumeration names, with the name its data takes.
+    Variant(VariantExpr),
     /// `<name> ဟူသော လုပ်ဆောင်ချက်`: the address of a function, a value of a
     /// function kind.
     FnAddr(FnAddrExpr),
@@ -501,7 +504,34 @@ pub struct MemberExpr
     pub qualifier: Ident,
     /// The member name.
     pub member: Ident,
-    /// Source region, from the qualifier to the member.
+    /// The kind arguments of a generic enumeration, `<name><A၊ B>များထဲမှ` or
+    /// `A နှင့် B တို့ကို အစားထိုးအသုံးပြုသည့်` before it; none when the check works
+    /// them out.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_args: Vec<Kind>,
+    /// The data of a variant that carries a value: `(<value>)` after the
+    /// member, or `ဒေတာအနေဖြင့် <value> ရှိသော` before it.
+    #[serde(default)]
+    pub data: Option<Box<Expr>>,
+    /// Source region, from the qualifier to the member, or to the `)` of
+    /// the data.
+    pub span: Span,
+}
+
+/// The variant a test or a read of an enumeration names:
+/// `<variant> အဖြစ်သို့`, `<name> ဟူသည့် <variant> အဖြစ်သို့`, or the
+/// `<variant> အဖြစ်` of a read.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct VariantExpr
+{
+    /// Node number.
+    pub id: NodeId,
+    /// The name the data of the variant takes, `<name> ဟူသည့်`.
+    pub bind: Option<Ident>,
+    /// The variant name.
+    pub variant: Ident,
+    /// Source region, from the name or the variant to the variant.
     pub span: Span,
 }
 
@@ -952,6 +982,7 @@ impl Expr
             Expr::Table(n) => n.id,
             Expr::Str(n) => n.id,
             Expr::Member(n) => n.id,
+            Expr::Variant(n) => n.id,
             Expr::FnAddr(n) => n.id,
             Expr::Comptime(n) => n.id,
         }
@@ -990,6 +1021,7 @@ impl Expr
             Expr::Table(n) => &mut n.id,
             Expr::Str(n) => &mut n.id,
             Expr::Member(n) => &mut n.id,
+            Expr::Variant(n) => &mut n.id,
             Expr::FnAddr(n) => &mut n.id,
             Expr::Comptime(n) => &mut n.id,
         }

@@ -14,6 +14,7 @@ message from the compiler, the reason and the fix.
 - the mistakes in declaring an enumeration and in giving its members (variants) values
 - the mistakes in naming a member
 - how the compiler checks that a switch covers each member
+- the mistakes with members that hold data
 
 ## An enumeration declared inside a block
 
@@ -212,6 +213,41 @@ error[ZK0460]: an arm before this one has this case
 A switch runs the first arm whose case equals the subject, and `၃ + ၃` equals `၆`, so the
 second arm could never run. The fix is to remove the second arm, or to change its case.
 
+## A member that holds data written with none
+
+```zaka-error ZK0354
+ပုံ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ဒေတာအနေဖြင့် ကိန်းပြည့် တစ်ခု ရှိသည့် စက်ဝိုင်း နှင့် အမှတ် တို့ပါဝင်သည်။
+
+ကိန်းရှင် ပ သည် ပုံများထဲမှ စက်ဝိုင်း ဖြစ်ပါစေ။
+```
+
+```text
+error[ZK0354]: the member "စက်ဝိုင်း" of "ပုံ" holds data of the kind "isize", and none is given
+```
+
+`စက်ဝိုင်း` holds an integer, so each value of it needs one. The fix is to give the data,
+`ပုံများထဲမှ စက်ဝိုင်း(၅)`. The opposite mistake, data for a member that holds none, such as
+`ပုံများထဲမှ အမှတ်(၁)`, is ZK0355.
+
+## A read of a member the test ruled out
+
+```zaka-error ZK0358
+ပုံ ဟူသော ဒေတာအမျိုးအစားကွဲတွင် ဒေတာအနေဖြင့် ကိန်းပြည့် တစ်ခု ရှိသည့် စက်ဝိုင်း နှင့် အမှတ် တို့ပါဝင်သည်။
+
+ကိန်းရှင် ပ သည် ပုံများထဲမှ အမှတ် ဖြစ်ပါစေ။
+ပ သည် အမှတ် ဖြစ်လျှင် ပ ကို စက်ဝိုင်း အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+တခြား ပုံ တစ်ခု ဖြစ်လျှင် "အခြား" ဟု ပြသမည်။
+```
+
+```text
+error[ZK0358]: "ပ" is "အမှတ်" here, so reading it as "စက်ဝိုင်း" stops the run each time
+```
+
+Inside the arm of `အမှတ်`, the variable `ပ` is `အမှတ်`, so a read of the data of
+`စက်ဝိုင်း` there would stop the program each time. The fix is to read the data in the arm
+of `စက်ဝိုင်း`, or to name it in that arm with `ရ ဟူသည့် စက်ဝိုင်း အဖြစ်သို့
+ပြောင်းလဲနိုင်လျှင်`.
+
 ## Recap
 
 - An enumeration is declared at the top level, and each member has a different name and
@@ -221,5 +257,7 @@ second arm could never run. The fix is to remove the second arm, or to change it
 - A member is named with `<name>များထဲမှ <member>`, with `များ` before `ထဲမှ`.
 - A switch over an enumeration names each member or ends with the default arm, which comes
   last and names the data kind of the subject.
+- A member that holds data is written with its data, and its data is read in the arm or
+  branch that tested it.
 
 Next: [Functions as values](../function-values/README.md).

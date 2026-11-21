@@ -150,6 +150,15 @@ impl Descriptors
                 .collect();
             (row.len, row.name) = (s.fields().len(), Some(s.name.clone()));
         }
+        // A variant writes its text, then its data, which the field with the
+        // number in `value` holds; none for a variant with no data.
+        if let Some(v) = kind.as_variants()
+        {
+            let data =
+                |i: usize| v.data(i).map_or(String::new(), |(f, _)| f.to_string());
+            row.members =
+                (0..v.names().len()).map(|i| (data(i), v.text_at(i))).collect();
+        }
         if let Some(e) = kind.as_enum()
         {
             let each = e.members().iter().enumerate();
@@ -254,7 +263,7 @@ impl Descriptors
             fields = format!("zk_k{n}_f");
         }
         let mut members = "NULL".to_string();
-        if kind.as_enum().is_some()
+        if !r.members.is_empty()
         {
             let _ = writeln!(out, "static const zk_member zk_k{n}_m[] = {{");
             for (value, shown) in &r.members

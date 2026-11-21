@@ -47,8 +47,10 @@ pub fn crosses(kind: DataKind, platform: u16) -> bool
         DataKind::Float(bits) => matches!(bits, 32 | 64),
         DataKind::Bool => true,
         DataKind::Ptr(_) => true,
-        // A result and an optional are cells of Zaka, which C has no form of.
+        // A result, an optional and an enumeration whose variants hold data
+        // are cells of Zaka, which C has no form of.
         DataKind::Struct(_) if kind.fallible_parts().is_some() => false,
+        DataKind::Struct(_) if kind.as_variants().is_some() => false,
         DataKind::Struct(s) => s.fields().iter().all(|(_, k)| in_struct(*k, platform)),
         _ => false,
     }
@@ -186,6 +188,7 @@ pub fn exchanged(kind: DataKind, platform: u16) -> bool
         DataKind::Struct(s) =>
         {
             !s.name.starts_with('%')
+                && kind.as_variants().is_none()
                 && s.fields().iter().all(|(_, k)| exchanged(*k, platform))
         }
         _ => crosses(kind, platform),

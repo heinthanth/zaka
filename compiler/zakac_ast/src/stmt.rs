@@ -934,6 +934,10 @@ pub struct EnumMember
     /// The value, `တန်ဖိုးအနေဖြင့် <value> ရှိသည့်`; with none, the member takes
     /// the value of the member before it plus one, and the first takes 0.
     pub value: Option<Expr>,
+    /// The kind of the data the variant carries,
+    /// `ဒေတာအနေဖြင့် <kind> တစ်<word> ရှိသည့်`; none for a variant with no data.
+    #[serde(default)]
+    pub data: Option<Kind>,
     /// `true` when `ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်` stands in front of it: the
     /// member is the initial value of the enumeration.
     #[builder(default)]
@@ -952,6 +956,11 @@ pub struct EnumDecl
 {
     /// The enumeration name.
     pub name: Ident,
+    /// The kind parameters of a generic declaration, `<name><T၊ U>` or
+    /// `ယေဘုယျဒေတာအမျိုးအစား T … ကိုအစားထိုးသုံးနိုင်၍ ၎င်း…`; none for a plain one.
+    #[builder(default)]
+    #[serde(default)]
+    pub kind_params: Vec<KindParam>,
     /// The members in order.
     pub members: Vec<EnumMember>,
     /// The classifier that counts values of the enumeration, when written.
@@ -960,6 +969,11 @@ pub struct EnumDecl
     /// `true` when `အများသုံး` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
+    /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
+    /// order, each kind parameter among them a slot; none when not written.
+    #[builder(default)]
+    #[serde(default)]
+    pub hint: Vec<Ident>,
     /// Source region, the full stop included.
     pub span: Span,
 }

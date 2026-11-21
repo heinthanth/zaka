@@ -280,4 +280,4 @@ stop
 - Declare a struct with an enumeration field, and print it with no value set.
 - Set the numbers of an enumeration from a constant, such as `(အခြေခံ + ၁)`.
 
-Next: [Enumeration mistakes](mistakes.md).
+Next: [Members that hold data](data.md).
