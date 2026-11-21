@@ -257,7 +257,7 @@ impl<M: Module> FnGen<'_, '_, M>
             let parts = [self.expr(pipe), self.addr_of(*slot), self.descr(kind)];
             parts.into_iter().enumerate().for_each(|(k, v)| {
                 let at =
-                    self.b.ins().iadd_imm(base, i64::from(word) * (3 * i + k) as i64);
+                    self.b.ins().iadd_imm_u(base, i64::from(word) * (3 * i + k) as i64);
                 self.store(v, at);
             });
         }
