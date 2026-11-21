@@ -397,14 +397,14 @@ pub enum Op
     /// Push one stat of the ring collector, for its field in the struct of the
     /// core: a `ကိန်းပြည့်`, or for 4 a `မှန်မှားတန်ဖိုး`.
     RingStat(u8),
-    /// Start a job that calls the function at this index, its arguments on
+    /// Start a thread that calls the function at this index, its arguments on
     /// the stack as [`Op::Call`] takes them, and push the `usize` that names
-    /// the job. The job runs in its own turns, from its own stack.
+    /// the thread. The thread runs in its own turns, from its own stack.
     Spawn(u32),
-    /// Pop a `usize` that names a job and wait for its end: the job's result
-    /// of this kind is pushed, or goes to the slot under the name for a list
-    /// or struct result, whose address remains. A job that stopped at a trap
-    /// stops the waiter too.
+    /// Pop a `usize` that names a thread and wait for its end: the thread's
+    /// result of this kind is pushed, or goes to the slot under the name
+    /// for a list or struct result, whose address remains. A thread that
+    /// stopped at a trap stops the waiter too.
     Wait(Option<DataKind>),
     /// Push the `usize` that names a new channel: with the most values that
     /// wait in it, or with no limit.
@@ -422,9 +422,9 @@ pub enum Op
     /// Pop the `usize` that names a channel and close it; a second close
     /// stops the program.
     PipeClose,
-    /// Pop the address of a shared object and take its lock: the job waits
+    /// Pop the address of a shared object and take its lock: the thread waits
     /// while another holds it, and a lock whose holder stopped at a trap stops
-    /// the program. A job that holds the lock takes it once more.
+    /// the program. A thread that holds the lock takes it once more.
     Lock,
     /// Pop the address of a shared object and give back its lock once.
     Unlock,

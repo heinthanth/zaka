@@ -6,11 +6,11 @@ pub mod emit;
 pub mod exports;
 mod exprs;
 pub mod ffi;
-pub mod jobs;
 pub mod kinds;
 pub mod lib_names;
 pub mod options;
 mod stmts;
+pub mod threads;
 pub mod toolchain;
 pub mod wasi;
 

@@ -65,14 +65,14 @@ pub struct Object
     /// In a C lib, the index of the bridge of each function that code
     /// outside can call.
     pub export_shapes: Vec<usize>,
-    /// Whether the program starts a job, so the link takes the C guard of
-    /// jobs.
-    pub jobs: bool,
+    /// Whether the program starts a thread, so the link takes the C guard of
+    /// threads.
+    pub threads: bool,
 }
 
 /// The Cranelift flags of both the JIT and AOT: code tuned for speed, and a
 /// probe of each page of a frame larger than one page, inline. A Windows
-/// thread commits its stack a page at a time behind a guard page, so a frame
+/// OS thread commits its stack a page at a time behind a guard page, so a frame
 /// that skips over the guard page faults; the probes cost a few stores on the
 /// other hosts.
 ///
@@ -126,7 +126,7 @@ pub fn object(
     crate::debug::place_text(&mut octets, &places)?;
     #[rustfmt::skip]
     let object = Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes,
-        jobs: lowered.jobs };
+        threads: lowered.threads };
     Ok(object)
 }
 

@@ -1,7 +1,7 @@
-//! Jobs on the VM: a call that runs in parallel starts a job, which takes
+//! Threads on the VM: a call that runs in parallel starts a thread, which takes
 //! turns with the others over the one heap; a wait gives its result. A trap
-//! ends its job alone under `--trap unwind`, and the whole program under
-//! `--trap abort`. Channels take values from one job to another.
+//! ends its thread alone under `--trap unwind`, and the whole program under
+//! `--trap abort`. Channels take values from one thread to another.
 
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
@@ -54,7 +54,7 @@ fn program(lines: &str) -> String
 }
 
 #[test]
-fn two_jobs_sum_two_halves()
+fn two_threads_sum_two_halves()
 {
     let text = program(
         "ကိန်းရှင် က သည် စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို [၁၊ ၂၊ ၃] ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
@@ -81,12 +81,12 @@ fn one_wait_takes_a_text_result_and_leaves_no_block_held()
         run_and_keep(&compile(&text), &mut out, &options, &HostData::default());
     assert!(result.is_ok(), "{result:?}");
     assert_eq!(String::from_utf8(out).unwrap(), "မင်္ဂလာ!\nမင်္ဂလာ!\n");
-    // The wait that reads no value dropped the result of its job.
+    // The wait that reads no value dropped the result of its thread.
     assert_eq!(machine.leaks(), Vec::new());
 }
 
 #[test]
-fn a_second_wait_for_a_job_stops_the_program()
+fn a_second_wait_for_a_thread_stops_the_program()
 {
     let text = program(
         "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
@@ -95,11 +95,11 @@ fn a_second_wait_for_a_job_stops_the_program()
     );
     let (out, result) = run_source_with(&text, &RunOptions::default());
     assert_eq!(out, "က!\n");
-    assert_eq!(result.map_err(|t| t.kind), Err(TrapKind::JobWaited { job: 1 }));
+    assert_eq!(result.map_err(|t| t.kind), Err(TrapKind::ThreadWaited { thread: 1 }));
 }
 
 #[test]
-fn the_program_waits_at_its_end_for_each_job()
+fn the_program_waits_at_its_end_for_each_thread()
 {
     let text = program(
         "ပြ ဟူသော လုပ်ဆောင်ချက်ကို \"နောက်ကွယ်\" ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
@@ -108,14 +108,15 @@ fn the_program_waits_at_its_end_for_each_job()
     assert_eq!(output(&text), "ရှေ့\nနောက်ကွယ်\n");
 }
 
-/// A job that divides 10 with 0, then one that divides 10 with 2 and a print.
+/// A thread that divides 10 with 0, then one that divides 10 with 2 and a
+/// print.
 const TRAPS: &str = "ကိန်းရှင် က သည် စား ဟူသော လုပ်ဆောင်ချက်ကို ၀ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း \
                      ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် စား ဟူသော လုပ်ဆောင်ချက်ကို ၂ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
 ခ ကို စောင့်သော ရလဒ် ကို ပြသမည်။";
 
 #[test]
-fn a_trap_ends_its_job_alone_and_the_program_ends_with_code_one()
+fn a_trap_ends_its_thread_alone_and_the_program_ends_with_code_one()
 {
     let mut out = Vec::new();
     let options = RunOptions::default();
@@ -124,23 +125,23 @@ fn a_trap_ends_its_job_alone_and_the_program_ends_with_code_one()
         run_and_keep(&module, &mut out, &options, &HostData::default());
     assert!(result.is_ok(), "{result:?}");
     assert_eq!(String::from_utf8(out).unwrap(), "၅\n");
-    let traps = machine.job_traps();
+    let traps = machine.thread_traps();
     assert_eq!(traps.len(), 1);
     assert_eq!((traps[0].0, &traps[0].1.kind), (1, &TrapKind::ZeroDivisor));
     assert_eq!(machine.exit_code(), Some(1));
 }
 
 #[test]
-fn a_wait_for_a_job_that_trapped_traps()
+fn a_wait_for_a_thread_that_trapped_traps()
 {
     let text = program(&format!("{TRAPS}\nက ကို စောင့်မည်။"));
     let (out, result) = run_source_with(&text, &RunOptions::default());
     assert_eq!(out, "၅\n");
-    assert_eq!(result.map_err(|t| t.kind), Err(TrapKind::JobTrapped { job: 1 }));
+    assert_eq!(result.map_err(|t| t.kind), Err(TrapKind::ThreadTrapped { thread: 1 }));
 }
 
 #[test]
-fn under_abort_a_trap_in_a_job_stops_the_program()
+fn under_abort_a_trap_in_a_thread_stops_the_program()
 {
     let options = RunOptions::builder().trap(TrapMode::Abort).build();
     let (out, result) = run_source_with(&program(TRAPS), &options);
@@ -238,7 +239,7 @@ fn with_pipe(lines: &str) -> String
 }
 
 #[test]
-fn a_receive_no_job_can_serve_stops_the_program()
+fn a_receive_no_thread_can_serve_stops_the_program()
 {
     let text = with_pipe("လမ်း မှ ရရှိသော ဒေတာ ကို ပြသမည်။");
     let (_, result) = run_source_with(&text, &RunOptions::default());
@@ -254,7 +255,7 @@ fn a_send_to_a_closed_channel_stops_the_program()
 }
 
 #[test]
-fn a_wait_passes_on_a_failure_of_the_job()
+fn a_wait_passes_on_a_failure_of_the_thread()
 {
     let text = "စမ်း ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
@@ -343,28 +344,28 @@ fn reaching(lines: &str) -> String
 }
 
 #[test]
-fn a_job_reads_a_constant_and_no_global()
+fn a_thread_reads_a_constant_and_no_global()
 {
     let constant = reaching("ဖတ် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။");
     assert_eq!(codes(&constant), []);
     let global = reaching("ခေါ် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။");
-    assert_eq!(codes(&global), [Code::GlobalInJob]);
+    assert_eq!(codes(&global), [Code::GlobalInThread]);
 }
 
 #[test]
-fn a_job_starts_in_a_declared_function_that_changes_no_parameter()
+fn a_thread_starts_in_a_declared_function_that_changes_no_parameter()
 {
     let value = reaching(
         "ကိန်းရှင် ဖ သည် ဖတ် ဟူသော လုပ်ဆောင်ချက် ဖြစ်ပါစေ။\nဖ ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။",
     );
-    assert_eq!(codes(&value), [Code::JobOfNoDeclaredFn]);
+    assert_eq!(codes(&value), [Code::ThreadOfNoDeclaredFn]);
     let changes =
         reaching("ကိန်းရှင် ဂ သည် ၁ ဖြစ်ပါစေ။\nပြင် ဟူသော လုပ်ဆောင်ချက်ကို ဂ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။");
-    assert_eq!(codes(&changes), [Code::JobChangesArgs]);
+    assert_eq!(codes(&changes), [Code::ThreadChangesArgs]);
 }
 
 #[test]
-fn a_lock_block_keeps_the_changes_of_two_jobs_apart()
+fn a_lock_block_keeps_the_changes_of_two_threads_apart()
 {
     let text = std::fs::read_to_string(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -374,7 +375,7 @@ fn a_lock_block_keeps_the_changes_of_two_jobs_apart()
     assert_eq!(output(&text), "၂၀၀၀\n၂၀၀၀\n");
 }
 
-/// A struct jobs share, and a function that divides its field inside a lock
+/// A struct threads share, and a function that divides its field inside a lock
 /// block.
 const SPLIT: &str = "အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
                      လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
@@ -386,7 +387,7 @@ const SPLIT: &str = "အကောင့် ဟူသော အပြိုင်
 ";
 
 #[test]
-fn a_lock_whose_holder_trapped_stops_the_next_job_that_takes_it()
+fn a_lock_whose_holder_trapped_stops_the_next_thread_that_takes_it()
 {
     let text = format!(
         "{SPLIT}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -404,12 +405,12 @@ fn a_lock_whose_holder_trapped_stops_the_next_job_that_takes_it()
     );
     assert!(result.is_ok(), "{result:?}");
     let kinds: Vec<&TrapKind> =
-        machine.job_traps().iter().map(|(_, t)| &t.kind).collect();
+        machine.thread_traps().iter().map(|(_, t)| &t.kind).collect();
     assert_eq!(kinds, [&TrapKind::ZeroDivisor, &TrapKind::LockBroken]);
 }
 
 #[test]
-fn a_field_of_an_object_jobs_share_is_reached_inside_a_lock_block_alone()
+fn a_field_of_an_object_threads_share_is_reached_inside_a_lock_block_alone()
 {
     let outside = format!(
         "{SPLIT}\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -423,7 +424,7 @@ fn a_field_of_an_object_jobs_share_is_reached_inside_a_lock_block_alone()
 }
 
 #[test]
-fn jobs_add_to_an_atomic_number_with_no_lock()
+fn threads_add_to_an_atomic_number_with_no_lock()
 {
     let text = std::fs::read_to_string(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -520,7 +521,7 @@ fn a_continue_ends_the_round_alone()
 }
 
 #[test]
-fn a_round_reads_from_outside_values_jobs_can_use_alone()
+fn a_round_reads_from_outside_values_threads_can_use_alone()
 {
     let text = format!(
         "ကောင်တာ ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် n ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။\n{}",
@@ -530,7 +531,7 @@ fn a_round_reads_from_outside_values_jobs_can_use_alone()
 ၀ မှ ၁ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို c ၏ n ဟု ထားမည်။"
         )
     );
-    assert_eq!(codes(&text), [Code::NotForJobs]);
+    assert_eq!(codes(&text), [Code::NotForThreads]);
 }
 
 #[test]
@@ -632,9 +633,9 @@ fn a_trap_in_a_round_names_the_function_of_its_loop()
 }
 
 #[test]
-fn a_job_that_ended_gives_its_stack_region_to_the_next()
+fn a_thread_that_ended_gives_its_stack_region_to_the_next()
 {
-    // Each region takes 1 MiB of the 4 GiB of a 32-bit VM: 8000 jobs fit
+    // Each region takes 1 MiB of the 4 GiB of a 32-bit VM: 8000 threads fit
     // when the regions of the ended ones come back.
     let text = program(
         "ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
@@ -648,9 +649,9 @@ fn a_job_that_ended_gives_its_stack_region_to_the_next()
 }
 
 #[test]
-fn a_list_result_comes_to_its_wait_after_its_region_went_to_another_job()
+fn a_list_result_comes_to_its_wait_after_its_region_went_to_another_thread()
 {
-    // က ends while ခ runs, and ဂ then takes a region of an ended job.
+    // က ends while ခ runs, and ဂ then takes a region of an ended thread.
     let text = program(
         "ကိန်းရှင် က သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် အော် ဟူသော လုပ်ဆောင်ချက်ကို \"ခ\" ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
@@ -690,7 +691,7 @@ fn a_seed_shuffles_the_turns_and_gives_the_same_order_again()
     assert_eq!(run(7), run(7));
 }
 
-/// Three jobs claim an object through a compare-and-set of its owner field.
+/// Three threads claim an object through a compare-and-set of its owner field.
 const CLAIM: &str = "ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
                      ပိုင်ရှင် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
@@ -711,7 +712,7 @@ const CLAIM: &str = "ကောင်တာ ဟူသော အပြိုင်
 ";
 
 #[test]
-fn a_compare_and_set_lets_one_job_alone_claim_an_object()
+fn a_compare_and_set_lets_one_thread_alone_claim_an_object()
 {
     // Each order of the turns gives one winner.
     for seed in 0..20

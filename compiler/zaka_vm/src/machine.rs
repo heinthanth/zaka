@@ -63,11 +63,11 @@ use crate::trap::hex;
 
 mod collector;
 mod deep;
-mod jobs;
 mod pipes;
+mod threads;
 
-pub use jobs::JobState;
-pub use jobs::TrapMode;
+pub use threads::ThreadState;
+pub use threads::TrapMode;
 mod table;
 
 /// The kind of a pointer difference.
@@ -111,12 +111,12 @@ pub struct RunOptions
     /// the run ends; the machine itself keeps no list.
     #[builder(default)]
     pub leaks: bool,
-    /// What a job does when it traps.
+    /// What a thread does when it traps.
     #[builder(default)]
     pub trap: TrapMode,
-    /// The seed that shuffles the turns of the jobs: each turn takes a count
-    /// of ops and goes to a job that can run, both drawn from it. `None` keeps
-    /// the fixed turns, the same on each run.
+    /// The seed that shuffles the turns of the threads: each turn takes a count
+    /// of ops and goes to a thread that can run, both drawn from it. `None`
+    /// keeps the fixed turns, the same on each run.
     pub shuffle: Option<u64>,
 }
 
@@ -537,9 +537,9 @@ pub struct Machine
     /// program has few kinds of block, so a list serves.
     #[builder(default)]
     ring_kinds: Vec<(DataKind, bool)>,
-    /// The jobs the program started, and their turns.
+    /// The threads the program started, and their turns.
     #[builder(default)]
-    jobs: jobs::Jobs,
+    threads: threads::Threads,
     /// The static data, the stack region and the heap.
     mem: Mem,
     /// The variable of each stack and static block, at the block start.
@@ -669,7 +669,7 @@ impl Machine
         let placed = machine.place_globals().and_then(|()| machine.place_texts());
         let placed = placed.and_then(|()| machine.place_seqs());
         machine.mem.open_stack(options.max_stack);
-        machine.jobs.shuffle(options.shuffle);
+        machine.threads.shuffle(options.shuffle);
         let entered = placed.and_then(|()| machine.enter(main));
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
         machine.raise_peak();
@@ -794,7 +794,7 @@ impl Machine
             Err(kind) =>
             {
                 let trap = self.trap(kind);
-                self.job_trapped(trap)
+                self.thread_trapped(trap)
             }
             Ok(()) if self.frames.is_empty() => State::Finished,
             Ok(()) if self.waiting => State::Waiting,
@@ -963,7 +963,7 @@ impl Machine
     pub fn exit_code(&self) -> Option<u8>
     {
         ret_if!(self.state != State::Finished, None);
-        ret_if!(self.jobs.lost_trap(), Some(1));
+        ret_if!(self.threads.lost_trap(), Some(1));
         let g = self.module.host.exit? as usize;
         let value =
             self.mem.load(*self.globals.get(g)?, self.module.globals.get(g)?.kind);
@@ -971,13 +971,13 @@ impl Machine
         Some((raw & 0xFF) as u8)
     }
 
-    /// The traps that ended jobs while the program went on, each with the
-    /// number of its job.
+    /// The traps that ended threads while the program went on, each with the
+    /// number of its thread.
     ///
     /// # Returns
     ///
-    /// The traps, in job order.
-    pub fn job_traps(&self) -> Vec<(usize, &Trap)> { self.jobs.traps() }
+    /// The traps, in thread order.
+    pub fn thread_traps(&self) -> Vec<(usize, &Trap)> { self.threads.traps() }
 
     /// Put a plain list of texts in a global, each text and the list in a
     /// heap block of its own.
@@ -1439,7 +1439,7 @@ impl Machine
                 let (new, expected) = (self.pop()?, self.pop()?);
                 let at = self.pop_ptr("atomic_cas")?;
                 let old = self.mem.load(at, kind)?;
-                // The VM runs one job at a time, so the test and the set are
+                // The VM runs one thread at a time, so the test and the set are
                 // one step.
                 do_if!(old == expected, self.mem.store(at, new)?);
                 self.push(old)
@@ -2137,8 +2137,8 @@ impl Machine
         self.slots -= frame.locals.len();
         // The program has ended: C can call nothing more, so each leave ends;
         // then free each ring left, so no block remains held.
-        ret_if!(!self.frames.is_empty() || !self.jobs.on_main(), Ok(()));
-        self.drop_job_results()?;
+        ret_if!(!self.frames.is_empty() || !self.threads.on_main(), Ok(()));
+        self.drop_thread_results()?;
         self.end_leaves()?;
         self.collect_rings()
     }

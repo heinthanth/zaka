@@ -349,10 +349,10 @@ impl Folder
                 self.drop_value(value);
             }
             Stmt::Break { .. } | Stmt::Continue { .. } => (),
-            Stmt::Wait { job, .. }
-            | Stmt::Close { pipe: job, .. }
-            | Stmt::Lock { obj: job, .. }
-            | Stmt::Unlock { obj: job, .. } => self.drop_value(job),
+            Stmt::Wait { thread, .. }
+            | Stmt::Close { pipe: thread, .. }
+            | Stmt::Lock { obj: thread, .. }
+            | Stmt::Unlock { obj: thread, .. } => self.drop_value(thread),
             Stmt::Send { pipe, value, .. } =>
             {
                 self.drop_value(pipe);
@@ -536,9 +536,9 @@ impl Folder
                 do_for!(a in args.iter_mut(), self.drop_value(a));
                 (None, None)
             }
-            ExprNode::Wait(job) | ExprNode::Receive(job) =>
+            ExprNode::Wait(thread) | ExprNode::Receive(thread) =>
             {
-                self.drop_value(job);
+                self.drop_value(thread);
                 (None, None)
             }
             ExprNode::CallValue { callee, args } =>

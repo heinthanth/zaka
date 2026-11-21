@@ -35,12 +35,12 @@ _Static_assert(sizeof(size_t) == sizeof(void *), "a word holds an address and a 
 #define ZK_TRACK (ZK_CHECK_DEPTH || ZK_DEBUG_INFO)
 
 /**
- * Note a call as it starts on the calls in progress of its thread: count it,
+ * Note a call as it starts on the calls in progress of its OS thread: count it,
  * stop the run past the depth limit, and keep its function; a call past the
  * limit with no depth check is counted but not kept.
  *
  * @param func The number of its function, as zk_frame counts them.
- * @return The calls in progress of the thread.
+ * @return The calls in progress of the OS thread.
  */
 static inline zk_context *zk_enter(uint32_t func)
 {
@@ -55,7 +55,7 @@ static inline zk_context *zk_enter(uint32_t func)
 
 /**
  * Note a call as it starts, when the calls are kept, and keep the calls in
- * progress of the thread in the local zk_c, which ZK_LEAVE and ZK_AT read.
+ * progress of the OS thread in the local zk_c, which ZK_LEAVE and ZK_AT read.
  *
  * @param F The number of its function, as zk_frame counts them.
  */
@@ -64,7 +64,7 @@ static inline zk_context *zk_enter(uint32_t func)
 /* clang-format on */
 
 /**
- * Keep the calls in progress of the thread in the local zk_c, for the code of
+ * Keep the calls in progress of the OS thread in the local zk_c, for the code of
  * main and of the start of a lib, which no ZK_ENTER opens.
  */
 /* clang-format off */
@@ -87,7 +87,7 @@ static inline zk_context *zk_enter(uint32_t func)
 
 /**
  * A safe point of the ring collector at each round of a loop of a program
- * with jobs: a thread a collection asks to halt waits in it until the
+ * with threads: an OS thread a collection asks to halt waits in it until the
  * collection ends. It reads one flag of the runtime.
  */
 #ifdef __GNUC__

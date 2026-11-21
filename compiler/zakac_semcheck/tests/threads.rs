@@ -1,11 +1,11 @@
-//! The mark of objects jobs can use, and the built-in trait of the kinds
-//! jobs can use, as a bound of a generic.
+//! The mark of objects threads can use, and the built-in trait of the kinds
+//! threads can use, as a bound of a generic.
 
 use zakac_diagnostics::Code;
 
 use crate::common::check_as_is;
 
-/// A generic function that gives back its argument, for kinds jobs can use.
+/// A generic function that gives back its argument, for kinds threads can use.
 const PASS_ON: &str = "ပြန် ဟူသော လုပ်ဆောင်ချက် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်
 တန် ဟူသော T တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ T တစ်ခု ကို ပြန်ပေးမည်။
@@ -71,7 +71,7 @@ fn a_value_meets_the_bound_with_no_mark()
 #[test]
 fn the_mark_on_a_value_is_zk0493()
 {
-    assert_eq!(codes("အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော"), [Code::JobsMarkOnValue]);
+    assert_eq!(codes("အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော"), [Code::ThreadsMarkOnValue]);
 }
 
 #[test]

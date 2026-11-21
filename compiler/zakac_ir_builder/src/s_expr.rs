@@ -64,7 +64,7 @@ impl ToSexpr for Stmt
                 let cause: &'static str = cause.into();
                 list(cause, value.iter().map(ToSexpr::to_sexpr))
             }
-            Stmt::Wait { job, .. } => list("wait", [job.to_sexpr()]),
+            Stmt::Wait { thread, .. } => list("wait", [thread.to_sexpr()]),
             Stmt::Send { pipe, value, .. } =>
             {
                 list("send", [pipe.to_sexpr(), value.to_sexpr()])
@@ -212,7 +212,7 @@ impl ToSexpr for Expr
             {
                 list("spawn", [call_sexpr(name, args)])
             }
-            ExprNode::Wait(job) => list("wait", [job.to_sexpr()]),
+            ExprNode::Wait(thread) => list("wait", [thread.to_sexpr()]),
             ExprNode::Receive(pipe) => list("receive", [pipe.to_sexpr()]),
             ExprNode::RingStat(n) => list("ring_stat", [n.to_string()]),
             ExprNode::MakePipe(room) =>

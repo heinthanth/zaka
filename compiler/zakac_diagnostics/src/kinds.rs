@@ -1180,8 +1180,8 @@ pub enum NoInitial<'a>
     Result,
     /// A part inside the kind has none; the name of the part.
     Part(&'a str),
-    /// A job, which starting a function on another thread alone makes.
-    Job,
+    /// A thread, which starting a function as a thread alone makes.
+    Thread,
 }
 
 /// `ကနဦးတန်ဖိုး` for a kind that has none.
@@ -1204,7 +1204,7 @@ pub fn no_initial_value(span: Span, kind: &str, why: NoInitial<'_>) -> Diagnosti
         NoInitial::Member(e) => t!("codes.ZK0479.member", e = e),
         NoInitial::Result => t!("codes.ZK0479.result"),
         NoInitial::Part(p) => t!("codes.ZK0479.part", p = p),
-        NoInitial::Job => t!("codes.ZK0479.job"),
+        NoInitial::Thread => t!("codes.ZK0479.thread"),
     };
     let msg = t!("codes.ZK0479.message", k = kind, r = reason);
     Diagnostic::new(Code::NoInitialValue, msg, span).with_help(t!("codes.ZK0479.help"))
@@ -1374,7 +1374,7 @@ pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
     Diagnostic::new(Code::DecimalIndex, msg, span).with_help(t!("codes.ZK0487.help"))
 }
 
-/// The mark of objects jobs can use on a struct that is no shared object.
+/// The mark of objects threads can use on a struct that is no shared object.
 ///
 /// # Arguments
 ///
@@ -1384,13 +1384,15 @@ pub fn decimal_index(span: Span, kind: &str) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0493` warning.
-pub fn jobs_mark_on_value(span: Span, name: &str) -> Diagnostic
+pub fn threads_mark_on_value(span: Span, name: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0493.message", n = name);
-    Diagnostic::new(Code::JobsMarkOnValue, msg, span).with_help(t!("codes.ZK0493.help"))
+    Diagnostic::new(Code::ThreadsMarkOnValue, msg, span)
+        .with_help(t!("codes.ZK0493.help"))
 }
 
-/// A value of a kind jobs cannot use goes to a job, or comes back from one.
+/// A value of a kind threads cannot use goes to a thread, or comes back from
+/// one.
 ///
 /// # Arguments
 ///
@@ -1400,10 +1402,10 @@ pub fn jobs_mark_on_value(span: Span, name: &str) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0494` diagnostic.
-pub fn not_for_jobs(span: Span, kind: &str) -> Diagnostic
+pub fn not_for_threads(span: Span, kind: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0494.message", k = kind);
-    Diagnostic::new(Code::NotForJobs, msg, span).with_help(t!("codes.ZK0494.help"))
+    Diagnostic::new(Code::NotForThreads, msg, span).with_help(t!("codes.ZK0494.help"))
 }
 
 /// A send, a receive, a close or a loop over each value names a value that
@@ -1439,7 +1441,7 @@ pub fn pipe_data_outside(span: Span) -> Diagnostic
     Diagnostic::new(Code::PipeDataOutside, msg, span).with_help(t!("codes.ZK0496.help"))
 }
 
-/// A call that runs as a job calls no function the program declares in
+/// A call that runs as a thread calls no function the program declares in
 /// Zaka: a function value, a closure or a C function.
 ///
 /// # Arguments
@@ -1450,14 +1452,14 @@ pub fn pipe_data_outside(span: Span) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0497` diagnostic.
-pub fn job_of_no_declared_fn(span: Span, name: &str) -> Diagnostic
+pub fn thread_of_no_declared_fn(span: Span, name: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0497.message", n = name);
-    Diagnostic::new(Code::JobOfNoDeclaredFn, msg, span)
+    Diagnostic::new(Code::ThreadOfNoDeclaredFn, msg, span)
         .with_help(t!("codes.ZK0497.help"))
 }
 
-/// A call that runs as a job calls a function that changes or fills a
+/// A call that runs as a thread calls a function that changes or fills a
 /// parameter, a variable of the caller.
 ///
 /// # Arguments
@@ -1468,13 +1470,14 @@ pub fn job_of_no_declared_fn(span: Span, name: &str) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0498` diagnostic.
-pub fn job_changes_args(span: Span, name: &str) -> Diagnostic
+pub fn thread_changes_args(span: Span, name: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0498.message", n = name);
-    Diagnostic::new(Code::JobChangesArgs, msg, span).with_help(t!("codes.ZK0498.help"))
+    Diagnostic::new(Code::ThreadChangesArgs, msg, span)
+        .with_help(t!("codes.ZK0498.help"))
 }
 
-/// A field of an object jobs share is read or written outside a lock block
+/// A field of an object threads share is read or written outside a lock block
 /// of the object, or a lock block names a value that is no shared object.
 ///
 /// # Arguments

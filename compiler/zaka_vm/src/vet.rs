@@ -917,12 +917,12 @@ impl Paths<'_, '_>
         Ok(call_effect(takes, callee.ret))
     }
 
-    /// The effect of the start of a job: the arguments go, as for a call,
-    /// and the name of the job comes.
+    /// The effect of the start of a thread: the arguments go, as for a call,
+    /// and the name of the thread comes.
     ///
     /// # Arguments
     ///
-    /// * `f` - The function the job calls.
+    /// * `f` - The function the thread calls.
     ///
     /// # Returns
     ///

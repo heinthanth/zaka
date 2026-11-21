@@ -19,7 +19,7 @@ use cranelift_module::Module;
 use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_borrow_checker::crossing_fns;
-use zakac_borrow_checker::starts_jobs;
+use zakac_borrow_checker::starts_threads;
 use zakac_codegen_target_c::descriptors::Descriptors;
 use zakac_codegen_target_c::descriptors::KindRow;
 use zakac_codegen_target_c::emit::PROGRAM_TABLE;
@@ -76,10 +76,10 @@ pub struct Lowered
     /// The unwind codes of each function, for 64-bit Windows.
     #[builder(default)]
     pub unwinds: Vec<FnUnwind>,
-    /// Whether the program starts a job, so the build compiles the C guard of
-    /// jobs beside the object.
+    /// Whether the program starts a thread, so the build compiles the C guard
+    /// of threads beside the object.
     #[builder(default)]
-    pub jobs: bool,
+    pub threads: bool,
 }
 
 /// State shared across the functions of a program.
@@ -131,17 +131,17 @@ pub struct Shared<'m, M: Module>
     /// The unwind codes of each function compiled so far, for 64-bit
     /// Windows.
     pub unwinds: Vec<FnUnwind>,
-    /// The step of each function a job runs, under the function.
+    /// The step of each function a thread runs, under the function.
     pub steps: Vec<(u32, FuncId)>,
-    /// Whether the program starts jobs, so each round of a loop passes a safe
-    /// point of the ring collector.
+    /// Whether the program starts threads, so each round of a loop passes a
+    /// safe point of the ring collector.
     pub safe_points: bool,
     /// The step of each function a parallel map runs, under the function.
     pub map_steps: Vec<(u32, FuncId)>,
     /// The step of the function of each parallel loop, under the function.
     pub round_steps: Vec<(u32, FuncId)>,
     /// Whether the code runs in this process, which has no C compiler for
-    /// the guard of a job.
+    /// the guard of a thread.
     pub jit: bool,
 }
 
@@ -456,7 +456,7 @@ pub fn emit<M: Module>(
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
         cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(), map_steps: Vec::new(), round_steps: Vec::new(),
-        jit: main_name == "zk_main", safe_points: starts_jobs(module) };
+        jit: main_name == "zk_main", safe_points: starts_threads(module) };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
     let mut clif = String::new();
@@ -524,13 +524,14 @@ pub fn emit<M: Module>(
             define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.round_step(f));
         clif.push_str(&text);
     }
-    // A step can start no job of its own, so each is lowered once.
+    // A step can start no thread of its own, so each is lowered once.
     let steps = s.steps.clone();
     for (f, id) in steps
     {
         let mut sig = s.m.make_signature();
         sig.params.push(AbiParam::new(ptr));
-        let text = define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.job_step(f));
+        let text =
+            define_fn(&mut s, &mut fctx, id, sig, want_clif, |g| g.thread_step(f));
         clif.push_str(&text);
     }
     ret_if!(let Some(what) = s.missing.take(), Err(Error::NotForNative { what }));
@@ -544,7 +545,7 @@ pub fn emit<M: Module>(
     let lines = line_table(&mut s, main, main_name);
     #[rustfmt::skip]
     return Ok(Lowered::builder().main(main).clif(clif).table(table).descrs(descrs)
-        .export_shapes(export_shapes).lines(lines).jobs(!(s.steps.is_empty() && s.map_steps.is_empty() && s.round_steps.is_empty()))
+        .export_shapes(export_shapes).lines(lines).threads(!(s.steps.is_empty() && s.map_steps.is_empty() && s.round_steps.is_empty()))
         .unwinds(std::mem::take(&mut s.unwinds)).build());
 }
 

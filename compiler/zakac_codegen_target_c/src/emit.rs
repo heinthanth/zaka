@@ -8,7 +8,7 @@ use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_borrow_checker::crossing_fns;
 use zakac_borrow_checker::options::OverflowMode;
-use zakac_borrow_checker::starts_jobs;
+use zakac_borrow_checker::starts_threads;
 use zakac_host_errors::Error;
 use zakac_i18n::t;
 use zakac_ir_builder::ir::Func;
@@ -202,7 +202,7 @@ pub fn emit(
     let module = &spelled;
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
-        .grants(grants.clone()).safe_points(starts_jobs(module)).build();
+        .grants(grants.clone()).safe_points(starts_threads(module)).build();
     let mut units = vec![String::new(); files.len().max(1)];
     let unit_of = |lo| files.iter().rposition(|f| f.start_pos <= lo).unwrap_or(0);
     for (n, g) in module.globals.iter().enumerate()
@@ -227,10 +227,10 @@ pub fn emit(
     let fn_params = module.foreign.iter().flat_map(|f| f.params.iter().copied());
     let fn_params: Vec<DataKind> = fn_params.filter(|k| k.is_fn()).collect();
     // So can a function: C calls each one through a bridge and the runtime,
-    // which hold the rules of threads.
+    // which hold the rules of OS threads.
     let platform = options.platform_bits;
     do_for!(k in fn_params, _ = shared.cb_shape(k));
-    let jobs = crate::jobs::jobs_source(&mut shared);
+    let threads = crate::threads::threads_source(&mut shared);
     let header = shared.header();
     let kinds = shared.kinds_source();
     let ffi =
@@ -249,7 +249,7 @@ pub fn emit(
     out.push(CFile::builder().name(KINDS_HEADER).text(header).build());
     out.push(CFile::builder().name(KINDS_SOURCE).text(kinds).build());
     out.push(CFile::builder().name(MAIN_SOURCE).text(main).build());
-    do_if!(let Some(text) = jobs, out.push(CFile::builder().name(crate::jobs::JOBS_SOURCE).text(text).build()));
+    do_if!(let Some(text) = threads, out.push(CFile::builder().name(crate::threads::THREADS_SOURCE).text(text).build()));
     do_if!(
         !module.foreign.is_empty(),
         out.push(CFile::builder().name(FFI_SOURCE).text(ffi).build())
@@ -396,8 +396,8 @@ pub(crate) struct Shared<'m>
     pub(crate) module: &'m Module,
     /// The choices of the C target.
     pub(crate) options: TargetCOptions,
-    /// Whether the program starts jobs, so each round of a loop passes a safe
-    /// point of the ring collector.
+    /// Whether the program starts threads, so each round of a loop passes a
+    /// safe point of the ring collector.
     #[builder(default)]
     pub(crate) safe_points: bool,
     /// The rights the build grants the program.
@@ -418,7 +418,7 @@ pub(crate) struct Shared<'m>
     /// Whether the program makes a closure.
     #[builder(default)]
     pub(crate) made_closure: bool,
-    /// The functions a job runs, each with a step of its own.
+    /// The functions a thread runs, each with a step of its own.
     #[builder(default)]
     pub(crate) spawned: std::collections::BTreeSet<u32>,
     /// The functions a parallel map runs, each with a step of its own.
@@ -705,7 +705,7 @@ impl Shared<'_>
                 comment(&f.name)
             );
         }
-        out.push_str(&crate::jobs::declarations(self));
+        out.push_str(&crate::threads::declarations(self));
         out.push_str(&self.descr.declarations());
         let _ = writeln!(out, "extern const zk_program {PROGRAM_TABLE};");
         let shapes = (0..self.cb_kinds.len()).map(shape_name);
@@ -871,13 +871,13 @@ pub fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_OVERLAP", t!("target_c.trap.overlap")),
         ("ZK_TRAP_TOO_DEEP", t!("target_c.trap.too_deep")),
         ("ZK_TRAP_PERMISSION", t!("target_c.trap.permission_denied")),
-        ("ZK_TRAP_JOB_TRAPPED", t!("target_c.trap.job_trapped")),
+        ("ZK_TRAP_THREAD_TRAPPED", t!("target_c.trap.thread_trapped")),
         ("ZK_TRAP_DEADLOCK", t!("target_c.trap.deadlock")),
         ("ZK_TRAP_PIPE_CLOSED", t!("target_c.trap.pipe_closed")),
-        ("ZK_TRAP_JOB_STOPPED", t!("target_c.trap.job_stopped")),
+        ("ZK_TRAP_THREAD_STOPPED", t!("target_c.trap.thread_stopped")),
         ("ZK_TRAP_LOCK_BROKEN", t!("target_c.trap.lock_broken")),
         ("ZK_TRAP_THREADS_NOT_POSITIVE", t!("target_c.trap.threads_not_positive")),
-        ("ZK_TRAP_JOB_WAITED", t!("target_c.trap.job_waited")),
+        ("ZK_TRAP_THREAD_WAITED", t!("target_c.trap.thread_waited")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }

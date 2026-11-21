@@ -27,8 +27,8 @@ use crate::structs::StructTable;
 use crate::structs::parse_sig;
 use crate::task;
 use crate::task::ATOMIC;
-use crate::task::JOB;
 use crate::task::PIPE;
+use crate::task::THREAD;
 use crate::task::TaskKind;
 
 /// The name of the struct a function that can fail gives back; no written
@@ -335,7 +335,7 @@ pub enum DataKind
     Enum(&'static EnumKind),
     /// A function value: one word, the function it calls or none.
     Fn(&'static FnKind),
-    /// A job on another thread or a channel between threads: one word, the
+    /// A thread or a channel between threads: one word, the
     /// number that names it to the scheduler.
     Task(&'static TaskKind),
 }
@@ -355,8 +355,8 @@ pub enum InitialGap
     /// A part inside the kind with none: the name of a field, or the kind of
     /// the cells of a list.
     Part(String),
-    /// A job, which starting a function on another thread alone makes.
-    Job,
+    /// A thread, which starting a function as a thread alone makes.
+    Thread,
 }
 
 impl DataKind
@@ -1066,7 +1066,7 @@ impl DataKind
     fn gap_in(self, inside: &mut Vec<&'static StructKind>) -> Option<InitialGap>
     {
         ret_if!(self.is_fn(), Some(InitialGap::Function));
-        ret_if!(let Some(t) = self.as_task(), tern!(t.is_job(), Some(InitialGap::Job), None));
+        ret_if!(let Some(t) = self.as_task(), tern!(t.is_thread(), Some(InitialGap::Thread), None));
         ret_if!(self.as_external().is_some(), Some(InitialGap::Handle));
         ret_if!(self.is_optional(), None);
         if let Some(e) = self.as_enum()
@@ -1240,11 +1240,11 @@ impl DataKind
     /// `true` for a function kind.
     pub fn is_fn(self) -> bool { matches!(self, DataKind::Fn(_)) }
 
-    /// The job or channel part of the kind.
+    /// The thread or channel part of the kind.
     ///
     /// # Returns
     ///
-    /// The kind, or `None` for a kind that is no job and no channel.
+    /// The kind, or `None` for a kind that is no thread and no channel.
     pub fn as_task(self) -> Option<&'static TaskKind>
     {
         tern!(let DataKind::Task(t) = self, Some(t), None)
@@ -1271,7 +1271,7 @@ impl DataKind
             DataKind::Seq(s) => (0, Base::Seq(s)),
             DataKind::Enum(e) => (0, Base::Enum(e)),
             DataKind::Fn(f) => (0, Base::Fn(f)),
-            // A job or a channel is held as the number that names it.
+            // A thread or a channel is held as the number that names it.
             DataKind::Task(_) => (0, Base::Int(IntKind::new(false, Width::Platform))),
         }
     }
@@ -1772,7 +1772,7 @@ impl DataKind
 /// # Returns
 ///
 /// The struct, or `isize` for a name that is not declared.
-/// The job or channel kind a named kind phrase writes: `<kind> ပြန်ပေးမည့်
+/// The thread or channel kind a named kind phrase writes: `<kind> ပြန်ပေးမည့်
 /// အပြိုင်လုပ်ငန်း`, a bare `အပြိုင်လုပ်ငန်း`, or `<kind> ပို့နိုင်သော ဒေတာလမ်းကြောင်း`, which
 /// the core declares with their written forms.
 ///
@@ -1791,7 +1791,7 @@ fn task_of(kind: &Kind, structs: &StructTable) -> Option<DataKind>
     let of = kind.args.first().map(|a| DataKind::from_ast(a, structs));
     let made = match flavor
     {
-        task::Flavor::Job => task::make(false, of),
+        task::Flavor::Thread => task::make(false, of),
         task::Flavor::Pipe => task::make(true, Some(of?)),
         // An atomic number is an integer of the platform width.
         task::Flavor::Atomic =>
@@ -1804,8 +1804,8 @@ fn task_of(kind: &Kind, structs: &StructTable) -> Option<DataKind>
     Some(DataKind::Task(made))
 }
 
-/// The short name of a job or channel kind, as messages write it:
-/// `job(isize)`, `job()`, `pipe(text)`.
+/// The short name of a thread or channel kind, as messages write it:
+/// `thread(isize)`, `thread()`, `pipe(text)`.
 ///
 /// # Arguments
 ///
@@ -1821,7 +1821,7 @@ fn task_name(t: &TaskKind) -> String
     {
         (true, _) => "pipe",
         (_, true) => "atomic",
-        _ => "job",
+        _ => "thread",
     };
     format!("{head}({of})")
 }
@@ -1909,7 +1909,7 @@ fn parse_base(name: &str) -> Option<DataKind>
     ret_if!(is_fn_text(name), parse_fn_with(unwrap_parens(name), &mut DataKind::parse));
     ret_if!(name == "ptr", Some(DataKind::OPAQUE));
     ret_if!(
-        name.starts_with(JOB) || name.starts_with(PIPE) || name.starts_with(ATOMIC),
+        name.starts_with(THREAD) || name.starts_with(PIPE) || name.starts_with(ATOMIC),
         task::parse_sig(name).map(DataKind::Task)
     );
     ret_if!(name == "rawptr", Some(DataKind::OPAQUE.with_outer_raw()));

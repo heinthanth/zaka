@@ -167,7 +167,7 @@ impl Value
             DataKind::Bool => Value::Bool(false),
             // A value of an enumeration starts at its first member.
             DataKind::Enum(e) => e.first().scalar().unwrap_or(Value::NULL),
-            // A job or a channel starts as the number of none.
+            // A thread or a channel starts as the number of none.
             DataKind::Task(_) =>
             {
                 Value::Int { kind: IntKind::new(false, Width::Platform), raw: 0 }

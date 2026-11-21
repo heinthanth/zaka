@@ -74,7 +74,7 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
             | Stmt::Print { value: PrintValue::Expr(e), .. }
             | Stmt::Halt { value: Some(e), .. }
             | Stmt::Rings { octets: Some(e), .. }
-            | Stmt::Wait { job: e, .. }
+            | Stmt::Wait { thread: e, .. }
             | Stmt::Close { pipe: e, .. }
             | Stmt::Lock { obj: e, .. }
             | Stmt::Unlock { obj: e, .. } => expr_places(e, out),
@@ -232,7 +232,7 @@ fn expr_places(e: &Expr, out: &mut Vec<Place>)
         | ExprNode::Host { args, .. }
         | ExprNode::Foreign { args, .. }
         | ExprNode::List(args) => args.iter().for_each(|a| expr_places(a, out)),
-        ExprNode::Wait(job) | ExprNode::Receive(job) => expr_places(job, out),
+        ExprNode::Wait(thread) | ExprNode::Receive(thread) => expr_places(thread, out),
         ExprNode::CallValue { callee, args } => std::iter::once(callee.as_ref())
             .chain(args)
             .for_each(|a| expr_places(a, out)),

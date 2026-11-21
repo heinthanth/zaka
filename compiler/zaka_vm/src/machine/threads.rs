@@ -1,14 +1,14 @@
-//! The jobs of a program, run as green threads: each job has its own
-//! operand stack, calls and stack region, over the one heap, and the jobs
+//! The threads of a program, run as green threads: each thread has its own
+//! operand stack, calls and stack region, over the one heap, and the threads
 //! take turns of a fixed count of ops on one host thread. The order of the
 //! turns is fixed, so a run gives the same output each time; a seed
-//! (`--shuffle-job-order`) shuffles them, and the same seed gives the same
+//! (`--shuffle-thread-order`) shuffles them, and the same seed gives the same
 //! order again.
 //!
-//! The running job keeps its state in the fields of the machine; each other
-//! job keeps its state in its row of [`Jobs`], and a switch swaps the two. A
-//! wait for a job that has not ended parks the waiter: the op goes back one,
-//! so it runs again once the job it waits for ends.
+//! The running thread keeps its state in the fields of the machine; each other
+//! thread keeps its state in its row of [`Threads`], and a switch swaps the
+//! two. A wait for a thread that has not ended parks the waiter: the op goes
+//! back one, so it runs again once the thread it waits for ends.
 
 use zakac_rust_sugars::ret_false;
 
@@ -16,32 +16,32 @@ use super::pipes::Pipe;
 use super::*;
 use crate::mem::StackRange;
 
-/// The ops one job runs before the next one takes its turn.
+/// The ops one thread runs before the next one takes its turn.
 const TURN: u32 = 100;
 
-/// What a job does when it traps, as `--trap` chooses.
+/// What a thread does when it traps, as `--trap` chooses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumIter, Display, EnumString)]
 #[strum(serialize_all = "lowercase")]
 pub enum TrapMode
 {
-    /// The trap ends its job alone; a wait for that job traps in turn. A
-    /// trap of the main job still stops the program.
+    /// The trap ends its thread alone; a wait for that thread traps in turn. A
+    /// trap of the main thread still stops the program.
     #[default]
     Unwind,
-    /// The trap of a job stops the whole program.
+    /// The trap of a thread stops the whole program.
     Abort,
 }
 
-/// What a parked job waits for.
+/// What a parked thread waits for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(super) enum Waits
 {
-    /// Nothing: the job can run.
+    /// Nothing: the thread can run.
     #[default]
     Nothing,
-    /// The end of the job with this number.
-    Job(usize),
-    /// The end of each other job: the main job at the end of the program.
+    /// The end of the thread with this number.
+    Thread(usize),
+    /// The end of each other thread: the main thread at the end of the program.
     Each,
     /// A value in the channel with this number, or its close.
     Receive(usize),
@@ -51,7 +51,7 @@ pub(super) enum Waits
     Lock(u64),
 }
 
-/// Where a job stands.
+/// Where a thread stands.
 #[derive(Debug, Clone, PartialEq, Default)]
 enum End
 {
@@ -61,15 +61,15 @@ enum End
     /// It returned, with its result: a value, or nothing.
     Done(Option<Value>),
     /// It returned a list or a struct, kept as its octets: the block it was
-    /// in sat in the stack region of the job, which the next job takes.
+    /// in sat in the stack region of the thread, which the next thread takes.
     Kept(Vec<u8>),
     /// It stopped at a trap.
     Trapped(Box<Trap>),
 }
 
-/// One job.
+/// One thread.
 #[derive(Debug, Clone, Default, Builder)]
-struct Job
+struct Thread
 {
     /// Its operand stack, while it is parked.
     #[builder(default)]
@@ -90,61 +90,63 @@ struct Job
     end: End,
     /// The kind of its result, `None` for a function that gives nothing.
     ret: Option<DataKind>,
-    /// Whether some job waited for it.
+    /// Whether some thread waited for it.
     #[builder(default)]
     awaited: bool,
 }
 
-/// A lock of a shared object that a job holds.
+/// A lock of a shared object that a thread holds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Held
 {
     /// The address of the object.
     obj: u64,
-    /// The number of the job that holds it.
+    /// The number of the thread that holds it.
     owner: usize,
-    /// The count of times the job took it.
+    /// The count of times the thread took it.
     depth: u32,
     /// Whether its holder stopped at a trap, so it never comes back.
     broken: bool,
 }
 
-/// The jobs of a program and their turns.
+/// The threads of a program and their turns.
 #[derive(Debug, Clone)]
-pub struct Jobs
+pub struct Threads
 {
-    /// Each job, main at 0; the row of the running one is out of date.
-    list: Vec<Job>,
+    /// Each thread, main at 0; the row of the running one is out of date.
+    list: Vec<Thread>,
     /// Each channel, the first under the number 1.
     pub(super) pipes: Vec<Pipe>,
-    /// Each lock a job holds, or that a job held when it stopped at a trap.
+    /// Each lock a thread holds, or that a thread held when it stopped at a
+    /// trap.
     locks: Vec<Held>,
-    /// The number of the running job.
+    /// The number of the running thread.
     now: usize,
-    /// The ops left in the turn of the running job.
+    /// The ops left in the turn of the running thread.
     left: u32,
-    /// The stack regions of the jobs that ended, for the next jobs to take.
+    /// The stack regions of the threads that ended, for the next threads to
+    /// take.
     spare: Vec<StackRange>,
-    /// What draws the length and the job of each turn, when a seed shuffles
+    /// What draws the length and the thread of each turn, when a seed shuffles
     /// them.
     rng: Option<fastrand::Rng>,
 }
 
-impl Default for Jobs
+impl Default for Threads
 {
     fn default() -> Self
     {
         #[rustfmt::skip]
-        let jobs = Jobs { list: vec![Job::default()], pipes: Vec::new(), locks: Vec::new(),
+        let threads = Threads { list: vec![Thread::default()], pipes: Vec::new(), locks: Vec::new(),
             now: 0, left: TURN, spare: Vec::new(), rng: None };
-        jobs
+        threads
     }
 }
 
-impl Jobs
+impl Threads
 {
-    /// Whether a job stopped at a trap and no job waited for it: the program
-    /// then ends with code 1.
+    /// Whether a thread stopped at a trap and no thread waited for it: the
+    /// program then ends with code 1.
     ///
     /// # Returns
     ///
@@ -154,11 +156,11 @@ impl Jobs
         self.list.iter().any(|j| matches!(j.end, End::Trapped(_)) && !j.awaited)
     }
 
-    /// The traps that ended jobs, each with the number of its job.
+    /// The traps that ended threads, each with the number of its thread.
     ///
     /// # Returns
     ///
-    /// The traps, in job order.
+    /// The traps, in thread order.
     pub fn traps(&self) -> Vec<(usize, &Trap)>
     {
         self.list
@@ -172,47 +174,47 @@ impl Jobs
             .collect()
     }
 
-    /// Whether the running job is the main one.
+    /// Whether the running thread is the main one.
     ///
     /// # Returns
     ///
-    /// `true` for the main job.
+    /// `true` for the main thread.
     pub fn on_main(&self) -> bool { self.now == 0 }
 
-    /// Whether a job other than the running one has not ended.
+    /// Whether a thread other than the running one has not ended.
     ///
     /// # Returns
     ///
     /// `true` if one has not.
     fn others_run(&self) -> bool
     {
-        let runs = |(n, j): (usize, &Job)| n != self.now && j.end == End::Runs;
+        let runs = |(n, j): (usize, &Thread)| n != self.now && j.end == End::Runs;
         self.list.iter().enumerate().any(runs)
     }
 
-    /// Whether a job can run: it has not ended, and what it waits for came.
+    /// Whether a thread can run: it has not ended, and what it waits for came.
     ///
     /// # Arguments
     ///
-    /// * `n` - The number of the job.
+    /// * `n` - The number of the thread.
     ///
     /// # Returns
     ///
     /// `true` if it can.
     fn can_go(&self, n: usize) -> bool
     {
-        let job = &self.list[n];
-        ret_false!(job.end != End::Runs);
-        match job.waits
+        let thread = &self.list[n];
+        ret_false!(thread.end != End::Runs);
+        match thread.waits
         {
             Waits::Nothing => true,
-            Waits::Job(other) =>
+            Waits::Thread(other) =>
             {
                 self.list.get(other).is_none_or(|j| j.end != End::Runs)
             }
             Waits::Each =>
             {
-                let ended = |(k, j): (usize, &Job)| k == n || j.end != End::Runs;
+                let ended = |(k, j): (usize, &Thread)| k == n || j.end != End::Runs;
                 self.list.iter().enumerate().all(ended)
             }
             Waits::Receive(p) => self.pipes.get(p).is_none_or(Pipe::can_receive),
@@ -221,13 +223,13 @@ impl Jobs
         }
     }
 
-    /// The next job that can run: after the running one in order, the
+    /// The next thread that can run: after the running one in order, the
     /// running one itself last; with a seed, one of those that can run, drawn
     /// from it.
     ///
     /// # Returns
     ///
-    /// The number of the job, or `None` when none can run.
+    /// The number of the thread, or `None` when none can run.
     fn next_to_go(&mut self) -> Option<usize>
     {
         let count = self.list.len();
@@ -266,26 +268,26 @@ impl Jobs
     }
 }
 
-/// The kind of a job number.
-pub(super) const JOB_ID: IntKind = IntKind::new(false, Width::Platform);
+/// The kind of a thread number.
+pub(super) const THREAD_ID: IntKind = IntKind::new(false, Width::Platform);
 
-/// What a job does, as a debugger shows it.
+/// What a thread does, as a debugger shows it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum JobState
+pub enum ThreadState
 {
     /// It runs now.
     Runs,
     /// It waits for its turn.
     Queued,
-    /// It waits for the end of the job with this number.
-    WaitsJob(usize),
-    /// It waits for each other job to end: the main job at the end.
+    /// It waits for the end of the thread with this number.
+    WaitsThread(usize),
+    /// It waits for each other thread to end: the main thread at the end.
     WaitsEach,
     /// It waits for a value of the channel with this number.
     WaitsReceive(usize),
     /// It waits for room in the channel with this number.
     WaitsSend(usize),
-    /// It waits for a lock another job holds.
+    /// It waits for a lock another thread holds.
     WaitsLock,
     /// It returned.
     Done,
@@ -295,43 +297,43 @@ pub enum JobState
 
 impl Machine
 {
-    /// Each job of the program and what it does, the main job first, for a
-    /// debugger.
+    /// Each thread of the program and what it does, the main thread first, for
+    /// a debugger.
     ///
     /// # Returns
     ///
-    /// The state of each job, under its number.
-    pub fn job_states(&self) -> Vec<JobState>
+    /// The state of each thread, under its number.
+    pub fn thread_states(&self) -> Vec<ThreadState>
     {
-        let jobs = &self.jobs;
-        let state = |(n, j): (usize, &Job)| match (&j.end, j.waits)
+        let threads = &self.threads;
+        let state = |(n, j): (usize, &Thread)| match (&j.end, j.waits)
         {
-            (End::Trapped(_), _) => JobState::Trapped,
-            (End::Done(_) | End::Kept(_), _) => JobState::Done,
-            _ if n == jobs.now => JobState::Runs,
-            (_, Waits::Nothing) => JobState::Queued,
-            (_, Waits::Job(k)) => JobState::WaitsJob(k),
-            (_, Waits::Each) => JobState::WaitsEach,
-            (_, Waits::Receive(p)) => JobState::WaitsReceive(p),
-            (_, Waits::Send(p)) => JobState::WaitsSend(p),
-            (_, Waits::Lock(_)) => JobState::WaitsLock,
+            (End::Trapped(_), _) => ThreadState::Trapped,
+            (End::Done(_) | End::Kept(_), _) => ThreadState::Done,
+            _ if n == threads.now => ThreadState::Runs,
+            (_, Waits::Nothing) => ThreadState::Queued,
+            (_, Waits::Thread(k)) => ThreadState::WaitsThread(k),
+            (_, Waits::Each) => ThreadState::WaitsEach,
+            (_, Waits::Receive(p)) => ThreadState::WaitsReceive(p),
+            (_, Waits::Send(p)) => ThreadState::WaitsSend(p),
+            (_, Waits::Lock(_)) => ThreadState::WaitsLock,
         };
-        jobs.list.iter().enumerate().map(state).collect()
+        threads.list.iter().enumerate().map(state).collect()
     }
 
-    /// The number of the job that runs now; the main job is 0.
+    /// The number of the thread that runs now; the main thread is 0.
     ///
     /// # Returns
     ///
     /// The number.
-    pub fn running_job(&self) -> usize { self.jobs.now }
+    pub fn running_thread(&self) -> usize { self.threads.now }
 }
 
 impl Machine
 {
-    /// Start a job that calls a function: its arguments leave the stack,
-    /// the job enters the function at once, and the number of the job is
-    /// pushed. The job holds each list and struct argument, which the spawn
+    /// Start a thread that calls a function: its arguments leave the stack,
+    /// the thread enters the function at once, and the number of the thread is
+    /// pushed. The thread holds each list and struct argument, which the spawn
     /// takes owned.
     ///
     /// # Arguments
@@ -351,22 +353,22 @@ impl Machine
         ret_if!(self.stack.len() < params, Err(malformed("missing arguments")));
         let args = self.stack.split_off(self.stack.len() - params);
         let size = self.options.max_stack;
-        let spare = self.jobs.spare.pop().map(|r| StackRange { top: r.lo, ..r });
+        let spare = self.threads.spare.pop().map(|r| StackRange { top: r.lo, ..r });
         let range = spare.or_else(|| self.mem.take_region(size));
         let range = range.ok_or(TrapKind::StackFull { size })?;
-        let n = self.jobs.list.len();
-        let job = Job::builder().range(range).maybe_ret(ret).build();
-        self.jobs.list.push(job);
-        let back = self.jobs.now;
+        let n = self.threads.list.len();
+        let thread = Thread::builder().range(range).maybe_ret(ret).build();
+        self.threads.list.push(thread);
+        let back = self.threads.now;
         self.swap_to(n);
-        let entered = self.enter_job(f, args, &kinds, ret);
+        let entered = self.enter_thread(f, args, &kinds, ret);
         self.swap_to(back);
         entered?;
         let platform = self.module.platform_bits;
-        self.push(Value::int(JOB_ID, n as u128, platform))
+        self.push(Value::int(THREAD_ID, n as u128, platform))
     }
 
-    /// Enter the function of a new job, the running one: the slot of a list
+    /// Enter the function of a new thread, the running one: the slot of a list
     /// or struct result and the copies of the arguments go to its region.
     ///
     /// # Arguments
@@ -379,7 +381,7 @@ impl Machine
     /// # Returns
     ///
     /// `Ok`, or a trap.
-    fn enter_job(
+    fn enter_thread(
         &mut self, f: u32, args: Vec<Value>, kinds: &[DataKind], ret: Option<DataKind>,
     ) -> Step
     {
@@ -399,9 +401,9 @@ impl Machine
         self.enter(f)
     }
 
-    /// Move a list or struct argument into a block of the running job: the
+    /// Move a list or struct argument into a block of the running thread: the
     /// spawn takes its arguments owned, as a set does, and the function of
-    /// the job drops each of its parameters as it returns.
+    /// the thread drops each of its parameters as it returns.
     ///
     /// # Arguments
     ///
@@ -420,8 +422,8 @@ impl Machine
         Ok(Value::Ptr(to))
     }
 
-    /// Park the running job at the op that ran last, so the op runs again on
-    /// a later turn, once what the job waits for comes.
+    /// Park the running thread at the op that ran last, so the op runs again on
+    /// a later turn, once what the thread waits for comes.
     ///
     /// # Arguments
     ///
@@ -429,11 +431,11 @@ impl Machine
     pub(super) fn park(&mut self, waits: Waits)
     {
         do_if!(let Some(frame) = self.frames.last_mut(), frame.pc -= 1);
-        self.jobs.list[self.jobs.now].waits = waits;
+        self.threads.list[self.threads.now].waits = waits;
     }
 
-    /// Wait for a job: its result is pushed, or copied to the slot under its
-    /// number. A job that has not ended parks the waiter, and the op runs
+    /// Wait for a thread: its result is pushed, or copied to the slot under its
+    /// number. A thread that has not ended parks the waiter, and the op runs
     /// again on its next turn.
     ///
     /// # Arguments
@@ -442,39 +444,42 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// `Ok`, or a trap: `JobTrapped` for a job that stopped at one.
+    /// `Ok`, or a trap: `ThreadTrapped` for a thread that stopped at one.
     pub(super) fn wait(&mut self, kind: Option<DataKind>) -> Step
     {
         let id = self.pop_int("wait")?;
-        let n = usize::try_from(id).ok().filter(|n| *n < self.jobs.list.len());
-        let n = n.ok_or_else(|| malformed("wait needs the number of a job"))?;
-        if self.jobs.list[n].end == End::Runs
+        let n = usize::try_from(id).ok().filter(|n| *n < self.threads.list.len());
+        let n = n.ok_or_else(|| malformed("wait needs the number of a thread"))?;
+        if self.threads.list[n].end == End::Runs
         {
-            self.push(Value::int(JOB_ID, id, self.module.platform_bits))?;
-            self.park(Waits::Job(n));
+            self.push(Value::int(THREAD_ID, id, self.module.platform_bits))?;
+            self.park(Waits::Thread(n));
             return Ok(());
         }
         // One wait takes the result, as the join of Rust does.
-        ret_if!(self.jobs.list[n].awaited, Err(TrapKind::JobWaited { job: id as u64 }));
-        self.jobs.list[n].awaited = true;
-        let ret = self.jobs.list[n].ret;
-        let end = std::mem::take(&mut self.jobs.list[n].end);
-        // The row keeps that the job ended, with no result left in it.
+        ret_if!(
+            self.threads.list[n].awaited,
+            Err(TrapKind::ThreadWaited { thread: id as u64 })
+        );
+        self.threads.list[n].awaited = true;
+        let ret = self.threads.list[n].ret;
+        let end = std::mem::take(&mut self.threads.list[n].end);
+        // The row keeps that the thread ended, with no result left in it.
         let ended = tern!(matches!(end, End::Trapped(_)), end.clone(), End::Done(None));
-        self.jobs.list[n].end = ended;
+        self.threads.list[n].end = ended;
         match (end, kind)
         {
             (End::Done(v), _) => self.take_result(v),
             (End::Kept(raw), Some(_)) => self.take_kept(&raw, kind),
             // A wait whose value no one reads drops the result.
             (End::Kept(raw), None) => ret.map_or(Ok(()), |k| self.drop_kept(&raw, k)),
-            _ => Err(TrapKind::JobTrapped { job: id as u64 }),
+            _ => Err(TrapKind::ThreadTrapped { thread: id as u64 }),
         }
     }
 
     /// Take the lock of the shared object whose variable the stack pops: a
-    /// lock another job holds parks the job, and the op runs again on a later
-    /// turn.
+    /// lock another thread holds parks the thread, and the op runs again on a
+    /// later turn.
     ///
     /// # Returns
     ///
@@ -482,12 +487,12 @@ impl Machine
     pub(super) fn lock(&mut self) -> Step
     {
         let (at, obj) = self.lock_block("lock")?;
-        let now = self.jobs.now;
-        let held = self.jobs.locks.iter_mut().find(|h| h.obj == obj);
+        let now = self.threads.now;
+        let held = self.threads.locks.iter_mut().find(|h| h.obj == obj);
         let Some(held) = held
         else
         {
-            self.jobs.locks.push(Held { obj, owner: now, depth: 1, broken: false });
+            self.threads.locks.push(Held { obj, owner: now, depth: 1, broken: false });
             return Ok(());
         };
         ret_if!(held.broken, Err(TrapKind::LockBroken));
@@ -506,21 +511,21 @@ impl Machine
     ///
     /// # Returns
     ///
-    /// `Ok`, or a trap for a lock the job does not hold.
+    /// `Ok`, or a trap for a lock the thread does not hold.
     pub(super) fn unlock(&mut self) -> Step
     {
         let (_, obj) = self.lock_block("unlock")?;
-        let now = self.jobs.now;
-        let at = self.jobs.locks.iter().position(|h| h.obj == obj && h.owner == now);
+        let now = self.threads.now;
+        let at = self.threads.locks.iter().position(|h| h.obj == obj && h.owner == now);
         let at =
-            at.ok_or_else(|| malformed("unlock of a lock the job does not hold"))?;
-        self.jobs.locks[at].depth -= 1;
-        do_if!(self.jobs.locks[at].depth == 0, _ = self.jobs.locks.remove(at));
+            at.ok_or_else(|| malformed("unlock of a lock the thread does not hold"))?;
+        self.threads.locks[at].depth -= 1;
+        do_if!(self.threads.locks[at].depth == 0, _ = self.threads.locks.remove(at));
         Ok(())
     }
 
     /// Pop the variable of a shared object and find the block of the object:
-    /// which names its lock, the same in each job that holds the object.
+    /// which names its lock, the same in each thread that holds the object.
     ///
     /// # Arguments
     ///
@@ -536,12 +541,12 @@ impl Machine
         Ok((at, base))
     }
 
-    /// Give the waiter the result of a job that returned a value: it is
+    /// Give the waiter the result of a thread that returned a value: it is
     /// pushed. A list or struct result is kept, see [`Machine::take_kept`].
     ///
     /// # Arguments
     ///
-    /// * `v` - The result the job left, `None` for a function that gives
+    /// * `v` - The result the thread left, `None` for a function that gives
     ///   nothing.
     ///
     /// # Returns
@@ -552,7 +557,7 @@ impl Machine
         v.map_or(Ok(()), |v| self.push(v))
     }
 
-    /// Give the waiter the list or struct result of a job, kept as its
+    /// Give the waiter the list or struct result of a thread, kept as its
     /// octets: the octets move to the slot under the number.
     ///
     /// # Arguments
@@ -571,73 +576,74 @@ impl Machine
         self.mem.write_octets(to, raw)
     }
 
-    /// Whether the main job must wait at its last return: other jobs have not
-    /// ended. It then parks at the return, which runs again once the others
-    /// end.
+    /// Whether the main thread must wait at its last return: other threads have
+    /// not ended. It then parks at the return, which runs again once the
+    /// others end.
     ///
     /// # Returns
     ///
     /// `true` when it parks.
     pub(super) fn park_at_end(&mut self) -> bool
     {
-        ret_false!(self.frames.len() != 1 || !self.jobs.on_main());
-        ret_false!(!self.jobs.others_run());
+        ret_false!(self.frames.len() != 1 || !self.threads.on_main());
+        ret_false!(!self.threads.others_run());
         self.park(Waits::Each);
         true
     }
 
-    /// The work of the scheduler after each op: a job that ended keeps its
-    /// result, and a job that ended, parked or used up its turn gives the
+    /// The work of the scheduler after each op: a thread that ended keeps its
+    /// result, and a thread that ended, parked or used up its turn gives the
     /// next one its turn.
     ///
     /// # Returns
     ///
-    /// `Ok`, or `Deadlock` when no job can run.
+    /// `Ok`, or `Deadlock` when no thread can run.
     pub(super) fn take_turns(&mut self) -> Step
     {
-        let parked = self.jobs.list[self.jobs.now].waits != Waits::Nothing;
-        ret_if!(self.jobs.list.len() == 1 && !parked, Ok(()));
-        // The main job returned, after each other job ended: the run is over.
-        ret_if!(self.frames.is_empty() && self.jobs.on_main(), Ok(()));
-        let ended = self.frames.is_empty() && !self.jobs.on_main();
-        do_if!(ended, self.end_job()?);
-        self.jobs.left = self.jobs.left.saturating_sub(1);
-        ret_if!(!ended && !parked && self.jobs.left > 0, Ok(()));
+        let parked = self.threads.list[self.threads.now].waits != Waits::Nothing;
+        ret_if!(self.threads.list.len() == 1 && !parked, Ok(()));
+        // The main thread returned, after each other thread ended: the run is
+        // over.
+        ret_if!(self.frames.is_empty() && self.threads.on_main(), Ok(()));
+        let ended = self.frames.is_empty() && !self.threads.on_main();
+        do_if!(ended, self.end_thread()?);
+        self.threads.left = self.threads.left.saturating_sub(1);
+        ret_if!(!ended && !parked && self.threads.left > 0, Ok(()));
         self.next_turn()
     }
 
-    /// Give the turn to the next job that can run.
+    /// Give the turn to the next thread that can run.
     ///
     /// # Returns
     ///
-    /// `Ok`, or `Deadlock` when no job can run.
+    /// `Ok`, or `Deadlock` when no thread can run.
     fn next_turn(&mut self) -> Step
     {
-        let next = self.jobs.next_to_go().ok_or(TrapKind::Deadlock)?;
-        self.jobs.list[next].waits = Waits::Nothing;
-        self.jobs.left = self.jobs.turn();
+        let next = self.threads.next_to_go().ok_or(TrapKind::Deadlock)?;
+        self.threads.list[next].waits = Waits::Nothing;
+        self.threads.left = self.threads.turn();
         self.swap_to(next);
         Ok(())
     }
 
-    /// End the running job, which returned: keep its result.
+    /// End the running thread, which returned: keep its result.
     ///
     /// # Returns
     ///
     /// `Ok`, or a trap for a stack that lacks the result.
-    fn end_job(&mut self) -> Step
+    fn end_thread(&mut self) -> Step
     {
-        let now = self.jobs.now;
-        let ret = self.jobs.list[now].ret;
+        let now = self.threads.now;
+        let ret = self.threads.list[now].ret;
         let result = ret.map(|_| self.pop()).transpose()?;
         let platform = self.module.platform_bits;
-        // A list or struct result leaves the region of the job before
-        // another job takes the region.
+        // A list or struct result leaves the region of the thread before
+        // another thread takes the region.
         let block =
             ret.filter(|k| k.is_aggregate()).zip(result.and_then(|v| v.as_ptr()));
         let kept =
             block.map(|(k, at)| self.mem.octets(at, u64::from(k.size(platform))));
-        self.jobs.list[now].end = match kept
+        self.threads.list[now].end = match kept
         {
             Some(raw) => End::Kept(raw?),
             None => End::Done(result),
@@ -645,8 +651,8 @@ impl Machine
         Ok(())
     }
 
-    /// Stop the running job at a trap, when `--trap unwind` lets the program
-    /// go on: the trap of the main job, a deadlock, or `--trap abort` stops
+    /// Stop the running thread at a trap, when `--trap unwind` lets the program
+    /// go on: the trap of the main thread, a deadlock, or `--trap abort` stops
     /// the program.
     ///
     /// # Arguments
@@ -656,16 +662,16 @@ impl Machine
     /// # Returns
     ///
     /// The state of the run: it goes on, or it stopped at the trap.
-    pub(super) fn job_trapped(&mut self, trap: Trap) -> State
+    pub(super) fn thread_trapped(&mut self, trap: Trap) -> State
     {
-        let whole = self.jobs.on_main()
+        let whole = self.threads.on_main()
             || trap.kind == TrapKind::Deadlock
             || self.options.trap == TrapMode::Abort;
         ret_if!(whole, State::Trapped(trap));
-        let now = self.jobs.now;
-        self.jobs.list[now].end = End::Trapped(Box::new(trap));
+        let now = self.threads.now;
+        self.threads.list[now].end = End::Trapped(Box::new(trap));
         // The locks it held remain taken, broken: a later lock of each traps.
-        self.jobs
+        self.threads
             .locks
             .iter_mut()
             .filter(|h| h.owner == now)
@@ -678,7 +684,7 @@ impl Machine
         }
     }
 
-    /// Give back the calls of the running job, which stopped at a trap.
+    /// Give back the calls of the running thread, which stopped at a trap.
     /// shortcut: the values its calls held are not dropped, so each remains
     /// held to the end; drop them on unwind if a program traps in a loop.
     fn unwind_frames(&mut self)
@@ -690,16 +696,16 @@ impl Machine
         self.slots = 0;
     }
 
-    /// Drop the list and struct results the jobs left, at the end of the
+    /// Drop the list and struct results the threads left, at the end of the
     /// program, so no block remains held.
     ///
     /// # Returns
     ///
     /// `Ok`, or a trap a drop hits.
-    pub(super) fn drop_job_results(&mut self) -> Step
+    pub(super) fn drop_thread_results(&mut self) -> Step
     {
         let results: Vec<(Vec<u8>, DataKind)> = self
-            .jobs
+            .threads
             .list
             .iter()
             .filter_map(|j| match (&j.end, j.ret)
@@ -712,8 +718,8 @@ impl Machine
         self.drop_pipe_values()
     }
 
-    /// Drop a list or struct result a job kept as its octets: the octets go to
-    /// a stack block of their own for the drop, which leaves after it.
+    /// Drop a list or struct result a thread kept as its octets: the octets go
+    /// to a stack block of their own for the drop, which leaves after it.
     ///
     /// # Arguments
     ///
@@ -733,31 +739,31 @@ impl Machine
         dropped
     }
 
-    /// Make another job the running one: park the state of the running one
+    /// Make another thread the running one: park the state of the running one
     /// in its row, and take the state of the other from its row.
     ///
     /// # Arguments
     ///
-    /// * `n` - The number of the job.
+    /// * `n` - The number of the thread.
     fn swap_to(&mut self, n: usize)
     {
-        let now = self.jobs.now;
+        let now = self.threads.now;
         ret_if!(n == now);
-        let row = &mut self.jobs.list[now];
+        let row = &mut self.threads.list[now];
         row.stack = std::mem::take(&mut self.stack);
         row.frames = std::mem::take(&mut self.frames);
         row.slots = self.slots;
-        let next = &mut self.jobs.list[n];
+        let next = &mut self.threads.list[n];
         self.stack = std::mem::take(&mut next.stack);
         self.frames = std::mem::take(&mut next.frames);
         self.slots = next.slots;
         let range = next.range;
         let left = self.mem.swap_stack(range);
-        self.jobs.list[now].range = left;
-        self.jobs.now = n;
-        // A job that ended runs no more: the next job takes its region. Its
-        // blocks leave the table as the new calls cover them.
-        let ended = now != 0 && self.jobs.list[now].end != End::Runs;
-        do_if!(ended, self.jobs.spare.push(left));
+        self.threads.list[now].range = left;
+        self.threads.now = n;
+        // A thread that ended runs no more: the next thread takes its region.
+        // Its blocks leave the table as the new calls cover them.
+        let ended = now != 0 && self.threads.list[now].end != End::Runs;
+        do_if!(ended, self.threads.spare.push(left));
     }
 }

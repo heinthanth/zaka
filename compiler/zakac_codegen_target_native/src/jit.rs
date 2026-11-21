@@ -37,7 +37,7 @@ fn module(program: &IrModule) -> Result<JITModule, Error>
     let isa = cranelift_native::builder().map_err(module_error)?;
     let isa = isa.finish(settings::Flags::new(flags)).map_err(module_error)?;
     let mut jb = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
-    let glue = zaka_runtime::job_glue();
+    let glue = zaka_runtime::thread_glue();
     for (name, addr) in zaka_runtime::exports().iter().chain(&glue)
     {
         jb.symbol(*name, *addr);

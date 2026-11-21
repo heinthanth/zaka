@@ -1,5 +1,5 @@
-//! A call that runs as a job: its value is the job, and each value that goes
-//! to the job, or comes back from it, must be one jobs on other threads can
+//! A call that runs as a thread: its value is the thread, and each value that
+//! goes to the thread, or comes back from it, must be one other threads can
 //! use (ZK0494).
 
 use zakac_ast::expr::Expr;
@@ -35,7 +35,7 @@ use crate::semcheck::Checker;
 use crate::semcheck::each_list;
 use crate::task;
 
-/// The verb of the core that waits for a job.
+/// The verb of the core that waits for a thread.
 pub const WAIT: &str = "စောင့်";
 
 /// The verb of the core that sends a value to a channel.
@@ -248,8 +248,8 @@ fn root_name(place: &Expr) -> Option<(Name, Span)>
 
 impl Checker
 {
-    /// The job a call that runs in parallel gives, after a report of each
-    /// argument, and of the result, that jobs cannot use.
+    /// The thread a call that runs in parallel gives, after a report of each
+    /// argument, and of the result, that threads cannot use.
     ///
     /// # Arguments
     ///
@@ -259,22 +259,22 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// The job kind.
-    pub(crate) fn start_job(
+    /// The thread kind.
+    pub(crate) fn start_thread(
         &mut self, args: &[Expr], ret: Option<DataKind>, span: Span,
     ) -> DataKind
     {
         for arg in args
         {
             let kind = self.kinds.get(&arg.id()).copied();
-            do_if!(let Some(kind) = kind, self.goes_to_job(kind, arg.span()));
+            do_if!(let Some(kind) = kind, self.goes_to_thread(kind, arg.span()));
         }
-        do_if!(let Some(kind) = ret, self.goes_to_job(kind, span));
+        do_if!(let Some(kind) = ret, self.goes_to_thread(kind, span));
         DataKind::Task(task::make(false, ret))
     }
 
-    /// A wait for a job, `<job> ကို စောင့်မည်` or `<job> ကို စောင့်သော ရလဒ်`: a call of
-    /// the core's `စောင့်` on one value of a job kind.
+    /// A wait for a thread, `<thread> ကို စောင့်မည်` or `<thread> ကို စောင့်သော ရလဒ်`: a
+    /// call of the core's `စောင့်` on one value of a thread kind.
     ///
     /// # Arguments
     ///
@@ -284,19 +284,19 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// `Some` with the kind the function of the job gives back, or `None` for
-    /// a call that is no wait.
+    /// `Some` with the kind the function of the thread gives back, or `None`
+    /// for a call that is no wait.
     pub(crate) fn wait_call(
         &mut self, callee: &Ident, place: Option<&Expr>, args: &[Expr],
     ) -> Option<Option<DataKind>>
     {
-        let [job] = args
+        let [thread] = args
         else
         {
             return None;
         };
         ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
-        let task = self.infer(job, None)?.as_task().filter(|t| t.is_job())?;
+        let task = self.infer(thread, None)?.as_task().filter(|t| t.is_thread())?;
         Some(task.of)
     }
 
@@ -325,7 +325,7 @@ impl Checker
             {
                 let carried = self.pipe_of(pipe);
                 self.expect_kind(value, carried);
-                do_if!(let Some(kind) = carried, self.goes_to_job(kind, value.span()));
+                do_if!(let Some(kind) = carried, self.goes_to_thread(kind, value.span()));
                 Some(None)
             }
             [pipe] if name == CLOSE && self.names_pipe(pipe) => Some(None),
@@ -464,7 +464,7 @@ impl Checker
         tern!(op == VerbOp::Unwrap, carried, Some(DataKind::Bool))
     }
 
-    /// Report the function a call that runs as a job starts in when it is no
+    /// Report the function a call that runs as a thread starts in when it is no
     /// function the program declares in Zaka (ZK0497), or when it changes or
     /// fills a parameter (ZK0498).
     ///
@@ -472,7 +472,7 @@ impl Checker
     ///
     /// * `callee` - The name at the call.
     /// * `place` - The value a call on a value names, or `None`.
-    pub(crate) fn check_job_callee(&mut self, callee: &Ident, place: Option<&Expr>)
+    pub(crate) fn check_thread_callee(&mut self, callee: &Ident, place: Option<&Expr>)
     {
         let name = callee.name.as_str();
         let sigs = self.fns.get(&callee.name).filter(|_| place.is_none());
@@ -483,9 +483,9 @@ impl Checker
         });
         let plain =
             sigs.is_some() && !sig.as_ref().is_some_and(|s| s.external || s.closure);
-        ret_if!(!plain, self.report(kd::job_of_no_declared_fn(callee.span, name)));
+        ret_if!(!plain, self.report(kd::thread_of_no_declared_fn(callee.span, name)));
         let changes = sig.is_some_and(|s| s.edits.iter().chain(&s.fills).any(|e| *e));
-        do_if!(changes, self.report(kd::job_changes_args(callee.span, name)));
+        do_if!(changes, self.report(kd::thread_changes_args(callee.span, name)));
     }
 
     /// Check a lock block: its name holds a shared object, and the fields of
@@ -506,7 +506,7 @@ impl Checker
         self.held_locks.pop();
     }
 
-    /// Report a field of an object jobs share that is reached outside a lock
+    /// Report a field of an object threads share that is reached outside a lock
     /// block of the object.
     ///
     /// # Arguments
@@ -518,7 +518,7 @@ impl Checker
         &mut self, base: &Expr, kind: DataKind, field: &Ident,
     )
     {
-        let shared = kind.cell_kind().is_some_and(|c| self.marked_for_jobs(c));
+        let shared = kind.cell_kind().is_some_and(|c| self.marked_for_threads(c));
         ret_if!(!kind.is_box() || !shared);
         let held = result_var(base).is_some_and(|n| self.held_locks.contains(&n));
         do_if!(!held, self.report(kd::outside_lock(field.span, &field.name, false)));
@@ -617,7 +617,7 @@ impl Checker
     }
 
     /// Report a set of an atomic number whose value reads the same number: a
-    /// job between the read and the write would lose its change (ZK0727).
+    /// thread between the read and the write would lose its change (ZK0727).
     ///
     /// # Arguments
     ///
@@ -634,7 +634,7 @@ impl Checker
     /// Infer a parallel map, `<list> ၏ အကွက်တိုင်း ကို <fn> ဟူသော လုပ်ဆောင်ချက်
     /// ဖြင့် အပြိုင် လုပ်ဆောင်သော ရလဒ်များ`: a plain list of what the function gives
     /// back. The function is one the program declares, of one parameter the
-    /// cells fit, as for a job.
+    /// cells fit, as for a thread.
     ///
     /// # Arguments
     ///
@@ -676,10 +676,10 @@ impl Checker
             return None;
         };
         self.refer(&f.name, f.span, sig.decl);
-        self.check_job_callee(&callee, None);
-        self.goes_to_job(cell, list.span());
+        self.check_thread_callee(&callee, None);
+        self.goes_to_thread(cell, list.span());
         let ret = sig.ret?;
-        self.goes_to_job(ret, f.span);
+        self.goes_to_thread(ret, f.span);
         Some(DataKind::seq_of(ret))
     }
 
@@ -707,15 +707,15 @@ impl Checker
     /// # Arguments
     ///
     /// * `threads` - The count.
-    pub(crate) fn check_threads(&mut self, threads: &Expr)
+    pub(crate) fn check_thread_count(&mut self, threads: &Expr)
     {
         let found = self.infer(threads, None);
         do_if!(let Some(k) = found, _ = self.need_bound(k, threads));
     }
 
     /// Report a variable from outside a round of a parallel loop that the
-    /// round reads, when it holds a value jobs cannot use (ZK0494): the rounds
-    /// run on several threads at once.
+    /// round reads, when it holds a value threads cannot use (ZK0494): the
+    /// rounds run on several threads at once.
     ///
     /// # Arguments
     ///
@@ -734,7 +734,7 @@ impl Checker
         {
             return;
         };
-        self.goes_to_job(kind, n.span);
+        self.goes_to_thread(kind, n.span);
     }
 
     /// Report a call in a round of a parallel loop of a closure declared
@@ -750,7 +750,7 @@ impl Checker
         let outside = self.round.is_some_and(|r| !r.span.contains(&sig.decl));
         do_if!(
             outside && sig.closure,
-            self.report(kd::not_for_jobs(callee.span, &callee.name))
+            self.report(kd::not_for_threads(callee.span, &callee.name))
         );
     }
 
@@ -780,18 +780,18 @@ impl Checker
         do_if!(outside, self.report(od::round_writes_outside(span, &name)));
     }
 
-    /// Report a kind that jobs cannot use, where a value of it goes to a job
-    /// or comes back from one.
+    /// Report a kind that threads cannot use, where a value of it goes to a
+    /// thread or comes back from one.
     ///
     /// # Arguments
     ///
     /// * `kind` - The kind.
     /// * `span` - The value.
-    pub(crate) fn goes_to_job(&mut self, kind: DataKind, span: Span)
+    pub(crate) fn goes_to_thread(&mut self, kind: DataKind, span: Span)
     {
         do_if!(
-            !self.usable_in_jobs(kind),
-            self.report(kd::not_for_jobs(span, &kind.name()))
+            !self.usable_in_threads(kind),
+            self.report(kd::not_for_threads(span, &kind.name()))
         );
     }
 }

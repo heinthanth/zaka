@@ -1,11 +1,11 @@
 use zakac_ast::expr::Ident;
-use zakac_ast::jobs::ATOMIC_WORDS;
-use zakac_ast::jobs::PIPE_KIND;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::ResultParts;
 use zakac_ast::kind::Wrap;
+use zakac_ast::threads::ATOMIC_WORDS;
+use zakac_ast::threads::PIPE_KIND;
 use zakac_diagnostics::parser as diag;
 use zakac_i18n::t;
 use zakac_lexer::reserved::BOOL_LOAN_NAME;

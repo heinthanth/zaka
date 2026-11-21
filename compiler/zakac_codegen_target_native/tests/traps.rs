@@ -103,19 +103,19 @@ fn the_ring_statements_reach_the_runtime()
     assert_eq!(run.stdout, "ပြီး\n၂၀၀၀\nမှန်\n");
 }
 
-/// What `jobs.zaka` prints.
-const JOBS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
-                        ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
+/// What `threads.zaka` prints.
+const THREADS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
+                           ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
 
-/// Jobs run on threads of their own in an AOT build and through the JIT, and
-/// a trap in one ends it alone.
+/// Threads run on OS threads of their own in an AOT build and through the JIT,
+/// and a trap in one ends it alone.
 #[test]
-fn jobs_run_on_threads_in_an_aot_build()
+fn threads_run_on_os_threads_in_an_aot_build()
 {
     use zakac_borrow_checker::options::OverflowMode;
     let grants = zaka_host::Grants::default();
     let Some(run) = crate::common::run_aot(
-        &c_inputs().join("jobs.zaka"),
+        &c_inputs().join("threads.zaka"),
         OverflowMode::Stop,
         &grants,
     )
@@ -124,26 +124,30 @@ fn jobs_run_on_threads_in_an_aot_build()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, JOBS_OUT);
+    assert_eq!(run.stdout, THREADS_OUT);
     let trap = crate::common::run_aot(
-        &c_inputs().join("job_trap.zaka"),
+        &c_inputs().join("thread_trap.zaka"),
         OverflowMode::Stop,
         &grants,
     );
     let trap = trap.expect("the first build linked");
     assert_eq!(trap.status, Some(1), "{}", trap.stderr);
     assert_eq!(trap.stdout, "၅\n");
-    assert!(trap.stderr.contains("job 1 stopped: integer division"), "{}", trap.stderr);
-    let jit = run_jit(&c_inputs().join("jobs.zaka"), &[]);
+    assert!(
+        trap.stderr.contains("thread 1 stopped: integer division"),
+        "{}",
+        trap.stderr
+    );
+    let jit = run_jit(&c_inputs().join("threads.zaka"), &[]);
     assert_eq!(
         (jit.status, jit.stdout.as_str()),
-        (Some(0), JOBS_OUT),
+        (Some(0), THREADS_OUT),
         "{}",
         jit.stderr
     );
 }
 
-/// Two jobs change one shared object inside lock blocks in an AOT build, and
+/// Two threads change one shared object inside lock blocks in an AOT build, and
 /// lose no change.
 #[test]
 fn lock_blocks_keep_the_changes_of_two_threads_apart()
@@ -206,14 +210,14 @@ fn the_ring_collector_halts_a_loop_with_no_allocation()
     assert_eq!((run.status, run.stdout.as_str()), want, "{}", run.stderr);
 }
 
-/// A second wait for a job stops the program, through the JIT and as an
+/// A second wait for a thread stops the program, through the JIT and as an
 /// executable: the first wait took its result.
 #[test]
-fn a_second_wait_for_a_job_stops_the_program()
+fn a_second_wait_for_a_thread_stops_the_program()
 {
     use zakac_borrow_checker::options::OverflowMode;
     let path = c_inputs().join("wait_twice.zaka");
-    let said = "the job 1 this waits for gave its result to an earlier wait";
+    let said = "the thread 1 this waits for gave its result to an earlier wait";
     let jit = run_jit(&path, &[]);
     assert_eq!((jit.status, jit.stdout.as_str()), (Some(1), "က!\n"), "{}", jit.stderr);
     assert!(jit.stderr.contains(said), "{}", jit.stderr);
@@ -227,17 +231,17 @@ fn a_second_wait_for_a_job_stops_the_program()
     assert!(run.stderr.contains(said), "{}", run.stderr);
 }
 
-/// The ring collector runs while jobs run, through the JIT and as an
+/// The ring collector runs while threads run, through the JIT and as an
 /// executable.
 #[test]
-fn the_ring_collector_runs_while_jobs_run()
+fn the_ring_collector_runs_while_threads_run()
 {
     use zakac_borrow_checker::options::OverflowMode;
-    let path = c_inputs().join("ring_jobs.zaka");
+    let path = c_inputs().join("ring_threads.zaka");
     let jit = run_jit(&path, &[]);
     assert_eq!(
         (jit.status, jit.stdout.as_str()),
-        (Some(0), "collected while jobs ran\n"),
+        (Some(0), "collected while threads ran\n"),
         "{}",
         jit.stderr
     );
@@ -248,19 +252,19 @@ fn the_ring_collector_runs_while_jobs_run()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "collected while jobs ran\n");
+    assert_eq!(run.stdout, "collected while threads ran\n");
 }
 
-/// Jobs that print at once never mix their lines, through the JIT and as an
+/// Threads that print at once never mix their lines, through the JIT and as an
 /// executable.
 #[test]
-fn the_prints_of_jobs_come_out_as_whole_lines()
+fn the_prints_of_threads_come_out_as_whole_lines()
 {
     use zakac_borrow_checker::options::OverflowMode;
-    let path = c_inputs().join("job_lines.zaka");
+    let path = c_inputs().join("thread_lines.zaka");
     let jit = run_jit(&path, &[]);
     assert_eq!(jit.status, Some(0), "{}", jit.stderr);
-    assert_eq!(sorted_lines(&jit.stdout), job_lines());
+    assert_eq!(sorted_lines(&jit.stdout), thread_lines());
     let grants = zaka_host::Grants::default();
     let Some(run) = crate::common::run_aot(&path, OverflowMode::Stop, &grants)
     else
@@ -268,12 +272,12 @@ fn the_prints_of_jobs_come_out_as_whole_lines()
         return;
     };
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(sorted_lines(&run.stdout), job_lines());
+    assert_eq!(sorted_lines(&run.stdout), thread_lines());
 }
 
-/// The lines `job_lines.zaka` prints, sorted: each of four labels with each
+/// The lines `thread_lines.zaka` prints, sorted: each of four labels with each
 /// number from 1 to 300 in Burmese digits.
-fn job_lines() -> Vec<String>
+fn thread_lines() -> Vec<String>
 {
     let burmese = |n: u32| {
         let digit = |c: char| char::from_u32(0x1040 + c.to_digit(10).unwrap_or(0));
@@ -324,8 +328,8 @@ const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ �
                             ၉၊ ၁၀၊ ၁၁၊ ၁၂၊ ၁၃၊ ၁၄၊ ၁၅၊ ၁၆၊ ၁၇၊ ၁၈၊ ၁၉၊ ၂၀]\n";
 
 /// The rounds of parallel loops run on threads in an AOT build and through
-/// the JIT, and a trap in a round ends its job: the loop then stops with the
-/// trap of the job.
+/// the JIT, and a trap in a round ends its thread: the loop then stops with the
+/// trap of the thread.
 #[test]
 fn the_rounds_of_a_parallel_loop_run_on_threads()
 {
@@ -407,9 +411,9 @@ fn steps_characters_and_rows_spread_their_rounds()
 }
 
 /// A loop and a map run on the count of threads given to each in an AOT
-/// build: three jobs each stop when each round traps.
+/// build: three threads each stop when each round traps.
 #[test]
-fn a_count_of_threads_sets_the_jobs_of_a_loop()
+fn a_count_of_threads_sets_the_threads_of_a_loop()
 {
     use zakac_borrow_checker::options::OverflowMode;
     let grants = zaka_host::Grants::default();

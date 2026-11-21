@@ -14,7 +14,7 @@ mod ffi;
 mod func;
 #[cfg(feature = "jit")]
 pub mod jit;
-mod jobs;
 mod ops;
 mod stmts;
+mod threads;
 mod unwind;

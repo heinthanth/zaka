@@ -129,11 +129,11 @@ pub fn run_aot(
     let made = made.unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let dir = tempfile::tempdir().unwrap();
     let glue: Vec<zakac_codegen_target_c::emit::CFile> = made
-        .jobs
+        .threads
         .then(|| {
-            let text = zakac_codegen_target_c::jobs::native_jobs_glue();
+            let text = zakac_codegen_target_c::threads::native_threads_glue();
             zakac_codegen_target_c::emit::CFile::builder()
-                .name("zaka_jobs.c")
+                .name("zaka_threads.c")
                 .text(text)
                 .build()
         })

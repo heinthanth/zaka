@@ -169,19 +169,19 @@ pub enum TrapKind
     /// C called a closure after the call that gave it ended, with no leave
     /// from `ခေါ်ဆိုခွင့် ပြုမည်`, or after that leave was taken back.
     ClosureEscape,
-    /// A wait for a job that stopped at a trap.
-    JobTrapped
+    /// A wait for a thread that stopped at a trap.
+    ThreadTrapped
     {
-        /// The number of the job.
-        job: u64,
+        /// The number of the thread.
+        thread: u64,
     },
-    /// A second wait for a job, whose result the first wait took.
-    JobWaited
+    /// A second wait for a thread, whose result the first wait took.
+    ThreadWaited
     {
-        /// The number of the job.
-        job: u64,
+        /// The number of the thread.
+        thread: u64,
     },
-    /// Each job waits for another, and none can go on.
+    /// Each thread waits for another, and none can go on.
     Deadlock,
     /// A lock of a shared object whose holder stopped at a trap.
     LockBroken,
@@ -364,8 +364,14 @@ impl fmt::Display for TrapKind
             TrapKind::ClosedHandle => t!("vm.trap.closed_handle"),
             TrapKind::NullFromC => t!("vm.trap.null_from_c"),
             TrapKind::ClosureEscape => t!("vm.trap.closure_escape"),
-            TrapKind::JobTrapped { job } => t!("vm.trap.job_trapped", job = job),
-            TrapKind::JobWaited { job } => t!("vm.trap.job_waited", job = job),
+            TrapKind::ThreadTrapped { thread } =>
+            {
+                t!("vm.trap.thread_trapped", thread = thread)
+            }
+            TrapKind::ThreadWaited { thread } =>
+            {
+                t!("vm.trap.thread_waited", thread = thread)
+            }
             TrapKind::Deadlock => t!("vm.trap.deadlock"),
             TrapKind::LockBroken => t!("vm.trap.lock_broken"),
             TrapKind::ThreadsNotPositive => t!("vm.trap.threads_not_positive"),
@@ -455,8 +461,8 @@ impl TrapKind
             | TrapKind::ClosedHandle
             | TrapKind::NullFromC
             | TrapKind::ClosureEscape
-            | TrapKind::JobTrapped { .. }
-            | TrapKind::JobWaited { .. }
+            | TrapKind::ThreadTrapped { .. }
+            | TrapKind::ThreadWaited { .. }
             | TrapKind::Deadlock
             | TrapKind::LockBroken
             | TrapKind::ThreadsNotPositive

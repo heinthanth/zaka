@@ -146,7 +146,7 @@ impl Block
     fn holds(&self, addr: u64) -> bool { addr >= self.start && addr < self.end() }
 }
 
-/// A stack region: the room of the calls of one job.
+/// A stack region: the room of the calls of one thread.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct StackRange
 {
@@ -492,9 +492,9 @@ impl Mem
         self.next = self.stack_hi;
     }
 
-    /// Take a stack region of its own for a job, out of the fresh room past
-    /// the heap blocks made so far; the scheduler hands the region of a job
-    /// that ended to the next job before it asks for a fresh one.
+    /// Take a stack region of its own for a thread, out of the fresh room past
+    /// the heap blocks made so far; the scheduler hands the region of a thread
+    /// that ended to the next thread before it asks for a fresh one.
     ///
     /// # Arguments
     ///
@@ -511,7 +511,7 @@ impl Mem
     }
 
     /// Make another stack region the one calls take blocks from, as the
-    /// scheduler moves from one job to the next.
+    /// scheduler moves from one thread to the next.
     ///
     /// # Arguments
     ///

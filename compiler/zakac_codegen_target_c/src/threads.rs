@@ -1,7 +1,7 @@
-//! Jobs and channels in C: a spawn fills the data block of the job with a
+//! Threads and channels in C: a spawn fills the data block of the thread with a
 //! duplicate of each argument and hands it to the runtime, which runs the
-//! step of the job on a thread of its own under the guard of this file. The
-//! guard keeps the place a trap of the job jumps back to.
+//! step of the thread on an OS thread of its own under the guard of this file.
+//! The guard keeps the place a trap of the thread jumps back to.
 
 use std::fmt::Write;
 
@@ -20,46 +20,46 @@ use crate::emit::Shared;
 use crate::emit::func_name;
 use crate::kinds::is_blob;
 
-/// The file of the guard and of the step of each job.
-pub const JOBS_SOURCE: &str = "zaka_jobs.c";
+/// The file of the guard and of the step of each thread.
+pub const THREADS_SOURCE: &str = "zaka_threads.c";
 
 /// The octets each part of a data block starts on.
 const PART_ALIGN: u32 = 16;
 
-/// The guard of a job and the function that jumps back to it.
+/// The guard of a thread and the function that jumps back to it.
 pub const GUARD: &str = "\
 /* A longjmp of 64-bit Windows unwinds each frame it leaves; clearing the frame
    of the buffer makes it restore the registers alone, as on each other OS. */
 #if defined(_WIN64) && defined(ZK_LIB_PLAIN_JUMP)
-#define ZK_JOB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
+#define ZK_THREAD_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
-#define ZK_JOB_NO_UNWIND(buf) ((void)(buf))
+#define ZK_THREAD_NO_UNWIND(buf) ((void)(buf))
 #endif
 
 /**
- * Jump back to the guard of the job of this thread, on a trap that ends the
- * job alone.
+ * Jump back to the guard of the thread of this OS thread, on a trap that ends the
+ * thread alone.
  *
  * @param trap The id of the trap, which the runtime keeps.
  */
-_Noreturn void zk_job_leave(int32_t trap)
+_Noreturn void zk_thread_leave(int32_t trap)
 {
     (void)trap;
     longjmp(*(jmp_buf *)zk_lib_jump(), 1);
 }
 
 /**
- * Run the step of a job, keeping the place a trap of the job jumps back to.
+ * Run the step of a thread, keeping the place a trap of the thread jumps back to.
  *
  * @param step The step.
- * @param data The data block of the job.
- * @return 0, or 1 once a trap ended the job.
+ * @param data The data block of the thread.
+ * @return 0, or 1 once a trap ended the thread.
  */
-int32_t zk_job_guard(void (*step)(void *), void *data)
+int32_t zk_thread_guard(void (*step)(void *), void *data)
 {
     jmp_buf zk_here;
     if (setjmp(zk_here) != 0) return 1;
-    ZK_JOB_NO_UNWIND(zk_here);
+    ZK_THREAD_NO_UNWIND(zk_here);
     zk_lib_jump_set(&zk_here);
     step(data);
     zk_flush();
@@ -67,7 +67,7 @@ int32_t zk_job_guard(void (*step)(void *), void *data)
 }
 ";
 
-/// The offset of each part of the data block of a job that calls a function:
+/// The offset of each part of the data block of a thread that calls a function:
 /// the result first, then each argument.
 ///
 /// # Arguments
@@ -109,8 +109,8 @@ pub fn parts(module: &Module, f: u32) -> Vec<Option<DataKind>>
     std::iter::once(func.ret).chain(params).collect()
 }
 
-/// The C file of the guard and of the step of each function a job runs, or
-/// `None` for a program that starts no job.
+/// The C file of the guard and of the step of each function a thread runs, or
+/// `None` for a program that starts no thread.
 ///
 /// # Arguments
 ///
@@ -119,9 +119,9 @@ pub fn parts(module: &Module, f: u32) -> Vec<Option<DataKind>>
 /// # Returns
 ///
 /// The C text.
-pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
+pub(crate) fn threads_source(shared: &mut Shared<'_>) -> Option<String>
 {
-    ret_if!(no_jobs(shared), None);
+    ret_if!(no_threads(shared), None);
     let mut out =
         format!("#include \"{KINDS_HEADER}\"\n#include <setjmp.h>\n\n{GUARD}");
     let spawned: Vec<u32> = shared.spawned.iter().copied().collect();
@@ -133,7 +133,7 @@ pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
     Some(out)
 }
 
-/// Whether a program starts no job, maps nothing at once and runs no
+/// Whether a program starts no thread, maps nothing at once and runs no
 /// parallel loop.
 ///
 /// # Arguments
@@ -143,7 +143,7 @@ pub(crate) fn jobs_source(shared: &mut Shared<'_>) -> Option<String>
 /// # Returns
 ///
 /// `true` when it needs no guard.
-fn no_jobs(shared: &Shared<'_>) -> bool
+fn no_threads(shared: &Shared<'_>) -> bool
 {
     shared.spawned.is_empty() && shared.mapped.is_empty() && shared.rounds.is_empty()
 }
@@ -250,7 +250,7 @@ fn map_step(shared: &mut Shared<'_>, f: u32) -> String
     )
 }
 
-/// The step of a job that calls a function: it calls the function with the
+/// The step of a thread that calls a function: it calls the function with the
 /// arguments of the data block, which the function drops as it returns, and
 /// writes the result at its start.
 ///
@@ -291,7 +291,7 @@ fn step(shared: &mut Shared<'_>, f: u32) -> String
         None => format!("    {};\n", call(None)),
     };
     format!(
-        "\n/** The step of a job that runs `{}`. */\nvoid zk_job_step_{f}(void \
+        "\n/** The step of a thread that runs `{}`. */\nvoid zk_thread_step_{f}(void \
          *zk_d)\n{{\n    uint8_t *zk_b = (uint8_t *)zk_d;\n{call_line}}}\n",
         shared.module.funcs[f as usize].name.replace("*/", "* /")
     )
@@ -302,7 +302,7 @@ fn step(shared: &mut Shared<'_>, f: u32) -> String
 /// # Returns
 ///
 /// The C text.
-pub fn native_jobs_glue() -> String
+pub fn native_threads_glue() -> String
 {
     format!(
         "#include <stdint.h>\n#include <setjmp.h>\n\n#include \
@@ -318,18 +318,18 @@ pub fn native_jobs_glue() -> String
 ///
 /// # Returns
 ///
-/// The C text, blank for a program that starts no job.
+/// The C text, blank for a program that starts no thread.
 pub(crate) fn declarations(shared: &Shared<'_>) -> String
 {
-    ret_if!(no_jobs(shared), String::new());
+    ret_if!(no_threads(shared), String::new());
     let mut out = String::from(
-        "int32_t zk_job_guard(void (*step)(void *), void *data);\n_Noreturn void \
-         zk_job_leave(int32_t trap);\n",
+        "int32_t zk_thread_guard(void (*step)(void *), void *data);\n_Noreturn void \
+         zk_thread_leave(int32_t trap);\n",
     );
     shared
         .spawned
         .iter()
-        .for_each(|f| _ = writeln!(out, "void zk_job_step_{f}(void *zk_d);"));
+        .for_each(|f| _ = writeln!(out, "void zk_thread_step_{f}(void *zk_d);"));
     let steps = shared.mapped.iter();
     steps.for_each(|f| {
         _ = writeln!(out, "void zk_map_step_{f}(uint8_t *zk_c, uint8_t *zk_o);")
@@ -373,8 +373,8 @@ impl FnGen<'_, '_>
         let abort = i32::from(self.shared.options.trap_abort);
         let threads = p.threads.map_or_else(|| "0".to_string(), |t| self.place(t));
         self.line(&format!(
-            "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{}, zk_job_guard, \
-             zk_job_leave, {abort}, {threads});",
+            "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{}, zk_thread_guard, \
+             zk_thread_leave, {abort}, {threads});",
             p.func
         ));
     }
@@ -392,7 +392,7 @@ impl FnGen<'_, '_>
         let platform = self.shared.options.platform_bits;
         let (each, size) = round_parts(self.shared.module, p.func, platform);
         let values = self.operands(&p.args.iter().collect::<Vec<_>>());
-        let data = self.spill(DataKind::OPAQUE, format!("zk_job_data({size})"));
+        let data = self.spill(DataKind::OPAQUE, format!("zk_thread_data({size})"));
         for (v, (k, at)) in values.iter().zip(&each)
         {
             self.put_at(&format!("({data} + {at})"), v, *k);
@@ -401,8 +401,8 @@ impl FnGen<'_, '_>
         let abort = i32::from(self.shared.options.trap_abort);
         let threads = p.threads.map_or_else(|| "0".to_string(), |t| self.place(t));
         self.line(&format!(
-            "zk_par_for({count}, zk_round_step_{}, {data}, zk_job_guard, \
-             zk_job_leave, {abort}, {threads});",
+            "zk_par_for({count}, zk_round_step_{}, {data}, zk_thread_guard, \
+             zk_thread_leave, {abort}, {threads});",
             p.func
         ));
     }
@@ -417,7 +417,7 @@ impl FnGen<'_, '_>
     ///
     /// # Returns
     ///
-    /// The C text of the number of the job.
+    /// The C text of the number of the thread.
     pub(crate) fn spawn(&mut self, f: u32, args: &[Expr]) -> String
     {
         self.shared.spawned.insert(f);
@@ -425,7 +425,7 @@ impl FnGen<'_, '_>
         let kinds = parts(self.shared.module, f);
         let (offsets, size) = part_offsets(&kinds, platform);
         let values = self.operands(&args.iter().collect::<Vec<_>>());
-        let data = self.spill(DataKind::OPAQUE, format!("zk_job_data({size})"));
+        let data = self.spill(DataKind::OPAQUE, format!("zk_thread_data({size})"));
         // The arguments come owned, as the value of a set does: each moves
         // into the block.
         for ((v, arg), at) in values.iter().zip(args).zip(offsets.iter().skip(1))
@@ -436,38 +436,38 @@ impl FnGen<'_, '_>
             kinds[0].map_or_else(|| "NULL".to_string(), |k| self.shared.descr.of(k));
         let abort = i32::from(self.shared.options.trap_abort);
         format!(
-            "zk_job_start(zk_job_guard, zk_job_leave, zk_job_step_{f}, {data}, {ret}, \
-             {abort})"
+            "zk_thread_start(zk_thread_guard, zk_thread_leave, zk_thread_step_{f}, \
+             {data}, {ret}, {abort})"
         )
     }
 
-    /// The C text of a wait that takes the result of a job: the result moves
-    /// out of the data block of the job, which the runtime then frees.
+    /// The C text of a wait that takes the result of a thread: the result moves
+    /// out of the data block of the thread, which the runtime then frees.
     ///
     /// # Arguments
     ///
-    /// * `job` - The job.
+    /// * `thread` - The thread.
     /// * `kind` - The result kind.
     ///
     /// # Returns
     ///
     /// The C text.
-    pub(crate) fn wait(&mut self, job: &Expr, kind: DataKind) -> String
+    pub(crate) fn wait(&mut self, thread: &Expr, kind: DataKind) -> String
     {
-        let j = self.expr(job);
-        let j = self.spill(job.kind, j);
-        let at = self.spill(DataKind::OPAQUE, format!("zk_job_wait({j})"));
+        let j = self.expr(thread);
+        let j = self.spill(thread.kind, j);
+        let at = self.spill(DataKind::OPAQUE, format!("zk_thread_wait({j})"));
         if !is_blob(kind)
         {
             let load = format!("zk_ld_{}({at})", self.shared.mem(kind));
             let v = self.spill(kind, load);
-            self.line(&format!("zk_job_taken({j});"));
+            self.line(&format!("zk_thread_taken({j});"));
             return v;
         }
         let t = self.temp(kind);
         let size = self.shared.size(kind);
         self.line(&format!("zk_put_block({t}, {at}, {size});"));
-        self.line(&format!("zk_job_taken({j});"));
+        self.line(&format!("zk_thread_taken({j});"));
         t
     }
 

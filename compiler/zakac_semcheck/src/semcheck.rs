@@ -94,7 +94,6 @@ use crate::generic_struct::leftovers;
 use crate::generic_struct::name_instances;
 use crate::host;
 use crate::host::IO_ERROR;
-use crate::jobs::RoundCtx;
 use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::op_calls::OpCalls;
@@ -120,6 +119,7 @@ use crate::scope::Scopes;
 use crate::scope::Written;
 use crate::struct_check::collect_structs;
 use crate::structs::StructTable;
+use crate::threads::RoundCtx;
 use crate::traits::Traits;
 use crate::traits::inheriting;
 use crate::traits::traits;
@@ -537,7 +537,7 @@ fn check_once(
     diags.extend(private_in_exports(program, &homes));
     diags.extend(start_rules(program, !options.as_module));
     diags.extend(core_twins(program));
-    diags.extend(jobs_on_values(program));
+    diags.extend(threads_on_values(program));
     let c_structs = c_structs(program, &mut diags);
     #[rustfmt::skip]
     let mut checker = Checker::builder().fns(unit_fns[0].clone()).unit_fns(unit_fns)
@@ -545,7 +545,7 @@ fn check_once(
         .diags(diags).platform(options.platform_bits).no_unsafe(options.no_unsafe)
         .as_module(options.as_module).c_structs(c_structs)
         .known(known).open_structs(open_structs(program)).decls(decls)
-        .classifiers(struct_classifiers(program)).jobs(jobs_structs(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
+        .classifiers(struct_classifiers(program)).threads(threads_structs(program)).templates(templates.clone()).known_fns(instances.fns.clone()).known_structs(instances.structs.clone())
         .uses(instances.uses.clone()).root_unit(program.units.len().saturating_sub(1) as u32)
         .core_units((0..program.units.len() as u32).filter(|u| generic::in_core(program, *u)).collect())
         .traits(traits(program)).inheriting(inheriting(program)).build();
@@ -570,7 +570,7 @@ fn check_once(
     return (out, checker.counts, checker.found, checker.found_enums, checker.chosen, captured, asked, checker.op_calls, (checker.sites.take(), checker.blocked.take()));
 }
 
-/// The shared structs marked as usable in jobs.
+/// The shared structs marked as usable in threads.
 ///
 /// # Arguments
 ///
@@ -579,14 +579,14 @@ fn check_once(
 /// # Returns
 ///
 /// Their names.
-pub fn jobs_structs(program: &Program) -> HashSet<String>
+pub fn threads_structs(program: &Program) -> HashSet<String>
 {
-    let marked = |s: &&StructDecl| s.jobs && s.shared;
+    let marked = |s: &&StructDecl| s.threads && s.shared;
     let structs = program.stmts.iter().filter_map(as_struct_decl).filter(marked);
     structs.map(|s| s.name.name.to_string()).collect()
 }
 
-/// A warning for each plain struct that carries the mark of jobs, which
+/// A warning for each plain struct that carries the mark of threads, which
 /// changes nothing on a value (ZK0493).
 ///
 /// # Arguments
@@ -596,11 +596,11 @@ pub fn jobs_structs(program: &Program) -> HashSet<String>
 /// # Returns
 ///
 /// The warnings.
-fn jobs_on_values(program: &Program) -> Vec<Diagnostic>
+fn threads_on_values(program: &Program) -> Vec<Diagnostic>
 {
-    let plain = |s: &&StructDecl| s.jobs && !s.shared;
+    let plain = |s: &&StructDecl| s.threads && !s.shared;
     let structs = program.stmts.iter().filter_map(as_struct_decl).filter(plain);
-    structs.map(|s| kd::jobs_mark_on_value(s.name.span, &s.name.name)).collect()
+    structs.map(|s| kd::threads_mark_on_value(s.name.span, &s.name.name)).collect()
 }
 
 /// The struct a statement declares.
@@ -645,9 +645,9 @@ pub(crate) struct Checker
     #[builder(default)]
     pub classifiers: HashMap<String, String>,
     /// The shared structs marked `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`, whose
-    /// objects jobs on other threads can use.
+    /// objects other threads can use.
     #[builder(default)]
-    pub jobs: HashSet<String>,
+    pub threads: HashSet<String>,
     /// The channel name of the test `<pipe> ထဲတွင် ဒေတာ ရှိ` that stands as the
     /// whole condition of the arm being checked, the one place such a test
     /// can stand.
@@ -2513,7 +2513,7 @@ impl Visitor for Checker
     fn visit_counted(&mut self, n: &CountedStmt)
     {
         do_if!(n.parallel, self.check_round(Some(n.var.name), &n.block));
-        do_if!(let Some(t) = &n.threads, self.check_threads(t));
+        do_if!(let Some(t) = &n.threads, self.check_thread_count(t));
         let kind = self.counted_kind(n);
         self.scopes.push();
         self.declare(&n.var, kind, Access::LoopVar);
@@ -2533,7 +2533,7 @@ impl Visitor for Checker
             n.parallel,
             self.check_round(n.place.as_ref().map(|p| p.name), &n.block)
         );
-        do_if!(let Some(t) = &n.threads, self.check_threads(t));
+        do_if!(let Some(t) = &n.threads, self.check_thread_count(t));
         let kinds = self.infer(&n.source, None).and_then(|k| self.each_var_kind(k, n));
         self.scopes.push();
         do_if!(let Some(place) = &n.place, self.declare(place, kinds.and_then(|(p, _)| p), Access::Var));
@@ -2684,8 +2684,8 @@ impl Visitor for Checker
         {
             return;
         };
-        do_if!(n.parallel, self.check_job_callee(&n.callee, place));
-        ret_if!(n.parallel, _ = self.start_job(&n.args, ret, n.span));
+        do_if!(n.parallel, self.check_thread_callee(&n.callee, place));
+        ret_if!(n.parallel, _ = self.start_thread(&n.args, ret, n.span));
         self.check_pass(&n.callee, ret, n.pass, true, n.span);
     }
 

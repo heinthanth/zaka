@@ -62,10 +62,10 @@ impl FnGen<'_, '_>
         match s
         {
             Stmt::Set { place, value, .. } => self.set(*place, value),
-            Stmt::Wait { job, .. } =>
+            Stmt::Wait { thread, .. } =>
             {
-                let j = self.expr(job);
-                self.line(&format!("zk_job_drop({j});"));
+                let j = self.expr(thread);
+                self.line(&format!("zk_thread_drop({j});"));
             }
             Stmt::Send { pipe, value, .. } => self.send(pipe, value),
             Stmt::Close { pipe, .. } =>

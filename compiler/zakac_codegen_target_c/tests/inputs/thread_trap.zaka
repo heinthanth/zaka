@@ -1,4 +1,4 @@
-// A job that divides by zero ends alone; the start block goes on, and the
+// A thread that divides by zero ends alone; the start block goes on, and the
 // program ends with code 1, since no wait saw the trap.
 စား ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။

@@ -658,7 +658,7 @@ impl<'s> FuncGen<'s>
             {
                 self.call_into(Some(at), Target::Value(callee), args)
             }
-            ExprNode::Wait(job) => self.wait_into(Some(at), job, e.kind),
+            ExprNode::Wait(thread) => self.wait_into(Some(at), thread, e.kind),
             ExprNode::Receive(pipe) => self.receive_into(at, pipe, e.kind),
             ExprNode::List(cells) => self.build_list(at, e.kind, Some(cells)),
             ExprNode::CField { .. } => self.c_field_at(at, e),
@@ -994,7 +994,7 @@ impl<'s> FuncGen<'s>
                 self.set_block(*place, value)
             }
             Stmt::Set { place, value, .. } => self.store(*place, |g| g.expr(value)),
-            Stmt::Wait { job, kind, .. } => self.wait_stmt(job, *kind),
+            Stmt::Wait { thread, kind, .. } => self.wait_stmt(thread, *kind),
             Stmt::Send { pipe, value, .. } =>
             {
                 let slot = self.temp("%cell", value.kind);
@@ -1072,7 +1072,7 @@ impl<'s> FuncGen<'s>
             {
                 self.call_stmt(Target::Value(callee), args)
             }
-            // The VM runs one job at a time, so each store is whole and in order.
+            // The VM runs one thread at a time, so each store is whole and in order.
             Stmt::Store { addr, value, .. } | Stmt::AtomicSet { addr, value, .. } =>
             {
                 self.expr(addr);
@@ -1732,11 +1732,11 @@ impl<'s> FuncGen<'s>
                 do_for!(a in args, self.expr(a));
                 self.op(Op::Spawn(*func));
             }
-            ExprNode::Wait(job) =>
+            ExprNode::Wait(thread) =>
             {
                 let slot = e.kind.is_aggregate();
                 let slot = slot.then(|| Op::LocalAddr(self.temp("%ret", e.kind)));
-                self.wait_into(slot, job, e.kind);
+                self.wait_into(slot, thread, e.kind);
             }
             ExprNode::MakePipe(room) => self.op(Op::PipeNew(*room)),
             ExprNode::RingStat(n) => self.op(Op::RingStat(*n)),
@@ -2052,19 +2052,19 @@ impl<'s> FuncGen<'s>
         do_if!(let Some((n, kind)) = slot, self.drop_local(n, kind));
     }
 
-    /// Generate a wait for a job: a list or struct result goes to a slot,
+    /// Generate a wait for a thread: a list or struct result goes to a slot,
     /// whose address remains on the stack.
     ///
     /// # Arguments
     ///
     /// * `slot` - The op that pushes the address of the slot, for a list or
     ///   struct result.
-    /// * `job` - The job.
+    /// * `thread` - The thread.
     /// * `kind` - The result kind.
-    fn wait_into(&mut self, slot: Option<Op>, job: &Expr, kind: DataKind)
+    fn wait_into(&mut self, slot: Option<Op>, thread: &Expr, kind: DataKind)
     {
         do_if!(let Some(op) = slot, self.op(op));
-        self.expr(job);
+        self.expr(thread);
         self.op(Op::Wait(Some(kind)));
     }
 
@@ -2084,26 +2084,26 @@ impl<'s> FuncGen<'s>
         self.op(Op::PipeReceive(carried));
     }
 
-    /// Generate a wait for a job whose result is dropped: the result goes
+    /// Generate a wait for a thread whose result is dropped: the result goes
     /// to a slot that is dropped after the wait.
     ///
     /// # Arguments
     ///
-    /// * `job` - The job.
-    /// * `kind` - The result kind, or `None` for a job that gives nothing.
-    fn wait_stmt(&mut self, job: &Expr, kind: Option<DataKind>)
+    /// * `thread` - The thread.
+    /// * `kind` - The result kind, or `None` for a thread that gives nothing.
+    fn wait_stmt(&mut self, thread: &Expr, kind: Option<DataKind>)
     {
         let Some(kind) = kind
         else
         {
-            self.expr(job);
+            self.expr(thread);
             return self.op(Op::Wait(None));
         };
         let n = self.temp("%ret", kind);
         let at = Op::LocalAddr(n);
         let block = kind.is_aggregate();
         do_if!(!block, self.op(at));
-        self.wait_into(block.then_some(at), job, kind);
+        self.wait_into(block.then_some(at), thread, kind);
         self.op(tern!(block, Op::Pop, Op::Store(kind)));
         self.drop_local(n, kind);
     }

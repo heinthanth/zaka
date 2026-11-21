@@ -1,12 +1,12 @@
-//! The jobs and channels of a native program, each job on a thread of its
-//! own. One lock guards the state of each job and channel, and one condition
-//! wakes each thread that waits when the state changes. The state counts the
-//! threads that run: a thread that would wait while no other runs stops the
-//! program with the trap `deadlock`.
+//! The threads and channels of a native program, each thread on an OS thread of
+//! its own. One lock guards the state of each thread and channel, and one
+//! condition wakes each OS thread that waits when the state changes. The state
+//! counts the OS threads that run: an OS thread that would wait while no other
+//! runs stops the program with the trap `deadlock`.
 //!
-//! A job runs a step the compiler writes, under a guard the compiler writes:
-//! the step takes the arguments out of the data block of the job and writes
-//! the result at its start; the guard keeps the place a trap of the job
+//! A thread runs a step the compiler writes, under a guard the compiler writes:
+//! the step takes the arguments out of the data block of the thread and writes
+//! the result at its start; the guard keeps the place a trap of the thread
 //! jumps back to under `--trap unwind`.
 
 use std::cell::Cell;
@@ -37,14 +37,14 @@ use crate::traps::stop;
 use crate::traps::stop_owned;
 use crate::traps::trap;
 
-/// The step of a job: it takes the data block of the job.
+/// The step of a thread: it takes the data block of the thread.
 pub type ZkStep = extern "C" fn(*mut c_void);
 
-/// The guard of a job: it runs the step on the data block, and gives 0, or
+/// The guard of a thread: it runs the step on the data block, and gives 0, or
 /// a value other than 0 once a trap jumped back to it.
 pub type ZkGuard = extern "C" fn(ZkStep, *mut c_void) -> i32;
 
-/// Where a job stands.
+/// Where a thread stands.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum End
 {
@@ -56,8 +56,8 @@ enum End
     Trapped,
 }
 
-/// One job.
-struct Job
+/// One thread.
+struct Thread
 {
     /// Where it stands.
     end: End,
@@ -67,11 +67,11 @@ struct Job
     ret: usize,
     /// Whether a wait took its result, or saw its trap.
     awaited: bool,
-    /// Whether its data block came from [`zk_job_data`], so the runtime frees
-    /// it; the jobs of a parallel loop read a block of the loop.
+    /// Whether its data block came from [`zk_thread_data`], so the runtime
+    /// frees it; the threads of a parallel loop read a block of the loop.
     owned: bool,
-    /// Its thread, until a wait or the end of the program joins it.
-    thread: Option<std::thread::JoinHandle<()>>,
+    /// Its OS thread, until a wait or the end of the program joins it.
+    os_thread: Option<std::thread::JoinHandle<()>>,
 }
 
 /// One channel.
@@ -87,40 +87,40 @@ struct Pipe
     closed: bool,
 }
 
-/// A lock of a shared object that a thread holds.
+/// A lock of a shared object that an OS thread holds.
 struct Held
 {
     /// The address of the object.
     obj: usize,
-    /// The thread that holds it, as [`owner`] names it.
+    /// The OS thread that holds it, as [`owner`] names it.
     owner: usize,
-    /// The count of times the job took it.
+    /// The count of times the thread took it.
     depth: u32,
     /// Whether its holder stopped at a trap, so it never comes back.
     broken: bool,
 }
 
-/// The state of the jobs and channels.
+/// The state of the threads and channels.
 struct State
 {
-    /// Each job; the job a program holds as `n` is at `n - 1`.
-    jobs: Vec<Job>,
-    /// The numbers of the jobs of parallel loops that ended, which no program
-    /// holds, for the next jobs to take.
+    /// Each thread; the thread a program holds as `n` is at `n - 1`.
+    threads: Vec<Thread>,
+    /// The numbers of the threads of parallel loops that ended, which no
+    /// program holds, for the next threads to take.
     spare: Vec<usize>,
-    /// Each channel, as the jobs are numbered.
+    /// Each channel, as the threads are numbered.
     pipes: Vec<Pipe>,
-    /// The threads that run and do not wait, the main one included.
+    /// The OS threads that run and do not wait, the main one included.
     running: usize,
-    /// The threads that wait for the state to change.
+    /// The OS threads that wait for the state to change.
     parked: usize,
     /// The count of changes so far, which tells a waiter its wake is real.
     changes: u64,
 }
 
-/// The state of the jobs and channels.
+/// The state of the threads and channels.
 static STATE: Mutex<State> = Mutex::new(State {
-    jobs: Vec::new(),
+    threads: Vec::new(),
     spare: Vec::new(),
     pipes: Vec::new(),
     running: 1,
@@ -128,51 +128,51 @@ static STATE: Mutex<State> = Mutex::new(State {
     changes: 0,
 });
 
-/// Wakes each thread that waits once the state changes.
+/// Wakes each OS thread that waits once the state changes.
 static CHANGED: Condvar = Condvar::new();
 
 thread_local! {
-    /// The function that jumps back to the guard of the job of this thread
-    /// under `--trap unwind`, and the number of the job.
+    /// The function that jumps back to the guard of the thread of this OS thread
+    /// under `--trap unwind`, and the number of the thread.
     static LEAVE: Cell<Option<(extern "C" fn(i32), usize)>> = const { Cell::new(None) };
-    /// The trap that ended the job of this thread.
+    /// The trap that ended the thread of this OS thread.
     static TRAPPED: Cell<i32> = const { Cell::new(0) };
-    /// The number of the job of this thread, 0 for the main thread.
-    static JOB: Cell<usize> = const { Cell::new(0) };
-    /// The number a thread that runs no job holds locks under, from its first
+    /// The number of the thread of this OS thread, 0 for the main OS thread.
+    static THREAD: Cell<usize> = const { Cell::new(0) };
+    /// The number an OS thread that runs no thread holds locks under, from its first
     /// lock; 0 before it.
     static LOCKER: Cell<usize> = const { Cell::new(0) };
-    /// Whether this thread runs the program: `zk_start` marks it.
+    /// Whether this OS thread runs the program: `zk_start` marks it.
     static MAIN: Cell<bool> = const { Cell::new(false) };
 }
 
-/// The next number of a thread that runs no job, for its locks: the high half
-/// of the numbers, which no job reaches.
+/// The next number of an OS thread that runs no thread, for its locks: the high
+/// half of the numbers, which no thread reaches.
 static NEXT_LOCKER: AtomicUsize = AtomicUsize::new(1 << (usize::BITS - 1));
 
-/// Whether the main thread of a program runs, as against a C lib, whose
-/// threads come from C.
+/// Whether the main OS thread of a program runs, as against a C lib, whose
+/// OS threads come from C.
 static PROGRAM: AtomicBool = AtomicBool::new(false);
 
-/// Mark this thread as the main thread of the program, which the count of
-/// running threads holds from the start.
+/// Mark this OS thread as the main OS thread of the program, which the count of
+/// running OS threads holds from the start.
 pub(crate) fn mark_main()
 {
     MAIN.set(true);
     PROGRAM.store(true, Ordering::SeqCst);
 }
 
-/// The thread a lock names as its holder: the number of a job, or, for each
-/// other thread (the main one and each thread of C), a number of its own, so
-/// two such threads never pass as one.
+/// The OS thread a lock names as its holder: the number of a thread, or, for
+/// each other OS thread (the main one and each OS thread of C), a number of its
+/// own, so two such OS threads never pass as one.
 ///
 /// # Returns
 ///
 /// The number.
 fn owner() -> usize
 {
-    let job = JOB.get();
-    ret_if!(job != 0, job);
+    let thread = THREAD.get();
+    ret_if!(thread != 0, thread);
     let mine = LOCKER.get();
     ret_if!(mine != 0, mine);
     let fresh = NEXT_LOCKER.fetch_add(1, Ordering::Relaxed);
@@ -180,10 +180,10 @@ fn owner() -> usize
     fresh
 }
 
-/// Whether a thread out of the count of running threads can still change
-/// what a waiter waits for: each thread of a C lib, a thread of C inside a
-/// call of the program now, or a closure that C can call from a thread of its
-/// own later. A wait then never stops as a deadlock.
+/// Whether an OS thread out of the count of running OS threads can still change
+/// what a waiter waits for: each OS thread of a C lib, an OS thread of C inside
+/// a call of the program now, or a closure that C can call from an OS thread of
+/// its own later. A wait then never stops as a deadlock.
 ///
 /// # Returns
 ///
@@ -192,11 +192,11 @@ fn outside_acts() -> bool
 {
     !PROGRAM.load(Ordering::SeqCst)
         || crate::libs::free_calls() > 0
-        || lent_to_threads()
+        || lent_to_c_threads()
 }
 
-/// Look again at each wait once a thread of C left a call of the program: a
-/// wait that began while that thread could still act checks again for a
+/// Look again at each wait once an OS thread of C left a call of the program: a
+/// wait that began while that OS thread could still act checks again for a
 /// deadlock. A lib looks at none, as its waits never stop as one.
 pub(crate) fn recheck_waits()
 {
@@ -206,22 +206,22 @@ pub(crate) fn recheck_waits()
     changed(&mut st);
 }
 
-/// Whether C holds a closure it can call from a thread of its own.
+/// Whether C holds a closure it can call from an OS thread of its own.
 ///
 /// # Returns
 ///
 /// `true` when it does.
 #[cfg(not(target_os = "wasi"))]
-fn lent_to_threads() -> bool { crate::callbacks::lent_to_threads() }
+fn lent_to_c_threads() -> bool { crate::callbacks::lent_to_c_threads() }
 
-/// Whether C holds a closure it can call from a thread of its own: never on
+/// Whether C holds a closure it can call from an OS thread of its own: never on
 /// WASI, which calls no C.
 ///
 /// # Returns
 ///
 /// `false`.
 #[cfg(target_os = "wasi")]
-fn lent_to_threads() -> bool { false }
+fn lent_to_c_threads() -> bool { false }
 
 /// The state, locked.
 ///
@@ -233,7 +233,7 @@ fn state() -> MutexGuard<'static, State>
     STATE.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// Mark the state changed: each thread that waits runs again and looks.
+/// Mark the state changed: each OS thread that waits runs again and looks.
 ///
 /// # Arguments
 ///
@@ -246,13 +246,13 @@ fn changed(st: &mut State)
     CHANGED.notify_all();
 }
 
-/// Wait until `came` holds; a wait while no other thread runs stops the
+/// Wait until `came` holds; a wait while no other OS thread runs stops the
 /// program with the trap `deadlock`.
 ///
 /// # Arguments
 ///
 /// * `st` - The state, locked.
-/// * `came` - What the thread waits for.
+/// * `came` - What the OS thread waits for.
 ///
 /// # Returns
 ///
@@ -261,8 +261,8 @@ fn wait_until(
     mut st: MutexGuard<'static, State>, came: impl Fn(&State) -> bool,
 ) -> MutexGuard<'static, State>
 {
-    // A thread of C is out of the count: it waits and changes no count.
-    let counted = JOB.get() != 0 || MAIN.get();
+    // An OS thread of C is out of the count: it waits and changes no count.
+    let counted = THREAD.get() != 0 || MAIN.get();
     while !came(&st)
     {
         let seen = st.changes;
@@ -280,7 +280,8 @@ fn wait_until(
         {
             st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
         }
-        // A thread that wakes during a collection halts first, holding no lock.
+        // An OS thread that wakes during a collection halts first, holding no
+        // lock.
         if crate::seqs::halt_asked()
         {
             drop(st);
@@ -291,30 +292,30 @@ fn wait_until(
     st
 }
 
-/// Stop the whole program with the trap `deadlock`, from whichever thread.
+/// Stop the whole program with the trap `deadlock`, from whichever OS thread.
 fn deadlock() -> !
 {
     LEAVE.set(None);
     stop(trap::DEADLOCK, &[])
 }
 
-/// The function that jumps back to the guard of the job of this thread, and
-/// its number, when a trap ends the job alone.
+/// The function that jumps back to the guard of the thread of this OS thread,
+/// and its number, when a trap ends the thread alone.
 ///
 /// # Returns
 ///
-/// The function and the number, or `None` on the main thread and under
+/// The function and the number, or `None` on the main OS thread and under
 /// `--trap abort`.
 pub(crate) fn leave() -> Option<(extern "C" fn(i32), usize)> { LEAVE.get() }
 
-/// Keep the trap that ends the job of this thread, for its guard.
+/// Keep the trap that ends the thread of this OS thread, for its guard.
 ///
 /// # Arguments
 ///
 /// * `trap` - The trap.
 pub(crate) fn keep_trap(trap: i32) { TRAPPED.set(trap) }
 
-/// Make a data block of a job: zeros, which the spawn fills.
+/// Make a data block of a thread: zeros, which the spawn fills.
 ///
 /// # Arguments
 ///
@@ -323,8 +324,8 @@ pub(crate) fn keep_trap(trap: i32) { TRAPPED.set(trap) }
 /// # Returns
 ///
 /// The block.
-#[unsafe(export_name = stamped!("job_data"))]
-pub extern "C" fn zk_job_data(size: usize) -> *mut u8
+#[unsafe(export_name = stamped!("thread_data"))]
+pub extern "C" fn zk_thread_data(size: usize) -> *mut u8
 {
     // The word in front of the block holds its size, for the free.
     let block = vec![0u8; size + WORD].into_boxed_slice();
@@ -336,10 +337,10 @@ pub extern "C" fn zk_job_data(size: usize) -> *mut u8
     }
 }
 
-/// The octets of a word, in front of a data block of a job.
+/// The octets of a word, in front of a data block of a thread.
 const WORD: usize = size_of::<usize>();
 
-/// Free a data block of a job, from [`zk_job_data`].
+/// Free a data block of a thread, from [`zk_thread_data`].
 ///
 /// # Arguments
 ///
@@ -357,30 +358,30 @@ fn free_data(data: usize)
     }
 }
 
-/// Start a job on a thread of its own.
+/// Start a thread on an OS thread of its own.
 ///
 /// # Arguments
 ///
 /// * `guard` - The guard the compiler writes.
 /// * `jump` - The function that jumps back to the guard.
-/// * `step` - The step of the job.
-/// * `data` - Its data block, from [`zk_job_data`].
+/// * `step` - The step of the thread.
+/// * `data` - Its data block, from [`zk_thread_data`].
 /// * `ret` - The kind of its result, or NULL for none.
-/// * `abort` - 1 when a trap of the job stops the whole program.
+/// * `abort` - 1 when a trap of the thread stops the whole program.
 ///
 /// # Returns
 ///
-/// The number of the job.
-#[unsafe(export_name = stamped!("job_start"))]
-pub extern "C" fn zk_job_start(
+/// The number of the thread.
+#[unsafe(export_name = stamped!("thread_start"))]
+pub extern "C" fn zk_thread_start(
     guard: ZkGuard, jump: extern "C" fn(i32), step: ZkStep, data: *mut u8,
     ret: *const ZkKind, abort: i32,
 ) -> usize
 {
-    start_job((guard, jump, step), data, ret, abort, true)
+    start_thread((guard, jump, step), data, ret, abort, true)
 }
 
-/// Start a job on a thread of its own; see [`zk_job_start`].
+/// Start a thread on an OS thread of its own; see [`zk_thread_start`].
 ///
 /// # Arguments
 ///
@@ -392,8 +393,8 @@ pub extern "C" fn zk_job_start(
 ///
 /// # Returns
 ///
-/// The number of the job.
-fn start_job(
+/// The number of the thread.
+fn start_thread(
     (guard, jump, step): (ZkGuard, extern "C" fn(i32), ZkStep), data: *mut u8,
     ret: *const ZkKind, abort: i32, owned: bool,
 ) -> usize
@@ -401,33 +402,34 @@ fn start_job(
     zk_threads_begin();
     let mut st = state();
     #[rustfmt::skip]
-    let job = Job { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false,
-        owned, thread: None };
-    let next = st.jobs.len() + 1;
+    let thread = Thread { end: End::Runs, data: data as usize, ret: ret as usize, awaited: false,
+        owned, os_thread: None };
+    let next = st.threads.len() + 1;
     let n = st.spare.pop().unwrap_or(next);
     if n == next
     {
-        st.jobs.push(job);
+        st.threads.push(thread);
     }
     else
     {
-        st.jobs[n - 1] = job;
+        st.threads[n - 1] = thread;
     }
     st.running += 1;
     let data = data as usize;
-    let run = move || run_job(guard, (jump, abort != 0), step, data, n);
-    let thread = std::thread::Builder::new().stack_size(64 << 20).spawn(run);
-    let Ok(thread) = thread
+    let run = move || run_thread(guard, (jump, abort != 0), step, data, n);
+    let os_thread = std::thread::Builder::new().stack_size(64 << 20).spawn(run);
+    let Ok(os_thread) = os_thread
     else
     {
         drop(st);
         stop_owned(trap::OUT_OF_MEM, vec![named("size", 64usize << 20)])
     };
-    st.jobs[n - 1].thread = Some(thread);
+    st.threads[n - 1].os_thread = Some(os_thread);
     n
 }
 
-/// The work of the thread of a job: run the guard, then mark the job ended.
+/// The work of the OS thread of a thread: run the guard, then mark the thread
+/// ended.
 ///
 /// # Arguments
 ///
@@ -436,110 +438,112 @@ fn start_job(
 ///   trap stops the whole program.
 /// * `step` - The step.
 /// * `data` - The data block.
-/// * `n` - The number of the job.
-fn run_job(
+/// * `n` - The number of the thread.
+fn run_thread(
     guard: ZkGuard, (jump, abort): (extern "C" fn(i32), bool), step: ZkStep,
     data: usize, n: usize,
 )
 {
     do_if!(!abort, LEAVE.set(Some((jump, n))));
-    JOB.set(n);
+    THREAD.set(n);
     let status = guard(step, data as *mut c_void);
     LEAVE.set(None);
-    // The thread ends here, and its calls and its line with it.
+    // The OS thread ends here, and its calls and its line with it.
     crate::ctx::release_frames();
     crate::out::flush_line();
-    // The locks a job held when it stopped remain taken, broken.
+    // The locks a thread held when it stopped remain taken, broken.
     for shard in &LOCKS
     {
         let mut held = shard.lock().unwrap_or_else(PoisonError::into_inner);
         held.iter_mut().filter(|h| h.owner == n).for_each(|h| h.broken = true);
     }
     let mut st = state();
-    st.jobs[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
+    st.threads[n - 1].end = if status == 0 { End::Done } else { End::Trapped };
     st.running -= 1;
     changed(&mut st);
 }
 
-/// Wait for a job to end and take its result: one wait takes it, as the
-/// join of Rust does, and a second wait of the job stops the program with
-/// the trap `job waited`.
+/// Wait for a thread to end and take its result: one wait takes it, as the
+/// join of Rust does, and a second wait of the thread stops the program with
+/// the trap `thread waited`.
 ///
 /// # Arguments
 ///
-/// * `n` - The number of the job.
+/// * `n` - The number of the thread.
 ///
 /// # Returns
 ///
 /// The address of its result, at the start of its data block; the caller
-/// moves the result out, then gives the block back with [`zk_job_taken`]. A
-/// job that stopped at a trap stops the waiter with the trap `job trapped`.
-#[unsafe(export_name = stamped!("job_wait"))]
-pub extern "C" fn zk_job_wait(n: usize) -> *mut u8
+/// moves the result out, then gives the block back with [`zk_thread_taken`]. A
+/// thread that stopped at a trap stops the waiter with the trap `thread
+/// trapped`.
+#[unsafe(export_name = stamped!("thread_wait"))]
+pub extern "C" fn zk_thread_wait(n: usize) -> *mut u8
 {
     let st = state();
-    let at = n.checked_sub(1).filter(|i| *i < st.jobs.len());
+    let at = n.checked_sub(1).filter(|i| *i < st.threads.len());
     let Some(at) = at
     else
     {
         drop(st);
-        stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+        stop_owned(trap::THREAD_TRAPPED, vec![named("thread", n)])
     };
-    let mut st = wait_until(st, |s| s.jobs[at].end != End::Runs);
-    if st.jobs[at].awaited
+    let mut st = wait_until(st, |s| s.threads[at].end != End::Runs);
+    if st.threads[at].awaited
     {
         drop(st);
-        stop_owned(trap::JOB_WAITED, vec![named("job", n)])
+        stop_owned(trap::THREAD_WAITED, vec![named("thread", n)])
     }
-    st.jobs[at].awaited = true;
-    let (end, data) = (st.jobs[at].end, st.jobs[at].data);
-    let thread = st.jobs[at].thread.take();
+    st.threads[at].awaited = true;
+    let (end, data) = (st.threads[at].end, st.threads[at].data);
+    let os_thread = st.threads[at].os_thread.take();
     drop(st);
-    join(thread);
+    join(os_thread);
     ret_if!(end == End::Done, data as *mut u8);
-    stop_owned(trap::JOB_TRAPPED, vec![named("job", n)])
+    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", n)])
 }
 
-/// Give back the data block of a job whose result a wait moved out.
+/// Give back the data block of a thread whose result a wait moved out.
 ///
 /// # Arguments
 ///
-/// * `n` - The number of the job.
-#[unsafe(export_name = stamped!("job_taken"))]
-pub extern "C" fn zk_job_taken(n: usize)
+/// * `n` - The number of the thread.
+#[unsafe(export_name = stamped!("thread_taken"))]
+pub extern "C" fn zk_thread_taken(n: usize)
 {
     let data = {
         let mut st = state();
-        let job = &mut st.jobs[n - 1];
-        std::mem::take(&mut job.data)
+        let thread = &mut st.threads[n - 1];
+        std::mem::take(&mut thread.data)
     };
     free_data(data);
 }
 
-/// Wait for a job and drop its result, for a wait whose value no one reads.
+/// Wait for a thread and drop its result, for a wait whose value no one reads.
 ///
 /// # Arguments
 ///
-/// * `n` - The number of the job.
-#[unsafe(export_name = stamped!("job_drop"))]
-pub extern "C" fn zk_job_drop(n: usize)
+/// * `n` - The number of the thread.
+#[unsafe(export_name = stamped!("thread_drop"))]
+pub extern "C" fn zk_thread_drop(n: usize)
 {
-    let data = zk_job_wait(n);
-    let ret = state().jobs[n - 1].ret;
+    let data = zk_thread_wait(n);
+    let ret = state().threads[n - 1].ret;
     do_if!(ret != 0, zk_drop(data, ret as *const ZkKind));
-    zk_job_taken(n);
+    zk_thread_taken(n);
 }
 
 /// The count of the shards of the locks.
 const SHARDS: usize = 64;
 
-/// Each lock a thread holds, or that a job held when it stopped at a trap,
-/// apart from the state and spread over shards on the address of the object:
-/// a thread takes a lock no other thread holds, and gives one back no thread
-/// waits for, with no lock of the state and none other objects share.
+/// Each lock an OS thread holds, or that a thread held when it stopped at a
+/// trap, apart from the state and spread over shards on the address of the
+/// object: an OS thread takes a lock no other OS thread holds, and gives one
+/// back no OS thread waits for, with no lock of the state and none other
+/// objects share.
 static LOCKS: [Mutex<Vec<Held>>; SHARDS] = [const { Mutex::new(Vec::new()) }; SHARDS];
 
-/// The count of threads that wait for a lock, so a give back with none
+/// The count of OS threads that wait for a lock, so a give back with none
 /// wakes no one.
 static LOCK_WAITERS: AtomicUsize = AtomicUsize::new(0);
 
@@ -559,7 +563,7 @@ fn locks(obj: usize) -> MutexGuard<'static, Vec<Held>>
     LOCKS[shard].lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// What a thread finds when it takes a lock.
+/// What an OS thread finds when it takes a lock.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Take
 {
@@ -567,20 +571,20 @@ enum Take
     Taken,
     /// Its holder stopped at a trap.
     Broken,
-    /// Another thread holds it.
+    /// Another OS thread holds it.
     Other,
 }
 
-/// Take a lock when no other thread holds it.
+/// Take a lock when no other OS thread holds it.
 ///
 /// # Arguments
 ///
 /// * `obj` - The block of the object.
-/// * `me` - The thread, as [`owner`] names it.
+/// * `me` - The OS thread, as [`owner`] names it.
 ///
 /// # Returns
 ///
-/// What the thread found.
+/// What the OS thread found.
 fn take_free(obj: usize, me: usize) -> Take
 {
     let mut held = locks(obj);
@@ -596,7 +600,7 @@ fn take_free(obj: usize, me: usize) -> Take
     Take::Taken
 }
 
-/// Take the lock of a shared object: the thread waits while another holds
+/// Take the lock of a shared object: the OS thread waits while another holds
 /// it, and takes once more a lock it holds.
 ///
 /// # Arguments
@@ -605,14 +609,14 @@ fn take_free(obj: usize, me: usize) -> Take
 #[unsafe(export_name = stamped!("lock"))]
 pub extern "C" fn zk_lock(obj: *mut u8)
 {
-    // The block of the object names the lock, which each job that
-    // holds the object shares; the variable differs from job to job.
+    // The block of the object names the lock, which each thread that
+    // holds the object shares; the variable differs from thread to thread.
     let (obj, me) = (zk_seq_base(obj) as usize, owner());
     let mut took = take_free(obj, me);
     if took == Take::Other
     {
         // The count goes up before the look, so a give back after the look
-        // sees it and wakes this thread.
+        // sees it and wakes this OS thread.
         LOCK_WAITERS.fetch_add(1, Ordering::SeqCst);
         let free = |_: &State| {
             let held = locks(obj);
@@ -654,7 +658,7 @@ pub extern "C" fn zk_unlock(obj: *mut u8)
 }
 
 /// Add a value to an atomic number of the platform width, or subtract it,
-/// in one step no other thread can split; the result wraps.
+/// in one step no other OS thread can split; the result wraps.
 ///
 /// # Arguments
 ///
@@ -665,7 +669,7 @@ pub extern "C" fn zk_unlock(obj: *mut u8)
 pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
 {
     // SAFETY: the number is a word of the program, aligned as its kind, which
-    // each thread changes with atomic ops alone.
+    // each OS thread changes with atomic ops alone.
     let n = unsafe { AtomicIsize::from_ptr(at) };
     _ = tern!(
         sub != 0,
@@ -675,7 +679,7 @@ pub extern "C" fn zk_atomic_add(at: *mut isize, v: isize, sub: i32)
 }
 
 /// Read an atomic number of the platform width in one step that sees each
-/// change another thread made before it.
+/// change another OS thread made before it.
 ///
 /// # Arguments
 ///
@@ -692,7 +696,7 @@ pub extern "C" fn zk_atomic_load(at: *mut isize) -> isize
 }
 
 /// Set an atomic number of the platform width to a new value when it holds
-/// the expected one, in one step no other thread can split.
+/// the expected one, in one step no other OS thread can split.
 ///
 /// # Arguments
 ///
@@ -713,7 +717,7 @@ pub extern "C" fn zk_atomic_cas(at: *mut isize, expected: isize, new: isize) -> 
 }
 
 /// Set an atomic number of the platform width in one step, which each other
-/// thread sees whole and in order.
+/// OS thread sees whole and in order.
 ///
 /// # Arguments
 ///
@@ -734,9 +738,9 @@ pub type ZkMapStep = extern "C" fn(*mut u8, *mut u8);
 /// loop and the number of the round, from 0.
 pub type ZkRoundStep = extern "C" fn(*mut u8, usize);
 
-/// The rounds of a parallel loop that its jobs share: each job takes the next
-/// block of rounds until none is left, so a job whose rounds run fast takes
-/// more of them.
+/// The rounds of a parallel loop that its threads share: each thread takes the
+/// next block of rounds until none is left, so a thread whose rounds run fast
+/// takes more of them.
 struct Rounds
 {
     /// The step of a round.
@@ -747,19 +751,20 @@ struct Rounds
     count: usize,
     /// The rounds of one take.
     block: usize,
-    /// The first round no job took so far.
+    /// The first round no thread took so far.
     next: AtomicUsize,
 }
 
-/// The step of a job of a parallel loop: take a block of rounds and run them,
-/// until no round is left.
+/// The step of a thread of a parallel loop: take a block of rounds and run
+/// them, until no round is left.
 ///
 /// # Arguments
 ///
 /// * `data` - The rounds.
 extern "C" fn run_rounds(data: *mut c_void)
 {
-    // SAFETY: `zk_par_for` hands each job the rounds, which outlive the jobs.
+    // SAFETY: `zk_par_for` hands each thread the rounds, which outlive the
+    // threads.
     let r = unsafe { &*data.cast::<Rounds>() };
     loop
     {
@@ -770,31 +775,31 @@ extern "C" fn run_rounds(data: *mut c_void)
     }
 }
 
-/// Join the thread of a job, once the job ended.
+/// Join the OS thread of a thread, once the thread ended.
 ///
 /// # Arguments
 ///
-/// * `thread` - The thread, or `None` when a wait joined it before.
-fn join(thread: Option<std::thread::JoinHandle<()>>)
+/// * `os_thread` - The OS thread, or `None` when a wait joined it before.
+fn join(os_thread: Option<std::thread::JoinHandle<()>>)
 {
-    do_if!(let Some(t) = thread, _ = t.join());
+    do_if!(let Some(t) = os_thread, _ = t.join());
 }
 
 /// Run the rounds of a parallel loop: with no count of threads, fewer rounds
-/// than cores run here, in order, and else each core gets a job; with a count,
-/// a job for each thread it names, never more jobs than rounds, and one runs
-/// the rounds here, in order. Each job takes the next block of rounds until
-/// none is left. A trap
-/// in a round acts as in a job: the rounds of its job end, the other jobs
-/// finish, and the loop then stops with `job trapped`; under `--trap abort` the
-/// program stops at once.
+/// than cores run here, in order, and else each core gets a thread; with a
+/// count, a thread for each one it names, never more threads than rounds, and
+/// one runs the rounds here, in order. Each thread takes the next block of
+/// rounds until none is left. A trap
+/// in a round acts as in a thread: the rounds of its thread end, the other
+/// threads finish, and the loop then stops with `thread trapped`; under `--trap
+/// abort` the program stops at once.
 ///
 /// # Arguments
 ///
 /// * `count` - The count of rounds.
 /// * `step` - The step of a round.
 /// * `data` - The data block of the loop, which the step reads.
-/// * `guard` - The guard of a job, from the glue.
+/// * `guard` - The guard of a thread, from the glue.
 /// * `jump` - The function that jumps back to the guard on a trap.
 /// * `abort` - 1 when a trap stops the whole program.
 /// * `threads` - The count of threads the loop was given, 0 for none.
@@ -812,42 +817,50 @@ pub extern "C" fn zk_par_for(
         return;
     }
     let workers = tern!(threads == 0, cores, threads.min(count));
-    // Eight takes for each job leave rounds for a job that ends first to take.
+    // Eight takes for each thread leave rounds for a thread that ends first to
+    // take.
     let block = (count / (workers * 8)).max(1);
     #[rustfmt::skip]
     let mut rounds = Rounds { step, data: data as usize, count, block, next: AtomicUsize::new(0) };
     let at: *mut Rounds = &mut rounds;
     let start = |_| {
-        start_job((guard, jump, run_rounds), at.cast(), std::ptr::null(), abort, false)
+        start_thread(
+            (guard, jump, run_rounds),
+            at.cast(),
+            std::ptr::null(),
+            abort,
+            false,
+        )
     };
-    let jobs: Vec<usize> = (0..workers).map(start).collect();
-    // Each job ends before the loop goes on, so a trap waits for the others,
-    // and the rounds outlive each job.
-    let ended: Vec<bool> = jobs.iter().map(|n| job_ended_well(*n)).collect();
-    let trapped = jobs.iter().zip(ended).find(|(_, ok)| !ok).map(|(n, _)| *n);
+    let threads: Vec<usize> = (0..workers).map(start).collect();
+    // Each thread ends before the loop goes on, so a trap waits for the others,
+    // and the rounds outlive each thread.
+    let ended: Vec<bool> = threads.iter().map(|n| thread_ended_well(*n)).collect();
+    let trapped = threads.iter().zip(ended).find(|(_, ok)| !ok).map(|(n, _)| *n);
     ret_if!(trapped.is_none());
-    stop_owned(trap::JOB_TRAPPED, vec![named("job", trapped.unwrap_or_default())])
+    stop_owned(trap::THREAD_TRAPPED, vec![named("thread", trapped.unwrap_or_default())])
 }
 
-/// Wait for a job to end and mark it awaited.
+/// Wait for a thread to end and mark it awaited.
 ///
 /// # Arguments
 ///
-/// * `n` - The number of the job.
+/// * `n` - The number of the thread.
 ///
 /// # Returns
 ///
 /// `true` when it ran to its end, `false` when a trap ended it.
-fn job_ended_well(n: usize) -> bool
+fn thread_ended_well(n: usize) -> bool
 {
-    let mut st = wait_until(state(), |s| s.jobs[n - 1].end != End::Runs);
-    st.jobs[n - 1].awaited = true;
-    let well = st.jobs[n - 1].end == End::Done;
-    let thread = st.jobs[n - 1].thread.take();
-    // No program holds the number of a job of a loop, so the next job takes it.
+    let mut st = wait_until(state(), |s| s.threads[n - 1].end != End::Runs);
+    st.threads[n - 1].awaited = true;
+    let well = st.threads[n - 1].end == End::Done;
+    let os_thread = st.threads[n - 1].os_thread.take();
+    // No program holds the number of a thread of a loop, so the next thread
+    // takes it.
     st.spare.push(n);
     drop(st);
-    join(thread);
+    join(os_thread);
     well
 }
 
@@ -890,7 +903,7 @@ extern "C" fn map_round(data: *mut u8, i: usize)
 /// * `out` - The plain list the map fills, blank before.
 /// * `out_kind` - Its kind.
 /// * `step` - The step the compiler writes for the function.
-/// * `guard` - The guard of a job, from the glue.
+/// * `guard` - The guard of a thread, from the glue.
 /// * `jump` - The function that jumps back to the guard on a trap.
 /// * `abort` - 1 when a trap stops the whole program.
 /// * `threads` - The count of threads the map was given, 0 for none.
@@ -1034,31 +1047,32 @@ pub extern "C" fn zk_pipe_close(n: usize)
     changed(&mut st);
 }
 
-/// Wait for each job at the end of the program, then drop each result the
-/// jobs left and each value the channels hold.
+/// Wait for each thread at the end of the program, then drop each result the
+/// threads left and each value the channels hold.
 ///
 /// # Returns
 ///
-/// Whether a job stopped at a trap that no wait saw.
+/// Whether a thread stopped at a trap that no wait saw.
 pub(crate) fn end() -> bool
 {
     let st = state();
-    ret_if!(st.jobs.is_empty() && st.pipes.is_empty(), false);
-    let st = wait_until(st, |s| s.jobs.iter().all(|j| j.end != End::Runs));
+    ret_if!(st.threads.is_empty() && st.pipes.is_empty(), false);
+    let st = wait_until(st, |s| s.threads.iter().all(|j| j.end != End::Runs));
     let mut st = st;
-    let threads: Vec<_> = st.jobs.iter_mut().filter_map(|j| j.thread.take()).collect();
-    let jobs = std::mem::take(&mut st.jobs);
+    let os_threads: Vec<_> =
+        st.threads.iter_mut().filter_map(|j| j.os_thread.take()).collect();
+    let threads = std::mem::take(&mut st.threads);
     let pipes = std::mem::take(&mut st.pipes);
     drop(st);
-    threads.into_iter().for_each(|t| _ = t.join());
-    let lost = jobs.iter().any(|j| j.end == End::Trapped && !j.awaited);
+    os_threads.into_iter().for_each(|t| _ = t.join());
+    let lost = threads.iter().any(|j| j.end == End::Trapped && !j.awaited);
     // The results no wait took are dropped, then each block the runtime owns
     // is freed.
     let untaken =
-        |j: &&Job| j.end == End::Done && j.ret != 0 && !j.awaited && j.data != 0;
-    let results = jobs.iter().filter(untaken);
+        |j: &&Thread| j.end == End::Done && j.ret != 0 && !j.awaited && j.data != 0;
+    let results = threads.iter().filter(untaken);
     results.for_each(|j| zk_drop(j.data as *mut u8, j.ret as *const ZkKind));
-    jobs.iter().filter(|j| j.owned).for_each(|j| free_data(j.data));
+    threads.iter().filter(|j| j.owned).for_each(|j| free_data(j.data));
     let held = pipes.into_iter().filter(|p| p.kind != 0);
     for pipe in held
     {
@@ -1068,25 +1082,28 @@ pub(crate) fn end() -> bool
     lost
 }
 
-/// Whether a job thread other than this one can run, the rounds of a
+/// Whether a thread OS thread other than this one can run, the rounds of a
 /// parallel loop or map among them, so the ring collector waits: it walks the
 /// counts with plain ops.
 ///
 /// # Returns
 ///
-/// `true` while a job runs.
-pub(crate) fn jobs_run() -> bool { state().jobs.iter().any(|j| j.end == End::Runs) }
+/// `true` while a thread runs.
+pub(crate) fn threads_run() -> bool
+{
+    state().threads.iter().any(|j| j.end == End::Runs)
+}
 
-/// Whether this thread counts among the running threads: the main one, or a
-/// job.
+/// Whether this OS thread counts among the running OS threads: the main one, or
+/// a thread.
 ///
 /// # Returns
 ///
 /// `true` when it does.
-pub(crate) fn counted_thread() -> bool { JOB.get() != 0 || MAIN.get() }
+pub(crate) fn counted_thread() -> bool { THREAD.get() != 0 || MAIN.get() }
 
-/// The count of running threads other than this one, which counts itself;
-/// `None` while another thread holds the state, so a wait never blocks on
+/// The count of running OS threads other than this one, which counts itself;
+/// `None` while another OS thread holds the state, so a wait never blocks on
 /// it.
 ///
 /// # Returns

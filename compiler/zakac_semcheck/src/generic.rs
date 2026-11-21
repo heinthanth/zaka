@@ -53,8 +53,8 @@ use crate::scope::FnSigs;
 use crate::scope::Written;
 use crate::scope::overload_name;
 use crate::semcheck::Checker;
-use crate::task::JOB_WORD;
 use crate::task::PIPE_WORD;
+use crate::task::THREAD_WORD;
 use crate::task::TaskKind;
 
 /// The generic functions and structs of a program, under their names.
@@ -398,7 +398,7 @@ impl Binder<'_>
             return self.bind(&table.value, value);
         }
         ret_if!(let Some(parts) = pattern.parts.as_deref(), self.bind_parts(parts, actual));
-        // A job or a channel kind binds the kind it carries.
+        // A thread or a channel kind binds the kind it carries.
         let task = pattern.name.as_ref().and_then(|n| crate::task::task_word(&n.name));
         if task.is_some() && pattern.base == BaseKind::Named
         {
@@ -551,8 +551,8 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
     }
 }
 
-/// [`kind_ast`] for a job or a channel kind: the name the core declares, with
-/// the kind it carries as its kind.
+/// [`kind_ast`] for a thread or a channel kind: the name the core declares,
+/// with the kind it carries as its kind.
 ///
 /// # Arguments
 ///
@@ -568,7 +568,7 @@ fn task_ast(t: &TaskKind, span: Span) -> Option<Kind>
     {
         (true, _) => canonical(PIPE_WORD).into_owned(),
         (_, true) => crate::task::ATOMIC_WORD.to_string(),
-        _ => JOB_WORD.to_string(),
+        _ => THREAD_WORD.to_string(),
     };
     let args = match t.of
     {

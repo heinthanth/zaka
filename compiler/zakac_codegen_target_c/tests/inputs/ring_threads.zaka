@@ -1,5 +1,5 @@
-// Two jobs each leave 3000 rings while they run; the collector halts the
-// threads at safe points and frees rings before either job ends.
+// Two threads each leave 3000 rings while they run; the collector halts the
+// OS threads at safe points and frees rings before either thread ends.
 အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
 
 ကွင်းဆောက် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -18,5 +18,5 @@
 ကိန်းရှင် ခ သည် ဆောက် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
 ကိန်းရှင် ရ၁ သည် က ကို စောင့်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းရှင် ရ၂ သည် ခ ကို စောင့်သော ရလဒ် ဖြစ်ပါစေ။
-အကယ်၍ ရ၁ > ၀ ဖြစ်ပြီး ရ၂ > ၀ ဖြစ်လျှင် "collected while jobs ran" ဟု ပြသမည်။
+အကယ်၍ ရ၁ > ၀ ဖြစ်ပြီး ရ၂ > ၀ ဖြစ်လျှင် "collected while threads ran" ဟု ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

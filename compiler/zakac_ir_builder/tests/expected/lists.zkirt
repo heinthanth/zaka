@@ -720,7 +720,7 @@ module:
   - lo: 1422
     hi: 4678
   c_structs: {}
-  jobs_structs: []
+  threads_structs: []
   built_for: null
   span:
     lo: 0

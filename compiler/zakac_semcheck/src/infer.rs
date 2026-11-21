@@ -31,7 +31,6 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
-use crate::jobs::RING_STATS;
 use crate::kind::DataKind;
 use crate::kind::InitialGap;
 use crate::list::KindUse;
@@ -56,6 +55,7 @@ use crate::scope::FnSig;
 use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::structs::StructTable;
+use crate::threads::RING_STATS;
 
 impl Checker
 {
@@ -524,7 +524,7 @@ impl Checker
             }
             (VerbOp::ParMap, [list, Expr::Name(f), threads]) =>
             {
-                self.check_threads(threads);
+                self.check_thread_count(threads);
                 return self.infer_par_map(list, f);
             }
             (VerbOp::Join, pieces) => return self.infer_join(pieces),
@@ -700,7 +700,7 @@ impl Checker
             InitialGap::Member(e) => NoInitial::Member(&e.name),
             InitialGap::Result => NoInitial::Result,
             InitialGap::Part(p) => NoInitial::Part(p),
-            InitialGap::Job => NoInitial::Job,
+            InitialGap::Thread => NoInitial::Thread,
         };
         self.report(kd::no_initial_value(span, &kind.name(), why));
         None
@@ -874,12 +874,12 @@ impl Checker
             Written::of(&n.prepositions, &n.phrases),
             n.span,
         )?;
-        // A call that runs as a job gives the job, of the kind its function
-        // gives back, or of none.
+        // A call that runs as a thread gives the thread, of the kind its
+        // function gives back, or of none.
         if n.parallel
         {
-            self.check_job_callee(&n.callee, place);
-            return Some(self.start_job(&n.args, ret, n.span));
+            self.check_thread_callee(&n.callee, place);
+            return Some(self.start_thread(&n.args, ret, n.span));
         }
         self.check_pass(&n.callee, ret, n.pass, false, n.span);
         // Without a pass-on the value is the whole result; with one, the good

@@ -1,4 +1,4 @@
-// Two jobs add to one shared object, each change inside a lock block; a
+// Two threads add to one shared object, each change inside a lock block; a
 // function gives back from inside one, which gives the lock back.
 အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 

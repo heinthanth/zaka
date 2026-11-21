@@ -337,7 +337,7 @@ fn tag(kind: DataKind) -> i32
     match kind
     {
         DataKind::Int(k) if k.signed => 0,
-        // A job or a channel is the unsigned number that names it.
+        // A thread or a channel is the unsigned number that names it.
         DataKind::Int(_) | DataKind::Task(_) => 1,
         DataKind::Float(_) => 2,
         DataKind::Char => 3,

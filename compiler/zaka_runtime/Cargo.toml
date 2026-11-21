@@ -19,7 +19,7 @@ zakac_rust_sugars = { workspace = true }
 libffi = { workspace = true }
 
 [features]
-# The guard of a job in C, for code the JIT runs in the process of zakac; a
+# The guard of a thread in C, for code the JIT runs in the process of zakac; a
 # build of a program compiles its own.
 guard = ["dep:cc"]
 

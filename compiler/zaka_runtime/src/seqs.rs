@@ -341,9 +341,9 @@ fn text_cells(k: &ZkKind) -> *const ZkKind
 // ---- the queue of blocks to free, and the ring collector ----
 //
 // The trial counts of the collector change the counts with plain ops: a
-// collection runs with each other thread of the program halted.
+// collection runs with each other OS thread of the program halted.
 
-/// A list of blocks that a static holds: the runtime runs on one thread, and
+/// A list of blocks that a static holds: the runtime runs on one OS thread, and
 /// a static, unlike a thread local, still stands while the C lib runs
 /// the collection at exit.
 struct Blocks(Mutex<Vec<usize>>);
@@ -421,7 +421,7 @@ thread_local! {
 /// The blocks a release left held that can be part of a ring.
 static CANDIDATES: Blocks = Blocks::new();
 thread_local! {
-    /// The new blocks whose cells the deep duplicate of this thread still
+    /// The new blocks whose cells the deep duplicate of this OS thread still
     /// visits.
     static DEEP_TODO: Blocks = const { Blocks::new() };
 }
@@ -732,7 +732,7 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
     }
 }
 
-/// Set (1) while a collection asks the running threads to halt at a safe
+/// Set (1) while a collection asks the running OS threads to halt at a safe
 /// point; the loops of native code read it at each round, as `zk_halt`.
 #[unsafe(export_name = stamped!("halt"))]
 #[allow(non_upper_case_globals)]
@@ -745,22 +745,22 @@ pub static mut zk_halt: u8 = 0;
 /// The flag.
 fn halt() -> &'static AtomicU8
 {
-    // SAFETY: the flag lives for the whole run, and each thread reads and
+    // SAFETY: the flag lives for the whole run, and each OS thread reads and
     // sets it with atomic ops alone.
     unsafe { AtomicU8::from_ptr(&raw mut zk_halt) }
 }
 
-/// The count of threads halted at a safe point.
+/// The count of OS threads halted at a safe point.
 static HALTED: AtomicUsize = AtomicUsize::new(0);
 
-/// How long a collection waits for the running threads to halt before it lets
-/// the request go; the next full buffer asks again.
+/// How long a collection waits for the running OS threads to halt before it
+/// lets the request go; the next full buffer asks again.
 const HALT_WAIT: std::time::Duration = std::time::Duration::from_millis(20);
 
-/// A safe point: where a collection asks the running threads to halt, a
-/// thread waits here until the collection ends. Each allocation, each
-/// candidate a release notes and each wake of a waiting thread passes one, at
-/// the cost of one atomic load.
+/// A safe point: where a collection asks the running OS threads to halt, a
+/// OS thread waits here until the collection ends. Each allocation, each
+/// candidate a release notes and each wake of a waiting OS thread passes one,
+/// at the cost of one atomic load.
 pub fn safe_point()
 {
     ret_if!(!halt_asked());
@@ -782,7 +782,7 @@ pub extern "C" fn zk_safe_point() { safe_point() }
 #[unsafe(export_name = stamped!("halt_flag"))]
 pub extern "C" fn zk_halt_flag() -> *const u8 { &raw const zk_halt }
 
-/// Whether a collection asks the running threads to halt.
+/// Whether a collection asks the running OS threads to halt.
 ///
 /// # Returns
 ///
@@ -791,13 +791,14 @@ pub(crate) fn halt_asked() -> bool { halt().load(Ordering::Acquire) != 0 }
 
 /// Free each group of blocks in the buffer, or reached from it, that holds
 /// itself alone: trial deletion that halts the program while it runs. While
-/// jobs run, the other running threads halt at their next safe point first;
-/// a thread that reaches none in [`HALT_WAIT`] (a loop with no allocation, or a
-/// call of C) lets the collection go, and the next full buffer tries again.
+/// threads run, the other running OS threads halt at their next safe point
+/// first; an OS thread that reaches none in [`HALT_WAIT`] (a loop with no
+/// allocation, or a call of C) lets the collection go, and the next full buffer
+/// tries again.
 fn collect_rings()
 {
     ret_if!(!crate::libs::begin_collect());
-    let ran = !crate::jobs::jobs_run() || halt_others();
+    let ran = !crate::threads::threads_run() || halt_others();
     do_if!(ran, collect_held());
     halt().store(0, Ordering::Release);
     crate::libs::end_collect();
@@ -811,28 +812,28 @@ fn collect_rings()
 /// again; 0 after a collection ran.
 static RETRY_AT: AtomicUsize = AtomicUsize::new(0);
 
-/// Ask the other running threads to halt at their next safe point, and wait
-/// for them, at most [`HALT_WAIT`]. Threads that wait for a job, a channel or a
-/// lock are halted, as each wake passes a safe point.
+/// Ask the other running OS threads to halt at their next safe point, and wait
+/// for them, at most [`HALT_WAIT`]. OS threads that wait for a thread, a
+/// channel or a lock are halted, as each wake passes a safe point.
 ///
 /// # Returns
 ///
-/// `true` once each other running thread halted.
+/// `true` once each other running OS thread halted.
 fn halt_others() -> bool
 {
-    ret_false!(!crate::jobs::counted_thread());
+    ret_false!(!crate::threads::counted_thread());
     halt().store(1, Ordering::SeqCst);
     let deadline = std::time::Instant::now() + HALT_WAIT;
     loop
     {
-        let others = crate::jobs::running_others();
+        let others = crate::threads::running_others();
         ret_true!(others.is_some_and(|n| HALTED.load(Ordering::SeqCst) >= n));
         ret_false!(std::time::Instant::now() > deadline);
         std::thread::yield_now();
     }
 }
 
-/// The work of [`collect_rings`], while no other thread changes a count.
+/// The work of [`collect_rings`], while no other OS thread changes a count.
 fn collect_held()
 {
     RING_WAITING.store(0, Ordering::Relaxed);
@@ -977,7 +978,7 @@ pub extern "C" fn zk_drop(p: *mut u8, k: *const ZkKind)
     drain_queue();
 }
 
-/// Free the queue of blocks to free, unless an outer drop of this thread is
+/// Free the queue of blocks to free, unless an outer drop of this OS thread is
 /// freeing it now.
 fn drain_queue()
 {
@@ -1049,7 +1050,7 @@ fn unshare(p: *mut u8, k: &ZkKind)
     ret_if!(base.is_null() || rc_of(base) <= 1);
     let len = zk_seq_len(p);
     clone_block(p, k);
-    // Another thread can let go of the old block meanwhile, leaving this the
+    // Another OS thread can let go of the old block meanwhile, leaving this the
     // last holder; then this frees it.
     ret_if!(rc_sub(base) > 0);
     queue_free(base, text_cells(k), len);

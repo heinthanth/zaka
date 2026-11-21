@@ -76,14 +76,14 @@ const MAX_HEAP_ARG: &str = "max_heap";
 const MAX_STACK_ARG: &str = "max_stack";
 /// The flag for how variables sit in the address space.
 const FRAMES_ARG: &str = "frames";
-/// The flag for what a trap in a job does.
+/// The flag for what a trap in a thread does.
 const TRAP_ARG: &str = "trap";
 /// The flag that lists the heap blocks left unfreed.
 const LEAKS_ARG: &str = "leaks";
 /// The id of the flag that runs the program as native code, with the JIT.
 const JIT_ARG: &str = "jit";
-/// The flag that shuffles the turns of the jobs, with a seed or none.
-const SHUFFLE_ARG: &str = "shuffle_job_order";
+/// The flag that shuffles the turns of the threads, with a seed or none.
+const SHUFFLE_ARG: &str = "shuffle_thread_order";
 /// The id of the flag that runs the program on the VM.
 const VM_ARG: &str = "vm";
 /// The flags of the VM alone: a run that names one runs on the VM.
@@ -164,9 +164,9 @@ fn configure_vm_command(cmd: clap::Command) -> clap::Command
         .value_parser(["unwind", "abort"])
         .default_value("unwind");
     let shuffle = Arg::new(SHUFFLE_ARG)
-        .long("shuffle-job-order")
+        .long("shuffle-thread-order")
         .value_name("SEED")
-        .help(t!("vm.shuffle_job_order"))
+        .help(t!("vm.shuffle_thread_order"))
         .value_parser(value_parser!(u64))
         .num_args(0..=1)
         .require_equals(true)
@@ -356,7 +356,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let gate = run_gate(matches);
     let (machine, result) =
         run_in(&module, &mut *io.stdout, &options, &host, world, gate);
-    write_job_traps(io, &cmd_info, &machine, &source_map);
+    write_thread_traps(io, &cmd_info, &machine, &source_map);
     let Err(trap) = result
     else
     {
@@ -371,7 +371,7 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ExitCode::Failure
 }
 
-/// Report each trap that ended a job while the program went on.
+/// Report each trap that ended a thread while the program went on.
 ///
 /// # Arguments
 ///
@@ -379,14 +379,14 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 /// * `cmd_info` - The command, for the report.
 /// * `machine` - The machine where the run stopped.
 /// * `source_map` - The source map.
-fn write_job_traps(
+fn write_thread_traps(
     io: &mut CommandIO<'_>, cmd_info: &CommandInfo, machine: &Machine,
     source_map: &SourceMap,
 )
 {
-    for (job, trap) in machine.job_traps()
+    for (thread, trap) in machine.thread_traps()
     {
-        let head = t!("vm.trap.job_stopped", job = job);
+        let head = t!("vm.trap.thread_stopped", thread = thread);
         let msg = format!("{head}: {}", trap.report(source_map, backtrace()));
         let _ = report_command_error(io, cmd_info, Error::RuntimeTrap { msg });
     }
@@ -486,7 +486,7 @@ fn run_options(matches: &ArgMatches) -> RunOptions
     options
 }
 
-/// Draw a seed for `--shuffle-job-order` given with none, and tell it on
+/// Draw a seed for `--shuffle-thread-order` given with none, and tell it on
 /// standard error, so the same order can run again.
 ///
 /// # Arguments

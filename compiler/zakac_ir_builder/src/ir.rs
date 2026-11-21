@@ -59,12 +59,12 @@ pub struct Module
     #[builder(default)]
     #[serde(default)]
     pub c_structs: BTreeMap<String, String>,
-    /// The name of each shared struct marked as usable in jobs: its objects are
-    /// reached under their locks, so a closure C calls from a thread of its
-    /// own can capture one.
+    /// The name of each shared struct marked as usable in threads: its objects
+    /// are reached under their locks, so a closure C calls from an OS
+    /// thread of its own can capture one.
     #[builder(default)]
     #[serde(default)]
-    pub jobs_structs: BTreeSet<String>,
+    pub threads_structs: BTreeSet<String>,
     /// The target the program was settled for, when it depends on one.
     #[serde(default)]
     pub built_for: Option<Target>,
@@ -587,11 +587,11 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Wait for a job to end, and drop what its function gave back.
+    /// Wait for a thread to end, and drop what its function gave back.
     Wait
     {
-        /// The job.
-        job: Expr,
+        /// The thread.
+        thread: Expr,
         /// The kind its function gives back, or `None`.
         kind: Option<DataKind>,
         /// Source region.
@@ -616,8 +616,9 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
-    /// Take the lock of a shared object: it waits while another job holds it;
-    /// a lock that a job held when it stopped at a trap stops the program.
+    /// Take the lock of a shared object: it waits while another thread holds
+    /// it; a lock that a thread held when it stopped at a trap stops the
+    /// program.
     Lock
     {
         /// The object.
@@ -634,7 +635,7 @@ pub enum Stmt
         span: Span,
     },
     /// Add a value to an atomic number, or subtract it, in one step no
-    /// other job can split; the result wraps.
+    /// other thread can split; the result wraps.
     AtomicAdd
     {
         /// The address of the number.
@@ -980,8 +981,8 @@ pub enum ExprNode
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
     },
-    /// Start a job on another thread that calls a function with the
-    /// arguments; the value is the number of the job.
+    /// Start a thread that calls a function with the
+    /// arguments; the value is the number of the thread.
     Spawn
     {
         /// Index into [`Module::funcs`].
@@ -991,7 +992,7 @@ pub enum ExprNode
         /// The arguments, each of its parameter's kind.
         args: Vec<Expr>,
     },
-    /// Wait for a job to end; the value is what its function gave back.
+    /// Wait for a thread to end; the value is what its function gave back.
     Wait(Box<Expr>),
     /// A new channel, the `usize` that names it: with the most values that
     /// wait in it, or with no limit.

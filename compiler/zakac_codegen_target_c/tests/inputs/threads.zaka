@@ -1,5 +1,5 @@
-// Jobs on threads: two sums, a text result that one wait takes, printed twice,
-// and a channel that one job fills and the start block drains; the start block
+// Threads on OS threads: two sums, a text result that one wait takes, printed twice,
+// and a channel that one thread fills and the start block drains; the start block
 // alone prints.
 စုပေါင်း ဟူသော လုပ်ဆောင်ချက် သည် ဂဏန်းများ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။

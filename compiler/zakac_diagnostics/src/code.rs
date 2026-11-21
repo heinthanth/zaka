@@ -489,16 +489,16 @@ CNameTaken = ("ZK0491", Level::Error),
 /// A function that code outside can call passes a struct to C that has no
 /// C name.
 StructNeedsCName = ("ZK0492", Level::Error),
-/// The mark of objects jobs can use stands on a struct that is no shared
-/// object: its values go to jobs as they are, so the mark changes nothing.
-JobsMarkOnValue = ("ZK0493", Level::Warning),
-/// A value goes to a job on another thread, or comes back from one, and jobs
+/// The mark of objects threads can use stands on a struct that is no shared
+/// object: its values go to threads as they are, so the mark changes nothing.
+ThreadsMarkOnValue = ("ZK0493", Level::Warning),
+/// A value goes to another thread, or comes back from one, and threads
 /// cannot use its kind.
-NotForJobs = ("ZK0494", Level::Error),
+NotForThreads = ("ZK0494", Level::Error),
 NotAPipe = ("ZK0495", Level::Error),
 PipeDataOutside = ("ZK0496", Level::Error),
-JobOfNoDeclaredFn = ("ZK0497", Level::Error),
-JobChangesArgs = ("ZK0498", Level::Error),
+ThreadOfNoDeclaredFn = ("ZK0497", Level::Error),
+ThreadChangesArgs = ("ZK0498", Level::Error),
 OutsideLock = ("ZK0499", Level::Error),
 /// A negative verb before `သို့မဟုတ်` carries `သည်`.
 NegativeBeforeOr = ("ZK0501", Level::Warning),
@@ -589,9 +589,9 @@ ReadUnsetDoubt = ("ZK0723", Level::Warning),
 GlobalUnsetAtCall = ("ZK0724", Level::Error),
 /// A return that can leave a parameter marked `ဒေတာ ထည့်ပေးရန်` unset.
 FillUnsetAtReturn = ("ZK0725", Level::Error),
-/// A function a job runs reaches a mutable global, which belongs to the main
+/// A function a thread runs reaches a mutable global, which belongs to the main
 /// thread.
-GlobalInJob = ("ZK0726", Level::Error),
+GlobalInThread = ("ZK0726", Level::Error),
 /// A set of an atomic number whose value reads the same number.
 AtomicReadWrite = ("ZK0727", Level::Error),
 /// A round of a parallel loop writes a variable outside the cell of its own

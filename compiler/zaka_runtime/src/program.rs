@@ -59,7 +59,8 @@ pub struct ZkFnName
     pub name: *const c_char,
     /// 1 when C can call the function from a thread of its own: neither it
     /// nor each function it calls uses a mutable global, and for the thunk of
-    /// a closure each capture is a duplicate of a value jobs can use; else 0.
+    /// a closure each capture is a duplicate of a value threads can use; else
+    /// 0.
     pub crosses: usize,
 }
 
@@ -154,30 +155,30 @@ pub(crate) const OVERLAP_BIT: u32 = 1 << 7;
 pub static mut zk_prog: *const ZkProgram = null();
 
 thread_local! {
-    /// The table of the C lib whose call this thread runs, or ran last.
+    /// The table of the C lib whose call this OS thread runs, or ran last.
     static THREAD_PROG: Cell<*const ZkProgram> = const { Cell::new(null()) };
 }
 
-/// The table of the C lib opened first, for a thread that runs no call of a
+/// The table of the C lib opened first, for an OS thread that runs no call of a
 /// lib.
 static FIRST_LIB_PROG: AtomicPtr<ZkProgram> = AtomicPtr::new(null_mut());
 
-/// The table of the C lib whose call this thread runs, or ran last.
+/// The table of the C lib whose call this OS thread runs, or ran last.
 ///
 /// # Returns
 ///
-/// The table, or NULL when the thread ran no call of a lib.
+/// The table, or NULL when the OS thread ran no call of a lib.
 pub(crate) fn thread_prog() -> *const ZkProgram { THREAD_PROG.get() }
 
-/// Set the table of the C lib whose call this thread runs.
+/// Set the table of the C lib whose call this OS thread runs.
 ///
 /// # Arguments
 ///
 /// * `program` - The table.
 pub(crate) fn set_thread_prog(program: *const ZkProgram) { THREAD_PROG.set(program) }
 
-/// Keep the table of a C lib as the one of each thread that runs no call of a
-/// lib, unless a lib opened before it.
+/// Keep the table of a C lib as the one of each OS thread that runs no call of
+/// a lib, unless a lib opened before it.
 ///
 /// # Arguments
 ///
@@ -188,8 +189,8 @@ pub(crate) fn keep_last(program: *const ZkProgram)
     _ = FIRST_LIB_PROG.compare_exchange(null_mut(), fresh, ord, Ordering::Acquire);
 }
 
-/// The table in use on this thread: the one of its C lib, else the one of the
-/// first lib, else the one `zk_start` set.
+/// The table in use on this OS thread: the one of its C lib, else the one of
+/// the first lib, else the one `zk_start` set.
 ///
 /// # Returns
 ///
@@ -200,8 +201,8 @@ pub(crate) fn prog_ptr() -> *const ZkProgram
     ret_if!(!own.is_null(), own);
     let first = FIRST_LIB_PROG.load(Ordering::Acquire);
     ret_if!(!first.is_null(), first);
-    // SAFETY: `zk_start` sets it on the one thread of the program, before
-    // each other thread starts.
+    // SAFETY: `zk_start` sets it on the one OS thread of the program, before
+    // each other OS thread starts.
     unsafe { zk_prog }
 }
 

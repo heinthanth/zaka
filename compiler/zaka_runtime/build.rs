@@ -27,8 +27,8 @@ fn main()
     build_guard(&prefix);
 }
 
-/// Compile the guard of a job in C into the lib, each name with the prefix of
-/// the runtime.
+/// Compile the guard of a thread in C into the lib, each name with the prefix
+/// of the runtime.
 ///
 /// # Arguments
 ///
@@ -36,13 +36,13 @@ fn main()
 #[cfg(feature = "guard")]
 fn build_guard(prefix: &str)
 {
-    println!("cargo:rerun-if-changed=c/job_guard.c");
+    println!("cargo:rerun-if-changed=c/thread_guard.c");
     // C11, as each build of the C target: MSVC knows `_Noreturn` in it alone.
     cc::Build::new()
-        .file("c/job_guard.c")
+        .file("c/thread_guard.c")
         .std("c11")
         .define("ZK_PREFIX", prefix)
-        .compile("zk_job_guard");
+        .compile("zk_thread_guard");
 }
 
 /// The rows of the table for each `pub extern "C" fn` of a source file.

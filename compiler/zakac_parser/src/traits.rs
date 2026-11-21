@@ -508,8 +508,11 @@ impl Parser<'_>
         let closer = Kw::SubstitutedRel;
         let word = self.word_kind_args_len(0, closer).is_some();
         let mut args = tern!(word, self.parse_word_kind_args(closer)?, Vec::new());
-        let name =
-            tern!(self.at_jobs_trait(), self.jobs_trait_name(), self.parse_ident()?);
+        let name = tern!(
+            self.at_threads_trait(),
+            self.threads_trait_name(),
+            self.parse_ident()?
+        );
         if args.is_empty() && self.at_punct(Punct::Lt)
         {
             args = self.parse_sign_kind_args()?;

@@ -1,4 +1,4 @@
-// A second wait for one job: the first wait took its result.
+// A second wait for one thread: the first wait took its result.
 အော် ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
 "{စာ}!" ကို ပြန်ပေးမည်။

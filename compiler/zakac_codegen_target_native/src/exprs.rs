@@ -67,7 +67,7 @@ impl<M: Module> FnGen<'_, '_, M>
             ExprNode::Convert { operand, .. } => self.convert(operand, e.kind),
             ExprNode::Call { func, args, .. } => self.call(Callee::Fn(*func), args),
             ExprNode::Spawn { func, args, .. } => self.spawn(*func, args),
-            ExprNode::Wait(job) => self.wait(job, e.kind),
+            ExprNode::Wait(thread) => self.wait(thread, e.kind),
             ExprNode::MakePipe(room) =>
             {
                 let ptr = self.s.ptr;

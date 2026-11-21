@@ -1,5 +1,5 @@
-//! Jobs and channels in Cranelift code: a spawn fills the data block of the
-//! job, which each argument moves into, and hands it to the runtime with the
+//! Threads and channels in Cranelift code: a spawn fills the data block of the
+//! thread, which each argument moves into, and hands it to the runtime with the
 //! step this file writes for the function. The guard the step runs under is
 //! C, which the build compiles beside the object.
 
@@ -10,10 +10,10 @@ use cranelift_codegen::ir::types;
 use cranelift_module::FuncId;
 use cranelift_module::Linkage;
 use cranelift_module::Module;
-use zakac_codegen_target_c::jobs::part_offsets;
-use zakac_codegen_target_c::jobs::parts;
-use zakac_codegen_target_c::jobs::round_parts;
 use zakac_codegen_target_c::kinds::is_blob;
+use zakac_codegen_target_c::threads::part_offsets;
+use zakac_codegen_target_c::threads::parts;
+use zakac_codegen_target_c::threads::round_parts;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::Par;
 use zakac_ir_builder::ir::ParMap;
@@ -28,7 +28,7 @@ use crate::func::FnGen;
 
 impl<M: Module> Shared<'_, M>
 {
-    /// The step of a job that runs a function, declared on its first use.
+    /// The step of a thread that runs a function, declared on its first use.
     ///
     /// # Arguments
     ///
@@ -43,7 +43,7 @@ impl<M: Module> Shared<'_, M>
         ret_if!(let Some(id) = known, id);
         let mut sig = self.m.make_signature();
         sig.params.push(AbiParam::new(self.ptr));
-        let name = format!("zk_job_step_{f}");
+        let name = format!("zk_thread_step_{f}");
         let id = self.m.declare_function(&name, Linkage::Local, &sig).expect("a step");
         self.steps.push((f, id));
         id
@@ -93,8 +93,8 @@ impl<M: Module> Shared<'_, M>
         id
     }
 
-    /// A function of the C glue of jobs, under its plain name, declared on its
-    /// first use.
+    /// A function of the C glue of threads, under its plain name, declared on
+    /// its first use.
     ///
     /// # Arguments
     ///
@@ -144,7 +144,7 @@ impl<M: Module> FnGen<'_, '_, M>
     ///
     /// # Returns
     ///
-    /// The number of the job.
+    /// The number of the thread.
     pub fn spawn(&mut self, f: u32, args: &[Expr]) -> Value
     {
         let ptr = self.s.ptr;
@@ -152,7 +152,7 @@ impl<M: Module> FnGen<'_, '_, M>
         let (offsets, size) = part_offsets(&kinds, self.s.platform());
         let vals: Vec<Value> = args.iter().map(|a| self.expr(a)).collect();
         let size = self.word(i64::from(size));
-        let data = self.rt("zk_job_data", &[ptr], &[ptr], &[size]).unwrap_or(size);
+        let data = self.rt("zk_thread_data", &[ptr], &[ptr], &[size]).unwrap_or(size);
         for ((v, arg), at) in vals.into_iter().zip(args).zip(offsets.iter().skip(1))
         {
             let place = self.b.ins().iadd_imm_u(data, i64::from(*at));
@@ -160,9 +160,9 @@ impl<M: Module> FnGen<'_, '_, M>
         }
         let step = self.s.step_of(f);
         let step = self.addr_of_fn(step);
-        let guard = self.s.glue_fn("zk_job_guard", &[ptr, ptr], &[types::I32]);
+        let guard = self.s.glue_fn("zk_thread_guard", &[ptr, ptr], &[types::I32]);
         let guard = self.addr_of_fn(guard);
-        let leave = self.s.glue_fn("zk_job_leave", &[types::I32], &[]);
+        let leave = self.s.glue_fn("zk_thread_leave", &[types::I32], &[]);
         let leave = self.addr_of_fn(leave);
         let ret = match kinds[0]
         {
@@ -173,25 +173,25 @@ impl<M: Module> FnGen<'_, '_, M>
             self.b.ins().iconst(types::I32, i64::from(self.s.options.trap_abort));
         let params = [ptr, ptr, ptr, ptr, ptr, types::I32];
         let args = [guard, leave, step, data, ret, abort];
-        self.rt("zk_job_start", &params, &[ptr], &args).unwrap_or(data)
+        self.rt("zk_thread_start", &params, &[ptr], &args).unwrap_or(data)
     }
 
-    /// A wait that takes the result of a job: the result moves out of the
-    /// data block of the job, which the runtime then frees.
+    /// A wait that takes the result of a thread: the result moves out of the
+    /// data block of the thread, which the runtime then frees.
     ///
     /// # Arguments
     ///
-    /// * `job` - The job.
+    /// * `thread` - The thread.
     /// * `kind` - The result kind.
     ///
     /// # Returns
     ///
     /// The value.
-    pub fn wait(&mut self, job: &Expr, kind: DataKind) -> Value
+    pub fn wait(&mut self, thread: &Expr, kind: DataKind) -> Value
     {
         let ptr = self.s.ptr;
-        let j = self.expr(job);
-        let at = self.rt("zk_job_wait", &[ptr], &[ptr], &[j]).unwrap_or(j);
+        let j = self.expr(thread);
+        let at = self.rt("zk_thread_wait", &[ptr], &[ptr], &[j]).unwrap_or(j);
         // The result moves out, and the runtime frees the block after.
         let value = if is_blob(kind)
         {
@@ -203,7 +203,7 @@ impl<M: Module> FnGen<'_, '_, M>
         {
             self.load(self.s.clif_of(kind), at)
         };
-        self.rt("zk_job_taken", &[ptr], &[], &[j]);
+        self.rt("zk_thread_taken", &[ptr], &[], &[j]);
         value
     }
 
@@ -258,7 +258,7 @@ impl<M: Module> FnGen<'_, '_, M>
         }
     }
 
-    /// The guard of a job, the function that jumps back to it, and whether a
+    /// The guard of a thread, the function that jumps back to it, and whether a
     /// trap stops the whole program, as the runtime takes them.
     ///
     /// # Returns
@@ -267,9 +267,9 @@ impl<M: Module> FnGen<'_, '_, M>
     fn guard_args(&mut self) -> [Value; 3]
     {
         let ptr = self.s.ptr;
-        let guard = self.s.glue_fn("zk_job_guard", &[ptr, ptr], &[types::I32]);
+        let guard = self.s.glue_fn("zk_thread_guard", &[ptr, ptr], &[types::I32]);
         let guard = self.addr_of_fn(guard);
-        let leave = self.s.glue_fn("zk_job_leave", &[types::I32], &[]);
+        let leave = self.s.glue_fn("zk_thread_leave", &[types::I32], &[]);
         let leave = self.addr_of_fn(leave);
         let abort =
             self.b.ins().iconst(types::I32, i64::from(self.s.options.trap_abort));
@@ -328,7 +328,7 @@ impl<M: Module> FnGen<'_, '_, M>
         let (each, size) = round_parts(self.s.module, p.func, self.s.platform());
         let vals: Vec<Value> = p.args.iter().map(|a| self.expr(a)).collect();
         let size = self.word(i64::from(size));
-        let data = self.rt("zk_job_data", &[ptr], &[ptr], &[size]).unwrap_or(size);
+        let data = self.rt("zk_thread_data", &[ptr], &[ptr], &[size]).unwrap_or(size);
         for (v, (k, at)) in vals.into_iter().zip(&each)
         {
             let place = self.b.ins().iadd_imm_u(data, i64::from(*at));
@@ -417,14 +417,14 @@ impl<M: Module> FnGen<'_, '_, M>
         self.live = false;
     }
 
-    /// The code of the step of a job that runs a function: it calls the
+    /// The code of the step of a thread that runs a function: it calls the
     /// function with the arguments of the data block, which the function
     /// drops as it returns, and writes the result at its start.
     ///
     /// # Arguments
     ///
     /// * `f` - The function.
-    pub fn job_step(&mut self, f: u32)
+    pub fn thread_step(&mut self, f: u32)
     {
         let first = self.b.current_block().expect("the first block");
         let &[data] = self.b.block_params(first)

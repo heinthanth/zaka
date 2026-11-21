@@ -80,7 +80,7 @@ fn raw_expr(e: &Expr) -> bool
         {
             raw_expr(lhs) || raw_expr(rhs)
         }
-        ExprNode::Wait(job) | ExprNode::Receive(job) => raw_expr(job),
+        ExprNode::Wait(thread) | ExprNode::Receive(thread) => raw_expr(thread),
         ExprNode::AtomicCas { addr, expected, new } =>
         {
             raw_expr(addr) || raw_expr(expected) || raw_expr(new)
@@ -110,7 +110,7 @@ fn raw_stmt(s: &Stmt) -> bool
     match s
     {
         Stmt::Set { value, .. }
-        | Stmt::Wait { job: value, .. }
+        | Stmt::Wait { thread: value, .. }
         | Stmt::Close { pipe: value, .. }
         | Stmt::Lock { obj: value, .. }
         | Stmt::Unlock { obj: value, .. } => raw_expr(value),

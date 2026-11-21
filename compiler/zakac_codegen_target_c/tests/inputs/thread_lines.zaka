@@ -1,4 +1,4 @@
-// Four jobs each print 300 lines at once; each line comes out whole.
+// Four threads each print 300 lines at once; each line comes out whole.
 ပြ ဟူသော လုပ်ဆောင်ချက် သည် စာ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃၀၀ အထိ န အနေဖြင့် ရေတွက်၍ "{စာ}-{န}" ဟု ပြသမည်။

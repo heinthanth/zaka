@@ -76,7 +76,7 @@ const CHECKS_ARG: &str = "checks";
 const MAX_DEPTH_ARG: &str = "max_depth";
 /// The flag that caps the heap octets the executable holds at once.
 const MAX_HEAP_ARG: &str = "max_heap";
-/// The flag for what a trap in a job does.
+/// The flag for what a trap in a thread does.
 const TRAP_ARG: &str = "trap";
 /// The flag that names a C lib in the names C calls and in its link names.
 pub const LIB_NAME_ARG: &str = "lib_name";

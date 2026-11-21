@@ -1,17 +1,17 @@
 //! The phrase `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`: the mark of a shared struct
-//! whose objects jobs can use, and the name of the trait of the kinds jobs can
-//! use. Its words are read through their text, apart or glued.
+//! whose objects threads can use, and the name of the trait of the kinds
+//! threads can use. Its words are read through their text, apart or glued.
 
 use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::VerbExpr;
-use zakac_ast::jobs::JOBS_WORDS;
-use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::LockStmt;
 use zakac_ast::stmt::Stmt;
+use zakac_ast::threads::THREADS_WORDS;
+use zakac_ast::threads::USABLE_IN_THREADS;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_lexer::token::Kw;
@@ -38,7 +38,7 @@ use crate::parser::Parser;
 /// # Returns
 ///
 /// The count of tokens, or `None`.
-pub(crate) fn jobs_phrase_at(
+pub(crate) fn threads_phrase_at(
     tokens: &[Token], at: usize, text_of: &dyn Fn(&Token) -> String,
 ) -> Option<usize>
 {
@@ -50,9 +50,9 @@ pub(crate) fn jobs_phrase_at(
             .unwrap_or_default()
     };
     let first = word(at);
-    let glued = format!("{}{}", JOBS_WORDS[0], JOBS_WORDS[1]);
+    let glued = format!("{}{}", THREADS_WORDS[0], THREADS_WORDS[1]);
     (first == glued).then_some(1).or_else(|| {
-        (first == JOBS_WORDS[0] && word(at + 1) == JOBS_WORDS[1]).then_some(2)
+        (first == THREADS_WORDS[0] && word(at + 1) == THREADS_WORDS[1]).then_some(2)
     })
 }
 
@@ -75,7 +75,7 @@ pub(crate) fn past_marks(
     let mark = |n: usize| {
         let kw = tokens.get(n).map(|t| t.kind);
         let plain = matches!(kw, Some(TokenKind::Kw(Kw::Export | Kw::Shareable)));
-        tern!(plain, Some(1), jobs_phrase_at(tokens, n, text_of))
+        tern!(plain, Some(1), threads_phrase_at(tokens, n, text_of))
     };
     while let Some(len) = mark(at)
     {
@@ -84,11 +84,11 @@ pub(crate) fn past_marks(
     at
 }
 
-/// The word before the call end that runs a call as a job.
+/// The word before the call end that runs a call as a thread.
 pub(crate) const PARALLEL: &str = "အပြိုင်";
 
-/// The word after `လုပ်ဆောင်သော` in the expression that gives the job.
-pub(crate) const JOB_NOUN: &str = "လုပ်ငန်း";
+/// The word after `လုပ်ဆောင်သော` in the expression that gives the thread.
+pub(crate) const THREAD_NOUN: &str = "လုပ်ငန်း";
 
 /// The words that take the lock of an object after its `ကို`, glued to `ယူ၍`
 /// or apart from it.
@@ -96,7 +96,7 @@ const LOCK_WORDS: [&str; 2] = ["ခေတ္တ", "ခဏ"];
 
 /// The word that opens the count of threads of a parallel loop or map,
 /// `အပြိုင်လုပ်ငန်း <n> ခုခွဲ၍`.
-const JOB_WORD: &str = "အပြိုင်လုပ်ငန်း";
+const THREAD_WORD: &str = "အပြိုင်လုပ်ငန်း";
 
 /// The word that ends the count of threads.
 const SPLIT_WORD: &str = "ခုခွဲ၍";
@@ -119,7 +119,7 @@ impl Parser<'_>
 {
     /// Whether the end of a parallel call stands at the cursor:
     /// `အပြိုင် လုပ်ဆောင်မည်` (a statement) or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` (the
-    /// expression of the job).
+    /// expression of the thread).
     ///
     /// # Returns
     ///
@@ -146,7 +146,7 @@ impl Parser<'_>
         ret_if!(!word(0, PARALLEL), None);
         let next = self.peek_n(at + 1).kind;
         ret_if!(next == TokenKind::Kw(Kw::WillDo), Some(true));
-        (next == TokenKind::Kw(Kw::CallHead) && word(2, JOB_NOUN)).then_some(false)
+        (next == TokenKind::Kw(Kw::CallHead) && word(2, THREAD_NOUN)).then_some(false)
     }
 
     /// Whether the end of a long call stands `n` tokens ahead: `လုပ်ဆောင်မည်`,
@@ -212,7 +212,7 @@ impl Parser<'_>
     /// The count, `None` when the phrase does not come next, or a diagnostic.
     pub(crate) fn parse_threads(&mut self) -> PResult<Option<Expr>>
     {
-        ret_if!(!self.is_word_at(0, JOB_WORD), Ok(None));
+        ret_if!(!self.is_word_at(0, THREAD_WORD), Ok(None));
         self.bump();
         let count = self.parse_notation()?;
         self.eat_words(&[SPLIT_WORD])?;
@@ -234,7 +234,7 @@ impl Parser<'_>
             && self.peek_n(3).kind == TokenKind::Ident
             && kw(4, Kw::FnValue)
             && kw(5, Kw::Hpjint)
-            && (self.is_word_at(6, JOB_WORD) || self.par_map_end_at(6))
+            && (self.is_word_at(6, THREAD_WORD) || self.par_map_end_at(6))
     }
 
     /// Whether `အပြိုင် လုပ်ဆောင်သော ရလဒ်များ` stands `n` tokens ahead.
@@ -405,10 +405,10 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The count of tokens, or `None` when the phrase does not stand there.
-    pub(crate) fn jobs_phrase_ahead(&self, n: usize) -> Option<usize>
+    pub(crate) fn threads_phrase_ahead(&self, n: usize) -> Option<usize>
     {
         let tokens: Vec<Token> = (n..n + 2).map(|k| self.peek_n(k)).collect();
-        jobs_phrase_at(&tokens, 0, &|t: &Token| self.text_of(t.span).to_string())
+        threads_phrase_at(&tokens, 0, &|t: &Token| self.text_of(t.span).to_string())
     }
 
     /// Whether the phrase stands at the cursor, as the name of a trait.
@@ -416,19 +416,25 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` if it does.
-    pub(crate) fn at_jobs_trait(&self) -> bool { self.jobs_phrase_ahead(0).is_some() }
+    pub(crate) fn at_threads_trait(&self) -> bool
+    {
+        self.threads_phrase_ahead(0).is_some()
+    }
 
-    /// Read the phrase as the name of the built-in trait of the kinds jobs
+    /// Read the phrase as the name of the built-in trait of the kinds threads
     /// can use.
     ///
     /// # Returns
     ///
     /// The name, over the words of the phrase.
-    pub(crate) fn jobs_trait_name(&mut self) -> Ident
+    pub(crate) fn threads_trait_name(&mut self) -> Ident
     {
         let start = self.peek().span;
-        self.eat_jobs_phrase();
-        Ident::builder().name(USABLE_IN_JOBS).span(start.to(&self.prev_span())).build()
+        self.eat_threads_phrase();
+        Ident::builder()
+            .name(USABLE_IN_THREADS)
+            .span(start.to(&self.prev_span()))
+            .build()
     }
 
     /// Move past the phrase when it stands at the cursor.
@@ -436,9 +442,9 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` when it stood there.
-    pub(crate) fn eat_jobs_phrase(&mut self) -> bool
+    pub(crate) fn eat_threads_phrase(&mut self) -> bool
     {
-        let Some(count) = self.jobs_phrase_ahead(0)
+        let Some(count) = self.threads_phrase_ahead(0)
         else
         {
             return false;

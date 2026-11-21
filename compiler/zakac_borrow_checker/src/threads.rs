@@ -1,6 +1,6 @@
-//! The globals rule of jobs: a mutable global belongs to the main thread, so
-//! a function a job or a parallel map runs, itself or through each function it
-//! calls, reads and writes none (ZK0726). Constants are free to read.
+//! The globals rule of threads: a mutable global belongs to the main thread, so
+//! a function a thread or a parallel map runs, itself or through each function
+//! it calls, reads and writes none (ZK0726). Constants are free to read.
 
 use std::collections::BTreeSet;
 
@@ -28,7 +28,7 @@ use crate::walk::each_expr;
 use crate::walk::each_stmt;
 use crate::walk::stmt_exprs;
 
-/// Report each function a job runs that reaches a mutable global, at its
+/// Report each function a thread runs that reaches a mutable global, at its
 /// first use of one.
 ///
 /// # Arguments
@@ -38,7 +38,7 @@ use crate::walk::stmt_exprs;
 /// # Returns
 ///
 /// The diagnostics.
-pub(crate) fn check_jobs(module: &Module) -> Vec<Diagnostic>
+pub(crate) fn check_threads(module: &Module) -> Vec<Diagnostic>
 {
     let spawned = spawned_fns(module);
     ret_if!(spawned.is_empty(), Vec::new());
@@ -46,9 +46,9 @@ pub(crate) fn check_jobs(module: &Module) -> Vec<Diagnostic>
     reached.into_iter().filter_map(|f| global_use(module, f)).collect()
 }
 
-/// Whether calls of an export of a C lib can run on several threads at once
+/// Whether calls of an export of a C lib can run on several OS threads at once
 /// with no lock: neither it nor each function it reaches uses a mutable
-/// global, calls C, calls through a function value, or starts a job or a
+/// global, calls C, calls through a function value, or starts a thread or a
 /// parallel map.
 ///
 /// # Arguments
@@ -66,7 +66,7 @@ pub fn runs_free(module: &Module, f: u32) -> bool
     reached.iter().all(|g| alone(g) && global_use(module, *g).is_none())
 }
 
-/// Whether a program starts a job or runs a parallel loop or map, so its
+/// Whether a program starts a thread or runs a parallel loop or map, so its
 /// loops pass a safe point of the ring collector at each round.
 ///
 /// # Arguments
@@ -76,7 +76,7 @@ pub fn runs_free(module: &Module, f: u32) -> bool
 /// # Returns
 ///
 /// `true` when it does.
-pub fn starts_jobs(module: &Module) -> bool
+pub fn starts_threads(module: &Module) -> bool
 {
     let (mut loops, mut spawns) = (false, false);
     let bodies = module.funcs.iter().map(|f| &f.block).chain([&module.main]);
@@ -92,9 +92,9 @@ pub fn starts_jobs(module: &Module) -> bool
     loops || spawns
 }
 
-/// Which functions C can call from a thread of its own: those that, itself
+/// Which functions C can call from an OS thread of its own: those that, itself
 /// or through each function it calls, uses no mutable global; for the thunk
-/// of a closure, each capture is also a duplicate of a value jobs can use.
+/// of a closure, each capture is also a duplicate of a value threads can use.
 ///
 /// # Arguments
 ///
@@ -118,7 +118,7 @@ pub fn crossing_fns(module: &Module) -> Vec<bool>
                 };
                 let copies = record.kind.pointee();
                 let copies =
-                    copies.is_some_and(|r| copied_captures(r, &module.jobs_structs));
+                    copies.is_some_and(|r| copied_captures(r, &module.threads_structs));
                 do_if!(!copies, crosses[*func as usize] = false);
             };
             do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
@@ -130,47 +130,48 @@ pub fn crossing_fns(module: &Module) -> Vec<bool>
 /// Whether each capture of a closure record is a duplicate of a value another
 /// thread can read: no box, which the function around shares, and no
 /// function value, pointer or handle at each depth of the value, save an
-/// object of a struct marked as usable in jobs.
+/// object of a struct marked as usable in threads.
 ///
 /// # Arguments
 ///
 /// * `record` - The kind of the record.
-/// * `jobs` - The structs marked as usable in jobs.
+/// * `threads` - The structs marked as usable in threads.
 ///
 /// # Returns
 ///
 /// `true` when each is.
-fn copied_captures(record: DataKind, jobs: &BTreeSet<String>) -> bool
+fn copied_captures(record: DataKind, threads: &BTreeSet<String>) -> bool
 {
     let fields = record.as_struct().map(|s| s.fields());
     let mut captures = fields.unwrap_or_default().iter().skip(RECORD_HEAD);
-    captures.all(|(_, k)| crossing_value(*k, jobs))
+    captures.all(|(_, k)| crossing_value(*k, threads))
 }
 
 /// Whether a value can be read from another thread once copied: it holds no
 /// box, function value, pointer or handle, at each depth, save an object of a
-/// struct marked as usable in jobs, whose fields each thread reaches under its
-/// lock. The box of a captured variable a statement writes is no such object:
-/// a variable that holds an object is a box itself, so its box holds a box.
+/// struct marked as usable in threads, whose fields each thread reaches under
+/// its lock. The box of a captured variable a statement writes is no such
+/// object: a variable that holds an object is a box itself, so its box holds a
+/// box.
 ///
 /// # Arguments
 ///
 /// * `kind` - The kind of the value.
-/// * `jobs` - The structs marked as usable in jobs.
+/// * `threads` - The structs marked as usable in threads.
 ///
 /// # Returns
 ///
 /// `true` when it can.
-fn crossing_value(kind: DataKind, jobs: &BTreeSet<String>) -> bool
+fn crossing_value(kind: DataKind, threads: &BTreeSet<String>) -> bool
 {
     let kind = kind.repr();
     let base = |name: &str| name.split('<').next().unwrap_or_default().to_string();
-    ret_true!(kind.as_object().is_some_and(|s| jobs.contains(&base(&s.name))));
+    ret_true!(kind.as_object().is_some_and(|s| threads.contains(&base(&s.name))));
     let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
     ret_false!(shared || kind.is_box());
     let cell = kind.cell_kind().filter(|_| !kind.is_text());
     let fields = kind.as_struct().map(|s| s.fields()).unwrap_or_default();
-    let inner = |k: DataKind| crossing_value(k, jobs);
+    let inner = |k: DataKind| crossing_value(k, threads);
     cell.is_none_or(inner) && fields.iter().all(|(_, k)| inner(*k))
 }
 
@@ -206,7 +207,7 @@ fn global_free_fns(module: &Module) -> Vec<bool>
     crosses
 }
 
-/// Whether statements call C, call through a function value, or start a job
+/// Whether statements call C, call through a function value, or start a thread
 /// or a parallel map.
 ///
 /// # Arguments
@@ -233,7 +234,7 @@ fn needs_lock(block: &[Stmt]) -> bool
     found
 }
 
-/// The functions some call starts a job in, and those a parallel map or the
+/// The functions some call starts a thread in, and those a parallel map or the
 /// rounds of a parallel loop run.
 ///
 /// # Arguments
@@ -267,13 +268,13 @@ fn spawned_fns(module: &Module) -> BTreeSet<u32>
     found
 }
 
-/// The functions a job can run: those it starts in, and each function they
+/// The functions a thread can run: those it starts in, and each function they
 /// call, through function values too.
 ///
 /// # Arguments
 ///
 /// * `module` - The module.
-/// * `start` - The functions jobs start in.
+/// * `start` - The functions threads start in.
 ///
 /// # Returns
 ///
@@ -334,5 +335,5 @@ fn global_use(module: &Module, f: u32) -> Option<Diagnostic>
     });
     let (g, span) = first?;
     let name = &module.globals[g as usize].name;
-    Some(od::global_in_job(span, &func.name, name))
+    Some(od::global_in_thread(span, &func.name, name))
 }

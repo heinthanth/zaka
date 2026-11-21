@@ -91,11 +91,11 @@ impl<M: Module> FnGen<'_, '_, M>
         match s
         {
             Stmt::Set { place, value, .. } => self.set(*place, value),
-            Stmt::Wait { job, .. } =>
+            Stmt::Wait { thread, .. } =>
             {
                 let ptr = self.s.ptr;
-                let j = self.expr(job);
-                self.rt("zk_job_drop", &[ptr], &[], &[j]);
+                let j = self.expr(thread);
+                self.rt("zk_thread_drop", &[ptr], &[], &[j]);
             }
             Stmt::Send { pipe, value, .. } => self.send(pipe, value),
             Stmt::Close { pipe, .. } =>
@@ -786,11 +786,11 @@ impl<M: Module> FnGen<'_, '_, M>
     }
 
     /// The address of the flag a collection sets to halt the running
-    /// threads, read before a loop of a program with jobs.
+    /// OS threads, read before a loop of a program with threads.
     ///
     /// # Returns
     ///
-    /// The address, or `None` for a program with no jobs.
+    /// The address, or `None` for a program with no threads.
     fn halt_flag(&mut self) -> Option<Value>
     {
         ret_if!(!self.s.safe_points || !self.live, None);
@@ -804,7 +804,7 @@ impl<M: Module> FnGen<'_, '_, M>
     /// # Arguments
     ///
     /// * `flag` - The address of the flag, or `None` for a program with no
-    ///   jobs.
+    ///   threads.
     fn safe_point(&mut self, flag: Option<Value>)
     {
         let Some(flag) = flag.filter(|_| self.live)

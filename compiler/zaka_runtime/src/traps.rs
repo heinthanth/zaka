@@ -58,14 +58,14 @@ pub enum ZkTrap
     Overlap,
     TooDeep,
     Permission,
-    JobTrapped,
+    ThreadTrapped,
     Deadlock,
     PipeClosed,
-    /// The head of the line of a trap that ended a job alone.
-    JobStopped,
+    /// The head of the line of a trap that ended a thread alone.
+    ThreadStopped,
     LockBroken,
     ThreadsNotPositive,
-    JobWaited,
+    ThreadWaited,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -102,13 +102,13 @@ pub(crate) mod trap
     pub(crate) const OVERLAP: i32 = ZkTrap::Overlap as i32;
     pub(crate) const TOO_DEEP: i32 = ZkTrap::TooDeep as i32;
     pub(crate) const PERMISSION: i32 = ZkTrap::Permission as i32;
-    pub(crate) const JOB_TRAPPED: i32 = ZkTrap::JobTrapped as i32;
+    pub(crate) const THREAD_TRAPPED: i32 = ZkTrap::ThreadTrapped as i32;
     pub(crate) const DEADLOCK: i32 = ZkTrap::Deadlock as i32;
     pub(crate) const PIPE_CLOSED: i32 = ZkTrap::PipeClosed as i32;
-    pub(crate) const JOB_STOPPED: i32 = ZkTrap::JobStopped as i32;
+    pub(crate) const THREAD_STOPPED: i32 = ZkTrap::ThreadStopped as i32;
     pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
     pub(crate) const THREADS_NOT_POSITIVE: i32 = ZkTrap::ThreadsNotPositive as i32;
-    pub(crate) const JOB_WAITED: i32 = ZkTrap::JobWaited as i32;
+    pub(crate) const THREAD_WAITED: i32 = ZkTrap::ThreadWaited as i32;
 }
 
 /// The most lines of calls a short backtrace shows, as in the VM.
@@ -347,10 +347,10 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
 {
     flush_out();
-    if let Some((jump, job)) = crate::jobs::leave()
+    if let Some((jump, thread)) = crate::threads::leave()
     {
-        job_stopped(job, &reason_text(trap, pairs));
-        crate::jobs::keep_trap(trap);
+        thread_stopped(thread, &reason_text(trap, pairs));
+        crate::threads::keep_trap(trap);
         jump(trap);
     }
     let said = stop_text(trap, pairs);
@@ -449,19 +449,20 @@ fn reason_text(trap: i32, pairs: &[(&str, &[u8])]) -> Vec<u8>
     line
 }
 
-/// Write the line of a trap that ended a job alone under `--trap unwind`:
-/// `<executable>: job <n> stopped: <reason>`; the rest of the program goes on.
+/// Write the line of a trap that ended a thread alone under `--trap unwind`:
+/// `<executable>: thread <n> stopped: <reason>`; the rest of the program goes
+/// on.
 ///
 /// # Arguments
 ///
-/// * `job` - The number of the job.
+/// * `thread` - The number of the thread.
 /// * `reason` - The reason with its place.
-fn job_stopped(job: usize, reason: &[u8])
+fn thread_stopped(thread: usize, reason: &[u8])
 {
     let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
     let head = fill(
-        row(prog().trap_text, trap::JOB_STOPPED as usize),
-        &[("job", job.to_string().as_bytes())],
+        row(prog().trap_text, trap::THREAD_STOPPED as usize),
+        &[("thread", thread.to_string().as_bytes())],
     );
     let mut line = [name, b": ", &head, b": ", reason, b"\n"].concat();
     line.extend(backtrace());

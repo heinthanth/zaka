@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use zakac_ast::expr::Ident;
-use zakac_ast::jobs::USABLE_IN_JOBS;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::FnDecl;
@@ -20,6 +19,7 @@ use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::stmt::TraitBlock;
 use zakac_ast::stmt::TraitDecl;
+use zakac_ast::threads::USABLE_IN_THREADS;
 use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
@@ -159,10 +159,10 @@ fn builtin(name: &str, kind: DataKind) -> Option<bool>
 
 impl Checker
 {
-    /// Whether jobs on other threads can use values of a kind: numbers,
+    /// Whether other threads can use values of a kind: numbers,
     /// characters, true and false, text, and lists, structs, optionals,
     /// results and tables made of such kinds, and the objects of a struct
-    /// marked `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` whose fields jobs can use. A
+    /// marked `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` whose fields threads can use. A
     /// plain shared object, a function value, a pointer and a handle of a kind
     /// from outside cannot go.
     ///
@@ -172,13 +172,13 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// `true` when jobs can use it.
-    pub(crate) fn usable_in_jobs(&self, kind: DataKind) -> bool
+    /// `true` when threads can use it.
+    pub(crate) fn usable_in_threads(&self, kind: DataKind) -> bool
     {
-        self.jobs_walk(kind, &mut Vec::new())
+        self.threads_walk(kind, &mut Vec::new())
     }
 
-    /// [`Checker::usable_in_jobs`], with the kinds the walk is inside, so a
+    /// [`Checker::usable_in_threads`], with the kinds the walk is inside, so a
     /// kind that holds itself ends.
     ///
     /// # Arguments
@@ -188,8 +188,8 @@ impl Checker
     ///
     /// # Returns
     ///
-    /// `true` when jobs can use it.
-    fn jobs_walk(&self, kind: DataKind, seen: &mut Vec<DataKind>) -> bool
+    /// `true` when threads can use it.
+    fn threads_walk(&self, kind: DataKind, seen: &mut Vec<DataKind>) -> bool
     {
         let kind = kind.repr();
         ret_true!(seen.contains(&kind));
@@ -197,13 +197,13 @@ impl Checker
         let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
         ret_false!(shared);
         let cell = kind.cell_kind().filter(|_| !kind.is_text());
-        ret_false!(kind.is_box() && !cell.is_some_and(|c| self.marked_for_jobs(c)));
-        ret_false!(!cell.is_none_or(|c| self.jobs_walk(c, seen)));
+        ret_false!(kind.is_box() && !cell.is_some_and(|c| self.marked_for_threads(c)));
+        ret_false!(!cell.is_none_or(|c| self.threads_walk(c, seen)));
         kind.as_struct()
-            .is_none_or(|s| s.fields().iter().all(|(_, k)| self.jobs_walk(*k, seen)))
+            .is_none_or(|s| s.fields().iter().all(|(_, k)| self.threads_walk(*k, seen)))
     }
 
-    /// Whether the struct an object holds carries the mark of jobs.
+    /// Whether the struct an object holds carries the mark of threads.
     ///
     /// # Arguments
     ///
@@ -212,11 +212,11 @@ impl Checker
     /// # Returns
     ///
     /// `true` for a marked struct, or an instance of one.
-    pub(crate) fn marked_for_jobs(&self, cell: DataKind) -> bool
+    pub(crate) fn marked_for_threads(&self, cell: DataKind) -> bool
     {
         let name =
             |s: &StructKind| s.name.split('<').next().unwrap_or_default().to_string();
-        cell.as_struct().is_some_and(|s| self.jobs.contains(&name(s)))
+        cell.as_struct().is_some_and(|s| self.threads.contains(&name(s)))
     }
 }
 
@@ -294,10 +294,10 @@ impl Checker
         let Some(decl) = decl
         else
         {
-            let jobs = ident.name.as_str() == USABLE_IN_JOBS;
+            let threads = ident.name.as_str() == USABLE_IN_THREADS;
             let known = tern!(
-                jobs,
-                Some(self.usable_in_jobs(kind)),
+                threads,
+                Some(self.usable_in_threads(kind)),
                 builtin(&ident.name, kind)
             );
             do_if!(

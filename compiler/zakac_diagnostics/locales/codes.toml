@@ -1349,8 +1349,8 @@ en = "\"%{k}\" has no initial value: %{r}"
 en = "a function value has none"
 [codes.ZK0479.handle]
 en = "a handle comes from C alone"
-[codes.ZK0479.job]
-en = "a job comes from starting a function in parallel alone"
+[codes.ZK0479.thread]
+en = "a thread comes from starting a function in parallel alone"
 [codes.ZK0479.member]
 en = "no member of \"%{e}\" is marked \"ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်\""
 [codes.ZK0479.result]
@@ -1498,22 +1498,22 @@ en = "give it one: `%{n} ဟူသော ဒေတာအစုအဝေးသည
 en = """A function that code outside can call takes a struct as a whole, as C passes one, and the header of the lib declares the struct for C. C knows the struct under the C name its declaration gives, `<name> ဟူသော ဒေတာအစုအဝေးသည် "<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် <fields> တို့ပါဝင်သည်။`. Each struct such a parameter passes needs that name: the struct of the parameter, and each struct among its fields."""
 
 [codes.ZK0493.title]
-en = "the mark of jobs on a value"
+en = "the mark of threads on a value"
 [codes.ZK0493.message]
-en = "\"%{n}\" is no shared object: jobs use its values as they are, so `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` adds no lock"
+en = "\"%{n}\" is no shared object: threads use its values as they are, so `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` adds no lock"
 [codes.ZK0493.help]
-en = "remove the mark, or add `မျှဝေနိုင်သော` after it to make each value an object that jobs share"
+en = "remove the mark, or add `မျှဝေနိုင်သော` after it to make each value an object that threads share"
 [codes.ZK0493.explain]
-en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` makes the objects of a shared struct ones that jobs on other threads can use, with a lock. A plain struct is a value: a job that gets one gets a copy as soon as either side writes it, so jobs use it with no mark and no lock, and the mark on it changes nothing."""
+en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` makes the objects of a shared struct ones that other threads can use, with a lock. A plain struct is a value: a thread that gets one gets a copy as soon as either side writes it, so threads use it with no mark and no lock, and the mark on it changes nothing."""
 
 [codes.ZK0494.title]
-en = "a value jobs cannot use"
+en = "a value threads cannot use"
 [codes.ZK0494.message]
-en = "a value of %{k} goes to a job on another thread here, or comes back from one, and jobs cannot use %{k}"
+en = "a value of %{k} goes to another thread here, or comes back from one, and threads cannot use %{k}"
 [codes.ZK0494.help]
 en = "pass a value, or mark the struct of the object `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`; a plain shared object, a function value and a pointer cannot go"
 [codes.ZK0494.explain]
-en = """A job runs on another thread. A value that goes to it, as an argument, or comes back from it, as the result its function gives back, must be one jobs can use: a number, a character, true or false, text, a list, a struct, an optional, a result or a table of such kinds, or an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`. Two threads would change a plain shared object at once with no lock, and a closure can hold such an object, so neither can go."""
+en = """A thread runs apart from the one that starts it. A value that goes to it, as an argument, or comes back from it, as the result its function gives back, must be one threads can use: a number, a character, true or false, text, a list, a struct, an optional, a result or a table of such kinds, or an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`. Two threads would change a plain shared object at once with no lock, and a closure can hold such an object, so neither can go."""
 
 [codes.ZK0495.title]
 en = "no channel"
@@ -1536,31 +1536,31 @@ en = """The test `အကယ်၍ <pipe> ထဲတွင် ဒေတာ ရှ�
 [codes.ZK0499.title]
 en = "a field outside its lock"
 [codes.ZK0499.message]
-en = "the field \"%{n}\" of an object jobs share is read or written outside a lock block of the object"
+en = "the field \"%{n}\" of an object threads share is read or written outside a lock block of the object"
 [codes.ZK0499.no_object]
 en = "a lock block takes a shared object, and \"%{n}\" holds none"
 [codes.ZK0499.help]
 en = "write the access inside \"<obj> ကို ခေတ္တယူ၍ ...\", which holds the lock of the object"
 [codes.ZK0499.explain]
-en = """An object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` can go to jobs on other threads, so two of them could change a field at once. Its fields are read and written inside a lock block, `<obj> ကို ခေတ္တယူ၍ <block>`, which one job at a time holds: another job that takes the lock of the same object waits until the block ends. A lock block takes a name that holds a shared object."""
+en = """An object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` can go to other threads, so two of them could change a field at once. Its fields are read and written inside a lock block, `<obj> ကို ခေတ္တယူ၍ <block>`, which one thread at a time holds: another thread that takes the lock of the same object waits until the block ends. A lock block takes a name that holds a shared object."""
 
 [codes.ZK0726.title]
-en = "a global in a job"
+en = "a global in a thread"
 [codes.ZK0726.message]
-en = "\"%{f}\" runs in a job, and reaches the global \"%{g}\", which belongs to the main thread"
+en = "\"%{f}\" runs in a thread, and reaches the global \"%{g}\", which belongs to the main thread"
 [codes.ZK0726.help]
-en = "pass \"%{g}\" to the job as an argument, or make it a constant"
+en = "pass \"%{g}\" to the thread as an argument, or make it a constant"
 [codes.ZK0726.explain]
-en = """A variable at the top of a file belongs to the main thread. A function that a job runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the job as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`."""
+en = """A variable at the top of a file belongs to the main thread. A function that a thread runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the thread as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`."""
 
 [codes.ZK0727.title]
 en = "a read and a write of one atomic number"
 [codes.ZK0727.message]
-en = "this statement reads an atomic number and writes it, so a job that changes it between the two loses its change"
+en = "this statement reads an atomic number and writes it, so a thread that changes it between the two loses its change"
 [codes.ZK0727.help]
 en = "add with \"<atomic> ထဲသို့ <value> ကို ပေါင်းထည့်မည်\", or subtract with \"<atomic> ထဲမှ <value> ကို နုတ်ယူမည်\", in one step"
 [codes.ZK0727.explain]
-en = """An atomic number, `အက်တမ်မစ် ဖြစ်သော <kind>`, is read and set as a plain number. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, runs in two steps: another job can change the number between the read and the write, and that change is lost. `ပေါင်းထည့်` and `နုတ်ယူ` add and subtract in one step no job can split."""
+en = """An atomic number, `အက်တမ်မစ် ဖြစ်သော <kind>`, is read and set as a plain number. A set whose value reads the same number, such as `x ကို x + ၁ ဟု ထားမည်`, runs in two steps: another thread can change the number between the read and the write, and that change is lost. `ပေါင်းထည့်` and `နုတ်ယူ` add and subtract in one step no thread can split."""
 
 [codes.ZK0728.title]
 en = "a round that writes outside its cell"
@@ -1581,22 +1581,22 @@ en = "end the round alone with \"နောက်တစ်ကြိမ်ဆီ�
 en = """The rounds of a parallel loop run at once on several threads, so a round cannot stop the loop with `ကွင်းဆက် ကို ရပ်မည်။`, nor leave the function around it with a return: the other rounds are running. `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` ends the round alone. A break of a loop inside the round, and a return from a function declared inside it, are fine."""
 
 [codes.ZK0497.title]
-en = "a job of no declared function"
+en = "a thread of no declared function"
 [codes.ZK0497.message]
-en = "a job runs a function the program declares in Zaka, and \"%{n}\" is a function value, a closure or a C function"
+en = "a thread runs a function the program declares in Zaka, and \"%{n}\" is a function value, a closure or a C function"
 [codes.ZK0497.help]
-en = "declare a function that takes the values the job needs and makes the call, and run that function as the job"
+en = "declare a function that takes the values the thread needs and makes the call, and run that function as the thread"
 [codes.ZK0497.explain]
-en = """A job starts in a function the program declares, at the top of a file or inside a function with no captures. A function value or a closure can hold a shared object that two threads would change at once, and a C function runs outside the checks of Zaka; so a job runs none of them at its start. A function the job calls can still call them."""
+en = """A thread starts in a function the program declares, at the top of a file or inside a function with no captures. A function value or a closure can hold a shared object that two threads would change at once, and a C function runs outside the checks of Zaka; so a thread runs none of them at its start. A function the thread calls can still call them."""
 
 [codes.ZK0498.title]
-en = "a job that changes the caller's variables"
+en = "a thread that changes the caller's variables"
 [codes.ZK0498.message]
-en = "\"%{n}\" changes or fills a parameter, and a job cannot reach a variable of the caller"
+en = "\"%{n}\" changes or fills a parameter, and a thread cannot reach a variable of the caller"
 [codes.ZK0498.help]
-en = "pass the values to the job, and take what it makes back through its wait or a channel"
+en = "pass the values to the thread, and take what it makes back through its wait or a channel"
 [codes.ZK0498.explain]
-en = """A parameter marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` reaches a variable of the caller. A job goes on after the call that starts it, side to side with the caller, so the two would reach that variable at once. A job gets its own duplicate of each argument instead, and gives back what it makes through its result or a channel."""
+en = """A parameter marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်` reaches a variable of the caller. A thread goes on after the call that starts it, side to side with the caller, so the two would reach that variable at once. A thread gets its own duplicate of each argument instead, and gives back what it makes through its result or a channel."""
 
 [codes.ZK0725.title]
 en = "a return before a parameter is filled"

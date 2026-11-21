@@ -1,4 +1,4 @@
-/* The guard of a job for code that runs in the process of zakac, as the JIT's
+/* The guard of a thread for code that runs in the process of zakac, as the JIT's
    does: a build of a program compiles the same guard from the C of its own
    glue, while code the JIT writes finds this one in the runtime. ZK_NAME
    gives each name the prefix of the runtime, so it never meets the one of a
@@ -19,35 +19,35 @@ void ZK_NAME(flush)(void);
    writes gives no table to unwind it with; clearing the frame of the buffer
    makes the jump restore the registers alone, as on each other OS. */
 #if defined(_WIN64)
-#define ZK_JOB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
+#define ZK_THREAD_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
-#define ZK_JOB_NO_UNWIND(buf) ((void)(buf))
+#define ZK_THREAD_NO_UNWIND(buf) ((void)(buf))
 #endif
 
 /**
- * Jump back to the guard of the job of this thread, on a trap that ends the
- * job alone.
+ * Jump back to the guard of the thread of this OS thread, on a trap that ends the
+ * thread alone.
  *
  * @param trap The id of the trap, which the runtime keeps.
  */
-_Noreturn void ZK_NAME(job_leave)(int32_t trap)
+_Noreturn void ZK_NAME(thread_leave)(int32_t trap)
 {
     (void)trap;
     longjmp(*(jmp_buf *)ZK_NAME(lib_jump)(), 1);
 }
 
 /**
- * Run the step of a job, keeping the place a trap of the job jumps back to.
+ * Run the step of a thread, keeping the place a trap of the thread jumps back to.
  *
  * @param step The step.
- * @param data The data block of the job.
- * @return 0, or 1 once a trap ended the job.
+ * @param data The data block of the thread.
+ * @return 0, or 1 once a trap ended the thread.
  */
-int32_t ZK_NAME(job_guard)(void (*step)(void *), void *data)
+int32_t ZK_NAME(thread_guard)(void (*step)(void *), void *data)
 {
     jmp_buf zk_here;
     if (setjmp(zk_here) != 0) return 1;
-    ZK_JOB_NO_UNWIND(zk_here);
+    ZK_THREAD_NO_UNWIND(zk_here);
     ZK_NAME(lib_jump_set)(&zk_here);
     step(data);
     ZK_NAME(flush)();

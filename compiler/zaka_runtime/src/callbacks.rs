@@ -77,25 +77,25 @@ struct Cb
     /// The C lib whose call gave C the closure, as an address; 0 in a
     /// program.
     lib: usize,
-    /// Whether C can call it from a thread of its own: a function with no
+    /// Whether C can call it from an OS thread of its own: a function with no
     /// captures that uses no mutable global, itself or through its callees.
     crosses: bool,
 }
 
 /// Each closure C got, kept for the whole run.
 static CBS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
-/// Held while a lend, a leave or a call on a thread of C's own reads or
+/// Held while a lend, a leave or a call on an OS thread of C's own reads or
 /// changes the lends and the leave of a closure.
 static LENDING: Mutex<()> = Mutex::new(());
 
 thread_local! {
-    /// The closures lent to the C calls this thread runs now, the latest
+    /// The closures lent to the C calls this OS thread runs now, the latest
     /// last.
     static LENDS: RefCell<Vec<usize>> = const { RefCell::new(Vec::new()) };
 }
 
 thread_local! {
-    /// Set on the thread that runs the program, at its first lend or leave.
+    /// Set on the OS thread that runs the program, at its first lend or leave.
     static HOME: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -115,8 +115,8 @@ fn cb<'a>(p: usize) -> &'a mut Cb
 }
 
 /// The code libffi runs when C calls a closure. In a C lib the lock of the
-/// libs lets one thread at a time in, see [`run_in_lib`]. In a program a call
-/// from a thread of C's own runs when the function can cross, see
+/// libs lets one OS thread at a time in, see [`run_in_lib`]. In a program a
+/// call from an OS thread of C's own runs when the function can cross, see
 /// [`run_on_c_thread`], and ends the run otherwise. A call with no lend and no
 /// leave stops; else the bridge runs the thunk.
 ///
@@ -135,19 +135,19 @@ unsafe extern "C" fn run(
     ret_if!(HOME.get(), bridge(c, ret, args));
     ret_if!(c.crosses, run_on_c_thread(c, ret, args));
     eprintln!(
-        "C called a function of the program from a thread other than the one that \
+        "C called a function of the program from an OS thread other than the one that \
          runs it, and the function uses a mutable global, or captures a variable a \
-         statement writes or a value jobs cannot use; the run ends here"
+         statement writes or a value threads cannot use; the run ends here"
     );
     // Status 1, as a trap leaves: an abort makes Windows write a report first,
     // which takes seconds.
     std::process::exit(1);
 }
 
-/// A call C makes from a thread of its own of a function that can cross: the
-/// thread gets its calls in progress on first use, the counts of the heap are
-/// atomic since the function was lent, and the ring collector waits while the
-/// call runs. A trap stops the program, as on its own thread.
+/// A call C makes from an OS thread of its own of a function that can cross:
+/// the OS thread gets its calls in progress on first use, the counts of the
+/// heap are atomic since the function was lent, and the ring collector waits
+/// while the call runs. A trap stops the program, as on its own OS thread.
 ///
 /// # Arguments
 ///
@@ -176,18 +176,19 @@ fn run_on_c_thread(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
         zk_fn_bound(record.cast_const().cast()) != 0,
         zk_fn_release(record.cast_const().cast())
     );
-    crate::jobs::recheck_waits();
+    crate::threads::recheck_waits();
 }
 
-/// Whether C holds a closure it can call from a thread of its own, through a
-/// lend of a call that runs now or through a leave, so a thread of C can still
-/// change what a job waits for. A function with no captures that crosses
-/// reaches no value a job waits on, so C holding one counts for nothing.
+/// Whether C holds a closure it can call from an OS thread of its own, through
+/// a lend of a call that runs now or through a leave, so an OS thread of C can
+/// still change what a thread waits for. A function with no captures that
+/// crosses reaches no value a thread waits on, so C holding one counts for
+/// nothing.
 ///
 /// # Returns
 ///
 /// `true` when it does.
-pub(crate) fn lent_to_threads() -> bool
+pub(crate) fn lent_to_c_threads() -> bool
 {
     let list = CBS.lock().unwrap_or_else(|e| e.into_inner()).clone();
     let _lock = LENDING.lock().unwrap_or_else(|e| e.into_inner());
@@ -196,8 +197,8 @@ pub(crate) fn lent_to_threads() -> bool
     list.iter().map(|p| cb(*p)).any(|c| c.crosses && held(c))
 }
 
-/// A count of the record of a closure, for a call on a thread of C's own; the
-/// record of a function lives for the whole run and takes none.
+/// A count of the record of a closure, for a call on an OS thread of C's own;
+/// the record of a function lives for the whole run and takes none.
 ///
 /// # Arguments
 ///
@@ -228,10 +229,10 @@ fn bridge(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
     (unsafe { &*c.shape }.bridge)(ret, args, c.record)
 }
 
-/// A call C makes of a closure of a C lib. On a thread that waits in C with
+/// A call C makes of a closure of a C lib. On an OS thread that waits in C with
 /// calls of a lib parked, the call goes on as part of them: it takes them
-/// back, and lets go again once it ends. On another thread, with no call of a
-/// lib in progress, it runs as a call of the lib of the closure, through the
+/// back, and lets go again once it ends. On another OS thread, with no call of
+/// a lib in progress, it runs as a call of the lib of the closure, through the
 /// guard of its glue: a trap stops that lib, and C gets a result of zeros.
 ///
 /// # Arguments
@@ -256,7 +257,7 @@ fn run_in_lib(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
     unsafe { std::ptr::write_bytes(ret.cast::<u8>(), 0, (*c.cif.rtype).size) }
 }
 
-/// The step the guard of a lib runs for a call C makes on another thread.
+/// The step the guard of a lib runs for a call C makes on another OS thread.
 ///
 /// # Arguments
 ///
@@ -322,7 +323,7 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
     let seen = record_octets(f);
     ret_if!(let Some(found) = find(seen), found);
     let crosses = crosses(f);
-    // A thread of C's own can call it at each time from now on.
+    // An OS thread of C's own can call it at each time from now on.
     do_if!(crosses, zk_threads_begin());
     #[rustfmt::skip]
     let fresh = Box::new(Cb { seen: seen.to_vec(), record: zk_fn_rec(f), calls: 0,
@@ -355,7 +356,7 @@ fn cb_of(f: ZkFn, shape: *const ZkCbShape) -> usize
 
 /// The address C calls for a function value given to a C call: its libffi
 /// closure, which for a closure of the program is lent until the call ends.
-/// Each call from C goes through [`run`], where the rules of threads hold.
+/// Each call from C goes through [`run`], where the rules of OS threads hold.
 ///
 /// # Arguments
 ///
@@ -378,7 +379,7 @@ pub extern "C" fn zk_cb_code(f: ZkFn, shape: *const ZkCbShape) -> ZkCode
     code_of(c.code)
 }
 
-/// Whether C can call a function value from a thread of its own: the row of
+/// Whether C can call a function value from an OS thread of its own: the row of
 /// its function, or of the thunk of its closure, in the table of names allows
 /// it so.
 ///

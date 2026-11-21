@@ -1,4 +1,4 @@
-// One job spins on arithmetic alone, with no allocation, until the other
+// One thread spins on arithmetic alone, with no allocation, until the other
 // says it is done; the other leaves rings and reads how many collections ran.
 အဆစ် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် တန် ဟူသော ကိန်းပြည့် တစ်ခု နှင့် နောက် ဟူသော အဆစ် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု တို့ပါဝင်သည်။
 

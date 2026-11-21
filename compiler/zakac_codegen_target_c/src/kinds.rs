@@ -25,7 +25,7 @@ pub fn c_kind(kind: DataKind, platform: u16) -> Option<String>
         DataKind::Bool => Some("uint8_t".into()),
         DataKind::Ptr(_) | DataKind::Null => Some("unsigned char *".into()),
         DataKind::Fn(_) => Some("zk_fn".into()),
-        // A job or a channel is the `usize` that names it.
+        // A thread or a channel is the `usize` that names it.
         DataKind::Task(_) => Some(int_name(DataKind::USIZE.int_kind()?, platform)),
         _ => None,
     }

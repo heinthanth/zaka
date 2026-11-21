@@ -43,13 +43,13 @@ pub struct ZkBuf
 thread_local! {
     /// The sink of an interpolation; NULL while text goes to stdout.
     static INTO: Cell<*mut ZkBuf> = const { Cell::new(std::ptr::null_mut()) };
-    /// While threads run, the line this thread prints, until its end: each
+    /// While OS threads run, the line this OS thread prints, until its end: each
     /// print then reaches stdout whole, never mixed with the print of another
-    /// thread inside a line.
+    /// OS thread inside a line.
     static LINE: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Write out what waits for stdout, after the line this thread holds.
+/// Write out what waits for stdout, after the line this OS thread holds.
 pub fn flush_out()
 {
     flush_line();
@@ -82,7 +82,7 @@ pub fn emit(octets: &[u8])
     to_out(octets);
 }
 
-/// Keep octets in the line of this thread; a line end hands the whole line
+/// Keep octets in the line of this OS thread; a line end hands the whole line
 /// on to stdout.
 ///
 /// # Arguments
@@ -97,8 +97,8 @@ fn held(octets: &[u8])
     do_if!(let Some(line) = whole, to_out(&line));
 }
 
-/// Hand on the line this thread holds with no end so far, as its job or its
-/// call ends or the output flushes.
+/// Hand on the line this OS thread holds with no end so far, as its thread or
+/// its call ends or the output flushes.
 pub fn flush_line()
 {
     let rest = LINE.with_borrow_mut(std::mem::take);

@@ -1048,8 +1048,8 @@ impl Parser<'_>
         Ok(Head::Expr(call))
     }
 
-    /// End a long call that runs as a job: `အပြိုင် လုပ်ဆောင်မည်။`, a statement,
-    /// or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`, the expression whose value is the job.
+    /// End a long call that runs as a thread: `အပြိုင် လုပ်ဆောင်မည်။`, a statement,
+    /// or `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း`, the expression whose value is the thread.
     ///
     /// # Arguments
     ///

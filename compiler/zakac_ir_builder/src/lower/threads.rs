@@ -1,14 +1,14 @@
-//! Jobs: a call that runs in parallel becomes a spawn of the function it
-//! calls, and a call of the core's `စောင့်` on a job becomes a wait for it.
+//! Threads: a call that runs in parallel becomes a spawn of the function it
+//! calls, and a call of the core's `စောင့်` on a thread becomes a wait for it.
 
-use zakac_semcheck::jobs::ATOMIC_ADD;
-use zakac_semcheck::jobs::ATOMIC_CAS;
-use zakac_semcheck::jobs::ATOMIC_SUB;
-use zakac_semcheck::jobs::CLOSE;
-use zakac_semcheck::jobs::SEND;
-use zakac_semcheck::jobs::WAIT;
 use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::task;
+use zakac_semcheck::threads::ATOMIC_ADD;
+use zakac_semcheck::threads::ATOMIC_CAS;
+use zakac_semcheck::threads::ATOMIC_SUB;
+use zakac_semcheck::threads::CLOSE;
+use zakac_semcheck::threads::SEND;
+use zakac_semcheck::threads::WAIT;
 
 use super::*;
 use crate::ir::Par;
@@ -16,8 +16,8 @@ use crate::ir::ParMap;
 
 impl Lowerer<'_>
 {
-    /// The job a call that runs in parallel starts. Its arguments are
-    /// lowered as for a call; the job takes a duplicate of each.
+    /// The thread a call that runs in parallel starts. Its arguments are
+    /// lowered as for a call; the thread takes a duplicate of each.
     ///
     /// # Arguments
     ///
@@ -34,19 +34,19 @@ impl Lowerer<'_>
     {
         let (target, sig) = self.call_target(callee, place);
         let args = self.lower_args(args, &sig);
-        // A job gets no copies back: the check refuses a parameter the
+        // A thread gets no copies back: the check refuses a parameter the
         // function changes.
         self.post.clear();
         let Target::Fn { func, name } = target
         else
         {
-            unreachable!("the check lets a job call a declared function alone")
+            unreachable!("the check lets a thread call a declared function alone")
         };
         ExprNode::Spawn { func, name, args }
     }
 
-    /// The job a wait waits for: the one argument of a call of the core's
-    /// `စောင့်`, when it is a job.
+    /// The thread a wait waits for: the one argument of a call of the core's
+    /// `စောင့်`, when it is a thread.
     ///
     /// # Arguments
     ///
@@ -56,21 +56,21 @@ impl Lowerer<'_>
     ///
     /// # Returns
     ///
-    /// The job, or `None` for a call that is no wait.
+    /// The thread, or `None` for a call that is no wait.
     pub(super) fn waited<'a>(
         &self, callee: &ast::Ident, place: Option<&ast::Expr>, args: &'a [ast::Expr],
     ) -> Option<&'a ast::Expr>
     {
-        let [job] = args
+        let [thread] = args
         else
         {
             return None;
         };
         ret_if!(place.is_some() || callee.name.as_str() != WAIT, None);
-        self.kind_of(job).as_task().filter(|t| t.is_job()).map(|_| job)
+        self.kind_of(thread).as_task().filter(|t| t.is_thread()).map(|_| thread)
     }
 
-    /// Lower a wait for a job whose value is read.
+    /// Lower a wait for a thread whose value is read.
     ///
     /// # Arguments
     ///
@@ -81,11 +81,11 @@ impl Lowerer<'_>
     /// The wait, or `None` for a call that is no wait.
     pub(super) fn wait_node(&mut self, n: &ast::CallExpr) -> Option<ExprNode>
     {
-        let job = self.waited(&n.callee, n.place.as_deref(), &n.args)?;
-        Some(ExprNode::Wait(Box::new(self.expr(job))))
+        let thread = self.waited(&n.callee, n.place.as_deref(), &n.args)?;
+        Some(ExprNode::Wait(Box::new(self.expr(thread))))
     }
 
-    /// Lower a call that runs in parallel as a statement: the job starts,
+    /// Lower a call that runs in parallel as a statement: the thread starts,
     /// and its number goes to a hidden slot no one reads.
     ///
     /// # Arguments
@@ -559,7 +559,7 @@ impl Lowerer<'_>
         });
     }
 
-    /// Lower a wait for a job as a statement, its result dropped.
+    /// Lower a wait for a thread as a statement, its result dropped.
     ///
     /// # Arguments
     ///
@@ -570,9 +570,9 @@ impl Lowerer<'_>
     /// The wait, or `None` for a call that is no wait.
     pub(super) fn wait_stmt(&mut self, n: &st::CallStmt) -> Option<Stmt>
     {
-        let job = self.waited(&n.callee, n.place.as_deref(), &n.args)?;
-        let kind = self.kind_of(job).as_task().and_then(|t| t.of);
-        let job = self.expr(job);
-        Some(Stmt::Wait { job, kind, span: n.span })
+        let thread = self.waited(&n.callee, n.place.as_deref(), &n.args)?;
+        let kind = self.kind_of(thread).as_task().and_then(|t| t.of);
+        let thread = self.expr(thread);
+        Some(Stmt::Wait { thread, kind, span: n.span })
     }
 }

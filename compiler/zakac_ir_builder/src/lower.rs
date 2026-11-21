@@ -67,10 +67,10 @@ use crate::ir::fn_shape;
 use crate::ir::fresh_text;
 use crate::value::Value;
 
-mod jobs;
 mod nested;
 mod rounds;
 mod table;
+mod threads;
 
 use nested::Nested;
 use table::row_place;
@@ -133,7 +133,7 @@ pub fn lower(
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
         .unsafe_spans(unsafe_spans(program)).c_structs(c_structs(program))
-        .jobs_structs(zakac_semcheck::semcheck::jobs_structs(program).into_iter().collect())
+        .threads_structs(zakac_semcheck::semcheck::threads_structs(program).into_iter().collect())
         .maybe_built_for(program.target)
         .span(program.span).build();
     module
@@ -2946,13 +2946,13 @@ impl Lowerer<'_>
         span: Span,
     ) -> (Place, Fault)
     {
-        // A wait for a job passes on a failure of what the job gave back.
+        // A wait for a thread passes on a failure of what the thread gave back.
         let (ret, call) = match self.waited(callee, place, args)
         {
-            Some(job) =>
+            Some(thread) =>
             {
-                let ret = self.kind_of(job).as_task().and_then(|t| t.of);
-                (ret, ExprNode::Wait(Box::new(self.expr(job))))
+                let ret = self.kind_of(thread).as_task().and_then(|t| t.of);
+                (ret, ExprNode::Wait(Box::new(self.expr(thread))))
             }
             None =>
             {

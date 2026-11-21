@@ -165,65 +165,69 @@ fn the_ring_statements_reach_the_runtime()
     assert_eq!(collected.stdout, "ပြီး\n၂၀၀၀\nမှန်\n");
 }
 
-/// What `jobs.zaka` prints.
-const JOBS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
-                        ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
+/// What `threads.zaka` prints.
+const THREADS_OUT: &str = "၁၀၁၀၀\nမင်္ဂလာ!\nမင်္ဂလာ!\nစာကြောင်း ၁\nစာကြောင်း ၂\nစာကြောင်း \
+                           ၃\nစာကြောင်း ၄\nစာကြောင်း ၅\n";
 
-/// Jobs run on threads of their own and channels take values between them,
-/// as in the VM.
+/// Threads run on OS threads of their own and channels take values between
+/// them, as in the VM.
 #[test]
-fn jobs_and_channels_run_on_threads()
+fn threads_and_channels_run_on_os_threads()
 {
     let Some(cc) = cc()
     else
     {
         return;
     };
-    let path = root().join("tests/inputs/jobs.zaka");
+    let path = root().join("tests/inputs/threads.zaka");
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, JOBS_OUT);
+    assert_eq!(run.stdout, THREADS_OUT);
 }
 
-/// A trap in a job ends that job alone, and the program ends with code 1.
+/// A trap in a thread ends that thread alone, and the program ends with code 1.
 #[test]
-fn a_trap_in_a_job_ends_it_alone()
+fn a_trap_in_a_thread_ends_it_alone()
 {
     let Some(cc) = cc()
     else
     {
         return;
     };
-    let path = root().join("tests/inputs/job_trap.zaka");
+    let path = root().join("tests/inputs/thread_trap.zaka");
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(1), "{}", run.stderr);
     assert_eq!(run.stdout, "၅\n");
-    assert!(run.stderr.contains("job 1 stopped: integer division"), "{}", run.stderr);
+    assert!(
+        run.stderr.contains("thread 1 stopped: integer division"),
+        "{}",
+        run.stderr
+    );
 }
 
-/// A second wait for a job stops the program: the first took its result.
+/// A second wait for a thread stops the program: the first took its result.
 #[test]
-fn a_second_wait_for_a_job_stops_the_program()
+fn a_second_wait_for_a_thread_stops_the_program()
 {
     let path = root().join("tests/inputs/wait_twice.zaka");
     stops_with(
         &path,
         "က!\n",
-        "the job 1 this waits for gave its result to an earlier wait",
+        "the thread 1 this waits for gave its result to an earlier wait",
     );
 }
 
-/// A receive no job can serve stops the program.
+/// A receive no thread can serve stops the program.
 #[test]
-fn a_wait_no_job_can_end_stops_the_program()
+fn a_wait_no_thread_can_end_stops_the_program()
 {
     let path = root().join("tests/inputs/deadlock.zaka");
-    stops_with(&path, "", "each job waits; none can go on");
+    stops_with(&path, "", "each thread waits; none can go on");
 }
 
-/// Two jobs change one shared object inside lock blocks, and lose no change.
+/// Two threads change one shared object inside lock blocks, and lose no change.
 #[test]
 fn lock_blocks_keep_the_changes_of_two_threads_apart()
 {
@@ -272,21 +276,21 @@ fn a_parallel_map_runs_its_rounds_on_threads()
     assert_eq!(run.stdout, "၁၀၈၈၉၄\n၁၂၃၄၆!\n၃၃၈၃၅၀\n၁၀၀၀၀\n");
 }
 
-/// The ring collector runs while jobs run: it halts the threads at safe
+/// The ring collector runs while threads run: it halts the OS threads at safe
 /// points.
 #[test]
-fn the_ring_collector_runs_while_jobs_run()
+fn the_ring_collector_runs_while_threads_run()
 {
     let Some(cc) = cc()
     else
     {
         return;
     };
-    let path = root().join("tests/inputs/ring_jobs.zaka");
+    let path = root().join("tests/inputs/ring_threads.zaka");
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(run.stdout, "collected while jobs ran\n");
+    assert_eq!(run.stdout, "collected while threads ran\n");
 }
 
 /// The ring collector halts a thread that spins in a loop with no
@@ -306,25 +310,25 @@ fn the_ring_collector_halts_a_loop_with_no_allocation()
     assert_eq!(run.stdout, "collected beside a loop\n");
 }
 
-/// Jobs that print at once never mix their lines.
+/// Threads that print at once never mix their lines.
 #[test]
-fn the_prints_of_jobs_come_out_as_whole_lines()
+fn the_prints_of_threads_come_out_as_whole_lines()
 {
     let Some(cc) = cc()
     else
     {
         return;
     };
-    let path = root().join("tests/inputs/job_lines.zaka");
+    let path = root().join("tests/inputs/thread_lines.zaka");
     let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
     let run = compile_and_run(&cc, &files, Checks::Default);
     assert_eq!(run.status, Some(0), "{}", run.stderr);
-    assert_eq!(sorted_lines(&run.stdout), job_lines());
+    assert_eq!(sorted_lines(&run.stdout), thread_lines());
 }
 
-/// The lines `job_lines.zaka` prints, sorted: each of four labels with each
+/// The lines `thread_lines.zaka` prints, sorted: each of four labels with each
 /// number from 1 to 300 in Burmese digits.
-fn job_lines() -> Vec<String>
+fn thread_lines() -> Vec<String>
 {
     let burmese = |n: u32| {
         let digit = |c: char| char::from_u32(0x1040 + c.to_digit(10).unwrap_or(0));
@@ -353,7 +357,7 @@ const PAR_LOOP_OUT: &str = "၁၄၉၉၈၅၀၀၀\n[၂၊ ၄၊ ၆၊ �
                             ၉၊ ၁၀၊ ၁၁၊ ၁၂၊ ၁၃၊ ၁၄၊ ၁၅၊ ၁၆၊ ၁၇၊ ၁၈၊ ၁၉၊ ၂၀]\n";
 
 /// The rounds of parallel loops run on threads, and a trap in a round ends
-/// its job: the loop then stops with the trap of the job.
+/// its thread: the loop then stops with the trap of the thread.
 #[test]
 fn the_rounds_of_a_parallel_loop_run_on_threads()
 {
@@ -409,10 +413,10 @@ fn steps_characters_and_rows_spread_their_rounds()
     }
 }
 
-/// A loop and a map run on the count of threads given to each: three jobs
+/// A loop and a map run on the count of threads given to each: three threads
 /// each stop when each round traps.
 #[test]
-fn a_count_of_threads_sets_the_jobs_of_a_loop()
+fn a_count_of_threads_sets_the_threads_of_a_loop()
 {
     let Some(cc) = cc()
     else

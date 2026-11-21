@@ -16,13 +16,13 @@ en = "The most live heap octets before an allocation fails."
 en = "Where variables sit: checked gives each its own block, so a read past one traps; packed puts the locals of a call next to each other, as C does."
 
 [vm.trap_mode]
-en = "What a trap in a job does: unwind ends that job alone, and a wait for it traps in turn; abort stops the whole program."
+en = "What a trap in a thread does: unwind ends that thread alone, and a wait for it traps in turn; abort stops the whole program."
 
-[vm.shuffle_job_order]
-en = "Shuffle the turns of the jobs on the VM: each turn takes a count of ops and goes to a job that can run, both drawn from SEED; with no SEED the run draws one and writes it to standard error. The same SEED gives the same order again."
+[vm.shuffle_thread_order]
+en = "Shuffle the turns of the threads on the VM: each turn takes a count of ops and goes to a thread that can run, both drawn from SEED; with no SEED the run draws one and writes it to standard error. The same SEED gives the same order again."
 
 [vm.shuffle_seed]
-en = "the turns of the jobs are shuffled with the seed %{seed}; --shuffle-job-order=%{seed} runs the same order again"
+en = "the turns of the threads are shuffled with the seed %{seed}; --shuffle-thread-order=%{seed} runs the same order again"
 
 [vm.max_stack]
 en = "The most octets of the stack region, where the locals of each call live."
@@ -78,26 +78,26 @@ en = "more than %{depth} nested calls"
 [vm.trap.step_limit]
 en = "stopped after %{steps} ops"
 
-[vm.trap.job_trapped]
-en = "the job %{job} this waits for stopped at a trap"
+[vm.trap.thread_trapped]
+en = "the thread %{thread} this waits for stopped at a trap"
 
-[vm.trap.job_waited]
-en = "the job %{job} this waits for gave its result to an earlier wait"
+[vm.trap.thread_waited]
+en = "the thread %{thread} this waits for gave its result to an earlier wait"
 
 [vm.trap.deadlock]
-en = "each job waits; none can go on"
+en = "each thread waits; none can go on"
 
 [vm.trap.pipe_closed]
 en = "the channel %{pipe} is closed: no value can go to it, and it cannot close again"
 
 [vm.trap.lock_broken]
-en = "the lock of this object is broken: the job that held it stopped at a trap"
+en = "the lock of this object is broken: the thread that held it stopped at a trap"
 
 [vm.trap.threads_not_positive]
 en = "the count of threads of a parallel loop or map is not positive"
 
-[vm.trap.job_stopped]
-en = "job %{job} stopped"
+[vm.trap.thread_stopped]
+en = "thread %{thread} stopped"
 
 [vm.trap.step_not_positive]
 en = "counted loop step is not positive"
@@ -127,7 +127,7 @@ en = "the object variable holds no object, so it has no field to read or write"
 en = "C called a closure after the call that gave it ended, and C has no leave to call it; give one with \"ခေါ်ဆိုခွင့် ပြုမည်\""
 
 [vm.callback_thread]
-en = "C called a function of the program from a thread other than the one that runs it; the VM runs on one thread, so the run ends here"
+en = "C called a function of the program from an OS thread other than the one that runs it; the VM runs on one OS thread, so the run ends here"
 
 [vm.trap.foreign_call]
 en = "the C function %{name} runs in \"zakac run\" and in native builds, not in this VM"

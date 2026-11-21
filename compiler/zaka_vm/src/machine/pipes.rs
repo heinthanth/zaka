@@ -1,14 +1,14 @@
-//! The channels of a program: queues of values between jobs. A send moves
+//! The channels of a program: queues of values between threads. A send moves
 //! its value into a heap block at the back of the queue; a receive moves the
 //! value of the front block into an optional and frees the block. A send to
-//! a full channel and a receive from an open one that holds none park the job
-//! until the channel changes. The values a channel still holds at the end of
-//! the program are dropped.
+//! a full channel and a receive from an open one that holds none park the
+//! thread until the channel changes. The values a channel still holds at the
+//! end of the program are dropped.
 
 use std::collections::VecDeque;
 
-use super::jobs::JOB_ID;
-use super::jobs::Waits;
+use super::threads::THREAD_ID;
+use super::threads::Waits;
 use super::*;
 
 /// One channel.
@@ -62,9 +62,9 @@ impl Machine
     /// `Ok`.
     pub(super) fn pipe_new(&mut self, room: Option<u32>) -> Step
     {
-        self.jobs.pipes.push(Pipe::builder().maybe_room(room).build());
-        let n = self.jobs.pipes.len() as u128;
-        self.push(Value::int(JOB_ID, n, self.module.platform_bits))
+        self.threads.pipes.push(Pipe::builder().maybe_room(room).build());
+        let n = self.threads.pipes.len() as u128;
+        self.push(Value::int(THREAD_ID, n, self.module.platform_bits))
     }
 
     /// Pop a channel number and find its row.
@@ -80,7 +80,7 @@ impl Machine
     {
         let id = self.pop_int(op)?;
         let at = usize::try_from(id).ok().and_then(|n| n.checked_sub(1));
-        let at = at.filter(|n| *n < self.jobs.pipes.len());
+        let at = at.filter(|n| *n < self.threads.pipes.len());
         let at = at
             .ok_or_else(|| malformed(&format!("{op} needs the number of a channel")))?;
         Ok((id, at))
@@ -97,11 +97,11 @@ impl Machine
     /// `Ok`.
     fn push_pipe(&mut self, id: u128) -> Step
     {
-        self.push(Value::int(JOB_ID, id, self.module.platform_bits))
+        self.push(Value::int(THREAD_ID, id, self.module.platform_bits))
     }
 
     /// Move a value into a channel, leaving the default of its kind in its
-    /// place; a full channel parks the job, and a closed one stops it.
+    /// place; a full channel parks the thread, and a closed one stops it.
     ///
     /// # Arguments
     ///
@@ -114,7 +114,7 @@ impl Machine
     {
         let src = self.pop_ptr("pipe_send")?;
         let (id, at) = self.pop_pipe("pipe_send")?;
-        let pipe = &self.jobs.pipes[at];
+        let pipe = &self.threads.pipes[at];
         ret_if!(pipe.closed, Err(TrapKind::PipeClosed { pipe: id as u64 }));
         if !pipe.can_send()
         {
@@ -128,15 +128,15 @@ impl Machine
         let block = block.ok_or(TrapKind::OutOfMem { size })?;
         self.mem.blit(block, src, kind)?;
         self.mem.zero(src, kind)?;
-        let pipe = &mut self.jobs.pipes[at];
+        let pipe = &mut self.threads.pipes[at];
         pipe.kind = Some(kind);
         pipe.queue.push_back(block);
         Ok(())
     }
 
     /// Write the next value of a channel as an optional to the slot under its
-    /// number: an open channel that holds none parks the job, and a closed and
-    /// drained one gives no data.
+    /// number: an open channel that holds none parks the thread, and a closed
+    /// and drained one gives no data.
     ///
     /// # Arguments
     ///
@@ -151,7 +151,7 @@ impl Machine
         let slot = self.stack.last().and_then(|v| v.as_ptr());
         let slot = slot.ok_or_else(|| malformed("pipe_receive needs the slot"))?;
         let optional = DataKind::optional(kind);
-        let pipe = &mut self.jobs.pipes[at];
+        let pipe = &mut self.threads.pipes[at];
         if !pipe.can_receive()
         {
             self.push_pipe(id)?;
@@ -191,7 +191,7 @@ impl Machine
     pub(super) fn pipe_close(&mut self) -> Step
     {
         let (id, at) = self.pop_pipe("pipe_close")?;
-        let pipe = &mut self.jobs.pipes[at];
+        let pipe = &mut self.threads.pipes[at];
         ret_if!(pipe.closed, Err(TrapKind::PipeClosed { pipe: id as u64 }));
         pipe.closed = true;
         Ok(())
@@ -206,7 +206,7 @@ impl Machine
     pub(super) fn drop_pipe_values(&mut self) -> Step
     {
         let left: Vec<(u64, DataKind)> = self
-            .jobs
+            .threads
             .pipes
             .iter_mut()
             .filter_map(|p| Some((std::mem::take(&mut p.queue), p.kind?)))

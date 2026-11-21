@@ -100,7 +100,7 @@ pub enum Stmt
     Counted(CountedStmt),
     /// `l ၏ အကွက်တိုင်း ကို x အနေဖြင့် ယူ၍ ...`
     Each(EachStmt),
-    /// `<obj> ကို ခေတ္တယူ၍ ...`: a block that holds the lock of an object jobs
+    /// `<obj> ကို ခေတ္တယူ၍ ...`: a block that holds the lock of an object threads
     /// share.
     Lock(LockStmt),
     /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
@@ -363,8 +363,8 @@ pub struct EachStmt
 }
 
 /// A lock block, `<obj> ကို (ခေတ္တ|ခဏ)ယူ၍ <block>`: the block runs while the
-/// job holds the lock of the object, and each field of an object jobs share
-/// is read and written inside one.
+/// thread holds the lock of the object, and each field of an object threads
+/// share is read and written inside one.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct LockStmt
 {
@@ -657,8 +657,8 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
-    /// `true` for `... အပြိုင် လုပ်ဆောင်မည်`: the call runs as a job on another
-    /// thread, and the statement goes on at once.
+    /// `true` for `... အပြိုင် လုပ်ဆောင်မည်`: the call runs as a thread of its
+    /// own, and the statement goes on at once.
     #[builder(default)]
     #[serde(default)]
     pub parallel: bool,
@@ -894,11 +894,11 @@ pub struct StructDecl
     #[builder(default)]
     #[serde(default)]
     pub shared: bool,
-    /// `true` when `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` marks it: jobs on other
+    /// `true` when `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` marks it: other
     /// threads can use its objects, which a lock guards.
     #[builder(default)]
     #[serde(default)]
-    pub jobs: bool,
+    pub threads: bool,
     /// `true` for a kind that comes from outside the program,
     /// `ပြင်ပမှ လာသော ဒေတာအစုအဝေး`: each value is a handle to a struct C
     /// keeps, which copies share, and the fields, when written, are C's.

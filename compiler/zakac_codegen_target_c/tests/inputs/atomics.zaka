@@ -1,4 +1,4 @@
-// Two jobs add to an atomic field of a shared object with no lock, and a
+// Two threads add to an atomic field of a shared object with no lock, and a
 // local atomic number takes an add and a set; the field takes a set. Last,
 // compare-and-set on each: a good result when the number held the expected
 // value, an error holding what it held otherwise.

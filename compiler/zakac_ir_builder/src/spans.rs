@@ -137,12 +137,12 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(value, w);
             w.span(span);
         }
-        Stmt::Wait { job, span, .. }
-        | Stmt::Close { pipe: job, span }
-        | Stmt::Lock { obj: job, span }
-        | Stmt::Unlock { obj: job, span } =>
+        Stmt::Wait { thread, span, .. }
+        | Stmt::Close { pipe: thread, span }
+        | Stmt::Lock { obj: thread, span }
+        | Stmt::Unlock { obj: thread, span } =>
         {
-            expr(job, w);
+            expr(thread, w);
             w.span(span);
         }
         Stmt::Send { pipe, value, span } =>
@@ -357,7 +357,7 @@ fn expr(e: &mut Expr, w: &mut impl Walker)
         {
             do_for!(a in args, expr(a, w))
         }
-        ExprNode::Wait(job) | ExprNode::Receive(job) => expr(job, w),
+        ExprNode::Wait(thread) | ExprNode::Receive(thread) => expr(thread, w),
         ExprNode::CallValue { callee, args } =>
         {
             do_for!(a in args, expr(a, w));
