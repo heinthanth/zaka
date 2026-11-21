@@ -223,7 +223,8 @@ list, the characters of text or the rows of a ဇယား, into its own functio
   character starts (a first pass, `char_starts`); for a ဇယား, its address (round `r` is
   the room of row `r`, and a removed row ends its round);
 - then each variable from outside the round, through its address (a box with a count for
-  one that a closure shares).
+  one that a closure shares). The frame of the round marks each atomic number among them
+  (`Frame::atomics`), so a read of it is an `AtomicLoad` and an add an `AtomicAdd`.
 
 Its statements run inside a loop of one round, so a continue ends the round. A plain list
 that a round writes gets its own block before the loop (`own_before`). The loop calls the

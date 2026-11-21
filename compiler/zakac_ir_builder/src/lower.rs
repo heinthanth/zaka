@@ -2824,7 +2824,14 @@ impl Lowerer<'_>
     {
         let place = self.lookup(name);
         ret_if!(!self.is_edit(place), ExprNode::Read(place));
-        ExprNode::Load { addr: Box::new(self.edit_addr(place, span)) }
+        let addr = Box::new(self.edit_addr(place, span));
+        // Another thread can change an atomic number from outside a round at
+        // each moment, so the read is one step.
+        tern!(
+            self.reaches_atomic(place),
+            ExprNode::AtomicLoad { addr },
+            ExprNode::Load { addr }
+        )
     }
 
     /// Declare the result variable of a function and set it to its default.

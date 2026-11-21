@@ -516,7 +516,8 @@ The rounds run at the same time on several threads, so the rounds follow the rul
 
 An add to an [atomic number](#atomic-numbers) from outside the loop, with `ပေါင်းထည့်မည်` or
 `နုတ်ယူမည်`, is no write in the sense of ZK0728: each change is one step that no other round
-can split, so the rounds can count into one number.
+can split, so the rounds can count into one number. A read of an atomic number from outside
+the loop is one step too, so a round sees each change that another round made before it.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

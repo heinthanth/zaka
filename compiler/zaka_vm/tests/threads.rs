@@ -462,7 +462,7 @@ fn threads_add_to_an_atomic_number_with_no_lock()
     .unwrap();
     assert_eq!(
         output(&text),
-        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n"
+        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n၅၀၀၅၀၀၀\n"
     );
 }
 

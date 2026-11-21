@@ -2,7 +2,8 @@
 // local atomic number takes an add and a set; the field takes a set. Last,
 // compare-and-set on each: a good result when the number held the expected
 // value, an error holding what it held otherwise. Then the rounds of a
-// parallel loop add to a local atomic number through its address.
+// parallel loop add to a local atomic number through its address, and the
+// rounds of a second loop read it in one step.
 ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ကြိမ် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
 ရေ ဟူသော လုပ်ဆောင်ချက် သည် ရေတွက် ဟူသော ကောင်တာ တစ်ခု ကို လက်ခံပြီး
@@ -31,4 +32,7 @@
 ကိန်းရှင် ကြိမ်ရေ သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 ၁ မှ ၁၀၀၀ အထိ ခ အနေဖြင့် အပြိုင် ရေတွက်၍ ကြိမ်ရေ ထဲသို့ ခ ကို ပေါင်းထည့်မည်။
 ကြိမ်ရေ ကို ပြသမည်။
+ကိန်းရှင် စုစု သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၁၀ အထိ ခ အနေဖြင့် အပြိုင် ရေတွက်၍ စုစု ထဲသို့ ကြိမ်ရေ ကို ပေါင်းထည့်မည်။
+စုစု ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။

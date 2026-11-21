@@ -258,7 +258,7 @@ fn atomic_adds_of_two_threads_lose_nothing()
     assert_eq!(run.status, Some(0), "{}", run.stderr);
     assert_eq!(
         run.stdout,
-        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n"
+        "၁၉၈၀\n၇\n၄\nရလဒ်ကောင်း(၃)\nအမှားအယွင်း(၉)\nရလဒ်ကောင်း(၇)\n၈\n၅၀၀၅၀၀\n၅၀၀၅၀၀၀\n"
     );
 }
 

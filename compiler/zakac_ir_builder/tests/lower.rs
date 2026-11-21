@@ -404,3 +404,22 @@ fn a_parallel_loop_whose_counter_is_wider_than_the_word_runs_in_order()
     assert!(rounds(64), "a 64-bit build spreads the rounds");
     assert!(!rounds(32), "a 32-bit build runs them in order");
 }
+
+#[test]
+fn a_round_reads_an_atomic_number_from_outside_in_one_step()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ကြိမ်ရေ သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
+ကိန်းရှင် စုစု သည် အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၁၀ အထိ ခ အနေဖြင့် အပြိုင် ရေတွက်၍ စုစု ထဲသို့ ကြိမ်ရေ ကို ပေါင်းထည့်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let m = module(text);
+    let round = m.funcs.iter().find(|f| f.name.contains("#round")).expect("a round");
+    let forms: Vec<String> = round.block.iter().map(ToSexpr::to_sexpr).collect();
+    let forms = forms.join(" ");
+    // Another thread adds to the numbers at each moment, so the round
+    // reaches each one in one step, never with a plain load.
+    assert!(forms.contains("(atomic_add "), "{forms}");
+    assert!(forms.contains("(atomic_load "), "{forms}");
+    assert!(!forms.contains("(load "), "{forms}");
+}
