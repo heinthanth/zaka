@@ -317,7 +317,9 @@ retains and releases less. A `Dup` remains for:
 - a place that a range or an address reads in some routine;
 - a place its statement reads twice.
 
-A deep `Dup`, from a deep duplicate, is never turned into a `Take`.
+A deep `Dup`, from a deep duplicate, is never turned into a `Take`. The run of a REPL
+session (`BorrowCheckOptions.repl`) turns none into a `Take`, since a later chunk can
+read the variable again.
 
 After the moves, `lend_arguments` marks each `Dup` left in a call argument as `lent`, so
 the callee reads the caller's octets, or the cells of a plain list, with a room of 0 and
@@ -413,7 +415,8 @@ When a cell address is proven in range, its span goes to `CellProofs`, and at th
 `mark_checked` sets `checked: true` on those `CellAddr` nodes, so code generation leaves
 out the run-time `index` operation for them. This happens when the flow checker found no
 error and the program uses no raw address, since a raw address can change a fact the
-proofs rest on. The proof marks `CellAddr` alone, so a loop over the cells of a plain
+proofs rest on, and in the run of a REPL session (`BorrowCheckOptions.repl`), whose module
+leaves out the sets of earlier chunks. The proof marks `CellAddr` alone, so a loop over the cells of a plain
 list parameter keeps its run-time check (`SliceCell`, the internal operation of such a
 cell).
 

@@ -82,7 +82,7 @@ pub fn borrow_check(
 {
     // Moves at the last use come first, so the check follows the code that
     // runs.
-    move_last_uses(module);
+    do_if!(!options.repl, move_last_uses(module));
     lend_arguments(module);
     share_params(module);
     let read: &Module = module;
@@ -104,7 +104,7 @@ pub fn borrow_check(
     let unset = init::check_init(read);
     // A finding, or a raw address the flow cannot follow, means the facts
     // the proofs rest on need not hold.
-    let trusted = !has_errors(&all) && !uses_raw(read);
+    let trusted = !has_errors(&all) && !uses_raw(read) && !options.repl;
     do_if!(trusted, mark_checked(module, &proofs.proven()));
     let mut diagnostics = all;
     // A pointer read before it is set holds the zero octets its declaration

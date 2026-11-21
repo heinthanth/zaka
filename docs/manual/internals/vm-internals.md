@@ -47,6 +47,14 @@ list in one more, so the drops at the end of `main` give them back. `exit_code` 
 global `host.exit` once the run has finished and keeps its lowest 8 bits. A run with no
 host leaves both lists blank.
 
+A REPL session (`zakac repl`) keeps its machine from one chunk to the next.
+`Machine::go_on` takes the module of the next chunk on the state of a run that finished:
+the heap, the world, the rights, the threads and the closures remain. Each global of the
+new module takes over the block of an old global, or gets a new block (`take_global`). The
+static texts and lists of the new module get blocks of their own, and the old ones remain
+for the values that point at them. The REPL clones the machine before each chunk and goes
+back to the clone when the chunk traps.
+
 ## Calls and frames
 
 `call f` takes one block of the stack region for each local of `f`

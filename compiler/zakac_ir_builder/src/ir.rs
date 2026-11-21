@@ -1379,6 +1379,11 @@ pub struct LowerOptions
     /// Bit count of the platform-sized integer kinds.
     #[builder(default = 64)]
     pub platform_bits: u16,
+    /// In a REPL session, the place in the session text where the new chunk
+    /// starts: the code of the statements before it is left out, since that
+    /// code ran on the kept VM, and the variables of the start block live in
+    /// globals that the VM keeps from chunk to chunk.
+    pub repl_from: Option<u32>,
 }
 
 impl Default for LowerOptions

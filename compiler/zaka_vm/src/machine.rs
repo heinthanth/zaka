@@ -251,7 +251,7 @@ pub fn run_in(
 /// # Returns
 ///
 /// `Ok` when the main function returns, or the trap that stopped it.
-fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Box<Trap>>
+pub fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Box<Trap>>
 {
     while machine.running()
     {
@@ -674,6 +674,68 @@ impl Machine
         do_if!(let Err(kind) = entered, machine.state = State::Trapped(machine.trap(kind)));
         machine.raise_peak();
         machine
+    }
+
+    /// Go on with a new module on the state of a run that finished, as a REPL
+    /// session does with each chunk: the heap, the world, the rights, the
+    /// threads and the closures remain; each global of the new module takes
+    /// over the block of an old one or gets a new block; the static texts and
+    /// lists of the new module get blocks of their own, while the old ones
+    /// remain for the values that point at them. The run starts at the first
+    /// op of the main function.
+    ///
+    /// # Arguments
+    ///
+    /// * `module` - The new module.
+    /// * `kept` - For each global of the new module, the old global whose block
+    ///   it takes over, or `None` for a new block.
+    pub fn go_on(&mut self, module: Module, kept: &[Option<u32>])
+    {
+        let old = std::mem::take(&mut self.globals);
+        let main = module.main;
+        self.mem.set_fn_names(module.funcs.iter().map(|f| f.name.clone()).collect());
+        self.module = module;
+        (self.texts, self.seqs) = (Vec::new(), Vec::new());
+        // The blocks of calls name functions of the old module.
+        self.owners.retain(|_, o| o.func.is_none());
+        let held = |k: &Option<u32>| k.and_then(|i| old.get(i as usize).copied());
+        let placed =
+            (0..).zip(kept).try_for_each(|(n, k)| self.take_global(n, held(k)));
+        let placed = placed.and_then(|()| self.place_texts());
+        let placed = placed.and_then(|()| self.place_seqs());
+        (self.frames, self.stack, self.slots) = (Vec::new(), Vec::new(), 0);
+        (self.steps, self.at, self.waiting) = (0, (main, 0), false);
+        (self.out, self.err) = (String::new(), String::new());
+        self.state = State::Running;
+        self.linked = None;
+        let entered = placed.and_then(|()| self.enter(main));
+        do_if!(let Err(kind) = entered, self.state = State::Trapped(self.trap(kind)));
+        self.raise_peak();
+    }
+
+    /// Give one global of a run that goes on its block: the block of an old
+    /// global, or a new one.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The slot index.
+    /// * `held` - The block of the old global it takes over.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or `StaticFull` when the address space has no room.
+    fn take_global(&mut self, n: u32, held: Option<u64>) -> Step
+    {
+        let Some(addr) = held
+        else
+        {
+            let kind = self.module.globals[n as usize].kind;
+            return self
+                .place_global(n, u64::from(kind.size(self.module.platform_bits)));
+        };
+        self.owners.insert(addr, Owner::builder().slot(n).build());
+        self.globals.push(addr);
+        Ok(())
     }
 
     /// Give the globals their static room, before the stack region opens.

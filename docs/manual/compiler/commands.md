@@ -516,11 +516,14 @@ zakac repl
 ```
 
 `zakac repl` compiles in [REPL mode](../language/functions-start-block.md#repl-mode), so
-we write statements with no program start block. After each line it runs the statements so
-far on the VM and prints the new output. A line that leaves a block open, such as the
+we write statements with no program start block. Each line runs once, on one VM that
+lives through the whole session, so a line sees the values that the lines before it left,
+and its output is printed as it comes. A line that is one expression, such as `က + ၁`,
+prints its value, as `က + ၁ ကို ပြသမည်။` would. A line that leaves a block open, such as the
 head of an `အကယ်၍` block, waits for the lines after it, under a `...` prompt; a blank
 line ends the block as it stands. A statement that does not compile, or that stops the
-program, prints its message and is dropped, so the statements after it run as before.
+program, prints its message and is dropped: the variables keep the values from
+before it, and the statements after it run as before.
 
 On a terminal, the arrows move through the line and through the lines of earlier
 sessions, Ctrl-R searches them, and Ctrl-C drops the lines of an open block. `zakac`
@@ -542,13 +545,16 @@ Zaka REPL. Write statements and press Enter. :exit or Ctrl-D leaves, :clear clea
 > ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
 > က ကို ပြသမည်။
 ၁
-> က + ၁ ကို ပြသမည်။
-၂
+> က ကို က + ၁ ဟု ထားမည်။
+> က + ၁
+၃
 ```
 
-Each line runs the whole session again and prints the part of the output that is new. So
-a program that prints something different on each run, such as a random number, can print
-a wrong part, and the program works in a world held in storage: it reads no standard
+The variables of the session live in globals of the VM, which the VM keeps from one line
+to the next. A line that changes the shape of the program so much that the VM cannot go
+on runs the whole session again on a new VM and prints the part of the output that is new.
+That happens when a line declares a function after the session made a closure or ran a
+parallel loop, and when a line imports a module. The program works in a world held in storage: it reads no standard
 input, its files never reach the disk, and it cannot call C.
 
 ## lsp

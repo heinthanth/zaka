@@ -19,6 +19,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::ret_true;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::comptime_calls::SITE_GLOBAL;
 use zakac_semcheck::comptime_calls::part_kinds;
@@ -109,26 +110,32 @@ pub fn lower(
     #[rustfmt::skip]
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
         .top_count(top_count as u32).platform(options.platform_bits)
-        .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs).build();
+        .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
+        .maybe_repl_from(options.repl_from).build();
     lowerer.scopes.push(HashMap::new());
     lowerer.nested.push(HashMap::new());
     lowerer.drops.push(Vec::new());
     let mut main = Vec::new();
+    // The code of the statements that ran in earlier chunks of a REPL session;
+    // each is still lowered, so each slot and function keeps its number.
+    let mut done = Vec::new();
     let mut imported_inits = 0;
     for (i, s) in program.stmts.iter().enumerate()
     {
         let unit = program.unit_of(i);
         lowerer.enter_unit(unit);
         lowerer.suffix = unit_suffix(program, unit);
-        lowerer.top_stmt(s, &mut main);
+        lowerer.top_stmt(s, tern!(lowerer.ran_before(s), &mut done, &mut main));
         do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
     }
     let host = lowerer.start_call(&mut main);
     // The functions declared inside functions follow the top-level ones.
     let lifted = std::mem::take(&mut lowerer.lifted).into_iter();
     lowerer.funcs.extend(lifted.map(|f| f.expect("each lifted function is lowered")));
+    // The globals of a REPL session live on into the next chunk.
     let ends_in_return = matches!(main.last(), Some(Stmt::Return { .. }));
-    do_if!(!ends_in_return, main.extend(lowerer.global_drops(program.span)));
+    let drops = !ends_in_return && options.repl_from.is_none();
+    do_if!(drops, main.extend(lowerer.global_drops(program.span)));
     #[rustfmt::skip]
     let module = Module::builder().globals(lowerer.globals).funcs(lowerer.funcs)
         .foreign(lowerer.foreign).main(main).imported_inits(imported_inits).host(host)
@@ -555,6 +562,9 @@ struct Frame
     /// Whether the result is marked `အပိုင်အနေဖြင့်`: a return hands the block
     /// over to the caller.
     owned_ret: bool,
+    /// Whether it is the start block of a REPL session, whose own variables
+    /// live in globals.
+    session: bool,
 }
 
 /// The lowering walk.
@@ -657,10 +667,31 @@ struct Lowerer<'k>
     /// the parts inside it are left in place.
     #[builder(default)]
     spilling: bool,
+    /// In a REPL session, where the new chunk starts; see
+    /// [`LowerOptions::repl_from`].
+    repl_from: Option<u32>,
+    /// The globals that hold the box of a variable a closure shares: the
+    /// variables of the start block of a REPL session.
+    #[builder(default)]
+    global_boxes: HashSet<u32>,
 }
 
 impl Lowerer<'_>
 {
+    /// Whether a statement ran in an earlier chunk of a REPL session.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it did.
+    fn ran_before(&self, s: &st::Stmt) -> bool
+    {
+        self.repl_from.is_some_and(|from| s.span().lo.as_u32() < from)
+    }
+
     /// The kind the check recorded for an expression.
     ///
     /// # Arguments
@@ -708,14 +739,19 @@ impl Lowerer<'_>
             .access(access)
             .span(ident.span)
             .build();
+        // A variable of the start block of a REPL session lives in a global,
+        // which the VM keeps for the next chunk.
+        let depth = self.scopes.len();
+        let promoted =
+            self.frame.as_ref().is_some_and(|f| f.session && f.depth + 1 == depth);
         let place = match &mut self.frame
         {
-            Some(frame) =>
+            Some(frame) if !promoted =>
             {
                 frame.locals.push(slot);
                 Place::Local(frame.locals.len() as u32 - 1)
             }
-            None =>
+            _ =>
             {
                 self.globals.push(slot);
                 Place::Global(self.globals.len() as u32 - 1)
@@ -723,7 +759,7 @@ impl Lowerer<'_>
         };
         let scope = self.scopes.last_mut().expect("a scope is open");
         scope.insert(ident.name, place);
-        let dropped = kind.holds_text() && ident.name != RESULT_NAME;
+        let dropped = kind.holds_text() && ident.name != RESULT_NAME && !promoted;
         let drops = self.drops.last_mut().expect("a scope is open");
         do_if!(dropped, drops.push((place, kind)));
         place
@@ -2280,7 +2316,7 @@ impl Lowerer<'_>
         #[rustfmt::skip]
         let boxed = nested::boxed_in(f);
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: f.owned_ret });
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: f.owned_ret, session: f.start && self.repl_from.is_some() });
         let mut block = Vec::new();
         let mut result = None;
         self.scoped(|l| {
@@ -2302,7 +2338,9 @@ impl Lowerer<'_>
                 (true, None) => l.host_statement(f, given, result, &mut block),
                 _ => (),
             }
-            do_for!(s in &f.block.stmts, l.stmt(s, &mut block));
+            let session = l.frame.as_ref().is_some_and(|fr| fr.session);
+            let mut done = Vec::new();
+            do_for!(s in &f.block.stmts, l.stmt(s, tern!(session && l.ran_before(s), &mut done, &mut block)));
             let ends_in_return = matches!(block.last(), Some(Stmt::Return { .. }));
             do_if!(!ends_in_return, block.extend(l.exit_drops(depth, f.block.span)));
         });
@@ -2737,14 +2775,13 @@ impl Lowerer<'_>
     /// `true` if it is.
     fn is_edit(&self, place: Place) -> bool
     {
+        ret_true!(self.is_box(place));
         let Place::Local(n) = place
         else
         {
             return false;
         };
-        self.frame
-            .as_ref()
-            .is_some_and(|f| f.edits.contains(&n) || f.boxes.contains(&n))
+        self.frame.as_ref().is_some_and(|f| f.edits.contains(&n))
     }
 
     /// The address a place is reached through: the borrow a parameter the
@@ -2783,12 +2820,14 @@ impl Lowerer<'_>
     /// `true` if it does.
     fn is_box(&self, place: Place) -> bool
     {
-        let Place::Local(n) = place
-        else
+        match place
         {
-            return false;
-        };
-        self.frame.as_ref().is_some_and(|f| f.boxes.contains(&n))
+            Place::Local(n) =>
+            {
+                self.frame.as_ref().is_some_and(|f| f.boxes.contains(&n))
+            }
+            Place::Global(n) => self.global_boxes.contains(&n),
+        }
     }
 
     /// The kind of the variable a place stands for: the kind of the slot,

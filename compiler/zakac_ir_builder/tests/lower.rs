@@ -5,9 +5,11 @@ use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_ir_builder::ir::Func;
+use zakac_ir_builder::ir::LowerOptions;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::PrintValue;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::lower::lower;
 use zakac_semcheck::kind::DataKind;
 
 use crate::common;
@@ -422,4 +424,27 @@ fn a_round_reads_an_atomic_number_from_outside_in_one_step()
     assert!(forms.contains("(atomic_add "), "{forms}");
     assert!(forms.contains("(atomic_load "), "{forms}");
     assert!(!forms.contains("(load "), "{forms}");
+}
+
+#[test]
+fn a_repl_session_keeps_its_variables_in_globals_and_leaves_out_earlier_code()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် က + ၁ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let lowered = run(text, &FoldOptions::none());
+    let checked = &lowered.checked;
+    let whole = lowered.plain.as_ref().expect("the program lowers");
+    // The new chunk starts at the second declaration.
+    let from = start(whole).block[1].span().lo.as_u32();
+    #[rustfmt::skip]
+    let options = LowerOptions::builder().platform_bits(64).repl_from(from).build();
+    let m = lower(&checked.program, &checked.kinds, &checked.structs, &options);
+    let names: Vec<&str> = m.globals.iter().map(|g| g.name.as_str()).collect();
+    assert!(names.contains(&"က") && names.contains(&"ခ"), "{names:?}");
+    // The set of က ran in an earlier chunk; the one of ခ reads the global.
+    let forms: Vec<String> = start(&m).block.iter().map(ToSexpr::to_sexpr).collect();
+    assert_eq!(forms.iter().filter(|f| f.starts_with("(set ")).count(), 1, "{forms:?}");
+    assert!(start(&m).locals.is_empty(), "{:?}", start(&m).locals);
 }

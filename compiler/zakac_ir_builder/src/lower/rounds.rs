@@ -528,7 +528,7 @@ impl Lowerer<'_>
         let depth = self.scopes.len();
         let boxed = nested::boxed_in_stmts(&block.stmts);
         #[rustfmt::skip]
-        let outer = self.frame.replace(Frame { locals: Vec::new(), ret: None, fault: None, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: false });
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret: None, fault: None, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed, write_backs: Vec::new(), owned_ret: false, session: false });
         let mut stmts = Vec::new();
         self.scoped(|l| {
             let number =

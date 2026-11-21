@@ -10,9 +10,13 @@ use zaka_host::Gate;
 use zaka_host::Grants;
 use zaka_host::MemWorld;
 use zaka_vm::machine::HostData;
+use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
+use zaka_vm::machine::drive;
 use zaka_vm::machine::run_in;
 use zaka_vm::trap::Backtrace;
+use zakac_ast::stmt::START_NAME;
+use zakac_borrow_checker::borrow_check;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_cli_common::clap;
 use zakac_cli_common::clap::ArgMatches;
@@ -21,10 +25,17 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_codegen_target_vm::artifact::Emitted;
 use zakac_codegen_target_vm::artifact::run_phases;
+use zakac_codegen_target_vm::bc::Module;
+use zakac_codegen_target_vm::emit::emit;
 use zakac_codegen_target_vm::options::ResultMode;
 use zakac_i18n::t;
+use zakac_ir_builder::fold::fold;
+use zakac_ir_builder::ir;
 use zakac_ir_builder::ir::FoldOptions;
+use zakac_ir_builder::ir::LowerOptions;
+use zakac_ir_builder::lower::lower;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_parser::parser::parse;
@@ -32,6 +43,7 @@ use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::artifact::Checked;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
@@ -46,10 +58,8 @@ pub(crate) struct ZakacRepl
     cmd_instance: clap::Command,
 }
 
-/// The chunks a session kept and the output it has shown.
-// shortcut: each chunk runs the whole session again and prints the new tail of
-// its output, in a world held in storage (no stdin, no disk); keep the VM
-// between chunks when a program that prints a new value on each run matters.
+/// The chunks a session kept, the output it has shown, and the VM that ran
+/// them, which goes on with each new chunk.
 #[derive(Default)]
 struct Session
 {
@@ -57,12 +67,53 @@ struct Session
     kept: String,
     /// The octets of output shown so far.
     shown: usize,
+    /// The VM, where the last chunk left it.
+    machine: Option<Machine>,
+    /// The globals of the module the VM ran last, as lowered.
+    slots: Vec<ir::Slot>,
+}
+
+/// A compile of the session with a chunk.
+struct Compiled
+{
+    /// The source map, for the reports.
+    sm: SourceMap,
+    /// Where the session text starts in the source map.
+    base: u32,
+    /// The output of each phase.
+    emitted: Emitted,
 }
 
 impl Session
 {
+    /// Whether the session with a chunk fails to parse, and if so, whether
+    /// at its end.
+    ///
+    /// # Arguments
+    ///
+    /// * `chunk` - The lines of the chunk so far.
+    ///
+    /// # Returns
+    ///
+    /// `None` for a clean parse, else whether an error reaches the end.
+    fn parse_fails(&self, chunk: &str) -> Option<bool>
+    {
+        let text = format!("{}{chunk}", self.kept);
+        let end = text.trim_end().len() as u32;
+        let mut sm = SourceMap::new();
+        let file = sm.new_source_file(FileName::Custom(FILE_NAME.into()), text);
+        let lexed = lex(&file, &LexerOptions::default());
+        let parsed = parse(&file, &lexed);
+        let base = file.start_pos.as_u32();
+        let diags: Vec<_> =
+            lexed.diagnostics.iter().chain(&parsed.diagnostics).collect();
+        ret_if!(diags.is_empty(), None);
+        Some(diags.iter().any(|d| d.span.hi.as_u32() - base >= end))
+    }
+
     /// Whether an chunk leaves a block open: the session with it fails to
-    /// parse at its end, so more lines are to come.
+    /// parse at its end, so more lines are to come. A chunk that is one
+    /// expression is whole, since its value is printed.
     ///
     /// # Arguments
     ///
@@ -73,20 +124,35 @@ impl Session
     /// `true` while the chunk is not whole.
     fn is_open(&self, chunk: &str) -> bool
     {
-        let text = format!("{}{chunk}", self.kept);
-        let end = text.trim_end().len() as u32;
-        let mut sm = SourceMap::new();
-        let file = sm.new_source_file(FileName::Custom(FILE_NAME.into()), text);
-        let lexed = lex(&file, &LexerOptions::default());
-        let parsed = parse(&file, &lexed);
-        let base = file.start_pos.as_u32();
-        let mut diags = lexed.diagnostics.iter().chain(&parsed.diagnostics);
-        diags.any(|d| d.span.hi.as_u32() - base >= end)
+        let whole = |grouped: bool| self.parse_fails(&echoed(chunk, grouped)).is_none();
+        self.parse_fails(chunk) == Some(true) && !whole(false) && !whole(true)
     }
 
-    /// Compile the session with an chunk and run it: print the diagnostics,
-    /// then the output past what was shown. The chunk is kept when it
-    /// compiles and runs to its end.
+    /// Compile the session with a chunk, through each phase.
+    ///
+    /// # Arguments
+    ///
+    /// * `chunk` - The chunk.
+    ///
+    /// # Returns
+    ///
+    /// The compile.
+    fn compile(&self, chunk: &str) -> Compiled
+    {
+        let text = format!("{}{chunk}", self.kept);
+        let mut sm = SourceMap::new();
+        let file = sm.new_source_file(FileName::Custom(FILE_NAME.into()), text);
+        let options = SemcheckOptions::builder().repl(true).build();
+        #[rustfmt::skip]
+        let emitted = run_phases(&file, &LexerOptions::default(), &options,
+            &FoldOptions::default(), &BorrowCheckOptions::default(), ResultMode::default());
+        let base = file.start_pos.as_u32();
+        Compiled { sm, base, emitted }
+    }
+
+    /// Compile the session with a chunk and run the chunk: print the
+    /// diagnostics, then its output. A chunk that is one expression prints its
+    /// value. The chunk is kept when it compiles and runs to its end.
     ///
     /// # Arguments
     ///
@@ -95,42 +161,204 @@ impl Session
     fn take(&mut self, chunk: &str, io: &mut CommandIO<'_>)
     {
         ret_if!(chunk.trim().is_empty());
-        let text = format!("{}{chunk}", self.kept);
-        let mut sm = SourceMap::new();
-        let file = sm.new_source_file(FileName::Custom(FILE_NAME.into()), text.clone());
-        let options = SemcheckOptions::builder().repl(true).build();
-        #[rustfmt::skip]
-        let emitted = run_phases(&file, &LexerOptions::default(), &options,
-            &FoldOptions::default(), &BorrowCheckOptions::default(), ResultMode::default());
+        let first = self.compile(chunk);
+        let failed =
+            |c: &Compiled| c.emitted.diagnostics().iter().any(|d| d.is_error());
+        // A chunk that is one expression prints its value; the parentheses
+        // are for an expression that needs them.
+        let echoes = [false, true].map(|grouped| echoed(chunk, grouped));
+        let tried = echoes.iter().filter(|_| failed(&first));
+        let echo =
+            tried.map(|e| (e.as_str(), self.compile(e))).find(|(_, c)| !failed(c));
+        let (chunk, compiled) = echo.unwrap_or((chunk, first));
         // The earlier chunks compiled: their warnings were shown once.
-        let new_from = file.start_pos.as_u32() + self.kept.len() as u32;
-        let shown = emitted.diagnostics().iter();
+        let from = compiled.base + self.kept.len() as u32;
+        let shown = compiled.emitted.diagnostics().iter();
         let diags: Vec<_> = shown
-            .filter(|d| d.is_error() || d.span.lo.as_u32() >= new_from)
+            .filter(|d| d.is_error() || d.span.lo.as_u32() >= from)
             .cloned()
             .collect();
-        let _ = write_diagnostics(io.stderr, &sm, &diags);
-        let Some(module) = emitted.module
-        else
+        let _ = write_diagnostics(io.stderr, &compiled.sm, &diags);
+        ret_if!(compiled.emitted.module.is_none());
+        let checked = &compiled.emitted.borrowchecked.lowered.checked;
+        let ran = self.go_on(checked, from, &compiled.sm, io);
+        let ran = ran
+            .unwrap_or_else(|| self.run_all(checked, compiled.base, &compiled.sm, io));
+        do_if!(ran, self.kept.push_str(chunk));
+    }
+
+    /// Run the chunk on the kept VM, when the module of the session extends
+    /// the one the VM ran last: each global from earlier chunks has its
+    /// match, and each function keeps its number.
+    ///
+    /// # Arguments
+    ///
+    /// * `checked` - The checked session.
+    /// * `from` - Where the chunk starts.
+    /// * `sm` - The source map, for a report.
+    /// * `io` - The standard streams.
+    ///
+    /// # Returns
+    ///
+    /// `None` when the VM cannot go on, else whether the chunk ran to its end;
+    /// a chunk that traps leaves the VM as it was.
+    fn go_on(
+        &mut self, checked: &Checked, from: u32, sm: &SourceMap, io: &mut CommandIO<'_>,
+    ) -> Option<bool>
+    {
+        let machine = self.machine.as_ref()?;
+        let (slots, module) = session_module(checked, from);
+        let kept = reuse(&self.slots, &slots, from)?;
+        ret_if!(!same_fns(machine.module(), &module), None);
+        let mut next = machine.clone();
+        next.go_on(module, &kept);
+        next.set_host(&HostData::program(FILE_NAME));
+        let mut out = Vec::new();
+        let ran = drive(&mut next, &mut out);
+        let _ = io.stdout.write_all(&out);
+        let _ = io.stdout.flush();
+        if let Err(trap) = ran
         {
-            return;
-        };
+            let _ = writeln!(io.stderr, "{}", trap.report(sm, Backtrace::default()));
+            return Some(false);
+        }
+        self.shown += out.len();
+        (self.machine, self.slots) = (Some(next), slots);
+        Some(true)
+    }
+
+    /// Run the whole session on a new VM, and print the output past what was
+    /// shown: for the first chunk, and for a module the kept VM cannot run.
+    ///
+    /// # Arguments
+    ///
+    /// * `checked` - The checked session.
+    /// * `base` - Where the session text starts.
+    /// * `sm` - The source map, for a report.
+    /// * `io` - The standard streams.
+    ///
+    /// # Returns
+    ///
+    /// Whether the run reached its end.
+    fn run_all(
+        &mut self, checked: &Checked, base: u32, sm: &SourceMap, io: &mut CommandIO<'_>,
+    ) -> bool
+    {
+        let (slots, module) = session_module(checked, base);
         let mut out = Vec::new();
         let world = Box::new(MemWorld::builder().build());
         let gate = Gate::new(Grants { ffi: false, ..Grants::all() });
         let host = HostData::program(FILE_NAME);
-        let ran = run_in(&module, &mut out, &RunOptions::default(), &host, world, gate);
+        let (machine, ran) =
+            run_in(&module, &mut out, &RunOptions::default(), &host, world, gate);
         let _ = io.stdout.write_all(out.get(self.shown..).unwrap_or_default());
         let _ = io.stdout.flush();
-        let Err(trap) = ran.1
-        else
+        if let Err(trap) = ran
         {
-            self.kept = text;
-            self.shown = out.len();
-            return;
-        };
-        let _ = writeln!(io.stderr, "{}", trap.report(&sm, Backtrace::default()));
+            let _ = writeln!(io.stderr, "{}", trap.report(sm, Backtrace::default()));
+            return false;
+        }
+        self.shown = out.len();
+        (self.machine, self.slots) = (Some(machine), slots);
+        true
     }
+}
+
+/// A chunk as a print of its value, for a chunk that is one expression.
+///
+/// # Arguments
+///
+/// * `chunk` - The chunk.
+/// * `grouped` - Whether the expression stands in parentheses.
+///
+/// # Returns
+///
+/// The print statement.
+fn echoed(chunk: &str, grouped: bool) -> String
+{
+    let expr = chunk.trim().trim_end_matches('\u{104B}').trim_end();
+    let expr = tern!(grouped, format!("({expr})"), expr.to_string());
+    format!(
+        "{expr} \u{1000}\u{102D}\u{102F} \
+         \u{1015}\u{103C}\u{101E}\u{1019}\u{100A}\u{103A}\u{104B}\n"
+    )
+}
+
+/// The module that runs a chunk of a session: the statements before `from`
+/// ran in earlier chunks and leave no code, the variables of the start block
+/// live in globals, and no global is dropped at the end.
+///
+/// # Arguments
+///
+/// * `checked` - The checked session.
+/// * `from` - Where the chunk starts.
+///
+/// # Returns
+///
+/// The globals as lowered, and the module.
+fn session_module(checked: &Checked, from: u32) -> (Vec<ir::Slot>, Module)
+{
+    let bits = SemcheckOptions::default().platform_bits;
+    let lowering = LowerOptions::builder().platform_bits(bits).repl_from(from).build();
+    let mut module =
+        lower(&checked.program, &checked.kinds, &checked.structs, &lowering);
+    // A constant set in an earlier chunk has no set in this module to fold.
+    let folding = FoldOptions::builder().consts(false).build();
+    let _ = fold(&mut module, &folding, bits);
+    let mem = BorrowCheckOptions::builder().repl(true).build();
+    let _ = borrow_check(&mut module, &mem, bits);
+    let ops = Module {
+        overflow: mem.overflow,
+        ..emit(&module, bits, ResultMode::default().into())
+    };
+    (module.globals, ops)
+}
+
+/// Which old global each global of a new module takes over: a variable
+/// declared before the chunk takes over the one of the same name, place and
+/// kind; each other global, a hidden one among them, gets a block of its own.
+///
+/// # Arguments
+///
+/// * `old` - The globals of the module the VM ran last.
+/// * `new` - The globals of the new module.
+/// * `from` - Where the chunk starts.
+///
+/// # Returns
+///
+/// The old global of each new one, or `None` when a variable from before the
+/// chunk has no match, so the VM cannot go on.
+fn reuse(old: &[ir::Slot], new: &[ir::Slot], from: u32) -> Option<Vec<Option<u32>>>
+{
+    let earlier = |s: &ir::Slot| s.span.lo.as_u32() < from && !s.name.starts_with('%');
+    let same = |s: &ir::Slot, o: &ir::Slot| {
+        (&o.name, o.span, o.kind) == (&s.name, s.span, s.kind)
+    };
+    let take = |s: &ir::Slot| {
+        let found = old.iter().position(|o| same(s, o)).map(|i| i as u32);
+        tern!(earlier(s), found.map(Some), Some(None))
+    };
+    new.iter().map(take).collect()
+}
+
+/// Whether each function of the old module keeps its number and name in the
+/// new one, since function values and closures hold the numbers; the main
+/// function and the start block are run anew.
+///
+/// # Arguments
+///
+/// * `old` - The module the VM ran last.
+/// * `new` - The new module.
+///
+/// # Returns
+///
+/// `true` if each does.
+fn same_fns(old: &Module, new: &Module) -> bool
+{
+    let named = |i: usize, name: &str| new.funcs.get(i).is_some_and(|f| f.name == name);
+    let run_anew = |i: usize, name: &str| i == old.main as usize || name == START_NAME;
+    let funcs = old.funcs.iter().enumerate();
+    funcs.filter(|(i, f)| !run_anew(*i, &f.name)).all(|(i, f)| named(i, &f.name))
 }
 
 /// What a read of one line gives.
@@ -415,5 +643,42 @@ impl Command for ZakacRepl
     fn main(&self, _matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
         command_main(io)
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use zakac_semcheck::kind::DataKind;
+    use zakac_span::pos::Pos;
+    use zakac_span::span::Span;
+
+    use super::*;
+
+    /// A global slot of a name, at a place.
+    fn slot(name: &str, at: u32) -> ir::Slot
+    {
+        let span = Span::new(Pos::new(at), Pos::new(at + 1));
+        #[rustfmt::skip]
+        return ir::Slot::builder().name(name).kind(DataKind::Bool).access(ir::Access::Var)
+            .span(span).build();
+    }
+
+    #[test]
+    fn a_variable_from_an_earlier_chunk_takes_over_its_old_block()
+    {
+        let old = [slot("က", 0), slot("%new", 2), slot("ခ", 4)];
+        let new = [slot("ခ", 4), slot("%new", 2), slot("က", 0), slot("ဂ", 9)];
+        // A hidden global never shares a block; one from the new chunk gets
+        // its own.
+        assert_eq!(reuse(&old, &new, 8), Some(vec![Some(2), None, Some(0), None]));
+    }
+
+    #[test]
+    fn a_variable_from_an_earlier_chunk_with_no_match_stops_the_vm()
+    {
+        let old = [slot("က", 0)];
+        let new = [slot("က", 0), slot("ခ", 4)];
+        assert_eq!(reuse(&old, &new, 8), None);
     }
 }

@@ -569,6 +569,12 @@ slot, which the blit fills.
   global `%exit`. `host` (`Host { args, env, exit }`) records the numbers of these
   globals, each `None` when the program start block does not use it. Nothing else in the
   IR, the flow checker or the operations knows about the program start block.
+- A REPL session lowers each chunk with `LowerOptions.repl_from`, the place where the
+  chunk starts. Each variable of the program start block's own scope lives in a global
+  (`Frame::session`), with no drop, and `main` ends with no drops of the globals, so the
+  VM keeps the values for the next chunk. The statements before `repl_from` are still
+  lowered, so each slot and function keeps its number, but their code is thrown away,
+  since that code ran in earlier chunks. A box of such a variable is in `global_boxes`.
 
 Threads, locks, atomic numbers and parallel loops lower to the nodes in the tables above,
 and [Inside the VM](vm-internals.md#threads) follows each of them from the lowering to the

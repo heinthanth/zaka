@@ -45,6 +45,12 @@ pub struct BorrowCheckOptions
     /// The level of each lint code set through a name, over `check`.
     #[builder(default)]
     pub lint: LintLevels,
+    /// A run of a REPL session, whose module leaves out the statements of
+    /// earlier chunks: no last use turns into a move, since a later chunk can
+    /// read the variable again, and each check of the run remains, since the
+    /// proofs miss the sets of earlier chunks.
+    #[builder(default)]
+    pub repl: bool,
 }
 
 impl Default for BorrowCheckOptions

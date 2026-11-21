@@ -10,6 +10,7 @@ etcetera = { workspace = true }
 rust-i18n = { workspace = true }
 rustyline = { workspace = true }
 strum = { workspace = true }
+zakac_ast = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
 zakac_cli_common = { workspace = true }
@@ -31,7 +32,6 @@ zakac_span = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-zakac_ast = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }

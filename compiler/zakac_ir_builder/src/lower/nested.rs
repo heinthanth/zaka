@@ -531,9 +531,19 @@ impl Lowerer<'_>
     /// * `place` - The slot.
     pub(super) fn mark_box(&mut self, place: Place)
     {
-        let local = tern!(let Place::Local(n) = place, Some(n), None);
-        let frame = self.frame.as_mut();
-        do_if!(let (Some(n), Some(f)) = (local, frame), { f.boxes.insert(n); });
+        match (place, self.frame.as_mut())
+        {
+            (Place::Local(n), Some(f)) =>
+            {
+                f.boxes.insert(n);
+            }
+            // A variable of the start block of a REPL session is a global.
+            (Place::Global(n), Some(f)) if f.session =>
+            {
+                self.global_boxes.insert(n);
+            }
+            _ => (),
+        }
     }
 
     /// A new box that holds a value: a counted block of one cell.
