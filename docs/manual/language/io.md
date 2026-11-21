@@ -46,13 +46,13 @@ fail, and the program start block reads the whole result:
 ```zaka
 "စံကား/အဝင်အထွက်" မှ ရေး၊ ဖိုင်ကိုဖတ် နှင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
 
-မှတ်စု ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+မှတ်စုရေးပြီးဖတ် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 "မင်္ဂလာပါ" ကို "မှတ်စု.txt" သို့ ရေး မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။
 "မှတ်စု.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ်ကောင်း ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-မှတ်စု သည့် ရလဒ် ကို ပြသမည်။
+မှတ်စုရေးပြီးဖတ် သည့် ရလဒ် ကို ပြသမည်။
 "မရှိ.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -146,9 +146,9 @@ no right. The pages and the explorer run in storage and grant each right.
 | Call | What it does |
 | --- | --- |
 | `<text> ကို <path> ၏ နောက်ဆုံးမှဆက်ရေး` | adds the text at the end of the file, and makes the file when it is not there |
-| `<path> ရှိ ဖိုင်ကို ဖျက်` | removes the file, or the folder when it has nothing in it |
+| `<path> လမ်းကြောင်းရှိ အရာကို ဖျက်` | removes the file, or the folder when it has nothing in it |
 | `<path> နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ်` | makes the folder, and each folder above it that is not there |
-| `<path> ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု` | the names in the folder, sorted on their u8s, as a `စာသား စာရင်း` |
+| `<path> ဖိုင်တွဲထဲမှ အမည်များကို စု` | the names in the folder, sorted on their u8s, as a `စာသား စာရင်း` |
 | `<path> ကို အမျိုးအစားခွဲ` | what is at the path, as a member of `ဖိုင်စနစ်ပစ္စည်း`: `ဖိုင်` (a file), `ဖိုင်တွဲ` (a folder) or `တခြားပစ္စည်း` (another thing); a path with nothing at it fails with `မတွေ့ခြင်း` |
 | `<old> ကို <new> သို့ ရွှေ့` | moves the file or the folder, and replaces what is at the new path |
 | `<path> တွင် တစ်ခုခုရှိမရှိစစ်` | whether a file, a folder or another thing is at the path |
@@ -160,8 +160,8 @@ no right. The pages and the explorer run in storage and grant each right.
 - Each of these functions, and `ဖိုင်ကိုဖတ်` and `ရေး` on a file, accepts a path as text
   or as a `ဖိုင်လမ်းကြောင်း` of [the path module](stdlib.md#paths), which this module
   imports.
-- The prepositions `ရှိ ဖိုင်ကို` and `ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို` contain several
-  words. In a file that imports these functions, `ဖိုင်ကို`, `ဖိုင်တွဲအတွင်းရှိ`,
+- The prepositions `လမ်းကြောင်းရှိ အရာကို` and `ဖိုင်တွဲထဲမှ အမည်များကို` contain several
+  words. In a file that imports these functions, `လမ်းကြောင်းရှိ`, `အရာကို`, `ဖိုင်တွဲထဲမှ`,
   `အမည်များကို` and `နေရာတွင်` are taken as words of their prepositions ([What the
   flexible grammar costs](functions-sentences.md#what-the-flexible-grammar-costs)).
 - In a world in storage (a Learn page, the explorer), the folders are those that the
@@ -175,11 +175,11 @@ no right. The pages and the explorer run in storage and grant each right.
 "က" ကို "work/a.txt" သို့ ရေး သည့် ရလဒ် ကို ပြသမည်။
 "ခ" ကို "work/a.txt" ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ် ကို ပြသမည်။
 "work/a.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ် ကို ပြသမည်။
-"work" ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု သည့် ရလဒ် ကို ပြသမည်။
+"work" ဖိုင်တွဲထဲမှ အမည်များကို စု သည့် ရလဒ် ကို ပြသမည်။
 "work/notes" ကို အမျိုးအစားခွဲ သည့် ရလဒ် ကို ပြသမည်။
 "work/a.txt" ကို "work/notes/b.txt" သို့ ရွှေ့ သည့် ရလဒ် ကို ပြသမည်။
 "work/a.txt" တွင် တစ်ခုခုရှိမရှိစစ် သည့် ရလဒ် ကို ပြသမည်။
-"work/notes" ရှိ ဖိုင်ကို ဖျက် သည့် ရလဒ် ကို ပြသမည်။
+"work/notes" လမ်းကြောင်းရှိ အရာကို ဖျက် သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

@@ -15,6 +15,7 @@ use zaka_explorer::compile::samples::GROUPS;
 use zaka_explorer::compile::samples::MISTAKES;
 use zaka_explorer::compile::samples::SAMPLES;
 use zaka_explorer::compile::samples::Sample;
+use zaka_explorer::compile::samples::default_sample;
 use zaka_explorer::compile::samples::find_sample;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::options::MemCheck;
@@ -88,24 +89,55 @@ fn diagnostics_group_reports_errors()
 }
 
 #[test]
-fn all_sample_files_are_listed()
+fn all_standalone_browser_sample_files_are_listed()
 {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../samples");
     let mut on_disk = BTreeSet::new();
-    for group in GROUPS
+    let mut groups = BTreeSet::new();
+    for folder in std::fs::read_dir(root).unwrap()
     {
-        let dir = std::fs::read_dir(root.join(group)).unwrap();
-        for item in dir
+        let folder = folder.unwrap();
+        if !folder.file_type().unwrap().is_dir()
         {
-            let path = item.unwrap().path();
-            assert_eq!(path.extension().and_then(|e| e.to_str()), Some("zaka"));
+            continue;
+        }
+        let group = folder.file_name().into_string().unwrap();
+        if group.starts_with('.') || matches!(group.as_str(), "ffi" | "modules")
+        {
+            continue;
+        }
+        for item in std::fs::read_dir(folder.path()).unwrap()
+        {
+            let item = item.unwrap();
+            let path = item.path();
+            if !item.file_type().unwrap().is_file()
+                || path.extension().is_none_or(|e| e != "zaka")
+            {
+                continue;
+            }
             let stem = path.file_stem().unwrap().to_str().unwrap();
-            on_disk.insert(format!("{group}/{stem}"));
+            let sample_path = format!("{group}/{stem}");
+            if sample_path == "generics/hints"
+            {
+                continue;
+            }
+            let sample = find_sample(&sample_path)
+                .unwrap_or_else(|| panic!("missing {sample_path}"));
+            assert_eq!(
+                sample.text,
+                std::fs::read_to_string(path).unwrap(),
+                "{sample_path}"
+            );
+            on_disk.insert(sample_path);
+            groups.insert(group.clone());
         }
     }
     let listed: BTreeSet<String> = SAMPLES.iter().map(|s| s.path()).collect();
     assert_eq!(on_disk, listed);
     assert_eq!(listed.len(), SAMPLES.len(), "a path is listed twice");
+    assert_eq!(groups, GROUPS.iter().map(|group| group.to_string()).collect());
+    assert_eq!(groups.len(), GROUPS.len(), "a group is listed twice");
+    assert_eq!(default_sample().path(), "basics/hello");
 }
 
 #[test]

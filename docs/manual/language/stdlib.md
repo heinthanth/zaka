@@ -21,9 +21,10 @@ modules:
 Each function of the first three modules is written in Zaka. Its source is in the stdlib
 folder of the compiler, and an editor opens it through go to definition. Text and lists
 are values, so a function returns new text or a new list and leaves its argument as it
-was. We can write each call below as a sentence, through the
-[prepositions](functions-sentences.md#prepositions) of its parameters, and the sign form
-`f(a, b)` calls each function too.
+was. The examples use sentence forms, including calls with
+[argument particles](functions-sentences.md#prepositions) and
+[conversions through functions](conversions.md#conversions-through-functions).
+The [sign form](functions-calls.md#the-sign-form) also works.
 
 ## Text
 
@@ -39,9 +40,9 @@ was. We can write each call below as a sentence, through the
 | `<list> ကို <separator> ဖြင့် ဆက်` | the texts of a list joined, with the separator between each two |
 | `<text> ကို ဘေးနှစ်ဖက်တွင်နေရာလွတ်ဖယ်` | the text without the white space at its two ends |
 | `<text> တွင် <old> ကို <new> ဖြင့် အကုန်အစားထိုး` | the text with each old piece replaced, from the start on |
-| `<text> ကို <count> အထိ ထပ်ခါထပ်ခါဆက်` | the text written a number of times in a row |
+| `<text> ကို <count> ကြိမ် ထပ်ခါထပ်ခါဆက်` | the text repeated exactly that many times, or empty text for a count of zero or less |
 | `<text> ကို စာလုံးကြီးပြောင်း`, `<text> ကို စာလုံးသေးပြောင်း` | the text with each Latin letter in upper or in lower case |
-| `ကိန်းပြည့်အဖြစ်ပြောင်း(<text>)` | the text read as an integer, or a failure; the conversion `<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` calls it ([Conversions](conversions.md#conversions-through-functions)) |
+| `<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` | the text read as an integer, or a failure. Import `ကိန်းပြည့်အဖြစ်ပြောင်း` to use this conversion |
 
 A u8 number counts the u8s of the UTF-8 form of the text, as a [range of
 text](text.md#ranges) does, so `ကမ္ဘာ` starts at 22 in `မင်္ဂလာ ကမ္ဘာ`, because each
@@ -85,13 +86,13 @@ that the module makes uses `/`.
 | `<path> ၏ ဖိုင်အမည်` | the last part: `ဖိုင်.txt` of `a/ဖိုင်.txt` |
 | `<path> ၏ ဖိုင်အမည်နောက်တွဲ` | the extension without its `.`, or blank data; a name that starts with `.` has none |
 | `<path> ၏ ဖိုင်အမည်အရှေ့ပိုင်း` | the file name without its extension |
-| `<path> ပါရှိသော ဖိုင်တွဲလမ်းကြောင်း` | the folder that contains the path: `a` of `a/b`, `/` of `/b`, blank for a path of one part |
+| `<path> ၏ ဖိုင်တွဲလမ်းကြောင်း` | the folder that contains the path: `a` of `a/b`, `/` of `/b`, blank for a path of one part |
 | `<path> ကို ဖိုင်လမ်းကြောင်းအပြည့်အစုံဟုတ်မဟုတ်စစ်` | whether the path starts with `/` or `\`, or with a drive such as `C:` |
 | `<path> ကို ရှင်းလင်းသေသပ်အောင်ပြုလုပ်` | the path with no `.` part, each `..` removing the part before it, and no separator twice in a row; `.` when nothing is left |
 
-We can call the functions whose last preposition starts with `၏` after `၏` with no call
-end, as in `p ၏ ဖိုင်အမည်` ([Calls on a value](functions-calls.md#calls-on-a-value)), or
-as a preposition call with one, as in `p ၏ ဖိုင်အမည် သည့် ရလဒ်`.
+The names of the path parts read as properties. Write `p ၏ ဖိုင်အမည်` to get the
+file name or `p ၏ ဖိုင်တွဲလမ်းကြောင်း` to get the folder that contains it
+([Calls on a value](functions-calls.md#calls-on-a-value)).
 
 ```zaka
 "စံကား/လမ်းကြောင်း" မှ ဖိုင်လမ်းကြောင်း၊ ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း၊ ဖိုင်လမ်းကြောင်းဆက်၊ ဖိုင်အမည်၊ ဖိုင်အမည်နောက်တွဲ၊ ဖိုင်တွဲလမ်းကြောင်း နှင့် ရှင်းလင်းသေသပ်အောင်ပြုလုပ် တို့ကို ထည့်သွင်းမည်။
@@ -101,7 +102,7 @@ as a preposition call with one, as in `p ၏ ဖိုင်အမည် သည�
 လ ကို ပြသမည်။
 လ ၏ ဖိုင်အမည် ကို ပြသမည်။
 လ ၏ ဖိုင်အမည်နောက်တွဲ ကို ပြသမည်။
-လ ပါရှိသော ဖိုင်တွဲလမ်းကြောင်း သည့် ရလဒ် ကို ပြသမည်။
+လ ၏ ဖိုင်တွဲလမ်းကြောင်း ကို ပြသမည်။
 "a/b" ကို "c.md" နှင့် ဖိုင်လမ်းကြောင်းဆက် သည့် ရလဒ် ကို ပြသမည်။
 "a/./b//../c" ကို ရှင်းလင်းသေသပ်အောင်ပြုလုပ် သည့် ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -124,7 +125,7 @@ data kind.
 | Call | What it returns |
 | --- | --- |
 | `<list> ကို ငယ်စဉ်ကြီးလိုက်စီ` | the cells from the smallest to the largest; the cell kind must work with `<` (`နှိုင်းယှဉ်နိုင်သော`) |
-| `<list> ကို (<function>) ကိုသုံး၍ စီ` | the cells in the order that a function gives: `f(a, b)` is true when `a` comes before `b` |
+| `<list> ကို (<function>) ကိုသုံး၍ စီ` | the cells in the order given by the comparison function, which returns true when its first argument comes before its second |
 | `<list> မှ <number> အကွက်ကို ဖယ်` | the list without the cell at a number counted from 0; a number outside the list stops the program |
 | `<list> ထဲတွင် <value> ၏ အကွက်နေရာကိုရှာ` | the first cell number, from 0, whose cell has the value, or blank data |
 | `<value> ကို <list> ထဲတွင် ပါမပါစစ်` | whether a cell has the value |
@@ -144,15 +145,15 @@ data kind.
 ```zaka
 "စံကား/စာရင်း" မှ ငယ်စဉ်ကြီးလိုက်စီ၊ {စီ}၊ ဖယ်၊ အကွက်နေရာကိုရှာ နှင့် ပြောင်းပြန်စီ တို့ကို ထည့်သွင်းမည်။
 
-ကြီးသလား ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+ပိုကြီး ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
-က > ခ ကို ပြန်ပေးမည်။
+က သည် ခ ထက် ကြီးသည် ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် [၅၊ ၃၊ ၈၊ ၁] ဖြစ်ပါစေ။
 l ကို ငယ်စဉ်ကြီးလိုက်စီ သည့် ရလဒ် ကို ပြသမည်။
-l ကို (ကြီးသလား ဟူသော လုပ်ဆောင်ချက်) ကိုသုံး၍ စီ သည့် ရလဒ် ကို ပြသမည်။
+l ကို (ပိုကြီး ဟူသော လုပ်ဆောင်ချက်) ကိုသုံး၍ စီ သည့် ရလဒ် ကို ပြသမည်။
 l မှ ၁ အကွက်ကို ဖယ် သည့် ရလဒ် ကို ပြသမည်။
 l ထဲတွင် ၈ ၏ အကွက်နေရာကိုရှာ သည့် ရလဒ် ကို ပြသမည်။
 l ကို ပြောင်းပြန်စီ သည့် ရလဒ် ကို ပြသမည်။

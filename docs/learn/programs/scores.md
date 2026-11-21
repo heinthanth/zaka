@@ -22,7 +22,7 @@ spells out the name of the top student one character at a time.
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 /// The cell number of the highest score, counting from 0.
-ထိပ်ဆုံး ဟူသော လုပ်ဆောင်ချက် သည်
+အမြင့်ဆုံးအမှတ်နေရာ ဟူသော လုပ်ဆောင်ချက် သည်
 အမှတ်များ ဟူသော ကိန်းပြည့် စာရင်း တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 ကိန်းရှင် အဖြေ သည် ၀ ဖြစ်ပါစေ။
@@ -66,14 +66,14 @@ spells out the name of the top student one character at a time.
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၂၊ ၃၅၊ ၉၁၊ ၅၈၊ ၂၄] ဖြစ်ပါစေ။
 ကိန်းရှင် အမည်များ သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ["အောင်အောင်"၊ "သီတာ"၊ "မြမြ"၊ "ဇော်ဇော်"၊ "နန္ဒာ"] ဖြစ်ပါစေ။
 
-ကိန်းရှင် အောင်သူ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အောင်သောအမှတ်များ(အမှတ်များ) ဖြစ်ပါစေ။
-အောင်သူ ကို ပြသမည်။
-အောင်သူ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
-အောင်သူ ကို ပြသမည်။
+ကိန်းရှင် အောင်မှတ်မီအမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမှတ်များ ၏ အောင်သောအမှတ်များ ဖြစ်ပါစေ။
+အောင်မှတ်မီအမှတ်များ ကို ပြသမည်။
+အောင်မှတ်မီအမှတ်များ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
+အောင်မှတ်မီအမှတ်များ ကို ပြသမည်။
 
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အမှတ်များ ၏ အကွက်အရေအတွက်) ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။
-ကိန်းရှင် ပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စုစုပေါင်း(အမှတ်များ) ဖြစ်ပါစေ။
-ကိန်းရှင် ထိပ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ထိပ်ဆုံး(အမှတ်များ) ဖြစ်ပါစေ။
+ကိန်းရှင် ပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမှတ်များ ၏ စုစုပေါင်း ဖြစ်ပါစေ။
+ကိန်းရှင် ထိပ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမှတ်များ ၏ အမြင့်ဆုံးအမှတ်နေရာ ဖြစ်ပါစေ။
 "အရေအတွက် {အရေအတွက်}" ဟု ပြသမည်။
 "စုစုပေါင်း {ပေါင်း}" ဟု ပြသမည်။
 "အများဆုံး {အမှတ်များ ၏ အကွက် ထိပ်}" ဟု ပြသမည်။
@@ -105,19 +105,19 @@ spells out the name of the top student one character at a time.
   scores). Cell 2 of each list belongs to the same student.
 - **Each function walks its list once** with the [loop over each
   cell](../lists/README.md#walking-a-list), so no cell number can run past the end.
-  `ထိပ်ဆုံး` keeps its own count in `နေရာ` to know which cell has the highest score.
+  `အမြင့်ဆုံးအမှတ်နေရာ` keeps its own count in `နေရာ` to know which cell has the highest score.
 - **`အောင်သောအမှတ်များ` builds a new list.** `အဖြေ` starts as `[]`, a list with no cells,
   and [each add](../lists/growing.md#building-a-list) puts a passing score at its end. The
   program start block then removes the last cell, and prints the list before and after.
 - **A returned list is a separate value.** The list that `အောင်သောအမှတ်များ` returns
-  belongs to `အောင်သူ`, so removing a cell from it leaves `အမှတ်များ` as it was.
+  belongs to `အောင်မှတ်မီအမှတ်များ`, so removing a cell from it leaves `အမှတ်များ` as it was.
 - **The average is a whole number.** `ပေါင်း / အရေအတွက်` divides two integers, so 280 / 5
   gives 56. The count of cells is a `usize`, an integer with no sign, so the program
   start block [converts](../operators/conversion.md) it to `ကိန်းပြည့်` first.
 - **The name walk** uses the [loop over each character](../text/characters.md#characters).
   A Burmese letter and the mark on it are two characters, so `မြမြ` prints four lines.
-- **The calls** use the [sign form](../functions/results.md#the-sign-form), `f(x)`, where
-  the result goes into a variable.
+- **The calls on the list** use the [`၏` form](../../manual/language/functions-calls.md#calls-on-a-value).
+  For example, `အမှတ်များ ၏ စုစုပေါင်း` reads as “the total of the scores”.
 - **No list is copied.** Each call passes a list to a function that never writes it, so the
   function reads the caller's cells in place ([What a duplicate
   costs](../forms/costs.md#where-nothing-is-copied)).

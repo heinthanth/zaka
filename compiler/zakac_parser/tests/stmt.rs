@@ -499,7 +499,7 @@ fn a_preposition_holds_words_a_preposition_can_hold()
     // a preposition of several words, and a glued preposition that lexes as
     // several
     assert_eq!(codes(&header("က ခ")), []);
-    assert_eq!(codes(&header("ရှိ ဖိုင်ကို")), []);
+    assert_eq!(codes(&header("လမ်းကြောင်းရှိ အရာကို")), []);
     assert_eq!(codes(&header("၏")), []);
     // a call end, a closer, a sign, and `၏` after the first word
     assert_eq!(codes(&header("ခ မည်")), [Code::BadPreposition]);

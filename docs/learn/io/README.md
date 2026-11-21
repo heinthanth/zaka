@@ -23,12 +23,12 @@ This program writes a word into a file, then reads the file back:
 ```zaka
 "စံကား/အဝင်အထွက်" မှ ရေး၊ ဖိုင်ကိုဖတ် နှင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
 
-မှတ်စု ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+မှတ်စုရေးပြီးဖတ် ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 "မင်္ဂလာပါ" ကို "မှတ်စု.txt" သို့ ရေး မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။
 "မှတ်စု.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ်ကောင်း ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-မှတ်စု သည့် ရလဒ် ကို ပြသမည်။
+မှတ်စုရေးပြီးဖတ် သည့် ရလဒ် ကို ပြသမည်။
 ```
 
 ```text
@@ -62,7 +62,7 @@ use `ဖိုင်ကိုဖတ်`:
 A file might be missing or locked, so each of these calls can fail, and its result is a
 result kind (result type) whose error value is a member of the enumeration (enum)
 `အချက်အလက်အဝင်အထွက်အမှားအယွင်း` ("data input-output error"). For that reason, we put
-the work in a function that can fail, `မှတ်စု`, and each call inside it passes a failure
+the work in a function that can fail, `မှတ်စုရေးပြီးဖတ်`, and each call inside it passes a failure
 on to the caller ([Passing a failure on](../error-handling/passing.md)). The program
 start block (entry point, `main`) cannot pass a failure on, so it prints the whole
 result instead.

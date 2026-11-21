@@ -348,7 +348,7 @@ en = "bad parameter preposition"
 [codes.ZK0241.message]
 en = "\"%{m}\" cannot be a preposition"
 [codes.ZK0241.help]
-en = "a preposition is names and particles, as \"ကို\" or \"ရှိ ဖိုင်ကို\""
+en = "a preposition is names and particles, as \"ကို\" or \"လမ်းကြောင်းရှိ အရာကို\""
 [codes.ZK0241.explain]
 en = """The string after \"ဝိဘတ်\" is the word a preposition call writes after the argument, so its words must be ones a preposition can hold: names, and particles other than the endings \"သည်\", \"ပါ\", \"ဖြစ်ကာ\", \"ပြီးလျှင်\" and \"လက်ခံပြီး\". A preposition can hold several such words, one space apart; a sign, a literal or a call end cannot stand in it."""
 

@@ -157,7 +157,7 @@ pass in unchanged, as the last line of the output shows:
 ```
 <path> နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ် သည့် ရလဒ်
 <text> ကို <path> ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ်
-<path> ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု သည့် ရလဒ်
+<path> ဖိုင်တွဲထဲမှ အမည်များကို စု သည့် ရလဒ်
 ```
 
 The module of [Input and output](../io/README.md), `"စံကား/အဝင်အထွက်"`, can also make a
@@ -169,7 +169,7 @@ calls can fail, so this program prints the whole result of each one:
 
 "notes" နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ် သည့် ရလဒ် ကို ပြသမည်။
 "ဒီနေ့" ကို "notes/day.txt" ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ် ကို ပြသမည်။
-"notes" ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု သည့် ရလဒ် ကို ပြသမည်။
+"notes" ဖိုင်တွဲထဲမှ အမည်များကို စု သည့် ရလဒ် ကို ပြသမည်။
 ```
 
 ```text
@@ -182,7 +182,7 @@ calls can fail, so this program prints the whole result of each one:
 | --- | --- |
 | `"notes" နေရာတွင် ဖိုင်တွဲတစ်ခုပြုလုပ်` | "make a folder at notes" |
 | `"notes/day.txt" ၏ နောက်ဆုံးမှဆက်ရေး` | "write on at the end of notes/day.txt" |
-| `"notes" ရှိ ဖိုင်တွဲအတွင်းရှိ အမည်များကို စု` | "collect the names inside the folder at notes" |
+| `"notes" ဖိုင်တွဲထဲမှ အမည်များကို စု` | "collect the names inside the folder at notes" |
 
 `နောက်ဆုံးမှဆက်ရေး` makes the file when it is not there, which is the reason the folder
 lists `day.txt` afterwards.

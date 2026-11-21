@@ -86,6 +86,7 @@ csr = ["leptos/csr"]
 [build-dependencies]
 cargo-build = { workspace = true }
 zaka_web_builder = { workspace = true }
+zakac_rust_sugars = { workspace = true }
 
 # turf: the sheets of the components, built with their classes renamed after
 # a hash, so no class of one component reaches another. The names come from

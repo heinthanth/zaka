@@ -82,7 +82,7 @@ a.txt → b.txt
 
 We write a preposition in the string as one word or as several: names, particles such as
 `ကို`, `မှ`, `ဖြင့်`, `နှင့်`, `ထဲသို့` and `တွင်`, and other reserved words, as in
-`ရှိ ဖိုင်ကို` or `ကြိမ်မြောက်အကွက်ကို`. The compiler splits the string into words as the
+`လမ်းကြောင်းရှိ အရာကို` or `ကြိမ်မြောက်အကွက်ကို`. The compiler splits the string into words as the
 lexer splits a sentence, so `ကိုသုံး၍` and `ကို သုံး၍` are one preposition, and so are
 `၌ရှိသော` and `၌ ရှိသော`.
 
@@ -90,7 +90,7 @@ lexer splits a sentence, so `ကိုသုံး၍` and `ကို သုံ�
 | --- | --- | --- |
 | a call end (`မည်`, `သည့် ရလဒ်`, …), `ဟူသော`, a literal word, `အနုတ်`, a sign, `၊` or `။` in the string | not allowed, because the call could not end or an argument could not start | ZK0241 |
 | a closing word at the end: `သည်`, `ပါ`, `ဖြစ်ကာ`, `ပြီးလျှင်` or `လက်ခံပြီး` | not allowed; such a word before another word of the preposition is fine, as `ပါ` in `ပါရှိသော` | ZK0241 |
-| `၏` at the start of the last preposition, right before the function | allowed: `p ၏ ဖိုင်အမည်နောက်တွဲ သည့် ရလဒ်` | |
+| `၏` at the start of the last preposition, right before the function | allowed: `"စာ" ကို p ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ်` | |
 | `၏` at the start of another preposition, or of a last one before an [ending phrase](#starting-and-ending-phrases) | not allowed, because elsewhere `x ၏ f` reads a field | ZK0249 |
 | `၏` after the first word of a preposition | not allowed | ZK0241 |
 | a first preposition that starts with `ကို သုံး၍` or `တို့ကို သုံး၍` | not allowed, because these start the arguments-first call | ZK0241 |
@@ -98,7 +98,7 @@ lexer splits a sentence, so `ကိုသုံး၍` and `ကို သုံ�
 ### How a call is read
 
 - A call reads the longest preposition of the function that the words after an argument
-  spell, so `ရှိ ဖိုင်ကို` is one preposition, not `ရှိ` and then a name.
+  spell, so the call reads `လမ်းကြောင်းရှိ အရာကို` as one preposition.
 - Each parameter has one preposition or none. A call gives the arguments in the order of
   the parameters, each with the preposition of its parameter, and nothing after an argument
   whose parameter has none. A different preposition is ZK0331.
