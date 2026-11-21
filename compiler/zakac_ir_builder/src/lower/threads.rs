@@ -634,7 +634,8 @@ impl Lowerer<'_>
 
     /// Lower a wait on several channels: the wait writes the place of the
     /// chosen channel to a hidden slot, and an `if` chain on that slot runs
-    /// the arm of the channel, or the arm of the time limit or of no data.
+    /// the arm of the channel, the closed arm, or the arm of the time limit or
+    /// of no data.
     /// Each arm reads the value of its channel from its own hidden optional.
     ///
     /// # Arguments
@@ -674,11 +675,12 @@ impl Lowerer<'_>
         out.extend(blanks);
         out.push(Stmt::Set { place: chosen, value: none, span });
         out.push(Stmt::Select { pipes, slots: slots.clone(), ms, idle, chosen, span });
-        let is = |l: &Self, at: usize| {
+        let test = |l: &Self, op: CmpOp, at: usize| {
             let at = l.usize_const(at as u32, span);
             let now = read(chosen, DataKind::USIZE, span);
-            node_expr(DataKind::Bool, compare_node(CmpOp::Eq, now, at), span)
+            node_expr(DataKind::Bool, compare_node(op, now, at), span)
         };
+        let is = |l: &Self, at: usize| test(l, CmpOp::Eq, at);
         let mut arms: Vec<ChainArm> = tested
             .iter()
             .zip(&slots)
@@ -695,12 +697,20 @@ impl Lowerer<'_>
                 (Vec::new(), (is(self, i), block, arm.span))
             })
             .collect();
-        let end = n.timeout.as_ref().map(|t| (&t.block, t.span));
-        let end = end.or_else(|| n.idle.as_ref().map(|b| (b, b.span)));
-        let end = end.map(|(b, s)| {
-            (Vec::new(), (is(self, slots.len()), self.block(&b.stmts), s))
+        let count = slots.len();
+        let closed = n
+            .closed
+            .as_ref()
+            .map(|b| (Vec::new(), (is(self, count + 1), self.block(&b.stmts), b.span)));
+        // With no closed arm, the no-data arm runs once each channel is closed
+        // and drained too, as no channel holds a value then.
+        let idle_op = tern!(n.closed.is_some(), CmpOp::Eq, CmpOp::Ge);
+        let end = n.timeout.as_ref().map(|t| (&t.block, t.span, CmpOp::Eq));
+        let end = end.or_else(|| n.idle.as_ref().map(|b| (b, b.span, idle_op)));
+        let end = end.map(|(b, s, op)| {
+            (Vec::new(), (test(self, op, count), self.block(&b.stmts), s))
         });
-        arms.extend(end);
+        arms.extend(closed.into_iter().chain(end));
         out.push(if_chain(arms, Vec::new(), span));
     }
 

@@ -155,3 +155,41 @@ fn text_taken_in_a_loop_of_waits_leaves_no_block_held()
     assert_eq!(String::from_utf8(out).unwrap(), "က\nဂ\nခ\n");
     assert_eq!(machine.leaks(), Vec::new());
 }
+
+/// The closed arm, which prints `ပိတ်`.
+const CLOSED: &str = "မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် \"ပိတ်\" ဟု ပြသမည်။";
+
+#[test]
+fn the_closed_arm_runs_once_each_channel_is_closed_and_drained()
+{
+    let lines = format!(
+        "အလုပ် ထဲသို့ ၁ ကို ပို့မည်။\nအလုပ် ကို ပိတ်မည်။\nရပ် ကို ပိတ်မည်။\n{}\n{}",
+        wait(&format!("{CLOSED}\n{TIMEOUT}")),
+        wait(&format!("{CLOSED}\n{IDLE}"))
+    );
+    assert_eq!(output(&program(&lines)), "အလုပ် ၁\nပိတ်\n");
+}
+
+#[test]
+fn with_no_closed_arm_the_arm_of_no_data_runs_once_each_channel_is_closed()
+{
+    let lines = format!("အလုပ် ကို ပိတ်မည်။\nရပ် ကို ပိတ်မည်။\n{}", wait(IDLE));
+    assert_eq!(output(&program(&lines)), "မရှိ\n");
+}
+
+#[test]
+fn a_loop_of_waits_ends_through_the_closed_arm()
+{
+    let lines = format!(
+        "အလုပ် ထဲသို့ ၁ ကို ပို့မည်။
+အလုပ် ထဲသို့ ၂ ကို ပို့မည်။
+အလုပ် ကို ပိတ်မည်။
+ရပ် ကို ပိတ်မည်။
+ကိန်းရှင် ဆက် သည် မှန် ဖြစ်ပါစေ။
+ဆက် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{}
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။",
+        wait("မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် ဆက် ကို မမှန် ဟု ထားမည်။")
+    );
+    assert_eq!(output(&program(&lines)), "အလုပ် ၁\nအလုပ် ၂\n");
+}

@@ -2503,6 +2503,11 @@ impl Visitor for Checker
             self.visit_block(&arm.block);
             do_if!(pipe.is_some(), _ = self.pipe_reads.pop());
         }
+        if let Some(b) = &n.closed
+        {
+            self.proven = before.clone();
+            self.visit_block(b);
+        }
         if let Some(t) = &n.timeout
         {
             self.proven = before.clone();

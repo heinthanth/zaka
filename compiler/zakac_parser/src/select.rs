@@ -7,6 +7,9 @@
 //! မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် <block>        ← no wait
 //! ```
 //!
+//! The closed arm, `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် <block>`, can stand
+//! right after the arms of the channels, before either of the last two.
+//!
 //! The arms end at the first statement that is no arm, as the arms of a
 //! switch do.
 
@@ -37,6 +40,13 @@ const SECONDS: &str = "စက္ကန့်";
 
 /// The words of a time limit after its unit: within, data, and has not come.
 const TIMEOUT_WORDS: [&str; 3] = ["အတွင်း", "ဒေတာ", "မရောက်လာလျှင်"];
+
+/// The words of the closed arm, joined: from no channel can data come again.
+/// The arm can be written glued or with spaces between its words.
+const CLOSED_ARM: &str = "မည်သည့်လမ်းကြောင်းထံမှဒေတာမရောက်လာနိုင်တော့လျှင်";
+
+/// The most tokens the closed arm can take.
+const CLOSED_TOKENS: usize = 8;
 
 /// The first word of the no-data arm: in no channel.
 const NO_CHANNEL: &str = "မည်သည့်လမ်းကြောင်းတွင်မှ";
@@ -84,6 +94,7 @@ impl Parser<'_>
             arms.push(self.parse_channel_arm()?);
         }
         ret_if!(arms.is_empty(), Err(diag::select_no_arm(start)));
+        let closed = self.closed_arm().map(|n| self.parse_closed(n)).transpose()?;
         let timeout =
             tern!(self.timeout_unit().is_some(), Some(self.parse_timeout()?), None);
         let idle_at = self.peek().span;
@@ -94,8 +105,8 @@ impl Parser<'_>
         );
         let span = start.to(&self.prev_span());
         #[rustfmt::skip]
-        let node = SelectStmt::builder().arms(arms).maybe_timeout(timeout).maybe_idle(idle)
-            .span(span).build();
+        let node = SelectStmt::builder().arms(arms).maybe_closed(closed).maybe_timeout(timeout)
+            .maybe_idle(idle).span(span).build();
         Ok(Stmt::Select(node))
     }
 
@@ -166,6 +177,40 @@ impl Parser<'_>
         let arm = SelectTimeout::builder().count(count).seconds(seconds).block(block).span(span)
             .build();
         Ok(arm)
+    }
+
+    /// The count of tokens of the closed arm that starts here: its words,
+    /// glued or apart, up to `လျှင်`.
+    ///
+    /// # Returns
+    ///
+    /// The count, or `None` when no closed arm starts here.
+    fn closed_arm(&self) -> Option<usize>
+    {
+        let joined = (0..CLOSED_TOKENS).scan(String::new(), |text, n| {
+            text.push_str(self.text_of(self.peek_n(n).span));
+            Some(text.len())
+        });
+        let whole =
+            |(n, len): (usize, usize)| (len == CLOSED_ARM.len()).then_some(n + 1);
+        let n = joined.enumerate().find_map(whole)?;
+        let text: String = (0..n).map(|k| self.text_of(self.peek_n(k).span)).collect();
+        (text == CLOSED_ARM).then_some(n)
+    }
+
+    /// Parse the closed arm: its words, then the block.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The count of tokens of its words.
+    ///
+    /// # Returns
+    ///
+    /// The block, or a diagnostic.
+    fn parse_closed(&mut self, n: usize) -> PResult<zakac_ast::stmt::BlockStmt>
+    {
+        (0..n).for_each(|_| _ = self.bump());
+        self.parse_branch(false)
     }
 
     /// Whether the no-data arm starts here:

@@ -603,12 +603,14 @@ pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
     v.leave(n);
 }
 
-/// Visit the arms of a wait on several channels: each channel arm, then the
-/// count and the block of the time limit, then the no-data block.
+/// Visit the arms of a wait on several channels: each channel arm, the closed
+/// block, then the count and the block of the time limit, then the no-data
+/// block.
 pub fn walk_select<V: Visitor + ?Sized>(v: &mut V, n: &SelectStmt)
 {
     v.enter(n);
     do_for!(arm in &n.arms, v.visit_if_arm(arm));
+    do_if!(let Some(block) = &n.closed, v.visit_block(block));
     if let Some(t) = &n.timeout
     {
         v.visit_expr(&t.count);
@@ -1428,6 +1430,7 @@ pub fn walk_select_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SelectStmt)
         v.visit_expr_mut(&mut arm.cond);
         v.visit_block_mut(&mut arm.block);
     }
+    do_if!(let Some(block) = &mut n.closed, v.visit_block_mut(block));
     if let Some(t) = &mut n.timeout
     {
         v.visit_span_mut(&mut t.span);

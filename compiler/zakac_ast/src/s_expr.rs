@@ -598,7 +598,7 @@ fn if_sexpr(s: &IfStmt) -> String
     list("if", arms.chain(else_part))
 }
 
-/// `(select cond {..} cond {..} after count {..} idle {..})`.
+/// `(select cond {..} cond {..} closed {..} after count {..} idle {..})`.
 ///
 /// # Arguments
 ///
@@ -617,7 +617,8 @@ fn select_sexpr(s: &SelectStmt) -> String
         .iter()
         .flat_map(|t| [unit(t), t.count.to_sexpr(), t.block.to_sexpr()]);
     let idle = s.idle.iter().flat_map(|b| ["idle".to_string(), b.to_sexpr()]);
-    list("select", arms.chain(after).chain(idle))
+    let closed = s.closed.iter().flat_map(|b| ["closed".to_string(), b.to_sexpr()]);
+    list("select", arms.chain(closed).chain(after).chain(idle))
 }
 
 /// `(switch subject case {..} case {..} else kind {..})`.

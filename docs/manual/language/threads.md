@@ -358,6 +358,7 @@ the order of the turns:
 အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
 <pipe> ထဲတွင် ဒေတာ ရှိလျှင် <block>
 <pipe> ထဲတွင် ဒေတာ ရှိလျှင် <block>
+မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် <block>
 <n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် <block>
 မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် <block>
 ```
@@ -365,8 +366,9 @@ the order of the turns:
 A wait on several channels (select) takes the next value of the first channel that has
 one. The opener line starts it, and an arm for each channel follows, with the test that
 `အကယ်၍` uses for a channel. The arms end at the first statement that is no arm, as the
-arms of a switch do. After the arms of the channels, one more arm can tell what happens
-when no value comes: a time limit, or no wait at all.
+arms of a switch do. After the arms of the channels, the closed arm can tell what happens
+once no value can come again, and one more arm can tell what happens when no value comes
+now: a time limit, or no wait at all.
 
 - The wait runs one arm, that of the channel whose value it took, and `<pipe> ထဲမှ ဒေတာ`
   inside that arm is the value. The take is a receive, so no other thread can take the
@@ -376,19 +378,24 @@ when no value comes: a time limit, or no wait at all.
   so a run gives the same output each time; with `--shuffle-thread-order=<seed>` the VM
   draws the pick from the seed, and the same seed gives the same picks again.
 - A channel that is closed and drained counts as holding no value. Once each channel of
-  the wait is closed and drained, the wait runs no arm and the program goes on.
+  the wait is closed and drained, no value can come again: the closed arm,
+  `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်`, runs then. We can write its last word glued, as here, or apart, as
+  `ဒေတာ မရောက်လာနိုင်တော့လျှင်`. With no closed arm, the arm of no data runs in its place;
+  with neither, the wait runs no arm and the program goes on. A loop around a wait thus
+  needs the closed arm, or another exit, to end once the channels are closed.
 - `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` runs its block when no value came within `<n>`
   milliseconds, and `<n> စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` within `<n>` seconds. `<n>` is a
   `usize`, as the count of a [sleep](#sleeping) is.
 - `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` does not wait: its block runs at once when no
   channel holds a value at that moment, an open channel with nothing in it included. A
-  value that waits in a channel wins over this arm. A loop around such a wait, with no
+  value that waits in a channel wins over this arm, and so does the closed arm. A loop around such a wait, with no
   other work, keeps a core at work.
 - The form waits once. To watch the channels, we put it in a loop.
 - In a native program, a light task that waits gives its OS thread to the other tasks, as
   a receive does.
-- An opener with no arm of a channel after it is ZK0264, and a wait with both a time limit
-  and the arm of no data is ZK0265. An arm whose test names a value that is not a channel
+- The closed arm goes with either the time limit or the arm of no data, and stands
+  before them. An opener with no arm of a channel after it is ZK0264, and a wait with both
+  a time limit and the arm of no data is ZK0265. An arm whose test names a value that is not a channel
   is ZK0495, and a read of the channel of another arm is ZK0496.
 
 Here a thread sends three values, waits, then sends on the channel `ရပ်`. The loop prints
@@ -424,6 +431,39 @@ each value, prints a line each time 40 milliseconds pass with no value, and ends
 အလုပ် ၃
 စောင့်နေ
 စောင့်နေ
+ပြီး
+```
+
+With the closed arm, a loop ends once the sender has closed each channel and the loop has
+taken each value:
+
+```zaka
+ထုတ် ဟူသော လုပ်ဆောင်ချက် သည် အလုပ် ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လည်းကောင်း ရပ် ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အလုပ် ထဲသို့ န ကို ပို့မည်။
+အလုပ် ကို ပိတ်မည်။
+ရပ် ကို ပိတ်မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အလုပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ရပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို အလုပ် နှင့် ရပ် တို့ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ကိန်းရှင် ဆက် သည် မှန် ဖြစ်ပါစေ။
+ဆက် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+အလုပ် ထဲတွင် ဒေတာ ရှိလျှင် "အလုပ် {အလုပ် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ရပ် ထဲတွင် ဒေတာ ရှိလျှင် "ရပ်" ဟု ပြသမည်။
+မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် ဆက် ကို မမှန် ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+"ပြီး" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အလုပ် ၁
+အလုပ် ၂
+အလုပ် ၃
 ပြီး
 ```
 

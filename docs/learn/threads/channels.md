@@ -192,8 +192,8 @@ sends on `ရပ်`. Each arm reads its value with `<channel> ထဲမှ ဒ�
   not a channel is the error ZK0495.
 - **Waiting on several channels.** When values wait in several channels, the wait picks
   one at random; on the VM it picks the first, so a run gives the same output each time. A
-  channel that is closed and drained holds no value, and once each one is, the wait runs no
-  arm. `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit runs at once when no
+  channel that is closed and drained holds no value, and once each one is, the arm
+  `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်` runs, so a loop around the wait can end there. `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit runs at once when no
   channel holds a value ([Waiting on several channels](../../manual/language/threads.md#waiting-on-several-channels)).
 - **Deadlock.** A receive from a channel that no thread sends to or closes would wait
   forever, so the program stops with the trap `deadlock` instead

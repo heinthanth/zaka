@@ -380,14 +380,18 @@ pub struct LockStmt
 }
 
 /// A wait on several channels at once, which runs the arm of a channel that has
-/// a value: one at random when several have one, the time-limit arm when none
-/// came in time, and the no-data arm, with no wait, when none has one now.
+/// a value: one at random when several have one, the closed arm once each
+/// channel is closed and drained, the time-limit arm when none came in time,
+/// and the no-data arm, with no wait, when none has one now.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct SelectStmt
 {
     /// The arms of the channels: each condition tests a channel for data,
     /// `<pipe> ထဲတွင် ဒေတာ ရှိလျှင်`.
     pub arms: Vec<IfArm>,
+    /// The closed arm, `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်`: each channel is
+    /// closed and drained.
+    pub closed: Option<BlockStmt>,
     /// The time-limit arm, `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်`.
     pub timeout: Option<SelectTimeout>,
     /// The no-data arm, `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်`.

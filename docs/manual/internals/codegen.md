@@ -223,7 +223,7 @@ A statement is one of these forms:
 | `Fill { dst, count, value }` | set `count` cells at the address `dst` to `value`; written `(fill ...)` |
 | `Wait { thread, kind, span }` | a wait for a thread whose result is dropped |
 | `Send { pipe, value, span }`, `Close { pipe, span }` | send a value into a channel, or close it |
-| `Select { pipes, slots, ms, idle, chosen }` | a wait on several channels: the value goes to the optional of its channel in `slots`, and `chosen` gets the place of that channel, the count of channels for the time limit or no data, or that count plus one once each is closed and drained; an `if` chain on `chosen` follows; written `(select ...)` |
+| `Select { pipes, slots, ms, idle, chosen }` | a wait on several channels: the value goes to the optional of its channel in `slots`, and `chosen` gets the place of that channel, the count of channels for the time limit or no data, or that count plus one once each is closed and drained; an `if` chain on `chosen` follows, where the closed arm tests the count plus one and, with no closed arm, the arm of no data takes both; written `(select ...)` |
 | `Lock`, `Unlock` | take and release the lock of a shared object, around a lock block |
 | `AtomicAdd { addr, value, sub }`, `AtomicSet` | add to (or subtract from) an atomic number, or set an atomic field, in one step |
 | `Rings` | work of the ring collector: run it, pause it, resume it or set its threshold |

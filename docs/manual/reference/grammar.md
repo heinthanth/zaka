@@ -609,8 +609,10 @@ channel-loop = expr "မှ" received ( "ဒေတာတိုင်း" "ကိ
                name "အနေဖြင့်" "ယူ၍" branch ;
 lock-block   = name "ကို" ( "ခေတ္တ" | "ခဏ" ) "ယူ၍" branch ;
 select       = "အောက်ပါ" "ဒေတာလမ်းကြောင်းများ" "ထဲမှ" "ဦးစွာရောက်လာသော" "ဒေတာ" "ကို"
-               "စောင့်" "မည်" "။" channel-arm { channel-arm } [ time-arm | idle-arm ] ;
+               "စောင့်" "မည်" "။" channel-arm { channel-arm } [ closed-arm ]
+               [ time-arm | idle-arm ] ;
 channel-arm  = name "ထဲတွင်" "ဒေတာ" "ရှိ" "လျှင်" branch ;
+closed-arm   = "မည်သည့်လမ်းကြောင်း" "ထံမှ" "ဒေတာ" "မရောက်လာနိုင်တော့" "လျှင်" branch ;
 time-arm     = value ( "မီလီစက္ကန့်" | "စက္ကန့်" ) "အတွင်း" "ဒေတာ" "မရောက်လာလျှင်" branch ;
 idle-arm     = "မည်သည့်လမ်းကြောင်းတွင်မှ" "ဒေတာ" "မရှိ" "လျှင်" branch ;
 threads-mark = "အပြိုင်လုပ်ငန်းများတွင်" "အသုံးပြုနိုင်သော" ;
@@ -629,7 +631,8 @@ channel-kind = kind [ digits name ] ( "ပို့နိုင်သော" | "
   write `ခုခွဲ၍` glued or as `ခု ခွဲ၍`.
 - `receive` and `par-map` are reads, as the data reads of [Expressions](#expressions) are.
 - The arms of a `select` end at the first statement that is no arm, as the arms of a
-  switch do. A `select` with no `channel-arm` is ZK0264, and one with both a `time-arm`
+  switch do. The words of `closed-arm` can be glued or written apart. A `select` with no
+  `channel-arm` is ZK0264, and one with both a `time-arm`
   and an `idle-arm` is ZK0265 ([Threads](../language/threads.md#waiting-on-several-channels)).
 - In a lock block, we can glue the last two words, as in `ခေတ္တယူ၍`, or write them apart.
   The glued form has `ယူ၍` alone, while the form written apart takes each spelling of

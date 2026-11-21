@@ -16,6 +16,9 @@ const ARMS: &str = "က ထဲတွင် ဒေတာ ရှိလျှင်
 /// The arm of a time limit of 500 milliseconds.
 const MILLIS: &str = "၅၀၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် \"ကုန်\" ဟု ပြသမည်။";
 
+/// The closed arm, glued as written.
+const CLOSED: &str = "မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် \"ပိတ်\" ဟု ပြသမည်။";
+
 /// The arm of no data.
 const IDLE: &str = "မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် \"မရှိ\" ဟု ပြသမည်။";
 
@@ -57,4 +60,23 @@ fn a_time_limit_and_an_arm_of_no_data_together_is_zk0265()
         codes(&format!("{OPENER}\n{ARMS}\n{MILLIS}\n{IDLE}")),
         [Code::SelectTwoEnds]
     );
+}
+
+#[test]
+fn the_closed_arm_reads_glued_or_apart()
+{
+    let tree = stmt(&format!("{OPENER}\n{ARMS}\n{CLOSED}"));
+    assert!(tree.contains("closed"), "{tree}");
+    let apart = "မည်သည့်လမ်းကြောင်းထံမှ ဒေတာ မရောက်လာနိုင်တော့လျှင် \"ပိတ်\" ဟု ပြသမည်။";
+    let tree = stmt(&format!("{OPENER}\n{ARMS}\n{apart}"));
+    assert!(tree.contains("closed"), "{tree}");
+}
+
+#[test]
+fn the_closed_arm_goes_with_a_time_limit_or_the_arm_of_no_data()
+{
+    let tree = stmt(&format!("{OPENER}\n{ARMS}\n{CLOSED}\n{MILLIS}"));
+    assert!(tree.contains("closed") && tree.contains("after-ms"), "{tree}");
+    let tree = stmt(&format!("{OPENER}\n{ARMS}\n{CLOSED}\n{IDLE}"));
+    assert!(tree.contains("closed") && tree.contains("idle"), "{tree}");
 }

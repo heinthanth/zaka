@@ -54,3 +54,33 @@ fn a_time_limit_that_is_no_count_is_refused()
 \"၂\" မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် \"ကုန်\" ဟု ပြသမည်။";
     assert!(!codes(&wait(arms)).is_empty());
 }
+
+/// A function that returns from a wait on the channel `လမ်း`, with these end
+/// arms after the arm of the channel.
+fn returning(ends: &str) -> String
+{
+    format!(
+        "ယူ ဟူသော လုပ်ဆောင်ချက် သည် လမ်း ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+{OPENER}
+လမ်း ထဲတွင် ဒေတာ ရှိလျှင် လမ်း ထဲမှ ဒေတာ ကို ပြန်ပေးမည်။
+{ends}
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။"
+    )
+}
+
+#[test]
+fn a_wait_with_the_closed_arm_returns_on_each_path()
+{
+    let closed = "မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင် ၀ ကို ပြန်ပေးမည်။";
+    assert_eq!(codes(&returning(closed)), []);
+    let timed = format!("{closed}\n၁ စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် ၁ ကို ပြန်ပေးမည်။");
+    assert_eq!(codes(&returning(&timed)), []);
+}
+
+#[test]
+fn a_wait_with_neither_the_closed_arm_nor_the_arm_of_no_data_can_end_with_no_return()
+{
+    let timed = "၁ စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် ၁ ကို ပြန်ပေးမည်။";
+    assert_eq!(codes(&returning(timed)), [Code::EndWithoutReturn]);
+}

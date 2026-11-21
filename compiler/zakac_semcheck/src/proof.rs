@@ -276,13 +276,16 @@ pub(crate) fn returns_on_each_path(stmts: &[Stmt], full: &HashSet<Span>) -> bool
         Stmt::Return(_) => true,
         Stmt::Block(b) => gives(b),
         Stmt::Lock(n) => gives(&n.block),
-        // A wait needs its no-data arm to run an arm on each path: with each
-        // channel closed, a wait with no such arm runs none.
+        // A wait runs an arm on each path when it has the closed arm or the
+        // no-data arm: once each channel is closed and drained, one of the two
+        // runs, and with neither, no arm runs.
         Stmt::Select(n) =>
         {
-            n.idle.as_ref().is_some_and(gives)
+            (n.closed.is_some() || n.idle.is_some())
                 && n.arms.iter().all(|a| gives(&a.block))
+                && n.closed.as_ref().is_none_or(gives)
                 && n.timeout.as_ref().is_none_or(|t| gives(&t.block))
+                && n.idle.as_ref().is_none_or(gives)
         }
         Stmt::If(n) =>
         {
@@ -349,6 +352,7 @@ fn breaks_out(stmts: &[Stmt]) -> bool
         Stmt::Select(n) =>
         {
             n.arms.iter().any(|a| block(&a.block))
+                || n.closed.as_ref().is_some_and(block)
                 || n.timeout.as_ref().is_some_and(|t| block(&t.block))
                 || n.idle.as_ref().is_some_and(block)
         }
