@@ -5,16 +5,14 @@ description: Each form of statement (sentence) in Zaka at a glance, the verb tha
 
 # Statements
 
-A program is a list of statements, which run from the first to the last. Each statement
-is a Burmese sentence that ends with `။`, and the verb at the end of the sentence decides
-what the statement does. A statement does something and has no value, while an
-[expression](expressions.md) has a value and sits inside a statement.
+A statement tells the program to do something. It ends with `။`, and the verb at the end
+of the sentence determines the action. A statement can contain an
+[expression](expressions.md) to compute a value for that action.
 
-This page lists each form of statement, states the rules that all statements share, and
-covers printing, calls, returns and the heap statements. Two more pages state the other
-forms in full: [Declarations and assignment](declarations.md) and [Blocks, branches and
-loops](control-flow.md). [Zaka sentences](../../learn/sentences/README.md) in the Learn
-book introduces the sentence shape with gentle examples.
+This page lists the statement forms and covers printing, calls, returns and heap
+operations in detail. See [Declarations and assignment](declarations.md) for variables
+and constants and [Blocks, branches and loops](control-flow.md) for control flow. For
+a first example of a Zaka statement, see [Zaka sentences](../../learn/sentences/README.md).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -122,10 +120,10 @@ help: a statement ends in "ပြသမည်", "ထားမည်" or "ကိ�
 error[ZK0206]: "ထားမည်" needs "ကို" after operand 1, found ဟု
 ```
 
-The example shows how the compiler recovers from an error: it skips to the next `။` and
-goes on, so one run reports the mistakes of several statements. A missing `။` joins the
-statement with the next one in the report. A program with an error of this kind is not
-checked for names and data kinds, and it does not run.
+After a parse error, the compiler skips to the next `။` and resumes parsing. This
+lets it report mistakes in several statements at once. If a `။` is missing, the
+parser treats the next statement as part of the current one. A parse error stops
+compilation before the compiler checks names and data kinds.
 
 ## Printing
 
@@ -141,11 +139,12 @@ cells between `[` and `]`, and a struct as its name and its fields. Text inside 
 a struct prints in quotes. A template slot in a string literal writes its value with the
 same rules ([Text](text.md#the-text-of-a-value)).
 
-We write `ကို` after a plain value, a text variable included, and `ဟု` after a string
-literal, after a `+` join that contains one, or after a whole sentence, which is a clause
-that ends in a verb with a polite ending. The other particle still runs but gets a
-warning, ZK0505 or ZK0506, and [Natural wording](naturalness.md) has the rules. A logical
-expression needs parentheses (ZK0204).
+Use `ကို` after a plain value, including a text variable. Use `ဟု` after a string
+literal, a `+` join that contains a string literal, or a clause that ends in a verb
+with a polite ending. The compiler accepts either particle and warns (ZK0505 or
+ZK0506) if the other particle sounds more natural. See [Natural
+wording](naturalness.md) for the full rules. A logical expression needs parentheses
+(ZK0204).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

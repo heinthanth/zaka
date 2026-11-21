@@ -5,9 +5,9 @@ description: The common mistakes with lists, the message Zaka shows for each one
 
 # List mistakes
 
-This page goes through the common mistakes with lists (dynamic arrays). Some of them stop
-the compiler with an error, and others stop the program while it runs, because the number
-of cells in a list is known just at that point.
+Some mistakes with lists (dynamic arrays) are caught at compile time. A list can change
+length when the program runs, so other errors, such as reading past the end of a list,
+can also surface at run time.
 
 ## You will learn
 

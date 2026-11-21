@@ -5,10 +5,10 @@ description: Blocks, the if statement and each loop of Zaka - while, counted, ea
 
 # Blocks, branches and loops
 
-This page covers control flow: the block that groups statements, the if statement that
-picks a branch, the four loops, and the statements that leave a loop or skip a round.
-[Control flow](../../learn/control-flow/README.md) in the Learn book introduces them with
-gentle examples, and the switch is on [Enumerations](enums.md#switch).
+Control flow determines which statements run and in what order. This page covers blocks,
+`if` branches, the four loop forms, and the statements that exit a loop or skip a round.
+For a guided example, see [Control flow](../../learn/control-flow/README.md) in Learn.
+For the rules of `switch`, see [Enumerations](enums.md#switch).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

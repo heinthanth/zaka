@@ -5,10 +5,10 @@ description: Text, paths, lists and files with the modules the compiler carries 
 
 # The stdlib
 
-The compiler comes with a few modules of prepared functions, the stdlib (standard
-library). We import the names we need from a module, the same as from a file of our own
-([Modules](../modules/README.md)), and then call them like the functions we write. This
-page shows the modules for text, paths, lists, and files and folders.
+The stdlib (standard library) comes with the compiler and includes functions for text,
+paths, lists, files and folders. We can import and call these functions in the same
+form as functions from our own modules. See [Modules](../modules/README.md) for how
+imports work.
 
 ## You will learn
 

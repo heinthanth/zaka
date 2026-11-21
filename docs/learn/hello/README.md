@@ -34,21 +34,20 @@ Here is the greeting in Zaka:
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-The middle line is a sentence (statement) in Burmese, and word for word it means
-*"Hello, world" — thus, please show.* To print a line of text (string), we write the
-text in double quotes and follow it with `ဟု ပြသမည်။`:
+The line with the greeting is a Burmese sentence (statement). Word for word, it means
+*"Hello, world" — thus, please show.* To print a line of text (string), put it in
+double quotes and follow it with `ဟု ပြသမည်။`.
 
 ```
 "<text>" ဟု ပြသမည်။
 ```
 
-We can put other text between the quotes, while the rest of the sentence does not change.
-The table shows what each part does:
+To print a different greeting, change the text between the quotes.
 
 | Zaka | Reads as | What it does |
 | --- | --- | --- |
 | `"မင်္ဂလာပါ ကမ္ဘာကြီး"` | "Hello, world" | the text to print, in double quotes |
-| `ဟု` | "so" (quoting) | turns the words before it into a quote |
+| `ဟု` | "so" (quoting) | marks the preceding text as a quote |
 | `ပြသမည်` | "please show" | the command: print a line |
 | `။` | full stop | ends the sentence |
 
@@ -72,11 +71,11 @@ two fixed lines: `ပရိုဂရမ်သည် အောက်ပါတိ�
 | `ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။` | "the program will do the following" |
 | `ပရိုဂရမ် ပြီးဆုံးပါပြီး။` | "the program is done" |
 
-When the program runs, it starts at `ပရိုဂရမ်သည်` and runs the sentences one after
-another until it reaches the last line, which we call the block closer (end of a block). A program has
-just one program start block, and each sentence that runs must go inside it. All the
-examples in this book begin and end with these two lines, and [Where a program
-starts](../programs/start.md) shows what else a program start block can do.
+The program starts at `ပရိုဂရမ်သည်` and runs the sentences inside the block in order.
+The last line is the block closer (end of a block). A program has one program start
+block. Later examples often leave it out and let [REPL
+mode](../../manual/language/functions-start-block.md#repl-mode) create it. See
+[Where a program starts](../programs/start.md) for more on the block.
 
 ## Running it
 

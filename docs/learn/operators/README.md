@@ -5,10 +5,9 @@ description: Work with values through Burmese words or signs.
 
 # Operators
 
-An operator works on one or two values and returns a new value, so `+` adds two numbers
-and `<` compares them. Zaka has two forms for most operators: a sign form, the same as in
-school maths, and a word form, which is a short Burmese phrase. Both forms mean the same
-thing, and we can use whichever one reads better.
+Operators combine, compare or transform values. For example, `+` adds two numbers and
+`<` compares them. Most operators have both a sign form, such as `+`, and an equivalent
+word form in Burmese.
 
 ## You will learn
 

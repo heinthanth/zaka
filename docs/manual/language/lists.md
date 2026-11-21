@@ -5,15 +5,12 @@ description: The data kinds of lists, list literals, cells and cell numbers, add
 
 # Lists
 
-A list (dynamic array) keeps several values of one data kind (type) next to each other in
-RAM. Each value sits in a *cell* (element), and we reach a cell through its *cell number*
-(index). A list comes in two forms: a plain list gets its count from its value when the
-program runs, so it can grow and shrink, while a counted list (fixed-size array) has its
-count in its data kind, so the count is known before the program runs. This page covers
-what the two forms share and how a plain list grows; [Counted lists and
-storage](counted-lists.md) covers the count of a counted list, static data and how each
-form sits in RAM. The Learn book teaches lists in small steps in
-[Lists](../../learn/lists/README.md).
+A list holds values of one data kind (type) in order. Each value occupies a *cell*
+(element), which we access through its *cell number* (index). A plain list (dynamic
+array) can grow or shrink while the program runs. A counted list (fixed-size array) has
+a length fixed in its data kind. For rules specific to counted lists and for storage
+details, see [Counted lists and storage](counted-lists.md). For a first example, see
+[Lists](../../learn/lists/README.md) in Learn.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

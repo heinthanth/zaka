@@ -5,9 +5,9 @@ description: Take a run of cells from a list or from text as a separate list or 
 
 # Ranges
 
-A *range* (slice) is a run of cells that we take from a list or from text, counted from
-0. A range of a list is a new list, and a range of text is new text, so we can store,
-print and pass a range like each other list or text.
+A *range* (slice) takes consecutive cells from a list or a piece of text. Cell numbers
+start at 0. A list range produces a new list, and a text range produces new text, so we
+can store, print or pass either result.
 
 ## You will learn
 

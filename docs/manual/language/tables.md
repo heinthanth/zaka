@@ -5,12 +5,11 @@ description: The table data kind, which finds each row through its index - the d
 
 # Tables
 
-A table (map) keeps rows (entries), and each row has an index (key), which finds it, and a
-value. We write the data kind with the word `ဇယား`. No two rows of one table have equal
-indexes. A list reaches a value through the number of its cell, while a table reaches it
-through the index, which can be text, a number, a struct or another data kind (type) that
-can be hashed. The rows keep the order in which their indexes were first added. The Learn
-book teaches tables in small steps in [Tables](../../learn/tables/README.md).
+A table (map) stores rows (entries). Each row pairs an index (key) with a value. An
+index identifies at most one row and can be text, a number, a struct or another data
+kind (type) that supports hashing. Rows retain the order in which their indexes were
+first added. Use `ဇယား` to write a table data kind. For examples, see
+[Tables](../../learn/tables/README.md) in Learn.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

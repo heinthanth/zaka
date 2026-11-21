@@ -5,11 +5,10 @@ description: The shape of each form of the language, rule after rule, in one pla
 
 # Grammar
 
-This page gives the grammar of Zaka: the shape of each form that the parser
-reads, rule after rule. It covers shapes alone, so for what a form means, and for the
-checks that the compiler runs after parsing, we follow the link at the end of each section
-to the language page. [Reserved words](reserved-words.md) lists the reserved words, and
-[Operator precedence](precedence.md) gives the order of the operators.
+This page lists the forms the parser accepts. Follow the links in each section for what
+a form means and what the compiler checks after parsing. See [Reserved
+words](reserved-words.md) and [Operator precedence](precedence.md) for the word list and
+the rules for grouping operators.
 
 ## The notation
 

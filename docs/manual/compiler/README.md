@@ -5,13 +5,13 @@ description: An overview of zakac, the compiler that turns Zaka sentences into o
 
 # The compiler
 
-`zakac` reads a Zaka program, checks it, and turns it into the operations (instructions)
-that the Zaka VM (virtual machine) runs, or into machine code: through Cranelift
-(`zakac build --backend native`, or `zakac run`, which runs it at once) or through C
-(`zakac build --backend c`). It is built as a chain of small stages (compiler passes).
-Each stage reads what the stage before it made, adds its checks and passes the result on,
-and a stage that finds an error ends the chain, so the program does not run. [Hello,
-world](../../learn/hello/README.md#running-it) shows the first run.
+`zakac` checks a Zaka program and generates operations (instructions) for the Zaka VM
+(virtual machine) or machine code for the host. To build an executable, use
+`zakac build --backend native` for Cranelift or `zakac build --backend c` for C.
+`zakac run` compiles and runs a source file in one step. The compiler does its work in
+stages (compiler passes). Each stage uses the result of the previous stage, and an error
+stops compilation at the end of the stage that found it. For a first run, see [Hello,
+world](../../learn/hello/README.md#running-it).
 
 ```text
 source text

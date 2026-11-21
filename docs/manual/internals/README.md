@@ -5,11 +5,9 @@ description: A tour of the crates, how to build, test and format the workspace, 
 
 # Inside the compiler
 
-This chapter is for contributors. It describes the Rust code of the compiler as it is
-now and changes with it: when a crate is reworked, its page is rewritten, so each page
-here is a map of the current code and not a promise. To use the language, read
-[The compiler](../compiler/README.md) and [The VM](../vm/README.md), which name the
-stages; the pages of this chapter open each stage up.
+This chapter describes how the compiler is built and where contributors can find the
+code for each stage. For commands, compiler stages and how programs run, see [The
+compiler](../compiler/README.md) and [The VM](../vm/README.md).
 
 ## The pipeline in crates
 

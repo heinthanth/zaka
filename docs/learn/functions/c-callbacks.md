@@ -5,10 +5,9 @@ description: Pass a function of the program to C so that C can call it later, an
 
 # Callbacks and handles
 
-Some C functions keep something for later. A C function can keep a function of the
-program and call it later, which C calls a *callback*, and a C lib can keep a struct of its
-own and hand the program a pointer to it, which is a *handle* (opaque pointer). This page
-shows both, after [Calling C](c.md).
+We can pass a Zaka function to C so that C can call it later. This is a *callback*. A C
+lib can also give us a pointer to a struct it manages, called a *handle* (opaque
+pointer). This page builds on [Calling C](c.md) with an example of each.
 
 ## You will learn
 

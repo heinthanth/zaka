@@ -5,8 +5,9 @@ description: Repeat sentences as long as a condition is true.
 
 # While loops
 
-A loop runs its inner part again and again. A `while` loop keeps going as long as a
-condition is true, and in Zaka we write it as "as long as *condition*, do the following".
+A `while` loop tests a condition before each round and runs its block as long as the
+condition is true. In Zaka, the line that opens the loop reads "as long as *condition*,
+do the following".
 
 ## You will learn
 

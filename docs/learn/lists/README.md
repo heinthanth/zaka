@@ -5,9 +5,9 @@ description: Keep several values of one data kind in order, and reach each one t
 
 # Lists
 
-A *list* (dynamic array) keeps several values of one data kind (type) in order. Each value
-sits in a *cell* (element), and we reach a cell through its *cell number* (index), so a
-list of scores can keep all the scores of a class under one name.
+A *list* (dynamic array) stores values of the same data kind (type) in order. For
+example, we can keep the scores for a class in one list. Each score occupies a *cell*
+(element), and its *cell number* (index) lets us read or update it.
 
 ## You will learn
 
@@ -54,11 +54,10 @@ whole list, the output shows its cells between `[` and `]`, with `၊` between t
 <value>၊ <value> နှင့် <value> တို့ပါသော စာရင်း
 ```
 
-A value such as `[၀၊ ၀၊ ၀]` is a *list literal*: it writes out each cell, and so it also
-sets the number of cells in the list. We can also write the same literal in words, with `နှင့်`
-before the last cell and `တို့ပါသော စာရင်း` ("the list that contains these") at the end. The
-two forms mean the same thing, and a list prints in the bracket form. In this example,
-`အကွက်အရေအတွက်` ("cell count") gives the number of cells:
+A *list literal* such as `[၀၊ ၀၊ ၀]` gives the list one cell for each value inside
+the brackets. To write the same list in words, put `နှင့်` before the last value and
+`တို့ပါသော စာရင်း` ("the list that contains these") after it. A list prints with brackets
+in both cases. Use `အကွက်အရေအတွက်` ("cell count") to find its length.
 
 ```zaka
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
@@ -74,9 +73,9 @@ two forms mean the same thing, and a list prints in the bracket form. In this ex
 [[၁၊ ၂]၊ [၃၊ ၄]]
 ```
 
-When we set a list to a new value, it gets the cells of that value and their count, so the
-number of cells is not fixed when the program is written. A bracket list can also contain
-other bracket lists, as the last line shows, and [Lists of lists](grids.md) explains them.
+Assigning `[၁၊ ၂]` replaces the original three-cell list with a two-cell list. The
+last line shows how a list literal can contain other lists. See [Lists of
+lists](grids.md) for more examples.
 
 ## A list with no cells
 
@@ -117,9 +116,8 @@ The cell count is a word phrase, so we put it in parentheses before an operator 
 <list> ၏ <number> ခုမြောက်အကွက်
 ```
 
-We have two methods to number the cells. `အကွက် ၀` counts from 0, as most programming
-languages do, while `၁ ခုမြောက်အကွက်` ("the 1st cell") counts from 1, as people do, so
-both of these reach the first cell:
+The cell number starts at 0 after `အကွက်` and at 1 before `ခုမြောက်အကွက်`.
+Both `အကွက် ၀` and `၁ ခုမြောက်အကွက်` select the first cell.
 
 ```zaka
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၀၊ ၈၅၊ ၉၀] ဖြစ်ပါစေ။

@@ -5,10 +5,9 @@ description: Write to the screen and to files, read files and lines, with the st
 
 # Input and output
 
-A program reads and writes the world outside it (input and output, I/O) through the
-functions of the stdlib (standard library) module `"စံကား/အဝင်အထွက်"`, whose name
-means "input and output". The compiler comes with the module, so we import from it as we
-would from another file, and no file needs to sit next to the program.
+The stdlib (standard library) module `"စံကား/အဝင်အထွက်"` handles input and output
+(I/O), such as reading a line or writing a file. The module comes with the compiler,
+so we can import its functions without adding a file to the program folder.
 
 ## You will learn
 

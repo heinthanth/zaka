@@ -5,10 +5,9 @@ description: Run a function while the rest of the program goes on: start a threa
 
 # Threads
 
-A thread (`အပြိုင်လုပ်ငန်း`) runs a function while the rest of the program goes on, much as
-a cook puts rice on the fire and cuts the onions while the rice boils. We start a thread
-when two pieces of work do not need each other, and we wait for its result once we need
-it.
+A thread (`အပြိုင်လုပ်ငန်း`) lets a function run while the rest of the program
+continues. Start a thread when two pieces of work can proceed on their own, then wait
+for its result when the program needs it.
 
 ## You will learn
 

@@ -5,12 +5,11 @@ description: How the compiler reads a file - encoding, sentences, spaces, commen
 
 # Source text and words
 
-Before the compiler asks what a program means, it cuts the file into words (tokens).
-Burmese is written without spaces between words, and the compiler has no word list, so a
-few plain rules decide where one word ends and the next one begins. This page states those
-rules, from the file itself up to the literals. [Zaka sentences](../../learn/sentences/README.md)
-and [Spaces between words](../../learn/sentences/spacing.md) in the Learn book introduce
-them with gentle examples.
+The compiler splits a source file into words (tokens) before it parses the program.
+Burmese leaves out spaces between words, so Zaka uses a set of rules to find the ends of
+tokens. This page covers source encoding, spaces, comments, names and literals. For
+examples, see [Zaka sentences](../../learn/sentences/README.md) and [Spaces between
+words](../../learn/sentences/spacing.md) in Learn.
 
 ## Source files
 

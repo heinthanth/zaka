@@ -5,11 +5,9 @@ description: Part II of Learn - take ranges of lists and text, see where their c
 
 # Copies and storage
 
-This page starts Part II of Learn. Part I taught Zaka with values and shared objects:
-each assignment and each call makes a separate value, a duplicate (copy), and we never had
-to ask where in storage (memory) the cells of text or a list live. Programs written like
-that still mean the same thing here, while Part II shows what the duplicates cost and the
-forms that keep the cost down.
+Part I showed how to work with values and shared objects without managing storage
+(memory). Part II looks at how Zaka stores text and lists, what a duplicate (copy)
+costs, and which forms give us more control over that cost.
 
 ## You will learn
 

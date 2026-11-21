@@ -5,11 +5,10 @@ description: Part III of Learn - mark code as unsafe with စိတ်မချ�
 
 # Unsafe Zaka
 
-This page starts Part III of Learn, which is for advanced readers. Parts I and II need no
-address and give back no RAM (memory) in code, and most programs never leave them. Part
-III adds addresses (pointers), which are values that tell where a value sits in RAM, and
-blocks (allocations) of the heap that the program asks for and frees itself. That
-is the work of C, and of code that calls C.
+This is Part III of Learn. It introduces addresses (pointers), which let us read or
+change a value at a location in RAM (memory). It also covers heap blocks (allocations)
+that the program manages itself. We use these tools in unsafe code, for example when
+calling C.
 
 ## You will learn
 

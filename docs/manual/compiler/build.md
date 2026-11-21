@@ -5,12 +5,11 @@ description: The targets of zakac build in full, the VM, C and Cranelift, with t
 
 # Building programs
 
-`zakac build` runs each stage (compiler pass) and then the code generator of a target:
-the operations (instructions) of the VM (virtual machine), an executable through C, an
-executable through Cranelift, or a C lib (library). This page covers each target and its
-flags. [Commands](commands.md#build) has the short form, [Native
-programs](native.md) explains how an executable behaves, and [A lib for
-C](../../learn/functions/c-lib.md) teaches the C lib one step at a time.
+`zakac build` compiles a program for a selected target. It can emit operations
+(instructions) for the VM (virtual machine), build an executable through C or Cranelift,
+or build a C lib (library). For flags at a glance, see [Commands](commands.md#build).
+For executable behavior and a worked lib example, see [Native programs](native.md) and
+[A lib for C](../../learn/functions/c-lib.md).
 
 ```console
 $ zakac build age.zaka

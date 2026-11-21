@@ -5,9 +5,9 @@ description: The common mistakes with structs, the message Zaka shows for each o
 
 # Struct mistakes
 
-This page goes through the common mistakes with structs (records), and Zaka catches each
-of them before the program runs. For each mistake, we show the program, the message from
-the compiler, the reason and the fix.
+The compiler catches these common mistakes with structs (records) before the program
+runs. Each example shows the code, the message from the compiler, and how to fix the
+error.
 
 ## You will learn
 

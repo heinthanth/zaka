@@ -5,10 +5,9 @@ description: Find a value through an index instead of a number, the same as a ph
 
 # Tables
 
-A list finds a value through a cell number: cell 0, cell 1, cell 2. A *table* (map) finds a
-value through an *index* (key) instead, the same as a phone book finds a phone number
-through a name. In Zaka we write `ဇယား` for a table, which has rows, and each row has an
-index (`အညွှန်း`) and a value (`တန်ဖိုး`), with no two rows sharing the same index.
+A *table* (map) lets us look up a value using an *index* (key), much as we look up a
+phone number using a name. In a Zaka table, written `ဇယား`, each row pairs one index
+(`အညွှန်း`) with one value (`တန်ဖိုး`). Each index identifies a single row.
 
 ## You will learn
 

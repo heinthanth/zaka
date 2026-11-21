@@ -5,10 +5,9 @@ description: Give a group of statements a name, and run it through that name whe
 
 # Functions
 
-A *function* is a group of statements with a name, so we write the statements once and
-then run them through the name as often as we need. Running a function is called *calling*
-it. Functions keep a program short, because the same lines do not appear twice, and
-functions make it simpler to follow, because a good name shows what the lines are for.
+A *function* gives a group of statements a name. We write the statements once and
+*call* the function wherever we need to run them. For example, a function named
+`နှုတ်ဆက်` (greet) can print a greeting each time we call it.
 
 ## You will learn
 
@@ -100,8 +99,8 @@ call, where we write the name and then `မည်` ("will"):
 ## Where functions go
 
 We declare most functions at the top level of the file, outside the program start block.
-There, the order does not matter: a call can come before the declaration of its function,
-so a lot of programs put the statements that run at the top and the functions below them.
+A call to a top-level function can appear before its declaration. In this example,
+both calls use the function declared at the end.
 
 ```zaka
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။        // called before its declaration: fine
@@ -123,11 +122,11 @@ so a lot of programs put the statements that run at the top and the functions be
 
 ## A function inside a function
 
-We can also declare a function inside the program start block or inside another function,
-which makes it a *nested function*. A nested function can use the variables declared above
-it in the block around it, as in JavaScript or Python, and it reads and changes those
-variables themselves, not duplicates (copies) of them. The example uses a parameter, `က`,
-which the [next page](parameters.md) explains: it is the number that each call passes in.
+We can declare a *nested function* (local function) inside the program start block or
+another function. A nested function can read and change variables declared before it
+in the enclosing block. In this example, each call passes a number in the parameter
+`က` and adds it to the same variable, `စုစုပေါင်း`. The [next page](parameters.md)
+explains parameters in more detail.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -157,8 +156,8 @@ shows how one can even leave its block.
 ပြန်ပေးမည်။
 ```
 
-We write `ပြန်ပေးမည်။` ("will return") to leave a function at once, and the program then goes
-back to the place of the call:
+Write `ပြန်ပေးမည်။` ("will return") to leave a function at once. The program resumes
+after the call.
 
 ```zaka
 စမ်း ဟူသော လုပ်ဆောင်ချက် သည်

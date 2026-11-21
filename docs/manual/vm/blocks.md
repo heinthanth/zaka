@@ -5,14 +5,12 @@ description: How the VM sets out its storage in blocks, how it checks each acces
 
 # Addresses and blocks
 
-The storage (memory) of the VM (virtual machine) is a flat run of addresses (pointers),
-and each part of it belongs to a *block* (allocation): a run of octets (bytes) with a
-start, a length and a state. Each global, each local and each piece of heap is a block.
-The VM keeps a table of the blocks, and each read or write through an address looks the
-address up in that table before it touches an octet. This page covers how the addresses
-are laid out, how a block lives and ends, and how the two *frame modes* differ. Learn
-shows the same checks from the side of a program in [Pointer
-mistakes](../../learn/pointers/mistakes.md).
+VM (virtual machine) storage (memory) is one range of addresses (pointers). A *block*
+(allocation) is a run of octets (bytes) with a start, a length and a state. Globals,
+locals and heap allocations have blocks. Before a read or write through an address, the
+VM looks up the block in its table. This page covers how addresses are arranged, the
+life of a block and the two *frame modes*. For examples of failed checks, see [Pointer
+mistakes](../../learn/pointers/mistakes.md) in Learn.
 
 ## The address space
 

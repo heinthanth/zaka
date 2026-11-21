@@ -5,11 +5,10 @@ description: Declaring variables and constants, the rule that each value is set 
 
 # Declarations and assignment
 
-This page covers the statements that create a variable (mutable variable, `let mut`) or
-a constant (`const`) and the statements that change a value: declarations, the rule that
-each value is set before it is read, assignment, and the two statements that put a
-duplicate (copy) into a variable. [Variables](../../learn/variables/README.md) in the
-Learn book introduces them with gentle examples.
+A declaration creates a variable (mutable variable, `let mut`) or a constant (`const`).
+This page explains when a declaration needs a value, when a read is allowed, and how
+assignment and the two forms of a duplicate (copy) work. For examples, see
+[Variables](../../learn/variables/README.md) in Learn.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

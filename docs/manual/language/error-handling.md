@@ -5,11 +5,10 @@ description: A function that returns a good result or an error value, the forms 
 
 # Errors and results
 
-A function can fail, and in Zaka a failure is a value: the function returns either its good
-result (`Ok` value) or an error value (error), and each call must show what happens to a
-failure. The call can pass the failure on to its own caller, or it can keep the whole
-result and look at it. Zaka has no exceptions and no jump to a distant handler. The Learn
-book teaches this in small steps in [Errors and results](../../learn/error-handling/README.md).
+A function that can fail returns either a good result (`Ok` value) or an error value
+(error). At the call site, the caller can pass the error back to its own caller or keep
+the whole result and inspect it. For examples, see [Errors and
+results](../../learn/error-handling/README.md) in Learn.
 
 The rules are on three pages. This page covers how a function fails, how a caller passes a
 failure on and the order in which those calls run. [Reading a result](reading-results.md)

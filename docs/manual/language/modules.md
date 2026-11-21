@@ -5,10 +5,9 @@ description: How a program spans several files - the export mark, the import sen
 
 # Modules
 
-A program can span several files, and each file is a module. A file keeps its top-level
-names to itself unless it marks them `အများသုံး` (exported), and another file uses those
-names through an import. The Learn book shows the same rules with examples in
-[Modules](../../learn/modules/README.md).
+A module is one source file. A top-level name is local to that file unless the
+declaration marks it as exported with `အများသုံး`. Another file can import the exported
+name. For examples, see [Modules](../../learn/modules/README.md) in Learn.
 
 ```zaka-file
 // math.zaka

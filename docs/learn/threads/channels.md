@@ -5,9 +5,8 @@ description: Pass values from one thread to another with a channel: make one, se
 
 # Channels
 
-A channel (`ဒေတာလမ်းကြောင်း`, a message queue) carries values from one thread to another,
-much as a moving belt carries dishes from the kitchen to the counter. One thread puts
-values on it, and another thread takes them off in the same order.
+A channel (`ဒေတာလမ်းကြောင်း`, a message queue) carries values between threads. One
+thread sends values, and another receives them in the order the channel got them.
 
 ## You will learn
 
@@ -135,9 +134,10 @@ kind.
 
 ## Waiting on several channels
 
-A thread that reacts to two channels, such as one of work and one that asks it to stop, cannot
-wait on both with a receive. A wait on several channels (select) takes the next value of
-the first channel that has one, and runs the arm of that channel:
+A thread can listen for work on one channel and a stop signal on another. A wait on
+several channels (select) receives one value from a channel with data and runs the
+matching arm. If the channels are open with no data, the thread waits for a value to
+arrive. A time limit or a no-data arm can end the wait sooner.
 
 ```
 အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
@@ -174,10 +174,10 @@ the first channel that has one, and runs the arm of that channel:
 ရပ်
 ```
 
-The first wait finds the value in `အလုပ်` at once. The second has a time limit, and no
-value comes within 10 milliseconds, so its last arm runs. The third waits until the thread
-sends on `ရပ်`. Each arm reads its value with `<channel> ထဲမှ ဒေတာ`, as the test of
-`အကယ်၍` does. To keep watching the channels, we put the wait in a loop.
+The first wait receives `၇` from `အလုပ်`. The second runs its last arm because no
+value arrives within 10 milliseconds. The third waits until the thread sends on
+`ရပ်`. Inside a channel arm, `<channel> ထဲမှ ဒေတာ` reads the value that the wait
+received. Put the wait in a loop to receive more than one value.
 
 ## Details
 
@@ -190,11 +190,14 @@ sends on `ရပ်`. Each arm reads its value with `<channel> ထဲမှ ဒ�
   of the test, and the test must be the whole condition of `အကယ်၍`, with the channel as a
   name; another use is the error ZK0496. A receive, a loop or a close of a value that is
   not a channel is the error ZK0495.
-- **Waiting on several channels.** When values wait in several channels, the wait picks
-  one at random; on the VM it picks the first, so a run gives the same output each time. A
-  channel that is closed and drained holds no value, and once each one is, the arm
-  `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်` runs, so a loop around the wait can end there. `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit runs at once when no
-  channel holds a value ([Waiting on several channels](../../manual/language/threads.md#waiting-on-several-channels)).
+- **Waiting on several channels.** If several channels hold data, a native program
+  picks one at random. The VM defaults to the first matching arm in source order.
+  Use `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်` to handle a wait whose
+  channels are all closed with no values left. Use
+  `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit to continue at
+  once when no value is available. See [Waiting on several
+  channels](../../manual/language/threads.md#waiting-on-several-channels) for the order
+  in which the arms are checked.
 - **Deadlock.** A receive from a channel that no thread sends to or closes would wait
   forever, so the program stops with the trap `deadlock` instead
   ([When a program stops](../../manual/vm/traps.md)).

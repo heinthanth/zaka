@@ -5,10 +5,9 @@ description: The full rules of the Zaka language, how the compiler and the VM wo
 
 # Zaka Docs
 
-These pages are the manual of Zaka (စံကား). [Learn](../learn/README.md) teaches the
-language one small example at a time, while the manual states the rules in full: what
-each sentence (statement) means, what the compiler checks, what the VM does while a
-program runs, and the reasons behind each choice.
+This is the reference manual for Zaka (စံကား). It covers what each sentence (statement)
+means, what the compiler checks, and what the VM does when a program runs. For a first
+program and a series of short lessons, start with [Learn](../learn/README.md).
 
 ## How the manual is laid out
 

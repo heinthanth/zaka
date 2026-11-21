@@ -5,9 +5,9 @@ description: Build grids from lists whose cells are lists.
 
 # Lists of lists
 
-A cell (element) of a list can contain a whole list, so a list of lists can
-keep a grid of rows and columns. We reach a single value with two cell numbers, one for
-the row and one for the column.
+A cell (element) can hold another list, so we can store a grid as a list of rows. To
+access a value, we use two cell numbers. The first selects the row and the second
+selects the column within that row.
 
 ## You will learn
 

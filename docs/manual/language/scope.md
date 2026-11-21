@@ -5,12 +5,11 @@ description: How names are declared and found - blocks, shadowing, constants, lo
 
 # Names and scope
 
-A name refers to a variable, a constant, a parameter or a loop counter, and the scope of
-a name is the part of the program where we can use it. This page states what opens a
-scope, which names a place can see, what shadowing is, and which names cannot be assigned
-to. [Blocks and scope](../../learn/variables/scope.md) in the Learn book shows the same
-ideas with gentle examples, and [Source text and words](words.md#names) states how we
-write a name.
+The scope of a name is the part of the program where it can be used. This page covers
+the constructs that open a scope, the names visible in each scope, shadowing and which
+names can be assigned to. For examples, see [Blocks and
+scope](../../learn/variables/scope.md) in Learn. For the rules for spelling a name, see
+[Source text and words](words.md#names).
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။

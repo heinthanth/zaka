@@ -5,10 +5,10 @@ description: Ask the heap for a block in unsafe code, use it through a pointer, 
 
 # The heap
 
-A variable lasts as long as its block of code or its function, but sometimes a program
-needs room that lasts until the program itself decides to let it go, as C does with
-`malloc` and `free`. That room comes from *the heap* (dynamic memory): we ask it for a
-block (allocation), use the block through a pointer, and give it back when we are done.
+A variable belongs to a block of code or a function. When a program needs storage that
+can outlast that scope, it can request a block (allocation) from the *heap* (dynamic
+memory), access it through a pointer and free it once it is done with the block. This is
+the role of `malloc` and `free` in C.
 
 ## You will learn
 

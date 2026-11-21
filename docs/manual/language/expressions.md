@@ -5,12 +5,12 @@ description: Literals, names and the operators in each group - arithmetic, compa
 
 # Expressions
 
-An expression is a piece of a program that has a value. It can be a literal, a name, or
-operators applied to other expressions. Most operators have two forms that mean the same,
-a sign form (`+`) and a word form in Burmese (`နှင့် … ၏ ပေါင်းလဒ်`), and we can mix the two
-in one expression. The compiler works out the data kind (type) of each expression before
-the program runs ([Data kinds and values](kinds.md)). [Operators](../../learn/operators/README.md)
-in the Learn book introduces them with gentle examples.
+An expression produces a value. It can be a literal, a name, or an operator applied to
+one or more expressions. Most operators have both a sign form, such as `+`, and an
+equivalent Burmese word form, such as `နှင့် … ၏ ပေါင်းလဒ်`. We can mix the two forms in
+one expression. The compiler determines the data kind (type) of each expression before
+the program runs. See [Data kinds and values](kinds.md) for the data kinds and
+[Operators](../../learn/operators/README.md) in Learn for examples.
 
 ## Three tiers
 

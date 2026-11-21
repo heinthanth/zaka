@@ -5,12 +5,10 @@ description: How a compiler message is laid out, what its levels and codes mean,
 
 # Diagnostics
 
-A *diagnostic* is what the compiler reports about a place in the program: an error, a
-warning or a note. Each one has a code, a message, a place in the source, and often a
-suggestion. This page explains how a message is laid out and how the codes are shared out
-among the stages (compiler passes). The page of [error messages](../reference/errors.md)
-lists the codes, and [Hello, world](../../learn/hello/README.md#forgetting-the-full-stop)
-shows a first error.
+A *diagnostic* is an error, warning or note from the compiler. It includes a code, a
+message and a location in the source. It can also suggest a fix. For the full list of
+codes, see [Error messages](../reference/errors.md). For a first example, see [Hello,
+world](../../learn/hello/README.md#forgetting-the-full-stop).
 
 ## How a message is set out
 

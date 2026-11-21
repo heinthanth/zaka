@@ -5,10 +5,10 @@ description: Pass values into a function, and let a function change or set the c
 
 # Parameters
 
-A function becomes far more useful when it gets values to work with. The values that a
-function accepts are its *parameters*, and the values that a call passes in are the
-*arguments*. A parameter can also be a mutable parameter (`inout`) or a writable parameter
-(`out`), which lets the function change or set a variable of the caller.
+A *parameter* is a named input or output in a function signature. An *argument* is
+what we pass for that parameter in a call. A mutable parameter (`inout`) lets the
+function change a variable in the caller, while a writable parameter (`out`)
+lets it set one.
 
 ## You will learn
 

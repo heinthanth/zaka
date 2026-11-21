@@ -5,11 +5,10 @@ description: Let each member of an enumeration hold a value of its own data kind
 
 # Members that hold data
 
-A member of an enumeration (enum) can hold data (payload) of its own: a value that the program sets
-when it runs, not a constant. A shape is a circle with a radius, a rectangle with a width
-and a length, or a point with nothing more, so each member (variant) holds a different
-data kind (type), or none. This is what Rust calls an `enum` with data and what other
-languages call a tagged union.
+Each member (variant) of an enumeration (enum) can define what data (payload) it holds.
+For a shape, a circle can hold a radius, a rectangle can hold a width and a length, and
+a point can hold no data. The program supplies these values when it creates a shape.
+This form is also called a tagged union.
 
 ## You will learn
 

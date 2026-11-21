@@ -5,11 +5,10 @@ description: The whole language on one page, for developers who know Python, Rus
 
 # Zaka for programmers
 
-Zaka uses Burmese sentences, so each sentence (statement) puts its verb at the end and
-finishes with `။`, the Burmese full stop. In place of word order and punctuation, Zaka uses
-particles (postpositions), small words that come after a word to show whether it is the
-subject, the object or something else. Most operators come in two forms, a word form and a
-sign form, and we can use whichever reads better because both mean the same thing.
+Zaka uses Burmese word order. A sentence (statement) puts its verb last and ends with
+`။`, the Burmese full stop. Particles (postpositions) follow parts of a sentence and
+mark their roles, such as subject or object. Most operators have both a Burmese word
+form and an equivalent sign form, such as `+`.
 
 This page covers the language one feature at a time, for developers who know another
 language. Zaka has its own names for some ideas, so the usual name follows in parentheses

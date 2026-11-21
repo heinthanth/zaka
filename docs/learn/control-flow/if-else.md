@@ -5,9 +5,9 @@ description: Run sentences when a condition is true, and others when it is false
 
 # If and else
 
-An `if` statement runs its inner part when a condition is true and skips it when the
-condition is false. In Zaka we write it as a Burmese sentence, "if *condition*, then *do
-this*", and we can add an `else` part that runs when the condition is false.
+An `if` statement runs a block of code when its condition is true. We can add an `else`
+block to run when the condition is false. In Burmese, the `if` form reads "if
+*condition*, then *do this*".
 
 ## You will learn
 

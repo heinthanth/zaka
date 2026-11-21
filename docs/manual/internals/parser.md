@@ -5,12 +5,11 @@ description: How the parser turns the tokens of a file into the tree, with its t
 
 # The parser
 
-The parser takes the tokens of one file (the `LexOutput` of [the lexer](lexer.md)) and
-builds the tree of its statements (the AST), plus a list of
-diagnostics. When a sentence (statement) fails, the parser reports it, leaves it out of
-the tree and goes on, so the rest of the file still parses. Two crates share the work:
-`zakac_ast` has the tree and the table of verbs, and `zakac_parser` has the code that
-reads tokens.
+The parser takes the tokens of one file (the `LexOutput` from [the lexer](lexer.md)) and
+builds a tree of its statements (the AST) and a list of diagnostics. If it cannot parse
+a sentence (statement), it records a diagnostic, omits the failed statement and
+continues with the rest of the file. `zakac_ast` defines the tree and the table of
+verbs, and `zakac_parser` reads the tokens.
 
 The parser is too large for one page, so it has four:
 

@@ -5,12 +5,11 @@ description: Run a function on a thread while the rest of the program goes on - 
 
 # Threads
 
-A thread (`အပြိုင်လုပ်ငန်း`, a thread or task) runs a function while the rest of the
-program goes on. We start a thread with a call that has `အပြိုင်` before its last word,
-the program goes on with its own work, and it waits for the result of the thread when it
-needs it. All threads reach the same heap, and a value that goes to a thread is not
-duplicated (copied) until one side writes it. The Learn book teaches the same rules in
-small steps in [Threads](../../learn/threads/README.md).
+A thread (`အပြိုင်လုပ်ငန်း`, a thread or task) runs a function alongside the rest of the
+program. To start one, put `အပြိုင်` before the last word of a call. The calling code
+can continue and wait for the result later. Threads use the same heap, and a value
+passed to a thread is duplicated (copied) when one side writes to it. For examples, see
+[Threads](../../learn/threads/README.md) in Learn.
 
 How a thread of a Zaka program maps to an OS thread depends on how the program runs. A
 native program runs each thread as a light task on a pool of OS threads, or on an OS
@@ -363,40 +362,37 @@ the order of the turns:
 မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် <block>
 ```
 
-A wait on several channels (select) takes the next value of the first channel that has
-one. The opener line starts it, and an arm for each channel follows, with the test that
-`အကယ်၍` uses for a channel. The arms end at the first statement that is no arm, as the
-arms of a switch do. After the arms of the channels, the closed arm can tell what happens
-once no value can come again, and one more arm can tell what happens when no value comes
-now: a time limit, or no wait at all.
+A wait on several channels (select) receives one value from a channel with data and
+runs the matching arm. After the opening line, write one arm per channel. Each arm
+uses the same channel test as `အကယ်၍`. After the channel arms, we can add a closed
+arm for when all channels are closed and drained, then a time limit arm or a no-data
+arm. The first statement outside these forms marks the end of the wait.
 
-- The wait runs one arm, that of the channel whose value it took, and `<pipe> ထဲမှ ဒေတာ`
-  inside that arm is the value. The take is a receive, so no other thread can take the
-  value between the wait and the read.
-- When values wait in several channels, the wait picks one of them at random, so no arm
-  starves while another channel is full of work. On the VM the pick is the first such arm,
-  so a run gives the same output each time; with `--shuffle-thread-order=<seed>` the VM
-  draws the pick from the seed, and the same seed gives the same picks again.
-- A channel that is closed and drained counts as holding no value. Once each channel of
-  the wait is closed and drained, no value can come again: the closed arm,
-  `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်`, runs then. We can write its last word glued, as here, or apart, as
-  `ဒေတာ မရောက်လာနိုင်တော့လျှင်`. With no closed arm, the arm of no data runs in its place;
-  with neither, the wait runs no arm and the program goes on. A loop around a wait thus
-  needs the closed arm, or another exit, to end once the channels are closed.
+- The wait removes the value from the channel before it runs the matching arm.
+  Within that arm, `<pipe> ထဲမှ ဒေတာ` reads the received value.
+- If several channels hold data, a native program picks one of them at random. The
+  VM defaults to the first matching arm in source order. With
+  `--shuffle-thread-order=<seed>`, the VM draws from the channels with data using
+  the seed. With a fixed seed, the choices are repeatable.
+- Once all channels in the wait are closed and drained, the wait runs the closed arm,
+  `မည်သည့်လမ်းကြောင်းထံမှ ဒေတာမရောက်လာနိုင်တော့လျှင်`. We can also write
+  `ဒေတာ မရောက်လာနိုင်တော့လျှင်` with a space. If there is no closed arm, the wait
+  runs the no-data arm if present, or continues without running an arm. To leave a
+  loop once all channels are closed and drained, use an arm that exits the loop or
+  provide another exit.
 - `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` runs its block when no value came within `<n>`
   milliseconds, and `<n> စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` within `<n>` seconds. `<n>` is a
   `usize`, as the count of a [sleep](#sleeping) is.
-- `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` does not wait: its block runs at once when no
-  channel holds a value at that moment, an open channel with nothing in it included. A
-  value that waits in a channel wins over this arm, and so does the closed arm. A loop around such a wait, with no
-  other work, keeps a core at work.
-- The form waits once. To watch the channels, we put it in a loop.
+- `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` runs at once if no channel holds a
+  value and the closed arm does not run. A tight loop around this form can keep a
+  CPU core active.
+- To receive more than one value, put the wait in a loop.
 - In a native program, a light task that waits gives its OS thread to the other tasks, as
   a receive does.
-- The closed arm goes with either the time limit or the arm of no data, and stands
-  before them. An opener with no arm of a channel after it is ZK0264, and a wait with both
-  a time limit and the arm of no data is ZK0265. An arm whose test names a value that is not a channel
-  is ZK0495, and a read of the channel of another arm is ZK0496.
+- If present, the closed arm comes before the time limit or no-data arm. A wait needs
+  at least one channel arm (ZK0264) and can have at most one of the time limit and
+  no-data arms (ZK0265). The value tested in a channel arm must be a channel (ZK0495).
+  Reading `<pipe> ထဲမှ ဒေတာ` from the arm of a different channel raises ZK0496.
 
 Here a thread sends three values, waits, then sends on the channel `ရပ်`. The loop prints
 each value, prints a line each time 40 milliseconds pass with no value, and ends once

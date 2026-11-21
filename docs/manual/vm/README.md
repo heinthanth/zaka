@@ -5,11 +5,10 @@ description: What the Zaka VM is made of: its operations, its calls, its values 
 
 # The VM
 
-The Zaka VM (virtual machine) runs a program that `zakac` has turned into operations
-(instructions). It is small on purpose: a loop runs one operation at a time, a stack of
-values contains the working values of each sentence (statement), a stack of calls keeps
-track of where each function has got to, and a storage (memory) of *blocks* (allocations)
-contains each variable, so each variable has an address (pointer).
+The Zaka VM (virtual machine) runs the operations (instructions) generated for it. It
+uses a stack for values and a call stack to track active function calls and where to
+return. The VM divides its storage (memory) into *blocks* (allocations). Each variable
+has an address (pointer) in that storage.
 
 The VM checks each read and write through an address. A mistake stops the program (trap)
 with a message that names the operation and the block, and nothing in the program gets

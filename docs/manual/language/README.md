@@ -5,11 +5,10 @@ description: What a Zaka program is, and a map of the chapter that states the ru
 
 # The language
 
-A Zaka program is a list of sentences (statements), and each sentence ends with the
-Burmese full stop `။`. The VM runs the sentences from the first to the last. A sentence
-uses Burmese word order: first the things it talks about, each with a small word after it
-that shows its role, called a particle (postposition), and last the verb, which decides
-what the sentence means.
+Zaka uses Burmese word order. A sentence (statement) places its verb last and ends with
+the Burmese full stop `။`. A particle (postposition) follows a part of the sentence to
+mark its role. For example, `ကို` marks the value to print in the last statement of this
+program.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -43,9 +42,8 @@ rules.
 
 ## The pages of this chapter
 
-The pages go from the smallest parts of a program to the largest, and then to unsafe code.
-A newcomer can read them in this order, and each page links to the Learn page that teaches
-the same feature with gentle examples.
+This chapter starts with source text and statements, then covers functions, data,
+modules and unsafe code. Follow the links to Learn for worked examples.
 
 ### The basics
 

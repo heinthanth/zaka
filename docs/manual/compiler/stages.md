@@ -5,10 +5,12 @@ description: What each stage of the compiler reads and writes, which codes it ow
 
 # Stages
 
-The compiler is a chain of stages (compiler passes). Each stage reads what the stage
-before it made and writes something nearer to a program that the VM (virtual machine) can
-run: pieces, tokens, a tree, the IR, and at the end operations (instructions).
-[Commands](commands.md) shows how to run the chain up to each stage.
+The compiler processes a program in stages (compiler passes). The segmenter splits the
+source into pieces, the lexer turns those pieces into tokens, and the parser uses the
+tokens to build a tree. Later stages check the program, lower it to an intermediate
+representation (IR), and generate operations (instructions) for the VM (virtual machine)
+or code for another target. See [Commands](commands.md) to run the compiler up to a
+specific stage.
 
 ## The chain
 

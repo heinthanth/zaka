@@ -5,9 +5,9 @@ description: The common mistakes with enumerations and switches, the message Zak
 
 # Enumeration mistakes
 
-This page goes through the common mistakes with enumerations (enums) and switches, and Zaka
-catches each of them before the program runs. For each mistake, we show the program, the
-message from the compiler, the reason and the fix.
+The compiler catches these common mistakes with enumerations (enums) and switches before
+the program runs. Each example shows the code, the message from the compiler, and how to
+fix the error.
 
 ## You will learn
 

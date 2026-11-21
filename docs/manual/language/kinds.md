@@ -5,11 +5,11 @@ description: The data kinds (types) of Zaka - integers, decimal numbers, charact
 
 # Data kinds and values
 
-Each value in a Zaka program has a data kind (type), which sets how much room the value
-uses, which values it can have and which operations work on it. The compiler works out
-the data kind of each expression before the program runs, and a variable keeps the data
-kind it was declared with for its whole life. We write a data kind in Burmese, while
-compiler messages use a short English name for it, which the tables below list.
+A data kind (type) defines which values it can represent, how much space a value takes,
+and which operations it supports. The compiler determines the data kind of each
+expression before the program runs. A variable keeps the data kind it had at its
+declaration. The tables below pair each Burmese name with the short name used in
+compiler messages.
 
 [Scalar values](../../learn/values/README.md) in the Learn book introduces the scalar
 kinds with gentle examples. This page states the full rules.

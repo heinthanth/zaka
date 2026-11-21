@@ -5,9 +5,8 @@ description: Add to text at its end or in the middle, remove its last character,
 
 # Changing text
 
-A text (string) variable can grow, shrink and change in place, so we do not need to build
-new text for each change. Each change below keeps the text whole UTF-8, so it never breaks a
-character in two.
+We can add, remove or replace characters in a text (string) variable. The operations
+below keep the text valid UTF-8 and leave the remaining characters intact.
 
 ## You will learn
 

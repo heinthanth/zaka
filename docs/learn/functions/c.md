@@ -5,10 +5,9 @@ description: Declare a function of a shared lib, such as libc or libm, and call 
 
 # Calling C
 
-Each lib (library) on a computer has functions written in C: `libc` has `abs`, and `libm`
-has the math functions. Zaka can call these C functions through a foreign function
-interface (FFI): we declare each one with the lib it comes from, and then we call it like
-a function of the program.
+Zaka can call functions such as `abs` from `libc` or the math functions from `libm`. To
+use the foreign function interface (FFI), declare the function and name its lib
+(library). We can then call it like a Zaka function.
 
 ## You will learn
 

@@ -5,9 +5,8 @@ description: The ideas behind Zaka, explained through examples: sentences, Burme
 
 # Concepts
 
-The other chapters of the Docs state the rules, and these pages explain the reasons behind
-them. Each page picks one idea of the design, describes the problem it solves, works
-through an example, and names what it costs.
+These pages explain the design of Zaka through examples. Each describes a problem, the
+approach Zaka takes and what it costs.
 
 | Page | The question it answers |
 | --- | --- |

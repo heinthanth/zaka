@@ -5,11 +5,10 @@ description: Values that are duplicated and objects that are shared, equal conte
 
 # Values and objects
 
-Each data kind (type) of safe Zaka is either a value or a shared object (reference type).
-A value is duplicated (copied) when we assign it, pass it or return it, just as a number
-is. A shared object is shared instead: each name for it reaches the same object, so a
-change through one name shows through the others. Whether a data kind is a value or a
-shared object depends on its declaration alone, never on what is inside it.
+In safe Zaka, assignment, argument passing and returns duplicate (copy) values or share
+objects. A shared object (reference type) can have several names that refer to the same
+object, so a change through one name is visible through the others. The declaration of
+the data kind (type) determines which rule applies.
 
 The VM frees each block when its last use is gone, so safe code never frees a block itself
 and never sees an address. Pointers and the heap statements belong to unsafe code, in

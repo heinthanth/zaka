@@ -5,10 +5,10 @@ description: Show values with ပြသမည်, and choose between ကို a
 
 # Printing
 
-To print a value, we write the value, then a small word called a particle (postposition),
-then `ပြသမည်` ("please show"), which prints the value and starts a new line. The
-particle is `ကို` after a plain value such as a number, and `ဟု` after text (string) in
-quotes or after a whole sentence.
+`ပြသမည်` ("please show") prints a value and then starts a new line. Put a particle
+(postposition) between the value and `ပြသမည်`. Use `ကို` for a value such as a number
+or a variable, and `ဟု` for text (string) in quotes or a full clause such as
+`၃ သည် ၂ ထက် ကြီးသည်` ("3 is greater than 2").
 
 ## You will learn
 
@@ -45,9 +45,8 @@ The two sentences print two lines, and use the two forms of a print sentence:
 
 ## Plain values with `ကို`
 
-We use `ကို` after each value that is not text in quotes: a whole number, a decimal
-number, a character in single quotes, or a sum that the computer works out before it
-prints:
+Use `ကို` after a whole number, a decimal number, a character in single quotes, or a
+sum. The last print statement below adds two numbers and prints the result.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -67,9 +66,8 @@ prints:
 
 ## Text and sentences with `ဟု`
 
-`ဟု` turns the words before it into a quote, so we use it after text in double quotes.
-We also use it after a whole sentence, such as `၃ သည် ၂ ထက် ကြီးသည်` ("3 is greater than
-2"), and a pair of quotes with nothing inside prints a blank line:
+Use `ဟု` after text in double quotes or a clause such as `၃ သည် ၂ ထက် ကြီးသည်`
+("3 is greater than 2"). Use `""` with `ဟု` to print a blank line.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -87,8 +85,8 @@ We also use it after a whole sentence, such as `၃ သည် ၂ ထက် က�
 ပြီးပါပြီ
 ```
 
-The sentence `၃ သည် ၂ ထက် ကြီးသည်` is either true or false, and here it is true, so it
-prints `မှန်` (true). [True and false](../values/booleans.md) covers these values.
+Since 3 is greater than 2, the second print statement prints `မှန်` (true).
+See [True and false](../values/booleans.md) for more examples.
 
 ## How values look when printed
 

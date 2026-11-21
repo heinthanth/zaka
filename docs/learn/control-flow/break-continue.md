@@ -5,9 +5,8 @@ description: Leave a loop at once, or skip the rest of one round.
 
 # Break and continue
 
-Two sentences change how a loop runs from inside the loop: `break` leaves the loop at
-once, and `continue` skips the rest of the current round and goes on with the next one. In
-Zaka, both are short Burmese sentences.
+Use `break` to exit a loop at once. Use `continue` to skip the rest of the current round
+and start the next one. Zaka writes both as short Burmese sentences.
 
 ## You will learn
 

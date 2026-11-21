@@ -5,9 +5,9 @@ description: Write the data kind of a result that can fail, with a good side and
 
 # Writing result kinds
 
-So far, a variable that kept the result of a call took its data kind (type) from the call.
-We can also write a result kind (result type) out wherever a data kind goes: in a
-declaration, in a parameter, in a field of a struct, and in the result clause of a function.
+So far, the compiler worked out the data kind (type) of a whole result from the function
+call. We can also write a result kind (result type) in a variable declaration, a
+parameter, a struct field or the result clause of a function.
 
 ## You will learn
 

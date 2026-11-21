@@ -5,15 +5,15 @@ description: Give a value a name with ကိန်းရှင် ... ဖြစ�
 
 # Variables
 
-A *variable* (mutable variable) is a name for a value that the program keeps, so that we
-can use the name wherever we need the value. We create a variable once, with its data
-kind (type) and its value, and creating it is called *declaring* the variable.
+A *variable* (mutable variable) stores a value under a name. To create a variable, we
+write a *declaration* that gives it a name and a data kind (type). We can give it a
+value in the declaration or assign one before we first read it.
 
 ## You will learn
 
 - How to declare a variable with `ကိန်းရှင်` and give it a value.
 - How to write a data kind with its measure word (classifier), as in `ကိန်းပြည့် တစ်ခု`.
-- How to let the value choose the data kind, and how to start from the initial value
+- How to infer the data kind from the value, and how to start from the initial value
   `ကနဦးတန်ဖိုး`.
 - That a variable must get a value before we read it.
 
@@ -80,10 +80,10 @@ of another variable:
 <kind> တစ်<measure word>
 ```
 
-Burmese counts a thing with `တစ်` ("one") and a measure word (classifier) that fits the
-thing, much as English counts "one *sheet* of paper". In Zaka we count a data kind in the
-same form, so we write `ကိန်းပြည့် တစ်ခု` ("one integer"). Most data kinds use `ခု`, and
-`စာလုံး` (a character) uses `လုံး`:
+Burmese pairs `တစ်` ("one") with a measure word (classifier), much as English uses
+"one *sheet* of paper". Zaka uses the same pattern after a data kind, as in
+`ကိန်းပြည့် တစ်ခု` ("one integer"). Most data kinds use `ခု`. The character data
+kind `စာလုံး` uses `လုံး`.
 
 ```zaka
 ကိန်းရှင် အက္ခရာ သည် စာလုံး တစ်လုံး ဖြစ်၍ တန်ဖိုးသည် 'က' ဖြစ်ပါစေ။

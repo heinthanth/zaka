@@ -5,10 +5,9 @@ description: Keep the good result or the error value of a call, test which one i
 
 # Reading a whole result
 
-When we call a function that can fail without `?` or `ရလဒ်ကောင်း`, the call passes nothing
-on and returns the *whole result*, which is either the good result (`Ok` value) or the error
-value (error). We can keep the whole result in a variable, test which part it contains, and
-then read that part.
+When we call a function that can fail, leaving out `?` and `ရလဒ်ကောင်း` lets us keep
+the *whole result*. It contains either a good result (`Ok` value) or an error value
+(error). We can store it in a variable, check which part it contains and read that part.
 
 ## You will learn
 

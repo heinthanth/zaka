@@ -5,9 +5,9 @@ description: Split a program into several files, share names with အမျာ�
 
 # Modules
 
-When a program grows, we can split it into several files, and each `.zaka` file is a
-module (module, one source file). A module keeps its names to itself, except the names
-that we mark for sharing, and another file can bring those names in with an import.
+We can split a growing program into several modules, with one `.zaka` source file per
+module. To use a name from another module, mark it for export in its own file, then
+import it where it is needed.
 
 ## You will learn
 

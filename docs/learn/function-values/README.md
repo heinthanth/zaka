@@ -5,9 +5,10 @@ description: Keep a function in a variable, write its function kind, pass it to 
 
 # Functions as values
 
-A function value (first-class function) is a function that we keep in a variable or pass
-to another function, just as we do with a number. When we call the variable, the function
-in it runs, so one piece of code can run different functions at different times.
+A function value (first-class function) lets us store a function in a variable or pass
+it as an argument, much as we would a number. A call through the variable runs the
+function it holds at that moment. Changing the value can make the same call run a
+different function.
 
 ## You will learn
 

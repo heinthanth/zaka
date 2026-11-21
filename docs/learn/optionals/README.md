@@ -5,10 +5,9 @@ description: A data cell that might contain a value, how to test it before readi
 
 # Optional values
 
-Some values are there at times and missing at others: a search can find nothing, and a form
-can leave a field out. In Zaka, we keep such a value in an *optional kind* (option type,
-nullable type), which is a data cell that might contain a value, or might be blank (none,
-null).
+A search can return no match, and a person can leave a form field blank. We can
+represent such cases with an *optional kind* (option type, nullable type). Its data cell
+can hold a value or be blank (none, null).
 
 ## You will learn
 

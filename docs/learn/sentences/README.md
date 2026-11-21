@@ -5,10 +5,10 @@ description: Verb last, particles after each part, and two forms for writing a s
 
 # Zaka sentences
 
-Zaka uses Burmese sentences, and Burmese puts the verb at the end, so the English "show
-42" becomes "42 show" in Zaka: `၄၂ ကို ပြသမည်။`. A small word called a particle
-(postposition) comes after each part of the sentence (statement) to show the role of that
-part.
+A Zaka sentence (statement) uses Burmese word order, with the verb at the end. For
+example, "show 42" becomes `၄၂ ကို ပြသမည်။`. The word `ကို` follows `၄၂` to mark it as
+the value to print. We call a word that marks a role like this a particle
+(postposition).
 
 ## You will learn
 

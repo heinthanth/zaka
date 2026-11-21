@@ -1,16 +1,14 @@
 ---
 title: The program start block
-description: The block where each program starts, with its arguments, its environment and its exit code, and the rules on where it goes.
+description: Declare the program start block, receive arguments and environment variables, and set an exit code.
 ---
 
 # The program start block
 
-Each program starts in its program start block (entry point, `main`), a block after the
-word `ပရိုဂရမ်` ("program"). Its function signature has the parts of the function signature
-of a function, without a name, so it can accept the arguments and the environment of the
-run and return an exit code. This page covers its form, how a program runs, and the rules
-on where the program start block goes. The Learn page
-[Where a program starts](../../learn/programs/start.md) shows it in a complete program.
+The program start block (entry point, `main`) begins with `ပရိုဂရမ်` ("program"). Its
+function signature can declare parameters for command-line arguments and environment
+variables, and a return value for the exit code. For a complete example, see
+[Where a program starts](../../learn/programs/start.md) in Learn.
 
 ## Writing the program start block
 
@@ -24,18 +22,17 @@ on where the program start block goes. The Learn page
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-The statements that run go in the program start block or in functions, because the top
-level of a file has declarations alone. In the function signature of the program start
-block, we can use two `စာသား စာရင်း` parameters to receive the arguments and the
-environment of the run, and `<integer kind> တစ်ခု ကို ပြန်ပေးမည်` to return an exit code:
+Place executable statements inside the program start block or a function. The function
+signature can take up to two `စာသား စာရင်း` parameters and return an exit code with
+`<integer kind> တစ်ခု ကို ပြန်ပေးမည်`.
 
 | Part | Rule |
 | --- | --- |
-| end | `ပရိုဂရမ်` with one of the four spellings of the done word: `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး` or `ပြီးပါပြီ`; the block closer of other blocks, `လုပ်ဆောင်စရာများ ...`, does not end it (ZK0201) |
+| end | Start the block closer (end of a block) with `ပရိုဂရမ်`, then write `ပြီးဆုံးပါပြီး`, `ပြီးဆုံးပါပြီ`, `ပြီးပါပြီး` or `ပြီးပါပြီ`. The `လုပ်ဆောင်စရာများ ...` block closer raises ZK0201 here. |
 | parameters | none, one or two, each one a `စာသား စာရင်း`, with names that the program chooses |
-| the first parameter | the name of the program, then the arguments of the run, one text for each |
-| the second parameter | the environment variables, one `NAME=VALUE` text for each |
-| result | none, or an integer kind: the exit code of the run; the result clauses of a [function that can fail](error-handling.md) can be used too |
+| the first parameter | the program name, then one text value per command-line argument |
+| the second parameter | one `NAME=VALUE` text value per environment variable |
+| result | if declared, an integer return value that sets the exit code |
 
 ```zaka
 ကိန်းရှင် နှုတ်ခွန်း သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ" ဖြစ်ပါစေ။
@@ -54,11 +51,11 @@ environment of the run, and `<integer kind> တစ်ခု ကို ပြန�
 ၁
 ```
 
-The first cell is the name of the program, as in C, Rust and Python, so the count is at
-least 1. On the command line, the name is the input as written, or `-` for standard input,
-the arguments come after `--`, and the environment is the one that `zakac` runs in. The Run
-buttons of these pages give the name `main.zaka` and the Explorer `explorer.zaka`, with no
-arguments and a blank environment:
+The argument list has at least one cell because its first cell holds the program name.
+On the command line, that name is the input path as written, or `-` for standard input.
+Arguments come after `--`, and the program inherits the environment of `zakac`. The
+Run buttons in these pages use the name `main.zaka` and the Explorer uses
+`explorer.zaka`. Both pass no arguments and a blank list of environment variables.
 
 ```console
 $ zakac run greet.zaka -- ကက ခခ
@@ -95,7 +92,7 @@ unsafe block (`စိတ်မချရသော်လည်း`) inside it, or 
 | an imported file has no program start block | ZK0323 |
 | the top level of a file has declarations alone: functions, structs, variables, constants and imports; a statement that runs goes in the program start block or a function | ZK0326 |
 | each parameter is a `စာသား စာရင်း`, it is not a mutable or writable parameter, and there are two at most | ZK0440 |
-| the result is an integer kind; a result kind is not allowed either | ZK0441 |
+| A return value must have an integer data kind (type). A result kind (result type) raises the same error as other non-integer kinds. | ZK0441 |
 | the program start block cannot fail, so it has no pass-on ([Errors and results](error-handling.md#the-program-start-block)) | ZK0445 |
 | it is declared at the top level, not inside a block | ZK0214 |
 | `အများသုံး` does not export it | ZK0229 |
@@ -138,17 +135,30 @@ error[ZK0327]: the program has no start block, "ပရိုဂရမ်သည�
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
+```text
+error[ZK0440]: a parameter of the start block is a "စာသား စာရင်း", and there are two of them at most
+```
+
+```zaka-error ZK0441
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+error[ZK0441]: the result of the start block is "text", but it must be an integer
+```
+
 ## REPL mode
 
-In REPL mode, the statements at the top level of the file that we run form its program
-start block, so a short program can leave the block out. `zakac repl` compiles in this
-mode ([zakac repl](../compiler/commands.md#repl)), and the `--repl` flag of `run`,
-`build`, `irgen` and `borrowck` turns it on for a file.
+REPL mode lets us leave out the program start block. The compiler creates one from the
+top-level statements in the file we run. This mode is built into
+[`zakac repl`](../compiler/commands.md#repl). For a file, enable it with `--repl` on
+`run`, `build`, `irgen` or `borrowck`.
 
 - A statement that runs, at the top level, moves into the program start block, in order.
 - A variable or constant moves in with them, as a local of the block, so the values are
-  set in the order of the source. One remains at the top level when it has `အများသုံး`, or
-  when a function, or a variable or constant that remains, uses it.
+  set in source order. A declaration remains at the top level if it has `အများသုံး` or
+  if a function or another declaration that remains at the top level uses it.
 - Functions, structs, enumerations, traits, kind aliases and imports remain in their places.
 - A file with a program start block compiles as it does without the mode, so a statement
   outside the block is still ZK0326. An imported file keeps the rules above, and a file
@@ -163,17 +173,4 @@ With `--repl`, the file `age.zaka` can hold the two lines below and print `၂�
 ```text
 ကိန်းရှင် အသက် သည် ၂၀ ဖြစ်ပါစေ။
 အသက် ကို ပြသမည်။
-```
-
-```text
-error[ZK0440]: a parameter of the start block is a "စာသား စာရင်း", and there are two of them at most
-```
-
-```zaka-error ZK0441
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
-```
-
-```text
-error[ZK0441]: the result of the start block is "text", but it must be an integer
 ```

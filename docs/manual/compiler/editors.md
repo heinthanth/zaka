@@ -5,10 +5,10 @@ description: The zakac language server, what it shows while we edit a program, a
 
 # Editors
 
-`zakac lsp` is a language server: it speaks the Language Server Protocol over standard
-input and output, so an editor can show what the compiler finds while we edit a program.
-It is part of `zakac` itself, so the server and the compiler that builds the program are
-the same version in each case. [Commands](commands.md#lsp) lists its one flag, `--config`.
+`zakac lsp` runs a language server so the editor can show compiler findings as we edit a
+program. The server uses the Language Server Protocol over standard input and output. It
+ships with `zakac`, so it matches the version of the compiler. See
+[Commands](commands.md#lsp) for the `--config` flag.
 
 ## What it shows
 

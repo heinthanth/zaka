@@ -5,11 +5,10 @@ description: How a caller hands the error value of a failing function up to its 
 
 # Passing a failure on
 
-When we call a function that can fail, we cannot use the call as a plain number, because
-the call might fail and leave no number. The simplest answer is to *pass the failure on*
-(error propagation, `?` in Rust): when the callee fails, the function around the call stops
-at once and returns the same error value (error), and when the callee succeeds, the call
-goes on with its good result (`Ok` value).
+We can *pass a failure on* (error propagation, `?` in Rust) when we call a function that
+can fail. On success, the call gives us the good result (`Ok` value) and the enclosing
+function continues. On failure, the enclosing function returns the same error value
+(error) at once.
 
 ## You will learn
 

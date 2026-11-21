@@ -5,11 +5,10 @@ description: A second name for a data kind, where we can use the new name, and t
 
 # Kind aliases
 
-A kind alias (type alias) gives a data kind (type) a second name. The alias and the data
-kind behind it are one data kind, so a value of one is a value of the other, and printed
-values and messages use the original name of the data kind. The Learn book shows aliases
-in [Structs](../../learn/structs/README.md#another-name-for-a-kind) and in [Function
-values](../../learn/function-values/README.md).
+A kind alias (type alias) gives an existing data kind (type) another name. Both names
+refer to the same data kind, and printed values and diagnostics use its original name.
+For examples, see [Structs](../../learn/structs/README.md#another-name-for-a-kind) and
+[Function values](../../learn/function-values/README.md) in Learn.
 
 ```zaka
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။

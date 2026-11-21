@@ -5,9 +5,9 @@ description: Functions that return a good result or an error value, and how a ca
 
 # Errors and results
 
-Some work has no answer in certain cases, such as a division with a zero divisor, so a
-function that does such work can *fail*. When it fails, it returns an *error value*
-(error) instead of its *good result* (`Ok` value).
+A division function can return a number when the divisor is nonzero. To handle a zero
+divisor, we can declare a function that can *fail*. It returns either a *good result*
+(`Ok` value) or an *error value* (error) that tells the caller what went wrong.
 
 ## You will learn
 

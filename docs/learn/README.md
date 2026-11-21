@@ -5,34 +5,32 @@ description: Learn the Zaka programming language one small, runnable example at 
 
 # Zaka through Examples
 
-Zaka (စံကား) is a programming language based on a subset of Burmese. We write a Zaka
-program as a list of Burmese sentences (statements), such as `"မင်္ဂလာပါ" ဟု ပြသမည်။`
-("show: hello"), and we put them inside a program start block (entry point, `main`) so
-that the computer runs them one after another. The first chapters show that block in full;
-after them, most examples leave it out, and the statements at the top level form the
-block ([REPL mode](../manual/language/functions-start-block.md#repl-mode)).
+Zaka (စံကား) is a programming language based on a subset of Burmese. A Zaka sentence
+(statement) such as `"မင်္ဂလာပါ" ဟု ပြသမည်။` prints "hello". We put the sentences we want
+to run in a program start block (entry point, `main`). The first chapter shows the block
+in full. Most later examples leave it out, and [REPL
+mode](../manual/language/functions-start-block.md#repl-mode) puts their top-level
+statements in a program start block for us.
 
 Programmers who know another language can start with the tour, [Zaka for
 programmers](tour.md), and the [Terms](../manual/reference/terms.md) page lists each Zaka
 term next to the standard one.
 
-These pages teach the language through examples, and no earlier programming knowledge is
-needed. Each page has these parts:
+The lessons assume no programming experience. Each page follows the same format.
 
-- **You will learn**: a short list of what the page teaches.
+- **You will learn** lists the skills or ideas the page covers.
 - A small program, with comments that explain each line, and the exact output it prints.
 - A pattern line that shows the shape of a sentence, and a table that translates the
   Burmese words.
-- **Details**: the finer rules, kept apart from the main text.
-- **Recap**: the main points, in brief.
-- **Hands on**: small changes to make to the program.
+- **Details** explains special cases and links to the full rules.
+- **Recap** sums up the main points.
+- **Hands on** suggests small changes to make to the program.
 
 When a page uses a Zaka term for the first time, the standard term follows in
 parentheses, as in "data kind (type)".
 
-Read the pages in order, because each page builds on the pages before it. When a page
-mentions a later page, it also tells which page to finish before coming back. The pages
-come in three parts:
+Read the pages in order. Each lesson builds on earlier ones, and links to later pages
+point out when a topic needs more background. The lessons come in three parts.
 
 1. **Values**, from [Hello, world](hello/README.md) to the [Example
    programs](programs/README.md): numbers, text, lists, structs, shared objects,
@@ -44,9 +42,8 @@ come in three parts:
 3. **Unsafe Zaka**, from [Unsafe Zaka](pointers/README.md): unsafe code, pointers, blocks
    of the heap, and C functions that need addresses. This part is for advanced work.
 
-A program from an earlier part still means the same thing in the later parts. The first
-part is enough to write whole programs, while the other two parts give more control over
-cost and storage.
+Part I covers what we need to write complete programs. Parts II and III give us more
+control over how much work a program does and where it stores its data.
 
 ## How to run the examples
 
@@ -60,10 +57,11 @@ folder, which needs [Rust](https://www.rust-lang.org/tools/install) installed fi
 cargo build --release -p zakac
 ```
 
-Save a program in a file whose name ends in `.zaka` (or `.zk`), then run it:
+Save a program in a file whose name ends in `.zaka` (or `.zk`). Run it with `--repl`
+to support examples that leave out the program start block.
 
 ```sh
-./target/release/zakac run hello.zaka
+./target/release/zakac run --repl hello.zaka
 ```
 
 ## A note on the examples
