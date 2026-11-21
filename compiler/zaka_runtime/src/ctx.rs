@@ -85,7 +85,7 @@ pub(crate) fn new_ctx(rows: usize) -> *mut ZkCtx
 /// # Returns
 ///
 /// The count, 0 when no frame is kept.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn task_rows() -> usize
 {
     let want = wanted_rows();

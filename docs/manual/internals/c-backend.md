@@ -280,8 +280,8 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | `program.rs` | `ZkProgram`, the mirror of `zk_program`: the checks, the limits, the rights, the texts, the function names and the sites; `zk_prog`, the table of the running program |
 | `ctx.rs` | `ZkCtx` (`zk_context`) and `zk_ctx`, the calls in progress of each OS thread, or of the thread it runs |
 | `local.rs` | `Local`, what a thread keeps for itself (its context, its trap jump, its number, its output sink and line), swapped with the cells of the OS thread that runs it |
-| `tasks.rs` | the pool of light tasks: `zk_task_start`, one OS thread for each core, the ready and the sleeping tasks, a task that parks in a wait, sleeps or ends its turn at `zk_safe_point` (a second bit of `zk_halt`); none on Windows |
-| `fiber.rs` | the stack of a light task (mapped, with a guard page) and the switch between stacks, naked functions for aarch64 and x86_64 whose link names carry the hash of the build |
+| `tasks.rs` | the pool of light tasks: `zk_task_start`, one OS thread for each core, the queue and the sleeping tasks, a task that parks in a wait, sleeps or ends its turn at `zk_safe_point` (a second bit of `zk_halt`) |
+| `fiber.rs` | the stack of a light task and the switch between stacks: on unix a mapped stack with a guard of 64 KiB and naked functions for aarch64 and x86_64 whose link names hold the hash of the build; on Windows a fiber of the OS (`CreateFiberEx`, `SwitchToFiber`); the catch of an overflow (a signal handler on unix, a vectored exception handler on Windows) |
 | `start.rs` | `zk_start` and `zk_finish`: the start and the end of a run |
 | `traps.rs` | the traps, the stop message and the backtrace |
 | `out.rs` | the buffer of standard output, the sink of a format, the print of numbers |
@@ -449,8 +449,11 @@ A light task (`tasks.rs`) runs on a stack of 1 MiB from `fiber.rs`, which the sw
 between stacks reaches through naked functions. Below the stack lie 64 KiB that no access
 can reach; a fault there, which a handler on a signal stack of each OS thread of the pool
 catches, writes the trap `stack full` with no allocation and ends the program. Each other
-fault goes on to the handler that was there before. Its `Local` carries its call context and
-its other cells from one OS thread of the pool to the next. It stops in `wait_until`,
+fault goes on to the handler that was there before. On Windows a task is a fiber of the OS,
+which keeps 32 KiB of its stack for the handler (`SetThreadStackGuarantee`), and a vectored
+exception handler turns the stack overflow of a task into the same trap. A task takes its
+`Local`, its call context and its other cells, from one OS thread of the pool to the next.
+It stops in `wait_until`,
 which drops the lock of the state first, in `zk_sleep`, and in `zk_safe_point` once its
 turn of 10 ms is over while other tasks wait. A parked task counts as not running, as a
 waiting OS thread does, so the deadlock rule below holds for both. A parked task waits on

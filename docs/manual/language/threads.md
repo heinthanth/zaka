@@ -703,8 +703,9 @@ A thread written `သီးသန့် အပြိုင်` in place of `အ�
 | C functions, standard input, a function that calls itself again, more than 16 KiB of locals in a function | none (the compiler picks an OS thread) | allowed |
 
 - Parallel loops and maps run their rounds on OS threads.
-- On Windows, and in a C lib (`--emit lib`), each thread runs on an OS thread of its own;
-  a program for WASI starts no threads.
+- Light tasks run on macOS, Linux and Windows, where each task is a fiber of the OS. In a
+  C lib (`--emit lib`), each thread runs on an OS thread of its own, and a program for
+  WASI starts no threads.
 - A light task whose calls take more than its stack stops the program with `the program
   stopped: the stack of a light task, N octets, ran full`; an OS thread of its own, with
   `သီးသန့် အပြိုင်`, has room for such a thread.

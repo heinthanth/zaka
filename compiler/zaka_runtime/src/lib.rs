@@ -29,7 +29,7 @@ pub mod ctx;
 pub mod exchange;
 #[cfg(not(target_os = "wasi"))]
 pub mod ffi;
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 mod fiber;
 pub mod heap;
 pub mod host;

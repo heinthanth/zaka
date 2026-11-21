@@ -387,7 +387,7 @@ fn park_until_changed(
 /// * `task` - The task.
 /// * `seen` - The count of changes it saw.
 /// * `key` - What it waits on.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn park_task(task: Box<Task>, seen: u64, key: Key)
 {
     let mut st = state();
@@ -403,7 +403,7 @@ pub(crate) fn park_task(task: Box<Task>, seen: u64, key: Key)
 /// # Returns
 ///
 /// `true` when one does.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn program_runs() -> bool { PROGRAM.load(Ordering::SeqCst) }
 
 /// Stop the whole program with the trap `deadlock`, from whichever OS thread.

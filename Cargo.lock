@@ -6674,6 +6674,7 @@ dependencies = [
  "libc",
  "libffi",
  "strum",
+ "windows-sys 0.61.2",
  "xxhash-rust",
  "zaka_host",
  "zakac_rust_sugars",

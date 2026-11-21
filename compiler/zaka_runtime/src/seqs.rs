@@ -743,7 +743,7 @@ pub static mut zk_halt: u8 = 0;
 /// # Returns
 ///
 /// The flag.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn halt_flag() -> &'static AtomicU8 { halt() }
 
 /// The bit of [`zk_halt`] that asks for a halt; the pool of light tasks uses
@@ -802,12 +802,12 @@ pub(crate) fn halted_while(work: impl FnOnce())
 /// # Arguments
 ///
 /// * `count` - The count.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn halted_add(count: usize) { HALTED.fetch_add(count, Ordering::SeqCst); }
 
 /// A light task that [`halted_add`] counted runs again: it is no more halted,
 /// and halts at a safe point when a collection runs now.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn halted_leave()
 {
     HALTED.fetch_sub(1, Ordering::SeqCst);

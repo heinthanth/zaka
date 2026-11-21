@@ -133,6 +133,7 @@ thanks to all of these projects.
 | [wasm-bindgen-futures](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures) | 0.4.78 | MIT OR Apache-2.0 |
 | [web-sys](https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys) | 0.3.105 | MIT OR Apache-2.0 |
 | [web-time](https://github.com/daxpedda/web-time) | 1.1.0 | MIT OR Apache-2.0 |
+| [windows-sys](https://github.com/microsoft/windows-rs) | 0.61.2 | MIT OR Apache-2.0 |
 | [xxhash-rust](https://github.com/DoumanAsh/xxhash-rust) | 0.8.19 | BSL-1.0 |
 | [yaxpeax-arch](https://git.iximeow.net/yaxpeax-arch/) | 0.3.3 | 0BSD |
 | [yaxpeax-arm](http://git.iximeow.net/yaxpeax-arm/) | 0.5.0 | 0BSD |

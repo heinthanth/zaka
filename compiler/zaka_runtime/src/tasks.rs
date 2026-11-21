@@ -11,9 +11,9 @@
 //! function that went on on another OS thread must not keep the address of a
 //! cell of the first.
 
-#[cfg(not(unix))]
+#[cfg(not(zk_tasks))]
 pub(crate) use none::*;
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) use pool::*;
 
 use crate::threads::Key;
@@ -21,7 +21,7 @@ use crate::threads::ZkGuard;
 use crate::threads::ZkStep;
 
 /// The pool, where the stacks of tasks can be made.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 mod pool
 {
     use std::cell::Cell;
@@ -180,6 +180,7 @@ mod pool
             start: Some((guard, step, data)), outcome: Outcome::Runs, local, n });
         let at: *mut Task = &mut *task;
         task.sp = prepare(&task.stack, task_main, at.cast());
+        ret_if!(task.sp.is_null(), false);
         let mut pool = pool();
         do_if!(!pool.started, start_pool(&mut pool));
         pool.queue.push_back(task);
@@ -196,7 +197,7 @@ mod pool
     fn start_pool(pool: &mut Pool)
     {
         pool.started = true;
-        catch_faults();
+        crate::fiber::catch_overflow();
         let cores = std::thread::available_parallelism().map_or(1, usize::from);
         let spawn = |f: fn()| std::thread::Builder::new().stack_size(8 << 20).spawn(f);
         (0..cores).for_each(|_| _ = spawn(work));
@@ -207,119 +208,31 @@ mod pool
     /// on, for ever.
     fn work()
     {
-        signal_stack();
+        crate::fiber::enter_thread();
         loop
         {
             run(next_task());
         }
     }
 
-    /// The signals a fault on a guard can raise: SIGSEGV, and SIGBUS on macOS.
-    const FAULTS: [libc::c_int; 2] = [libc::SIGSEGV, libc::SIGBUS];
-
-    /// The handlers of [`FAULTS`] before ours, which a fault off the guard of a
-    /// task goes on to; written once, before ours takes their place.
-    static mut BEFORE: std::mem::MaybeUninit<[libc::sigaction; 2]> =
-        std::mem::MaybeUninit::uninit();
-
-    /// The octets of the signal stack of an OS thread of the pool.
-    const SIGNAL_STACK: usize = 128 * 1024;
-
-    /// Put our handler on the faults of a guard, once, as the pool starts.
-    fn catch_faults()
-    {
-        // SAFETY: the pool starts once, under its lock, so no handler reads
-        // `BEFORE` while it is written; `sigaction` reads and writes these.
-        unsafe {
-            let before = (&raw mut BEFORE).cast::<libc::sigaction>();
-            let mut ours: libc::sigaction = std::mem::zeroed();
-            ours.sa_sigaction = on_fault as *const () as libc::sighandler_t;
-            ours.sa_flags = libc::SA_SIGINFO | libc::SA_ONSTACK;
-            libc::sigemptyset(&raw mut ours.sa_mask);
-            for (i, sig) in FAULTS.iter().enumerate()
-            {
-                libc::sigaction(*sig, &ours, before.add(i));
-            }
-        }
-    }
-
-    /// Give the calling OS thread a stack of its own for signals: a fault on
-    /// the guard of a task comes while the stack of the task is full.
-    fn signal_stack()
-    {
-        // SAFETY: a new mapping, which this OS thread alone uses, for good.
-        unsafe {
-            let prot = libc::PROT_READ | libc::PROT_WRITE;
-            let flags = libc::MAP_PRIVATE | libc::MAP_ANON;
-            let at = libc::mmap(null_mut(), SIGNAL_STACK, prot, flags, -1, 0);
-            ret_if!(at == libc::MAP_FAILED);
-            let stack = libc::stack_t { ss_sp: at, ss_size: SIGNAL_STACK, ss_flags: 0 };
-            libc::sigaltstack(&stack, null_mut());
-        }
-    }
-
-    /// The handler of a fault: one on the guard of the running task stops the
-    /// program with the trap `stack full`; each other goes on to the handler
-    /// before ours.
+    /// The room of the stack of the running task, when a fault lies on its
+    /// guard: on unix the address of the fault tells, and on Windows the OS
+    /// tells an overflow of the running stack (`None`).
     ///
     /// # Arguments
     ///
-    /// * `sig` - The signal.
-    /// * `info` - What the OS tells of it.
-    /// * `ctx` - The state of the OS thread.
-    extern "C" fn on_fault(
-        sig: libc::c_int, info: *mut libc::siginfo_t, ctx: *mut c_void,
-    )
+    /// * `at` - The address of the fault, `None` for an overflow on Windows.
+    ///
+    /// # Returns
+    ///
+    /// The room, or `None` for a fault off each task.
+    pub(crate) fn overflowed(at: Option<usize>) -> Option<usize>
     {
-        // SAFETY: the OS hands a valid `info`; the running task lives in its
-        // box.
-        unsafe {
-            let at = (*info).si_addr() as usize;
-            let task = CURRENT.get();
-            if !task.is_null() && (*task).stack.guards(at)
-            {
-                crate::traps::stack_full_from_signal((*task).stack.room());
-            }
-            pass_on(sig, info, ctx);
-        }
-    }
-
-    /// Hand a fault to the handler that was there before ours, or, for none,
-    /// put the action of the OS back, so the fault comes again with it.
-    ///
-    /// # Arguments
-    ///
-    /// * `sig` - The signal.
-    /// * `info` - What the OS tells of it.
-    /// * `ctx` - The state of the OS thread.
-    ///
-    /// The caller makes sure that it runs in a handler of a signal of
-    /// [`FAULTS`].
-    unsafe fn pass_on(sig: libc::c_int, info: *mut libc::siginfo_t, ctx: *mut c_void)
-    {
-        let i = usize::from(sig == libc::SIGBUS);
-        // SAFETY: written before ours took their place.
-        let before = unsafe { &*(&raw const BEFORE).cast::<libc::sigaction>().add(i) };
-        let handler = before.sa_sigaction;
-        let plain = handler == libc::SIG_DFL || handler == libc::SIG_IGN;
-        if plain
-        {
-            // SAFETY: the action of the OS comes back; the fault comes again.
-            unsafe { libc::signal(sig, libc::SIG_DFL) };
-            return;
-        }
-        type Full = extern "C" fn(libc::c_int, *mut libc::siginfo_t, *mut c_void);
-        type Bare = extern "C" fn(libc::c_int);
-        // SAFETY: the handler before ours takes the arguments its flags tell.
-        unsafe {
-            match before.sa_flags & libc::SA_SIGINFO != 0
-            {
-                true => std::mem::transmute::<libc::sighandler_t, Full>(handler)(
-                    sig, info, ctx,
-                ),
-                false => std::mem::transmute::<libc::sighandler_t, Bare>(handler)(sig),
-            }
-        }
+        let task = CURRENT.get();
+        ret_if!(task.is_null(), None);
+        // SAFETY: the running task lives in its box.
+        let stack = unsafe { &(*task).stack };
+        at.is_none_or(|at| stack.guards(at)).then(|| stack.room())
     }
 
     /// The next task that can go on: the first in the queue, or one whose sleep
@@ -573,7 +486,7 @@ mod pool
 }
 
 /// No pool: each thread runs on an OS thread of its own.
-#[cfg(not(unix))]
+#[cfg(not(zk_tasks))]
 mod none
 {
     use super::*;

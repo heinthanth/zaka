@@ -10,7 +10,7 @@ use std::ptr::null_mut;
 use crate::ctx::ZkCtx;
 use crate::ctx::free_ctx;
 use crate::ctx::new_ctx;
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 use crate::ctx::task_rows;
 use crate::out::ZkBuf;
 use crate::threads::Own;
@@ -69,7 +69,7 @@ impl Local
     /// # Returns
     ///
     /// The cells.
-    #[cfg(unix)]
+    #[cfg(zk_tasks)]
     pub(crate) fn of_task(n: usize, leave: Option<(extern "C" fn(i32), usize)>)
     -> Local
     {

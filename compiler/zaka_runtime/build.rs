@@ -3,6 +3,7 @@
 
 use std::path::Path;
 
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
 include!("stamp.rs");
@@ -13,6 +14,11 @@ fn main()
     println!("cargo:rerun-if-changed=../zaka_host/src");
     println!("cargo:rerun-if-changed=stamp.rs");
     println!("cargo:rerun-if-env-changed=ZAKA_RUNTIME_SALT");
+    // Light tasks run where the runtime can switch stacks: unix and Windows.
+    println!("cargo::rustc-check-cfg=cfg(zk_tasks)");
+    let os_kinds = std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
+    let tasks = os_kinds.split(',').any(|f| f == "unix" || f == "windows");
+    do_if!(tasks, println!("cargo:rustc-cfg=zk_tasks"));
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets it");
     let prefix = runtime_prefix(&Path::new(&manifest).join(".."));
     println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");

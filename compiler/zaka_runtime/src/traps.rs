@@ -112,7 +112,7 @@ pub(crate) mod trap
     pub(crate) const LOCK_BROKEN: i32 = ZkTrap::LockBroken as i32;
     pub(crate) const THREADS_NOT_POSITIVE: i32 = ZkTrap::ThreadsNotPositive as i32;
     pub(crate) const THREAD_WAITED: i32 = ZkTrap::ThreadWaited as i32;
-    #[cfg(unix)]
+    #[cfg(zk_tasks)]
     pub(crate) const STACK_FULL: i32 = ZkTrap::StackFull as i32;
 }
 
@@ -425,7 +425,7 @@ fn exit_with(said: Vec<u8>) -> !
 /// # Arguments
 ///
 /// * `size` - The octets of the stack.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 pub(crate) fn stack_full_from_signal(size: usize) -> !
 {
     let mut digits = [0u8; 20];
@@ -444,8 +444,28 @@ pub(crate) fn stack_full_from_signal(size: usize) -> !
     fill_raw(reason, &[(b"size", digits)], &mut |piece| raw_write(piece));
     raw_write(tail);
     raw_write(b"\n");
-    // SAFETY: `_exit` ends the process at once, as a trap does.
+    end_now()
+}
+
+/// End the process at once, with status 1, as a trap does: no handler runs
+/// and nothing is freed.
+#[cfg(unix)]
+fn end_now() -> !
+{
+    // SAFETY: `_exit` ends the process.
     unsafe { libc::_exit(1) }
+}
+
+/// End the process at once, with status 1, as a trap does: no handler runs
+/// and nothing is freed.
+#[cfg(windows)]
+fn end_now() -> !
+{
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    use windows_sys::Win32::System::Threading::TerminateProcess;
+    // SAFETY: the process ends itself.
+    unsafe { TerminateProcess(GetCurrentProcess(), 1) };
+    unreachable!("the process ended")
 }
 
 /// Write octets to standard error with no allocation.
@@ -460,6 +480,26 @@ fn raw_write(octets: &[u8])
     let _ = unsafe { libc::write(2, octets.as_ptr().cast(), octets.len()) };
 }
 
+/// Write octets to standard error with no allocation.
+///
+/// # Arguments
+///
+/// * `octets` - The octets.
+#[cfg(windows)]
+fn raw_write(octets: &[u8])
+{
+    use windows_sys::Win32::Storage::FileSystem::WriteFile;
+    use windows_sys::Win32::System::Console::GetStdHandle;
+    use windows_sys::Win32::System::Console::STD_ERROR_HANDLE;
+    let mut wrote = 0u32;
+    let len = u32::try_from(octets.len()).unwrap_or(u32::MAX);
+    // SAFETY: `WriteFile` reads `len` octets of the slice.
+    unsafe {
+        let err = GetStdHandle(STD_ERROR_HANDLE);
+        WriteFile(err, octets.as_ptr(), len, &mut wrote, std::ptr::null_mut());
+    }
+}
+
 /// The decimal digits of a number, in a buffer of the caller.
 ///
 /// # Arguments
@@ -470,7 +510,7 @@ fn raw_write(octets: &[u8])
 /// # Returns
 ///
 /// The digits, at the end of `buf`.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 fn decimal(mut n: usize, buf: &mut [u8; 20]) -> &[u8]
 {
     let mut at = buf.len();
@@ -490,7 +530,7 @@ fn decimal(mut n: usize, buf: &mut [u8; 20]) -> &[u8]
 /// * `tmpl` - The template.
 /// * `pairs` - Each name of its slots and its value.
 /// * `out` - Where each piece goes.
-#[cfg(unix)]
+#[cfg(zk_tasks)]
 fn fill_raw(tmpl: &[u8], pairs: &[(&[u8], &[u8])], out: &mut dyn FnMut(&[u8]))
 {
     let mut rest = tmpl;
