@@ -122,7 +122,12 @@ fn article_view(page: &Page, rendered: &Rendered) -> impl IntoView + use<>
     let blocks: Vec<_> = rendered.blocks.iter().cloned().map(block).collect();
     let book = page.book;
     let grid = page.is_title().then(|| chapter_grid(book));
-    article().class(ClassName::LEARN_ARTICLE).child((head, blocks, grid, pager(page)))
+    article().class(ClassName::LEARN_ARTICLE).attr("data-pagefind-body", "").child((
+        head,
+        blocks,
+        grid,
+        pager(page),
+    ))
 }
 
 /// The head of a page: its chapter, its title and what it teaches.

@@ -43,5 +43,6 @@ pub fn pager(page: &Page) -> impl IntoView + use<>
     nav()
         .class(format!("{} rise", ClassName::PAGER))
         .attr("aria-label", t!("website.learn.pager"))
+        .attr("data-pagefind-ignore", "")
         .child((sheet(&SHEET), before, after))
 }

@@ -158,7 +158,7 @@ fn bar(
         .attr("title", t!("website.sandbox.run_hint"))
         .on(ev::click, move |_| toggle(live))
         .child(label);
-    div().class(ClassName::SANDBOX_BAR).child((
+    div().class(ClassName::SANDBOX_BAR).attr("data-pagefind-ignore", "").child((
         span().class(ClassName::SANDBOX_NAME).lang("my").child(NAME),
         codes.collect_view(),
         div().class(ClassName::SANDBOX_ACTIONS).child((reset, run)),
