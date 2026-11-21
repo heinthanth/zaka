@@ -169,11 +169,16 @@ error[ZK0722]: "အဆင့်" can be unset here: a path reaches this read wit
 
 ### What sets a variable and what reads it
 
-| Sets the variable | Reads the variable |
-| --- | --- |
-| an assignment | printing it |
-| a call that passes it to a writable parameter (`out`), one marked `ဒေတာ ထည့်ပေးရန်` ([Functions](functions-parameters.md#writable-parameters)) | an argument of a mutable parameter (`inout`), one marked `ဒေတာ ပြောင်းလဲရန်`, because the function can read it |
-| | an operand, an argument, a call through it, a field or a cell of it, an add to a list, and in unsafe code its address |
+Two things set a variable:
+
+- an assignment;
+- a call that passes it to a writable parameter (`out`), one marked `ဒေတာ ထည့်ပေးရန်`
+  ([Function parameters](functions-parameters.md#writable-parameters)).
+
+Each other use reads it: printing it, an operand, an argument, a call through it, a field
+or a cell of it, an add to a list, and in unsafe code its address. An argument of a
+mutable parameter (`inout`), one marked `ဒေတာ ပြောင်းလဲရန်`, reads it too, because the
+function can read it before it writes.
 
 Where two paths join, the variable is set when it is set on both of them. The block of a
 loop can run zero times, so a write inside a `နေသရွေ့` loop sets nothing for the code after

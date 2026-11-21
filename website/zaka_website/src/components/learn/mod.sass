@@ -176,8 +176,10 @@
     vertical-align: top
     border-bottom: 1px solid var(--panel-border)
 
-  td:first-child
-    white-space: nowrap
+  // No column narrower than a short phrase, so a long cell beside it cannot squeeze
+  // it to a word a line; long cells wrap in each column, the first one too.
+  td
+    min-width: 12ch
 
   blockquote
     margin: 0
@@ -308,10 +310,21 @@
   .learn-lede
     font-size: 17px
 
+  // A table scrolls sideways here, so its cells can take the width a line of text needs:
+  // the last column, most often the description, the most, and a code chip stays whole.
   .learn-prose
     table
       display: block
       overflow-x: auto
+
+    td
+      min-width: 16ch
+
+    td:last-child
+      min-width: 30ch
+
+    td code
+      white-space: nowrap
 
 @media (prefers-reduced-motion: reduce)
   .learn-chapter

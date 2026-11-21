@@ -68,9 +68,22 @@ The sentence `အသက် ကို ၂၀ ဟု ထားမည်။` ("set 
 it into vannas (Burmese clusters of a consonant and its signs), digits, spaces and the
 line feed, and `zakac segment` prints the list:
 
-| Pre-token | `အ` | `သက်` | space | `ကို` | space | `၂` | `၀` | space | `ဟု` | space | `ထား` | `မည်` | `။` | line feed |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Octets | 0..3 | 3..12 | 12..13 | 13..22 | 22..23 | 23..26 | 26..29 | 29..30 | 30..36 | 36..37 | 37..46 | 46..55 | 55..58 | 58..59 |
+| Pre-token | Octets |
+| --- | --- |
+| `အ` | 0..3 |
+| `သက်` | 3..12 |
+| space | 12..13 |
+| `ကို` | 13..22 |
+| space | 22..23 |
+| `၂` | 23..26 |
+| `၀` | 26..29 |
+| space | 29..30 |
+| `ဟု` | 30..36 |
+| space | 36..37 |
+| `ထား` | 37..46 |
+| `မည်` | 46..55 |
+| `။` | 55..58 |
+| line feed | 58..59 |
 
 The word builder joins pre-tokens that touch and share a script, drops the white space,
 and keeps `။` alone, which gives six words: `အသက်`, `ကို`, `၂၀`, `ဟု`, `ထားမည်` and `။`.
