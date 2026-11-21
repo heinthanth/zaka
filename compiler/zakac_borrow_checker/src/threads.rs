@@ -10,7 +10,6 @@ use zakac_ir_builder::ir::Access;
 use zakac_ir_builder::ir::Expr;
 use zakac_ir_builder::ir::ExprNode;
 use zakac_ir_builder::ir::Func;
-use zakac_ir_builder::ir::HostFn;
 use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::RECORD_HEAD;
@@ -132,8 +131,8 @@ fn large_frame(func: &Func) -> bool
 }
 
 /// Whether statements need an OS thread of their own: a call of C, which can
-/// keep state for each OS thread or hold it in a call that blocks, or a read of
-/// standard input, which can wait with no end.
+/// keep state for each OS thread or hold it in a call that blocks. A read of
+/// standard input runs on an OS thread for I/O, as a file call does.
 ///
 /// # Arguments
 ///
@@ -147,10 +146,7 @@ fn pins_thread(block: &[Stmt]) -> bool
     let mut found = false;
     each_stmt(block, &mut |s| {
         found |= matches!(s, Stmt::Foreign { .. });
-        let mut note = |e: &Expr| {
-            let read = matches!(e.node, ExprNode::Host { func: HostFn::ReadLine, .. });
-            found |= read || matches!(e.node, ExprNode::Foreign { .. });
-        };
+        let mut note = |e: &Expr| found |= matches!(e.node, ExprNode::Foreign { .. });
         do_for!(e in stmt_exprs(s), each_expr(e, &mut note));
     });
     found

@@ -1,7 +1,7 @@
 //! Which threads can run as light tasks: a thread whose function reaches no
-//! call of C, no read of standard input and no call of itself again, through
-//! function values too. A thread written `သီးသန့် အပြိုင်` still counts here; the
-//! codegen gives it an OS thread of its own.
+//! call of C and no call of itself again, through function values too. A read
+//! of standard input leaves a thread light. A thread written `သီးသန့် အပြိုင်` still
+//! counts here; the codegen gives it an OS thread of its own.
 
 use std::collections::BTreeSet;
 
@@ -90,7 +90,7 @@ fn a_plain_thread_runs_light()
 }
 
 #[test]
-fn threads_that_reach_c_recursion_or_standard_input_get_os_threads()
+fn threads_that_reach_c_or_recursion_get_os_threads_and_a_read_of_input_does_not()
 {
     let text = program(
         "အရှည် ဟူသော လုပ်ဆောင်ချက်ကို \"က\" ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
@@ -98,7 +98,7 @@ fn threads_that_reach_c_recursion_or_standard_input_get_os_threads()
 ဖတ်ပြ ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။
 ပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။",
     );
-    assert_eq!(light(&text), set(&["ပေါင်း"]));
+    assert_eq!(light(&text), set(&["ဖတ်ပြ", "ပေါင်း"]));
 }
 
 #[test]

@@ -222,7 +222,8 @@ fn with_right(
     f(&name, ret)
 }
 
-/// Read a line of standard input.
+/// Read a line of standard input: on a light task, an OS thread for I/O waits
+/// for the line, as for a file call, and the pool goes on with other tasks.
 #[unsafe(export_name = stamped!("host_read_line"))]
 pub extern "C" fn zk_host_read_line(
     slot: *mut u8, ret: *const ZkKind, stream: *const u8, stream_kind: *const ZkKind,
@@ -231,7 +232,7 @@ pub extern "C" fn zk_host_read_line(
     let ret = kind(ret);
     ret_if!(handle(stream, kind(stream_kind)) != STDIN, fault(slot, ret, OTHER));
     flush_out();
-    match TermWorld.read_line()
+    match blocking(|| TermWorld.read_line())
     {
         Ok(Some(line)) => good(slot, ret, Some(line.as_bytes())),
         Ok(None) => fault(slot, ret, zaka_host::END_OF_INPUT),

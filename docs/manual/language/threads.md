@@ -840,7 +840,6 @@ too:
 - calls a C function (`"libX" မှလာသော`), which can keep state for each OS thread or hold
   its OS thread in a call that blocks;
 - calls itself again, through other functions as well, since the stack of a task is small;
-- reads standard input, which can wait with no end;
 - keeps more than 16 KiB of locals in one function, more than the guard of the stack of a
   task, which a frame must never step past.
 
@@ -850,9 +849,9 @@ A thread written `သီးသန့် အပြိုင်` in place of `အ�
 | --- | --- | --- |
 | Stack | 1 MiB, filled as it grows | 64 MiB |
 | In one program | tens of thousands | a few thousand |
-| While it waits for a thread, a channel, a lock, a sleep or a file | its OS thread runs the next task | its OS thread waits |
+| While it waits for a thread, a channel, a lock, a sleep, a file or standard input | its OS thread runs the next task | its OS thread waits |
 | A long loop with no wait | gives its OS thread to the next task after 10 milliseconds, while other tasks wait | the OS shares the cores |
-| C functions, standard input, a function that calls itself again, more than 16 KiB of locals in a function | none (the compiler picks an OS thread) | allowed |
+| C functions, a function that calls itself again, more than 16 KiB of locals in a function | none (the compiler picks an OS thread) | allowed |
 
 - Parallel loops and maps run their rounds on OS threads.
 - Light tasks run on macOS, Linux and Windows, where each task is a fiber of the OS. In a

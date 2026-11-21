@@ -468,7 +468,7 @@ It stops in `wait_until`,
 which drops the lock of the state first (a wait on several channels, `zk_select`, waits
 there too: a light task in it parks on `Key::Pipes`, a mask of its channels, so a change of
 one of them wakes it, and an OS thread of the runtime marks the end of each time limit with
-`Key::Timer`, and a wait is no deadlock while such a limit runs), in `zk_sleep`, in a call on a file (`blocking`
+`Key::Timer`, and a wait is no deadlock while such a limit runs), in `zk_sleep`, in a call on a file or a read of standard input (`blocking`
 in `host.rs`: an OS thread for I/O, up to 64 of them, runs the call while the task waits,
 so a slow disk or a named pipe holds no OS thread of the pool), and in `zk_safe_point` once its
 turn of 10 ms is over while other tasks wait. Each loop of each OS thread reads

@@ -357,3 +357,25 @@ fn threads_no_one_waits_for_give_their_rows_back_and_keep_their_traps()
         assert!(run.stderr.contains("integer division"), "{how}: {}", run.stderr);
     });
 }
+
+/// 20 threads that each read a line of standard input, which the tests give
+/// none of: each read waits on an OS thread for I/O and finds the end.
+const READERS: &str = "\"စံကား/အဝင်အထွက်\" မှ စာကြောင်းတစ်ကြောင်းဖတ် နှင့် စံပြုအဝင် တို့ကို ထည့်သွင်းမည်။
+
+ဖတ်ပြ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ကို ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၂၀ အထိ န အနေဖြင့် ရေတွက်၍ ဖတ်ပြ ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+
+#[test]
+fn light_tasks_read_standard_input_on_os_threads_for_io()
+{
+    both(READERS, |how, run| {
+        assert_eq!(run.status, Some(0), "{how}: {}", run.stderr);
+        assert_eq!(run.stdout.lines().count(), 20, "{how}: {}", run.stdout);
+    });
+}

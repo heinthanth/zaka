@@ -368,7 +368,7 @@ Two checks live outside `checks/` and keep their own facts:
   each one. It runs once the lint levels are set, so ZK0726 is an error at each level.
 - `threads.rs` also gives the codegens `light_fns`: the functions a spawn starts in whose
   reach (`kind_callees`: a call through a function value reaches each taken function
-  whose shape fits the kind of the value), holds no call of C, no read of standard input, no
+  whose shape fits the kind of the value), holds no call of C, no
   function that calls itself again and no function with more than 16 KiB of locals (at 64
   bits), below the guard of 64 KiB under the stack of a task. A thread of one of these runs as a light task, unless its call is
   written `သီးသန့် အပြိုင်`.
