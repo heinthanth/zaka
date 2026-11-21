@@ -290,7 +290,7 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | `show.rs` | `==`, the print of each data kind, results and optionals, the rows of a ဇယား (map) |
 | `host.rs` | the host functions of `zaka_host`: standard input, files and streams, the arguments and the environment |
 | `rights.rs` | the rights of the run, and the asker on a terminal |
-| `threads.rs` | threads and channels, each thread on its own OS thread (see [Threads and channels](#threads-and-channels)) |
+| `threads.rs` | threads and channels, each thread as a light task or on its own OS thread (see [Threads and channels](#threads-and-channels)) |
 | `libs.rs` | the record of each C lib the runtime serves |
 | `exchange.rs` | the C form of a value that a C lib passes to C or receives from it |
 | `callbacks.rs` | the libffi closures of the closures that go to C |
@@ -418,7 +418,11 @@ row is `ZK_TRAP_NO_ROW`.
 
 ## Threads and channels
 
-The C target runs each thread (`အပြိုင်လုပ်ငန်း`) on its own OS thread.
+The C target runs each thread (`အပြိုင်လုပ်ငန်း`) as a light task, on a stack of its own that
+a pool of OS threads takes turns on, or on an OS thread of its own. A spawn calls
+`zk_task_start` when `light_fns` of the borrow checker holds its function and the call is
+not written `သီးသန့် အပြိုင်`, and `zk_thread_start` otherwise; both take the same arguments,
+and the rest of this section holds for both.
 
 ### The C side
 
@@ -440,6 +444,13 @@ block. A second wait for a thread is the trap `thread waited`. A receive writes 
 optional into a scratch slot, and a send moves its value through its address.
 
 ### The runtime side
+
+A light task (`tasks.rs`) runs on a stack of 1 MiB from `fiber.rs`, which the switch
+between stacks reaches through naked functions. Its `Local` carries its call context and
+its other cells from one OS thread of the pool to the next. It stops in `wait_until`,
+which drops the lock of the state first, in `zk_sleep`, and in `zk_safe_point` once its
+turn of 10 ms is over while other tasks wait. A parked task counts as not running, as a
+waiting OS thread does, so the deadlock rule below holds for both.
 
 The runtime (`zaka_runtime/src/threads.rs`) keeps the threads and channels under one lock
 and one condition. It counts the OS threads that run: the main one (`mark_main`, from

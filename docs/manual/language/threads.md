@@ -13,8 +13,9 @@ duplicated (copied) until one side writes it. The Learn book teaches the same ru
 small steps in [Threads](../../learn/threads/README.md).
 
 How a thread of a Zaka program maps to an OS thread depends on how the program runs. A
-native program runs each thread on its own OS thread, so the threads run at the same
-time. The VM runs all threads on one OS thread and takes turns between them in a fixed
+native program runs each thread as a light task on a pool of OS threads, or on an OS
+thread of its own, so the threads run at the same time ([Light tasks](#light-tasks)). The
+VM runs all threads on one OS thread and takes turns between them in a fixed
 order, so a program prints the same lines on each run, and `--shuffle-thread-order`
 shuffles those turns ([Threads and OS threads](#threads-and-os-threads)).
 

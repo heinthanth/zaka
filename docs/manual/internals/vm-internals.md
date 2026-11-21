@@ -135,8 +135,9 @@ contains.
 ## Threads
 
 The VM runs the [threads](../language/threads.md) (`အပြိုင်လုပ်ငန်း`) of a program as
-green threads on one OS thread, while the C and native targets run each thread on its own
-OS thread ([The C target](c-backend.md#threads-and-channels)).
+green threads on one OS thread, while the C and native targets run each thread as a light
+task on a pool of OS threads, or on an OS thread of its own ([The C
+target](c-backend.md#threads-and-channels)).
 
 ### Turns
 

@@ -366,6 +366,10 @@ Two checks live outside `checks/` and keep their own facts:
   (`callees`, through function values to each function whose address the module takes),
   and reports the first read, address or write of a global that is not a constant in
   each one. It runs once the lint levels are set, so ZK0726 is an error at each level.
+- `threads.rs` also gives the codegens `light_fns`: the functions a spawn starts in whose
+  reach, through function values too, holds no call of C, no read of standard input and
+  no function that calls itself again. A thread of one of these runs as a light task, unless its call is
+  written `သီးသန့် အပြိုင်`.
 - `init.rs` raises ZK0722 to ZK0724 (see [Set before read](#set-before-read)).
 
 The drop that the compiler writes at the end of a scope (`Stmt::Drop`) does not run the

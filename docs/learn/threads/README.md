@@ -254,7 +254,7 @@ their own, so a sleep ends at once and the lines still come in the same order.
 - We end a long call with `အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း` to start a thread, and we use
   `<thread> ကို စောင့်သော ရလဒ်` to wait for its result.
 - The VM takes turns between threads on one OS thread, while a native program runs each
-  thread on a separate OS thread.
+  thread as a light task on a few OS threads, or on a separate OS thread when it needs one.
 - `… အပြိုင် လုပ်ဆောင်မည်။` starts a thread that we do not wait for, and the program waits
   for it before it ends.
 - A thread gets a duplicate of each argument, and it cannot touch a variable at the top of

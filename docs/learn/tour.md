@@ -696,8 +696,9 @@ of a file (ZK0726), and we cannot pass a plain shared object to a thread (ZK0494
 two threads could write to it at once.
 
 The VM runs the threads one after another in short turns, in a fixed order, so the output is
-the same on each run, while a native program runs them at the same time on separate OS
-threads.
+the same on each run, while a native program runs them at the same time as light tasks
+on a pool of OS threads, as goroutines run in Go, so tens of thousands of threads
+fit in one program.
 
 Learn: [Threads](threads/README.md), [Channels](threads/channels.md).
 Docs: [Threads](../manual/language/threads.md).

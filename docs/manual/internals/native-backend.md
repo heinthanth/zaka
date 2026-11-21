@@ -172,7 +172,9 @@ address to Cranelift. The AOT path links the libs with the `-lX` flags of the C 
 
 A spawn writes the data block the same as the C target does (`threads.rs`, with the
 offsets of `zakac_codegen_target_c::threads`), and the step of each function a thread runs
-is Cranelift code, `zk_thread_step_<f>`, defined after the bridges. The guard and the
+is Cranelift code, `zk_thread_step_<f>`, defined after the bridges. A spawn calls
+`zk_task_start` for a light task and `zk_thread_start` for an OS thread, with the rule of
+the C target. The guard and the
 leave are C: an AOT build compiles `native_threads_glue` beside the object and links it.
 
 The JIT has no C compiler at run time, so the runtime carries its own guard. With the
