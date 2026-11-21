@@ -454,7 +454,9 @@ which keeps 32 KiB of its stack for the handler (`SetThreadStackGuarantee`), and
 exception handler turns the stack overflow of a task into the same trap. A task takes its
 `Local`, its call context and its other cells, from one OS thread of the pool to the next.
 It stops in `wait_until`,
-which drops the lock of the state first, in `zk_sleep`, and in `zk_safe_point` once its
+which drops the lock of the state first, in `zk_sleep`, in a call on a file (`blocking`
+in `host.rs`: an OS thread for I/O, up to 64 of them, runs the call while the task waits,
+so a slow disk or a named pipe holds no OS thread of the pool), and in `zk_safe_point` once its
 turn of 10 ms is over while other tasks wait. Each loop of each OS thread reads
 `zk_halt`, so the OS thread that watches the turns sets its turn bit just while a task is
 past its turn and others wait, and a task that gives its turn on clears it: the loops of

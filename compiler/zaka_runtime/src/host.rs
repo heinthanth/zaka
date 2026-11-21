@@ -26,6 +26,7 @@ use crate::seqs::zk_seq_base;
 use crate::seqs::zk_seq_len;
 use crate::seqs::zk_seq_new;
 use crate::seqs::zk_seq_put;
+use crate::tasks::blocking;
 use crate::traps::trap;
 use crate::traps::zk_addr_trap;
 use crate::traps::zk_plain_trap;
@@ -240,7 +241,7 @@ pub extern "C" fn zk_host_read_line(
 pub extern "C" fn zk_host_read_file(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Read, path, |name, ret| {
-        match TermWorld.read_file(name)
+        match blocking(|| TermWorld.read_file(name))
         {
             Ok(text) => good(slot, ret, Some(text.as_bytes())),
             Err(e) => fault(slot, ret, io_member(&e)),
@@ -256,7 +257,7 @@ pub extern "C" fn zk_host_write_file(
 {
     let data = String::from_utf8_lossy(text_at(text)).into_owned();
     with_right(slot, ret, Right::Write, path, |name, ret| {
-        outcome(slot, ret, TermWorld.write_file(name, &data))
+        outcome(slot, ret, blocking(|| TermWorld.write_file(name, &data)))
     })
 }
 
@@ -268,7 +269,7 @@ pub extern "C" fn zk_host_append_file(
 {
     let data = String::from_utf8_lossy(text_at(text)).into_owned();
     with_right(slot, ret, Right::Write, path, |name, ret| {
-        outcome(slot, ret, TermWorld.append_file(name, &data))
+        outcome(slot, ret, blocking(|| TermWorld.append_file(name, &data)))
     })
 }
 
@@ -301,7 +302,7 @@ pub extern "C" fn zk_host_write_stream(
 pub extern "C" fn zk_host_remove(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Write, path, |name, ret| {
-        outcome(slot, ret, TermWorld.remove(name))
+        outcome(slot, ret, blocking(|| TermWorld.remove(name)))
     })
 }
 
@@ -312,7 +313,7 @@ pub extern "C" fn zk_host_make_folder(
 )
 {
     with_right(slot, ret, Right::Write, path, |name, ret| {
-        outcome(slot, ret, TermWorld.make_folder(name))
+        outcome(slot, ret, blocking(|| TermWorld.make_folder(name)))
     })
 }
 
@@ -323,7 +324,7 @@ pub extern "C" fn zk_host_list_folder(
 )
 {
     with_right(slot, ret, Right::Read, path, |name, ret| {
-        match TermWorld.list_folder(name)
+        match blocking(|| TermWorld.list_folder(name))
         {
             Err(e) => fault(slot, ret, io_member(&e)),
             Ok(names) => good_names(slot, ret, &names),
@@ -356,7 +357,7 @@ fn good_names(slot: *mut u8, ret: &ZkKind, names: &[String])
 pub extern "C" fn zk_host_path_kind(slot: *mut u8, ret: *const ZkKind, path: *const u8)
 {
     with_right(slot, ret, Right::Read, path, |name, ret| {
-        match TermWorld.path_kind(name)
+        match blocking(|| TermWorld.path_kind(name))
         {
             Ok(k) => good_word(slot, ret, k as isize),
             Err(e) => fault(slot, ret, io_member(&e)),
@@ -376,7 +377,7 @@ pub extern "C" fn zk_host_rename(
         !allowed(Right::Write, &old) || !allowed(Right::Write, &new),
         fault(slot, ret, NO_PERMISSION)
     );
-    outcome(slot, ret, TermWorld.rename(&old, &new))
+    outcome(slot, ret, blocking(|| TermWorld.rename(&old, &new)))
 }
 
 /// Read a variable of the environment.

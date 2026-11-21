@@ -53,6 +53,8 @@ mod pool
         Park(u64, Key),
         /// A sleep until this time.
         Sleep(Instant),
+        /// A call that can block, which an OS thread for I/O runs.
+        Io(Job),
         /// The end of its turn.
         Turn,
     }
@@ -384,6 +386,7 @@ mod pool
                 crate::threads::park_task(task, seen, key)
             }
             Outcome::Stopped(Stop::Sleep(at)) => asleep(task, at),
+            Outcome::Stopped(Stop::Io(job)) => start_io(job, task),
             Outcome::Stopped(Stop::Turn) | Outcome::Runs =>
             {
                 requeue(vec![task]);
@@ -531,6 +534,115 @@ mod pool
     /// * `reason` - What it stops for.
     fn stop_running(reason: Stop) { crate::seqs::halted_while(|| stop(reason)) }
 
+    /// A call that can block, on the stack of the task that waits for it: the
+    /// task stops until an OS thread for I/O ran it, so what it borrows from
+    /// the stack lives as long as the call.
+    pub(crate) struct Job(*mut (dyn FnMut() + 'static));
+
+    // SAFETY: the task that owns the call waits, stopped, until the OS thread
+    // for I/O ran it, and reaches none of it meanwhile.
+    unsafe impl Send for Job {}
+
+    /// The most OS threads for I/O: more calls at once wait in the queue.
+    const IO_THREADS: usize = 64;
+
+    /// The calls that wait for an OS thread for I/O, each with its task, and
+    /// the count of those OS threads, and of those that wait.
+    struct Io
+    {
+        /// The calls, first in front.
+        queue: VecDeque<(Job, Box<Task>)>,
+        /// The OS threads for I/O.
+        threads: usize,
+        /// Those of them that wait for a call.
+        idle: usize,
+    }
+
+    /// The calls for I/O and their OS threads.
+    static IO: Mutex<Io> =
+        Mutex::new(Io { queue: VecDeque::new(), threads: 0, idle: 0 });
+
+    /// Wakes an OS thread for I/O once a call comes.
+    static IO_WAKE: Condvar = Condvar::new();
+
+    /// Run a call that can block, such as one on a file: on a light task an OS
+    /// thread for I/O runs it while the OS thread of the pool goes on with
+    /// other tasks; elsewhere it runs here.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The call.
+    ///
+    /// # Returns
+    ///
+    /// What the call gave.
+    pub(crate) fn blocking<T>(f: impl FnOnce() -> T) -> T
+    {
+        if !on_task()
+        {
+            return f();
+        }
+        let (mut f, mut out) = (Some(f), None);
+        let mut call = || out = f.take().map(|f| f());
+        let call: &mut dyn FnMut() = &mut call;
+        // SAFETY: the task waits until the call ran, so its stack, and what the
+        // call borrows from it, outlives the call.
+        let job = unsafe {
+            std::mem::transmute::<*mut dyn FnMut(), *mut (dyn FnMut() + 'static)>(call)
+        };
+        stop_running(Stop::Io(Job(job)));
+        out.expect("an OS thread for I/O ran the call")
+    }
+
+    /// Hand a call of a task to an OS thread for I/O, starting one when none
+    /// waits.
+    ///
+    /// # Arguments
+    ///
+    /// * `job` - The call.
+    /// * `task` - The task that waits for it.
+    fn start_io(job: Job, task: Box<Task>)
+    {
+        let mut io = IO.lock().unwrap_or_else(PoisonError::into_inner);
+        io.queue.push_back((job, task));
+        let more = io.idle == 0 && io.threads < IO_THREADS;
+        do_if!(more, io.threads += 1);
+        drop(io);
+        do_if!(more, _ = std::thread::Builder::new().spawn(io_work));
+        IO_WAKE.notify_one();
+    }
+
+    /// The work of an OS thread for I/O: run each call that comes, then put
+    /// its task back with those that can go on.
+    fn io_work()
+    {
+        loop
+        {
+            let (Job(call), task) = next_io();
+            // SAFETY: the task of the call waits, stopped, so the call and
+            // what it borrows live.
+            unsafe { (*call)() };
+            requeue(vec![task]);
+        }
+    }
+
+    /// The next call for I/O; with none, wait for one.
+    ///
+    /// # Returns
+    ///
+    /// The call and its task.
+    fn next_io() -> (Job, Box<Task>)
+    {
+        let mut io = IO.lock().unwrap_or_else(PoisonError::into_inner);
+        loop
+        {
+            ret_if!(let Some(next) = io.queue.pop_front(), next);
+            io.idle += 1;
+            io = IO_WAKE.wait(io).unwrap_or_else(PoisonError::into_inner);
+            io.idle -= 1;
+        }
+    }
+
     /// Sleep: the running task stops for a count of milliseconds.
     ///
     /// # Arguments
@@ -618,4 +730,15 @@ mod none
 
     /// The end of a turn: there are no tasks on this host.
     pub(crate) fn turn() {}
+
+    /// Run a call that can block, here: there are no tasks on this host.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The call.
+    ///
+    /// # Returns
+    ///
+    /// What the call gave.
+    pub(crate) fn blocking<T>(f: impl FnOnce() -> T) -> T { f() }
 }

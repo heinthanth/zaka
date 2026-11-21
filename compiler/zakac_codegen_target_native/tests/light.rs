@@ -197,3 +197,83 @@ fn the_same_chain_on_an_os_thread_of_its_own_has_room()
         assert_eq!(run.stdout, "၀\n", "{how}");
     });
 }
+
+/// Readers of named pipes, more than the OS threads of the pool, and one
+/// writer that sleeps, then writes to each pipe: opening a pipe waits for the
+/// other end, so readers that held the OS threads of the pool would keep the
+/// writer from running. Each call on a file of a light task runs on an OS
+/// thread for I/O, so the pool goes on.
+#[cfg(unix)]
+#[test]
+fn file_calls_of_light_tasks_leave_the_pool_free()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let cores = std::thread::available_parallelism().map_or(1, usize::from);
+    let count = (cores + 4).min(48);
+    // Text shows a number in Burmese digits, so the names of the pipes use them.
+    let pipe = |n: usize| dir.path().join(format!("p{}", burmese(n as u64)));
+    for n in 1..=count
+    {
+        let made = std::process::Command::new("mkfifo").arg(pipe(n)).status().unwrap();
+        assert!(made.success());
+    }
+    let at = dir.path().display().to_string().replace('\\', "/");
+    let text = format!(
+        "\"စံကား/အဝင်အထွက်\" မှ ရေး၊ ဖိုင်ကိုဖတ် နှင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
+
+ဖတ်ပို့ ဟူသော လုပ်ဆောင်ချက် သည် လမ်း ဟူသော စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လည်းကောင်း န ဟူသော ကိန်းပြည့် \
+         တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ဖတ်ပြီး သည် \"{at}/p{{န}}\" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
+အကယ်၍ ဖတ်ပြီး ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် လမ်း ထဲသို့ ဖတ်ပြီး ထဲမှ ဒေတာ ကို ပို့မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ရေးသူ ဟူသော လုပ်ဆောင်ချက် သည် အရေအတွက် ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၅၀ မီလီစက္ကန့် စောင့်မည်။
+၁ မှ အရေအတွက် အထိ န အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ရေးပြီး သည် \"x\" ကို \"{at}/p{{န}}\" သို့ ရေး သည့် ရလဒ် ဖြစ်ပါစေ။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် လမ်း သည် စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+၁ မှ {count} အထိ န အနေဖြင့် ရေတွက်၍ ဖတ်ပို့ ဟူသော လုပ်ဆောင်ချက်ကို လမ်း နှင့် န တို့ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ရေးသူ ဟူသော လုပ်ဆောင်ချက်ကို {count} ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ကိန်းရှင် ရ သည် ၀ ဖြစ်ပါစေ။
+၁ မှ {count} အထိ မ အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် တန် သည် လမ်း မှ ရရှိသော ဒေတာ ဖြစ်ပါစေ။
+အကယ်၍ တန် ထဲတွင် ဒေတာ ရှိလျှင် ရ ကို ရ + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ရ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+"
+    );
+    let file = dir.path().join("pipes.zaka");
+    std::fs::write(&file, text).unwrap();
+    // A run past the deadline is a pool that the readers hold: it ends here.
+    let exe = env!("CARGO_BIN_EXE_zakac_codegen_target_native");
+    let mut child = std::process::Command::new(exe)
+        .env("ZAKAC_NO_CONFIG", "1")
+        .args(["--jit", "--allow-all"])
+        .arg(&file)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+    while child.try_wait().unwrap().is_none() && std::time::Instant::now() < deadline
+    {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    let ended = child.try_wait().unwrap().is_some();
+    if !ended
+    {
+        let _ = child.kill();
+    }
+    let out = child.wait_with_output().unwrap();
+    assert!(ended, "the readers held the pool: the run did not end");
+    let printed = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(printed, format!("{}\n", burmese(count as u64)), "{stderr}");
+}
