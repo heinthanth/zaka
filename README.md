@@ -1,11 +1,8 @@
 # Zaka (စံကား)
 
-Zaka is a programming language based on a subset of Burmese. `zakac` checks each line,
-catches mistakes before the program runs, explains each one in plain words, and compiles
-the program for the Zaka VM.
+Zaka is a programming language based on a subset of Burmese. Burmese sentences are compiled down to instructions for the Zaka VM, or to machine code through Cranelift or C.
 
 ```zaka
-// Print the text inside the quotes.
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသမည်။
 ```
 
@@ -29,8 +26,7 @@ cargo build --release -p zakac
 
 ## AI disclosure
 
-Much of the code, tests and docs here were written with the help of different AI models such as Anthropic Claude, Alibaba Qwen, OpenAI GPT, Google Gemini, etc. I designed the language, wrote the initial code, directed the work and reviewed the changes, and the tests cover each compiler stage and each runnable example in Learn and Docs. Even so, AI-written code can hold mistakes that look correct. Treat Zaka as an experimental
-project, and please report what seems wrong as an issue.
+Much of the code, tests and docs here were written with the help of different AI models such as Anthropic Claude, OpenAI GPT, Alibaba Qwen, Google Gemini, etc. I designed the language, wrote the initial code, directed the work and reviewed the changes. And the unit tests, integration tests cover each compiler stage and each runnable example in Learn and Docs. Even so, AI-written code can hold mistakes that look correct. Treat Zaka as an experimental project, and please report what seems wrong as an issue.
 
 ## Credits
 
@@ -39,7 +35,5 @@ for the PDA10 Burmese Mono font, and for permission to use it on the website.
 
 ## License
 
-Zaka is released under the [MIT license](LICENSE). © 2023–2026 Hein Thant Maung Maung.
-
-The fonts ship under the [SIL Open Font License](https://openfontlicense.org), and the
-dependencies keep their own licenses.
+Zaka is released under the [MIT license](LICENSE). © 2023–2026 Hein Thant Maung Maung.<br/>
+Most of the fonts are shipped under the [SIL Open Font License](https://openfontlicense.org) and other dependencies are distributed under their own license.
