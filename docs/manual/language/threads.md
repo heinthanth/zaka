@@ -683,7 +683,8 @@ stack grows, and a pool of OS threads, one for each core, takes turns on the tas
 thousand light tasks fit in a program where ten thousand OS threads, at 64 MiB of stack
 each, do not. For each thread that a call starts, the compiler picks a light task or an OS
 thread, and the words of the program are the same for both. A thread gets an OS thread of
-its own when its function, or a function it calls, through function values too:
+its own when its function, or a function it calls, through function values of its kind
+too:
 
 - calls a C function (`"libX" မှလာသော`), which can keep state for each OS thread or hold
   its OS thread in a call that blocks;
@@ -706,9 +707,12 @@ A thread written `သီးသန့် အပြိုင်` in place of `အ�
 - Light tasks run on macOS, Linux and Windows, where each task is a fiber of the OS. In a
   C lib (`--emit lib`), each thread runs on an OS thread of its own, and a program for
   WASI starts no threads.
-- A light task whose calls take more than its stack stops the program with `the program
-  stopped: the stack of a light task, N octets, ran full`; an OS thread of its own, with
-  `သီးသန့် အပြိုင်`, has room for such a thread.
+- A light task whose calls take more than its stack stops at the trap `stack full`. Under
+  `--trap unwind`, the default, the thread ends alone, as at each other trap (`thread N
+  stopped: the stack of a light task, N octets, ran full`), and a wait for it stops the
+  waiter. Under `--trap abort`, and on Windows in each mode, the program stops, after
+  the output it printed so far. An OS thread of its own, with `သီးသန့် အပြိုင်`, has room for
+  such a thread.
 - On the VM, the choice changes nothing: each thread takes turns there
   ([Turns on the VM](#turns-on-the-vm)).
 

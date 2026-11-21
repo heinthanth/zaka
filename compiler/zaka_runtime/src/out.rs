@@ -49,6 +49,32 @@ thread_local! {
     static LINE: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
 }
 
+/// Hand what waits for stdout to `write`, the line this OS thread holds after
+/// it, with no allocation and no lock that waits: a lock or a line another
+/// call holds now is left as it is. For the stop of a full stack.
+///
+/// # Arguments
+///
+/// * `write` - Where the octets go.
+#[cfg(zk_tasks)]
+pub(crate) fn flush_raw(write: &mut dyn FnMut(&[u8]))
+{
+    if let Ok(mut out) = OUT.try_lock()
+    {
+        write(&out);
+        out.clear();
+    }
+    let _ = LINE.try_with(|line| {
+        let Ok(mut line) = line.try_borrow_mut()
+        else
+        {
+            return;
+        };
+        write(&line);
+        line.clear();
+    });
+}
+
 /// Write out what waits for stdout, after the line this OS thread holds.
 pub fn flush_out()
 {

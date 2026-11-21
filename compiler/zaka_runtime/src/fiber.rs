@@ -346,7 +346,9 @@ mod unix
             let before = (&raw mut BEFORE).cast::<libc::sigaction>();
             let mut ours: libc::sigaction = std::mem::zeroed();
             ours.sa_sigaction = on_fault as *const () as libc::sighandler_t;
-            ours.sa_flags = libc::SA_SIGINFO | libc::SA_ONSTACK;
+            // A jump back to the guard of a task leaves the handler: the signal
+            // is open for the next fault.
+            ours.sa_flags = libc::SA_SIGINFO | libc::SA_ONSTACK | libc::SA_NODEFER;
             libc::sigemptyset(&raw mut ours.sa_mask);
             for (i, sig) in FAULTS.iter().enumerate()
             {

@@ -177,14 +177,68 @@ fn deep_chain(count: u32) -> String
     )
 }
 
+/// The line of a light task whose stack ran full, under `--trap unwind`.
+#[cfg(unix)]
+const FULL: &str =
+    "thread 1 stopped: the stack of a light task, 1048576 octets, ran full";
+
+#[cfg(unix)]
 #[test]
-fn a_light_task_whose_stack_runs_full_stops_with_a_trap()
+fn a_light_task_whose_stack_runs_full_ends_alone_with_a_trap()
+{
+    both(&deep_chain(120), |how, run| {
+        assert!(run.stderr.contains(FULL), "{how}: {}", run.stderr);
+        let want =
+            "the program stopped: the thread 1 this waits for stopped at a trap\n";
+        assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
+        assert_eq!(run.status, Some(1), "{how}");
+    });
+}
+
+/// On Windows a full stack stops the whole program under each `--trap` mode:
+/// a jump out of the handler of a stack overflow is not safe there.
+#[cfg(windows)]
+#[test]
+fn on_windows_a_full_stack_stops_the_program()
 {
     both(&deep_chain(120), |how, run| {
         let want = "the program stopped: the stack of a light task, 1048576 octets, \
                     ran full\n";
         assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
         assert_eq!(run.status, Some(1), "{how}");
+    });
+}
+
+#[test]
+fn under_abort_a_full_stack_stops_the_program_after_its_output()
+{
+    let text = deep_chain(120).replace(
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n",
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"အစ\" ဟု ပြသမည်။\n",
+    );
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("abort.zaka");
+    std::fs::write(&file, text).unwrap();
+    let run = run_jit(&file, &["--allow-all", "--trap", "abort"]);
+    assert_eq!(run.stdout, "အစ\n", "{}", run.stderr);
+    let want =
+        "the program stopped: the stack of a light task, 1048576 octets, ran full\n";
+    assert_eq!(stop_line(&run.stderr), want, "{}", run.stderr);
+    assert_eq!(run.status, Some(1));
+}
+
+#[cfg(unix)]
+#[test]
+fn the_pool_goes_on_after_a_task_whose_stack_ran_full()
+{
+    let text = deep_chain(120).replace(
+        "က ကို စောင့်သော ရလဒ် ကို ပြသမည်။\n",
+        "ကိန်းရှင် ခ သည် f120 ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။\nခ ကို စောင့်သော \
+         ရလဒ် ကို ပြသမည်။\n",
+    );
+    both(&text, |how, run| {
+        assert_eq!(run.stdout, "၀\n", "{how}: {}", run.stderr);
+        assert!(run.stderr.contains(FULL), "{how}: {}", run.stderr);
     });
 }
 
@@ -210,7 +264,8 @@ fn file_calls_of_light_tasks_leave_the_pool_free()
     let dir = tempfile::tempdir().unwrap();
     let cores = std::thread::available_parallelism().map_or(1, usize::from);
     let count = (cores + 4).min(48);
-    // Text shows a number in Burmese digits, so the names of the pipes use them.
+    // Text shows a number in Burmese digits, so the names of the pipes use
+    // them.
     let pipe = |n: usize| dir.path().join(format!("p{}", burmese(n as u64)));
     for n in 1..=count
     {

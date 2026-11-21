@@ -418,9 +418,11 @@ fn exit_with(said: Vec<u8>) -> !
     std::process::exit(1)
 }
 
-/// Stop the program with the trap `stack full`, from the handler of a fault on
-/// the guard page of a light task: the line is written with no allocation and
-/// no lock, since the fault can come inside either, and the program ends.
+/// Stop with the trap `stack full`, from the handler of a fault on the guard of
+/// a light task: the lines are written with no allocation and no lock that
+/// could wait, since the fault can come inside either. The output the program
+/// printed so far goes out first. Under `--trap unwind` on unix, the thread
+/// alone ends, as at each other trap; else the program ends.
 ///
 /// # Arguments
 ///
@@ -428,13 +430,27 @@ fn exit_with(said: Vec<u8>) -> !
 #[cfg(zk_tasks)]
 pub(crate) fn stack_full_from_signal(size: usize) -> !
 {
+    crate::out::flush_raw(&mut |octets| raw_write_to(1, octets));
     let mut digits = [0u8; 20];
     let digits = decimal(size, &mut digits);
     let p = prog();
     let name = NAME.get().map_or(&b"zaka"[..], Vec::as_slice);
+    let reason = row(p.trap_text, trap::STACK_FULL as usize);
     raw_write(name);
     raw_write(b": ");
-    let reason = row(p.trap_text, trap::STACK_FULL as usize);
+    #[cfg(unix)]
+    if let Some((jump, thread)) = crate::threads::leave()
+    {
+        let mut number = [0u8; 20];
+        let number = decimal(thread, &mut number);
+        let head = row(p.trap_text, trap::THREAD_STOPPED as usize);
+        fill_raw(head, &[(b"thread", number)], &mut |piece| raw_write(piece));
+        raw_write(b": ");
+        fill_raw(reason, &[(b"size", digits)], &mut |piece| raw_write(piece));
+        raw_write(b"\n");
+        crate::threads::keep_trap(trap::STACK_FULL);
+        jump(trap::STACK_FULL);
+    }
     // The head of the line holds the reason at `%{e}`.
     let stopped = text(p.stopped_text);
     let at = stopped.windows(4).position(|w| w == b"%{e}");
@@ -446,6 +462,14 @@ pub(crate) fn stack_full_from_signal(size: usize) -> !
     raw_write(b"\n");
     end_now()
 }
+
+/// Write octets to standard error with no allocation.
+///
+/// # Arguments
+///
+/// * `octets` - The octets.
+#[cfg(zk_tasks)]
+fn raw_write(octets: &[u8]) { raw_write_to(2, octets) }
 
 /// End the process at once, with status 1, as a trap does: no handler runs
 /// and nothing is freed.
@@ -468,35 +492,42 @@ fn end_now() -> !
     unreachable!("the process ended")
 }
 
-/// Write octets to standard error with no allocation.
+/// Write octets to standard output (1) or standard error (2) with no
+/// allocation.
 ///
 /// # Arguments
 ///
+/// * `fd` - The stream.
 /// * `octets` - The octets.
 #[cfg(unix)]
-fn raw_write(octets: &[u8])
+fn raw_write_to(fd: i32, octets: &[u8])
 {
     // SAFETY: `write` reads `len` octets of the slice.
-    let _ = unsafe { libc::write(2, octets.as_ptr().cast(), octets.len()) };
+    let _ = unsafe { libc::write(fd, octets.as_ptr().cast(), octets.len()) };
 }
 
-/// Write octets to standard error with no allocation.
+/// Write octets to standard output (1) or standard error (2) with no
+/// allocation.
 ///
 /// # Arguments
 ///
+/// * `fd` - The stream.
 /// * `octets` - The octets.
 #[cfg(windows)]
-fn raw_write(octets: &[u8])
+fn raw_write_to(fd: i32, octets: &[u8])
 {
     use windows_sys::Win32::Storage::FileSystem::WriteFile;
     use windows_sys::Win32::System::Console::GetStdHandle;
     use windows_sys::Win32::System::Console::STD_ERROR_HANDLE;
+    use windows_sys::Win32::System::Console::STD_OUTPUT_HANDLE;
+    use zakac_rust_sugars::tern;
     let mut wrote = 0u32;
     let len = u32::try_from(octets.len()).unwrap_or(u32::MAX);
     // SAFETY: `WriteFile` reads `len` octets of the slice.
     unsafe {
-        let err = GetStdHandle(STD_ERROR_HANDLE);
-        WriteFile(err, octets.as_ptr(), len, &mut wrote, std::ptr::null_mut());
+        let which = tern!(fd == 1, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE);
+        let stream = GetStdHandle(which);
+        WriteFile(stream, octets.as_ptr(), len, &mut wrote, std::ptr::null_mut());
     }
 }
 

@@ -448,7 +448,10 @@ optional into a scratch slot, and a send moves its value through its address.
 A light task (`tasks.rs`) runs on a stack of 1 MiB from `fiber.rs`, which the switch
 between stacks reaches through naked functions. Below the stack lie 64 KiB that no access
 can reach; a fault there, which a handler on a signal stack of each OS thread of the pool
-catches, writes the trap `stack full` with no allocation and ends the program. Each other
+catches, writes the trap `stack full` with no allocation, after the output that waits
+for stdout (`flush_raw`, with no lock that waits). Under `--trap unwind` the handler jumps
+back to the guard of the task, so the thread alone ends (the signal is open again:
+`SA_NODEFER`); under `--trap abort` it ends the program. Each other
 fault goes on to the handler that was there before. On Windows a task is a fiber of the OS,
 which keeps 32 KiB of its stack for the handler (`SetThreadStackGuarantee`), and a vectored
 exception handler turns the stack overflow of a task into the same trap. A task takes its
