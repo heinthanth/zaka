@@ -1,0 +1,100 @@
+// The search: a magnifier in the bar and a modal with a field over the
+// pages that match.
+
+// The button sits in the bar as the pickers do: an icon in the ink of the
+// bar, with no border, that grows a little under the pointer.
+.search-button
+  --icon-size: 24px
+  display: grid
+  place-items: center
+  width: 40px
+  height: 40px
+  padding: 0
+  color: inherit
+  background: transparent
+  border: 0
+  cursor: pointer
+  -webkit-tap-highlight-color: transparent
+
+  svg
+    transition: scale 160ms ease-out
+
+  &:hover svg
+    scale: 1.1
+
+  &:focus-visible
+    outline: 2px solid currentColor
+    outline-offset: 2px
+
+.search-modal
+  --modal-width: 640px
+
+  // The modal opens near the top, so the list grows down under the field.
+  margin-top: 12vh
+
+.search-field
+  box-sizing: border-box
+  width: 100%
+  margin: 16px 0 8px
+  padding: 10px 12px
+  font: inherit
+  font-size: 16px
+  color: var(--fg)
+  background: var(--field)
+  border: 1px solid var(--panel-border)
+  outline: none
+
+  &:focus-visible
+    border-color: var(--accent)
+    box-shadow: inset 0 0 0 1px var(--accent)
+
+.search-list
+  display: grid
+  margin: 0
+  padding: 0
+  list-style: none
+
+.search-match
+  display: grid
+  gap: 4px
+  padding: 12px 8px
+  color: inherit
+  text-decoration: none
+  border-bottom: 1px solid var(--panel-border)
+
+  &:hover,
+  &:focus-visible
+    background: var(--field)
+    outline: none
+
+.search-head
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  gap: 12px
+  margin: 0
+
+.search-title
+  font-weight: 700
+
+.search-book
+  flex: none
+  font-size: 12px
+  color: var(--fg-muted)
+
+.search-excerpt
+  margin: 0
+  font-size: 14px
+  color: var(--fg-muted)
+
+  mark
+    color: var(--fg)
+    background: color-mix(in srgb, var(--gold) 40%, transparent)
+
+.search-note
+  margin: 12px 0
+  color: var(--fg-muted)
+
+@media (prefers-reduced-motion: reduce)
+  .search-button svg
+    transition: none

@@ -6792,6 +6792,7 @@ dependencies = [
  "tower-http",
  "turf",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
  "zaka_explorer",
  "zaka_host",

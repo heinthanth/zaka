@@ -34,6 +34,21 @@ en = "Docs"
 [website.header.source]
 en = "GitHub"
 
+# ---------------------------------------------------------------- search
+
+[website.search.open]
+en = "Search the books"
+[website.search.title]
+en = "Search Learn and Docs"
+[website.search.hint]
+en = "Words or Zaka code, as in ကိန်းရှင်"
+[website.search.close]
+en = "Close the search"
+[website.search.none]
+en = "No page matches these words."
+[website.search.no_index]
+en = "Search works on the built site, which holds the index."
+
 # ---------------------------------------------------------------- hero
 
 [website.hero.credit]

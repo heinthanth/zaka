@@ -62,6 +62,7 @@ use crate::components::missing::missing;
 use crate::components::name::name;
 use crate::components::scroll_bar::PageScrollBar;
 use crate::components::scroll_bar::scroll_bar_sheet;
+use crate::components::search::LOADER;
 use crate::components::traits::traits;
 use crate::set_origin;
 
@@ -122,6 +123,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView
         meta().name("viewport").content("width=device-width, initial-scale=1"),
         link().rel("icon").r#type("image/svg+xml").href(LOGO_LIGHT),
         script().inner_html(PREPAINT),
+        script().inner_html(LOADER),
         fonts,
         style().inner_html(font_faces()),
         MOTION.map(|src| script().src(src).attr("defer", true)),

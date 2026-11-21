@@ -34,6 +34,8 @@ use crate::assets::LOGO_DARK;
 use crate::assets::LOGO_LIGHT;
 use crate::book::DOCS_URL;
 use crate::book::LEARN_URL;
+use crate::components::search::search_button;
+use crate::components::search::search_sheet;
 
 // The sheet, its classes renamed after a hash: `STYLE_SHEET` and `ClassName`.
 turf::style_sheet!("src/components/header/mod.sass");
@@ -76,17 +78,17 @@ const READ_LINE: f64 = 50.0;
 /// Chapter of the page when no field is under the header.
 const PAPER: &str = "paper";
 
-/// The sheet of the header. It mounts outside the island: a global sheet
-/// renders on the server alone, so inside an island the server and the
-/// browser would disagree on its contents.
+/// The sheets of the header and of its search. Both mount outside the
+/// island: a global sheet renders on the server alone, so inside an island the
+/// server and the browser would disagree on its contents.
 ///
 /// # Returns
 ///
 /// The view; it renders no element of its own.
-pub fn header_sheet() -> impl IntoView { sheet(&SHEET) }
+pub fn header_sheet() -> impl IntoView { (sheet(&SHEET), search_sheet()) }
 
 /// The header: the wordmark, the links to Learn, the Docs and the source
-/// repo (when the build set [`REPO_URL`]), the theme and
+/// repo (when the build set [`REPO_URL`]), the search, the theme and
 /// language pickers, and the explorer; on the explorer page, the settings of
 /// the explorer in its place. It sits over the page and takes the ground and
 /// ink of the chapter under it. An island: the pickers and the chapter
@@ -153,6 +155,7 @@ pub fn SiteHeader(here: String) -> impl IntoView
         learn,
         docs,
         source,
+        search_button(),
         pickers,
         action,
         toggle(open),

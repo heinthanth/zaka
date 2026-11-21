@@ -12,4 +12,5 @@ pub mod name;
 pub mod pager;
 pub mod sandbox;
 pub mod scroll_bar;
+pub mod search;
 pub mod traits;

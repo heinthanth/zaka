@@ -84,6 +84,9 @@ const GLOBE: [&str; 3] = [
      0 1 4-10z",
 ];
 
+/// A magnifier, a lens with its handle, on a 24 unit grid.
+const SEARCH: [&str; 2] = ["M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z", "m21 21-4.3-4.3"];
+
 /// A check mark, on a 24 unit grid.
 const CHECK: [&str; 1] = ["M20 6 9 17l-5-5"];
 
@@ -349,3 +352,10 @@ pub fn restart() -> impl IntoView { line_icon(&RESTART) }
 ///
 /// The view.
 pub fn globe() -> impl IntoView { line_icon(&GLOBE) }
+
+/// A magnifier, for the search of the books.
+///
+/// # Returns
+///
+/// The view.
+pub fn search() -> impl IntoView { line_icon(&SEARCH) }
