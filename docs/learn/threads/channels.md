@@ -26,11 +26,9 @@ values on it, and another thread takes them off in the same order.
 လမ်း ကို ပိတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခါးပတ် သည် စာသား ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို ခါးပတ် ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
 ခါးပတ် မှ ရရှိသော ဒေတာတိုင်းကို ပန်းကန် အနေဖြင့် ယူ၍ "ရ: {ပန်းကန်}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -63,7 +61,7 @@ is closed and each value in it has come out. When we close a channel, the values
 still in it come out first.
 
 A duplicate (copy) of a channel value names the same channel, so the thread and the
-program start block above both reach one queue. The values that we send must be values
+statements above both reach one queue. The values that we send must be values
 that a thread can use, the same as the arguments of a thread.
 
 ## One value at a time
@@ -80,7 +78,6 @@ inside the branch to read the value that came:
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 လမ်း ထဲသို့ ၁၀ ကို ပို့မည်။
 လမ်း ထဲသို့ ၂၀ ကို ပို့မည်။
@@ -88,7 +85,6 @@ inside the branch to read the value that came:
 လမ်း မှ ရရှိသော ဒေတာ ကို ပြသမည်။
 အကယ်၍ လမ်း ထဲတွင် ဒေတာ ရှိလျှင် (လမ်း ထဲမှ ဒေတာ) * ၂ ကို ပြသမည်။
 လမ်း မှ ရရှိသော ဒေတာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -118,11 +114,9 @@ is full, so a fast sender keeps pace with a slow receiver:
 လမ်း ကို ပိတ်မည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကန့် သည် ကိန်းပြည့် ၂ ခု ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို ကန့် ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
 ကန့် မှ ရရှိသော ဒေတာတိုင်းကို တန် အနေဖြင့် ယူ၍ "ရ {တန်}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

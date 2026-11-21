@@ -256,12 +256,13 @@ fn debug_mode_opens_the_last_phase_before_the_first_failure()
 }
 
 #[test]
-fn blank_source_lacks_a_start_block()
+fn blank_source_compiles_in_repl_mode()
 {
+    // The explorer compiles in REPL mode: the top-level statements, here
+    // none, form the program start block.
     let out = compile("", &Options::default());
     assert!(out.tokens.is_empty());
-    let codes: Vec<&str> = out.diagnostics.iter().map(|d| d.code.as_str()).collect();
-    assert_eq!(codes, ["ZK0327"]);
+    assert!(out.diagnostics.is_empty(), "{:?}", out.diagnostics);
     assert_eq!(out.tree.label, "program");
 }
 

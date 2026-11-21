@@ -43,22 +43,39 @@ fn statements_at_the_top_level_form_the_start_block_in_repl_mode()
 }
 
 #[test]
-fn a_declaration_after_a_statement_moves_in_order()
+fn declarations_move_in_as_locals_in_order()
 {
     let checked = repl(LOOSE);
     let moved = start_stmts(&checked);
-    assert_eq!(moved.len(), 3);
-    assert!(matches!(moved[1], Stmt::Decl(_)));
+    assert_eq!(moved.len(), 4);
+    assert!(matches!(moved[0], Stmt::Decl(_)) && matches!(moved[2], Stmt::Decl(_)));
     let top = checked.program.stmts.iter().filter(|s| matches!(s, Stmt::Decl(_)));
-    assert_eq!(top.count(), 1);
+    assert_eq!(top.count(), 0);
 }
 
 #[test]
-fn declarations_alone_get_a_blank_start_block()
+fn a_declaration_a_function_uses_remains_with_the_ones_it_uses()
+{
+    let text = "ကိန်းသေ က သည် ၁ ဖြစ်ပါစေ။
+ကိန်းသေ ခ သည် က + ၁ ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် ၃ ဖြစ်ပါစေ။
+ပြ ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ခ ကို ပြသမည်။ လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+ပြ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
+ဂ ကို ပြသမည်။
+";
+    let checked = repl(text);
+    assert_eq!(checked.out.diagnostics.len(), 0, "{:?}", checked.out.diagnostics);
+    let top = checked.program.stmts.iter().filter(|s| matches!(s, Stmt::Decl(_)));
+    assert_eq!(top.count(), 2);
+    assert_eq!(start_stmts(&checked).len(), 3);
+}
+
+#[test]
+fn a_file_of_declarations_alone_gets_a_start_block()
 {
     let checked = repl("ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။\n");
     assert_eq!(checked.out.diagnostics.len(), 0);
-    assert!(start_stmts(&checked).is_empty());
+    assert_eq!(start_stmts(&checked).len(), 1);
 }
 
 #[test]

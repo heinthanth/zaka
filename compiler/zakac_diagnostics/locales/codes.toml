@@ -546,7 +546,7 @@ en = "no start block"
 [codes.ZK0327.message]
 en = "the program has no start block, \"ပရိုဂရမ်သည်\""
 [codes.ZK0327.help]
-en = "add \"ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\", the statements to run, and \"ပရိုဂရမ် ပြီးဆုံးပါပြီး။\""
+en = "add \"ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\", the statements to run, and \"ပရိုဂရမ် ပြီးဆုံးပါပြီး။\", or run the file with --repl, so its top-level statements form the start block"
 [codes.ZK0327.explain]
 en = """The file given to \"zakac run\" starts the program, so it holds a start block, \"ပရိုဂရမ်သည်\", with the statements that run first. A file that other files import holds declarations alone and no start block."""
 

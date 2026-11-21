@@ -17,7 +17,6 @@ thing, and we can use whichever one reads better.
 - which groups of operators Zaka has, and where this chapter covers each group
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
@@ -26,7 +25,6 @@ thing, and we can use whichever one reads better.
 
 က > ခ ကို ပြသမည်။                       // sign
 က သည် ခ ထက် ကြီးသည် ဟု ပြသမည်။            // words: k is greater than kh
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -27,13 +27,11 @@ remove, duplicates (copies) the cells into a new heap block, so the literal itse
 changes:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရောင်များ သည် ["နီ"၊ "ဝါ"] ဖြစ်ပါစေ။
 ကိန်းရှင် ရွေး သည် ရောင်များ ဖြစ်ပါစေ။
 ရွေး ထဲသို့ "စိမ်း" ကို ထည့်မည်။          // the first edit: a new heap block
 ရောင်များ ကို ပြသမည်။
 ရွေး ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -57,12 +55,10 @@ known before the program runs, so the compiler can work out a cell read and the 
 the constant at compile time, and neither runs while the program runs:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ ရက်များ သည် [၃၁၊ ၂၈၊ ၃၁] ဖြစ်ပါစေ။
 ကိန်းသေ ဖေဖော်ဝါရီ သည် ရက်များ ၏ အကွက် ၁ ဖြစ်ပါစေ။
 ဖေဖော်ဝါရီ ကို ပြသမည်။
 ရက်များ ၏ အကွက်အရေအတွက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -74,10 +70,8 @@ A value that needs the program to run, such as a variable in a cell, is an error
 declare such a list with `ကိန်းရှင်` instead:
 
 ```zaka-error ZK0606
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် n သည် ၃ ဖြစ်ပါစေ။
 ကိန်းသေ l သည် [n၊ ၂] ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -92,12 +86,10 @@ in the list itself, so it never needs a heap block, and a literal of known cells
 duplicated in from static data in one step:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈] ဖြစ်ပါစေ။
 က ကို ပြသမည်။
 ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -138,7 +130,6 @@ cell is set, either through cell numbers written in place or through a counted l
 each cell that writes the cell of its counter:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 က ၏ အကွက် ၀ ကို ၅ ဟု ထားမည်။
 က ၏ အကွက် ၁ ကို ၆ ဟု ထားမည်။
@@ -146,7 +137,6 @@ each cell that writes the cell of its counter:
 ကိန်းရှင် ခ သည် အကွက် ၄ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ၀ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ ခ ၏ အကွက် န ကို န * ၁၀ ဟု ထားမည်။    // each cell, 0 to 3
 ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -159,11 +149,9 @@ tell which cells a write reaches, as with a cell number in a variable or a loop 
 of the cells, the read gets the warning ZK0723, and the program still runs:
 
 ```zaka-warning ZK0723
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 ၀ မှ ၁ အထိ န အနေဖြင့် ရေတွက်၍ က ၏ အကွက် န ကို န ဟု ထားမည်။     // cell 2 is never set
 က ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -186,12 +174,10 @@ folds other constants:
 ```zaka
 ကိန်းသေ အရွယ် သည် ၃ ဖြစ်ပါစေ။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် အကွက် အရွယ် * ၂ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 က ကို ပြသမည်။
 ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -203,10 +189,8 @@ A variable does not work, because its value is known when the program runs, and 
 of the list must be fixed before that:
 
 ```zaka-error ZK0227
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရွယ် သည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် က သည် အကွက် အရွယ် ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -225,12 +209,10 @@ the first `စာရင်း` (a row of 3 integers) and the `၂` to the second
 messages write this data kind as `isize[3][2]`:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဂရစ် သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // 2 rows of 3
 ဂရစ် ၏ အကွက် ၁ ၏ အကွက် ၂ ကို ၉ ဟု ထားမည်။                                          // row 1, column 2
 ဂရစ် ကို ပြသမည်။
 ဂရစ် ၏ အကွက် ၁ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -249,13 +231,11 @@ duplicated into a heap block. The other direction does not work (see [A counted 
 from a plain list](#a-counted-list-from-a-plain-list)):
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
 ခ ကို [၄၊ ၅] ဟု ထားမည်။
 က ကို ပြသမည်။
 ခ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -281,10 +261,8 @@ Here the loop sets each cell of the counted result before the return:
 အဖြေ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် နှစ်ထပ်များ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ကိန်းများ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -300,10 +278,8 @@ A counted list takes its count times the size of one cell, with no gaps, while a
 list takes three words, whatever its count:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
 ကိန်းပြည့် စာရင်း တစ်ခု ၏ အရွယ်အစား ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -322,11 +298,9 @@ number it can follow. Here the number is in a variable, and the compiler still w
 that it is 3:
 
 ```zaka-error ZK0710
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // cells 0, 1 and 2 have values; 3 does not exist
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -339,10 +313,8 @@ number is written in place, as a fixed number, the compiler reports it with anot
 Counting from 1 starts at 1, not 0:
 
 ```zaka-error ZK0603
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသမည်။     // counting from 1 starts at 1
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -353,10 +325,8 @@ The cell number is the whole operator expression after `အကွက်`, so thi
 cell `၁ + ၂`:
 
 ```zaka-error ZK0603
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀ နှင့် ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသမည်။         // cell 3, not cell 1 plus 2
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -368,9 +338,7 @@ error[ZK0603]: cell 3 is outside the list, whose cells run from 0 to 2
 The literal must have the same number of cells as the count in the data kind:
 
 ```zaka-error ZK0419
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀ နှင့် ၈၅ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -384,10 +352,8 @@ one fits it, in a declaration or elsewhere. To set each cell to its initial valu
 use `ကနဦးတန်ဖိုး` instead:
 
 ```zaka-error ZK0436
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၇၊ ၈၊ ၉] ဖြစ်ပါစေ။
 က ကို [] ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -399,10 +365,8 @@ error[ZK0436]: a list with no cells does not fit the counted list isize[3]
 A plain list does not turn into a counted list, because nothing promises its count:
 
 ```zaka-error ZK0401
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -414,10 +378,8 @@ error[ZK0401]: expected isize[3], found isize[]
 A counted list keeps its count for good, so we cannot use `ထည့်မည်` or `ဖျက်မည်` on it:
 
 ```zaka-error ZK0437
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ်များ သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်ပါစေ။
 အမှတ်များ ထဲသို့ ၇၀ ကို ထည့်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

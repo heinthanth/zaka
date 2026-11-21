@@ -186,7 +186,7 @@ rules).
 error[ZK0406]: the literal 256 does not fit u8
 ```
 
-```zaka-error ZK0216 repl=on
+```zaka-error ZK0216
 ကိန်းရှင် က သည် ၇ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 

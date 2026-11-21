@@ -25,10 +25,8 @@ functions make it simpler to follow, because a good name shows what the lines ar
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // Call it twice
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -38,9 +36,11 @@ functions make it simpler to follow, because a good name shows what the lines ar
 နေကောင်းလား
 ```
 
-The first part of the file declares the function, and the program start block (entry
-point, `main`) calls it twice. Declaring a function does not run it: the statements inside
-run each time the function is called, and not before. We can use this pattern to declare a
+The first part of the file declares the function, and the two lines after it call it twice;
+those lines form the program start block (entry point, `main`), as in [REPL
+mode](../../manual/language/functions-start-block.md#repl-mode). Declaring a function
+does not run it: the statements inside run each time the function is called, and not
+before. We can use this pattern to declare a
 function:
 
 ```text
@@ -81,10 +81,8 @@ call, where we write the name and then `မည်` ("will"):
 "မင်္ဂလာပါ" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။   // the long form
 နှုတ်ဆက် မည်။                                // the short form
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -103,14 +101,12 @@ call, where we write the name and then `မည်` ("will"):
 
 We declare most functions at the top level of the file, outside the program start block.
 There, the order does not matter: a call can come before the declaration of its function,
-so a lot of programs put the program start block at the top and the functions below it.
+so a lot of programs put the statements that run at the top and the functions below them.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။        // called before its declaration: fine
 "ခေါင်းစဉ်" ဟု ပြသမည်။
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 
 // draw a line
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက် သည်
@@ -172,10 +168,8 @@ back to the place of the call:
 "မရောက်ပါ" ဟု ပြသမည်။            // never runs
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စမ်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 "ပြီး" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

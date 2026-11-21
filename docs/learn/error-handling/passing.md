@@ -33,10 +33,8 @@ goes on with its good result (`Ok` value).
 စားခွဲ(စားခွဲ(က၊ ခ)?၊ ဂ)? ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ထပ်စား(၁၀၀၊ ၅၊ ၂) ကို ပြသမည်။
 ထပ်စား(၁၀၀၊ ၀၊ ၂) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -57,7 +55,7 @@ To pass a failure on, we write `?` straight after the `)` of the call:
 
 In the first call, both divisions succeed, so `ထပ်စား` returns `၁၀` as its good result. In
 the second call, the inner division fails, so `ထပ်စား` stops and returns the same error
-value, and the outer division never runs. The program start block prints each whole result
+value, and the outer division never runs. The program prints each whole result
 so that we can see both outcomes.
 
 A call with `?` is a value like other values, so we can use it wherever a value goes: in a
@@ -99,9 +97,7 @@ that has no good result, or one whose good result we do not need:
 "ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အားလုံး() ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -139,10 +135,8 @@ run first, and the first failure ends the function, so the calls to its right ne
 စစ်(၂)? + စစ်(၃)? + စစ်(၄)? ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် ပေါင်း() ဖြစ်ပါစေ။
 အကယ်၍ ရ ထဲတွင် အမှားအယွင်း ရှိလျှင် "မအောင်မြင်: {ရ ထဲမှ အမှားအယွင်း ဒေတာ}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -152,7 +146,7 @@ run first, and the first failure ends the function, so the calls to its right ne
 ```
 
 `စစ်(၄)` is never called, because `စစ်(၃)` failed first, so `ပေါင်း` stopped and returned
-the error value. The program start block keeps that error value in `ရ` and tests it, which
+the error value. The program keeps that error value in `ရ` and tests it, which
 [Reading a whole result](results.md) explains next.
 
 ## The program start block cannot pass a failure on
@@ -169,9 +163,7 @@ code of the run, so the program start block cannot fail, and a pass-on in it is 
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စားခွဲ(၁၀၀၊ ၀)? ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -190,12 +182,10 @@ the whole result of the call in a variable and test it:
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
 အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် ရ ထဲမှ ဒေတာ ကို ပြသမည်။
 ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားမည်။
 အကယ်၍ ရ ထဲတွင် အမှားအယွင်း ရှိလျှင် ရ ထဲမှ အမှားအယွင်း ဒေတာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -220,9 +210,7 @@ failure is never lost:
 န ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စစ် ဟူသော လုပ်ဆောင်ချက်ကို ၁ ဖြင့် လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -245,9 +233,6 @@ fails with text, while the caller fails with an integer:
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းပြည့် ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
 စစ်(၁)? ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

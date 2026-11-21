@@ -70,8 +70,10 @@ and one set of tests serve both books.
   - Options can follow the fence word, as the flags of the same names:
     `lint-error=mem`, `lint-warn=mem`, `lint-allow=mem`, `lint-warn=doubts`,
     `lint-allow=`, `lint-warn=` or `lint-error=` with each other lint group or code
-    (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`, and `repl=on`, which compiles
-    in REPL mode so the fence can leave out the program start block.
+    (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`.
+  - Each fence compiles in REPL mode, so it can leave out the program start block; a
+    fence with a start block compiles as it is. `repl=off` turns the mode off, for a
+    fence that teaches ZK0327.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
 - A Zaka term carries its standard term in parentheses, as in "data kind (type)" or "table
@@ -84,7 +86,9 @@ and one set of tests serve both books.
   parameter" (not "changed" and "filled"), "operation" (not "op"), "core module" (not
   "the core"), "program start block" (not "start block"), "block closer" (not "closer").
 - A Learn page has one shape: a short intro, `## You will learn`, the smallest example
-  that runs with its pattern line (`<name> ဟူသော <kind> တစ်ခု`) and a word-for-word gloss,
+  that runs (with no program start block, except in the Hello, Programs and Modules
+  chapters, the first example of the tour, and an example whose point needs the block,
+  such as a function or a declaration inside it) with its pattern line (`<name> ဟူသော <kind> တစ်ခု`) and a word-for-word gloss,
   one idea in each `##` section, `## Details` for the edge rules (with links to Docs),
   `## Recap`, `## Hands on`, then `Next:`. `learn/tour.md` is the fast path for a reader
   who knows another language.

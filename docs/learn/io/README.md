@@ -29,9 +29,7 @@ This program writes a word into a file, then reads the file back:
 "မှတ်စု.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ်ကောင်း ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မှတ်စု သည့် ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -78,9 +76,7 @@ When a call fails, its error value tells us the reason. A file that is not there
 ```zaka
 "စံကား/အဝင်အထွက်" မှ ဖိုင်ကိုဖတ် ကို ထည့်သွင်းမည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မရှိ.txt" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -88,7 +84,7 @@ When a call fails, its error value tells us the reason. A file that is not there
 ```
 
 Here we write `သည့် ရလဒ်` in place of `သည့် ရလဒ်ကောင်း`, which gives the whole result,
-good or failed, and the program start block can print it. [Reading a whole
+good or failed, and the program can print it. [Reading a whole
 result](../error-handling/results.md) shows how to test it.
 
 ## Permission to read and write
@@ -97,7 +93,7 @@ result](../error-handling/results.md) shows how to test it.
 the right, as Deno does. We grant each right with a flag:
 
 ```sh
-zakac run --allow-read --allow-write notes.zaka
+zakac run --repl --allow-read --allow-write notes.zaka
 ```
 
 Without the flag, the program asks on the terminal, and a call that does not get the
@@ -110,9 +106,7 @@ To read a variable of the environment, we use `ပတ်ဝန်းကျင်
 ```zaka
 "စံကား/အဝင်အထွက်" မှ ဖတ် ကို ထည့်သွင်းမည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "HOME" ဟူသည့် ပတ်ဝန်းကျင်ကိန်းရှင် ကို ဖတ်သည့်ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -141,9 +135,7 @@ share one line:
 "!" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပြ သည့် ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -152,7 +144,7 @@ share one line:
 ```
 
 `ပြ` has no value to return, so its result kind uses `အောင်မြင်သည့်သတင်း` ("news of
-success") as the good side, and that is what the program start block prints on the last
+success") as the good side, and that is what the program prints on the last
 line ([A side with no value](../error-handling/kinds.md#a-side-with-no-value)).
 
 ## Reading what the user enters
@@ -175,9 +167,7 @@ under the program has the lines that the program reads:
 "မင်္ဂလာပါ {နာမည်}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် နှုတ်ဆက် သည့် ရလဒ် ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```stdin
@@ -208,7 +198,6 @@ This program counts three lines, and one of them is blank:
 ```zaka
 "စံကား/အဝင်အထွက်" မှ စာကြောင်းတစ်ကြောင်းဖတ်၊ စံပြုအဝင် နှင့် အချက်အလက်အဝင်အထွက်အမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 ကိန်းရှင် လိုင်း သည် စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
 လိုင်း ထဲတွင် ရလဒ်ကောင်း ရှိနေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -217,7 +206,6 @@ This program counts three lines, and one of them is blank:
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အကယ်၍ လိုင်း ထဲမှ အမှားအယွင်း ဒေတာ == အချက်အလက်အဝင်အထွက်အမှားအယွင်းများထဲမှ အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း ဖြစ်လျှင် "{အရေအတွက်} လိုင်း" ဟု ပြသမည်။
 သို့မဟုတ်ပါက "ဖတ်၍မရ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```stdin

@@ -17,14 +17,12 @@ be used is the *scope* of the name.
 - The four spellings of the block closer.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "အစ" ဟု ပြသမည်။
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။               // do the following:
 ကိန်းရှင် လူဦးရေ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 လူဦးရေ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။              // the tasks are done.
 "အဆုံး" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -59,12 +57,10 @@ A name that we declare inside a block can be used inside that block, and nowhere
 After the block closer, the name is gone:
 
 ```zaka-error ZK0301
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။ // short-lived
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ယာယီ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -75,7 +71,6 @@ The other direction works: we can use the names from outside a block inside it, 
 can put a block inside another block:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ယာယီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အရေအတွက် * ၁၀ ဖြစ်ပါစေ။ // uses the outer name
@@ -84,7 +79,6 @@ can put a block inside another block:
 ယာယီ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -98,14 +92,12 @@ the outer one, so inside the block the name means the new variable, and when the
 ends, the outer variable is back, with its value unchanged:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။ // a new, inner အရေအတွက်
 အရေအတွက် ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အရေအတွက် ကို ပြသမည်။                          // the outer one again
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

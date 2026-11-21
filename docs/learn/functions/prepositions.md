@@ -25,10 +25,8 @@ This page uses functions with a result, which [Results](results.md) teaches.
 "{နေရာ}: {စာ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "(I) will write 'hello' to the notebook"
 "မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -74,10 +72,8 @@ A preposition can be several words, because Burmese often puts a phrase after a 
 "{စ} → {ဆုံး}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "(I) will show the trip starting from Yangon up to Mandalay"
 "ရန်ကုန်" မှ စ၍ "မန္တလေး" အထိ ခရီးစဉ်ပြမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -108,10 +104,8 @@ explains, and it can glue onto the name just as `မည်` does:
 "{စာ}{ပိုင်း}" ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "Show the result of joining 'pa' at the end of 'mingala'"
 "ပါ" ကို "မင်္ဂလာ" ၏ နောက်ဆုံးတွင် တွဲသည့်ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -149,12 +143,10 @@ parameters can have phrases too, so that a call is a short command:
 "ရှင်းပြီ" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "Show the result of reading the text from the file 'notes.txt'"
 ဖိုင် "notes.txt" ထဲမှ စာကို ဖတ် သည့် ရလဒ် ကို ပြသမည်။
 // "(I) will clear the screen"
 ဖန်သားပြင်ကို ရှင်း မည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -182,10 +174,8 @@ also mean `နာ` followed with `မည်`, so a variable of that name gets th
 "အား" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် နာမည် သည် "မောင်" ဖြစ်ပါစေ။
 {နာမည်} ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 To keep both meanings apart, we can write a name in braces, `{<name>}`, which is a name and
@@ -197,11 +187,9 @@ the variable, while the bare word `နာမည်` is the call:
 "အား" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် {နာမည်} သည် "မောင်" ဖြစ်ပါစေ။
 {နာမည်} ကို ပြသမည်။
 နာမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -230,10 +218,8 @@ arguments fit:
 "စာ {စ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ ကို ပြ မည်။            // the integer one
 "ဟယ်လို" ကို ပြ မည်။      // the text one
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

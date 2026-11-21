@@ -117,7 +117,7 @@ that is not declared, and `"{}"` is ZK0202, an operand missing.
 error[ZK0301]: "မသိ" is not declared
 ```
 
-```zaka-error ZK0202 repl=on
+```zaka-error ZK0202
 "{}" ဟု ပြသမည်။
 ```
 

@@ -16,10 +16,8 @@ or the pass mark of a test. We declare these as *constants* (`const`) with `က�
 - The two rules of a constant: it needs a value, and the value never changes.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။   // the length of a week
 တစ်ပတ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -47,14 +45,12 @@ The value of a constant can use other constants, and we use a constant in the sa
 as a variable:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃.၁၄၁၅၉ ဖြစ်ပါစေ။     // pi
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။          // the length of a week
 ကိန်းသေ နှစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တစ်ပတ် * ၂ ဖြစ်ပါစေ။ // built from another constant
 
 ပိုင် ကို ပြသမည်။
 နှစ်ပတ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -67,9 +63,7 @@ as a variable:
 We must give a constant its value when we declare it, because we cannot set it later:
 
 ```zaka-error ZK0308
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -82,10 +76,8 @@ After the declaration, we can never give a constant a new value. The next page s
 to change a variable, and the same sentence on a constant is an error:
 
 ```zaka-error ZK0306
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။
 တစ်ပတ် ကို ၈ ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

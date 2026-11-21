@@ -123,7 +123,7 @@ error[ZK0326]: a statement that runs goes inside the start block, not at the top
 error[ZK0325]: the program has a start block before this one
 ```
 
-```zaka-error ZK0327
+```zaka-error ZK0327 repl=off
 ကိန်းရှင် အမည် သည် "ဇကား" ဖြစ်ပါစေ။
 ```
 
@@ -146,9 +146,9 @@ mode ([zakac repl](../compiler/commands.md#repl)), and the `--repl` flag of `run
 `build`, `irgen` and `borrowck` turns it on for a file.
 
 - A statement that runs, at the top level, moves into the program start block, in order.
-- A variable or constant after the first such statement moves in too, so the values are
-  set in the order of the source; one before it remains at the top level, and so does one
-  with `အများသုံး`.
+- A variable or constant moves in with them, as a local of the block, so the values are
+  set in the order of the source. One remains at the top level when it has `အများသုံး`, or
+  when a function, or a variable or constant that remains, uses it.
 - Functions, structs, enumerations, traits, kind aliases and imports remain in their places.
 - A file with a program start block compiles as it does without the mode, so a statement
   outside the block is still ZK0326. An imported file keeps the rules above, and a file

@@ -17,11 +17,9 @@ a function, return it from one, and join two pieces of it into one.
 - what happens when we assign text to another variable
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသမည်။
 "ဆို \"ဟယ်လို\"" ဟု ပြသမည်။               // \" puts a double quote inside
 "ပထမကြောင်း{နောက်တစ်ကြောင်း}ဒုတိယကြောင်း" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -57,12 +55,10 @@ We declare a text variable as we declare a number variable, with `စာသာ�
 The variable is a plain value, so we print it with `ကို`, the same as a number.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 အမည် ကို ပြသမည်။
 အမည် ကို "အောင်အောင်" ဟု ထားမည်။
 အမည် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -85,14 +81,12 @@ interpolation). When the program runs, it writes the value of the expression in 
 the slot, the same as `ပြသမည်` would print it:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် အသက် သည် ၂၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 "{အမည်} သည် အသက် {အသက်} နှစ် ဖြစ်သည်" ဟု ပြသမည်။
 "နောက်နှစ်တွင် {အသက် + ၁} နှစ်" ဟု ပြသမည်။
 "{၁.၅} {မှန်} {'က'} {[၁၊ ၂၊ ၃]}" ဟု ပြသမည်။
 "{{ မဟုတ် }}" ဟု ပြသမည်။                 // a doubled brace is a brace
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -107,10 +101,8 @@ To write a brace as part of the text, we double it: `{{` and `}}`. The escape na
 matches its `{`, so we can put a string literal with slots inside a slot:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ၉၅ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 "ရလဒ်: {"အမှတ် {အမှတ်}" + " (အောင်)"}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -121,9 +113,7 @@ When the expression in a slot has a mistake, the compiler points at its place in
 quotes:
 
 ```zaka-error ZK0301
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "{မသိ}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -135,12 +125,10 @@ the program is compiled, such as a literal or another constant. Each read of the
 is a fresh duplicate of its text, so the constant keeps its value:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မမ" ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ဟေး {အမည်}" ဖြစ်ပါစေ။
 ခ ကို ပြသမည်။
 အမည် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -158,13 +146,11 @@ is a fresh duplicate of its text, so the constant keeps its value:
 We use `+` to join two pieces of text into new text:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် နှုတ်ဆက် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မင်္ဂလာပါ " + အမည် ဖြစ်ပါစေ။
 နှုတ်ဆက် ကို ပြသမည်။
 နှုတ်ဆက် ကို နှုတ်ဆက် + "!" ဟု ထားမည်။
 နှုတ်ဆက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -176,10 +162,8 @@ To join several pieces in one sentence, we can also use the word form: `၊` bet
 pieces, `နှင့်` before the last one, and `တို့ကို ဆက်ထားသည့် စာသား` after it.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "မောင်မောင်" ဖြစ်ပါစေ။
 "မင်္ဂလာပါ "၊ အမည် နှင့် "!" တို့ကို ဆက်ထားသည့် စာသား ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -195,10 +179,8 @@ pieces, `နှင့်` before the last one, and `တို့ကို ဆက
 We can join text to text alone, so `+` with a number is a mistake:
 
 ```zaka-error ZK0403
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "အဆင့် " ဖြစ်ပါစေ။
 စာ + ၁ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -217,11 +199,9 @@ To put a number into text, we use a template slot instead: `"အဆင့် {�
 We use `==` and `!=` to check whether two pieces of text have the same characters:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မောင်မောင်" ဖြစ်ပါစေ။
 အမည် == "မောင်မောင်" ကို ပြသမည်။
 အမည် != "မမ" ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -236,14 +216,12 @@ duplicated (copied), so each variable has its own text, and a change to one leav
 as it was:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပထမ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka" ဖြစ်ပါစေ။
 ကိန်းရှင် ဒုတိယ သည် စာသား တစ်ခု ဖြစ်ပါစေ။
 ဒုတိယ ကို ပထမ ဟု ထားမည်။
 ဒုတိယ ကို ဒုတိယ + "!" ဟု ထားမည်။
 ပထမ ကို ပြသမည်။
 ဒုတိယ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

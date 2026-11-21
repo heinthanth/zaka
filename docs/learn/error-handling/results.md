@@ -25,14 +25,12 @@ then read that part.
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
 အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် "ရလဒ် {ရ ထဲမှ ဒေတာ}" ဟု ပြသမည်။
 သို့မဟုတ်ပါက "မအောင်မြင်" ဟု ပြသမည်။
 ရ ကို စားခွဲ(၁၀၀၊ ၀) ဟု ထားမည်။
 အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် "ရလဒ်" ဟု ပြသမည်။
 သို့မဟုတ်ပါက "အမှား: {ရ ထဲမှ အမှားအယွင်း ဒေတာ}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -40,7 +38,7 @@ then read that part.
 အမှား: သုညဖြင့် စား၍ မရပါ
 ```
 
-The first line of the program start block keeps the whole result in `ရ`, and `ရ` gets its
+The first line after the function keeps the whole result in `ရ`, and `ရ` gets its
 data kind (type) from the call, as a variable declared without a data kind does. Later,
 `ထားမည်` puts another result of the same data kind into `ရ`. To test and read a whole
 result, we use these forms:
@@ -77,12 +75,10 @@ we make sure which part it contains:
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၀) ဖြစ်ပါစေ။
 "မစမီ" ဟု ပြသမည်။
 ရ ထဲမှ ဒေတာ ကို ပြသမည်။
 "ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -107,10 +103,8 @@ so a read of its error value there is the mistake ZK0454:
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၀၊ ၂၅) ဖြစ်ပါစေ။
 အကယ်၍ ရ ထဲတွင် ရလဒ်ကောင်း ရှိလျှင် ရ ထဲမှ အမှားအယွင်း ဒေတာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 The arms after it (`သို့မဟုတ်ပါက`) know the opposite. When an arm ends with `ပြန်ပေးမည်`,

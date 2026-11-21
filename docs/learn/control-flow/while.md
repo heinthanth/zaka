@@ -16,7 +16,6 @@ condition is true, and in Zaka we write it as "as long as *condition*, do the fo
 - how to stop a program whose loop never ends
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 
 // as long as the number is less than 100, ...
@@ -26,7 +25,6 @@ condition is true, and in Zaka we write it as "as long as *condition*, do the fo
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 "ပြီးပြီ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -71,11 +69,9 @@ zero times.
 The inner part can be a single sentence, written right after `နေသရွေ့`:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျန် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။      // remaining
 ကျန် သည် ၀ ထက် ကြီးနေသရွေ့ ကျန် ကို ကျန် - ၁ ဟု ထားမည်။
 ကျန် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -93,7 +89,6 @@ When the condition is a true/false variable or a comparison in signs, it has no 
 after it:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ဆက်ရှာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။ // keep searching
 ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။        // round
 ဆက်ရှာ ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -102,7 +97,6 @@ after it:
 ဆက်ရှာ ကို အကြိမ် * အကြိမ် သည် ၅၀ အောက် ငယ်သည် ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အကြိမ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

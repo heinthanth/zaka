@@ -148,7 +148,7 @@ reject the whole cut:
 **A space between a name we made up and the particle after it.** Without the space, the
 lexer sees one word where we meant two, and no cut can fix that:
 
-```zaka-error ZK0203 repl=on
+```zaka-error ZK0203
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```

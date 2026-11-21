@@ -16,10 +16,8 @@ data kind (type) is `မှန်မှားတန်ဖိုး` ("true/false
 - The polite endings after `မှန်` and `မမှန်`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မှန် ကို ပြသမည်။
 မမှန် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -45,10 +43,8 @@ Programs seldom write `မှန်` or `မမှန်` out. Most true/false v
 [comparison](../operators/comparison.md), in words or with a sign such as `<`:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။     // a comparison gives a true/false value
 ၅ < ၃ ကို ပြသမည်။                  // and so does the sign form
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -71,10 +67,8 @@ Like a verb, `မှန်` and `မမှန်` can have a polite ending, so `
 `ဟု`:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 မှန်သည် ဟု ပြသမည်။
 မမှန်ပါ ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

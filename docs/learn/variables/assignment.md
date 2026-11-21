@@ -16,12 +16,10 @@ After we declare a variable, we can give it a new value, and this is called
 - How to duplicate (copy) a value into a new variable with `ကူးထည့်မည်`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ပြသမည်။
 အသက် ကို ၂၄ ဟု ထားမည်။                // set age to 24
 အသက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -53,13 +51,11 @@ maths student, "age = age + 1" looks impossible, but the computer does it in two
 2. It puts the result into `အသက်`, in place of the old value.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၄ ဖြစ်ပါစေ။
 အသက် ကို အသက် + ၁ ဟု ထားမည်။          // set age to age + 1
 အသက် ကို ပြသမည်။
 အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားမည်။   // the word form works too
 အသက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -73,12 +69,10 @@ We can also store a sentence that is true or false, such as `အသက် သည
 ("age is greater than 18"), in a `မှန်မှားတန်ဖိုး` variable:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။   // adult, set on the next line
 အရွယ်ရောက် ကို အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ထားမည်။
 အရွယ်ရောက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -96,11 +90,9 @@ Another verb puts a value into a variable: `ကူးထည့်မည်` ("wi
 variable gets the data kind of the value:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် မိတ္တူ ထဲသို့ အမည် ကို ကူးထည့်မည်။      // a duplicate: both keep the text
 "[{အမည်}] [{မိတ္တူ}]" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -127,10 +119,8 @@ new object.
 The new value must suit the data kind of the variable, just as the first value did:
 
 ```zaka-error ZK0401
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ၂.၅ ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

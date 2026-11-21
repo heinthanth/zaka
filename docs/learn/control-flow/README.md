@@ -17,7 +17,6 @@ as in "print the numbers 1 to 100". The order in which a program runs its senten
 - how to give a choice or a loop one sentence or a whole block
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 
 // choose: if ... then ... otherwise ...
@@ -26,7 +25,6 @@ as in "print the numbers 1 to 100". The order in which a program runs its senten
 
 // repeat: count from 1 to 3
 ၁ မှ ၃ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

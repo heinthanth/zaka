@@ -52,6 +52,7 @@ crate	pulldown-cmark-escape	0.11.0	MIT	https://github.com/raphlinus/pulldown-cma
 crate	rust-i18n	4.2.2	MIT	https://github.com/longbridge/rust-i18n
 crate	rustix	1.1.5	Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT	https://github.com/bytecodealliance/rustix
 crate	rustybuzz	0.20.1	MIT	https://github.com/harfbuzz/rustybuzz
+crate	rustyline	19.0.0	MIT	https://github.com/kkawakam/rustyline
 crate	serde	1.0.229	MIT OR Apache-2.0	https://github.com/serde-rs/serde
 crate	serde-saphyr	1.2.0	MIT OR Apache-2.0	https://github.com/bourumir-wyngs/serde-saphyr
 crate	serde-wasm-bindgen	0.6.5	MIT	https://github.com/RReverser/serde-wasm-bindgen

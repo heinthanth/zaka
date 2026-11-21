@@ -19,9 +19,7 @@ part.
 - How to write a sum with words or with signs such as `+`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -52,7 +50,6 @@ Each of these sentences puts the numbers first and the verb last, and the partic
 between them show what each number does:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "the product of 3 and 4"
 ၃ နှင့် ၄ ၏ မြှောက်လဒ် ကို ပြသမည်။
 
@@ -61,7 +58,6 @@ between them show what each number does:
 
 // "3 is greater than 2"
 ၃ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -96,11 +92,9 @@ same result, and we can mix the two in one sentence:
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃ + ၄ ကို ပြသမည်။                        // signs
 ၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။           // words
 ၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။       // both: the sum of (1 + 2) and 4
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

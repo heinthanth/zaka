@@ -22,10 +22,8 @@ does multiplication before addition, and parentheses change the order.
 | `(၂ + ၃) * ၄` | `၂ နှင့် ၃ ၏ ပေါင်းလဒ် နှင့် ၄ ၏ မြှောက်လဒ်` | 20 |
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၂ + ၃ * ၄ ကို ပြသမည်။         // * before +
 (၂ + ၃) * ၄ ကို ပြသမည်။       // parentheses first
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -74,12 +72,10 @@ words. In `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်`, th
 "the product of (k + kh) and g":
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
 က + ခ နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသမည်။         // (2 + 3) × 4
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -93,7 +89,6 @@ Word phrases can nest, and we read them from left to right. Each result word, su
 result then joins the rest of the line:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၄ ဖြစ်ပါစေ။
@@ -103,7 +98,6 @@ result then joins the rest of the line:
 
 // (the sum of k and kh) and g: the product      → (2 + 3) × 4
 က နှင့် ခ ၏ ပေါင်းလဒ် နှင့် ဂ ၏ မြှောက်လဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -125,7 +119,7 @@ second line, `ပေါင်းလဒ်` comes first and uses `က နှင�
 A word phrase cannot go straight inside a sum with signs, so to use one there, we put it
 in parentheses. Without them, the compiler stops with an error:
 
-```zaka-error ZK0203 repl=on
+```zaka-error ZK0203
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။
@@ -138,11 +132,9 @@ error[ZK0203]: this statement does not end in a statement verb, found "*"
 With the parentheses, the line works:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 (က နှင့် ခ ၏ ပေါင်းလဒ်) * ၂ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -158,10 +150,8 @@ Parentheses around a whole value that we print or keep change nothing, so Zaka w
 about them, much as an editor points out a double space:
 
 ```zaka-warning ZK0507
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 (က + ၁) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

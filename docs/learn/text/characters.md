@@ -28,11 +28,9 @@ the data kind `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြ�
 Burmese letter needs three.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka စံကား" ဖြစ်ပါစေ။
 စာ ၏ အကွက်အရေအတွက် ကို ပြသမည်။          // the count of cells
 စာ ၏ အကွက် ၀ ကို ပြသမည်။                // the first cell: Z
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -53,10 +51,8 @@ Burmese letter in two. We can write a whole character instead, as [Changing a
 character](#changing-a-character) shows.
 
 ```zaka-error ZK0429
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "abc" ဖြစ်ပါစေ။
 စာ ၏ အကွက် ၀ ကို ၁ ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -76,13 +72,11 @@ in place of `အကွက်`. We write `၏ စာလုံးအရေအတ�
 to read one counted from 0, and `၏ <number> ခုမြောက်စာလုံး` to read one counted from 1:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ကမ္ဘာ" ဖြစ်ပါစေ။
 စာ ၏ အကွက်အရေအတွက် ကို ပြသမည်။
 စာ ၏ စာလုံးအရေအတွက် ကို ပြသမည်။
 စာ ၏ စာလုံး ၀ ကို ပြသမည်။
 စာ ၏ ၂ ခုမြောက်စာလုံး ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -111,9 +105,7 @@ which means "taking each character of the text as `<name>`, do `<sentence>`". A 
 same loop for its cells, as [Walking a list](../lists/README.md#walking-a-list) shows later.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "ကမ္ဘာ" ၏ စာလုံးတိုင်း ကို စ အနေဖြင့် ယူ၍ စ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -143,13 +135,11 @@ We use `ထားမည်` to write a new character there, with `၏ စာလ�
 `၏ n ခုမြောက်စာလုံး` counting from 1:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "cat" ဖြစ်ပါစေ။
 စာ ၏ စာလုံး ၀ ကို 'b' ဟု ထားမည်။
 စာ ကို ပြသမည်။
 စာ ၏ ၃ ခုမြောက်စာလုံး ကို 'd' ဟု ထားမည်။
 စာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -161,10 +151,8 @@ The new value must be a character in single quotes. Text in double quotes is a m
 even when it contains a single character:
 
 ```zaka-error ZK0401
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "cat" ဖြစ်ပါစေ။
 စာ ၏ စာလုံး ၀ ကို "b" ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -176,12 +164,10 @@ A character is one Unicode code point, not a letter as we see it on the screen. 
 replaces one of them and keeps the rest:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ကျွန်" ဖြစ်ပါစေ။
 စာ ၏ စာလုံးအရေအတွက် ကို ပြသမည်။
 စာ ၏ စာလုံး ၀ ကို 'ခ' ဟု ထားမည်။
 စာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -192,10 +178,8 @@ replaces one of them and keeps the rest:
 A number past the last character stops the program, for a write as for a read:
 
 ```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "ab" ဖြစ်ပါစေ။
 စာ ၏ ၃ ခုမြောက်စာလုံး ကို 'x' ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

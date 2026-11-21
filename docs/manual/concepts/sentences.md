@@ -133,7 +133,7 @@ is the pattern of particles and verbs above. The *logical* level joins clauses w
 **The particles check the sentence.** Each verb lists the particles it wants, so the
 compiler finds a wrong particle where we wrote it, and the message names it:
 
-```zaka-error ZK0206 repl=on
+```zaka-error ZK0206
 ၃ ကို ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။
 ```
 
@@ -143,7 +143,7 @@ error[ZK0206]: "ပေါင်းလဒ်" needs "နှင့်" after opera
 
 When no verb uses an operand, the compiler finds it at the end of the sentence:
 
-```zaka-error ZK0204 repl=on
+```zaka-error ZK0204
 ၃ နှင့် ၄ ကို ပြသမည်။
 ```
 

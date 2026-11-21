@@ -978,6 +978,8 @@ fn check_options(options: &Options) -> SemcheckOptions
     SemcheckOptions::builder()
         .platform_bits(options.platform_bits)
         .no_unsafe(options.no_unsafe)
+        // Code pasted from a book page can leave the start block out.
+        .repl(true)
         .lint(options.lint)
         .build()
 }

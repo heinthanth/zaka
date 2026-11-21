@@ -26,7 +26,6 @@ words, a comparison is a short Burmese sentence, such as "age is greater than 18
 | `a >= b` | `a သည် b အောက် မငယ်ပါ` | a is not less than b |
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 
 // Words: the first value, then သည်, the second value with ထက်, အောက် or နှင့်, then the verb
@@ -38,7 +37,6 @@ words, a comparison is a short Burmese sentence, such as "age is greater than 18
 အသက် > ၁၈ ကို ပြသမည်။
 အသက် < ၁၈ ကို ပြသမည်။
 အသက် == ၂၅ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -79,12 +77,10 @@ mean the same. "Not greater" means less than or equal, so `<=` is `ထက် မ
 `အောက် မငယ်ပါ`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 အသက် သည် ၃၀ နှင့် မညီပါ ဟု ပြသမည်။
 အသက် သည် ၆၀ ထက် မကြီးပါ ဟု ပြသမည်။
 အသက် သည် ၁၈ အောက် မငယ်ပါ ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -102,10 +98,8 @@ We can compare characters too, and their order follows their Unicode numbers, so
 comes before `'ခ'`, and `'A'` (65) comes before `'a'` (97):
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'က' < 'ခ' ကို ပြသမည်။
 'A' < 'a' ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -123,11 +117,9 @@ A comparison is a value, so we can keep its answer in a true/false variable and 
 later:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အမှတ် သည် ၄၀ အောက် မငယ်သည် ဖြစ်ပါစေ။ // passed
 အောင် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -139,7 +131,7 @@ later:
 In maths we can write 1 < 2 < 3, but Zaka does not let one comparison go straight inside
 another, so the compiler stops with an error:
 
-```zaka-error ZK0210 repl=on
+```zaka-error ZK0210
 ၁ < ၂ < ၃ ကို ပြသမည်။
 ```
 

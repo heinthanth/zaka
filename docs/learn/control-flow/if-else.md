@@ -17,7 +17,6 @@ this*", and we can add an `else` part that runs when the condition is false.
 - how to put several sentences, or another `if`, inside a branch
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၅ ဖြစ်ပါစေ။
 
 // if age is less than 18, then ...
@@ -25,7 +24,6 @@ this*", and we can add an `else` part that runs when the condition is false.
 
 // nothing happens when the condition is false
 အကယ်၍ အသက် သည် ၆၀ ထက် ကြီးလျှင် "အငြိမ်းစား" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -61,12 +59,10 @@ comparison in signs. A value like this has no verb for `လျှင်` to join
 `ဖြစ်လျှင်` ("if it is so, then") as a separate word after it:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။ // passed?
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အောင် ဖြစ်လျှင် "အောင်ပါသည်" ဟု ပြသမည်။
 အကယ်၍ အမှတ် > ၇၀ ဖြစ်လျှင် "ကောင်းပါသည်" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -85,11 +81,9 @@ To run something when the condition is false, we add a line that starts with
 `သို့မဟုတ်ပါက` ("otherwise"), which works like `else` in other languages:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အောင် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။ // passed?
 အကယ်၍ အောင် ဖြစ်လျှင် "အောင်ပါသည်" ဟု ပြသမည်။
 သို့မဟုတ်ပါက "ကျပါသည်" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -109,13 +103,11 @@ To check another condition when the first one is false, we add a line that start
 conditions from top to bottom and runs the **first** branch whose condition is true:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၈၀ အောက် မငယ်လျှင် "အဆင့် က" ဟု ပြသမည်။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၆၀ အောက် မငယ်လျှင် "အဆင့် ခ" ဟု ပြသမည်။
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် "အဆင့် ဂ" ဟု ပြသမည်။
 သို့မဟုတ်ပါက "အဆင့် ဃ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -130,7 +122,6 @@ conditions from top to bottom and runs the **first** branch whose condition is t
 To run several sentences in a branch, we make the inner part a block:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် % ၂ သည် ၀ နှင့် ညီလျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "စုံကိန်း" ဟု ပြသမည်။
@@ -140,7 +131,6 @@ To run several sentences in a branch, we make the inner part a block:
 "မကိန်း" ဟု ပြသမည်။
 (အမှတ် + ၁) / ၂ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -155,7 +145,7 @@ To run several sentences in a branch, we make the inner part a block:
 A one-sentence branch cannot be another `if`, because it would then be unclear which `if`
 an "otherwise" belongs to, so the compiler stops with an error:
 
-```zaka-error ZK0215 repl=on
+```zaka-error ZK0215
 အကယ်၍ မှန် ဖြစ်လျှင် အကယ်၍ မမှန် ဖြစ်လျှင် ၁ ကို ပြသမည်။
 ```
 
@@ -166,13 +156,11 @@ error[ZK0215]: a single-statement block cannot be another conditional
 To put an `if` inside an `if`, we write the inner one in a block:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉၅ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၄၀ အောက် မငယ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "အောင်" ဟု ပြသမည်။
 အကယ်၍ အမှတ် သည် ၉၀ ထက် ကြီးလျှင် "ဂုဏ်ထူး" ဟု ပြသမည်။     // distinction
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

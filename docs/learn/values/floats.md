@@ -16,10 +16,8 @@ as `၃.၁၄`, `၀.၅` or `-၂.၅`, and its data kind (type) is `ဒဿမ
 - The reason `၀.၁ + ၀.၂` does not print `၀.၃`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၃.၁၄ ကို ပြသမည်။
 ၇.၀ / ၂ ကို ပြသမည်။        // decimal division keeps the fraction
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -54,12 +52,10 @@ we can write a big or small number in scientific notation, with `e` and a power 
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 -၂.၅ ကို ပြသမည်။
 ၁၀ ဟူသော ဒဿမကိန်း တစ်ခု ကို ပြသမည်။             // the data kind after it makes 10 a decimal number
 1.5e3 ကို ပြသမည်။                   // scientific notation: 1.5 × 10³
 1.5e-3 ကို ပြသမည်။                  // 1.5 × 10⁻³
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -87,10 +83,8 @@ neighbour and not as the true value. Most of the time we do not notice, but now 
 the last digits show it:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၀.၁ + ၀.၂ ကို ပြသမည်။
 ၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု / ၃ ကို ပြသမည်။    // fewer bits, a less close neighbour
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

@@ -18,11 +18,9 @@ can get, and whether it can be negative.
 - What happens when a number does not fit its data kind.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသမည်။                                     // a plain integer
 -၅ ကို ပြသမည်။                                     // a negative integer
 ၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။          // an 8-bit integer
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -75,10 +73,8 @@ different `--target-bits` setting. More bits mean bigger numbers:
 | `ကိန်းပြည့်` | (64 bits unless set otherwise) | |
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၂၅၅ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။        // 8 bits, no sign: 0 up to 255
 ၂၁၄၇၄၈၃၆၄၇ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။         // 32 bits
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -93,7 +89,7 @@ When in doubt, we use plain `ကိန်းပြည့်`.
 When a number is too big for its data kind, the compiler stops, and the program does not
 run:
 
-```zaka-error ZK0220 repl=on
+```zaka-error ZK0220
 ၂၅၆ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။
 ```
 
@@ -108,10 +104,8 @@ can write its digits as Burmese digits `၀ ၁ ၂ ၃ ၄ ၅ ၆ ၇ ၈ ၉`
 4 5 6 7 8 9`, and both give the same number. The output uses Burmese digits in both cases:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၂၃ ကို ပြသမည်။                                 // Burmese digits
 123 ကို ပြသမည်။                                  // Western digits: the same number
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -121,7 +115,7 @@ can write its digits as Burmese digits `၀ ၁ ၂ ၃ ၄ ၅ ၆ ၇ ၈ ၉`
 
 We cannot mix the two sets of digits in one number:
 
-```zaka-error ZK0103 repl=on
+```zaka-error ZK0103
 ၁၂.34 ကို ပြသမည်။
 ```
 
@@ -141,11 +135,9 @@ case, so in base 16 `A` is ten and `F` is fifteen. We write the base itself in p
 10.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။                     // base 2: 1010 = ten
 အခြေ ၈ ဖြင့် ၇၇ ကို ပြသမည်။                       // base 8: 77 = 63
 အခြေ ၁၆ ဖြင့် FF ကို ပြသမည်။                       // base 16 (hexadecimal): FF = 255
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -169,9 +161,7 @@ An integer literal has up to three parts, in this fixed order:
    `ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု` (optional).
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။  // base, digits, data kind
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -185,10 +175,8 @@ write it with the word `အနုတ်` ("minus"). The compiler works out the r
 program runs, so we never see the difference:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 -၅ ကို ပြသမည်။
 အနုတ် ၅ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

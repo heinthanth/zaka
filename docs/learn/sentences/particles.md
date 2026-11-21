@@ -17,9 +17,7 @@ show its role. English does this with word order and with small words such as "o
 - How to turn on the spoken endings `တယ်` and `မယ်`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၀ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -49,7 +47,6 @@ This program uses most of the common particles, and the comment above each line 
 what the line means:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // "10 is greater than 3"
 ၁၀ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။
 
@@ -61,7 +58,6 @@ what the line means:
 
 // "the remainder of 10 ÷ 3"
 ၁၀ ကို ၃ ဖြင့် စားသော စားကြွင်း ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -99,11 +95,9 @@ The ending does not change the meaning, so `ကြီး`, `ကြီးသည�
 greater":
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၂ ထက် ကြီး ကို ပြသမည်။
 ၅ သည် ၂ ထက် ကြီးသည် ဟု ပြသမည်။
 ၅ သည် ၂ ထက် ကြီးပါသည် ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

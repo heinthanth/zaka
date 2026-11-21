@@ -14,8 +14,9 @@ fn decl_has_name_kind_and_value()
     let out =
         compile("ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။", &Options::default());
     assert_eq!(out.tree.label, "program");
-    let decl = &out.tree.children[0];
-    assert_eq!(decl.label, "decl");
+    // In REPL mode the declaration sits in the implicit program start block.
+    let decl =
+        flatten(&out.tree).into_iter().find(|n| n.label == "decl").expect("a decl");
     let labels: Vec<&str> = decl.children.iter().map(|c| c.label).collect();
     assert_eq!(labels, ["ident", "kind", "int"]);
     let int = &decl.children[2];

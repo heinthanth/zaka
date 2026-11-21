@@ -24,10 +24,8 @@ function that does such work can *fail*. When it fails, it returns an *error val
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စားခွဲ(၁၀၀၊ ၂၅) ကို ပြသမည်။
 စားခွဲ(၁၀၀၊ ၀) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -37,7 +35,7 @@ function that does such work can *fail*. When it fails, it returns an *error val
 
 The first call succeeds and returns `ရလဒ်ကောင်း` ("good result") with `၄` inside, while
 the second call has a zero divisor, so it returns `အမှားအယွင်း` ("error value") with the
-text inside. Here the program start block just prints each whole result so that we can see
+text inside. Here the program just prints each whole result so that we can see
 both outcomes, but most callers either pass the failure on or test the result, which the
 next two pages explain.
 
@@ -86,10 +84,8 @@ wrong number itself:
 န ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အရေအတွက်စစ်(၃) ကို ပြသမည်။
 အရေအတွက်စစ်(၀ - ၂) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

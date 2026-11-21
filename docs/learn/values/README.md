@@ -19,12 +19,10 @@ cannot add two answers of "true".
 - Where text (string) fits in.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၄၂ ကို ပြသမည်။          // an integer (a whole number)
 ၃.၁၄ ကို ပြသမည်။        // a decimal number
 'က' ကို ပြသမည်။         // a character
 မှန် ကို ပြသမည်။         // a true/false value: true
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -53,9 +51,7 @@ operation does not fit a data kind, such as adding a number to a character, the 
 does not run, and the compiler reports the mistake:
 
 ```zaka-error ZK0403
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'က' + ၁ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

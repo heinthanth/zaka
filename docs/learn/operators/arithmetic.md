@@ -28,7 +28,6 @@ decimal numbers (floats).
 | `-a` | `အနုတ် a` | "minus a" | negation |
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
@@ -47,7 +46,6 @@ decimal numbers (floats).
 က ကို ခ ဖြင့် စားသော စားလဒ် ကို ပြသမည်။
 က ကို ခ ဖြင့် စားသော စားကြွင်း ကို ပြသမည်။
 အနုတ် က ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -96,12 +94,10 @@ When we divide two integers, the result is an integer too, so Zaka drops the fra
 instead, and `၁၇.၀ / ၅` is `၃.၄`.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၇ / ၅ ကို ပြသမည်။
 ၁၇.၀ / ၅ ကို ပြသမည်။
 -၇ / ၂ ကို ပြသမည်။        // the fraction is dropped toward zero
 -၇ % ၂ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -118,9 +114,7 @@ Division with zero as the divisor has no answer. When the compiler can see the z
 stops with an error and the program does not run:
 
 ```zaka-error ZK0602
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ / ၀ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -130,12 +124,10 @@ error[ZK0602]: / with the constant zero as divisor
 When the zero shows up while the program runs, the program stops at that point:
 
 ```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 "အစ" ဟု ပြသမည်။
 ၁၀ / ခ ကို ပြသမည်။
 "ဤနေရာ မရောက်ပါ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -152,11 +144,9 @@ and a decimal variable do not mix, though, because a large integer could lose di
 decimal number, so we need to write a [conversion](conversion.md) to combine them:
 
 ```zaka-error ZK0404
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 ကိန်းရှင် ဈေး သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁.၅ ဖြစ်ပါစေ။
 အသက် * ဈေး ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -173,10 +163,8 @@ Each integer data kind has a largest and a smallest value (see
 runs, the program stops there, and the message names the operation and the data kind:
 
 ```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
 ခ + ၁ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -191,12 +179,10 @@ odometer that rolls over. To get that, we compile them with `--overflow wrap`, o
 **Stop on overflow** in the Explorer:
 
 ```zaka overflow=wrap
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
 ခ + ၁ ကို ပြသမည်။                                        // wraps to the smallest
 ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
 လ - ၁ ကို ပြသမည်။                                        // wraps to 255
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

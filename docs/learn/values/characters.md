@@ -17,12 +17,10 @@ each Unicode character works, emoji included.
 - How braces work inside quotes.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'က' ကို ပြသမည်။
 'A' ကို ပြသမည်။
 '春' ကို ပြသမည်။
 '🔥' ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -51,9 +49,7 @@ error. A Burmese letter with marks, such as `ကို`, is also more than one c
 computer: `က`, then the vowel mark `ိ`, then `ု`. So `'ကို'` is the same error:
 
 ```zaka-error ZK0107
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 'ကို' ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -75,13 +71,11 @@ write these, we use an *escape sequence*, which works in characters and in
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 '\'' ကို ပြသမည်။                       // a single quote
 '{ယူနီကုဒ် 1000}' ကို ပြသမည်။            // the character with Unicode number 1000 (hex): က
 "တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသမည်။    // a line break inside text
 "{{ }}" ဟု ပြသမည်။                     // braces inside text
 '{{' ကို ပြသမည်။                       // a brace character
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -111,7 +105,7 @@ Inside quotes, a brace starts a Burmese escape name, so we double a brace to wri
 a character: `'{{'` is the character `{`, in a character and in text alike. In a
 character, a name that Zaka does not know is an error:
 
-```zaka-error ZK0106 repl=on
+```zaka-error ZK0106
 '{မသိ}' ကို ပြသမည်။
 ```
 

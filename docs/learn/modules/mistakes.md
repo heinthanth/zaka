@@ -23,7 +23,7 @@ We can use `အများသုံး` on a declaration at the top level of a 
 an enumeration, a variable or a constant. Before a sentence, or before a declaration
 inside a block, it has no meaning, so the compiler stops with the error ZK0229:
 
-```zaka-error ZK0229 repl=on
+```zaka-error ZK0229
 အများသုံး ၁ ကို ပြသမည်။
 ```
 
@@ -36,7 +36,7 @@ error[ZK0229]: "အများသုံး" marks a declaration at the top leve
 The imports of a file come first. When we write an import below a declaration or a
 sentence, or inside a block, the compiler stops with the error ZK0230:
 
-```zaka-error ZK0230 repl=on
+```zaka-error ZK0230
 ၁ ကို ပြသမည်။
 "math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။
 ```

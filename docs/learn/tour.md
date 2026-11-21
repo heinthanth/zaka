@@ -15,9 +15,8 @@ This page covers the language one feature at a time, for developers who know ano
 language. Zaka has its own names for some ideas, so the usual name follows in parentheses
 the first time, as in data kind (type), and the [list of terms](../manual/reference/terms.md)
 has all of them. To run an example, paste it into the [Explorer](/explorer/), or save it as
-`x.zaka` and run `zakac run x.zaka`. To test statements one at a time, run `zakac repl`: there
-we can leave out the program start block ([REPL
-mode](../manual/language/functions-start-block.md#repl-mode)).
+`x.zaka` and run `zakac run --repl x.zaka`. To test statements one at a time, run `zakac
+repl`.
 
 ## Sentence shape
 
@@ -58,6 +57,10 @@ and `ကို` after the object. To print, we write `ကို` after a plain v
 quoted text or a full sentence such as `၁၀ သည် ၃ ထက် ကြီးသည်`. Numbers print in Burmese
 digits.
 
+The examples below leave the program start block out: in [REPL
+mode](../manual/language/functions-start-block.md#repl-mode), which `zakac run --repl`,
+`zakac repl` and the Explorer use, the statements at the top level form the block.
+
 Learn: [Hello, world](hello/README.md), [Zaka sentences](sentences/README.md).
 Docs: [Statements](../manual/language/statements.md), [Source text and words](../manual/language/words.md).
 
@@ -71,14 +74,12 @@ Docs: [Statements](../manual/language/statements.md), [Source text and words](..
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။   // the data kind written out
 ကိန်းရှင် အမည် သည် "မမ" ဖြစ်ပါစေ။                                 // the data kind comes from the value
 ကိန်းသေ တစ်ပတ် သည် ၇ ဖြစ်ပါစေ။                                     // a constant
 ကိန်းရှင် ပျမ်းမျှ သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။   // 0.0
 အသက် ကို အသက် + ၁ ဟု ထားမည်။                                      // assignment
 "{အမည်} {အသက်} {တစ်ပတ်} {ပျမ်းမျှ}" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -119,7 +120,6 @@ Docs: [Data kinds and values](../manual/language/kinds.md), [Declarations and as
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ၁၇ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ၅ ဖြစ်ပါစေ။
 က + ခ ကို ပြသမည်။                          // sign form
@@ -128,7 +128,6 @@ Docs: [Data kinds and values](../manual/language/kinds.md), [Declarations and as
 က သည် ခ ထက် ကြီးသည် ဟု ပြသမည်။              // k > kh
 (က > ခ ဖြစ်၍ ခ သည် ၀ နှင့် ညီသည် မဟုတ်) ကို ပြသမည်။   // and, not
 က ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။   // a conversion
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -170,7 +169,6 @@ Docs: [Expressions](../manual/language/expressions.md), [Conversions](../manual/
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမှတ် သည် ၇၃ ဖြစ်ပါစေ။
 အကယ်၍ အမှတ် သည် ၈၀ အောက် မငယ်လျှင် "က" ဟု ပြသမည်။        // if score >= 80
 ထိုသို့မဟုတ်ဘဲ အမှတ် သည် ၆၀ အောက် မငယ်လျှင် "ခ" ဟု ပြသမည်။   // else if
@@ -182,7 +180,6 @@ Docs: [Expressions](../manual/language/expressions.md), [Conversions](../manual/
 အကယ်၍ န သည် ၅၀ ထက် ကြီးလျှင် ကွင်းဆက် ကို ရပ်မည်။           // break
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 န ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -235,11 +232,9 @@ Docs: [Loops](../manual/language/control-flow.md#loops).
 "{နေရာ}: {စာ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ဧရိယာ ဟူသော လုပ်ဆောင်ချက်ကို ၃ နှင့် ၄ တို့ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။   // the long form
 ဧရိယာ(၅၊ ၆) ကို ပြသမည်။                                                   // the short form
 "မင်္ဂလာပါ" ကို "မှတ်စု" သို့ ရေး မည်။                                       // a sentence call
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -280,7 +275,6 @@ Docs: [Functions](../manual/language/functions.md).
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အမည် သည် "မောင်မောင်" ဖြစ်ပါစေ။
 ကိန်းရှင် အသက် သည် ၂၅ ဖြစ်ပါစေ။
 "{အမည်} သည် နောက်နှစ်တွင် {အသက် + ၁} နှစ်" ဟု ပြသမည်။   // an expression in braces
@@ -289,7 +283,6 @@ Docs: [Functions](../manual/language/functions.md).
 နှုတ်ဆက် ကို ပြသမည်။
 အမည် ၏ စာလုံးအရေအတွက် ကို ပြသမည်။                     // characters
 အမည် ၏ အကွက်အရေအတွက် ကို ပြသမည်။                      // cells
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -325,7 +318,6 @@ Docs: [Text](../manual/language/text.md).
 ```
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၀၊ ၂၀] ဖြစ်ပါစေ။
 ကိန်းများ ထဲသို့ ၃၀ ကို ထည့်မည်။                        // append
 ကိန်းများ ၏ အကွက် ၀ ကို ပြသမည်။                        // cell 0
@@ -335,7 +327,6 @@ Docs: [Text](../manual/language/text.md).
 ဖုန်း ထဲမှ အညွှန်း "ကို" ၏ တန်ဖိုး ကို ၉၅၂၂၂ ဟု ထားမည်။
 ဖုန်း ကို ပြသမည်။
 ဖုန်း ထဲမှ အညွှန်း "ဇော်" ၏ တန်ဖိုး ကို ပြသမည်။               // no such row: a blank
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -383,7 +374,6 @@ Docs: [Lists](../manual/language/lists.md), [Tables](../manual/language/tables.m
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အမည် ဟူသော စာသား တစ်ခု နှင့် အသက် ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
 အကောင့် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ကျော် သည် လူ(အမည်: "ကျော်"၊ အသက်: ၂၀) ဖြစ်ပါစေ။
 ကိန်းရှင် မွန် သည် ကျော် ဖြစ်ပါစေ။                    // a duplicate
 မွန် ၏ အသက် ကို ၃၀ ဟု ထားမည်။
@@ -392,7 +382,6 @@ Docs: [Lists](../manual/language/lists.md), [Tables](../manual/language/tables.m
 ကိန်းရှင် ခ သည် က ဖြစ်ပါစေ။                         // one account, two names
 ခ ၏ လက်ကျန် ကို ၅၀ ဟု ထားမည်။
 က ကို ပြသမည်။                                       // changed through ခ
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -432,14 +421,12 @@ Docs: [Structs](../manual/language/structs.md), [Values and objects](../manual/l
 ```zaka
 အရောင် ဟူသော ဒေတာအမျိုးအစားကွဲတွင် နီ၊ ဝါ နှင့် စိမ်း တို့ပါဝင်သည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မီး သည် အရောင်များထဲမှ ဝါ ဖြစ်ပါစေ။
 မီး ကို ပြသမည်။
 မီး သည် နီ ဖြစ်လျှင် "ရပ်" ဟု ပြသမည်။                  // a switch: one arm per member
 ဝါ ဖြစ်လျှင် "ဖြည်းဖြည်း" ဟု ပြသမည်။
 စိမ်း ဖြစ်လျှင် "သွား" ဟု ပြသမည်။
 မီး ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။   // the member's number
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -484,7 +471,6 @@ Docs: [Enumerations](../manual/language/enums.md).
 က / ခ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 စားခွဲ(၁၀၊ ၂) ကို ပြသမည်။
 ကိန်းရှင် ရ သည် စားခွဲ(၁၀၊ ၀) ဖြစ်ပါစေ။
 အကယ်၍ ရ ထဲတွင် အမှားအယွင်း ရှိလျှင် "မအောင်မြင်: {ရ ထဲမှ အမှားအယွင်း ဒေတာ}" ဟု ပြသမည်။
@@ -493,7 +479,6 @@ Docs: [Enumerations](../manual/language/enums.md).
 ခ ထဲမှ ဒေတာ၊ မရှိလျှင် ၀ ကို ပြသမည်။                    // a fallback
 ခ ကို ၇ ဟု ထားမည်။
 အကယ်၍ ခ ထဲတွင် ဒေတာ ရှိလျှင် ခ ထဲမှ ဒေတာ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -563,9 +548,7 @@ T တွင် နာမည်ရှိသော ဂုဏ်သတ္တိ ရ
 "မင်္ဂလာပါ " + နာမည်ယူ(က) ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 နှုတ်ဆက်(ကြောင်(နာမည်: "ဖြူဖြူ")) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -626,11 +609,9 @@ write the same import with a path that starts with `စံကား/`:
 ```zaka
 "စံကား/စာသား" မှ ခွဲ နှင့် ဆက် တို့ကို ထည့်သွင်းမည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် သီးများ သည် "ပန်း၊ငှက်ပျော၊သရက်" ကို "၊" ဖြင့် ခွဲ သည့် ရလဒ် ဖြစ်ပါစေ။
 သီးများ ကို ပြသမည်။
 သီးများ ကို " / " ဖြင့် ဆက် သည့် ရလဒ် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -671,13 +652,11 @@ Docs: [Modules](../manual/language/modules.md), [The stdlib](../manual/language/
 စု ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 // start two threads that run စုပေါင်း side to side with the program
 ကိန်းရှင် ရှေ့ သည် စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို [၁၊ ၂၊ ၃] ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
 ကိန်းရှင် နောက် သည် စုပေါင်း ဟူသော လုပ်ဆောင်ချက်ကို [၄၊ ၅၊ ၆] ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
 // wait for each and add the results
 (ရှေ့ ကို စောင့်သော ရလဒ်) + (နောက် ကို စောင့်သော ရလဒ်) ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -720,7 +699,6 @@ Docs: [Threads](../manual/language/threads.md).
 abs ဟူသော စိတ်မချရသော လုပ်ဆောင်ချက် သည် "libc" မှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
 n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။   // a pointer to အသက်
@@ -728,7 +706,6 @@ n ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခ�
 abs ဟူသော လုပ်ဆောင်ချက်ကို -၄၂ ဖြင့် လုပ်ဆောင်သော ရလဒ် ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အသက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

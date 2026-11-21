@@ -106,6 +106,7 @@ thanks to all of these projects.
 | [rust-i18n](https://github.com/longbridge/rust-i18n) | 4.2.2 | MIT |
 | [rustix](https://github.com/bytecodealliance/rustix) | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | [rustybuzz](https://github.com/harfbuzz/rustybuzz) | 0.20.1 | MIT |
+| [rustyline](https://github.com/kkawakam/rustyline) | 19.0.0 | MIT |
 | [serde](https://github.com/serde-rs/serde) | 1.0.229 | MIT OR Apache-2.0 |
 | [serde-saphyr](https://github.com/bourumir-wyngs/serde-saphyr) | 1.2.0 | MIT OR Apache-2.0 |
 | [serde-wasm-bindgen](https://github.com/RReverser/serde-wasm-bindgen) | 0.6.5 | MIT |

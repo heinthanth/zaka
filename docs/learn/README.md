@@ -8,7 +8,9 @@ description: Learn the Zaka programming language one small, runnable example at 
 Zaka (စံကား) is a programming language based on a subset of Burmese. We write a Zaka
 program as a list of Burmese sentences (statements), such as `"မင်္ဂလာပါ" ဟု ပြသမည်။`
 ("show: hello"), and we put them inside a program start block (entry point, `main`) so
-that the computer runs them one after another.
+that the computer runs them one after another. The first chapters show that block in full;
+after them, most examples leave it out, and the statements at the top level form the
+block ([REPL mode](../manual/language/functions-start-block.md#repl-mode)).
 
 Programmers who know another language can start with the tour, [Zaka for
 programmers](tour.md), and the [Terms](../manual/reference/terms.md) page lists each Zaka

@@ -19,12 +19,10 @@ print and pass a range like each other list or text.
 ## A range of a list
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] ဖြစ်ပါစေ။
 l ၏ အကွက် ၁ မှစ၍ ၃ ကွက် ကို ပြသမည်။
 l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။
 l ၏ အကွက် ၅ မှစ၍ ၀ ကွက် ကို ပြသမည်။    // no cells
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -56,14 +54,12 @@ from. A write to the range leaves the list as it was, and the list can grow whil
 the range:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် အလယ် သည် က ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
 က ထဲသို့ ၄ ကို ထည့်မည်။               // fine: the range is a separate list
 အလယ် ၏ အကွက် ၀ ကို ၀ ဟု ထားမည်။
 အလယ် ကို ပြသမည်။
 က ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -86,11 +82,9 @@ letter takes three, as [Cells](../text/characters.md#cells) shows. In `"Zaka စ
 first four cells are `Zaka`, and the Burmese word starts at cell 5, after the space:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် "Zaka စံကား" ဖြစ်ပါစေ။
 စာ ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ကို ပြသမည်။
 စာ ၏ အကွက် ၅ မှစ၍ ၁၅ ကွက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -104,11 +98,9 @@ six cells from cell 0 are its first two characters, while two cells would cut th
 character in half, and the program stops:
 
 ```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စာ သည် "ကမ္ဘာ" ဖြစ်ပါစေ။
 စာ ၏ အကွက် ၀ မှစ၍ ၆ ကွက် ကို ပြသမည်။
 စာ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။      // ends inside the first character
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -121,10 +113,8 @@ the program stopped: a range of text at 0x1002 starts or ends inside a character
 When a range runs past the end of its list, the program stops:
 
 ```zaka-stop
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -136,10 +126,8 @@ and the count of the range are fixed numbers, the compiler reports a range past 
 as an error before the program runs:
 
 ```zaka-error ZK0605
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် l သည် အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 l ၏ အကွက် ၂ မှစ၍ ၂ ကွက် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

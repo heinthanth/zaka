@@ -24,7 +24,6 @@ sign form and a word form.
 | `!a` | `a မဟုတ်` | "not a" | a is false |
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။   // it is raining
 ကိန်းရှင် ထီးပါ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မမှန် ဖြစ်ပါစေ။   // I have an umbrella
 
@@ -35,7 +34,6 @@ sign form and a word form.
 (မိုးရွာ && ထီးပါ) ကို ပြသမည်။                        // the same with signs
 (မိုးရွာ || ထီးပါ) ကို ပြသမည်။
 !ထီးပါ ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -74,7 +72,7 @@ To print a logical expression, we put it in parentheses before `ကို` or `�
 them, Zaka cannot tell where the expression ends and the print sentence begins, so the
 compiler stops with an error:
 
-```zaka-error ZK0204 repl=on
+```zaka-error ZK0204
 ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
 မိုးရွာ ဖြစ်၍ မှန် ကို ပြသမည်။
 ```
@@ -89,7 +87,6 @@ The most common use of logic is to join two comparisons, for example to check wh
 age is between 18 and 60. We can write the comparisons in words or in signs:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃၀ ဖြစ်ပါစေ။
 (အသက် သည် ၁၈ အောက် မငယ်သည် ဖြစ်၍ အသက် သည် ၆၀ အောက် ငယ်သည်) ဟု ပြသမည်။
 (အသက် >= ၁၈ && အသက် < ၆၀) ကို ပြသမည်။
@@ -100,7 +97,6 @@ age is between 18 and 60. We can write the comparisons in words or in signs:
 // a logical expression can also be kept in a variable
 ကိန်းရှင် ထွက်သင့် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် (အသက် > ၁၈ ဖြစ်၍ အသက် < ၆၀) ဖြစ်ပါစေ။
 ထွက်သင့် ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

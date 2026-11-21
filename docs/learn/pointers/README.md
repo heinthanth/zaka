@@ -19,7 +19,6 @@ is the work of C, and of code that calls C.
 - which values have an address and which do not
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။          // age = 18
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။ // a pointer to age
@@ -27,7 +26,6 @@ is the work of C, and of code that calls C.
 ညွှန်း ၏ တန်ဖိုး ကို ၂၀ ဟု ထားမည်။                              // write through it
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 အသက် ကို ပြသမည်။                                            // age has changed
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -76,10 +74,8 @@ itself cannot be unsafe, so we put an unsafe block inside it, as above. Outside 
 code, pointer work is the error ZK0468:
 
 ```zaka-error ZK0468
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ကိန်းရှင် ညွှန်း သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် အသက် ၏ လိပ်စာ ဖြစ်ပါစေ။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -119,12 +115,10 @@ A pointer accepts addresses of the data kind in its declaration alone, so the ad
 does not fit a pointer to an 8-bit integer:
 
 ```zaka-error ZK0401
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ၈ ဘစ် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် က ၏ လိပ်စာ ဖြစ်ပါစေ။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -148,11 +142,9 @@ value) of each pointer kind. A pointer is not a true/false value, so to test it 
 compare it with the null address, and neither step needs unsafe code:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။ // no address so far
 ပ ကို ပြသမည်။
 အကယ်၍ ပ သည် မည်သည်ကိုမှ မညွှန်းသော လိပ်စာ နှင့် ညီလျှင် "ဘာမှ မညွှန်ပါ" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -174,14 +166,12 @@ mistakes](mistakes.md#reading-through-a-null-pointer) shows.
 Programmers who know C can write `&` for "the address of" and `*` for "the value at":
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် &က ဖြစ်ပါစေ။ // the same as က ၏ လိပ်စာ
 *ပ ကို *ပ + ၁ ဟု ထားမည်။                              // the same as ပ ၏ တန်ဖိုး
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 က ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -200,12 +190,10 @@ place in RAM, but Zaka does not give out its address, because a write through it
 change the constant, and the variable of a counted loop is treated the same:
 
 ```zaka-error ZK0412
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းသေ ကြီးဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
 အောက်ပါတို့ကို စိတ်မချရသော်လည်း လုပ်ဆောင်မည်။
 ကြီးဆုံး ၏ လိပ်စာ ကို ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

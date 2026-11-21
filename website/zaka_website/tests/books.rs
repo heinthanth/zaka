@@ -309,9 +309,9 @@ fn fence_words_with_an_equals_sign_are_options()
     assert_eq!(Fence::parse("zaka-error ZK07"), None);
     assert_eq!(Fence::parse("zaka-error zk0709"), None);
     assert_eq!(Fence::parse("text lint-warn=mem"), None);
-    let (_, options) = Fence::parse("zaka-error ZK0203 repl=on").expect("a fence");
-    assert!(options.repl);
-    assert_eq!(Fence::parse("zaka repl=off"), None);
+    let (_, options) = Fence::parse("zaka-error ZK0327 repl=off").expect("a fence");
+    assert!(options.no_repl);
+    assert_eq!(Fence::parse("zaka repl=on"), None);
 }
 
 #[test]
@@ -319,9 +319,10 @@ fn a_repl_fence_runs_with_no_start_block()
 {
     let source =
         "ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။\nက ကို ပြသမည်။\nကိန်းရှင် ခ သည် ၂ ဖြစ်ပါစေ။\nခ ကို ပြသမည်။\n";
-    let repl = FenceOptions::builder().repl(true).build();
-    assert_eq!(run_to_end(source, &repl, ""), (Vec::new(), "၁\n၂\n".to_string()));
-    let (codes, _) = run_to_end(source, &FenceOptions::default(), "");
+    let plain = FenceOptions::default();
+    assert_eq!(run_to_end(source, &plain, ""), (Vec::new(), "၁\n၂\n".to_string()));
+    let strict = FenceOptions::builder().no_repl(true).build();
+    let (codes, _) = run_to_end(source, &strict, "");
     assert!(codes.contains(&"ZK0326".to_string()), "{codes:?}");
 }
 

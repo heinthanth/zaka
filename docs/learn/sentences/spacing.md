@@ -18,18 +18,16 @@ name that we make up and the particle after it.
 - That one space, several spaces, a tab and a line break all count the same.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။ // make a number named အသက် (age)
 အသက် ကို ပြသမည်။                          // a space between အသက် and ကို
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
 ၂၀
 ```
 
-The second line makes a number with the name `အသက်` (age), which the
-[Variables](../variables/README.md) chapter explains, and the third line prints it. When we
+The first line makes a number with the name `အသက်` (age), which the
+[Variables](../variables/README.md) chapter explains, and the second line prints it. When we
 use a name that we made up, we put a space after it, before its particle:
 
 ```
@@ -46,7 +44,7 @@ use a name that we made up, we put a space after it, before its particle:
 Without the space, the compiler sees `အသက်ကို` as one long name. No name of that spelling
 exists, so the compiler reports an error, and it suggests the fix:
 
-```zaka-error ZK0203 repl=on
+```zaka-error ZK0203
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```
@@ -68,11 +66,9 @@ We can leave the spaces out in three places:
   same.
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // reserved words joined
 ၁+၂ ကို ပြသမည်။                     // no spaces around +
 ၁ နှင့် ၂ ၏ ပေါင်းလဒ် ကို ပြသမည်။      // ၏ needs no space
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text

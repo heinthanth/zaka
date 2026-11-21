@@ -17,9 +17,7 @@ does this, and in Zaka we write it as "from 1 to 5, counting as *n*, do the foll
 - how to put one loop inside another
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၅ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -58,11 +56,9 @@ space is one word to Zaka.
 steps, we add `<step> စီ` ("`<step>` at a time") before the counter's name:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၅ မှ ၁ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။          // counts down
 "---" ဟု ပြသမည်။
 ၀ မှ ၁၀၀ အထိ ၂၅ စီ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ပြသမည်။    // 25 at a time
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -91,11 +87,9 @@ With `တိုး၍` or `လျှော့၍`, when the first value is past 
 times:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁၀ မှ ၀ အထိ ၂ စီ ကိန်း အနေဖြင့် လျှော့၍ ကိန်း ကို ပြသမည်။   // 10, 8, 6, 4, 2, 0
 ၅ မှ ၁ အထိ ကိန်း အနေဖြင့် တိုး၍ ကိန်း ကို ပြသမည်။           // never runs
 "ပြီး" ဟု ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -114,11 +108,9 @@ A loop often builds a total one round at a time, so we set a variable to zero be
 loop and add the counter to it in each round:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် စုစုပေါင်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။       // total
 ၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ စုစုပေါင်း ကို စုစုပေါင်း + ကိန်း ဟု ထားမည်။
 စုစုပေါင်း ကို ပြသမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -131,12 +123,10 @@ A loop can contain another loop. This one prints a small times table, where the 
 runs once for each row and the inner loop runs once for each column of that row:
 
 ```zaka
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၃ အထိ အတန်း အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။     // row
 ၁ မှ ၃ အထိ အတိုင် အနေဖြင့် ရေတွက်၍ အတန်း * အတိုင် ကို ပြသမည်။      // column
 "---" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
@@ -160,9 +150,7 @@ The inner part can read the counter but cannot change it, because the loop sets 
 each round, so the compiler stops with an error:
 
 ```zaka-error ZK0307
-ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ၁ မှ ၁၀ အထိ ကိန်း အနေဖြင့် ရေတွက်၍ ကိန်း ကို ၀ ဟု ထားမည်။
-ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
