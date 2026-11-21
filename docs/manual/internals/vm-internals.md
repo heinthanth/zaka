@@ -174,6 +174,13 @@ channel, or an open one that has no values, parks the thread with `Waits::Send` 
 `Waits::Receive`, which `can_go` tests. The end of the program drops the values left in
 each queue (`drop_pipe_values`).
 
+A wait on several channels (`Op::Select`) reads its operands without popping them, so it can
+park and run again: the channels go to `Thread::selects`, the end of its time limit to
+`Thread::until` at the first park, and the thread parks with `Waits::Select`. `can_go` lets
+it run once a channel holds a value, each is closed, or the clock passed the end, and
+`first_wake` counts the end as a wake. The pick among channels that hold a value is the
+first, or one drawn from the seed of `--shuffle-thread-order` (`Threads::draw`).
+
 ### Locks
 
 The lowering turns a lock block into `Stmt::Lock`, the block, and `Stmt::Unlock`.

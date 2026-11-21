@@ -249,7 +249,7 @@ See [Declarations and assignment](../language/declarations.md#declarations),
 ```text
 stmt         = var-decl | fn-decl | block | if-stmt | switch-stmt
              | while-loop | counted-loop | each-loop | generic-loop | channel-loop
-             | lock-block | break | continue | return | call-stmt | verb-stmt
+             | lock-block | select | break | continue | return | call-stmt | verb-stmt
              | collector-stmt ;
 
 block        = block-open "။" { stmt } block-close "။" ;
@@ -315,7 +315,7 @@ mem          = "မင်မိုရီ" | "မှတ်ဉာဏ်" ;
 - The collector statements run and tune the collector of the VM. `mem` is a reserved
   word, but the parser reads the other words through their text, so each of these words
   can be glued to the next or written apart, and none of them is reserved.
-  [Threads](#threads) has `parallel`, `channel-loop` and `lock-block`.
+  [Threads](#threads) has `parallel`, `channel-loop`, `lock-block` and `select`.
 - `value` is an operand of a clause, or the value that a verb of the clause makes
   ([Expressions](#expressions)). We write the operands of a statement verb in the order
   that the verb lists them, and none can be left over before the verb.
@@ -608,6 +608,11 @@ received     = "ရရှိသော" | "လက်ခံရရှိသော" 
 channel-loop = expr "မှ" received ( "ဒေတာတိုင်း" "ကို" | "ဒေတာတိုင်းကို" )
                name "အနေဖြင့်" "ယူ၍" branch ;
 lock-block   = name "ကို" ( "ခေတ္တ" | "ခဏ" ) "ယူ၍" branch ;
+select       = "အောက်ပါ" "ဒေတာလမ်းကြောင်းများ" "ထဲမှ" "ဦးစွာရောက်လာသော" "ဒေတာ" "ကို"
+               "စောင့်" "မည်" "။" channel-arm { channel-arm } [ time-arm | idle-arm ] ;
+channel-arm  = name "ထဲတွင်" "ဒေတာ" "ရှိ" "လျှင်" branch ;
+time-arm     = value ( "မီလီစက္ကန့်" | "စက္ကန့်" ) "အတွင်း" "ဒေတာ" "မရောက်လာလျှင်" branch ;
+idle-arm     = "မည်သည့်လမ်းကြောင်းတွင်မှ" "ဒေတာ" "မရှိ" "လျှင်" branch ;
 threads-mark = "အပြိုင်လုပ်ငန်းများတွင်" "အသုံးပြုနိုင်သော" ;
 
 atomic-kind  = "အက်တမ်မစ်" "ဖြစ်သော" kind ;
@@ -623,6 +628,9 @@ channel-kind = kind [ digits name ] ( "ပို့နိုင်သော" | "
   `တိုး၍`, `လျှော့၍` or `ယူ၍`), and before `လုပ်ဆောင်သော ရလဒ်များ` in a parallel map. We can
   write `ခုခွဲ၍` glued or as `ခု ခွဲ၍`.
 - `receive` and `par-map` are reads, as the data reads of [Expressions](#expressions) are.
+- The arms of a `select` end at the first statement that is no arm, as the arms of a
+  switch do. A `select` with no `channel-arm` is ZK0264, and one with both a `time-arm`
+  and an `idle-arm` is ZK0265 ([Threads](../language/threads.md#waiting-on-several-channels)).
 - In a lock block, we can glue the last two words, as in `ခေတ္တယူ၍`, or write them apart.
   The glued form has `ယူ၍` alone, while the form written apart takes each spelling of
   `ယူ၍`.

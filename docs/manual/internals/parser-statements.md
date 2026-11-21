@@ -54,6 +54,7 @@ The tests that run first, in this order:
 | `at_trait_block` | `ရှိစေရန်` before the full stop | `parse_trait_block` |
 | `at_auto_rings` | `အလိုအလျောက် မင်မိုရီ` | `parse_auto_rings` |
 | `at_lock` | `<obj> ကို (ခေတ္တ\|ခဏ)ယူ၍` | `parse_lock` (in `threads.rs`) |
+| `at_select` | `အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။` | `parse_select` (in `select.rs`): the arms of the channels, then the arm of a time limit (`timeout_unit`) or of no data (`at_idle_arm`); ZK0264 and ZK0265 |
 
 Then the reserved word at the start:
 

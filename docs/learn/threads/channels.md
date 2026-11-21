@@ -15,6 +15,7 @@ values on it, and another thread takes them off in the same order.
 - How to receive each value in a loop.
 - How to receive one value at a time.
 - How a channel with a limit holds a fast sender back.
+- How to wait on several channels at once.
 
 ## Sending and receiving
 
@@ -132,6 +133,52 @@ next send waits until the program start block receives a value. A parameter can 
 channel kind without the count, as `ထုတ်` does, because the limit is not part of the data
 kind.
 
+## Waiting on several channels
+
+A thread that reacts to two channels, such as one of work and one that asks it to stop, cannot
+wait on both with a receive. A wait on several channels (select) takes the next value of
+the first channel that has one, and runs the arm of that channel:
+
+```
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+<channel> ထဲတွင် ဒေတာ ရှိလျှင် <block>
+<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် <block>
+```
+
+```zaka
+ထုတ် ဟူသော လုပ်ဆောင်ချက် သည် ရပ် ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၅၀ မီလီစက္ကန့် စောင့်မည်။
+ရပ် ထဲသို့ ၀ ကို ပို့မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ကိန်းရှင် အလုပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ရပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို ရပ် ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+အလုပ် ထဲသို့ ၇ ကို ပို့မည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+အလုပ် ထဲတွင် ဒေတာ ရှိလျှင် "အလုပ် {အလုပ် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ရပ် ထဲတွင် ဒေတာ ရှိလျှင် "ရပ်" ဟု ပြသမည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+အလုပ် ထဲတွင် ဒေတာ ရှိလျှင် "အလုပ် {အလုပ် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ရပ် ထဲတွင် ဒေတာ ရှိလျှင် "ရပ်" ဟု ပြသမည်။
+၁၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် "စောင့်နေ" ဟု ပြသမည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+အလုပ် ထဲတွင် ဒေတာ ရှိလျှင် "အလုပ် {အလုပ် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ရပ် ထဲတွင် ဒေတာ ရှိလျှင် "ရပ်" ဟု ပြသမည်။
+```
+
+```text
+အလုပ် ၇
+စောင့်နေ
+ရပ်
+```
+
+The first wait finds the value in `အလုပ်` at once. The second has a time limit, and no
+value comes within 10 milliseconds, so its last arm runs. The third waits until the thread
+sends on `ရပ်`. Each arm reads its value with `<channel> ထဲမှ ဒေတာ`, as the test of
+`အကယ်၍` does. To keep watching the channels, we put the wait in a loop.
+
 ## Details
 
 - **Other spellings.** `ပို့ဆောင်နိုင်သော` means the same as `ပို့နိုင်သော`, and
@@ -143,6 +190,11 @@ kind.
   of the test, and the test must be the whole condition of `အကယ်၍`, with the channel as a
   name; another use is the error ZK0496. A receive, a loop or a close of a value that is
   not a channel is the error ZK0495.
+- **Waiting on several channels.** When values wait in several channels, the wait picks
+  one at random; on the VM it picks the first, so a run gives the same output each time. A
+  channel that is closed and drained holds no value, and once each one is, the wait runs no
+  arm. `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` in place of a time limit runs at once when no
+  channel holds a value ([Waiting on several channels](../../manual/language/threads.md#waiting-on-several-channels)).
 - **Deadlock.** A receive from a channel that no thread sends to or closes would wait
   forever, so the program stops with the trap `deadlock` instead
   ([When a program stops](../../manual/vm/traps.md)).
@@ -157,6 +209,8 @@ kind.
   channel is closed and drained.
 - `<channel> မှ ရရှိသော ဒေတာ` receives one value as an optional value.
 - A channel with a count holds that count of values at most, and a send waits while it is full.
+- `အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။` waits on several channels and runs the arm of the one whose value came first, or
+  the arm of a time limit.
 
 ## Hands on
 
@@ -164,5 +218,7 @@ kind.
   that comes. Who closes the channel?
 - Change the limit of the last example to 1 and predict the output before running it.
 - Receive from a channel that no thread sends to, and read the message.
+- Write a loop that waits on a channel of work and a channel that asks it to stop, and ends once
+  the stop comes.
 
 Next: [Sharing between threads](sharing.md).

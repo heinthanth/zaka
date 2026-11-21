@@ -870,6 +870,7 @@ The checks of threads (`threads.rs`, with the data kinds in `task.rs`):
 | a receive | returns the optional of what the channel carries (`infer_receive`) | |
 | `<pipe> ထဲတွင် ဒေတာ ရှိ` | good as the whole condition of an arm alone (`check_arm_cond` sets `pipe_test`); `pipe_part` serves both this and the next row | ZK0496 |
 | `<pipe> ထဲမှ ဒေတာ` | good inside that arm alone (`pipe_reads`) | ZK0496 |
+| an arm of a wait on several channels | `check_select_arm`: the test of a channel as for `အကယ်၍`, its reads inside its block (`pipe_reads`); the time limit is a `usize` | ZK0495, ZK0496 |
 | a lock block | `check_lock` checks that its name has an object, and keeps the name in `held_locks` while it checks the block | |
 | a field of a marked object | `check_locked_field`, from `infer_field`: the field needs a lock around it on its name | ZK0499 |
 | an atomic number | used as its integer (`read_kind` in `infer_name` and `infer_field`), needs no lock, and accepts `ပေါင်းထည့်` and `နုတ်ယူ` (`atomic_call`) | |

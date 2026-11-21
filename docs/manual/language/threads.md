@@ -352,6 +352,108 @@ the order of the turns:
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
+## Waiting on several channels
+
+```text
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+<pipe> ထဲတွင် ဒေတာ ရှိလျှင် <block>
+<pipe> ထဲတွင် ဒေတာ ရှိလျှင် <block>
+<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် <block>
+မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် <block>
+```
+
+A wait on several channels (select) takes the next value of the first channel that has
+one. The opener line starts it, and an arm for each channel follows, with the test that
+`အကယ်၍` uses for a channel. The arms end at the first statement that is no arm, as the
+arms of a switch do. After the arms of the channels, one more arm can tell what happens
+when no value comes: a time limit, or no wait at all.
+
+- The wait runs one arm, that of the channel whose value it took, and `<pipe> ထဲမှ ဒေတာ`
+  inside that arm is the value. The take is a receive, so no other thread can take the
+  value between the wait and the read.
+- When values wait in several channels, the wait picks one of them at random, so no arm
+  starves while another channel is full of work. On the VM the pick is the first such arm,
+  so a run gives the same output each time; with `--shuffle-thread-order=<seed>` the VM
+  draws the pick from the seed, and the same seed gives the same picks again.
+- A channel that is closed and drained counts as holding no value. Once each channel of
+  the wait is closed and drained, the wait runs no arm and the program goes on.
+- `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` runs its block when no value came within `<n>`
+  milliseconds, and `<n> စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်` within `<n>` seconds. `<n>` is a
+  `usize`, as the count of a [sleep](#sleeping) is.
+- `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်` does not wait: its block runs at once when no
+  channel holds a value at that moment, an open channel with nothing in it included. A
+  value that waits in a channel wins over this arm. A loop around such a wait, with no
+  other work, keeps a core at work.
+- The form waits once. To watch the channels, we put it in a loop.
+- In a native program, a light task that waits gives its OS thread to the other tasks, as
+  a receive does.
+- An opener with no arm of a channel after it is ZK0264, and a wait with both a time limit
+  and the arm of no data is ZK0265. An arm whose test names a value that is not a channel
+  is ZK0495, and a read of the channel of another arm is ZK0496.
+
+Here a thread sends three values, waits, then sends on the channel `ရပ်`. The loop prints
+each value, prints a line each time 40 milliseconds pass with no value, and ends once
+`ရပ်` has a value:
+
+```zaka
+ထုတ် ဟူသော လုပ်ဆောင်ချက် သည် အလုပ် ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လည်းကောင်း ရပ် ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၃ အထိ န အနေဖြင့် ရေတွက်၍ အလုပ် ထဲသို့ န ကို ပို့မည်။
+၁၀၀ မီလီစက္ကန့် စောင့်မည်။
+ရပ် ထဲသို့ ၀ ကို ပို့မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အလုပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ကိန်းရှင် ရပ် သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ထုတ် ဟူသော လုပ်ဆောင်ချက်ကို အလုပ် နှင့် ရပ် တို့ဖြင့် အပြိုင် လုပ်ဆောင်မည်။
+ကိန်းရှင် ဆက် သည် မှန် ဖြစ်ပါစေ။
+ဆက် ဖြစ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+အလုပ် ထဲတွင် ဒေတာ ရှိလျှင် "အလုပ် {အလုပ် ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+ရပ် ထဲတွင် ဒေတာ ရှိလျှင် ဆက် ကို မမှန် ဟု ထားမည်။
+၄၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် "စောင့်နေ" ဟု ပြသမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+"ပြီး" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အလုပ် ၁
+အလုပ် ၂
+အလုပ် ၃
+စောင့်နေ
+စောင့်နေ
+ပြီး
+```
+
+With the arm of no data, the wait looks once and goes on. The first wait finds no
+value in the channel, and the second finds the value that came between them:
+
+```zaka
+ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+လမ်း ထဲတွင် ဒေတာ ရှိလျှင် "ရ {လမ်း ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် "မရှိသေး" ဟု ပြသမည်။
+လမ်း ထဲသို့ ၅ ကို ပို့မည်။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+လမ်း ထဲတွင် ဒေတာ ရှိလျှင် "ရ {လမ်း ထဲမှ ဒေတာ}" ဟု ပြသမည်။
+မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် "မရှိသေး" ဟု ပြသမည်။
+```
+
+```text
+မရှိသေး
+ရ ၅
+```
+
+```zaka-error ZK0265
+ကိန်းရှင် လမ်း သည် ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။
+လမ်း ထဲတွင် ဒေတာ ရှိလျှင် "ရ" ဟု ပြသမည်။
+၁၀ မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် "ကုန်" ဟု ပြသမည်။
+မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင် "မရှိ" ဟု ပြသမည်။
+```
+
 ## Objects threads share
 
 ```text

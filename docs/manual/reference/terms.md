@@ -110,6 +110,7 @@ is first used, as in "data kind (type)".
 | share | re-export | | [Modules](../language/modules.md) |
 | thread | thread, task | `အပြိုင်လုပ်ငန်း` | [Threads](../language/threads.md) |
 | channel | channel, message queue | | [Threads](../language/threads.md) |
+| wait on several channels | select, `select` statement | `ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်` | [Threads](../language/threads.md#waiting-on-several-channels) |
 | OS thread | operating-system thread | | [Threads](../language/threads.md#threads-and-os-threads) |
 | lock block | mutex lock, critical section | | [Threads](../language/threads.md) |
 | atomic number | atomic integer | | [Threads](../language/threads.md) |
