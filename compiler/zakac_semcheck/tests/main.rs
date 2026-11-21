@@ -24,6 +24,7 @@ mod prepositions;
 mod repl;
 mod resolve;
 mod samples;
+mod select;
 mod start;
 mod structs;
 mod text;

@@ -843,7 +843,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The operand, or a diagnostic.
-    fn parse_operand(&mut self) -> PResult<Expr>
+    pub(crate) fn parse_operand(&mut self) -> PResult<Expr>
     {
         extract!(Head::Expr(expr) = self.parse_head(Mode::Expr)?);
         Ok(expr)

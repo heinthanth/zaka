@@ -116,6 +116,7 @@ fn raw_stmt(s: &Stmt) -> bool
         | Stmt::Lock { obj: value, .. }
         | Stmt::Unlock { obj: value, .. } => raw_expr(value),
         Stmt::Send { pipe, value, .. } => raw_expr(pipe) || raw_expr(value),
+        Stmt::Select { pipes, ms, .. } => pipes.iter().chain(ms).any(raw_expr),
         Stmt::Print { value: PrintValue::Expr(e), .. }
         | Stmt::Halt { value: Some(e), .. }
         | Stmt::Rings { octets: Some(e), .. } => raw_expr(e),

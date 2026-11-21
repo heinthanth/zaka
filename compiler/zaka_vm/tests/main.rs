@@ -12,6 +12,7 @@ mod permissions;
 mod print;
 mod rings;
 mod samples;
+mod select;
 mod spoken;
 mod stepping;
 mod text_consts;

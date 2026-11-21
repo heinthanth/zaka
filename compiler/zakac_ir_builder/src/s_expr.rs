@@ -71,6 +71,10 @@ impl ToSexpr for Stmt
             }
             Stmt::Close { pipe, .. } => list("close", [pipe.to_sexpr()]),
             Stmt::Sleep { ms, .. } => list("sleep", [ms.to_sexpr()]),
+            Stmt::Select { pipes, slots, ms, idle, chosen, .. } =>
+            {
+                select_sexpr(pipes, slots, ms.as_ref(), *idle, *chosen)
+            }
             Stmt::Lock { obj, .. } => list("lock", [obj.to_sexpr()]),
             Stmt::Unlock { obj, .. } => list("unlock", [obj.to_sexpr()]),
             Stmt::Rings { act, octets, .. } => list(
@@ -555,4 +559,29 @@ fn foreign_sexpr(func: u32, args: &[Expr]) -> String
         "foreign",
         std::iter::once(func.to_string()).chain(args.iter().map(ToSexpr::to_sexpr)),
     )
+}
+
+/// The S-expression of a wait on several channels: the place of the chosen
+/// channel, each channel with its slot, then the time limit or the mark of a
+/// wait that does not wait.
+///
+/// # Arguments
+///
+/// * `pipes` - The channels.
+/// * `slots` - The slot of each.
+/// * `ms` - The time limit in milliseconds.
+/// * `idle` - Whether the wait does not wait.
+/// * `chosen` - The slot of the chosen place.
+///
+/// # Returns
+///
+/// The S-expression.
+fn select_sexpr(
+    pipes: &[Expr], slots: &[Place], ms: Option<&Expr>, idle: bool, chosen: Place,
+) -> String
+{
+    let arms = pipes.iter().zip(slots).map(|(p, s)| format!("({} {s})", p.to_sexpr()));
+    let end = ms.map(|m| list("after-ms", [m.to_sexpr()]));
+    let end = end.or_else(|| idle.then(|| "idle".to_string()));
+    list("select", std::iter::once(chosen.to_string()).chain(arms).chain(end))
 }

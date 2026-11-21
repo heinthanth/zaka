@@ -723,6 +723,13 @@ impl Paths<'_, '_>
                 Ok(call_effect(vec![I], Some(DataKind::optional(kind))))
             }
             Op::PipeClose | Op::Sleep => Ok(effect(&[I], None)),
+            Op::Select { arms, timed, .. } =>
+            {
+                let pairs = (0..arms).flat_map(|_| [I, A]);
+                let takes: Vec<Class> =
+                    timed.then_some(I).into_iter().chain(pairs).collect();
+                Ok(effect(&takes, Some(I)))
+            }
             Op::Lock | Op::Unlock => Ok(effect(&[A], None)),
             Op::AtomicAdd(kind, _) => self.kinded(kind, &[class_of(kind), A], None),
             Op::AtomicCas(kind) =>

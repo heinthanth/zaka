@@ -502,6 +502,35 @@ impl Checker
         pipe.and_then(result_var)
     }
 
+    /// Check the test of an arm of a wait on several channels: it tests a
+    /// channel for data, as the condition of `အကယ်၍` does, and the channel is
+    /// a name (ZK0495 for a value of another kind).
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The test.
+    ///
+    /// # Returns
+    ///
+    /// The channel, whose data the block of the arm can read.
+    pub(crate) fn check_select_arm(&mut self, cond: &Expr) -> Option<Name>
+    {
+        let pipe = self.check_arm_cond(cond);
+        ret_if!(pipe.is_some(), pipe);
+        let tested = match cond
+        {
+            Expr::Verb(v) if v.op == VerbOp::HasData => v.args.first(),
+            _ => None,
+        };
+        let tested = tested.unwrap_or(cond);
+        let kind = self.kinds.get(&tested.id()).copied();
+        let name = kind.map_or_else(|| "?".to_string(), |k| k.name());
+        // A channel that is no plain name has ZK0496 at this point.
+        let pipe_kind = kind.and_then(DataKind::as_task).is_some_and(|k| k.pipe);
+        do_if!(!pipe_kind, self.report(kd::not_a_pipe(tested.span(), &name)));
+        None
+    }
+
     /// Infer a test of a channel for data, or a read of its data: the test
     /// stands alone as the condition of `အကယ်၍` (ZK0496 elsewhere), and the read
     /// inside the branch of that test.

@@ -15,6 +15,7 @@ mod lists;
 mod modules;
 mod old_results;
 mod samples;
+mod select;
 mod spec;
 mod stmt;
 mod struct_lits;

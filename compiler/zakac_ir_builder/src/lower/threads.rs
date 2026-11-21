@@ -610,17 +610,122 @@ impl Lowerer<'_>
             return None;
         };
         let count = self.expr(count);
+        let ms = self.millis(count, unit, n.span);
+        Some(Stmt::Sleep { ms, span: n.span })
+    }
+
+    /// A count of a unit of time in milliseconds.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - The count.
+    /// * `unit` - The milliseconds in one unit: 1, or 1000 for seconds.
+    /// * `span` - The source region.
+    ///
+    /// # Returns
+    ///
+    /// The count of milliseconds.
+    fn millis(&self, count: Expr, unit: u64, span: Span) -> Expr
+    {
+        ret_if!(unit == 1, count);
+        let each = self.usize_const(unit as u32, span);
+        node_expr(DataKind::USIZE, infix_node(InfixOp::Mul, count, each), span)
+    }
+
+    /// Lower a wait on several channels: the wait writes the place of the
+    /// chosen channel to a hidden slot, and an `if` chain on that slot runs
+    /// the arm of the channel, or the arm of the time limit or of no data.
+    /// Each arm reads the value of its channel from its own hidden optional.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The wait.
+    /// * `out` - The list the statements go to.
+    pub(super) fn select_stmt(&mut self, n: &st::SelectStmt, out: &mut Vec<Stmt>)
+    {
         let span = n.span;
-        let ms = match unit
-        {
-            1 => count,
-            _ =>
-            {
-                let each = self.usize_const(unit as u32, span);
-                node_expr(DataKind::USIZE, infix_node(InfixOp::Mul, count, each), span)
-            }
+        let tested: Vec<(&ast::VerbExpr, &st::IfArm)> = n
+            .arms
+            .iter()
+            .filter_map(
+                |arm| tern!(let ast::Expr::Verb(v) = &arm.cond, Some((v, arm)), None),
+            )
+            .collect();
+        let pipes: Vec<Expr> =
+            tested.iter().map(|(v, _)| self.expr(&v.args[0])).collect();
+        let slots: Vec<Place> =
+            pipes.iter().map(|p| self.select_slot(p, span)).collect();
+        let ms = n.timeout.as_ref().map(|t| {
+            let count = self.expr(&t.count);
+            self.millis(count, tern!(t.seconds, 1000, 1), t.span)
+        });
+        let chosen = self.hidden(DataKind::USIZE, span);
+        let idle = n.idle.is_some();
+        // Each optional starts with no data, and the chosen place with the
+        // count of channels, so each read after the wait finds a set slot.
+        let none = self.usize_const(slots.len() as u32, span);
+        let blanks: Vec<Stmt> = slots
+            .iter()
+            .map(|s| {
+                let value = default_constant(self.slot_kind(*s), span);
+                Stmt::Set { place: *s, value, span }
+            })
+            .collect();
+        out.extend(blanks);
+        out.push(Stmt::Set { place: chosen, value: none, span });
+        out.push(Stmt::Select { pipes, slots: slots.clone(), ms, idle, chosen, span });
+        let is = |l: &Self, at: usize| {
+            let at = l.usize_const(at as u32, span);
+            let now = read(chosen, DataKind::USIZE, span);
+            node_expr(DataKind::Bool, compare_node(CmpOp::Eq, now, at), span)
         };
-        Some(Stmt::Sleep { ms, span })
+        let mut arms: Vec<ChainArm> = tested
+            .iter()
+            .zip(&slots)
+            .enumerate()
+            .map(|(i, ((v, arm), slot))| {
+                let ast::Expr::Name(pipe) = &v.args[0]
+                else
+                {
+                    unreachable!("the check lets a channel arm test a name alone")
+                };
+                self.pipe_reads.push((pipe.name, *slot));
+                let block = self.block(&arm.block.stmts);
+                self.pipe_reads.pop();
+                (Vec::new(), (is(self, i), block, arm.span))
+            })
+            .collect();
+        let end = n.timeout.as_ref().map(|t| (&t.block, t.span));
+        let end = end.or_else(|| n.idle.as_ref().map(|b| (b, b.span)));
+        let end = end.map(|(b, s)| {
+            (Vec::new(), (is(self, slots.len()), self.block(&b.stmts), s))
+        });
+        arms.extend(end);
+        out.push(if_chain(arms, Vec::new(), span));
+    }
+
+    /// A hidden optional that a wait on several channels gives the value of
+    /// one channel to; one that can hold text starts blank and joins the
+    /// drops of its scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipe` - The channel.
+    /// * `span` - The wait.
+    ///
+    /// # Returns
+    ///
+    /// The slot.
+    fn select_slot(&mut self, pipe: &Expr, span: Span) -> Place
+    {
+        let carried = pipe.kind.as_task().and_then(|t| t.of);
+        let kind = DataKind::optional(carried.expect("the check found a channel"));
+        let place = self.hidden(kind, span);
+        ret_if!(!kind.holds_text(), place);
+        let blank = default_constant(kind, span);
+        self.pre_init.push(Stmt::Set { place, value: blank, span });
+        self.drops.last_mut().expect("a scope is open").push((place, kind));
+        place
     }
 
     /// Lower a wait for a thread as a statement, its result dropped.

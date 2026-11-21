@@ -401,6 +401,7 @@ fn threads_note(states: &[ThreadState], seed: Option<u64>) -> String
             }
             ThreadState::WaitsSend(p) => t!("explorer.run.thread_waits_send", pipe = p),
             ThreadState::WaitsLock => t!("explorer.run.thread_waits_lock"),
+            ThreadState::WaitsSelect => t!("explorer.run.thread_waits_select"),
             ThreadState::Sleeps => t!("explorer.run.thread_sleeps"),
             ThreadState::Done => t!("explorer.run.thread_done"),
             ThreadState::Trapped => t!("explorer.run.thread_trapped"),

@@ -425,6 +425,24 @@ pub enum Op
     /// Pop a `usize` count of milliseconds: the thread sleeps that long, and
     /// the other threads go on.
     Sleep,
+    /// Wait on several channels at once. Pop the time limit, a `usize` count
+    /// of milliseconds, when the wait has one; then pop, for each channel from
+    /// the last, the `usize` that names it and the address of its optional.
+    /// The next value of a channel that holds one goes to its optional, one
+    /// picked at random from those that hold one, and its place among the
+    /// channels is pushed as a `usize`. The count of channels is pushed when
+    /// the time limit passed, or, for a wait that does not wait, when no
+    /// channel holds a value; that count plus one when each channel is closed
+    /// and drained. The thread waits for one of those while none holds.
+    Select
+    {
+        /// The count of channels.
+        arms: u32,
+        /// Whether the wait has a time limit.
+        timed: bool,
+        /// Whether the wait does not wait.
+        idle: bool,
+    },
     /// Pop the address of a shared object and take its lock: the thread waits
     /// while another holds it, and a lock whose holder stopped at a trap stops
     /// the program. A thread that holds the lock takes it once more.
@@ -695,6 +713,13 @@ impl Op
             Op::Wait(kind) => kind.map(|k| k.name()).unwrap_or_default(),
             Op::PipeNew(room) => room.map(|r| r.to_string()).unwrap_or_default(),
             Op::PipeSend(kind) | Op::PipeReceive(kind) => kind.name(),
+            Op::Select { arms, timed, idle } =>
+            {
+                let end = [(timed, " timed"), (idle, " idle")]
+                    .into_iter()
+                    .find(|(on, _)| *on);
+                format!("{arms}{}", end.map_or("", |(_, t)| t))
+            }
             Op::AtomicAdd(kind, sub) =>
             {
                 format!("{}{}", if sub { "sub " } else { "" }, kind.name())

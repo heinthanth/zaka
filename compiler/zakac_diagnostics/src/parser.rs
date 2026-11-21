@@ -1028,3 +1028,33 @@ pub fn mark_clash(span: Span, first: &str, second: &str) -> Diagnostic
     let msg = t!("codes.ZK0263.message", a = first, b = second);
     Diagnostic::new(Code::MarkClash, msg, span).with_help(t!("codes.ZK0263.help"))
 }
+
+/// A wait on several channels with no arm of a channel.
+///
+/// # Arguments
+///
+/// * `span` - The opener of the wait.
+///
+/// # Returns
+///
+/// The `ZK0264` diagnostic.
+pub fn select_no_arm(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0264.message");
+    Diagnostic::new(Code::SelectNoArm, msg, span).with_help(t!("codes.ZK0264.help"))
+}
+
+/// A wait on several channels with both a time limit and a no-data arm.
+///
+/// # Arguments
+///
+/// * `span` - The second of the two arms.
+///
+/// # Returns
+///
+/// The `ZK0265` diagnostic.
+pub fn select_two_ends(span: Span) -> Diagnostic
+{
+    let msg = t!("codes.ZK0265.message");
+    Diagnostic::new(Code::SelectTwoEnds, msg, span).with_help(t!("codes.ZK0265.help"))
+}

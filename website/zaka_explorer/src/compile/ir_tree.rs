@@ -266,6 +266,11 @@ impl IrTree<'_>
             {
                 self.node("sleep", blank, span, vec![self.expr(ms)])
             }
+            Stmt::Select { pipes, ms, chosen, .. } =>
+            {
+                let children = pipes.iter().chain(ms).map(|e| self.expr(e)).collect();
+                self.node("select", self.place_text(*chosen), span, children)
+            }
             Stmt::Print { value, .. } =>
             {
                 self.node("print", blank, span, vec![self.print(value, span)])

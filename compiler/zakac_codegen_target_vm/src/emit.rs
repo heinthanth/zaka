@@ -1014,6 +1014,18 @@ impl<'s> FuncGen<'s>
                 self.expr(ms);
                 self.op(Op::Sleep);
             }
+            Stmt::Select { pipes, slots, ms, idle, chosen, .. } =>
+            {
+                self.store(*chosen, |g| {
+                    pipes.iter().zip(slots).for_each(|(p, s)| {
+                        g.addr_of(*s);
+                        g.expr(p);
+                    });
+                    do_if!(let Some(ms) = ms, g.expr(ms));
+                    let (arms, timed) = (pipes.len() as u32, ms.is_some());
+                    g.op(Op::Select { arms, timed, idle: *idle });
+                })
+            }
             Stmt::Lock { obj, .. } =>
             {
                 self.expr(obj);

@@ -600,6 +600,10 @@ pub(crate) fn written_places(s: &Stmt) -> Vec<Place>
     match s
     {
         Stmt::Set { place, .. } => vec![*place],
+        Stmt::Select { slots, chosen, .. } =>
+        {
+            slots.iter().copied().chain([*chosen]).collect()
+        }
         Stmt::Drop { dest, .. }
         | Stmt::Free { dest, .. }
         | Stmt::Alloc { dest, .. }

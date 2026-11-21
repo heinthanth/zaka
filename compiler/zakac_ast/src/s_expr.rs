@@ -26,6 +26,8 @@ use crate::stmt::ImportStmt;
 use crate::stmt::KindParam;
 use crate::stmt::Param;
 use crate::stmt::Program;
+use crate::stmt::SelectStmt;
+use crate::stmt::SelectTimeout;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
 use crate::stmt::StructDecl;
@@ -200,6 +202,7 @@ impl ToSexpr for Stmt
             }
             Stmt::Generic(s) => generic_sexpr(s),
             Stmt::Lock(s) => list("lock", [s.obj.name.to_string(), s.block.to_sexpr()]),
+            Stmt::Select(s) => select_sexpr(s),
             Stmt::Break(_) => "(break)".into(),
             Stmt::Continue(_) => "(continue)".into(),
             Stmt::Fn(s) =>
@@ -593,6 +596,28 @@ fn if_sexpr(s: &IfStmt) -> String
     let else_part =
         s.else_block.iter().flat_map(|b| ["else".to_string(), b.to_sexpr()]);
     list("if", arms.chain(else_part))
+}
+
+/// `(select cond {..} cond {..} after count {..} idle {..})`.
+///
+/// # Arguments
+///
+/// * `s` - The wait.
+///
+/// # Returns
+///
+/// The text.
+fn select_sexpr(s: &SelectStmt) -> String
+{
+    let arms =
+        s.arms.iter().flat_map(|arm| [arm.cond.to_sexpr(), arm.block.to_sexpr()]);
+    let unit = |t: &SelectTimeout| tern!(t.seconds, "after-s", "after-ms").to_string();
+    let after = s
+        .timeout
+        .iter()
+        .flat_map(|t| [unit(t), t.count.to_sexpr(), t.block.to_sexpr()]);
+    let idle = s.idle.iter().flat_map(|b| ["idle".to_string(), b.to_sexpr()]);
+    list("select", arms.chain(after).chain(idle))
 }
 
 /// `(switch subject case {..} case {..} else kind {..})`.

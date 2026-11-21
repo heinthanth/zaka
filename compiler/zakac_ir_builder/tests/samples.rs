@@ -84,6 +84,11 @@ fn places(stmts: &[Stmt], out: &mut Vec<Place>)
                 expr_places(pipe, out);
                 expr_places(value, out);
             }
+            Stmt::Select { pipes, slots, ms, chosen, .. } =>
+            {
+                out.extend(slots.iter().copied().chain([*chosen]));
+                pipes.iter().chain(ms).for_each(|e| expr_places(e, out));
+            }
             Stmt::Halt { value: None, .. } | Stmt::Rings { octets: None, .. } => (),
             Stmt::Print { value: PrintValue::Text(_), .. } => (),
             Stmt::If { cond, then, els, .. } =>

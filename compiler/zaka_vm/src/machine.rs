@@ -1486,6 +1486,7 @@ impl Machine
             Op::PipeReceive(kind) => self.pipe_receive(kind),
             Op::PipeClose => self.pipe_close(),
             Op::Sleep => self.sleep(),
+            Op::Select { arms, timed, idle } => self.select(arms, timed, idle),
             Op::Lock => self.lock(),
             Op::AtomicAdd(kind, sub) =>
             {

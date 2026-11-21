@@ -276,6 +276,14 @@ pub(crate) fn returns_on_each_path(stmts: &[Stmt], full: &HashSet<Span>) -> bool
         Stmt::Return(_) => true,
         Stmt::Block(b) => gives(b),
         Stmt::Lock(n) => gives(&n.block),
+        // A wait needs its no-data arm to run an arm on each path: with each
+        // channel closed, a wait with no such arm runs none.
+        Stmt::Select(n) =>
+        {
+            n.idle.as_ref().is_some_and(gives)
+                && n.arms.iter().all(|a| gives(&a.block))
+                && n.timeout.as_ref().is_none_or(|t| gives(&t.block))
+        }
         Stmt::If(n) =>
         {
             n.else_block.as_ref().is_some_and(gives)
@@ -337,6 +345,12 @@ fn breaks_out(stmts: &[Stmt]) -> bool
         {
             n.arms.iter().any(|a| block(&a.block))
                 || n.else_block.as_ref().is_some_and(block)
+        }
+        Stmt::Select(n) =>
+        {
+            n.arms.iter().any(|a| block(&a.block))
+                || n.timeout.as_ref().is_some_and(|t| block(&t.block))
+                || n.idle.as_ref().is_some_and(block)
         }
         Stmt::Switch(n) =>
         {

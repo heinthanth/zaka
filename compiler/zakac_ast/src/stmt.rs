@@ -103,6 +103,9 @@ pub enum Stmt
     /// `<obj> ကို ခေတ္တယူ၍ ...`: a block that holds the lock of an object threads
     /// share.
     Lock(LockStmt),
+    /// `အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။` and its
+    /// arms: a wait on several channels at once.
+    Select(SelectStmt),
     /// `ကိန်းရှင် i သည် kind တစ်ခု ဖြစ်၍ တန်ဖိုးသည် v ဖြစ်ကာ cond နေသရွေ့ ...`
     Generic(GenericStmt),
     /// `ကွင်းဆက် ကို ရပ်မည်။`
@@ -370,6 +373,38 @@ pub struct LockStmt
 {
     /// The object.
     pub obj: Ident,
+    /// The block.
+    pub block: BlockStmt,
+    /// Source region.
+    pub span: Span,
+}
+
+/// A wait on several channels at once, which runs the arm of a channel that has
+/// a value: one at random when several have one, the time-limit arm when none
+/// came in time, and the no-data arm, with no wait, when none has one now.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SelectStmt
+{
+    /// The arms of the channels: each condition tests a channel for data,
+    /// `<pipe> ထဲတွင် ဒေတာ ရှိလျှင်`.
+    pub arms: Vec<IfArm>,
+    /// The time-limit arm, `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်`.
+    pub timeout: Option<SelectTimeout>,
+    /// The no-data arm, `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်`.
+    pub idle: Option<BlockStmt>,
+    /// Source region.
+    pub span: Span,
+}
+
+/// The time-limit arm of a wait on several channels.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct SelectTimeout
+{
+    /// The count of milliseconds or seconds.
+    pub count: Expr,
+    /// Whether the count is in seconds, `စက္ကန့်`, not milliseconds.
+    #[builder(default)]
+    pub seconds: bool,
     /// The block.
     pub block: BlockStmt,
     /// Source region.

@@ -68,6 +68,7 @@ use crate::stmt::ReplaceStmt;
 use crate::stmt::ResizeStmt;
 use crate::stmt::ReturnStmt;
 use crate::stmt::RingsStmt;
+use crate::stmt::SelectStmt;
 use crate::stmt::ShareStmt;
 use crate::stmt::SizeArg;
 use crate::stmt::Stmt;
@@ -132,6 +133,7 @@ WhileStmt => "while", visit_while;
 CountedStmt => "counted", visit_counted;
 EachStmt => "each", visit_each;
 LockStmt => "lock", visit_lock;
+SelectStmt => "select", visit_select;
 GenericStmt => "generic", visit_generic;
 BreakStmt => "break", visit_break;
 ContinueStmt => "continue", visit_continue;
@@ -213,6 +215,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Counted(s) => s,
         Stmt::Each(s) => s,
         Stmt::Lock(s) => s,
+        Stmt::Select(s) => s,
         Stmt::Generic(s) => s,
         Stmt::Break(s) => s,
         Stmt::Continue(s) => s,
@@ -338,6 +341,8 @@ pub trait Visitor
     fn visit_each(&mut self, n: &EachStmt) { walk_each(self, n) }
     /// Visit a lock block.
     fn visit_lock(&mut self, n: &LockStmt) { walk_lock(self, n) }
+    /// Visit a wait on several channels.
+    fn visit_select(&mut self, n: &SelectStmt) { walk_select(self, n) }
     /// Visit a generic loop.
     fn visit_generic(&mut self, n: &GenericStmt) { walk_generic(self, n) }
     /// Visit a break statement.
@@ -488,6 +493,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Counted(s) => v.visit_counted(s),
         Stmt::Each(s) => v.visit_each(s),
         Stmt::Lock(s) => v.visit_lock(s),
+        Stmt::Select(s) => v.visit_select(s),
         Stmt::Generic(s) => v.visit_generic(s),
         Stmt::Break(s) => v.visit_break(s),
         Stmt::Continue(s) => v.visit_continue(s),
@@ -594,6 +600,21 @@ pub fn walk_each<V: Visitor + ?Sized>(v: &mut V, n: &EachStmt)
     do_if!(let Some(place) = &n.place, v.visit_ident(place));
     v.visit_ident(&n.var);
     v.visit_block(&n.block);
+    v.leave(n);
+}
+
+/// Visit the arms of a wait on several channels: each channel arm, then the
+/// count and the block of the time limit, then the no-data block.
+pub fn walk_select<V: Visitor + ?Sized>(v: &mut V, n: &SelectStmt)
+{
+    v.enter(n);
+    do_for!(arm in &n.arms, v.visit_if_arm(arm));
+    if let Some(t) = &n.timeout
+    {
+        v.visit_expr(&t.count);
+        v.visit_block(&t.block);
+    }
+    do_if!(let Some(block) = &n.idle, v.visit_block(block));
     v.leave(n);
 }
 
@@ -1296,6 +1317,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
             v.visit_ident_mut(&mut s.obj);
             v.visit_block_mut(&mut s.block);
         }
+        Stmt::Select(s) => walk_select_mut(v, s),
         Stmt::Generic(s) => walk_generic_mut(v, s),
         Stmt::Break(s) => v.visit_span_mut(&mut s.span),
         Stmt::Continue(s) => v.visit_span_mut(&mut s.span),
@@ -1394,6 +1416,25 @@ pub fn walk_print_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut PrintStmt)
 {
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.value);
+}
+
+/// Visit the arms of a wait on several channels.
+pub fn walk_select_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut SelectStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    for arm in &mut n.arms
+    {
+        v.visit_span_mut(&mut arm.span);
+        v.visit_expr_mut(&mut arm.cond);
+        v.visit_block_mut(&mut arm.block);
+    }
+    if let Some(t) = &mut n.timeout
+    {
+        v.visit_span_mut(&mut t.span);
+        v.visit_expr_mut(&mut t.count);
+        v.visit_block_mut(&mut t.block);
+    }
+    do_if!(let Some(block) = &mut n.idle, v.visit_block_mut(block));
 }
 
 /// Visit the arms and the else block of a conditional.

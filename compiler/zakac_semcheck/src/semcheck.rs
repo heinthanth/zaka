@@ -41,6 +41,7 @@ use zakac_ast::stmt::ReplaceStmt;
 use zakac_ast::stmt::ResizeStmt;
 use zakac_ast::stmt::ReturnStmt;
 use zakac_ast::stmt::RingsStmt;
+use zakac_ast::stmt::SelectStmt;
 use zakac_ast::stmt::ShareStmt;
 use zakac_ast::stmt::SizeArg;
 use zakac_ast::stmt::Stmt;
@@ -2486,6 +2487,36 @@ impl Visitor for Checker
         let guard = n.arms.len() == 1 && n.else_block.is_none();
         let guard = guard && n.arms.first().is_some_and(|a| leaves_at_end(&a.block));
         do_if!(guard, after.extend(facts_when(&n.arms[0].cond, false)));
+        self.proven = after;
+        self.touched.extend(inside);
+    }
+
+    fn visit_select(&mut self, n: &SelectStmt)
+    {
+        let before = self.proven.clone();
+        let outer = std::mem::take(&mut self.touched);
+        for arm in &n.arms
+        {
+            self.proven = before.clone();
+            let pipe = self.check_select_arm(&arm.cond);
+            do_if!(let Some(p) = pipe, self.pipe_reads.push(p));
+            self.visit_block(&arm.block);
+            do_if!(pipe.is_some(), _ = self.pipe_reads.pop());
+        }
+        if let Some(t) = &n.timeout
+        {
+            self.proven = before.clone();
+            self.expect_kind(&t.count, Some(DataKind::USIZE));
+            self.visit_block(&t.block);
+        }
+        if let Some(b) = &n.idle
+        {
+            self.proven = before.clone();
+            self.visit_block(b);
+        }
+        let inside = std::mem::replace(&mut self.touched, outer);
+        let mut after = before;
+        after.retain(|name, _| !inside.contains(name));
         self.proven = after;
         self.touched.extend(inside);
     }

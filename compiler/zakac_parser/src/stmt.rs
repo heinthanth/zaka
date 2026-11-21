@@ -239,6 +239,7 @@ impl Parser<'_>
         ret_if!(self.at_trait_block(), self.parse_trait_block());
         ret_if!(self.at_auto_rings(), self.parse_auto_rings());
         ret_if!(self.at_lock(), self.parse_lock());
+        ret_if!(self.at_select(), self.parse_select());
         let tok = self.peek();
         let Some(kw) = kw_of(&tok)
         else

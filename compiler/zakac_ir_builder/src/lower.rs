@@ -1167,6 +1167,7 @@ impl Lowerer<'_>
             }
             st::Stmt::Each(n) => self.each(n, out),
             st::Stmt::Lock(n) => self.lock_stmt(n, out),
+            st::Stmt::Select(n) => self.select_stmt(n, out),
             st::Stmt::Break(n) =>
             {
                 out.extend(self.loop_drops(n.span));

@@ -146,6 +146,11 @@ fn stmt(s: &mut Stmt, w: &mut impl Walker)
             expr(thread, w);
             w.span(span);
         }
+        Stmt::Select { pipes, ms, span, .. } =>
+        {
+            pipes.iter_mut().chain(ms.as_mut()).for_each(|e| expr(e, w));
+            w.span(span);
+        }
         Stmt::Send { pipe, value, span } =>
         {
             expr(pipe, w);

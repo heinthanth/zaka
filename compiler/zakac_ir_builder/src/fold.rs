@@ -354,6 +354,10 @@ impl Folder
             | Stmt::Sleep { ms: thread, .. }
             | Stmt::Lock { obj: thread, .. }
             | Stmt::Unlock { obj: thread, .. } => self.drop_value(thread),
+            Stmt::Select { pipes, ms, .. } =>
+            {
+                pipes.iter_mut().chain(ms.as_mut()).for_each(|e| self.drop_value(e))
+            }
             Stmt::Send { pipe, value, .. } =>
             {
                 self.drop_value(pipe);

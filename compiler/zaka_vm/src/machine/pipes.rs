@@ -36,6 +36,20 @@ impl Pipe
     /// `true` if it can.
     pub(super) fn can_receive(&self) -> bool { self.closed || !self.queue.is_empty() }
 
+    /// Whether a value waits in the channel.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    pub(super) fn holds(&self) -> bool { !self.queue.is_empty() }
+
+    /// Whether the channel is closed.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    pub(super) fn is_closed(&self) -> bool { self.closed }
+
     /// Whether a send can go on: the channel has room, or it is closed, so the
     /// send stops the program.
     ///
@@ -163,6 +177,23 @@ impl Machine
         {
             return self.mem.zero(slot, optional);
         };
+        self.receive_block(slot, block, kind)
+    }
+
+    /// Move a value that left a channel into an optional, and free its block.
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - The address of the optional.
+    /// * `block` - The block of the value.
+    /// * `kind` - The kind of the value.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    fn receive_block(&mut self, slot: u64, block: u64, kind: DataKind) -> Step
+    {
+        let optional = DataKind::optional(kind);
         let shape =
             optional.as_struct().ok_or_else(|| malformed("an optional is a struct"))?;
         let platform = self.module.platform_bits;
@@ -181,6 +212,87 @@ impl Machine
         self.mem.store(slot + tag, Value::int(int, 1, platform))?;
         self.mem.blit(slot + some, block, kind)?;
         self.mem.free(block)
+    }
+
+    /// Wait on several channels at once, see [`Op::Select`]. The operands
+    /// remain on the stack while the thread parks, so the op runs again on
+    /// its next turn.
+    ///
+    /// # Arguments
+    ///
+    /// * `arms` - The count of channels.
+    /// * `timed` - Whether the wait has a time limit.
+    /// * `idle` - Whether the wait does not wait.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or a trap.
+    pub(super) fn select(&mut self, arms: u32, timed: bool, idle: bool) -> Step
+    {
+        let n = arms as usize;
+        let take = 2 * n + usize::from(timed);
+        let base = self.stack.len().checked_sub(take);
+        let base = base.ok_or_else(|| malformed("select needs its channels"))?;
+        let ms = timed.then(|| self.stack.last().and_then(raw_int));
+        let ms = ms.map(|m| m.ok_or_else(|| malformed("select needs its time limit")));
+        let ms = ms.transpose()?.map(|m| u64::try_from(m).unwrap_or(u64::MAX));
+        let arms: Vec<(u64, usize)> =
+            (0..n).map(|i| self.select_arm(base + 2 * i)).collect::<Result<_, _>>()?;
+        let pipes = &self.threads.pipes;
+        let holding: Vec<usize> =
+            (0..n).filter(|i| pipes[arms[*i].1].holds()).collect();
+        let closed = arms.iter().all(|(_, p)| pipes[*p].is_closed());
+        let now = self.world.now_ms();
+        let until = ms.map(|m| self.threads.select_until(now.saturating_add(m)));
+        let passed = until.is_some_and(|t| now >= t);
+        let chosen = match holding.is_empty()
+        {
+            false => Some(holding[self.threads.draw(holding.len())]),
+            true if closed => Some(n + 1),
+            true if idle || passed => Some(n),
+            true => None,
+        };
+        let Some(chosen) = chosen
+        else
+        {
+            self.threads.select_on(arms.iter().map(|(_, p)| *p).collect());
+            self.park(Waits::Select(until));
+            return Ok(());
+        };
+        self.stack.truncate(base);
+        self.threads.select_done();
+        if let Some(&(slot, at)) = arms.get(chosen).filter(|_| chosen < n)
+        {
+            let pipe = &mut self.threads.pipes[at];
+            let kind = pipe.kind.ok_or_else(|| malformed("a value has a kind"))?;
+            let block = pipe.queue.pop_front().expect("the channel holds a value");
+            self.receive_block(slot, block, kind)?;
+        }
+        self.push(Value::int(THREAD_ID, chosen as u128, self.module.platform_bits))
+    }
+
+    /// The optional and the channel of one arm of a wait on several
+    /// channels, from the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The place of the address of the optional on the stack.
+    ///
+    /// # Returns
+    ///
+    /// The address of the optional and the index of the channel.
+    fn select_arm(&self, at: usize) -> Result<(u64, usize), TrapKind>
+    {
+        let slot = self.stack[at].as_ptr();
+        let slot =
+            slot.ok_or_else(|| malformed("select needs the slot of a channel"))?;
+        let id = raw_int(&self.stack[at + 1]);
+        let pipe =
+            id.and_then(|n| usize::try_from(n).ok()).and_then(|n| n.checked_sub(1));
+        let pipe = pipe.filter(|n| *n < self.threads.pipes.len());
+        let pipe =
+            pipe.ok_or_else(|| malformed("select needs the number of a channel"))?;
+        Ok((slot, pipe))
     }
 
     /// Close a channel; a second close stops the program.
@@ -217,4 +329,18 @@ impl Machine
             self.mem.free(block)
         })
     }
+}
+
+/// The raw pattern of an integer value.
+///
+/// # Arguments
+///
+/// * `v` - The value.
+///
+/// # Returns
+///
+/// The pattern, or `None` for a value that is no integer.
+fn raw_int(v: &Value) -> Option<u128>
+{
+    tern!(let Value::Int { raw, .. } = v, Some(*raw), None)
 }

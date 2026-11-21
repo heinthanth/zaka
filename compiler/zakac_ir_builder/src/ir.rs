@@ -625,6 +625,29 @@ pub enum Stmt
         /// Source region.
         span: Span,
     },
+    /// Wait on several channels at once: the next value of the first channel
+    /// that has one goes to its slot, and `chosen` gets the place of that
+    /// channel in `pipes`. With values in several, one is picked at random.
+    /// `chosen` gets the count of channels when the time limit passed, or,
+    /// for a wait that does not wait, when no channel holds a value now; and
+    /// that count plus one when each channel is closed and drained. Each slot
+    /// of the other channels holds no data.
+    Select
+    {
+        /// The channels.
+        pipes: Vec<Expr>,
+        /// The optional each channel gives its value to, in the order of
+        /// `pipes`.
+        slots: Vec<Place>,
+        /// The time limit in milliseconds, or `None` for no limit.
+        ms: Option<Expr>,
+        /// Whether the wait does not wait when no channel holds a value.
+        idle: bool,
+        /// The slot that gets the place of the chosen channel, a `usize`.
+        chosen: Place,
+        /// Source region.
+        span: Span,
+    },
     /// Take the lock of a shared object: it waits while another thread holds
     /// it; a lock that a thread held when it stopped at a trap stops the
     /// program.
@@ -874,6 +897,7 @@ impl Stmt
             | Stmt::Send { span, .. }
             | Stmt::Close { span, .. }
             | Stmt::Sleep { span, .. }
+            | Stmt::Select { span, .. }
             | Stmt::Lock { span, .. }
             | Stmt::Unlock { span, .. }
             | Stmt::AtomicAdd { span, .. }

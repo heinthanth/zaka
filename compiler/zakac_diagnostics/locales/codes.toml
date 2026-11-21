@@ -1852,6 +1852,24 @@ en = "drop one of the two"
 [codes.ZK0263.explain]
 en = """Some marks of a struct do not go together. A struct that a lib gives to C, `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, cannot be generic, since a C header cannot declare a generic struct, nor `မျှဝေနိုင်သော`, since C passes the struct whole. A kind from outside, `ပြင်ပမှ လာသော`, is one struct of C, so it is not generic either, and each of its values is a shared one, so `မျှဝေနိုင်သော` adds nothing."""
 
+[codes.ZK0264.title]
+en = "wait on channels with no channel"
+[codes.ZK0264.message]
+en = "this wait on several channels has no arm of a channel"
+[codes.ZK0264.help]
+en = "add an arm \"<channel> ထဲတွင် ဒေတာ ရှိလျှင် ...\" for each channel to wait on"
+[codes.ZK0264.explain]
+en = """A wait on several channels, `အောက်ပါ ဒေတာလမ်းကြောင်းများထဲမှ ဦးစွာရောက်လာသော ဒေတာကို စောင့်မည်။`, runs the arm of the channel that has a value first. It needs an arm for each channel, `<channel> ထဲတွင် ဒေတာ ရှိလျှင် <block>`, before its time-limit arm or its no-data arm; with none, it has nothing to wait on."""
+
+[codes.ZK0265.title]
+en = "time limit and no wait in one wait"
+[codes.ZK0265.message]
+en = "this wait on several channels has both a time limit and an arm for no data"
+[codes.ZK0265.help]
+en = "keep one: the time limit waits up to its time, and the no-data arm does not wait at all"
+[codes.ZK0265.explain]
+en = """A wait on several channels has two ends for when no channel has a value: the time-limit arm, `<n> မီလီစက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင်`, waits up to that time, and the no-data arm, `မည်သည့်လမ်းကြောင်းတွင်မှ ဒေတာ မရှိလျှင်`, runs at once with no wait. The two cannot both hold, so a wait has one of them at most."""
+
 [codes.ZK0262.title]
 en = "name from two whole imports"
 [codes.ZK0262.message]

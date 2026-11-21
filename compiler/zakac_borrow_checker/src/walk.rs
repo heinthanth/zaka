@@ -99,6 +99,7 @@ pub(crate) fn stmt_exprs(s: &Stmt) -> Vec<&Expr>
         | Stmt::Lock { obj: thread, .. }
         | Stmt::Unlock { obj: thread, .. } => vec![thread],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],
+        Stmt::Select { pipes, ms, .. } => pipes.iter().chain(ms.as_ref()).collect(),
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {
@@ -275,6 +276,7 @@ fn stmt_exprs_mut(s: &mut Stmt) -> Vec<&mut Expr>
         | Stmt::Lock { obj: thread, .. }
         | Stmt::Unlock { obj: thread, .. } => vec![thread],
         Stmt::Send { pipe, value, .. } => vec![pipe, value],
+        Stmt::Select { pipes, ms, .. } => pipes.iter_mut().chain(ms.as_mut()).collect(),
         Stmt::Print { value: PrintValue::Expr(e), .. } => vec![e],
         Stmt::Halt { value, .. } | Stmt::Rings { octets: value, .. } =>
         {

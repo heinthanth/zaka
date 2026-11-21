@@ -51,6 +51,10 @@ pub(super) enum Waits
     Lock(u64),
     /// The clock of the world at this count of milliseconds: a sleep.
     Until(u64),
+    /// A value in one of the channels the thread selects on, the close of
+    /// each, or the clock at this count of milliseconds when there is a time
+    /// limit.
+    Select(Option<u64>),
 }
 
 /// Where a thread stands.
@@ -95,6 +99,11 @@ struct Thread
     /// Whether some thread waited for it.
     #[builder(default)]
     awaited: bool,
+    /// The index of each channel of the wait on several channels it runs.
+    #[builder(default)]
+    selects: Vec<usize>,
+    /// The end of the time limit of that wait, once it parked.
+    until: Option<u64>,
 }
 
 /// A lock of a shared object that a thread holds.
@@ -224,6 +233,14 @@ impl Threads
             Waits::Lock(obj) => self.locks.iter().all(|h| h.obj != obj || h.broken),
             Waits::Send(p) => self.pipes.get(p).is_none_or(Pipe::can_send),
             Waits::Until(t) => now >= t,
+            Waits::Select(until) =>
+            {
+                let pipes = thread.selects.iter().filter_map(|p| self.pipes.get(*p));
+                let closed = pipes.clone().all(Pipe::is_closed);
+                until.is_some_and(|t| now >= t)
+                    || closed
+                    || pipes.clone().any(Pipe::holds)
+            }
         }
     }
 
@@ -236,7 +253,7 @@ impl Threads
     {
         let wake = |j: &Thread| match (&j.end, j.waits)
         {
-            (End::Runs, Waits::Until(t)) => Some(t),
+            (End::Runs, Waits::Until(t) | Waits::Select(Some(t))) => Some(t),
             _ => None,
         };
         self.list.iter().filter_map(wake).min()
@@ -267,6 +284,56 @@ impl Threads
         };
         ret_if!(free.is_empty(), None);
         Some(free[rng.usize(..free.len())])
+    }
+
+    /// Pick one of a count of choices: the first, or with a seed one drawn
+    /// from it.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - The count of choices, at least one.
+    ///
+    /// # Returns
+    ///
+    /// The index of the choice.
+    pub(super) fn draw(&mut self, count: usize) -> usize
+    {
+        self.rng.as_mut().map_or(0, |r| r.usize(..count))
+    }
+
+    /// The end of the time limit of the wait on several channels the running
+    /// thread runs: kept from when it first parked, so a wake that finds no
+    /// value does not start the limit again.
+    ///
+    /// # Arguments
+    ///
+    /// * `end` - The end, counted from now.
+    ///
+    /// # Returns
+    ///
+    /// The end the thread keeps.
+    pub(super) fn select_until(&mut self, end: u64) -> u64
+    {
+        *self.list[self.now].until.get_or_insert(end)
+    }
+
+    /// Park the running thread on the channels of a wait on several channels.
+    ///
+    /// # Arguments
+    ///
+    /// * `pipes` - The index of each channel.
+    pub(super) fn select_on(&mut self, pipes: Vec<usize>)
+    {
+        self.list[self.now].selects = pipes;
+    }
+
+    /// Forget the channels and the time limit of the wait on several channels
+    /// the running thread ran.
+    pub(super) fn select_done(&mut self)
+    {
+        let thread = &mut self.list[self.now];
+        thread.selects.clear();
+        thread.until = None;
     }
 
     /// Shuffle the turns from a seed, or keep them fixed.
@@ -313,6 +380,8 @@ pub enum ThreadState
     WaitsSend(usize),
     /// It waits for a lock another thread holds.
     WaitsLock,
+    /// It waits on several channels at once.
+    WaitsSelect,
     /// It sleeps.
     Sleeps,
     /// It returned.
@@ -344,6 +413,7 @@ impl Machine
             (_, Waits::Send(p)) => ThreadState::WaitsSend(p),
             (_, Waits::Lock(_)) => ThreadState::WaitsLock,
             (_, Waits::Until(_)) => ThreadState::Sleeps,
+            (_, Waits::Select(_)) => ThreadState::WaitsSelect,
         };
         threads.list.iter().enumerate().map(state).collect()
     }

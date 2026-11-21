@@ -145,6 +145,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0261 | a share, `... ကို အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်။`, that names a name the file does not import | [Modules](../language/modules.md#sharing-imported-names) |
 | ZK0262 | a use of a name that two whole imports bring from two files | [Modules](../language/modules.md#whole-imports) |
 | ZK0263 | a struct whose marks do not go together: a C name or `ပြင်ပမှ လာသော` with kind parameters, or `မျှဝေနိုင်သော` or the thread mark with either; or the thread mark on an enumeration | [Structs](../language/structs.md#marks-after-the-head) |
+| ZK0264 | a wait on several channels whose opener has no arm of a channel after it | [Threads](../language/threads.md#waiting-on-several-channels) |
+| ZK0265 | a wait on several channels with both a time limit and an arm of no data | [Threads](../language/threads.md#waiting-on-several-channels) |
 
 ### ZK03: names
 
