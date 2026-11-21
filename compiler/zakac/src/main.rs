@@ -1,5 +1,6 @@
 mod build;
 mod cli;
+mod repl;
 
 use zakac_cli_common::executable_main;
 

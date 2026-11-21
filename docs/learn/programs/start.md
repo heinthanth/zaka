@@ -145,6 +145,10 @@ error[ZK0326]: a statement that runs goes inside the start block, not at the top
   run: a second one is ZK0325, a file with none is ZK0327, and an imported file cannot
   have one ([The start
   block](../../manual/language/functions-start-block.md)).
+- **REPL mode.** `zakac repl` runs statements as we write them, and `zakac run --repl`
+  runs a file in the same mode: the statements at the top level form the program start
+  block, so we can leave the block out ([REPL
+  mode](../../manual/language/functions-start-block.md#repl-mode)).
 - **The parameters.** The block can have none, one or two parameters, and each one must
   be a `စာသား စာရင်း`; other parameters are ZK0440.
 - **The result.** The result must be an integer, or the compiler reports ZK0441. The

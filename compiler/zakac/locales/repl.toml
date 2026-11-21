@@ -1,0 +1,13 @@
+_version = 2
+
+[repl.about]
+en = "Run statements as we write them, with no program start block. A line that leaves a block open goes on to the next line; a blank line ends it."
+
+[repl.welcome]
+en = "Zaka REPL. Write statements and press Enter. :exit or Ctrl-D leaves, :clear clears the screen and :reset forgets the statements so far."
+
+[repl.reset]
+en = "The session starts again: the statements so far are gone."
+
+[repl.unknown]
+en = "unknown command %{c}: the commands are :exit, :clear and :reset"

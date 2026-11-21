@@ -14,3 +14,6 @@ en = "Foldings to run: all, none, or a comma list of exprs, consts and branches.
 
 [ir.no_unsafe]
 en = "Refuse unsafe code (စိတ်မချရသော), for lessons and projects that keep to safe Zaka."
+
+[ir.repl]
+en = "REPL mode: the top-level statements of the file form its program start block, so the file can leave the block out."

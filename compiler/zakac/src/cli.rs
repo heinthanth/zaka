@@ -22,6 +22,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_semcheck::cli::ZakacSemcheck;
 
 use crate::build::ZakacBuild;
+use crate::repl::ZakacRepl;
 
 /// The `zakac` command.
 #[derive(Builder)]
@@ -85,6 +86,7 @@ impl Command for Zakac
             .add_subcommand::<ZakacBorrowChecker>(Some("borrowck"))
             .add_subcommand::<ZakacBuild>(Some("build"))
             .add_subcommand::<ZakaVm>(Some("run"))
+            .add_subcommand::<ZakacRepl>(Some("repl"))
             .add_subcommand::<ZakacLsp>(Some("lsp"))
     }
 

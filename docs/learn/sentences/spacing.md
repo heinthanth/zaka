@@ -46,7 +46,7 @@ use a name that we made up, we put a space after it, before its particle:
 Without the space, the compiler sees `အသက်ကို` as one long name. No name of that spelling
 exists, so the compiler reports an error, and it suggests the fix:
 
-```zaka-error ZK0203
+```zaka-error ZK0203 repl=on
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```

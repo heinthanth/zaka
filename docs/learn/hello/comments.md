@@ -92,7 +92,7 @@ sentence remains in the file, and we can bring it back later when we remove the 
 we join it to the next word, the compiler sees one long word of program text, and it
 stops with an error:
 
-```zaka-error ZK0202
+```zaka-error ZK0202 repl=on
 မှတ်ချက်ကို မမေ့ပါနှင့်
 ```
 

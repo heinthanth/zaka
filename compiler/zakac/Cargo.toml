@@ -6,7 +6,9 @@ autotests = false
 
 [dependencies]
 bon = { workspace = true }
+etcetera = { workspace = true }
 rust-i18n = { workspace = true }
+rustyline = { workspace = true }
 strum = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_burmese_segmenter = { workspace = true }
@@ -23,12 +25,13 @@ zakac_rust_sugars = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_semcheck = { workspace = true }
 zaka_vm = { workspace = true, features = ["ffi"] }
+zaka_host = { workspace = true }
+zakac_reporter = { workspace = true }
+zakac_span = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-zaka_host = { workspace = true }
 zakac_ast = { workspace = true }
-zakac_span = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }

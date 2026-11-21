@@ -30,6 +30,7 @@ made, the *artifact*, while `run` goes to the end and runs the program.
 | `borrowck` (or `mkbck`) | run the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
 | `build` | build the program for a target | the operations (instructions) of the VM, an executable or a lib (library) | `.zkc` / `.zkct` for the VM |
 | `run` | run the program | nothing: the program runs | |
+| `repl` | run statements as we write them, with no program start block | nothing: each statement runs | |
 | `lsp` | serve an editor | errors, colors and hovers, to the editor | |
 
 [Stages](stages.md) shows what each artifact contains. Each stage also builds as a
@@ -173,12 +174,13 @@ We give a lint flag again, or a comma list, to name more than one group or code.
 front end reads the groups `naturalness` and `spoken`, and the checker reads the rest;
 [Lint names](#lint-names) lists them.
 
-### From `irgen` on: folding and unsafe code
+### From `irgen` on: folding, unsafe code and REPL mode
 
 | Flag | Value | Default | What it does |
 | --- | --- | --- | --- |
 | `--fold` | `all`, `none`, or a comma list of `exprs`, `consts` and `branches` | `all` | the foldings to run |
 | `--no-unsafe` | | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
+| `--repl` | | off | REPL mode: the statements at the top level of the file that we run form its program start block, so the file can leave the block out ([REPL mode](../language/functions-start-block.md#repl-mode)) |
 
 `--fold` changes the IR, not what the program does:
 
@@ -504,6 +506,50 @@ trap.zaka: the program stopped: integer division or remainder with zero as divis
 `--jit` asks for Cranelift alone: a program it cannot build is an error, `--max-heap` caps
 the heap when we give it and not otherwise, and `--shuffle-thread-order` cannot go with
 it. The `zaka_vm` program carries no Cranelift and runs each program on the VM.
+
+## repl
+
+Run statements as we write them, as a REPL (read-eval-print loop) does.
+
+```text
+zakac repl
+```
+
+`zakac repl` compiles in [REPL mode](../language/functions-start-block.md#repl-mode), so
+we write statements with no program start block. After each line it runs the statements so
+far on the VM and prints the new output. A line that leaves a block open, such as the
+head of an `အကယ်၍` block, waits for the lines after it, under a `...` prompt; a blank
+line ends the block as it stands. A statement that does not compile, or that stops the
+program, prints its message and is dropped, so the statements after it run as before.
+
+On a terminal, the arrows move through the line and through the lines of earlier
+sessions, Ctrl-R searches them, and Ctrl-C drops the lines of an open block. `zakac`
+keeps those lines in `zakac/repl_lines` in the data folder of the user, such as
+`~/.local/share` (`XDG_DATA_HOME`) on Linux and macOS. With input from a pipe or a file,
+the lines are read one after another, with no editing.
+
+A line that starts with `:` is a command:
+
+| Command | What it does |
+| --- | --- |
+| `:exit` | end the session, as Ctrl-D does |
+| `:clear` | clear the screen; the statements so far remain |
+| `:reset` | forget the statements so far, so the session starts again |
+
+```console
+$ zakac repl
+Zaka REPL. Write statements and press Enter. :exit or Ctrl-D leaves, :clear clears the screen and :reset forgets the statements so far.
+> ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
+> က ကို ပြသမည်။
+၁
+> က + ၁ ကို ပြသမည်။
+၂
+```
+
+Each line runs the whole session again and prints the part of the output that is new. So
+a program that prints something different on each run, such as a random number, can print
+a wrong part, and the program works in a world held in storage: it reads no standard
+input, its files never reach the disk, and it cannot call C.
 
 ## lsp
 

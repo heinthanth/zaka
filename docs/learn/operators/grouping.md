@@ -125,7 +125,7 @@ second line, `ပေါင်းလဒ်` comes first and uses `က နှင�
 A word phrase cannot go straight inside a sum with signs, so to use one there, we put it
 in parentheses. Without them, the compiler stops with an error:
 
-```zaka-error ZK0203
+```zaka-error ZK0203 repl=on
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။

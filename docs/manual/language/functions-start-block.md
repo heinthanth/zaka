@@ -138,6 +138,33 @@ error[ZK0327]: the program has no start block, "ပရိုဂရမ်သည�
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
+## REPL mode
+
+In REPL mode, the statements at the top level of the file that we run form its program
+start block, so a short program can leave the block out. `zakac repl` compiles in this
+mode ([zakac repl](../compiler/commands.md#repl)), and the `--repl` flag of `run`,
+`build`, `irgen` and `borrowck` turns it on for a file.
+
+- A statement that runs, at the top level, moves into the program start block, in order.
+- A variable or constant after the first such statement moves in too, so the values are
+  set in the order of the source; one before it remains at the top level, and so does one
+  with `အများသုံး`.
+- Functions, structs, enumerations, traits, kind aliases and imports remain in their places.
+- A file with a program start block compiles as it does without the mode, so a statement
+  outside the block is still ZK0326. An imported file keeps the rules above, and a file
+  with nothing to run gets a blank program start block.
+
+```console
+$ zakac run --repl age.zaka
+```
+
+With `--repl`, the file `age.zaka` can hold the two lines below and print `၂၀`:
+
+```text
+ကိန်းရှင် အသက် သည် ၂၀ ဖြစ်ပါစေ။
+အသက် ကို ပြသမည်။
+```
+
 ```text
 error[ZK0440]: a parameter of the start block is a "စာသား စာရင်း", and there are two of them at most
 ```

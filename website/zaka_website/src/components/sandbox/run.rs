@@ -53,7 +53,7 @@ pub enum Fence
 /// What a fence of a Learn page asks of the compiler besides its promise:
 /// `lint-error=mem`, `lint-warn=doubts`, `no-unsafe=on`, `overflow=wrap`, and
 /// `lint-allow=`, `lint-warn=` or `lint-error=` with each other lint group or
-/// code, as the flags of the same names.
+/// code, and `repl=on`, as the flags of the same names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Builder, Serialize, Deserialize)]
 pub struct FenceOptions
 {
@@ -75,6 +75,11 @@ pub struct FenceOptions
     #[builder(default)]
     #[serde(default)]
     pub lint: LintLevels,
+    /// Whether the program compiles in REPL mode: its top-level statements
+    /// form its program start block.
+    #[builder(default)]
+    #[serde(default)]
+    pub repl: bool,
 }
 
 impl FenceOptions
@@ -99,6 +104,7 @@ impl FenceOptions
             ("lint-error", "mem") => self.check = MemCheck::Error,
             ("lint-warn", "doubts") => self.strict = true,
             ("no-unsafe", "on") => self.no_unsafe = true,
+            ("repl", "on") => self.repl = true,
             ("overflow", _) => self.overflow = value.parse().ok()?,
             ("lint-allow", _) =>
             {
@@ -247,6 +253,7 @@ pub fn compile(source: &str, options: &FenceOptions, input: &str) -> Compiled
         &LexerOptions::default(),
         &SemcheckOptions::builder()
             .no_unsafe(options.no_unsafe)
+            .repl(options.repl)
             .lint(options.lint)
             .build(),
         &FoldOptions::default(),

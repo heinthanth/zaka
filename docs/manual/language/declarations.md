@@ -115,7 +115,7 @@ the value must fit the data kind (ZK0401).
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
-```zaka-error ZK0234
+```zaka-error ZK0234 repl=on
 ကိန်းရှင် အရေအတွက် သည် ကိန်းပြည့် ဖြစ်ပါစေ။
 ```
 

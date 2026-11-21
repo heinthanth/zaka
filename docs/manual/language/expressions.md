@@ -291,7 +291,7 @@ A comparison cannot be the direct operand of another comparison, in either form
 မှန်
 ```
 
-```zaka-error ZK0210
+```zaka-error ZK0210 repl=on
 ၁ < ၂ < ၃ ကို ပြသမည်။
 ```
 
@@ -337,7 +337,7 @@ cannot tell where it ends (ZK0204).
 မှန်
 ```
 
-```zaka-error ZK0204
+```zaka-error ZK0204 repl=on
 ကိန်းရှင် က သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
 က ဖြစ်၍ မှန် ကို ပြသမည်။
 ```
@@ -491,7 +491,7 @@ xs ၏ အကွက်အရေအတွက် == ၀ ကို ပြသမည�
 error[ZK0203]: this statement does not end in a statement verb, found "=="
 ```
 
-```zaka-error ZK0203
+```zaka-error ZK0203 repl=on
 ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
 က နှင့် ခ ၏ ပေါင်းလဒ် * ၂ ကို ပြသမည်။

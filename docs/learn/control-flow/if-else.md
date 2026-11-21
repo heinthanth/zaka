@@ -155,7 +155,7 @@ To run several sentences in a branch, we make the inner part a block:
 A one-sentence branch cannot be another `if`, because it would then be unclear which `if`
 an "otherwise" belongs to, so the compiler stops with an error:
 
-```zaka-error ZK0215
+```zaka-error ZK0215 repl=on
 အကယ်၍ မှန် ဖြစ်လျှင် အကယ်၍ မမှန် ဖြစ်လျှင် ၁ ကို ပြသမည်။
 ```
 

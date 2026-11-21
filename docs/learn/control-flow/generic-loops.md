@@ -105,7 +105,7 @@ The update changes the variable, so we declare it with `ကိန်းရှင
 The `ပြီးလျှင်` update must be the last sentence of the block, so the compiler stops with
 an error when another sentence comes after it:
 
-```zaka-error ZK0213
+```zaka-error ZK0213 repl=on
 ကိန်းရှင် ကိန်း သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ကာ ကိန်း သည် ၃ အောက် ငယ်နေသရွေ့ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပြီးလျှင် ကိန်း ကို ကိန်း + ၁ ဟု ထားမည်။
 ကိန်း ကို ပြသမည်။

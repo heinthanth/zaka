@@ -271,7 +271,7 @@ fn is_text_list(kind: &Kind) -> bool
 ///
 /// `false` for a function, a struct, an enumeration, a kind alias, a trait, a
 /// trait block, a variable, a constant or an import.
-fn runs_in_place(stmt: &Stmt) -> bool
+pub(crate) fn runs_in_place(stmt: &Stmt) -> bool
 {
     !matches!(
         stmt,

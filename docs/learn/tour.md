@@ -15,7 +15,9 @@ This page covers the language one feature at a time, for developers who know ano
 language. Zaka has its own names for some ideas, so the usual name follows in parentheses
 the first time, as in data kind (type), and the [list of terms](../manual/reference/terms.md)
 has all of them. To run an example, paste it into the [Explorer](/explorer/), or save it as
-`x.zaka` and run `zakac run x.zaka`.
+`x.zaka` and run `zakac run x.zaka`. To test statements one at a time, run `zakac repl`: there
+we can leave out the program start block ([REPL
+mode](../manual/language/functions-start-block.md#repl-mode)).
 
 ## Sentence shape
 

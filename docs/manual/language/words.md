@@ -55,7 +55,7 @@ A missing `။` is ZK0201 ("expected `။`"). To separate the arguments, the par
 the cells of a list literal, we use the Burmese comma `၊`, because a Western comma is not
 a Zaka character.
 
-```zaka-error ZK0101
+```zaka-error ZK0101 repl=on
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁, ၂ ပါသော စာရင်း ဖြစ်ပါစေ။
 ```
 
@@ -102,7 +102,7 @@ These rules lead to the one habit that a Zaka writer needs: we put a space betwe
 and the particle (postposition) after it. When the joined word is not a known name, the
 compiler guesses that a space is missing and points it out:
 
-```zaka-error ZK0203
+```zaka-error ZK0203 repl=on
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
 အသက်ကို ပြသမည်။
 ```
@@ -204,7 +204,7 @@ of the raw name. A backtick outside a string is ZK0101.
 | `{}` with nothing between the braces | ZK0109 |
 | a plain reserved word written as a name | ZK0201 ("expected a name") |
 
-```zaka-error ZK0109
+```zaka-error ZK0109 repl=on
 ကိန်းရှင် {} သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 
@@ -298,11 +298,11 @@ number uses one script (ZK0103). A literal has up to three parts, in this order:
 
 Numbers print with Burmese digits, whatever digits the program used.
 
-```zaka-error ZK0103
+```zaka-error ZK0103 repl=on
 ၁၂.34 ကို ပြသမည်။
 ```
 
-```zaka-error ZK0219
+```zaka-error ZK0219 repl=on
 အခြေ ၂ ဖြင့် ၁၂ ကို ပြသမည်။
 ```
 
@@ -364,11 +364,11 @@ a\b
 xAy
 ```
 
-```zaka-error ZK0106
+```zaka-error ZK0106 repl=on
 '{မသိ}' ကို ပြသမည်။
 ```
 
-```zaka-error ZK0107
+```zaka-error ZK0107 repl=on
 'ကို' ကို ပြသမည်။
 ```
 
@@ -376,7 +376,7 @@ xAy
 error[ZK0107]: a character literal must hold one character, found 3
 ```
 
-```zaka-error ZK0104
+```zaka-error ZK0104 repl=on
 "မပိတ်ထားသော စာ ဟု ပြသမည်။
 ```
 

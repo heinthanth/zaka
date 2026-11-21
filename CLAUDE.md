@@ -70,7 +70,8 @@ and one set of tests serve both books.
   - Options can follow the fence word, as the flags of the same names:
     `lint-error=mem`, `lint-warn=mem`, `lint-allow=mem`, `lint-warn=doubts`,
     `lint-allow=`, `lint-warn=` or `lint-error=` with each other lint group or code
-    (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`.
+    (`lint-allow=spoken`), `no-unsafe=on`, `overflow=stop`, and `repl=on`, which compiles
+    in REPL mode so the fence can leave out the program start block.
 - The tests also check that each link reaches a page, each `#mark` reaches a `##` head,
   and each code in `zakac_diagnostics` has a row on `manual/reference/errors.md`.
 - A Zaka term carries its standard term in parentheses, as in "data kind (type)" or "table

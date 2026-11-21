@@ -139,7 +139,7 @@ later:
 In maths we can write 1 < 2 < 3, but Zaka does not let one comparison go straight inside
 another, so the compiler stops with an error:
 
-```zaka-error ZK0210
+```zaka-error ZK0210 repl=on
 ၁ < ၂ < ၃ ကို ပြသမည်။
 ```
 

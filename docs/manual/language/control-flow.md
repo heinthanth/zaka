@@ -55,7 +55,7 @@ statement. A single statement is a short form of a block of one statement:
 (ZK0215), because it would be unclear which if an `otherwise` belongs to, so we put the
 inner if in a block.
 
-```zaka-error ZK0215
+```zaka-error ZK0215 repl=on
 အကယ်၍ မှန် ဖြစ်လျှင် အကယ်၍ မမှန် ဖြစ်လျှင် ၁ ကို ပြသမည်။
 ```
 

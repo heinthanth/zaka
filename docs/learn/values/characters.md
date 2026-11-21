@@ -111,7 +111,7 @@ Inside quotes, a brace starts a Burmese escape name, so we double a brace to wri
 a character: `'{{'` is the character `{`, in a character and in text alike. In a
 character, a name that Zaka does not know is an error:
 
-```zaka-error ZK0106
+```zaka-error ZK0106 repl=on
 '{မသိ}' ကို ပြသမည်။
 ```
 

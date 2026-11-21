@@ -74,7 +74,7 @@ To print a logical expression, we put it in parentheses before `ကို` or `�
 them, Zaka cannot tell where the expression ends and the print sentence begins, so the
 compiler stops with an error:
 
-```zaka-error ZK0204
+```zaka-error ZK0204 repl=on
 ကိန်းရှင် မိုးရွာ သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်၍ တန်ဖိုးသည် မှန် ဖြစ်ပါစေ။
 မိုးရွာ ဖြစ်၍ မှန် ကို ပြသမည်။
 ```

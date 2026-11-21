@@ -48,6 +48,7 @@ const IR_TEXT_EXTENSION: &str = ".zkirt";
 const TARGET_BITS_ARG: &str = "target_bits";
 const FOLD_ARG: &str = "fold";
 const NO_UNSAFE_ARG: &str = "no-unsafe";
+const REPL_ARG: &str = "repl";
 /// Words the fold flag takes.
 const FOLD_WORDS: &[&str] = &["all", "none", "exprs", "consts", "branches"];
 /// Bit counts the platform-sized integer kinds can have.
@@ -102,8 +103,10 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .long("no-unsafe")
         .help(t!("ir.no_unsafe"))
         .action(ArgAction::SetTrue);
+    let repl =
+        Arg::new(REPL_ARG).long("repl").help(t!("ir.repl")).action(ArgAction::SetTrue);
     let cmd = attach_lint_args(attach_grant_args(cmd, Granted::Comptime));
-    attach_target_os_args(cmd.arg(target_bits).arg(fold).arg(no_unsafe))
+    attach_target_os_args(cmd.arg(target_bits).arg(fold).arg(no_unsafe).arg(repl))
 }
 
 /// The check options from the command line.
@@ -124,6 +127,7 @@ pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
     SemcheckOptions::builder()
         .platform_bits(bits)
         .no_unsafe(no_unsafe)
+        .repl(matches.get_flag(REPL_ARG))
         .lint(lint_levels(matches))
         .build()
 }

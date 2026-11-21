@@ -62,7 +62,7 @@ This is the reason a name needs a space before its particle. `ageကို` is o
 not the name `age` and the particle `ကို`, so the sentence has no particle before its
 verb:
 
-```zaka-error ZK0203
+```zaka-error ZK0203 repl=on
 ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 ageကို ပြသမည်။
 ```

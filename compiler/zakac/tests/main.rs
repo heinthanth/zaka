@@ -4,5 +4,6 @@ mod backtrace;
 mod c_libs;
 mod config_example;
 mod mutants;
+mod repl;
 mod target;
 mod wasi;

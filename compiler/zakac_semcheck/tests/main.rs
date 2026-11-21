@@ -21,6 +21,7 @@ mod optionals;
 mod overloads;
 mod pointers;
 mod prepositions;
+mod repl;
 mod resolve;
 mod samples;
 mod start;

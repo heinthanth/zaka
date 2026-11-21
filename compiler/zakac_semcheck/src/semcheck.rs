@@ -215,6 +215,10 @@ pub struct SemcheckOptions
     /// does for an open module: it needs no start block.
     #[builder(default)]
     pub as_module: bool,
+    /// REPL mode: the top-level statements of the file that is run form its
+    /// program start block, so the file can leave the block out.
+    #[builder(default)]
+    pub repl: bool,
 }
 
 impl SemcheckOptions
@@ -287,6 +291,7 @@ pub struct SemcheckOutput
 /// The kind table and the diagnostics.
 pub fn semcheck(program: &mut Program, options: &SemcheckOptions) -> SemcheckOutput
 {
+    do_if!(options.repl && !options.as_module, crate::repl::implicit_start(program));
     let mut known = KnownConsts::new();
     let mut enums = KnownEnums::new();
     // A run writes each count it works out back as digits, so the names in a

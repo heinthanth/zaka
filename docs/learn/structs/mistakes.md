@@ -18,7 +18,7 @@ the compiler, the reason and the fix.
 
 ## A struct declared inside a block
 
-```zaka-error ZK0228
+```zaka-error ZK0228 repl=on
 အကယ်၍ မှန် ဖြစ်လျှင် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။

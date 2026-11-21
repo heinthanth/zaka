@@ -93,7 +93,7 @@ When in doubt, we use plain `ကိန်းပြည့်`.
 When a number is too big for its data kind, the compiler stops, and the program does not
 run:
 
-```zaka-error ZK0220
+```zaka-error ZK0220 repl=on
 ၂၅၆ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။
 ```
 
@@ -121,7 +121,7 @@ can write its digits as Burmese digits `၀ ၁ ၂ ၃ ၄ ၅ ၆ ၇ ၈ ၉`
 
 We cannot mix the two sets of digits in one number:
 
-```zaka-error ZK0103
+```zaka-error ZK0103 repl=on
 ၁၂.34 ကို ပြသမည်။
 ```
 

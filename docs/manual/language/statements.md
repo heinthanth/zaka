@@ -109,7 +109,7 @@ be") and the block closers keep their own spellings.
 The verbs of the core module are calls of functions, which is the reason a mismatch with
 them gets ZK0332 rather than one of the grammar errors.
 
-```zaka-error ZK0203 ZK0206
+```zaka-error ZK0203 ZK0206 repl=on
 ၁ ကို ပြသမည်။
 ၅ + ၃။
 ၂ ကို ပြသမည်။
