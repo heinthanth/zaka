@@ -120,15 +120,64 @@ mod pool
     /// Wakes an OS thread of the pool once a task can go on.
     static WAKE: Condvar = Condvar::new();
 
-    /// The bit of the halt flag that asks a task to give its turn on.
+    /// The bit of the halt flag that asks a task to give its turn on. The loops
+    /// of each OS thread read the flag, those of the program start block among
+    /// them, and take a call while it is set; so it is set just while a task is
+    /// past its turn and others wait, and cleared once the task gives it on.
     const TURN_BIT: u8 = 2;
+
+    /// When the task of each OS thread of the pool began its turn, in
+    /// milliseconds from [`EPOCH`] plus one; 0 while it runs none.
+    static BEGUN: std::sync::OnceLock<Box<[std::sync::atomic::AtomicU64]>> =
+        std::sync::OnceLock::new();
+
+    /// The time the turns count from.
+    static EPOCH: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+
+    /// The milliseconds from [`EPOCH`], plus one, so 0 stands for no turn.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn now_ms() -> u64
+    {
+        let epoch = EPOCH.get_or_init(Instant::now);
+        u64::try_from(epoch.elapsed().as_millis()).unwrap_or(u64::MAX - 1) + 1
+    }
+
+    /// Whether the turn that began at `begun` is over.
+    ///
+    /// # Arguments
+    ///
+    /// * `begun` - A value of [`BEGUN`].
+    /// * `now` - The time, as [`now_ms`] gives it.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it is.
+    fn over(begun: u64, now: u64) -> bool
+    {
+        let turn = u64::try_from(TURN.as_millis()).unwrap_or(u64::MAX);
+        begun != 0 && now.saturating_sub(begun) >= turn
+    }
+
+    /// Set the turn bit while a task is past its turn and others wait, and
+    /// clear it otherwise.
+    fn refresh_turn()
+    {
+        let waiting = !pool().queue.is_empty();
+        let now = now_ms();
+        let begun = BEGUN.get().map_or(&[][..], |b| &b[..]);
+        let past = begun.iter().any(|b| over(b.load(Ordering::Relaxed), now));
+        mark_turn(crate::seqs::halt_flag(), waiting && past);
+    }
 
     thread_local! {
         /// The task this OS thread of the pool runs now; NULL outside each
         /// task.
         static CURRENT: Cell<*mut Task> = const { Cell::new(null_mut()) };
-        /// When the turn of that task began.
-        static BEGAN: Cell<Option<Instant>> = const { Cell::new(None) };
+        /// The number of this OS thread among those of the pool.
+        static SLOT: Cell<usize> = const { Cell::new(0) };
     }
 
     /// The pool, locked.
@@ -199,15 +248,22 @@ mod pool
         pool.started = true;
         crate::fiber::catch_overflow();
         let cores = std::thread::available_parallelism().map_or(1, usize::from);
-        let spawn = |f: fn()| std::thread::Builder::new().stack_size(8 << 20).spawn(f);
-        (0..cores).for_each(|_| _ = spawn(work));
-        let _ = spawn(watch_turns);
+        let slots = (0..cores).map(|_| std::sync::atomic::AtomicU64::new(0)).collect();
+        let _ = BEGUN.set(slots);
+        let builder = || std::thread::Builder::new().stack_size(8 << 20);
+        (0..cores).for_each(|i| _ = builder().spawn(move || work(i)));
+        let _ = builder().spawn(watch_turns);
     }
 
     /// The work of an OS thread of the pool: run the next task that can go
     /// on, for ever.
-    fn work()
+    ///
+    /// # Arguments
+    ///
+    /// * `slot` - Its number among the OS threads of the pool.
+    fn work(slot: usize)
     {
+        SLOT.set(slot);
         crate::fiber::enter_thread();
         loop
         {
@@ -310,12 +366,12 @@ mod pool
         task.local.swap();
         let at: *mut Task = &mut *task;
         CURRENT.set(at);
-        BEGAN.set(Some(Instant::now()));
+        begin_turn(now_ms());
         // SAFETY: the stack of the task stopped in a switch, or is new; the
         // box keeps its place while the task runs.
         unsafe { switch(&raw mut (*at).back, (*at).sp) };
         CURRENT.set(null_mut());
-        BEGAN.set(None);
+        begin_turn(0);
         let outcome = std::mem::replace(&mut task.outcome, Outcome::Runs);
         // A task that ended hands on the line it printed, as a thread does.
         do_if!(matches!(outcome, Outcome::Ended(_)), crate::out::flush_line());
@@ -328,8 +384,23 @@ mod pool
                 crate::threads::park_task(task, seen, key)
             }
             Outcome::Stopped(Stop::Sleep(at)) => asleep(task, at),
-            Outcome::Stopped(Stop::Turn) | Outcome::Runs => requeue(vec![task]),
+            Outcome::Stopped(Stop::Turn) | Outcome::Runs =>
+            {
+                requeue(vec![task]);
+                refresh_turn();
+            }
         }
+    }
+
+    /// Note the start of a turn on this OS thread of the pool, or its end (0).
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - The time, as [`now_ms`] gives it, or 0.
+    fn begin_turn(at: u64)
+    {
+        let begun = BEGUN.get().and_then(|b| b.get(SLOT.get()));
+        do_if!(let Some(begun) = begun, begun.store(at, Ordering::Relaxed));
     }
 
     /// End a task: free what it held, and mark its thread ended.
@@ -373,16 +444,14 @@ mod pool
     }
 
     /// The work of the OS thread that ends long turns: while tasks wait for an
-    /// OS thread of the pool, ask the task that runs to give its turn on at
-    /// the back edge of its next loop.
+    /// OS thread of the pool and a task is past its turn, ask it to give its
+    /// turn on at the back edge of its next loop.
     fn watch_turns()
     {
         loop
         {
             std::thread::sleep(TURN);
-            let waiting = !pool().queue.is_empty();
-            let flag = crate::seqs::halt_flag();
-            mark_turn(flag, waiting);
+            refresh_turn();
         }
     }
 
@@ -480,8 +549,9 @@ mod pool
     {
         let asked = crate::seqs::halt_flag().load(Ordering::Acquire) & TURN_BIT != 0;
         ret_if!(!asked || !on_task());
-        let over = BEGAN.get().is_some_and(|b| b.elapsed() >= TURN);
-        do_if!(over, stop_running(Stop::Turn));
+        let begun = BEGUN.get().and_then(|b| b.get(SLOT.get()));
+        let past = begun.is_some_and(|b| over(b.load(Ordering::Relaxed), now_ms()));
+        do_if!(past, stop_running(Stop::Turn));
     }
 }
 

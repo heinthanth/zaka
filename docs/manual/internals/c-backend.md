@@ -455,7 +455,10 @@ exception handler turns the stack overflow of a task into the same trap. A task 
 `Local`, its call context and its other cells, from one OS thread of the pool to the next.
 It stops in `wait_until`,
 which drops the lock of the state first, in `zk_sleep`, and in `zk_safe_point` once its
-turn of 10 ms is over while other tasks wait. A parked task counts as not running, as a
+turn of 10 ms is over while other tasks wait. Each loop of each OS thread reads
+`zk_halt`, so the OS thread that watches the turns sets its turn bit just while a task is
+past its turn and others wait, and a task that gives its turn on clears it: the loops of
+the program start block take the call for that short while alone. A parked task counts as not running, as a
 waiting OS thread does, so the deadlock rule below holds for both. A parked task waits on
 a key (a thread, a channel, a lock, or each change), and a change wakes the tasks of its
 key alone; a woken task counts as halted for the ring collector until it runs again.
