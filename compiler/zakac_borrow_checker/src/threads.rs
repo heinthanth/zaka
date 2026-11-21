@@ -13,6 +13,8 @@ use zakac_ir_builder::ir::Module;
 use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::RECORD_HEAD;
 use zakac_ir_builder::ir::Stmt;
+use zakac_ir_builder::ir::is_round;
+use zakac_ir_builder::ir::shown_name;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
@@ -335,5 +337,6 @@ fn global_use(module: &Module, f: u32) -> Option<Diagnostic>
     });
     let (g, span) = first?;
     let name = &module.globals[g as usize].name;
-    Some(od::global_in_thread(span, &func.name, name))
+    ret_if!(is_round(&func.name), Some(od::global_in_round(span, name)));
+    Some(od::global_in_thread(span, shown_name(&func.name), name))
 }

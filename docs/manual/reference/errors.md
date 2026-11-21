@@ -370,7 +370,7 @@ See [Unsafe Zaka](../language/unsafe.md).
 | ZK0723 | a warning: a read of a counted list whose cells the check cannot prove set | [Set before read](../language/declarations.md#set-before-read), [Static data and counted lists](../../learn/forms/counted-lists.md#filling-the-cells-one-at-a-time) |
 | ZK0724 | a call of a function that reads a global that can be unset at the call | [Globals and calls](../language/declarations.md#globals-and-calls) |
 | ZK0725 | a return that can leave a writable parameter (`ဒေတာ ထည့်ပေးရန်`) unset | [Writable parameters](../language/functions-parameters.md#writable-parameters) |
-| ZK0726 | a function that a thread runs reaches a variable at the top of a file, itself or through a function it calls | [What a thread can reach](../language/threads.md#what-a-thread-can-reach) |
+| ZK0726 | a function that a thread or a round of a parallel loop runs reaches a variable at the top of a file, itself or through a function it calls | [What a thread can reach](../language/threads.md#what-a-thread-can-reach) |
 | ZK0727 | a set of an atomic number whose value reads the same number | [Atomic numbers](../language/threads.md#atomic-numbers) |
 | ZK0728 | a round of a parallel loop writes a variable from outside the loop, other than the cell with the number of the round, or lets a call change one | [Parallel loops and maps](../language/threads.md#parallel-loops-and-maps) |
 | ZK0729 | a round of a parallel loop stops the loop with a break, or returns from the function around it | [Parallel loops and maps](../language/threads.md#parallel-loops-and-maps) |

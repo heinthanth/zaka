@@ -348,6 +348,24 @@ pub fn global_in_thread(span: Span, func: &str, global: &str) -> Diagnostic
         .with_help(t!("codes.ZK0726.help", g = global))
 }
 
+/// A round of a parallel loop reaches a mutable global, itself or through a
+/// function it calls; the global belongs to the main thread.
+///
+/// # Arguments
+///
+/// * `span` - The use of the global.
+/// * `global` - The global.
+///
+/// # Returns
+///
+/// The `ZK0726` diagnostic.
+pub fn global_in_round(span: Span, global: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0726.message_round", g = global);
+    Diagnostic::new(Code::GlobalInThread, msg, span)
+        .with_help(t!("codes.ZK0726.help_round", g = global))
+}
+
 /// A set of an atomic number whose value reads the same number, which loses
 /// the change another thread makes between the read and the write.
 ///

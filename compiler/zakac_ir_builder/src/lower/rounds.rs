@@ -17,6 +17,7 @@ use zakac_ast::visit::walk_name;
 use super::*;
 use crate::ir::Par;
 use crate::ir::ParRounds;
+use crate::ir::ROUND_MARK;
 use crate::lower::nested::closure_name;
 
 /// What a round takes from its loop, besides its number and the variables
@@ -798,7 +799,7 @@ impl Lowerer<'_>
     fn round_name(&self, func: u32) -> String
     {
         // A trap shows the name before `#`: the function the loop is in.
-        format!("{}#round{func}{}", self.current, self.suffix)
+        format!("{}{ROUND_MARK}{func}{}", self.current, self.suffix)
     }
 }
 

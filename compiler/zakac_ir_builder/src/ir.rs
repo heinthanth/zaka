@@ -1517,6 +1517,21 @@ pub enum HaltCause
 /// The written name.
 pub fn shown_name(name: &str) -> &str { name.split(['#', '@']).next().unwrap_or(name) }
 
+/// The mark in the name of the function of a round of a parallel loop, after
+/// the name of the function the loop is in: `<function>#round<n>`.
+pub const ROUND_MARK: &str = "#round";
+
+/// Whether a function of the module runs a round of a parallel loop.
+///
+/// # Arguments
+///
+/// * `name` - The name of the function in the module.
+///
+/// # Returns
+///
+/// `true` for the function of a round.
+pub fn is_round(name: &str) -> bool { name.contains(ROUND_MARK) }
+
 /// The parameter slot kinds and the result kind of a function of kind `f`:
 /// each parameter in its own kind, or a borrow of it for one the function
 /// can change, as a declared function places its parameters. A call

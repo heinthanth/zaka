@@ -1550,8 +1550,12 @@ en = "a global in a thread"
 en = "\"%{f}\" runs in a thread, and reaches the global \"%{g}\", which belongs to the main thread"
 [codes.ZK0726.help]
 en = "pass \"%{g}\" to the thread as an argument, or make it a constant"
+[codes.ZK0726.message_round]
+en = "a round of this parallel loop runs in a thread, and reaches the global \"%{g}\", which belongs to the main thread"
+[codes.ZK0726.help_round]
+en = "declare \"%{g}\" inside the block or the function that runs the loop, so the rounds share it as a local, or make it a constant"
 [codes.ZK0726.explain]
-en = """A variable at the top of a file belongs to the main thread. A function that a thread runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the thread as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`."""
+en = """A variable at the top of a file belongs to the main thread. A function that a thread runs, itself or through each function it calls, reads and writes no such variable, as two threads would reach it at once with no lock; it reads constants, which never change. Pass the value to the thread as an argument, take a result back through its wait or a channel, or share an object whose struct carries the mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`. The rounds of a parallel loop run in threads too: a variable the rounds share is declared in the block or the function that runs the loop."""
 
 [codes.ZK0727.title]
 en = "a read and a write of one atomic number"

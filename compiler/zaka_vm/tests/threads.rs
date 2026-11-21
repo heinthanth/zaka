@@ -337,6 +337,35 @@ const REACH: &str = "ကိန်းရှင် ရေ သည် ၀ ဖြစ�
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 ";
 
+/// The messages of the diagnostics of a program.
+fn messages(text: &str) -> Vec<String>
+{
+    let mut sm = SourceMap::new();
+    let file = sm.new_source_file(FileName::Custom("t.zaka".into()), text.to_string());
+    let (lexer, options) = (LexerOptions::default(), SemcheckOptions::default());
+    #[rustfmt::skip]
+    let emitted = run_phases(&file, &lexer, &options, &FoldOptions::default(),
+        &Default::default(), ResultMode::default());
+    emitted.diagnostics().iter().map(|d| d.message.clone()).collect()
+}
+
+#[test]
+fn a_round_that_reaches_a_global_names_the_loop()
+{
+    let text = "ကိန်းရှင် ထွက် သည် အကွက် ၅ ခုရှိသော ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၀ မှ ၄ အထိ i အနေဖြင့် အပြိုင် ရေတွက်၍ ထွက် ၏ အကွက် i ကို i * ၁၀ ဟု ထားမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+";
+    let found = messages(text);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].starts_with("a round of this parallel loop"), "{found:?}");
+    assert!(!found[0].contains('#'), "{found:?}");
+    let thread = messages(&reaching("ခေါ် ဟူသော လုပ်ဆောင်ချက်ကို အပြိုင် လုပ်ဆောင်မည်။"));
+    // The thread reaches the global through တိုး, which it calls.
+    assert!(thread[0].starts_with("\"တိုး\" runs in a thread"), "{thread:?}");
+}
+
 /// [`REACH`], then a start block of these lines.
 fn reaching(lines: &str) -> String
 {
