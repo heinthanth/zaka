@@ -48,6 +48,7 @@ thanks to all of these projects.
 | [@fontsource/iosevka](https://fontsource.org/fonts/iosevka) | 5.3.0 | OFL-1.1 |
 | [gsap](https://gsap.com) | 3.12.5 | Standard 'no charge' license: https://gsap.com/standard-license. Club GSAP members get more: https://gsap.com/licensing/. Why GreenSock doesn't employ an MIT license: https://gsap.com/why-license/ |
 | [lenis](https://github.com/darkroomengineering/lenis) | 1.1.13 | MIT |
+| [pagefind](https://pagefind.app) | 1.4.0 | MIT |
 
 ## Rust crates
 

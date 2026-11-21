@@ -24,6 +24,10 @@ const MD_OPEN: &str = "<!-- begin: projects -->";
 /// The mark after the part of `CREDITS.md` that the list writes.
 const MD_CLOSE: &str = "<!-- end: projects -->";
 
+/// The script of the site build, which runs Pagefind through bunx, from the
+/// crate root.
+const PAGES_BUILD: &str = "../../.mise-tasks/pages/build.sh";
+
 /// The root of the shared crate.
 fn root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")) }
 
@@ -142,6 +146,19 @@ fn npm_line(
     line("npm", name, version, license, url)
 }
 
+/// The line of Pagefind, at the version the site build pins. The build runs
+/// it through bunx, not Trunk, to index the books; its search code ships
+/// with the pages.
+fn pagefind_line() -> String
+{
+    let script = std::fs::read_to_string(root().join(PAGES_BUILD)).unwrap();
+    let pinned =
+        script.split("pagefind@").nth(1).expect("the site build pins no pagefind");
+    let version: String =
+        pinned.chars().take_while(|c| c.is_ascii_digit() || *c == '.').collect();
+    line("npm", "pagefind", &version, "MIT", "https://pagefind.app")
+}
+
 /// The npm lines the list holds, under their name and version.
 ///
 /// # Arguments
@@ -183,8 +200,11 @@ fn the_credits_list_the_direct_deps()
     let known = known_npm(&held);
     let npm =
         trunk_packages().into_iter().map(|(d, n, v)| npm_line(&d, &n, &v, &known));
-    let lines: Vec<String> =
-        std::iter::once(HEADER.to_string()).chain(crate_lines()).chain(npm).collect();
+    let lines: Vec<String> = std::iter::once(HEADER.to_string())
+        .chain(crate_lines())
+        .chain(npm)
+        .chain(std::iter::once(pagefind_line()))
+        .collect();
     let text = lines.join("\n") + "\n";
     if std::env::var("ZAKA_BLESS").is_ok_and(|v| v == "1")
     {
