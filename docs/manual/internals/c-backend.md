@@ -291,6 +291,7 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | `host.rs` | host calls for streams, files, arguments, the environment, math and time |
 | `rights.rs` | the rights of the run, and the asker on a terminal |
 | `threads.rs` | threads and channels, each thread as a light task or on its own OS thread (see [Threads and channels](#threads-and-channels)) |
+| `waiters.rs` | the light tasks that wait, filed under what each waits on (a thread, a lock, the bit of a channel, a time limit, each change), so a change looks at the tasks it concerns alone |
 | `libs.rs` | the record of each C lib the runtime serves |
 | `exchange.rs` | the C form of a value that a C lib passes to C or receives from it |
 | `callbacks.rs` | the libffi closures of the closures that go to C |

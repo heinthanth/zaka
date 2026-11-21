@@ -41,6 +41,7 @@ use crate::traps::named;
 use crate::traps::stop;
 use crate::traps::stop_owned;
 use crate::traps::trap;
+use crate::waiters::Waiters;
 
 /// The step of a thread: it takes the data block of the thread.
 pub type ZkStep = extern "C" fn(*mut c_void);
@@ -132,9 +133,9 @@ struct State
     parked: usize,
     /// The count of changes so far, which tells a waiter its wake is real.
     changes: u64,
-    /// The light tasks that wait for the state to change, each with what it
-    /// waits on; each is out of `running` and `parked`.
-    parked_tasks: Vec<(Key, Box<Task>)>,
+    /// The light tasks that wait for the state to change, filed under what
+    /// each waits on; each is out of `running` and `parked`.
+    parked_tasks: Waiters<Box<Task>>,
     /// The time limits of waits on several channels that have not passed: a
     /// wait is no deadlock while one remains, as its end changes the state.
     alarms: usize,
@@ -149,7 +150,7 @@ static STATE: Mutex<State> = Mutex::new(State {
     running: 1,
     parked: 0,
     changes: 0,
-    parked_tasks: Vec::new(),
+    parked_tasks: Waiters::new(),
     alarms: 0,
 });
 
@@ -297,7 +298,7 @@ impl Key
     /// # Returns
     ///
     /// `true` when it does.
-    fn meets(self, other: Key) -> bool
+    pub(crate) fn meets(self, other: Key) -> bool
     {
         ret_if!(self == other || self == Key::Each || other == Key::Each, true);
         match (self, other)
@@ -333,12 +334,9 @@ fn changed(st: &mut State, what: Key)
     st.parked = 0;
     st.changes += 1;
     CHANGED.notify_all();
-    let (woken, waiting): (Vec<_>, Vec<_>) = std::mem::take(&mut st.parked_tasks)
-        .into_iter()
-        .partition(|(k, _)| k.meets(what));
-    st.parked_tasks = waiting;
+    let woken = st.parked_tasks.take(what);
     st.running += woken.len();
-    crate::tasks::wake(woken.into_iter().map(|(_, task)| task).collect());
+    crate::tasks::wake(woken);
 }
 
 /// Wait until `came` holds; a wait while no other OS thread runs stops the
@@ -440,7 +438,7 @@ fn park_until_changed(
 pub(crate) fn park_task(task: Box<Task>, seen: u64, key: Key)
 {
     let mut st = state();
-    ret_if!(st.changes == seen, st.parked_tasks.push((key, task)));
+    ret_if!(st.changes == seen, st.parked_tasks.park(key, task));
     // A change came since the task looked: it looks again, counted as running.
     st.running += 1;
     drop(st);

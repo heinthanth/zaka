@@ -45,6 +45,7 @@ pub mod start;
 mod tasks;
 pub mod threads;
 pub mod traps;
+mod waiters;
 
 pub use rights::set_gate;
 
