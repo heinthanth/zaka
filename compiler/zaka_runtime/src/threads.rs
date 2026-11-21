@@ -257,6 +257,19 @@ pub(crate) enum Key
     Pipe(usize),
     /// The lock of the object at this address.
     Lock(usize),
+    /// A value in, or the close of, one of several channels: bit `p % 64` of
+    /// the mask stands for the channel at index `p`, so a change of another
+    /// channel can wake the wait for nothing, which then looks and parks
+    /// again. With `timed`, the end of a time limit wakes it too.
+    Pipes
+    {
+        /// The bits of the channels.
+        mask: u64,
+        /// Whether the wait has a time limit.
+        timed: bool,
+    },
+    /// The end of a time limit.
+    Timer,
     /// Each change.
     Each,
 }
@@ -274,9 +287,26 @@ impl Key
     /// `true` when it does.
     fn meets(self, other: Key) -> bool
     {
-        self == other || self == Key::Each || other == Key::Each
+        ret_if!(self == other || self == Key::Each || other == Key::Each, true);
+        match (self, other)
+        {
+            (Key::Pipes { mask, .. }, Key::Pipe(p)) => mask & pipe_bit(p) != 0,
+            (Key::Pipes { timed, .. }, Key::Timer) => timed,
+            _ => false,
+        }
     }
 }
+
+/// The bit of a channel in the mask of [`Key::Pipes`].
+///
+/// # Arguments
+///
+/// * `at` - The index of the channel.
+///
+/// # Returns
+///
+/// The bit.
+fn pipe_bit(at: usize) -> u64 { 1 << (at % 64) }
 
 /// Mark the state changed: each OS thread that waits runs again and looks,
 /// and so does each light task that waits on what changed.
@@ -1316,7 +1346,8 @@ pub extern "C" fn zk_select(
     {
         st = set_alarm(st, e);
     }
-    let mut st = wait_until(st, Key::Each, done);
+    let mask = at.iter().fold(0, |m, p| m | pipe_bit(*p));
+    let mut st = wait_until(st, Key::Pipes { mask, timed: end.is_some() }, done);
     let holding: Vec<usize> = (0..n).filter(|i| holds(&st, *i)).collect();
     let chosen = match holding.is_empty()
     {
@@ -1449,7 +1480,7 @@ fn ring(count: usize)
 {
     let mut st = state();
     st.alarms -= count;
-    changed(&mut st, Key::Each);
+    changed(&mut st, Key::Timer);
 }
 
 /// Close a channel; a second close stops the program.
@@ -1556,4 +1587,21 @@ pub(crate) fn running_others() -> Option<usize>
 {
     let st = STATE.try_lock().ok()?;
     Some(st.running.saturating_sub(1))
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn a_wait_on_several_channels_wakes_for_its_own_channels_and_its_limit()
+    {
+        let wait = Key::Pipes { mask: pipe_bit(2) | pipe_bit(5), timed: false };
+        assert!(wait.meets(Key::Pipe(2)) && wait.meets(Key::Pipe(5)));
+        assert!(!wait.meets(Key::Pipe(3)) && !wait.meets(Key::Lock(2)));
+        assert!(!wait.meets(Key::Timer) && wait.meets(Key::Each));
+        let timed = Key::Pipes { mask: pipe_bit(2), timed: true };
+        assert!(timed.meets(Key::Timer) && !Key::Pipe(2).meets(Key::Timer));
+    }
 }
