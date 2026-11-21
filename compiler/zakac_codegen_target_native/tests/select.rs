@@ -164,3 +164,31 @@ fn a_loop_of_waits_ends_once_a_light_task_closes_each_channel()
         assert_eq!(run.stdout, "၅၀၅၀\n", "{how}");
     });
 }
+
+#[test]
+fn a_deadlock_after_a_wait_cut_short_shows_at_once()
+{
+    // The wait takes the value at once, so its time limit of 5 seconds must not
+    // hold off the deadlock of the receive after it.
+    let text = format!(
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{}
+{}
+က ထဲသို့ ၁ ကို ပို့မည်။
+{OPENER}
+က ထဲတွင် ဒေတာ ရှိလျှင် \"က\" ဟု ပြသမည်။
+ခ ထဲတွင် ဒေတာ ရှိလျှင် \"ခ\" ဟု ပြသမည်။
+၅ စက္ကန့် အတွင်း ဒေတာ မရောက်လာလျှင် \"ကုန်\" ဟု ပြသမည်။
+ခ မှ ရရှိသော ဒေတာ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+",
+        pipe("က"),
+        pipe("ခ")
+    );
+    let start = std::time::Instant::now();
+    both(&text, |how, run| {
+        let want = "the program stopped: each thread waits; none can go on\n";
+        assert_eq!(stop_line(&run.stderr), want, "{how}: {}", run.stderr);
+    });
+    assert!(start.elapsed().as_secs() < 4, "{:?}", start.elapsed());
+}

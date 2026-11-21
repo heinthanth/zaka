@@ -1342,12 +1342,10 @@ pub extern "C" fn zk_select(
     let done = |s: &State| {
         (0..n).any(|i| holds(s, i)) || closed(s) || mode == ZkSelect::Idle || passed()
     };
-    if let Some(e) = end.filter(|_| !done(&st))
-    {
-        st = set_alarm(st, e);
-    }
+    let alarm = end.filter(|_| !done(&st)).map(|e| set_alarm(&mut st, e));
     let mask = at.iter().fold(0, |m, p| m | pipe_bit(*p));
     let mut st = wait_until(st, Key::Pipes { mask, timed: end.is_some() }, done);
+    do_if!(let Some(id) = alarm, cancel_alarm(&mut st, id));
     let holding: Vec<usize> = (0..n).filter(|i| holds(&st, *i)).collect();
     let chosen = match holding.is_empty()
     {
@@ -1390,7 +1388,7 @@ fn draw(count: usize) -> usize
 /// The ends of the time limits of the waits on several channels, for the
 /// OS thread that marks the state changed at each.
 #[cfg(not(target_os = "wasi"))]
-static ALARMS: Mutex<Vec<Instant>> = Mutex::new(Vec::new());
+static ALARMS: Mutex<Vec<(Instant, u64)>> = Mutex::new(Vec::new());
 
 /// Wakes the OS thread of the alarms once a time limit comes.
 #[cfg(not(target_os = "wasi"))]
@@ -1406,38 +1404,66 @@ static ALARM_SET: Condvar = Condvar::new();
 ///
 /// # Returns
 ///
-/// The state, locked.
+/// The number of the alarm, for [`cancel_alarm`].
 #[cfg(not(target_os = "wasi"))]
-fn set_alarm(
-    mut st: MutexGuard<'static, State>, end: Instant,
-) -> MutexGuard<'static, State>
+fn set_alarm(st: &mut State, end: Instant) -> u64
 {
     static STARTED: std::sync::Once = std::sync::Once::new();
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let id = NEXT.fetch_add(1, Ordering::Relaxed);
     st.alarms += 1;
-    ALARMS.lock().unwrap_or_else(PoisonError::into_inner).push(end);
+    ALARMS.lock().unwrap_or_else(PoisonError::into_inner).push((end, id));
     ALARM_SET.notify_one();
     STARTED.call_once(|| _ = std::thread::Builder::new().spawn(ring_alarms));
-    st
+    id
 }
 
-/// Wait out a time limit where no other thread runs: no value can come, so
-/// the wait sleeps to its end.
+/// Drop the alarm of a wait that ended: a deadlock after the wait then shows
+/// at once. An alarm that the OS thread of the alarms took counts down
+/// there.
 ///
 /// # Arguments
 ///
 /// * `st` - The state, locked.
+/// * `id` - The number of the alarm.
+#[cfg(not(target_os = "wasi"))]
+fn cancel_alarm(st: &mut State, id: u64)
+{
+    let mut list = ALARMS.lock().unwrap_or_else(PoisonError::into_inner);
+    let Some(at) = list.iter().position(|(_, n)| *n == id)
+    else
+    {
+        return;
+    };
+    list.swap_remove(at);
+    st.alarms -= 1;
+}
+
+/// Drop an alarm: WASI sets none.
+///
+/// # Arguments
+///
+/// * `_st`, `_id` - Unused.
+#[cfg(target_os = "wasi")]
+fn cancel_alarm(_st: &mut State, _id: u64) {}
+
+/// Wait out a time limit where no other thread runs: no value can come, so
+/// the wait sleeps to its end, holding the state, which no other thread
+/// takes.
+///
+/// # Arguments
+///
+/// * `_st` - The state, locked.
 /// * `end` - The end of the time limit.
 ///
 /// # Returns
 ///
-/// The state, locked.
+/// The number of the alarm, unused.
 #[cfg(target_os = "wasi")]
-fn set_alarm(st: MutexGuard<'static, State>, end: Instant)
--> MutexGuard<'static, State>
+fn set_alarm(_st: &mut State, end: Instant) -> u64
 {
-    drop(st);
     std::thread::sleep(end.saturating_duration_since(Instant::now()));
-    state()
+    0
 }
 
 /// The work of the OS thread of the alarms: at the end of each time limit,
@@ -1449,8 +1475,8 @@ fn ring_alarms()
     loop
     {
         let now = Instant::now();
-        let first = list.iter().enumerate().min_by_key(|(_, t)| **t);
-        let first = first.map(|(i, t)| (i, *t));
+        let first = list.iter().enumerate().min_by_key(|(_, (t, _))| *t);
+        let first = first.map(|(i, (t, _))| (i, *t));
         list = match first
         {
             None => ALARM_SET.wait(list).unwrap_or_else(PoisonError::into_inner),
