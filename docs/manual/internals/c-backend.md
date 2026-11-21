@@ -479,8 +479,12 @@ waiting OS thread does, so the deadlock rule below holds for both. A parked task
 a key (a thread, a channel, a lock, or each change), and a change wakes the tasks of its
 key alone; a woken task counts as halted for the ring collector until it runs again.
 
-The runtime (`zaka_runtime/src/threads.rs`) keeps the threads and channels under one lock
-and one condition. It counts the OS threads that run: the main one (`mark_main`, from
+The runtime (`zaka_runtime/src/threads.rs`) keeps the threads under one lock and one
+condition. Each channel has a lock of its own and a count of its waits (`PipeCell`): a send,
+a receive or a close takes the lock of the channel alone, and takes the lock of the state to
+wake the waits just when its count is above zero. A wait raises the count before it looks,
+so a change after the look sees it, and then waits through `wait_until`, as the other waits
+do. It counts the OS threads that run: the main one (`mark_main`, from
 `zk_start`) and each thread of the program. A wait that would leave none running is the
 trap `deadlock`, unless an OS thread outside the count can still act (`outside_acts`):
 

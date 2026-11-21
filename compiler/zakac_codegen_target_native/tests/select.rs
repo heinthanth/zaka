@@ -192,3 +192,56 @@ fn a_deadlock_after_a_wait_cut_short_shows_at_once()
     });
     assert!(start.elapsed().as_secs() < 4, "{:?}", start.elapsed());
 }
+
+/// A channel of numbers with room for two.
+fn small_pipe(name: &str) -> String
+{
+    format!(
+        "ကိန်းရှင် {name} သည် ကိန်းပြည့် ၂ ခု ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး \
+         ဖြစ်ပါစေ။"
+    )
+}
+
+#[test]
+fn ten_senders_on_each_of_four_full_channels_lose_no_value_and_no_wake()
+{
+    // Ten senders on each of four channels with room for two: sends wait for
+    // room and the wait waits for values, so a lost wake would hang the run.
+    let pipes = ["က", "ခ", "ဂ", "ဃ"];
+    let decls: Vec<String> = pipes.iter().map(|p| small_pipe(p)).collect();
+    let starts: Vec<String> = pipes
+        .iter()
+        .map(|p| {
+            format!("၁ မှ ၁၀ အထိ န အနေဖြင့် ရေတွက်၍ ပို့ ဟူသော လုပ်ဆောင်ချက်ကို {p} ဖြင့် အပြိုင် လုပ်ဆောင်မည်။")
+        })
+        .collect();
+    let arms: Vec<String> = pipes
+        .iter()
+        .map(|p| format!("{p} ထဲတွင် ဒေတာ ရှိလျှင် စု ကို စု + {p} ထဲမှ ဒေတာ ဟု ထားမည်။"))
+        .collect();
+    let text = format!(
+        "ပို့ ဟူသော လုပ်ဆောင်ချက် သည် လမ်း ဟူသော ကိန်းပြည့် ပို့နိုင်သော ဒေတာလမ်းကြောင်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+၁ မှ ၁၀၀ အထိ န အနေဖြင့် ရေတွက်၍ လမ်း ထဲသို့ န ကို ပို့မည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{}
+{}
+ကိန်းရှင် စု သည် ၀ ဖြစ်ပါစေ။
+၁ မှ ၄၀၀၀ အထိ ရ အနေဖြင့် ရေတွက်၍ အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+{OPENER}
+{}
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+စု ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+",
+        decls.join("\n"),
+        starts.join("\n"),
+        arms.join("\n")
+    );
+    both(&text, |how, run| {
+        assert_eq!(run.status, Some(0), "{how}: {}", run.stderr);
+        assert_eq!(run.stdout, "၂၀၂၀၀၀\n", "{how}");
+    });
+}

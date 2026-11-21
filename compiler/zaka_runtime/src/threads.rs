@@ -16,6 +16,7 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
+use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicIsize;
 use std::sync::atomic::AtomicU64;
@@ -101,6 +102,20 @@ struct Pipe
     closed: bool,
 }
 
+/// A channel and the count of the OS threads and tasks that wait on it.
+struct PipeCell
+{
+    /// The channel.
+    pipe: Mutex<Pipe>,
+    /// The count of waits on the channel: a change with none wakes no one,
+    /// and takes no lock of the state.
+    waiters: AtomicUsize,
+}
+
+/// Each channel, the first under the number 1. A channel lives to the end of
+/// the program, so each one is a cell that is never freed.
+static PIPES: RwLock<Vec<&'static PipeCell>> = RwLock::new(Vec::new());
+
 /// A lock of a shared object that an OS thread holds.
 struct Held
 {
@@ -125,8 +140,6 @@ struct State
     spare: Vec<usize>,
     /// Whether a detached thread stopped at a trap, which no wait can see.
     lost: bool,
-    /// Each channel, as the threads are numbered.
-    pipes: Vec<Pipe>,
     /// The OS threads that run and do not wait, the main one included.
     running: usize,
     /// The OS threads that wait for the state to change.
@@ -146,7 +159,6 @@ static STATE: Mutex<State> = Mutex::new(State {
     threads: Vec::new(),
     spare: Vec::new(),
     lost: false,
-    pipes: Vec::new(),
     running: 1,
     parked: 0,
     changes: 0,
@@ -1350,25 +1362,74 @@ pub extern "C" fn zk_par_map(
 #[unsafe(export_name = stamped!("pipe_new"))]
 pub extern "C" fn zk_pipe_new(room: usize) -> usize
 {
-    let mut st = state();
-    st.pipes.push(Pipe { queue: VecDeque::new(), room, kind: 0, closed: false });
-    st.pipes.len()
+    let pipe = Pipe { queue: VecDeque::new(), room, kind: 0, closed: false };
+    let cell = Box::leak(Box::new(PipeCell {
+        pipe: Mutex::new(pipe),
+        waiters: AtomicUsize::new(0),
+    }));
+    let mut pipes = PIPES.write().unwrap_or_else(PoisonError::into_inner);
+    pipes.push(cell);
+    pipes.len()
 }
 
-/// The index of a channel, or a stop for a number that names none.
+/// The index and the cell of a channel, or a stop for a number that names
+/// none.
 ///
 /// # Arguments
 ///
-/// * `st` - The state.
 /// * `n` - The number.
 ///
 /// # Returns
 ///
-/// The index.
-fn pipe_at(st: &State, n: usize) -> usize
+/// The index and the cell.
+fn pipe_at(n: usize) -> (usize, &'static PipeCell)
 {
-    let at = n.checked_sub(1).filter(|i| *i < st.pipes.len());
-    at.unwrap_or_else(|| stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]))
+    let pipes = PIPES.read().unwrap_or_else(PoisonError::into_inner);
+    let at = n.checked_sub(1);
+    let found = at.and_then(|i| pipes.get(i).map(|cell| (i, *cell)));
+    drop(pipes);
+    found.unwrap_or_else(|| stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]))
+}
+
+impl PipeCell
+{
+    /// The channel, locked.
+    ///
+    /// # Returns
+    ///
+    /// The guard.
+    fn lock(&self) -> MutexGuard<'_, Pipe>
+    {
+        self.pipe.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Wake the waits on a channel that changed; with none, take no lock of the
+/// state.
+///
+/// # Arguments
+///
+/// * `at` - The index of the channel.
+/// * `cell` - The channel.
+fn pipe_changed(at: usize, cell: &PipeCell)
+{
+    ret_if!(cell.waiters.load(Ordering::SeqCst) == 0);
+    changed(&mut state(), Key::Pipe(at));
+}
+
+/// Wait on channels until `came` holds of them. The counts of waiters go up
+/// before the look, so a change after the look sees them and wakes this wait.
+///
+/// # Arguments
+///
+/// * `cells` - The channels.
+/// * `on` - What the wait waits on, for a light task.
+/// * `came` - What the wait waits for; it locks the channels it reads.
+fn wait_on_pipes(cells: &[&PipeCell], on: Key, came: impl Fn() -> bool)
+{
+    cells.iter().for_each(|c| _ = c.waiters.fetch_add(1, Ordering::SeqCst));
+    drop(wait_until(state(), on, |_| came()));
+    cells.iter().for_each(|c| _ = c.waiters.fetch_sub(1, Ordering::SeqCst));
 }
 
 /// Move a value into a channel, leaving zeros in its place; the send waits
@@ -1383,25 +1444,29 @@ fn pipe_at(st: &State, n: usize) -> usize
 pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
 {
     let size = kind(k).size;
-    let st = state();
-    let at = pipe_at(&st, n);
-    let full = |s: &State| {
-        let p = &s.pipes[at];
-        p.closed || p.room == 0 || p.queue.len() < p.room
-    };
-    let mut st = wait_until(st, Key::Pipe(at), full);
-    if st.pipes[at].closed
+    let (at, cell) = pipe_at(n);
+    let room = |p: &Pipe| p.closed || p.room == 0 || p.queue.len() < p.room;
+    loop
     {
-        drop(st);
-        stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
+        let mut pipe = cell.lock();
+        if pipe.closed
+        {
+            drop(pipe);
+            stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
+        }
+        if room(&pipe)
+        {
+            // SAFETY: the value is `size` octets the generated code owns.
+            let octets = unsafe { std::slice::from_raw_parts_mut(value, size) };
+            pipe.queue.push_back(octets.to_vec().into_boxed_slice());
+            pipe.kind = k as usize;
+            octets.fill(0);
+            drop(pipe);
+            return pipe_changed(at, cell);
+        }
+        drop(pipe);
+        wait_on_pipes(&[cell], Key::Pipe(at), || room(&cell.lock()));
     }
-    // SAFETY: the value is `size` octets the generated code owns.
-    let octets = unsafe { std::slice::from_raw_parts_mut(value, size) };
-    let pipe = &mut st.pipes[at];
-    pipe.queue.push_back(octets.to_vec().into_boxed_slice());
-    pipe.kind = k as usize;
-    octets.fill(0);
-    changed(&mut st, Key::Pipe(at));
 }
 
 /// Write the next value of a channel as an optional: it waits while the
@@ -1417,14 +1482,24 @@ pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
 pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
 {
     let optional = kind(k);
-    let st = state();
-    let at = pipe_at(&st, n);
-    let came = |s: &State| s.pipes[at].closed || !s.pipes[at].queue.is_empty();
-    let mut st = wait_until(st, Key::Pipe(at), came);
-    let value = st.pipes[at].queue.pop_front();
-    do_if!(value.is_some(), changed(&mut st, Key::Pipe(at)));
-    drop(st);
-    fill_optional(out, optional, value.as_deref());
+    let (at, cell) = pipe_at(n);
+    let came = || {
+        let pipe = cell.lock();
+        pipe.closed || !pipe.queue.is_empty()
+    };
+    loop
+    {
+        let mut pipe = cell.lock();
+        let value = pipe.queue.pop_front();
+        let closed = pipe.closed;
+        drop(pipe);
+        do_if!(value.is_some(), pipe_changed(at, cell));
+        ret_if!(
+            value.is_some() || closed,
+            fill_optional(out, optional, value.as_deref())
+        );
+        wait_on_pipes(&[cell], Key::Pipe(at), came);
+    }
 }
 
 /// Write a value that left a channel as an optional, or no data.
@@ -1488,31 +1563,81 @@ pub extern "C" fn zk_select(
 {
     // SAFETY: the generated code passes three words for each channel.
     let words = unsafe { std::slice::from_raw_parts(arms, 3 * n) };
-    let mut st = state();
-    let at: Vec<usize> = words.chunks(3).map(|w| pipe_at(&st, w[0])).collect();
+    let pipes: Vec<(usize, &PipeCell)> =
+        words.chunks(3).map(|w| pipe_at(w[0])).collect();
+    let cells: Vec<&PipeCell> = pipes.iter().map(|(_, c)| *c).collect();
     let ms = u64::try_from(ms).unwrap_or(u64::MAX);
     let end =
         (mode == ZkSelect::Timed).then(|| Instant::now() + Duration::from_millis(ms));
-    let holds = |s: &State, i: usize| !s.pipes[at[i]].queue.is_empty();
-    let closed = |s: &State| at.iter().all(|p| s.pipes[*p].closed);
     let passed = || end.is_some_and(|e| Instant::now() >= e);
-    let done = |s: &State| {
-        (0..n).any(|i| holds(s, i)) || closed(s) || mode == ZkSelect::Idle || passed()
+    let holds = |c: &&PipeCell| !c.lock().queue.is_empty();
+    let came = || {
+        let closed = cells.iter().all(|c| c.lock().closed);
+        cells.iter().any(holds) || closed || mode == ZkSelect::Idle || passed()
     };
-    let alarm = end.filter(|_| !done(&st)).map(|e| set_alarm(&mut st, e));
-    let mask = at.iter().fold(0, |m, p| m | pipe_bit(*p));
-    let mut st = wait_until(st, Key::Pipes { mask, timed: end.is_some() }, done);
-    do_if!(let Some(id) = alarm, cancel_alarm(&mut st, id));
-    let holding: Vec<usize> = (0..n).filter(|i| holds(&st, *i)).collect();
-    let chosen = match holding.is_empty()
+    let mask = pipes.iter().fold(0, |m, (at, _)| m | pipe_bit(*at));
+    let on = Key::Pipes { mask, timed: end.is_some() };
+    let mut alarm = None;
+    loop
     {
-        false => holding[draw(holding.len())],
-        true if closed(&st) => n + 1,
-        true => n,
-    };
-    let value = (chosen < n).then(|| st.pipes[at[chosen]].queue.pop_front()).flatten();
-    do_if!(value.is_some(), changed(&mut st, Key::Pipe(at[chosen])));
-    drop(st);
+        ret_if!(let Some(got) = select_take(&pipes, came()), {
+            do_if!(let Some(id) = alarm, cancel_alarm(&mut state(), id));
+            select_fill(words, got)
+        });
+        do_if!(alarm.is_none(), alarm = end.map(|e| set_alarm(&mut state(), e)));
+        wait_on_pipes(&cells, on, came);
+    }
+}
+
+/// What a wait on several channels takes once it looked: the place of the
+/// chosen channel and its value.
+type Taken = (usize, Option<Box<[u8]>>);
+
+/// Look at the channels of a wait once, and take a value when one holds one.
+///
+/// # Arguments
+///
+/// * `pipes` - The index and the cell of each channel.
+/// * `ends` - Whether the wait ends now when no channel holds a value: each is
+///   closed, the time limit passed, or the wait does not wait.
+///
+/// # Returns
+///
+/// The place and the value, `n` with none when the wait ends with no value,
+/// `n + 1` once each channel is closed and drained, or `None` to wait.
+fn select_take(pipes: &[(usize, &PipeCell)], ends: bool) -> Option<Taken>
+{
+    let n = pipes.len();
+    let holding: Vec<usize> =
+        (0..n).filter(|i| !pipes[*i].1.lock().queue.is_empty()).collect();
+    if !holding.is_empty()
+    {
+        let chosen = holding[draw(holding.len())];
+        let (at, cell) = pipes[chosen];
+        // Another wait can take the value between the look and the take; this
+        // wait then looks again.
+        let value = cell.lock().queue.pop_front()?;
+        pipe_changed(at, cell);
+        return Some((chosen, Some(value)));
+    }
+    ret_if!(!ends, None);
+    let closed = pipes.iter().all(|(_, c)| c.lock().closed);
+    Some((tern!(closed, n + 1, n), None))
+}
+
+/// Write the value a wait on several channels took to the optional of its
+/// channel.
+///
+/// # Arguments
+///
+/// * `words` - The three words of each channel.
+/// * `(chosen, value)` - The place of the chosen channel and its value.
+///
+/// # Returns
+///
+/// The place.
+fn select_fill(words: &[usize], (chosen, value): Taken) -> usize
+{
     let Some(arm) = words.chunks(3).nth(chosen)
     else
     {
@@ -1674,15 +1799,16 @@ fn ring(count: usize)
 #[unsafe(export_name = stamped!("pipe_close"))]
 pub extern "C" fn zk_pipe_close(n: usize)
 {
-    let mut st = state();
-    let at = pipe_at(&st, n);
-    if st.pipes[at].closed
+    let (at, cell) = pipe_at(n);
+    let mut pipe = cell.lock();
+    if pipe.closed
     {
-        drop(st);
+        drop(pipe);
         stop_owned(trap::PIPE_CLOSED, vec![named("pipe", n)]);
     }
-    st.pipes[at].closed = true;
-    changed(&mut st, Key::Pipe(at));
+    pipe.closed = true;
+    drop(pipe);
+    pipe_changed(at, cell);
 }
 
 /// Sleep: this OS thread waits for a count of milliseconds, and the other
@@ -1712,14 +1838,16 @@ pub extern "C" fn zk_sleep(ms: usize)
 pub(crate) fn end() -> bool
 {
     let st = state();
-    ret_if!(st.threads.is_empty() && st.pipes.is_empty(), false);
+    let no_pipes = PIPES.read().unwrap_or_else(PoisonError::into_inner).is_empty();
+    ret_if!(st.threads.is_empty() && no_pipes, false);
     let st =
         wait_until(st, Key::Each, |s| s.threads.iter().all(|j| j.end != End::Runs));
     let mut st = st;
     let os_threads: Vec<_> =
         st.threads.iter_mut().filter_map(|j| j.os_thread.take()).collect();
     let threads = std::mem::take(&mut st.threads);
-    let pipes = std::mem::take(&mut st.pipes);
+    let pipes =
+        std::mem::take(&mut *PIPES.write().unwrap_or_else(PoisonError::into_inner));
     let st_lost = std::mem::take(&mut st.lost);
     st.spare.clear();
     drop(st);
@@ -1732,11 +1860,16 @@ pub(crate) fn end() -> bool
     let results = threads.iter().filter(untaken);
     results.for_each(|j| zk_drop(j.data as *mut u8, j.ret as *const ZkKind));
     threads.iter().filter(|j| j.owned).for_each(|j| free_data(j.data));
-    let held = pipes.into_iter().filter(|p| p.kind != 0);
-    for pipe in held
+    for cell in pipes
     {
+        let mut pipe = cell.lock();
         let k = pipe.kind as *const ZkKind;
-        pipe.queue.into_iter().for_each(|mut v| zk_drop(v.as_mut_ptr(), k));
+        let queue = std::mem::take(&mut pipe.queue);
+        drop(pipe);
+        do_if!(
+            !k.is_null(),
+            queue.into_iter().for_each(|mut v| zk_drop(v.as_mut_ptr(), k))
+        );
     }
     lost
 }
