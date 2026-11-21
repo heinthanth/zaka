@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_borrow_checker::crossing_fns;
+use zakac_borrow_checker::light_fns;
 use zakac_borrow_checker::options::OverflowMode;
 use zakac_borrow_checker::starts_threads;
 use zakac_host_errors::Error;
@@ -202,7 +203,8 @@ pub fn emit(
     let module = &spelled;
     #[rustfmt::skip]
     let mut shared = Shared::builder().module(module).options(options).files(files.to_vec())
-        .grants(grants.clone()).safe_points(starts_threads(module)).build();
+        .grants(grants.clone()).safe_points(starts_threads(module)).light(light_fns(module))
+        .build();
     let mut units = vec![String::new(); files.len().max(1)];
     let unit_of = |lo| files.iter().rposition(|f| f.start_pos <= lo).unwrap_or(0);
     for (n, g) in module.globals.iter().enumerate()
@@ -400,6 +402,9 @@ pub(crate) struct Shared<'m>
     /// safe point of the ring collector.
     #[builder(default)]
     pub(crate) safe_points: bool,
+    /// The functions whose threads can run as light tasks.
+    #[builder(default)]
+    pub(crate) light: std::collections::BTreeSet<u32>,
     /// The rights the build grants the program.
     pub(crate) grants: Grants,
     /// The first construct the C target cannot build at present.

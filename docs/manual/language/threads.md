@@ -1,6 +1,6 @@
 ---
 title: Threads
-description: Run a function on a thread while the rest of the program goes on - starting a thread, the thread kind, waiting for its result, sleeping, the values a thread can use, channels, objects that threads share and their locks, atomic numbers, parallel loops and maps, threads and OS threads, the turns on the VM, and what a trap in a thread does.
+description: Run a function on a thread while the rest of the program goes on - starting a thread, the thread kind, waiting for its result, sleeping, the values a thread can use, channels, objects that threads share and their locks, atomic numbers, parallel loops and maps, threads and OS threads, light tasks, the turns on the VM, and what a trap in a thread does.
 ---
 
 # Threads
@@ -659,19 +659,53 @@ Where a thread runs depends on how the program runs:
 - **The VM** runs all threads on one OS thread and takes turns between them, as the next
   section describes.
 - **A native program**, from the C target or the native target ([Native
-  programs](../compiler/native.md)), runs each thread on its own OS thread, with a stack
-  of 64 MiB, and a thread written `သီးသန့် အပြိုင်` does the same. The OS threads run at the same time, so the order of their output lines can
+  programs](../compiler/native.md)), runs a thread as a light task when it can, and on an
+  OS thread of its own when it cannot ([Light tasks](#light-tasks)). The threads run at
+  the same time on the cores of the computer, so the order of their output lines can
   change from run to run, but what a thread returns and what a channel carries cannot. A
   wait for a thread, a receive or a send that would wait while no other thread runs stops
   the program with the trap `deadlock`, as on the VM. `zakac build --trap abort` makes a
   trap in a thread stop the whole program.
 - **The JIT** of `zakac run`, which runs a source file as native code when it can, runs
-  threads, parallel loops and maps on OS threads, as a native program does, and
+  threads as light tasks or on OS threads, and parallel loops and maps on OS threads, as
+  a native program does, and
   `zakac run --trap abort` makes a trap in a thread stop the whole program there too.
 - While a thread runs, a native program collects no rings (objects that reach each other in
   a loop): the collector changes the reference counts with plain operations, so it waits
   until each thread has ended. The buffer still fills, and the end of the program
   collects as it does in all programs.
+
+## Light tasks
+
+A light task is a thread on a small stack of its own, 1 MiB, which the OS fills as the
+stack grows, and a pool of OS threads, one for each core, takes turns on the tasks. Ten
+thousand light tasks fit in a program where ten thousand OS threads, at 64 MiB of stack
+each, do not. For each thread that a call starts, the compiler picks a light task or an OS
+thread, and the words of the program are the same for both. A thread gets an OS thread of
+its own when its function, or a function it calls, through function values too:
+
+- calls a C function (`"libX" မှလာသော`), which can keep state for each OS thread or hold
+  its OS thread in a call that blocks;
+- calls itself again, through other functions as well, since the stack of a task is small;
+- reads standard input, which can wait with no end.
+
+A thread written `သီးသန့် အပြိုင်` in place of `အပြိုင်` gets an OS thread of its own as well.
+
+| | Light task | OS thread |
+| --- | --- | --- |
+| Stack | 1 MiB, filled as it grows | 64 MiB |
+| In one program | tens of thousands | a few thousand |
+| While it waits for a thread, a channel, a lock or a sleep | its OS thread runs the next task | its OS thread waits |
+| A long loop with no wait | gives its OS thread to the next task after 10 milliseconds, while other tasks wait | the OS shares the cores |
+| C functions, standard input, a function that calls itself again | none (the compiler picks an OS thread) | allowed |
+
+- Parallel loops and maps run their rounds on OS threads.
+- On Windows, and in a C lib (`--emit lib`), each thread runs on an OS thread of its own;
+  a program for WASI starts no threads.
+- A light task whose calls take more than its stack stops the program with a crash at the
+  page below the stack, not with a trap.
+- On the VM, the choice changes nothing: each thread takes turns there
+  ([Turns on the VM](#turns-on-the-vm)).
 
 ## Turns on the VM
 

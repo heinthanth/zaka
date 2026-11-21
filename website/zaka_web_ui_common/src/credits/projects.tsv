@@ -41,6 +41,7 @@ crate	leptos-use-window	0.20.1	MIT OR Apache-2.0	https://github.com/Synphonyte/l
 crate	leptos-use-window-size	0.20.1	MIT OR Apache-2.0	https://github.com/Synphonyte/leptos-use
 crate	leptos_meta	0.8.7	MIT	https://github.com/leptos-rs/leptos
 crate	leptos_router	0.8.17	MIT	https://github.com/leptos-rs/leptos
+crate	libc	0.2.189	MIT OR Apache-2.0	https://github.com/rust-lang/libc
 crate	libffi	5.2.0	MIT OR Apache-2.0	https://github.com/libffi-rs/libffi-rs
 crate	libloading	0.9.0	ISC	https://github.com/nagisa/rust_libloading/
 crate	lsp-server	0.10.0	MIT OR Apache-2.0	https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server

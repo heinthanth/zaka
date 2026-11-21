@@ -74,9 +74,11 @@ where the program runs:
   them: it runs one thread for a short while, then the next one, in the same fixed
   order each time. So a program prints the same lines in the same order on each run.
 - **A native program** (`zakac build --backend native` or `--backend c`, or
-  `zakac run --jit`) runs each thread on a separate OS thread. The threads then run at
-  the same time on several cores of the computer, so the work can finish sooner, but the
-  lines that two threads print can come in a different order from one run to the next.
+  `zakac run --jit`) runs each thread as a light task, a small stack that a few OS
+  threads take turns on, or on a separate OS thread when the thread needs one. The
+  threads then run at the same time on several cores of the computer, so the work can
+  finish sooner, but the lines that two threads print can come in a different order from
+  one run to the next.
 
 A thread returns the same result on both, so a program should depend on results and
 channels, not on the order of the lines that two threads print.
@@ -235,6 +237,10 @@ their own, so a sleep ends at once and the lines still come in the same order.
 - **Stopping the whole program.** We can build a native program with `--trap abort`, and a
   trap in one thread then stops the whole program
   ([Commands](../../manual/compiler/commands.md)).
+- **Light tasks.** Tens of thousands of threads fit in a native program, as light tasks.
+  The compiler gives a thread an OS thread of its own when it calls C, reads standard
+  input or calls a function again, and we can ask for one with `သီးသန့် အပြိုင်` in place
+  of `အပြိုင်` ([Light tasks](../../manual/language/threads.md#light-tasks)).
 - **Shuffled turns.** `zakac run --shuffle-thread-order` makes the VM take turns in a
   shuffled order, which helps to find a mistake that hangs on the order of the threads
   ([Commands](../../manual/compiler/commands.md#run)).

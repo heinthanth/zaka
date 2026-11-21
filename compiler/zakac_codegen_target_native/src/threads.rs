@@ -21,6 +21,7 @@ use zakac_ir_builder::ir::ParRounds;
 use zakac_ir_builder::ir::Place;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
 use crate::emit::Shared;
@@ -141,11 +142,12 @@ impl<M: Module> FnGen<'_, '_, M>
     ///
     /// * `f` - The function.
     /// * `args` - The arguments, owned.
+    /// * `apart` - Whether the call asks for an OS thread of its own.
     ///
     /// # Returns
     ///
     /// The number of the thread.
-    pub fn spawn(&mut self, f: u32, args: &[Expr]) -> Value
+    pub fn spawn(&mut self, f: u32, args: &[Expr], apart: bool) -> Value
     {
         let ptr = self.s.ptr;
         let kinds = parts(self.s.module, f);
@@ -173,7 +175,9 @@ impl<M: Module> FnGen<'_, '_, M>
             self.b.ins().iconst(types::I32, i64::from(self.s.options.trap_abort));
         let params = [ptr, ptr, ptr, ptr, ptr, types::I32];
         let args = [guard, leave, step, data, ret, abort];
-        self.rt("zk_thread_start", &params, &[ptr], &args).unwrap_or(data)
+        let light = !apart && self.s.light.contains(&f);
+        let start = tern!(light, "zk_task_start", "zk_thread_start");
+        self.rt(start, &params, &[ptr], &args).unwrap_or(data)
     }
 
     /// A wait that takes the result of a thread: the result moves out of the

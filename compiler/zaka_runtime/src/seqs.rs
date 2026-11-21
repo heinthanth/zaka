@@ -738,6 +738,18 @@ fn collect_white(root: *mut u8, out: &mut Vec<*mut u8>)
 #[allow(non_upper_case_globals)]
 pub static mut zk_halt: u8 = 0;
 
+/// The flag of [`zk_halt`], for the pool of light tasks.
+///
+/// # Returns
+///
+/// The flag.
+#[cfg(unix)]
+pub(crate) fn halt_flag() -> &'static AtomicU8 { halt() }
+
+/// The bit of [`zk_halt`] that asks for a halt; the pool of light tasks uses
+/// another bit of it to ask a task to give its turn on.
+const HALT_BIT: u8 = 1;
+
 /// The flag of [`zk_halt`], read and set in one step.
 ///
 /// # Returns
@@ -787,7 +799,11 @@ pub(crate) fn halted_while(work: impl FnOnce())
 /// A safe point the loops of native code reach once the flag reads set:
 /// see [`safe_point`].
 #[unsafe(export_name = stamped!("safe_point"))]
-pub extern "C" fn zk_safe_point() { safe_point() }
+pub extern "C" fn zk_safe_point()
+{
+    safe_point();
+    crate::tasks::turn();
+}
 
 /// The address of [`zk_halt`], which the loops of Cranelift code read.
 ///
@@ -802,7 +818,7 @@ pub extern "C" fn zk_halt_flag() -> *const u8 { &raw const zk_halt }
 /// # Returns
 ///
 /// `true` while it does.
-pub(crate) fn halt_asked() -> bool { halt().load(Ordering::Acquire) != 0 }
+pub(crate) fn halt_asked() -> bool { halt().load(Ordering::Acquire) & HALT_BIT != 0 }
 
 /// Free each group of blocks in the buffer, or reached from it, that holds
 /// itself alone: trial deletion that halts the program while it runs. While
@@ -815,7 +831,7 @@ fn collect_rings()
     ret_if!(!crate::libs::begin_collect());
     let ran = !crate::threads::threads_run() || halt_others();
     do_if!(ran, collect_held());
-    halt().store(0, Ordering::Release);
+    halt().fetch_and(!HALT_BIT, Ordering::Release);
     crate::libs::end_collect();
     // A request that lapsed waits for the buffer to double before the next,
     // so each later release does not wait out the halt again.
@@ -837,7 +853,7 @@ static RETRY_AT: AtomicUsize = AtomicUsize::new(0);
 fn halt_others() -> bool
 {
     ret_false!(!crate::threads::counted_thread());
-    halt().store(1, Ordering::SeqCst);
+    halt().fetch_or(HALT_BIT, Ordering::SeqCst);
     let deadline = std::time::Instant::now() + HALT_WAIT;
     loop
     {

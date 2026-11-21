@@ -63,12 +63,35 @@ pub(crate) fn swap_active(ctx: &mut *mut ZkCtx) { *ctx = ACTIVE.replace(*ctx); }
 
 /// A new context for a thread, which [`free_ctx`] frees.
 ///
+/// # Arguments
+///
+/// * `rows` - The rows of its frame table, made now; 0 to make it at its first
+///   use, with room for the depth limit.
+///
 /// # Returns
 ///
 /// The context.
-pub(crate) fn new_ctx() -> *mut ZkCtx
+pub(crate) fn new_ctx(rows: usize) -> *mut ZkCtx
 {
-    Box::into_raw(Box::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 }))
+    let mut ctx = Box::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 });
+    do_if!(rows > 0, grow(&mut ctx, rows));
+    Box::into_raw(ctx)
+}
+
+/// The rows the frame table of a light task needs: a task calls no function
+/// again, so its calls go no deeper than the count of functions, under the
+/// depth limit.
+///
+/// # Returns
+///
+/// The count, 0 when no frame is kept.
+#[cfg(unix)]
+pub(crate) fn task_rows() -> usize
+{
+    let want = wanted_rows();
+    ret_if!(want == 0, 0);
+    let count = prog().fn_count;
+    tern!(count == 0, want, want.min(count + 2))
 }
 
 /// Free the context of a thread and its frame table, once the thread ended and
@@ -103,7 +126,10 @@ pub extern "C" fn zk_ctx() -> *mut ZkCtx
     // reference to it outlives this call.
     let ctx = unsafe { &mut *at };
     let want = wanted_rows();
-    do_if!(ctx.room < want, grow(ctx, want));
+    // The table of a thread is made once, to the size it needs; the OS
+    // thread's own grows for a C lib whose limit is deeper.
+    let own = ACTIVE.get().is_null();
+    do_if!(ctx.room < want && (own || ctx.room == 0), grow(ctx, want));
     at
 }
 

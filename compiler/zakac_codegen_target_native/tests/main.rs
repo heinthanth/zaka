@@ -6,6 +6,7 @@ mod debug_info;
 mod disasm;
 mod ffi_lib;
 mod forms;
+mod light;
 mod permissions;
 mod samples;
 mod traps;

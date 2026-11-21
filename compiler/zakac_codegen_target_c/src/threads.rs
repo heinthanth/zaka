@@ -414,11 +414,12 @@ impl FnGen<'_, '_>
     ///
     /// * `f` - The function.
     /// * `args` - The arguments.
+    /// * `apart` - Whether the call asks for an OS thread of its own.
     ///
     /// # Returns
     ///
     /// The C text of the number of the thread.
-    pub(crate) fn spawn(&mut self, f: u32, args: &[Expr]) -> String
+    pub(crate) fn spawn(&mut self, f: u32, args: &[Expr], apart: bool) -> String
     {
         self.shared.spawned.insert(f);
         let platform = self.shared.options.platform_bits;
@@ -435,10 +436,29 @@ impl FnGen<'_, '_>
         let ret =
             kinds[0].map_or_else(|| "NULL".to_string(), |k| self.shared.descr.of(k));
         let abort = i32::from(self.shared.options.trap_abort);
+        let start = self.start_fn(f, apart);
         format!(
-            "zk_thread_start(zk_thread_guard, zk_thread_leave, zk_thread_step_{f}, \
-             {data}, {ret}, {abort})"
+            "{start}(zk_thread_guard, zk_thread_leave, zk_thread_step_{f}, {data}, \
+             {ret}, {abort})"
         )
+    }
+
+    /// The runtime function that starts a thread: `zk_task_start` for a light
+    /// task, when the function of the thread can run as one and the call does
+    /// not ask for an OS thread of its own; `zk_thread_start` otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The function of the thread.
+    /// * `apart` - Whether the call asks for an OS thread of its own.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    fn start_fn(&self, f: u32, apart: bool) -> &'static str
+    {
+        let light = !apart && self.shared.light.contains(&f);
+        tern!(light, "zk_task_start", "zk_thread_start")
     }
 
     /// The C text of a wait that takes the result of a thread: the result moves

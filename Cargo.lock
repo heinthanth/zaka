@@ -6671,6 +6671,7 @@ name = "zaka_runtime"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "libc",
  "libffi",
  "strum",
  "xxhash-rust",

@@ -10,6 +10,8 @@ use std::ptr::null_mut;
 use crate::ctx::ZkCtx;
 use crate::ctx::free_ctx;
 use crate::ctx::new_ctx;
+#[cfg(unix)]
+use crate::ctx::task_rows;
 use crate::out::ZkBuf;
 use crate::threads::Own;
 
@@ -52,8 +54,46 @@ impl Local
         n: usize, leave: Option<(extern "C" fn(i32), usize)>,
     ) -> Local
     {
+        Local::with_rows(n, leave, 0)
+    }
+
+    /// What a new light task starts with: as [`Local::of_thread`], with a frame
+    /// table no deeper than its calls can go.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The number of the thread.
+    /// * `leave` - The jump back to its guard and its number, `None` when a
+    ///   trap of it stops the whole program.
+    ///
+    /// # Returns
+    ///
+    /// The cells.
+    #[cfg(unix)]
+    pub(crate) fn of_task(n: usize, leave: Option<(extern "C" fn(i32), usize)>)
+    -> Local
+    {
+        Local::with_rows(n, leave, task_rows())
+    }
+
+    /// The cells of a new thread with a frame table of `rows` rows, 0 to make
+    /// it at its first use.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The number of the thread.
+    /// * `leave` - The jump back to its guard and its number.
+    /// * `rows` - The rows.
+    ///
+    /// # Returns
+    ///
+    /// The cells.
+    fn with_rows(
+        n: usize, leave: Option<(extern "C" fn(i32), usize)>, rows: usize,
+    ) -> Local
+    {
         #[rustfmt::skip]
-        let local = Local { ctx: new_ctx(), jump: null_mut(), own: (leave, 0, n),
+        let local = Local { ctx: new_ctx(rows), jump: null_mut(), own: (leave, 0, n),
             sink: null_mut(), line: Vec::new() };
         local
     }

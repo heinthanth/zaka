@@ -1,6 +1,7 @@
 //! The lowering of a module: the functions, the globals, the records of the
 //! functions, the kind descriptors and the table of the program.
 
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -19,6 +20,7 @@ use cranelift_module::Module;
 use zaka_host::Grant;
 use zaka_host::Grants;
 use zakac_borrow_checker::crossing_fns;
+use zakac_borrow_checker::light_fns;
 use zakac_borrow_checker::starts_threads;
 use zakac_codegen_target_c::descriptors::Descriptors;
 use zakac_codegen_target_c::descriptors::KindRow;
@@ -136,6 +138,8 @@ pub struct Shared<'m, M: Module>
     /// Whether the program starts threads, so each round of a loop passes a
     /// safe point of the ring collector.
     pub safe_points: bool,
+    /// The functions whose threads can run as light tasks.
+    pub light: BTreeSet<u32>,
     /// The step of each function a parallel map runs, under the function.
     pub map_steps: Vec<(u32, FuncId)>,
     /// The step of the function of each parallel loop, under the function.
@@ -456,7 +460,7 @@ pub fn emit<M: Module>(
         sites: vec![(0, 0, 0)], site_index: HashMap::new(), missing: None, next_data: 0,
         ckinds: HashMap::new(), ffi_shapes: HashMap::new(), c_fns: HashMap::new(),
         cb_shapes: Vec::new(), lines: Vec::new(), unwinds: Vec::new(), steps: Vec::new(), map_steps: Vec::new(), round_steps: Vec::new(),
-        jit: main_name == "zk_main", safe_points: starts_threads(module) };
+        jit: main_name == "zk_main", safe_points: starts_threads(module), light: light_fns(module) };
     declare_program(&mut s);
     let mut fctx = FunctionBuilderContext::new();
     let mut clif = String::new();

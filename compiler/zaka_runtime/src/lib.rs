@@ -29,6 +29,8 @@ pub mod ctx;
 pub mod exchange;
 #[cfg(not(target_os = "wasi"))]
 pub mod ffi;
+#[cfg(unix)]
+mod fiber;
 pub mod heap;
 pub mod host;
 pub mod libs;
@@ -40,6 +42,7 @@ pub mod rights;
 pub mod seqs;
 pub mod show;
 pub mod start;
+mod tasks;
 pub mod threads;
 pub mod traps;
 

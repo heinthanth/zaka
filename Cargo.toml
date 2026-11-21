@@ -56,6 +56,7 @@ leptos-use-storage = "0.20"
 leptos-use-window = "0.20"
 leptos-use-window-size = "0.20"
 libffi = "5.2"
+libc = "0.2"
 cbindgen = { version = "0.29.4", default-features = false }
 libloading = "0.9"
 lsp-server = "0.10.0"

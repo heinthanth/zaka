@@ -280,6 +280,8 @@ its functions is `extern "C"`, with the name that the C calls, and its build scr
 | `program.rs` | `ZkProgram`, the mirror of `zk_program`: the checks, the limits, the rights, the texts, the function names and the sites; `zk_prog`, the table of the running program |
 | `ctx.rs` | `ZkCtx` (`zk_context`) and `zk_ctx`, the calls in progress of each OS thread, or of the thread it runs |
 | `local.rs` | `Local`, what a thread keeps for itself (its context, its trap jump, its number, its output sink and line), swapped with the cells of the OS thread that runs it |
+| `tasks.rs` | the pool of light tasks: `zk_task_start`, one OS thread for each core, the ready and the sleeping tasks, a task that parks in a wait, sleeps or ends its turn at `zk_safe_point` (a second bit of `zk_halt`); none on Windows |
+| `fiber.rs` | the stack of a light task (mapped, with a guard page) and the switch between stacks, naked functions for aarch64 and x86_64 whose link names carry the hash of the build |
 | `start.rs` | `zk_start` and `zk_finish`: the start and the end of a run |
 | `traps.rs` | the traps, the stop message and the backtrace |
 | `out.rs` | the buffer of standard output, the sink of a format, the print of numbers |

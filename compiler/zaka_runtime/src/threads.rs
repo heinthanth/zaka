@@ -33,6 +33,7 @@ use crate::seqs::zk_add_cell;
 use crate::seqs::zk_drop;
 use crate::seqs::zk_seq_base;
 use crate::seqs::zk_seq_len;
+use crate::tasks::Task;
 use crate::traps::named;
 use crate::traps::stop;
 use crate::traps::stop_owned;
@@ -117,6 +118,8 @@ struct State
     parked: usize,
     /// The count of changes so far, which tells a waiter its wake is real.
     changes: u64,
+    /// The light tasks that wait for the state to change.
+    parked_tasks: Vec<Box<Task>>,
 }
 
 /// The state of the threads and channels.
@@ -127,6 +130,7 @@ static STATE: Mutex<State> = Mutex::new(State {
     running: 1,
     parked: 0,
     changes: 0,
+    parked_tasks: Vec::new(),
 });
 
 /// Wakes each OS thread that waits once the state changes.
@@ -245,6 +249,7 @@ fn changed(st: &mut State)
     st.parked = 0;
     st.changes += 1;
     CHANGED.notify_all();
+    crate::tasks::requeue(std::mem::take(&mut st.parked_tasks));
 }
 
 /// Wait until `came` holds; a wait while no other OS thread runs stops the
@@ -264,6 +269,7 @@ fn wait_until(
 {
     // An OS thread of C is out of the count: it waits and changes no count.
     let counted = THREAD.get() != 0 || MAIN.get();
+    let task = crate::tasks::on_task();
     while !came(&st)
     {
         let seen = st.changes;
@@ -277,10 +283,7 @@ fn wait_until(
             drop(st);
             deadlock();
         }
-        while st.changes == seen
-        {
-            st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
-        }
+        st = tern!(task, park_until_changed(st, seen), wait_for_change(st, seen));
         // An OS thread that wakes during a collection halts first, holding no
         // lock.
         if crate::seqs::halt_asked()
@@ -292,6 +295,72 @@ fn wait_until(
     }
     st
 }
+
+/// Wait on the OS thread until the state changes past `seen`.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked.
+/// * `seen` - The count of changes so far.
+///
+/// # Returns
+///
+/// The state, locked, after the change.
+fn wait_for_change(
+    mut st: MutexGuard<'static, State>, seen: u64,
+) -> MutexGuard<'static, State>
+{
+    while st.changes == seen
+    {
+        st = CHANGED.wait(st).unwrap_or_else(PoisonError::into_inner);
+    }
+    st
+}
+
+/// Stop the running light task until the state changes past `seen`: the
+/// lock goes first, so no OS thread holds it while the task waits, and the
+/// task can go on on another OS thread.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked.
+/// * `seen` - The count of changes so far.
+///
+/// # Returns
+///
+/// The state, locked again.
+fn park_until_changed(
+    st: MutexGuard<'static, State>, seen: u64,
+) -> MutexGuard<'static, State>
+{
+    drop(st);
+    crate::tasks::park(seen);
+    state()
+}
+
+/// Keep a light task that stopped to wait for a change: with those that wait,
+/// or with those that can go on, when the state changed since it looked.
+///
+/// # Arguments
+///
+/// * `task` - The task.
+/// * `seen` - The count of changes it saw.
+#[cfg(unix)]
+pub(crate) fn park_task(task: Box<Task>, seen: u64)
+{
+    let mut st = state();
+    ret_if!(st.changes == seen, st.parked_tasks.push(task));
+    drop(st);
+    crate::tasks::requeue(vec![task]);
+}
+
+/// Whether a program runs, as against a C lib, whose OS threads come from C.
+///
+/// # Returns
+///
+/// `true` when one does.
+#[cfg(unix)]
+pub(crate) fn program_runs() -> bool { PROGRAM.load(Ordering::SeqCst) }
 
 /// Stop the whole program with the trap `deadlock`, from whichever OS thread.
 fn deadlock() -> !
@@ -397,6 +466,42 @@ pub extern "C" fn zk_thread_start(
     start_thread((guard, jump, step), data, ret, abort, true)
 }
 
+/// Start a thread as a light task: a small stack that a pool of OS threads
+/// takes turns on, for a thread whose function calls no C, reads no standard
+/// input and calls no function again. The arguments are those of
+/// [`zk_thread_start`]; with no pool on this host, or no room for a stack, the
+/// thread gets an OS thread of its own.
+///
+/// # Arguments
+///
+/// * `guard` - The guard the compiler writes.
+/// * `jump` - The function that jumps back to the guard.
+/// * `step` - The step of the thread.
+/// * `data` - Its data block, from [`zk_thread_data`].
+/// * `ret` - The kind of its result, or NULL for none.
+/// * `abort` - 1 when a trap of the thread stops the whole program.
+///
+/// # Returns
+///
+/// The number of the thread.
+#[unsafe(export_name = stamped!("task_start"))]
+pub extern "C" fn zk_task_start(
+    guard: ZkGuard, jump: extern "C" fn(i32), step: ZkStep, data: *mut u8,
+    ret: *const ZkKind, abort: i32,
+) -> usize
+{
+    ret_if!(
+        !crate::tasks::can_start(),
+        zk_thread_start(guard, jump, step, data, ret, abort)
+    );
+    let (st, n) = add_thread(data, ret, true);
+    let leave = tern!(abort != 0, None, Some((jump, n)));
+    ret_if!(crate::tasks::start(guard, leave, step, data as usize, n), n);
+    // No stack: the same thread goes on an OS thread.
+    spawn_os_thread(st, (guard, jump, step), data as usize, abort, n);
+    n
+}
+
 /// Start a thread on an OS thread of its own; see [`zk_thread_start`].
 ///
 /// # Arguments
@@ -415,6 +520,27 @@ fn start_thread(
     ret: *const ZkKind, abort: i32, owned: bool,
 ) -> usize
 {
+    let (st, n) = add_thread(data, ret, owned);
+    spawn_os_thread(st, (guard, jump, step), data as usize, abort, n);
+    n
+}
+
+/// Add a running thread to the state, counted among those that run.
+///
+/// # Arguments
+///
+/// * `data` - Its data block.
+/// * `ret` - The kind of its result, or NULL for none.
+/// * `owned` - Whether the runtime frees the data block.
+///
+/// # Returns
+///
+/// The state, still locked, so the thread cannot end before its start is
+/// kept; and the number of the thread.
+fn add_thread(
+    data: *mut u8, ret: *const ZkKind, owned: bool,
+) -> (MutexGuard<'static, State>, usize)
+{
     zk_threads_begin();
     let mut st = state();
     #[rustfmt::skip]
@@ -431,7 +557,24 @@ fn start_thread(
         st.threads[n - 1] = thread;
     }
     st.running += 1;
-    let data = data as usize;
+    (st, n)
+}
+
+/// Run a thread that was added on an OS thread of its own.
+///
+/// # Arguments
+///
+/// * `st` - The state, locked since the thread was added.
+/// * `guard`, `jump`, `step` - The guard, the jump back to it, and the step.
+/// * `data` - The data block.
+/// * `abort` - 1 when a trap of the thread stops the whole program.
+/// * `n` - The number of the thread.
+fn spawn_os_thread(
+    mut st: MutexGuard<'static, State>,
+    (guard, jump, step): (ZkGuard, extern "C" fn(i32), ZkStep), data: usize,
+    abort: i32, n: usize,
+)
+{
     let run = move || run_thread(guard, (jump, abort != 0), step, data, n);
     let os_thread = std::thread::Builder::new().stack_size(64 << 20).spawn(run);
     let Ok(os_thread) = os_thread
@@ -441,7 +584,6 @@ fn start_thread(
         stop_owned(trap::OUT_OF_MEM, vec![named("size", 64usize << 20)])
     };
     st.threads[n - 1].os_thread = Some(os_thread);
-    n
 }
 
 /// The work of the OS thread of a thread: run the guard, then mark the thread
@@ -467,7 +609,19 @@ fn run_thread(
     crate::out::flush_line();
     local.swap();
     local.free();
-    // The locks a thread held when it stopped remain taken, broken.
+    thread_ended(n, status);
+}
+
+/// Mark a thread ended, on an OS thread of its own or as a light task: the
+/// locks it held when it stopped remain taken, broken, and each waiter looks
+/// again.
+///
+/// # Arguments
+///
+/// * `n` - The number of the thread.
+/// * `status` - What its guard gave: 0, or a value other than 0 after a trap.
+pub(crate) fn thread_ended(n: usize, status: i32)
+{
     for shard in &LOCKS
     {
         let mut held = shard.lock().unwrap_or_else(PoisonError::into_inner);
@@ -1075,6 +1229,7 @@ pub extern "C" fn zk_pipe_close(n: usize)
 pub extern "C" fn zk_sleep(ms: usize)
 {
     let ms = u64::try_from(ms).unwrap_or(u64::MAX);
+    ret_if!(crate::tasks::on_task(), crate::tasks::sleep(ms));
     crate::seqs::halted_while(|| {
         std::thread::sleep(std::time::Duration::from_millis(ms))
     });

@@ -18,6 +18,10 @@ zakac_rust_sugars = { workspace = true }
 [target.'cfg(not(target_os = "wasi"))'.dependencies]
 libffi = { workspace = true }
 
+# The stacks of light tasks; elsewhere each thread runs on an OS thread.
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
+
 [features]
 # The guard of a thread in C, for code the JIT runs in the process of zakac; a
 # build of a program compiles its own.

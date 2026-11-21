@@ -32,7 +32,10 @@ fn main()
     let lib = out.join("libzaka_runtime.a");
     let libs = out.join("native-libs.txt");
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    for watched in ["compiler/zaka_runtime", "compiler/zaka_host/src", "Cargo.lock"]
+    // The root manifest holds the profile the lib is built with.
+    let watched =
+        ["compiler/zaka_runtime", "compiler/zaka_host/src", "Cargo.lock", "Cargo.toml"];
+    for watched in watched
     {
         println!("cargo:rerun-if-changed={}", root.join(watched).display());
     }
