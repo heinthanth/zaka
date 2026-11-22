@@ -70,6 +70,17 @@ breaks when the line as written that ends before the statement, with the first l
 statement joined to it, is too wide, and joins when it fits; the other lines remain as
 written.
 
+## The wrap of other lines
+
+`wrap.rs` takes each line of the output, as the gaps so far make it, that lies outside the
+declarations and is wider than the widest line, and breaks it where it reads best: the
+end of a clause first, then after a `၊`, then a space after a reserved word or a closing
+mark. Within the best kind of place that has one, the last place that keeps the line
+within the width wins, and when none does, the first. A space break never leaves the last
+word of a statement alone on its line. A line too wide inside a declaration is wrapped the
+same way after the breaks of its lines. The wrap only adds breaks; a comment after code
+takes no part in the width.
+
 ## The rewrites
 
 The rewrites change words, never the space around them. Each one is a *swap*: a span of

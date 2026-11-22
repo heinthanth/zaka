@@ -48,5 +48,8 @@ en = "The lines of a function signature: preserve keeps them, split puts the nam
 [formatter.inline_block_lines]
 en = "The line of a block written as one statement after its condition or loop head: preserve keeps it, split puts the statement on a line of its own, fit does so when the line does not fit in the widest line."
 
+[formatter.wrap_long_lines]
+en = "Wrap each other line wider than the widest line: at the end of a clause first, then after ၊, then at a space."
+
 [formatter.changed]
 en = "the formatted text of %{file} reads as other words, so it was left as it is; this is a fault of the formatter"

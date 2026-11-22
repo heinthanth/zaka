@@ -39,6 +39,7 @@ use crate::rewrite::Swap;
 use crate::rewrite::sort_imports;
 use crate::rewrite::swapped;
 use crate::rewrite::swaps;
+use crate::wrap::wrap;
 
 /// The reason a file was left as it is.
 #[derive(Debug)]
@@ -364,7 +365,18 @@ impl Printer<'_>
             made: &made,
             max_width: self.options.max_width,
         };
-        plan(&self.shapes, &ruler)
+        let (mut gaps, owned) = plan(&self.shapes, &ruler);
+        ret_if!(!self.options.wrap_long_lines, gaps);
+        // Whether a piece starts a line with the gaps so far: a break the
+        // plan decides, else a line break as written or between two
+        // statements that share a line.
+        let starts_line = |i: usize, gaps: &HashMap<usize, Gap>| match gaps.get(&i)
+        {
+            Some(gap) => *gap == Gap::Break,
+            None => words[i].broken || self.splits(pieces[i - 1], &pieces[i], 0),
+        };
+        wrap(&ruler, &mut gaps, &owned, &starts_line);
+        gaps
     }
 
     /// The space at the start of a line the formatter breaks inside a

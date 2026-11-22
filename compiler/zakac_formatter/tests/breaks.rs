@@ -61,7 +61,7 @@ fn a_long_struct_puts_each_field_on_a_line()
 fn the_initial_mark_keeps_to_its_member()
 {
     let text = item("samples/basics/enums.zaka", "အရောင် ");
-    let out = fmt_with(&text, &narrow(30));
+    let out = fmt_with(&text, &narrow(40));
     let second = out.lines().nth(1).unwrap();
     assert!(second.starts_with("ကနဦးတန်ဖိုး"), "{out}");
 }

@@ -160,3 +160,5 @@
                            # the parameters and the opener of a function
 # inline-block-lines = "fit"  # --inline-block-lines <LINES>: a block written as
                            # one statement goes on a line of its own
+# wrap-long-lines = true   # --wrap-long-lines <BOOL>: wrap each other line wider
+                           # than max-width

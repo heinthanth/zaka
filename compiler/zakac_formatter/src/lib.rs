@@ -12,6 +12,7 @@ pub mod cli;
 pub mod format;
 pub mod options;
 pub mod rewrite;
+pub mod wrap;
 
 pub use format::FmtError;
 pub use format::format;

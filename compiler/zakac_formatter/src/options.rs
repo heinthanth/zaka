@@ -55,6 +55,10 @@ pub struct FmtOptions
     /// the line is too wide.
     #[builder(default)]
     pub inline_block_lines: Lines,
+    /// Wrap each other line wider than the widest line: at the end of a
+    /// clause first, then after a `၊`, then at a space.
+    #[builder(default = true)]
+    pub wrap_long_lines: bool,
 }
 
 impl Default for FmtOptions

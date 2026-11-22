@@ -55,6 +55,7 @@ const STRUCT_ARG: &str = "struct-lines";
 const ENUM_ARG: &str = "enum-lines";
 const SIGNATURE_ARG: &str = "signature-lines";
 const INLINE_ARG: &str = "inline-block-lines";
+const WRAP_ARG: &str = "wrap-long-lines";
 
 /// The `zakac fmt` command.
 pub struct ZakacFormatter
@@ -139,6 +140,8 @@ fn configure_fmt_command(cmd: clap::Command) -> clap::Command
             .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
         setting(INLINE_ARG, "LINES", "fit", t!("formatter.inline_block_lines").into())
             .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
+        setting(WRAP_ARG, "BOOL", "true", t!("formatter.wrap_long_lines").into())
+            .value_parser(clap::value_parser!(bool)),
     ];
     cmd.about(t!("formatter.about")).arg(paths).arg(check).args(settings)
 }
@@ -172,6 +175,7 @@ pub fn options_from(matches: &ArgMatches) -> FmtOptions
         .enum_lines(word(ENUM_ARG).parse().unwrap_or_default())
         .signature_lines(word(SIGNATURE_ARG).parse().unwrap_or_default())
         .inline_block_lines(word(INLINE_ARG).parse().unwrap_or_default())
+        .wrap_long_lines(flag(WRAP_ARG))
         .build()
 }
 

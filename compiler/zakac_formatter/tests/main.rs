@@ -7,3 +7,4 @@ mod common;
 mod repo;
 mod rewrites;
 mod spacing;
+mod wrap;

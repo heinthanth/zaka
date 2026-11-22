@@ -617,6 +617,7 @@ These rules hold for each file:
 | `--enum-lines <LINES>` | `fit` | the lines of an enumeration: `preserve`, `split` or `fit` |
 | `--signature-lines <LINES>` | `fit` | the lines of a function signature: `preserve`, `split` or `fit` |
 | `--inline-block-lines <LINES>` | `fit` | the line of a block written as one statement: `preserve`, `split` or `fit` |
+| `--wrap-long-lines <BOOL>` | `true` | wrap each other line wider than `--max-width` |
 
 `--speech-mode` changes reserved words and the ends of calls, never names, strings or
 comments. A spoken spelling that stands for two written words, as `ရှိတဲ့` stands for
@@ -678,6 +679,20 @@ when the two fit on one line; the lines of the condition remain as written.
 ```text
 အကယ်၍ အရေအတွက် == ၀ လျှင်
 စာလုံးဖတ်ခြင်းအမှားအယွင်းများထဲမှ ဗလာစာသား ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+```
+
+Each other line wider than `--max-width` wraps, at the place that reads best and keeps the
+line within the width, best first: the end of a clause (after a reserved word that ends in
+`၍`, `ကာ`, `ပြီး` or `သည်`, after `လျှင်`, or before the opener of a block), after a `၊`
+between the items of a list, and last a space after a reserved word or a closing mark, so a
+value keeps the particle after it. A wrap never leaves the last word of a statement alone
+on its line, so a line with no good place, such as one long string and its verb, remains as
+it is. The wrap adds line breaks and never removes the author's, and a comment after
+code keeps its line and takes no part in the width.
+
+```text
+ကိန်းရှင် ဂရစ် သည် အကွက် ၂ ခုရှိသော အကွက် ၃ ခုရှိသော ကိန်းပြည့် စာရင်း စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည်
+(၁၊ ၂ နှင့် ၃ တို့ပါသော စာရင်း) နှင့် (၄၊ ၅ နှင့် ၆ တို့ပါသော စာရင်း) တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ```
 
 A line the formatter starts takes the depth of its statement, and the count of

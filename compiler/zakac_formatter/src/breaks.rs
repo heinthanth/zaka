@@ -32,6 +32,7 @@ use zakac_span::span::Span;
 
 use crate::options::FmtOptions;
 use crate::options::Lines;
+use crate::wrap::wrap_line;
 
 /// What the space before a piece becomes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -209,17 +210,30 @@ pub struct Ruler<'a>
 ///
 /// # Returns
 ///
-/// The gaps; a gap the map leaves out keeps the line breaks as written.
-pub fn plan(shapes: &[Shape], ruler: &Ruler<'_>) -> HashMap<usize, Gap>
+/// The gaps, where a gap the map leaves out keeps the line breaks as
+/// written, and the pieces of each declaration, as the index of the first
+/// and the last.
+pub fn plan(
+    shapes: &[Shape], ruler: &Ruler<'_>,
+) -> (HashMap<usize, Gap>, Vec<(usize, usize)>)
 {
     let mut gaps = HashMap::new();
-    for shape in shapes.iter().filter(|s| s.lines != Lines::Preserve)
+    let mut owned = Vec::new();
+    for shape in shapes
     {
         let Some((first, last)) = range(shape, ruler.words)
         else
         {
             continue;
         };
+        // The span of a declaration can start after its name; its statement
+        // starts after the stop or the comment before it.
+        let first = tern!(shape.inline, first, statement_start(ruler.words, first));
+        do_if!(!shape.inline, owned.push((first, last)));
+        if shape.lines == Lines::Preserve
+        {
+            continue;
+        }
         // A comment ends its line, so the lines around it remain as written.
         if ruler.words[first..=last].iter().any(|w| w.comment)
         {
@@ -231,7 +245,7 @@ pub fn plan(shapes: &[Shape], ruler: &Ruler<'_>) -> HashMap<usize, Gap>
             false => gaps.extend(ruler.owned_gaps(shape, first, last)),
         }
     }
-    gaps
+    (gaps, owned)
 }
 
 impl Ruler<'_>
@@ -239,7 +253,7 @@ impl Ruler<'_>
     /// The gaps of a declaration: a join at each gap when it fits, else a
     /// break before each of its lines, a second break after its opener on a
     /// line still too wide, then before each `သို့မဟုတ်` of a line still too
-    /// wide, and last a break at the last space that fits.
+    /// wide, and last the wrap of a line still too wide.
     ///
     /// # Arguments
     ///
@@ -296,7 +310,7 @@ impl Ruler<'_>
         breaks.extend(wide);
         breaks.sort_unstable();
         let lines = self.lines(&breaks, first, last);
-        let fill = lines.iter().flat_map(|&(s, e)| self.fill(s, e, first));
+        let fill = lines.iter().flat_map(|&(s, e)| wrap_line(self, s, e, s != first));
         let mut all: Vec<usize> = breaks.iter().copied().chain(fill).collect();
         all.sort_unstable();
         all.dedup();
@@ -359,33 +373,6 @@ impl Ruler<'_>
         lead + line_width(&self.words[start..end])
     }
 
-    /// The breaks that fill a line too wide: before each piece that would
-    /// take the line past the widest line, never before a joined piece.
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The index of the first piece of the line.
-    /// * `end` - The index past its last piece.
-    /// * `first` - The index of the first piece of the shape.
-    ///
-    /// # Returns
-    ///
-    /// The breaks.
-    fn fill(&self, start: usize, end: usize, first: usize) -> Vec<usize>
-    {
-        let mut found = Vec::new();
-        let mut from = start;
-        for i in start + 1..end
-        {
-            let past = self.width(from, i + 1, first) > self.max_width;
-            do_if!(past && !self.words[i].joined, {
-                found.push(i);
-                from = i;
-            });
-        }
-        found
-    }
-
     /// The gap before a statement that stands for a block: a break when the
     /// line that holds it, joined, is wider than the widest line, or when the
     /// lines are `split`; a join otherwise.
@@ -437,6 +424,24 @@ fn range(shape: &Shape, words: &[Word<'_>]) -> Option<(usize, usize)>
     let stop = |w: &Word<'_>| w.kind == Some(TokenKind::Punct(Punct::FullStop));
     let last = words[from..].iter().position(stop).map(|n| from + n)?;
     (first < words.len() && first < last).then_some((first, last))
+}
+
+/// The first piece of the statement that holds a piece: the piece after the
+/// stop or the comment before it.
+///
+/// # Arguments
+///
+/// * `words` - The pieces of the file.
+/// * `at` - The index of the piece.
+///
+/// # Returns
+///
+/// The index of the first piece of its statement.
+fn statement_start(words: &[Word<'_>], at: usize) -> usize
+{
+    let stop = TokenKind::Punct(Punct::FullStop);
+    let ends = |w: &Word<'_>| w.comment || w.kind == Some(stop);
+    words[..at].iter().rposition(ends).map_or(0, |i| i + 1)
 }
 
 /// The pieces a break goes before: the first piece at or after each cut,
