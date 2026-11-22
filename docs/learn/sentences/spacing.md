@@ -19,7 +19,7 @@ name that we make up and the particle after it.
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။ // make a number named အသက် (age)
-အသက် ကို ပြသမည်။                          // a space between အသက် and ကို
+အသက် ကို ပြသမည်။ // a space between အသက် and ကို
 ```
 
 ```text
@@ -66,9 +66,9 @@ We can leave the spaces out in three places:
   same.
 
 ```zaka
-၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // reserved words joined
-၁+၂ ကို ပြသမည်။                     // no spaces around +
-၁ နှင့် ၂ ၏ ပေါင်းလဒ် ကို ပြသမည်။      // ၏ needs no space
+၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။ // reserved words joined
+၁+၂ ကို ပြသမည်။ // no spaces around +
+၁ နှင့် ၂ ၏ ပေါင်းလဒ် ကို ပြသမည်။ // ၏ needs no space
 ```
 
 ```text

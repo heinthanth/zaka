@@ -18,7 +18,7 @@ a function, return it from one, and join two pieces of it into one.
 
 ```zaka
 "မင်္ဂလာပါ" ဟု ပြသမည်။
-"ဆို \"ဟယ်လို\"" ဟု ပြသမည်။               // \" puts a double quote inside
+"ဆို \"ဟယ်လို\"" ဟု ပြသမည်။ // \" puts a double quote inside
 "ပထမကြောင်း{နောက်တစ်ကြောင်း}ဒုတိယကြောင်း" ဟု ပြသမည်။
 ```
 
@@ -86,7 +86,7 @@ the slot, the same as `ပြသမည်` would print it:
 "{အမည်} သည် အသက် {အသက်} နှစ် ဖြစ်သည်" ဟု ပြသမည်။
 "နောက်နှစ်တွင် {အသက် + ၁} နှစ်" ဟု ပြသမည်။
 "{၁.၅} {မှန်} {'က'} {[၁၊ ၂၊ ၃]}" ဟု ပြသမည်။
-"{{ မဟုတ် }}" ဟု ပြသမည်။                 // a doubled brace is a brace
+"{{ မဟုတ် }}" ဟု ပြသမည်။ // a doubled brace is a brace
 ```
 
 ```text

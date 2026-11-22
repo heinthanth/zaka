@@ -71,7 +71,7 @@ compiler, so the output on the page is the output that the program prints now.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ဟု ပြသမည်။          // show: hello
+"မင်္ဂလာပါ" ဟု ပြသမည်။ // show: hello
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

@@ -18,9 +18,9 @@ can get, and whether it can be negative.
 - What happens when a number does not fit its data kind.
 
 ```zaka
-၄၂ ကို ပြသမည်။                                     // a plain integer
--၅ ကို ပြသမည်။                                     // a negative integer
-၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။          // an 8-bit integer
+၄၂ ကို ပြသမည်။ // a plain integer
+-၅ ကို ပြသမည်။ // a negative integer
+၁၂၇ ဟူသော ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။ // an 8-bit integer
 ```
 
 ```text
@@ -73,8 +73,8 @@ different `--target-bits` setting. More bits mean bigger numbers:
 | `ကိန်းပြည့်` | (64 bits unless set otherwise) | |
 
 ```zaka
-၂၅၅ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။        // 8 bits, no sign: 0 up to 255
-၂၁၄၇၄၈၃၆၄၇ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။         // 32 bits
+၂၅၅ ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။ // 8 bits, no sign: 0 up to 255
+၂၁၄၇၄၈၃၆၄၇ ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။ // 32 bits
 ```
 
 ```text
@@ -104,8 +104,8 @@ can write its digits as Burmese digits `၀ ၁ ၂ ၃ ၄ ၅ ၆ ၇ ၈ ၉`
 4 5 6 7 8 9`, and both give the same number. The output uses Burmese digits in both cases:
 
 ```zaka
-၁၂၃ ကို ပြသမည်။                                 // Burmese digits
-123 ကို ပြသမည်။                                  // Western digits: the same number
+၁၂၃ ကို ပြသမည်။ // Burmese digits
+123 ကို ပြသမည်။ // Western digits: the same number
 ```
 
 ```text
@@ -135,9 +135,9 @@ case, so in base 16 `A` is ten and `F` is fifteen. We write the base itself in p
 10.
 
 ```zaka
-အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။                     // base 2: 1010 = ten
-အခြေ ၈ ဖြင့် ၇၇ ကို ပြသမည်။                       // base 8: 77 = 63
-အခြေ ၁၆ ဖြင့် FF ကို ပြသမည်။                       // base 16 (hexadecimal): FF = 255
+အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။ // base 2: 1010 = ten
+အခြေ ၈ ဖြင့် ၇၇ ကို ပြသမည်။ // base 8: 77 = 63
+အခြေ ၁၆ ဖြင့် FF ကို ပြသမည်။ // base 16 (hexadecimal): FF = 255
 ```
 
 ```text
@@ -161,7 +161,7 @@ An integer literal has up to three parts, in this fixed order:
    `ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု` (optional).
 
 ```zaka
-အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။  // base, digits, data kind
+အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။ // base, digits, data kind
 ```
 
 ```text

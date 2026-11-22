@@ -71,11 +71,11 @@ write these, we use an *escape sequence*, which works in characters and in
 ```
 
 ```zaka
-'\'' ကို ပြသမည်။                       // a single quote
-'{ယူနီကုဒ် 1000}' ကို ပြသမည်။            // the character with Unicode number 1000 (hex): က
-"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသမည်။    // a line break inside text
-"{{ }}" ဟု ပြသမည်။                     // braces inside text
-'{{' ကို ပြသမည်။                       // a brace character
+'\'' ကို ပြသမည်။ // a single quote
+'{ယူနီကုဒ် 1000}' ကို ပြသမည်။ // the character with Unicode number 1000 (hex): က
+"တစ်{နောက်တစ်ကြောင်း}နှစ်" ဟု ပြသမည်။ // a line break inside text
+"{{ }}" ဟု ပြသမည်။ // braces inside text
+'{{' ကို ပြသမည်။ // a brace character
 ```
 
 ```text

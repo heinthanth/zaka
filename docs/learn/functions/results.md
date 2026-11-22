@@ -22,7 +22,7 @@ two numbers. The value that a function returns is its *result* (return value).
 နှစ်ထပ် ဟူသော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
-က * က ကို ပြန်ပေးမည်။      // return k × k as the result
+က * က ကို ပြန်ပေးမည်။ // return k × k as the result
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 // Use the result like other values
@@ -150,10 +150,10 @@ it looks like a call in most other languages.
 က * က ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-ကိန်းရှင် ကိုး သည် နှစ်ထပ်(၃) ဖြစ်ပါစေ။     // store it
+ကိန်းရှင် ကိုး သည် နှစ်ထပ်(၃) ဖြစ်ပါစေ။ // store it
 ကိုး ကို ပြသမည်။
-နှစ်ထပ်(၃) + နှစ်ထပ်(၄) ကို ပြသမည်။         // in a sum, with no parentheses around it
-နှစ်ထပ်(နှစ်ထပ်(၂)) ကို ပြသမည်။            // one call inside another
+နှစ်ထပ်(၃) + နှစ်ထပ်(၄) ကို ပြသမည်။ // in a sum, with no parentheses around it
+နှစ်ထပ်(နှစ်ထပ်(၂)) ကို ပြသမည်။ // one call inside another
 ```
 
 ```text

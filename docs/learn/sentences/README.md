@@ -92,9 +92,9 @@ same result, and we can mix the two in one sentence:
 ```
 
 ```zaka
-၃ + ၄ ကို ပြသမည်။                        // signs
-၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။           // words
-၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။       // both: the sum of (1 + 2) and 4
+၃ + ၄ ကို ပြသမည်။ // signs
+၃ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။ // words
+၁ + ၂ နှင့် ၄ ၏ ပေါင်းလဒ် ကို ပြသမည်။ // both: the sum of (1 + 2) and 4
 ```
 
 ```text

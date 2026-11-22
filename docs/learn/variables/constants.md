@@ -16,7 +16,7 @@ or the pass mark of a test. We declare these as *constants* (`const`) with `က�
 - The two rules of a constant: it needs a value, and the value never changes.
 
 ```zaka
-ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။   // the length of a week
+ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။ // the length of a week
 တစ်ပတ် ကို ပြသမည်။
 ```
 
@@ -45,8 +45,8 @@ The value of a constant can use other constants, and we use a constant in the sa
 as a variable:
 
 ```zaka
-ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃.၁၄၁၅၉ ဖြစ်ပါစေ။     // pi
-ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။          // the length of a week
+ကိန်းသေ ပိုင် သည် ဒဿမကိန်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃.၁၄၁၅၉ ဖြစ်ပါစေ။ // pi
+ကိန်းသေ တစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇ ဖြစ်ပါစေ။ // the length of a week
 ကိန်းသေ နှစ်ပတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တစ်ပတ် * ၂ ဖြစ်ပါစေ။ // built from another constant
 
 ပိုင် ကို ပြသမည်။

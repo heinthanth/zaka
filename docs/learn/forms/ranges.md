@@ -22,7 +22,7 @@ can store, print or pass either result.
 ကိန်းရှင် l သည် [၁၀၊ ၂၀၊ ၃၀၊ ၄၀၊ ၅၀] ဖြစ်ပါစေ။
 l ၏ အကွက် ၁ မှစ၍ ၃ ကွက် ကို ပြသမည်။
 l ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။
-l ၏ အကွက် ၅ မှစ၍ ၀ ကွက် ကို ပြသမည်။    // no cells
+l ၏ အကွက် ၅ မှစ၍ ၀ ကွက် ကို ပြသမည်။ // no cells
 ```
 
 ```text
@@ -56,7 +56,7 @@ the range:
 ```zaka
 ကိန်းရှင် က သည် [၁၊ ၂၊ ၃] ဖြစ်ပါစေ။
 ကိန်းရှင် အလယ် သည် က ၏ အကွက် ၁ မှစ၍ ၂ ကွက် ဖြစ်ပါစေ။
-က ထဲသို့ ၄ ကို ထည့်မည်။               // fine: the range is a separate list
+က ထဲသို့ ၄ ကို ထည့်မည်။ // fine: the range is a separate list
 အလယ် ၏ အကွက် ၀ ကို ၀ ဟု ထားမည်။
 အလယ် ကို ပြသမည်။
 က ကို ပြသမည်။
@@ -100,7 +100,7 @@ character in half, and the program stops:
 ```zaka-stop
 ကိန်းရှင် စာ သည် "ကမ္ဘာ" ဖြစ်ပါစေ။
 စာ ၏ အကွက် ၀ မှစ၍ ၆ ကွက် ကို ပြသမည်။
-စာ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။      // ends inside the first character
+စာ ၏ အကွက် ၀ မှစ၍ ၂ ကွက် ကို ပြသမည်။ // ends inside the first character
 ```
 
 ```text

@@ -218,8 +218,8 @@ arguments fit:
 "စာ {စ}" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-၅ ကို ပြ မည်။            // the integer one
-"ဟယ်လို" ကို ပြ မည်။      // the text one
+၅ ကို ပြ မည်။ // the integer one
+"ဟယ်လို" ကို ပြ မည်။ // the text one
 ```
 
 ```text

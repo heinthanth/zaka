@@ -17,7 +17,7 @@ as `၃.၁၄`, `၀.၅` or `-၂.၅`, and its data kind (type) is `ဒဿမ
 
 ```zaka
 ၃.၁၄ ကို ပြသမည်။
-၇.၀ / ၂ ကို ပြသမည်။        // decimal division keeps the fraction
+၇.၀ / ၂ ကို ပြသမည်။ // decimal division keeps the fraction
 ```
 
 ```text
@@ -53,9 +53,9 @@ we can write a big or small number in scientific notation, with `e` and a power 
 
 ```zaka
 -၂.၅ ကို ပြသမည်။
-၁၀ ဟူသော ဒဿမကိန်း တစ်ခု ကို ပြသမည်။             // the data kind after it makes 10 a decimal number
-1.5e3 ကို ပြသမည်။                   // scientific notation: 1.5 × 10³
-1.5e-3 ကို ပြသမည်။                  // 1.5 × 10⁻³
+၁၀ ဟူသော ဒဿမကိန်း တစ်ခု ကို ပြသမည်။ // the data kind after it makes 10 a decimal number
+1.5e3 ကို ပြသမည်။ // scientific notation: 1.5 × 10³
+1.5e-3 ကို ပြသမည်။ // 1.5 × 10⁻³
 ```
 
 ```text
@@ -84,7 +84,7 @@ the last digits show it:
 
 ```zaka
 ၀.၁ + ၀.၂ ကို ပြသမည်။
-၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု / ၃ ကို ပြသမည်။    // fewer bits, a less close neighbour
+၁ ဟူသော ၃၂ ဘစ် ဒဿမကိန်း တစ်ခု / ၃ ကို ပြသမည်။ // fewer bits, a less close neighbour
 ```
 
 ```text

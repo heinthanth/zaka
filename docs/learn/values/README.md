@@ -19,10 +19,10 @@ cannot add two answers of "true".
 - Where text (string) fits in.
 
 ```zaka
-၄၂ ကို ပြသမည်။          // an integer (a whole number)
-၃.၁၄ ကို ပြသမည်။        // a decimal number
-'က' ကို ပြသမည်။         // a character
-မှန် ကို ပြသမည်။         // a true/false value: true
+၄၂ ကို ပြသမည်။ // an integer (a whole number)
+၃.၁၄ ကို ပြသမည်။ // a decimal number
+'က' ကို ပြသမည်။ // a character
+မှန် ကို ပြသမည်။ // a true/false value: true
 ```
 
 ```text

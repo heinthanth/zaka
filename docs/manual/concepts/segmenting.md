@@ -164,9 +164,9 @@ The help line of the message points at the joined word and shows the fix.
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။      // ထက်ကြီးသည်: three reserved words, joined
-၁+၂ ကို ပြသမည်။                     // no space around the sign
-၁ နှင့် ၂ ၏ ပေါင်းလဒ် ကို ပြသမည်။      // ၏ is a word on its own, so it needs no space
+၅ သည် ၃ ထက်ကြီးသည် ဟု ပြသမည်။ // ထက်ကြီးသည်: three reserved words, joined
+၁+၂ ကို ပြသမည်။ // no space around the sign
+၁ နှင့် ၂ ၏ ပေါင်းလဒ် ကို ပြသမည်။ // ၏ is a word on its own, so it needs no space
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

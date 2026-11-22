@@ -17,10 +17,10 @@ letters of other scripts, digits after the first character, `_`, and even emoji.
 - That we can declare a name once in each place.
 
 ```zaka
-ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။      // Burmese
-ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။        // English
-ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။    // with _ and a digit
-ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။           // emoji
+ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။ // Burmese
+ကိန်းရှင် age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။ // English
+ကိန်းရှင် အမှတ်_၁ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၅ ဖြစ်ပါစေ။ // with _ and a digit
+ကိန်းရှင် 🍎 သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။ // emoji
 အသက် + age + အမှတ်_၁ + 🍎 ကို ပြသမည်။
 ```
 
@@ -45,8 +45,8 @@ A name ends at a space, or at a sign such as `+` or `။`. A change of script do
 it, so `အသက်age` and `age၂` are names too, one word each:
 
 ```zaka
-ကိန်းရှင် အသက်age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။  // Burmese, then English
-ကိန်းရှင် age၂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။       // English, then a digit
+ကိန်းရှင် အသက်age သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။ // Burmese, then English
+ကိန်းရှင် age၂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ ဖြစ်ပါစေ။ // English, then a digit
 အသက်age + age၂ ကို ပြသမည်။
 ```
 
@@ -86,8 +86,8 @@ To use a reserved word as a name, or a name with spaces in it, we write the name
 braces:
 
 ```zaka
-ကိန်းရှင် {ကို ပြသမည်} သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။     // a name made of Zaka words
-ကိန်းရှင် {the total} သည် ၉၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။      // a name with a space
+ကိန်းရှင် {ကို ပြသမည်} သည် ၇ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ // a name made of Zaka words
+ကိန်းရှင် {the total} သည် ၉၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။ // a name with a space
 {ကို ပြသမည်} ကို ပြသမည်။
 {the total} ကို ပြသမည်။
 ```

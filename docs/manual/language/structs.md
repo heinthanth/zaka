@@ -224,7 +224,7 @@ before it reads the struct ([Set before read](declarations.md#set-before-read)):
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် မ သည် အမှတ် တစ်ခု ဖြစ်ပါစေ။
 မ ၏ x ကို ၃ ဟု ထားမည်။
-မ ၏ y ကို ၄ ဟု ထားမည်။      // each field is set now
+မ ၏ y ကို ၄ ဟု ထားမည်။ // each field is set now
 မ ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```

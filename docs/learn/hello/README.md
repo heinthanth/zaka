@@ -99,9 +99,9 @@ can print numbers, and we can work out a sum such as `၆ * ၇` before we print
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ ကမ္ဘာကြီး" ဟု ပြသမည်။
-"စံကား ဘာသာစကားမှ ကြိုဆိုပါသည်" ဟု ပြသမည်။   // "Welcome to the Zaka language"
-၂၀၂၆ ကို ပြသမည်။                            // a number: show 2026
-၆ * ၇ ကို ပြသမည်။                            // a sum: show 6 times 7
+"စံကား ဘာသာစကားမှ ကြိုဆိုပါသည်" ဟု ပြသမည်။ // "Welcome to the Zaka language"
+၂၀၂၆ ကို ပြသမည်။ // a number: show 2026
+၆ * ၇ ကို ပြသမည်။ // a sum: show 6 times 7
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 

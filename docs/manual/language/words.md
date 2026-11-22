@@ -138,7 +138,7 @@ comment just when it is a word on its own.
 /// three slashes
 မှတ်ချက် the word for "note"
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"http://zaka.example // not a comment" ဟု ပြသမည်။   // a comment after a statement
+"http://zaka.example // not a comment" ဟု ပြသမည်။ // a comment after a statement
 ၁ ကို ပြသမည်။ မှတ်ချက် also after a statement
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
@@ -273,11 +273,11 @@ number uses one script (ZK0103). A literal has up to three parts, in this order:
 
 ```zaka
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၁၂၃ ကို ပြသမည်။                                    // Burmese digits
-123 ကို ပြသမည်။                                     // Western digits: the same number
-အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။                        // 1010 in base 2
-အခြေ ၁၆ ဖြင့် ff ကို ပြသမည်။                          // letters, either case
-အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။   // base, then digits, then data kind
+၁၂၃ ကို ပြသမည်။ // Burmese digits
+123 ကို ပြသမည်။ // Western digits: the same number
+အခြေ ၂ ဖြင့် ၁၀၁၀ ကို ပြသမည်။ // 1010 in base 2
+အခြေ ၁၆ ဖြင့် ff ကို ပြသမည်။ // letters, either case
+အခြေ ၁၆ ဖြင့် FF ဟူသော လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြသမည်။ // base, then digits, then data kind
 ၃.၁၄ ကို ပြသမည်။
 1.5e3 ကို ပြသမည်။
 အနုတ် ၅ ကို ပြသမည်။

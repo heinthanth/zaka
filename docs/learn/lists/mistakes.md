@@ -20,7 +20,7 @@ can also surface at run time.
 ```zaka-stop
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
 ကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
-အမှတ်များ ၏ အကွက် န ကို ပြသမည်။            // the cells are 0, 1 and 2, so 3 does not exist
+အမှတ်များ ၏ အကွက် န ကို ပြသမည်။ // the cells are 0, 1 and 2, so 3 does not exist
 ```
 
 ```text
@@ -34,7 +34,7 @@ straight into the program. The same happens when we count from 1 and start at 0:
 
 ```zaka-stop
 ကိန်းရှင် အမှတ်များ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၇၀၊ ၈၅ နှင့် ၉၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသမည်။     // counting from 1 starts at 1
+အမှတ်များ ၏ ၀ ခုမြောက်အကွက် ကို ပြသမည်။ // counting from 1 starts at 1
 ```
 
 ```text
@@ -85,7 +85,7 @@ list with no cells first and leaves the function:
 
 ```zaka-stop
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၊ ၂၀ နှင့် ၃၀ တို့ပါသော စာရင်း ဖြစ်ပါစေ။
-ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသမည်။         // cell 3, not cell 1 plus 2
+ကိန်းများ ၏ အကွက် ၁ + ၂ ကို ပြသမည်။ // cell 3, not cell 1 plus 2
 ```
 
 ```text
@@ -162,7 +162,7 @@ list](../forms/counted-lists.md#adding-to-a-counted-list)).
 ```zaka-stop
 ကိန်းရှင် ကိန်းများ သည် ကိန်းပြည့် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [၁] ဖြစ်ပါစေ။
 ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။
-ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။      // no cell is left to remove
+ကိန်းများ ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။ // no cell is left to remove
 ```
 
 ```text

@@ -29,9 +29,9 @@ words, a comparison is a short Burmese sentence, such as "age is greater than 18
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၅ ဖြစ်ပါစေ။
 
 // Words: the first value, then သည်, the second value with ထက်, အောက် or နှင့်, then the verb
-အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ပြသမည်။        // age is greater than 18
-အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသမည်။       // age is less than 18
-အသက် သည် ၂၅ နှင့် ညီသည် ဟု ပြသမည်။        // age equals 25
+အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ပြသမည်။ // age is greater than 18
+အသက် သည် ၁၈ အောက် ငယ်သည် ဟု ပြသမည်။ // age is less than 18
+အသက် သည် ၂၅ နှင့် ညီသည် ဟု ပြသမည်။ // age equals 25
 
 // Signs
 အသက် > ၁၈ ကို ပြသမည်။

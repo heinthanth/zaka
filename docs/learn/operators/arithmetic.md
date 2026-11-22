@@ -32,12 +32,12 @@ decimal numbers (floats).
 ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၅ ဖြစ်ပါစေ။
 
 // Signs
-က + ခ ကို ပြသမည်။          // add
-က - ခ ကို ပြသမည်။          // subtract
-က * ခ ကို ပြသမည်။          // times
-က / ခ ကို ပြသမည်။          // divide
-က % ခ ကို ပြသမည်။          // remainder
--က ကို ပြသမည်။             // negate
+က + ခ ကို ပြသမည်။ // add
+က - ခ ကို ပြသမည်။ // subtract
+က * ခ ကို ပြသမည်။ // times
+က / ခ ကို ပြသမည်။ // divide
+က % ခ ကို ပြသမည်။ // remainder
+-က ကို ပြသမည်။ // negate
 
 // Words
 က နှင့် ခ ၏ ပေါင်းလဒ် ကို ပြသမည်။
@@ -96,7 +96,7 @@ instead, and `၁၇.၀ / ၅` is `၃.၄`.
 ```zaka
 ၁၇ / ၅ ကို ပြသမည်။
 ၁၇.၀ / ၅ ကို ပြသမည်။
--၇ / ၂ ကို ပြသမည်။        // the fraction is dropped toward zero
+-၇ / ၂ ကို ပြသမည်။ // the fraction is dropped toward zero
 -၇ % ၂ ကို ပြသမည်။
 ```
 
@@ -163,7 +163,7 @@ Each integer data kind has a largest and a smallest value (see
 runs, the program stops there, and the message names the operation and the data kind:
 
 ```zaka-stop
-ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
+ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။ // the largest 8-bit integer
 ခ + ၁ ကို ပြသမည်။
 ```
 
@@ -179,10 +179,10 @@ odometer that rolls over. To get that, we compile them with `--overflow wrap`, o
 **Stop on overflow** in the Explorer:
 
 ```zaka overflow=wrap
-ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။           // the largest 8-bit integer
-ခ + ၁ ကို ပြသမည်။                                        // wraps to the smallest
+ကိန်းရှင် ခ သည် ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၂၇ ဖြစ်ပါစေ။ // the largest 8-bit integer
+ခ + ၁ ကို ပြသမည်။ // wraps to the smallest
 ကိန်းရှင် လ သည် လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၀ ဖြစ်ပါစေ။
-လ - ၁ ကို ပြသမည်။                                        // wraps to 255
+လ - ၁ ကို ပြသမည်။ // wraps to 255
 ```
 
 ```text

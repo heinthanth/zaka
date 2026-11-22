@@ -23,7 +23,7 @@ This program takes the first four cells of a text as a new text:
 
 ```zaka
 ကိန်းရှင် အမည် သည် "Zaka စံကား" ဖြစ်ပါစေ။
-ကိန်းရှင် တို သည် အမည် ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ဖြစ်ပါစေ။   // its first four cells
+ကိန်းရှင် တို သည် အမည် ၏ အကွက် ၀ မှစ၍ ၄ ကွက် ဖြစ်ပါစေ။ // its first four cells
 တို ကို ပြသမည်။
 အမည် ကို ပြသမည်။
 ```

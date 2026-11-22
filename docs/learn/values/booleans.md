@@ -43,8 +43,8 @@ Programs seldom write `မှန်` or `မမှန်` out. Most true/false v
 [comparison](../operators/comparison.md), in words or with a sign such as `<`:
 
 ```zaka
-၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။     // a comparison gives a true/false value
-၅ < ၃ ကို ပြသမည်။                  // and so does the sign form
+၅ သည် ၃ ထက် ကြီးသည် ဟု ပြသမည်။ // a comparison gives a true/false value
+၅ < ၃ ကို ပြသမည်။ // and so does the sign form
 ```
 
 ```text

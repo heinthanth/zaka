@@ -29,8 +29,8 @@ Burmese letter needs three.
 
 ```zaka
 ကိန်းရှင် စာ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် "Zaka စံကား" ဖြစ်ပါစေ။
-စာ ၏ အကွက်အရေအတွက် ကို ပြသမည်။          // the count of cells
-စာ ၏ အကွက် ၀ ကို ပြသမည်။                // the first cell: Z
+စာ ၏ အကွက်အရေအတွက် ကို ပြသမည်။ // the count of cells
+စာ ၏ အကွက် ၀ ကို ပြသမည်။ // the first cell: Z
 ```
 
 ```text

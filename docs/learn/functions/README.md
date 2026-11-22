@@ -80,8 +80,8 @@ call, where we write the name and then `မည်` ("will"):
 "မင်္ဂလာပါ" ဟု ပြသမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
-နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။   // the long form
-နှုတ်ဆက် မည်။                                // the short form
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။ // the long form
+နှုတ်ဆက် မည်။ // the short form
 ```
 
 ```text
@@ -103,7 +103,7 @@ A call to a top-level function can appear before its declaration. In this exampl
 both calls use the function declared at the end.
 
 ```zaka
-မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။        // called before its declaration: fine
+မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။ // called before its declaration: fine
 "ခေါင်းစဉ်" ဟု ပြသမည်။
 မျဉ်းဆွဲ ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။
 
@@ -164,7 +164,7 @@ after the call.
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "ရောက်သည်" ဟု ပြသမည်။
 ပြန်ပေးမည်။
-"မရောက်ပါ" ဟု ပြသမည်။            // never runs
+"မရောက်ပါ" ဟု ပြသမည်။ // never runs
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 စမ်း ဟူသော လုပ်ဆောင်ချက်ကို လုပ်ဆောင်မည်။

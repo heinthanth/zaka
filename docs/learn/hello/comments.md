@@ -19,7 +19,7 @@ comment runs to the end of its line.
 ```zaka
 // The program starts here.
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-"မင်္ဂလာပါ" ဟု ပြသမည်။   // a comment after a sentence
+"မင်္ဂလာပါ" ဟု ပြသမည်။ // a comment after a sentence
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -49,7 +49,7 @@ We can start a comment in three forms, and all three do the same thing:
 မှတ်ချက် Or with the Burmese word for "note".
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-၃ ကို ပြသမည်။                 // after a sentence
+၃ ကို ပြသမည်။ // after a sentence
 ၄ ကို ပြသမည်။ မှတ်ချက် also after a sentence
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```

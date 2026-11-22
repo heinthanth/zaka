@@ -18,7 +18,7 @@ After we declare a variable, we can give it a new value, and this is called
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၈ ဖြစ်ပါစေ။
 အသက် ကို ပြသမည်။
-အသက် ကို ၂၄ ဟု ထားမည်။                // set age to 24
+အသက် ကို ၂၄ ဟု ထားမည်။ // set age to 24
 အသက် ကို ပြသမည်။
 ```
 
@@ -52,9 +52,9 @@ maths student, "age = age + 1" looks impossible, but the computer does it in two
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၄ ဖြစ်ပါစေ။
-အသက် ကို အသက် + ၁ ဟု ထားမည်။          // set age to age + 1
+အသက် ကို အသက် + ၁ ဟု ထားမည်။ // set age to age + 1
 အသက် ကို ပြသမည်။
-အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားမည်။   // the word form works too
+အသက် ကို အသက် နှင့် ၁၀ ၏ ပေါင်းလဒ် ဟု ထားမည်။ // the word form works too
 အသက် ကို ပြသမည်။
 ```
 
@@ -70,7 +70,7 @@ We can also store a sentence that is true or false, such as `အသက် သည
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂၀ ဖြစ်ပါစေ။
-ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။   // adult, set on the next line
+ကိန်းရှင် အရွယ်ရောက် သည် မှန်မှားတန်ဖိုး တစ်ခု ဖြစ်ပါစေ။ // adult, set on the next line
 အရွယ်ရောက် ကို အသက် သည် ၁၈ ထက် ကြီးသည် ဟု ထားမည်။
 အရွယ်ရောက် ကို ပြသမည်။
 ```
@@ -91,7 +91,7 @@ variable gets the data kind of the value:
 
 ```zaka
 ကိန်းရှင် အမည် သည် "မောင်" ဖြစ်ပါစေ။
-ကိန်းရှင် မိတ္တူ ထဲသို့ အမည် ကို ကူးထည့်မည်။      // a duplicate: both keep the text
+ကိန်းရှင် မိတ္တူ ထဲသို့ အမည် ကို ကူးထည့်မည်။ // a duplicate: both keep the text
 "[{အမည်}] [{မိတ္တူ}]" ဟု ပြသမည်။
 ```
 
