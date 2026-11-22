@@ -249,7 +249,7 @@ fn a_struct_name_and_a_field_go_to_their_declarations()
     let kind = definition(&file, at(text, 3, "နေရာ")).unwrap();
     let field = definition(&file, at(text, 3, "x အနေဖြင့် ၃")).unwrap();
     assert!(kind.uri.path().ends_with("lib/point.zaka"));
-    assert_eq!((kind.range.start.line, field.range.start.line), (2, 2));
+    assert_eq!((kind.range.start.line, field.range.start.line), (2, 3));
 }
 
 #[test]
@@ -320,8 +320,8 @@ fn an_alias_goes_to_its_declaration()
 {
     let text = include_str!("../../../samples/structs/aliases.zaka");
     let file = check("aliases.zaka", text, Buffers::default());
-    let found = definition(&file, at(text, 15, "ကျောင်းသား")).unwrap();
-    assert_eq!(found.range.start, at(text, 2, "ကျောင်းသား"));
+    let found = definition(&file, at(text, 20, "ကျောင်းသား")).unwrap();
+    assert_eq!(found.range.start, at(text, 5, "ကျောင်းသား"));
 }
 
 #[test]

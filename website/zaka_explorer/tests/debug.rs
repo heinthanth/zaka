@@ -328,21 +328,21 @@ fn endless_loops_stop_at_the_budget()
 fn a_line_stops_where_the_run_comes_onto_it()
 {
     let (out, _) = session_of("programs/gcd");
-    let stops = line_stops(&out.asm, 7);
+    let stops = line_stops(&out.asm, 8);
     assert!(!stops.is_empty());
     let head =
         |&(f, pc): &(u32, u32)| out.asm[f as usize].rows[pc as usize].label.is_some();
     assert!(stops.iter().any(head), "{stops:?}");
     assert!(line_stops(&out.asm, 2).is_empty());
     assert!(!has_ops(&out.asm, 1) && !has_ops(&out.asm, 2));
-    assert!(has_ops(&out.asm, 7));
+    assert!(has_ops(&out.asm, 8));
 }
 
 #[test]
 fn a_break_on_a_loop_line_pauses_on_each_pass()
 {
     let (out, mut s) = session_of("programs/gcd");
-    s.set_line_stops(line_stops(&out.asm, 7));
+    s.set_line_stops(line_stops(&out.asm, 8));
     s.resume();
     let first = s.position();
     let mut steps = s.steps();
@@ -360,7 +360,7 @@ fn a_break_on_a_loop_line_pauses_on_each_pass()
 fn line_stops_join_the_op_breaks_and_replace_as_a_whole()
 {
     let (out, mut s) = session_of("programs/gcd");
-    let stops = line_stops(&out.asm, 7);
+    let stops = line_stops(&out.asm, 8);
     let (f, pc) = stops[0];
     // A break of its own at an op that no line stop holds.
     let own = (0..).find(|op| !stops.contains(&(f, *op))).expect("an op off the line");
