@@ -79,6 +79,38 @@ fn the_same_parameters_and_marks_twice_are_zk0304()
     assert_eq!(codes_as_is(&twice), [Code::DuplicateFunction]);
 }
 
+/// Two functions of one name with the same parameter and other results:
+/// `ယူ` of a true/false value gives text or an integer.
+const TAKE: &str = "ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော မှန်မှားတန်ဖိုး တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ က ဖြစ်လျှင် \"ဟုတ်\" ကို ပြန်ပေးမည်။
+\"မဟုတ်\" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော မှန်မှားတန်ဖိုး တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ က ဖြစ်လျှင် ၁ ကို ပြန်ပေးမည်။
+၀ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+";
+
+/// Overloads that differ in the result alone are told apart through the kind
+/// the place of the call expects, and a call with no such kind is ZK0333.
+#[test]
+fn the_place_of_a_call_picks_among_results()
+{
+    let start = |stmts: &str| {
+        format!("{TAKE}ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n{stmts}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။")
+    };
+    let picked = start(
+        "ကိန်းရှင် စ သည် စာသား တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ယူ(မှန်) ဖြစ်ပါစေ။\nကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ \
+         တန်ဖိုးသည် ယူ(မှန်) ဖြစ်ပါစေ။",
+    );
+    assert_eq!(codes_as_is(&picked), []);
+    assert_eq!(codes_as_is(&start("ယူ(မှန်) ကို ပြသမည်။")), [Code::OverloadUnclear]);
+}
+
 /// A function of a file with the name, the kinds and the prepositions of a verb
 /// the core gives is ZK0350; one with other kinds adds an overload, quietly.
 #[test]

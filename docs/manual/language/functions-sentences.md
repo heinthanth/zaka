@@ -319,7 +319,7 @@ Because of these costs, some function signatures are not allowed:
 | `၏` in a preposition other than at the start of the last one, or before an ending phrase | elsewhere `x ၏ f` reads a field | ZK0249, ZK0241 |
 | `၏`, a call end, or a closing word at its end, in a phrase | the call could not end, or would read a field | ZK0258 |
 | a first preposition that starts with `ကို သုံး၍` or `တို့ကို သုံး၍` | it starts the arguments-first call | ZK0241 |
-| two functions with one name and the same parameter kinds, prepositions and phrases, in one file or across imports | no call could tell them apart | ZK0304 |
+| two functions with one name and the same parameter kinds, prepositions, phrases and result, in one file or across imports | no call could tell them apart | ZK0304 |
 
 A reserved word declared in braces can name a function: `{စီ} ဟူသော လုပ်ဆောင်ချက် သည် …`
 is called as `l ကို စီ မည်။`, with the word bare, right before a call end. Elsewhere the

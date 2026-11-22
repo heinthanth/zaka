@@ -376,7 +376,9 @@ pub(crate) struct FnSig
 impl FnSig
 {
     /// Whether two functions take the same parameters with the same
-    /// prepositions and phrases, so no call can tell them apart.
+    /// prepositions and phrases and give the same result kind, so no call can
+    /// tell them apart; two that differ in the result alone are told apart
+    /// through the kind the place of the call expects.
     ///
     /// # Arguments
     ///
@@ -390,7 +392,8 @@ impl FnSig
         let words = (0..self.params.len()).map(|n| self.preposition(n));
         let theirs = (0..other.params.len()).map(|n| other.preposition(n));
         let phrases = (self.start, self.end) == (other.start, other.end);
-        self.params == other.params && phrases && words.eq(theirs)
+        let same = self.params == other.params && self.ret == other.ret;
+        same && phrases && words.eq(theirs)
     }
 
     /// The preposition of a parameter.

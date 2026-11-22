@@ -155,7 +155,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0301 | a name that was never declared, or is out of scope | [Blocks and scope](../../learn/variables/scope.md) |
 | ZK0302 | the same name declared twice in one block | [Names](../../learn/variables/names.md) |
 | ZK0303 | calling a function that does not exist | [Functions](../../learn/functions/README.md) |
-| ZK0304 | two functions with the same name, parameter kinds and prepositions, or a function with a name that the file imports | [Functions](../language/functions.md) |
+| ZK0304 | two functions with the same name, parameter kinds, prepositions and result, or a function with a name that the file imports | [Functions](../language/functions.md) |
 | ZK0305 | two parameters of one function with one name | [Parameters](../../learn/functions/parameters.md) |
 | ZK0306 | changing a constant | [Constants](../../learn/variables/constants.md) |
 | ZK0307 | changing a counted loop's counter | [Counted loops](../../learn/control-flow/counted-loops.md) |

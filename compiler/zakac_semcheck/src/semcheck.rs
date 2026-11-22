@@ -1081,7 +1081,7 @@ impl Checker
             self.infer_all(args);
             return None;
         };
-        let Some(sig) = self.choose(callee, args, written, &sigs, span)
+        let Some(sig) = self.choose(callee, args, written, &sigs, (expect, span))
         else
         {
             self.infer_all(args);
@@ -1276,7 +1276,9 @@ impl Checker
     /// one there is, or the one overload whose parameter count, prepositions
     /// (when the call writes prepositions) and parameter kinds the
     /// arguments fit, as the check of an argument against its parameter
-    /// accepts it. No fit is ZK0332 and more than one is ZK0333.
+    /// accepts it. When several fit, the ones whose result kind is the kind
+    /// the place of the call expects are kept. No fit is ZK0332 and more than
+    /// one is ZK0333.
     ///
     /// # Arguments
     ///
@@ -1285,19 +1287,24 @@ impl Checker
     /// * `written` - The prepositions and phrases written; blank for the other
     ///   call forms.
     /// * `sigs` - The functions of the name.
-    /// * `span` - The call.
+    /// * `at` - The kind the place of the call expects, when known, and the
+    ///   call.
     ///
     /// # Returns
     ///
     /// The function, or `None` after a report.
     fn choose(
         &mut self, callee: &Ident, args: &[Expr], written: Written<'_>, sigs: &[FnSig],
-        span: Span,
+        at: (Option<DataKind>, Span),
     ) -> Option<FnSig>
     {
+        let (expect, span) = at;
         ret_if!(sigs.len() == 1, sigs.first().cloned());
-        let fits: Vec<&FnSig> =
+        let mut fits: Vec<&FnSig> =
             sigs.iter().filter(|s| self.fits_call(s, args, written)).collect();
+        let wanted = |s: &&FnSig| expect.is_some() && s.ret == expect;
+        let kept: Vec<&FnSig> = fits.iter().copied().filter(wanted).collect();
+        do_if!(fits.len() > 1 && !kept.is_empty(), fits = kept);
         let list = || sigs.iter().map(params_text).collect::<Vec<_>>().join(" / ");
         match fits.as_slice()
         {

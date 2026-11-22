@@ -384,7 +384,7 @@ en = "function declared twice"
 [codes.ZK0304.message]
 en = "function \"%{n}\" is declared twice"
 [codes.ZK0304.explain]
-en = """Two top-level declarations give a function the same name and the same parameter kinds and prepositions, so no call can tell them apart. A file can declare several functions of one name when their parameter kinds or their prepositions differ; a call then runs the one its arguments fit. Rename one of the two functions, or change its parameters. A name a file imports cannot also be declared in that file."""
+en = """Two top-level declarations give a function the same name, the same parameter kinds and prepositions and the same result kind, so no call can tell them apart. A file can declare several functions of one name when their parameter kinds, their prepositions or their result kinds differ; a call then runs the one its arguments and its place fit. Rename one of the two functions, or change its parameters. A name a file imports cannot also be declared in that file."""
 
 [codes.ZK0305.title]
 en = "duplicate parameter"
@@ -605,9 +605,9 @@ en = "call fits more than one function"
 [codes.ZK0333.message]
 en = "more than one function \"%{n}\" takes these arguments"
 [codes.ZK0333.help]
-en = "write the prepositions and the phrases of the function meant, or give each argument the kind of its parameter"
+en = "write the prepositions and the phrases of the function meant, give each argument the kind of its parameter, or put the call in a place whose kind is known, such as a declaration with a kind"
 [codes.ZK0333.explain]
-en = """A file can declare several functions of one name, each with other parameter kinds or other prepositions. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no prepositions fits functions that differ in their prepositions alone. Write the prepositions of the function meant, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
+en = """A file can declare several functions of one name, each with other parameter kinds or other prepositions. A call runs the one whose parameters its arguments fit, and here two or more fit: a number with no kind fits each integer kind, and a call with no prepositions fits functions that differ in their prepositions alone. Functions that differ in their result kind alone are told apart through the kind the place of the call expects: the kind of a declaration, a parameter or a returned value. Write the prepositions of the function meant, the kind of the place, or a kind on the number, such as \"(၈ ဘစ် ကိန်းပြည့် ၅)\"."""
 
 [codes.ZK0334.title]
 en = "unknown external function"

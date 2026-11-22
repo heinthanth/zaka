@@ -142,7 +142,7 @@ through the function kind that its place expects.
 | --- | --- |
 | no generic function of the name fits the call | ZK0332 |
 | more than one generic function fits | ZK0333 |
-| two generic functions with the same signature: the same parameters and prepositions, whatever their kind parameters are called | ZK0304 |
+| two generic functions with the same signature: the same parameters, prepositions and result, whatever their kind parameters are called | ZK0304 |
 
 ```zaka
 ဗလာ ဟူသော လုပ်ဆောင်ချက် သည် ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်

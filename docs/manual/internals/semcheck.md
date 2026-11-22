@@ -283,12 +283,14 @@ A call through a value uses the prepositions of the value's function kind, becau
 parser's name table knows no scopes and so cannot widen what a function kind allows.
 
 **Overloads.** A file can declare several functions of one name: `FnSigs` maps a name to
-its overloads in the order of their declarations, and the same parameter kinds and
-prepositions twice are ZK0304. Each signature has its inner name (`FnSig::inner`, from
+its overloads in the order of their declarations, and the same parameter kinds,
+prepositions and result kind twice are ZK0304 (`FnSig::same_params`). Each signature has its inner name (`FnSig::inner`, from
 `overload_name`): the written name for the first, `<name>#<n>` for the n-th. `check_call`
 runs `choose`. With more than one function of the name, `fits_call` keeps the ones whose
 count, prepositions (when the call writes prepositions) and parameter kinds fit, with a
-trial of `expect_kind` on each argument that puts the diagnostics back. One fit is
+trial of `expect_kind` on each argument that puts the diagnostics back. When several
+fit, `choose` keeps the ones whose result kind is `Checker::call_expect`, the kind the place
+of the call expects, which `infer` sets for each call expression. One fit is
 recorded in `Checker::chosen` under the span of the name at the call, none is ZK0332 and
 more than one is ZK0333. After the last run, `write_overloads` (`overloads.rs`) writes the
 inner names into the program: each later declaration of a name, each call in `chosen`, and

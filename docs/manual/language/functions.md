@@ -92,9 +92,9 @@ run each time the function is called.
   level and nowhere else (ZK0214).
 - At the top level, a call can come before the declaration of its function, so the order
   of declarations does not matter there and two functions can call each other.
-- A file can declare several functions with one name when their parameters differ
-  ([One name, several functions](functions-overloads.md)). A second function with the same
-  name, parameter kinds and prepositions is ZK0304. Nested functions of one scope have no
+- A file can declare several functions with one name when their parameters or their
+  results differ ([One name, several functions](functions-overloads.md)). A second function
+  with the same name, parameter kinds, prepositions and result is ZK0304. Nested functions of one scope have no
   overloads, so a second one with the same name is ZK0304 too.
 - A call to a name that no function has is ZK0303.
 - When we write `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` between `ဟူသော` and `လုပ်ဆောင်ချက်`
@@ -128,7 +128,7 @@ error[ZK0214]: external functions, C functions and the start block can be declar
 | ZK0258 | a phrase string with a word that a phrase cannot contain, or with `၏` | [Starting and ending phrases](functions-sentences.md#starting-and-ending-phrases) |
 | ZK0260 | words before a function that cut into its arguments in two readings | [Prepositions](functions-sentences.md#prepositions) |
 | ZK0303 | a call to a function that is not declared | [Declaring a function](#declaring-a-function) |
-| ZK0304 | two functions with one name and the same parameter kinds, prepositions and phrases | [One name, several functions](functions-overloads.md) |
+| ZK0304 | two functions with one name and the same parameter kinds, prepositions, phrases and result | [One name, several functions](functions-overloads.md) |
 | ZK0305 | one parameter name listed twice | [Function parameters](functions-parameters.md#writing-a-parameter) |
 | ZK0306 | a constant as the argument of a mutable parameter | [Function parameters](functions-parameters.md#mutable-parameters) |
 | ZK0311 | a return statement outside a function | [Results and returns](functions-results.md#return-statements) |

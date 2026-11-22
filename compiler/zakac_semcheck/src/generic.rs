@@ -168,8 +168,8 @@ pub(crate) type Wanted = BTreeMap<Name, (Name, Vec<DataKind>)>;
 pub(crate) type Uses = HashMap<Name, Span>;
 
 /// Whether two generic functions have one head: one count of kind parameters,
-/// and the same parameters and prepositions once the kind parameters of each
-/// stand in order for one set of kinds.
+/// and the same parameters, prepositions and result once the kind parameters
+/// of each stand in order for one set of kinds.
 ///
 /// # Arguments
 ///
@@ -194,13 +194,14 @@ fn same_head(a: &FnDecl, b: &FnDecl) -> bool
         };
         let bound: HashMap<Name, Kind> =
             d.kind_params.iter().enumerate().map(slot).collect();
-        let kinds = d.params.iter().map(|p| p.kind.clone());
+        let kinds = d.params.iter().map(|p| p.kind.clone()).chain(d.ret.clone());
         kinds.map(|mut k| (k.substitute(&bound), k).1).collect()
     };
     let word = |d: &FnDecl| -> Vec<Option<Name>> {
         d.params.iter().map(|p| p.preposition.as_ref().map(|m| m.name)).collect()
     };
     let (ka, kb) = (stand_in(a), stand_in(b));
+    ret_false!(ka.len() != kb.len());
     word(a) == word(b) && ka.iter().zip(&kb).all(|(l, r)| l.same_as(r))
 }
 
