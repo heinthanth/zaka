@@ -29,9 +29,10 @@ joined phrase).
    An error of the file that the lint cannot turn down leaves it as it is.
 2. With `--import-order sorted`, move the lines of the imports, then format the moved
    text as a file of its own.
-3. Print each token and comment again under the rules, with the words the rewrites swap
+3. Plan the lines of each struct, enumeration and function signature.
+4. Print each token and comment again under the rules, with the words the rewrites swap
    in.
-4. Check the output.
+5. Check the output.
 
 ## The depth of a line
 
@@ -44,6 +45,30 @@ A line starts a statement when the token before it is `။`, and takes the inden
 depth. A later line of a statement keeps the spaces its author wrote, or takes the count
 `--continuation-indent` gives past the depth. A comment on a line of its own between two
 statements takes the depth of the statement after it.
+
+## The lines of a declaration
+
+`breaks.rs` walks the statements for each struct, enumeration, function signature and
+block written as one statement, and
+notes where each of its lines would start: before each field or member (back over the
+`ကနဦးတန်ဖိုး` mark of the initial member), after the last one, and for a signature before
+each parameter and before the opener. A signature ends at the stop after its opener, so
+the block is not part of it.
+
+For each declaration, `plan` decides the gap before each of its pieces: a join everywhere
+when its lines are `fit` and the declaration fits on one line, else a break at the starts
+of its lines and a join elsewhere. A line still too wide gets more breaks, in this order:
+after the opener of a function that gives a result (`အောက်ပါတို့ကို လုပ်ဆောင်ကာ`), before each
+`သို့မဟုတ်`, and last at the last space that fits. The width is counted in characters, as an
+editor counts its columns, and a line starts at the depth of its statement. The printer
+takes these gaps in place of the line breaks as written; a declaration that holds a
+comment keeps its gaps as written. A break never goes before a joined word, so the check
+sees the same tokens.
+
+A block written as one statement gets one decision: the gap before its statement. It
+breaks when the line as written that ends before the statement, with the first line of the
+statement joined to it, is too wide, and joins when it fits; the other lines remain as
+written.
 
 ## The rewrites
 

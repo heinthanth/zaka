@@ -5,6 +5,7 @@
 //! The formatter changes the space between words alone, never splits or joins
 //! a word, and checks that its output lexes to the same words.
 
+pub mod breaks;
 pub mod check;
 #[cfg(feature = "cli")]
 pub mod cli;

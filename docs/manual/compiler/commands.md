@@ -595,7 +595,8 @@ should.
 These rules hold for each file:
 
 - One space between two words that the file keeps apart, and none between joined words.
-- A line break that the author put inside a statement is kept.
+- A line break that the author put inside a statement is kept, except in a struct, an
+  enumeration or a function signature, whose lines the formatter sets (below).
 - No space at the end of a line, and one line break at the end of the file.
 - A comment on a line of its own takes the depth of the statement after it, and a
   comment after code has one space before it.
@@ -611,6 +612,11 @@ These rules hold for each file:
 | `--speech-mode <MODE>` | `written` | each reserved word in its `written` spelling (`ထားမည်`) or its `spoken` one (`ထားမယ်`) |
 | `--digits <SCRIPT>` | `preserve` | the digits of number literals: `preserve`, `burmese` (`၁၀`) or `latin` (`10`) |
 | `--import-order <ORDER>` | `preserve` | `sorted` sorts each run of imports at the head of a file: the stdlib first, then the others, each group in the order of its path |
+| `--max-width <COLUMNS>` | `100` | the widest line that `fit` allows, in characters, as an editor counts its columns: a Burmese mark counts as one, as a letter does |
+| `--struct-lines <LINES>` | `fit` | the lines of a struct: `preserve`, `split` or `fit` |
+| `--enum-lines <LINES>` | `fit` | the lines of an enumeration: `preserve`, `split` or `fit` |
+| `--signature-lines <LINES>` | `fit` | the lines of a function signature: `preserve`, `split` or `fit` |
+| `--inline-block-lines <LINES>` | `fit` | the line of a block written as one statement: `preserve`, `split` or `fit` |
 
 `--speech-mode` changes reserved words and the ends of calls, never names, strings or
 comments. A spoken spelling that stands for two written words, as `ရှိတဲ့` stands for
@@ -620,6 +626,63 @@ spellings are an error unless the lint allows them (see
 as one in base 16 or with an exponent, as it is. With `--import-order sorted`, a blank
 line or a comment on a line of its own ends a run of imports, so the groups the author
 made remain apart, and the `///` comments above an import move with it.
+
+### The lines of a declaration
+
+A struct, an enumeration and a function signature each have a setting of their lines. With `fit`, the
+default, a declaration that fits in `--max-width` goes on one line, and the line breaks
+written inside it go; one that does not fit is broken into its lines. With `split` it is
+broken into its lines, short or long, and with `preserve` it keeps the lines as written.
+A declaration with a comment inside keeps its lines, since a comment ends its line.
+
+A broken struct puts its head on a line, each field on a line of its own and its end on
+the last line; a separator, `၊` or `နှင့်`, ends its line. An enumeration
+puts each member on a line the same way.
+
+```text
+ခရီး ဟူသော ဒေတာအစုအဝေးတွင်
+အကွာ ဟူသော ကိန်းပြည့် တစ်ခု၊
+ညွှန် ဟူသော အမိန့် တစ်ခု နှင့်
+အဆင့်တန်း ဟူသော အဆင့် တစ်ခု
+တို့ပါဝင်သည်။
+```
+
+A broken function signature puts its name on a line, each parameter on a line of its
+own, with `လက်ခံပြီး` after the last one, and the opener with the result on the last line:
+
+```text
+ရှာ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+ပိုင်း ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ကို" ကို သုံး၍ လည်းကောင်း
+စာ ဟူသော စာသား တစ်ခု ကို ဝိဘတ် "ထဲတွင်" ကို သုံး၍ လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ကိန်းပြည့် ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+```
+
+A line that is still too wide breaks again: the line of the opener breaks after
+`အောက်ပါတို့ကို လုပ်ဆောင်ကာ`, so the data kind of the result starts a line of its own; a
+data kind still too wide breaks before its `သို့မဟုတ်`; and a line still too wide after
+that breaks at the last space that fits.
+
+```text
+စမ်းသပ်ပြောင်းလဲ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ
+စာလုံး
+သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာလုံးဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+```
+
+A block written as one statement after its condition or its loop head, as in
+`အကယ်၍ <condition> လျှင် <statement>။`, has `--inline-block-lines`. With `fit`, the statement goes
+on a line of its own when the line that holds it is too wide, and back after its condition
+when the two fit on one line; the lines of the condition remain as written.
+
+```text
+အကယ်၍ အရေအတွက် == ၀ လျှင်
+စာလုံးဖတ်ခြင်းအမှားအယွင်းများထဲမှ ဗလာစာသား ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+```
+
+A line the formatter starts takes the depth of its statement, and the count of
+`--continuation-indent` when it gives one. The formatter breaks a line between two words
+alone, never inside a word or before a word joined to the one before it.
 
 Each flag is also a setting of the `[fmt]` section of `zakac.toml`, such as
 `indent = 2`, and the editors read that section too.

@@ -25,22 +25,22 @@ fn case(name: &str) -> String
     std::fs::read_to_string(path).unwrap()
 }
 
-/// Lines of a sample, from `from` to `to`, counted from 1.
+/// One item of a sample: the lines from the line that starts with a word to
+/// the next blank line, each with its line break.
 ///
 /// # Arguments
 ///
 /// * `sample` - The path inside `samples/`.
-/// * `from` - The first line.
-/// * `to` - The last line.
+/// * `start` - The first word of the first line.
 ///
 /// # Returns
 ///
-/// The lines, each with its line break.
-fn sample_lines(sample: &str, from: usize, to: usize) -> String
+/// The lines.
+fn sample_item(sample: &str, start: &str) -> String
 {
     let text = std::fs::read_to_string(repo().join("samples").join(sample)).unwrap();
-    let lines = text.lines().skip(from - 1).take(to + 1 - from);
-    lines.map(|l| format!("{l}\n")).collect()
+    let lines = text.lines().skip_while(|l| !l.starts_with(start));
+    lines.take_while(|l| !l.is_empty()).map(|l| format!("{l}\n")).collect()
 }
 
 /// Extra spaces, spaces at line ends, blank runs and two statements on one
@@ -85,10 +85,11 @@ fn statements_can_share_a_line()
 fn indent_follows_the_blocks()
 {
     let options = FmtOptions::builder().indent(4).build();
-    let out = fmt_with(&sample_lines("programs/tic_tac_toe.zaka", 6, 18), &options);
+    let out =
+        fmt_with(&sample_item("programs/tic_tac_toe.zaka", "ကစားကွက်ပြ "), &options);
     let lead: Vec<usize> =
         out.lines().map(|l| l.len() - l.trim_start().len()).collect();
-    assert_eq!(lead, [0, 0, 0, 0, 4, 4, 4, 8, 8, 8, 4, 4, 0], "{out}");
+    assert_eq!(lead, [0, 0, 0, 4, 4, 4, 8, 8, 8, 4, 4, 0], "{out}");
 }
 
 /// A number for `continuation_indent` sets the later lines of a statement to
@@ -99,7 +100,7 @@ fn continuation_lines_take_a_set_indent()
     let options = FmtOptions::builder()
         .continuation_indent(ContinuationIndent::Spaces(2))
         .build();
-    let out = fmt_with(&sample_lines("programs/tic_tac_toe.zaka", 20, 38), &options);
+    let out = fmt_with(&sample_item("programs/tic_tac_toe.zaka", "နိုင်မနိုင်စစ် "), &options);
     let lead: Vec<usize> =
         out.lines().map(|l| l.len() - l.trim_start().len()).collect();
     assert_eq!(lead[6..9], [2, 2, 2], "{out}");
@@ -111,7 +112,7 @@ fn continuation_lines_take_a_set_indent()
 #[test]
 fn continuation_lines_keep_their_spaces()
 {
-    let text = sample_lines("programs/tic_tac_toe.zaka", 20, 38);
+    let text = sample_item("programs/tic_tac_toe.zaka", "နိုင်မနိုင်စစ် ");
     assert_eq!(fmt(&text), text);
 }
 

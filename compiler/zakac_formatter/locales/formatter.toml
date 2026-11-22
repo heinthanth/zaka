@@ -33,5 +33,20 @@ en = "The digits of number literals: preserve, burmese or latin."
 [formatter.import_order]
 en = "The order of the imports at the head of a file: preserve, or sorted with the stdlib first."
 
+[formatter.max_width]
+en = "The widest line, in characters as an editor counts its columns, that a line laid out to fit takes before it breaks."
+
+[formatter.struct_lines]
+en = "The lines of a struct: preserve keeps them, split puts each field on a line, fit does so when the struct does not fit in the widest line."
+
+[formatter.enum_lines]
+en = "The lines of an enumeration: preserve keeps them, split puts each member on a line, fit does so when it does not fit in the widest line."
+
+[formatter.signature_lines]
+en = "The lines of a function signature: preserve keeps them, split puts the name, each parameter and the opener on lines of their own, fit does so when it does not fit in the widest line."
+
+[formatter.inline_block_lines]
+en = "The line of a block written as one statement after its condition or loop head: preserve keeps it, split puts the statement on a line of its own, fit does so when the line does not fit in the widest line."
+
 [formatter.changed]
 en = "the formatted text of %{file} reads as other words, so it was left as it is; this is a fault of the formatter"

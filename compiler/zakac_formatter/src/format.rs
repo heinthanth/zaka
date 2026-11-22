@@ -2,6 +2,7 @@
 //! between them set by the rules of [`FmtOptions`].
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::visit::Visitor;
@@ -24,6 +25,12 @@ use zakac_span::source_file::SourceFile;
 use zakac_span::source_map::SourceMap;
 use zakac_span::span::Span;
 
+use crate::breaks::Gap;
+use crate::breaks::Ruler;
+use crate::breaks::Shape;
+use crate::breaks::Word;
+use crate::breaks::plan;
+use crate::breaks::shapes;
 use crate::check::same_words;
 use crate::options::ContinuationIndent;
 use crate::options::FmtOptions;
@@ -94,6 +101,7 @@ pub fn format(
         .lexed(&lexed)
         .blocks(lines_of_blocks(&file, &blocks.spans))
         .swaps(swaps.clone())
+        .shapes(shapes(&parsed.stmts, options))
         .options(options)
         .build();
     let out = printer.print()?;
@@ -205,6 +213,8 @@ struct Piece
     /// The piece is `။`, which ends a statement.
     stop: bool,
     comment: bool,
+    /// Its kind, for a token.
+    kind: Option<TokenKind>,
 }
 
 /// The tokens and comments of a file, in the order of the text.
@@ -223,13 +233,14 @@ fn pieces(file: &SourceFile, lexed: &LexOutput) -> Vec<Piece>
     let stop = TokenKind::Punct(Punct::FullStop);
     let words = lexed.tokens.iter().filter(|t| t.kind != TokenKind::Eof).map(|t| {
         let (lo, hi) = at(t.span);
-        Piece { lo, hi, joined: t.joined, stop: t.kind == stop, comment: false }
+        let kind = Some(t.kind);
+        Piece { lo, hi, joined: t.joined, stop: t.kind == stop, comment: false, kind }
     });
     let notes = lexed.comments.iter().map(|c| {
         let (lo, hi) = at(c.span);
         // A comment runs to the end of its line, spaces there too.
         let hi = lo + file.src[lo..hi].trim_end().len();
-        Piece { lo, hi, joined: false, stop: false, comment: true }
+        Piece { lo, hi, joined: false, stop: false, comment: true, kind: None }
     });
     let mut all: Vec<Piece> = words.chain(notes).collect();
     all.sort_by_key(|p| p.lo);
@@ -248,6 +259,8 @@ struct Printer<'a>
     blocks: Vec<(usize, usize)>,
     /// The words the rewrites swap in, in the order of the text.
     swaps: Vec<Swap>,
+    /// The declarations whose lines the formatter lays out.
+    shapes: Vec<Shape>,
     options: &'a FmtOptions,
 }
 
@@ -262,6 +275,8 @@ impl Printer<'_>
     fn print(&self) -> Result<String, FmtError>
     {
         let pieces = pieces(self.file, self.lexed);
+        let texts: Vec<Cow<'_, str>> = pieces.iter().map(|p| self.swapped(p)).collect();
+        let gaps = self.gaps(&pieces, &texts);
         let mut out = String::with_capacity(self.file.src.len());
         // Whether the next token starts a statement.
         let mut starts = true;
@@ -270,8 +285,16 @@ impl Printer<'_>
             let prev = i.checked_sub(1).map(|j| pieces[j]);
             let gap = prev.map_or("", |p| &self.file.src[p.hi..piece.lo]);
             ret_if!(!gap.trim().is_empty(), Err(FmtError::Changed));
+            let forced = gaps.get(&i).copied();
             let breaks = gap.matches('\n').count();
             let split = prev.is_some_and(|p| self.splits(p, piece, breaks));
+            // A declaration laid out by the formatter sets its own gaps.
+            let (breaks, split) = match forced
+            {
+                Some(Gap::Join) => (0, false),
+                Some(Gap::Break) => (1, false),
+                None => (breaks, split),
+            };
             match prev
             {
                 Some(_) if breaks == 0 && !split =>
@@ -283,15 +306,87 @@ impl Printer<'_>
                     let blank =
                         breaks.saturating_sub(1).min(self.options.blank_lines_max);
                     out.extend(std::iter::repeat_n('\n', blank + 1));
-                    out.push_str(&self.lead(&pieces[i..], starts));
+                    let made = forced == Some(Gap::Break);
+                    let lead = tern!(
+                        made,
+                        self.made_lead(piece),
+                        self.lead(&pieces[i..], starts)
+                    );
+                    out.push_str(&lead);
                 }
                 None => out.push_str(&self.lead(&pieces[i..], starts)),
             }
-            out.push_str(&self.swapped(piece));
+            out.push_str(&texts[i]);
             do_if!(!piece.comment, starts = piece.stop);
         }
         do_if!(!out.is_empty(), out.push('\n'));
         Ok(out)
+    }
+
+    /// The gaps the declarations decide, keyed on the index of the piece after
+    /// each.
+    ///
+    /// # Arguments
+    ///
+    /// * `pieces` - The pieces of the file.
+    /// * `texts` - The text each piece is printed with.
+    ///
+    /// # Returns
+    ///
+    /// The gaps.
+    fn gaps(&self, pieces: &[Piece], texts: &[Cow<'_, str>]) -> HashMap<usize, Gap>
+    {
+        let base = self.file.start_pos;
+        let broken = |i: usize| {
+            let from = i.checked_sub(1).map_or(0, |j| pieces[j].hi);
+            i > 0 && self.file.src[from..pieces[i].lo].contains('\n')
+        };
+        let words: Vec<Word<'_>> = pieces
+            .iter()
+            .zip(texts)
+            .enumerate()
+            .map(|(i, (p, text))| Word {
+                at: base + p.lo,
+                text,
+                joined: p.joined,
+                comment: p.comment,
+                kind: p.kind,
+                broken: broken(i),
+            })
+            .collect();
+        let lead = |i: usize| {
+            self.depth(line_at(self.file, pieces[i].lo)) * self.options.indent
+        };
+        let made = |i: usize| self.made_lead(&pieces[i]).len();
+        let ruler = Ruler {
+            words: &words,
+            lead: &lead,
+            made: &made,
+            max_width: self.options.max_width,
+        };
+        plan(&self.shapes, &ruler)
+    }
+
+    /// The space at the start of a line the formatter breaks inside a
+    /// declaration: the depth of the line, and the count of
+    /// `continuation-indent` when it gives one.
+    ///
+    /// # Arguments
+    ///
+    /// * `piece` - The first piece of the line.
+    ///
+    /// # Returns
+    ///
+    /// The space.
+    fn made_lead(&self, piece: &Piece) -> String
+    {
+        let depth = self.depth(line_at(self.file, piece.lo)) * self.options.indent;
+        let more = match self.options.continuation_indent
+        {
+            ContinuationIndent::Spaces(n) => n,
+            ContinuationIndent::Preserve => 0,
+        };
+        " ".repeat(depth + more)
     }
 
     /// Whether a line break goes between two pieces that share a line: the

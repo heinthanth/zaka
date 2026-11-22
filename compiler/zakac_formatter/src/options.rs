@@ -37,6 +37,24 @@ pub struct FmtOptions
     /// The order of the imports at the head of a file.
     #[builder(default)]
     pub import_order: ImportOrder,
+    /// The widest line, in code points as an editor counts its columns, that
+    /// a shape laid out with [`Lines::Fit`] takes before it breaks.
+    #[builder(default = 100)]
+    pub max_width: usize,
+    /// The lines of a struct declaration.
+    #[builder(default)]
+    pub struct_lines: Lines,
+    /// The lines of an enumeration declaration.
+    #[builder(default)]
+    pub enum_lines: Lines,
+    /// The lines of a function signature.
+    #[builder(default)]
+    pub signature_lines: Lines,
+    /// The line of a block written as one statement after its condition or
+    /// its loop head: with `fit`, the statement goes on a line of its own when
+    /// the line is too wide.
+    #[builder(default)]
+    pub inline_block_lines: Lines,
 }
 
 impl Default for FmtOptions
@@ -118,4 +136,22 @@ pub enum ImportOrder
     /// Each run of imports is sorted: the stdlib first, then the others, each
     /// group in the order of its path.
     Sorted,
+}
+
+/// The lines of a declaration: a struct with a field on each line, an
+/// enumeration with a member on each line, or a function signature with its
+/// name, a parameter on each line, then its opener.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumString, IntoStaticStr)]
+#[derive(VariantNames)]
+#[strum(serialize_all = "snake_case")]
+pub enum Lines
+{
+    /// The lines as written.
+    Preserve,
+    /// Broken into its lines, short or long.
+    Split,
+    /// On one line when it fits in the widest line, and broken into its lines
+    /// when it does not.
+    #[default]
+    Fit,
 }

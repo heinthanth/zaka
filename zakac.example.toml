@@ -151,3 +151,12 @@
                            # burmese or latin
 # import-order = "preserve"  # --import-order <ORDER>: preserve, or sorted with
                            # the stdlib first
+# max-width = 100          # --max-width <COLUMNS>: the widest line when the lines
+                           # are fit, in characters as an editor counts columns
+# struct-lines = "fit"     # --struct-lines <LINES>: preserve, split (a field on
+                           # each line) or fit (split when it does not fit)
+# enum-lines = "fit"       # --enum-lines <LINES>: the same for the members
+# signature-lines = "fit"  # --signature-lines <LINES>: the same for the name,
+                           # the parameters and the opener of a function
+# inline-block-lines = "fit"  # --inline-block-lines <LINES>: a block written as
+                           # one statement goes on a line of its own

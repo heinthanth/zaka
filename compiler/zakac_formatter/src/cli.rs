@@ -37,6 +37,7 @@ use crate::options::ContinuationIndent;
 use crate::options::Digits;
 use crate::options::FmtOptions;
 use crate::options::ImportOrder;
+use crate::options::Lines;
 use crate::options::SpeechMode;
 
 const PATHS_ARG: &str = "paths";
@@ -49,6 +50,11 @@ const MARK_ORDER_ARG: &str = "mark-order";
 const SPEECH_ARG: &str = "speech-mode";
 const DIGITS_ARG: &str = "digits";
 const IMPORT_ARG: &str = "import-order";
+const WIDTH_ARG: &str = "max-width";
+const STRUCT_ARG: &str = "struct-lines";
+const ENUM_ARG: &str = "enum-lines";
+const SIGNATURE_ARG: &str = "signature-lines";
+const INLINE_ARG: &str = "inline-block-lines";
 
 /// The `zakac fmt` command.
 pub struct ZakacFormatter
@@ -123,6 +129,16 @@ fn configure_fmt_command(cmd: clap::Command) -> clap::Command
             .value_parser(PossibleValuesParser::new(Digits::VARIANTS)),
         setting(IMPORT_ARG, "ORDER", "preserve", t!("formatter.import_order").into())
             .value_parser(PossibleValuesParser::new(ImportOrder::VARIANTS)),
+        setting(WIDTH_ARG, "COLUMNS", "100", t!("formatter.max_width").into())
+            .value_parser(clap::value_parser!(usize)),
+        setting(STRUCT_ARG, "LINES", "fit", t!("formatter.struct_lines").into())
+            .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
+        setting(ENUM_ARG, "LINES", "fit", t!("formatter.enum_lines").into())
+            .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
+        setting(SIGNATURE_ARG, "LINES", "fit", t!("formatter.signature_lines").into())
+            .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
+        setting(INLINE_ARG, "LINES", "fit", t!("formatter.inline_block_lines").into())
+            .value_parser(PossibleValuesParser::new(Lines::VARIANTS)),
     ];
     cmd.about(t!("formatter.about")).arg(paths).arg(check).args(settings)
 }
@@ -151,6 +167,11 @@ pub fn options_from(matches: &ArgMatches) -> FmtOptions
         .speech_mode(word(SPEECH_ARG).parse().unwrap_or_default())
         .digits(word(DIGITS_ARG).parse().unwrap_or_default())
         .import_order(word(IMPORT_ARG).parse().unwrap_or_default())
+        .max_width(matches.get_one::<usize>(WIDTH_ARG).copied().unwrap_or(100))
+        .struct_lines(word(STRUCT_ARG).parse().unwrap_or_default())
+        .enum_lines(word(ENUM_ARG).parse().unwrap_or_default())
+        .signature_lines(word(SIGNATURE_ARG).parse().unwrap_or_default())
+        .inline_block_lines(word(INLINE_ARG).parse().unwrap_or_default())
         .build()
 }
 
