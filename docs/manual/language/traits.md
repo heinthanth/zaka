@@ -90,7 +90,9 @@ the trait, with the same name, and with the data kind in place of the first kind
 and the given data kinds in place of the others in its parameter and result data kinds. The
 compiler looks at the functions of the file of the use, of the file of the data kind and
 of the file of the trait. No block is needed, because a plain function gives a data kind a
-trait, as `ငယ်သလား` gives `ကိန်းပြည့်` the trait in the first example.
+trait, as `ငယ်သလား` gives `ကိန်းပြည့်` the trait in the first example. A trait whose functions
+take its data kind first can also be a data kind, `<trait> အရာ`, which holds a value of each
+data kind with the trait ([Trait values](trait-values.md)).
 
 The compiler checks each constraint of a generic where we use the generic, before it
 builds the instance:

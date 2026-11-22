@@ -37,6 +37,7 @@
   - [Kind aliases](language/aliases.md)
   - [Generics](language/generics.md)
   - [Traits](language/traits.md)
+  - [Trait values](language/trait-values.md)
   - [Threads](language/threads.md)
   - [Compile time](language/compile-time.md)
   - [The core module](language/core.md)

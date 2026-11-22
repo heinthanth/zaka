@@ -247,6 +247,13 @@ a note on another name is ZK0248) and names local data kinds
 function, then `expand_local_kinds` puts their data kinds in their place, marked in
 `Kind.alias` so that these count with `ခု`.
 
+A trait with `အရာ` after it, where a data kind stands, is a trait value kind
+(`BaseKind::TraitValue`): `trait_value_len` in `kind.rs` finds a trait as a hint
+(`hint_trait_at`) or a name with its kinds in signs, then the word `အရာ`, which is no
+reserved word, and `parse_core` reads the trait through `parse_trait_ref`. A hint of a
+trait can start with a slot whose data kind phrase leads back to the same place, so
+`scanning_trait_value` keeps the scan from starting again inside itself.
+
 ## Written-as hints
 
 A written-as hint is the words that a generic data kind or trait is written with:

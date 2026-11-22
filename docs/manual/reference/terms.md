@@ -104,6 +104,7 @@ is first used, as in "data kind (type)".
 | kind parameter | type parameter | | [Generics](../language/generics.md) |
 | instance | monomorphized instance | | [Generics](../language/generics.md) |
 | trait | trait, interface, type class | | [Traits](../language/traits.md) |
+| trait value | interface value, trait object | `<trait> အရာ` | [Trait values](../language/trait-values.md) |
 | trait block | `impl` block | | [Traits](../language/traits.md) |
 | default function | default method | | [Traits](../language/traits.md) |
 | written-as hint | no counterpart; a second spelling for a data kind or a trait | | [Generics](../language/generics.md#written-as-hints) |

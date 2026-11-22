@@ -848,6 +848,18 @@ ZK0349.
 
 ## Calls a node stands for
 
+- **Trait values.** `trait_fit` (in `trait_value.rs`), called from `expect_fit`, lets a value
+  into a trait value kind when its data kind has the trait (`has_trait`, ZK0343 when not).
+  Outside the trial checks of `fits_call` (`Checker::trials`), it records in
+  `OpCalls::to_traits` the trait value kind and the inner name of the function that gives
+  the data kind each function of the trait (`impl_of`: a plain function of the files of
+  `places`, else the instance of the default for the data kind), and ZK0362 for a plain
+  value whose trait has a function that changes its first parameter. `write_op_calls` puts
+  the call `%trait-value` with those names around the value. A call whose first argument
+  is a trait value and whose name is a function of its trait takes the signature
+  `dispatch_sig` builds from the trait function, and its name becomes `%trait-call:<n>` in
+  `chosen`. `check_trait_values`, called from `written_kind`, checks the trait of each
+  written trait value kind: ZK0344, ZK0340 and ZK0360.
 - **`x ၏ f`.** A field read that finds no field, with no brace on the name, checks the call
   `f(x)` instead (`infer_method`). Each records its call in `OpCalls::methods`, and
   `write_methods` puts it in place of the node before the overloads get their inner names.

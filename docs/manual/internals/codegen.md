@@ -657,6 +657,33 @@ lowers to the nodes above (`lower/table.rs`):
 - The fallback of an optional keeps the optional in a hidden slot, and an `if` moves its
   data, or puts the fallback, into a second slot, so the fallback runs in its arm alone.
 
+## Trait values
+
+A trait value (`<trait> အရာ`) is a closure, so the backends see no new node
+(`lower/trait_values.rs`). Its data kind is a function kind whose `of_trait` names the trait;
+the dispatcher of each pair of trait value kind and held data kind takes the number of a
+trait function, the address of an argument pack and its record.
+
+- **Putting a value in.** The check puts the call `%trait-value` around the value, with the
+  address of each function that gives its data kind a function of the trait, in the order
+  of the trait (`FnAddr` arguments). `to_trait_node` lowers it as a closure: a record
+  `%closure{code, info, c0}` holds the value, and the code is the dispatcher, made once
+  for the pair and kept in `Lowerer::dispatchers`.
+- **A call.** The check names a call through a trait value `%trait-call:<n>`. `dispatch`
+  fills a hidden `%args{a0, …}` slot of the caller with the arguments after the first
+  (the address of the place for a parameter marked `ဒေတာ ပြောင်းလဲရန်` or `ဒေတာ ထည့်ပေးရန်`)
+  and a blank result, calls the trait value with the number and the raw address of the
+  slot, and reads the result from its last field into a slot that its scope drops. The
+  scope drops the pack too, so the dispatcher passes a new count of each value on.
+- **The dispatcher.** An `if` chain on the number picks the function of the held data kind;
+  the held value is field `c0` of the record. A result of the trait's own data kind is
+  wrapped in a new record of the same dispatcher.
+- **A change.** For a function that changes its first parameter, the pack starts with a
+  field for the new trait value. The dispatcher duplicates the held value into a local,
+  passes the address of the local, and writes a new trait value of that local into the
+  field; the caller takes it out and puts it in the place of the trait value, dropping the
+  old one. Each other holder of the old record keeps its value.
+
 ## Artifacts
 
 `zakac irgen` writes the folded IR (`.zkirt` text, `.zkir` raw). [The VM

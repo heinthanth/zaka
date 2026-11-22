@@ -61,6 +61,7 @@
   - [Closures](function-values/closures.md)
 - [Generics](generics/README.md)
   - [Traits](generics/traits.md)
+  - [Trait values](generics/trait-values.md)
 - [Modules](modules/README.md)
   - [Module mistakes](modules/mistakes.md)
 - [Threads](threads/README.md)

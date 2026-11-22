@@ -350,4 +350,4 @@ same as in the notes block of a generic function.
 - Give `ဗက်တာ` the function `ငယ်မငယ်စစ်`, then compare two vectors with `<`.
 - Remove one function from the trait block of `လူ` in the first example and read the error.
 
-Next: [Modules](../modules/README.md).
+Next: [Trait values](trait-values.md).

@@ -172,8 +172,8 @@ runs of `zakac run` use the ABI of `zakac` alone, while an executable for Window
 `gnu` or `msvc` ([Windows](native.md#windows)).
 
 We give a lint flag again, or a comma list, to name more than one group or code. The
-front end reads the groups `naturalness` and `spoken`, and the checker reads the rest;
-[Lint names](#lint-names) lists them.
+front end reads the groups `naturalness`, `spoken` and `duplicates`, and the checker reads
+the rest; [Lint names](#lint-names) lists them.
 
 ### From `irgen` on: folding, unsafe code and REPL mode
 
@@ -255,6 +255,7 @@ A lint name is a group or a code:
 | `overflow` | ZK0719 |
 | `naturalness` | the [natural wording](../language/naturalness.md) rules, ZK0501 to ZK0511 |
 | `spoken` | ZK0510, a word in its [spoken spelling](../language/spoken.md); `--lint-allow spoken` lets a program use them |
+| `duplicates` | ZK0362, a plain value that goes into a [trait value](../language/trait-values.md#changes-through-a-trait-value) whose trait has a function that changes its first parameter |
 
 The rules for two names that meet:
 

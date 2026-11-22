@@ -584,6 +584,7 @@ T တွင် နာမည်ရှိသော ဂုဏ်သတ္တိ ရ
 | `နာမည်ရှိသော ဟူသည့် ဂုဏ်သတ္တိ …` | `trait Named { fn name(k: &Self) -> String; }` |
 | `ကြောင် တွင် နာမည်ရှိသော ဂုဏ်သတ္တိရှိစေရန် …` | `impl Named for Cat { … }` |
 | `T တွင် နာမည်ရှိသော ဂုဏ်သတ္တိ ရှိသည်` | `where T: Named` |
+| `နာမည်ရှိသော အရာ တစ်ခု` | `Named` as an interface value, `dyn Named` |
 
 To make a generic, we add `ယေဘုယျဒေတာအမျိုးအစား T ကိုအစားထိုးသုံးနိုင်၍` to the function
 signature, which adds a kind parameter (type parameter) `T`. A trait (interface) lists the
@@ -597,7 +598,12 @@ kinds the program uses, and it checks each instance with the data kinds it was b
 Because the struct `ကြောင်` sets its measure word to `ကောင်`, a parameter of that data kind
 is written `ကြောင် တစ်ကောင်`. We can also use the sign form `နှုတ်ဆက်<T>`.
 
-Learn: [Generics](generics/README.md), [Traits](generics/traits.md).
+A trait with `အရာ` after it is the data kind of a trait value (interface value), which holds a
+value of each data kind with the trait, so `နာမည်ရှိသော အရာ စာရင်း` can hold a `ကြောင်` and a
+`ခွေး` together, and a call on each cell runs the function of its own data kind.
+
+Learn: [Generics](generics/README.md), [Traits](generics/traits.md),
+[Trait values](generics/trait-values.md).
 Docs: [Generics](../manual/language/generics.md), [Traits](../manual/language/traits.md).
 
 ## Modules
