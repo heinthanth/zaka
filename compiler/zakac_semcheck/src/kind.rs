@@ -41,6 +41,9 @@ pub const FALLIBLE: &str = "%fallible";
 /// The name of the struct kind of a closure record.
 pub const CLOSURE: &str = "%closure";
 
+/// The name of the struct of the arguments of a call through a trait value.
+pub const ARGS_PACK: &str = "%args";
+
 /// The name of the struct that holds a ဇယား. Its signature lists its fields
 /// in full, as a result's does, so it never takes a name of its own in a
 /// signature, and two ဇယား kinds written out in one signature never clash.
@@ -449,7 +452,7 @@ impl DataKind
     /// # Returns
     ///
     /// The kind for a pointer, the kind itself for each other kind.
-    pub(crate) fn with_outer_raw(self) -> DataKind
+    pub fn with_outer_raw(self) -> DataKind
     {
         tern!(let DataKind::Ptr(p) = self, DataKind::Ptr(p.with_outer_raw()), self)
     }
@@ -1163,6 +1166,26 @@ impl DataKind
         let sig = format!("{CLOSURE}{{code:{word},info:{word}{fields}}}");
         let shape = parse_sig(&sig);
         DataKind::Struct(shape.expect("the signature of a closure record reads back"))
+    }
+
+    /// The struct of the arguments of a call through a trait value: one field
+    /// of each kind, in order, named `a0`, `a1` and so on.
+    ///
+    /// # Arguments
+    ///
+    /// * `fields` - The kind of each field.
+    ///
+    /// # Returns
+    ///
+    /// The struct kind.
+    pub fn args_pack(fields: &[DataKind]) -> DataKind
+    {
+        let each = fields.iter().enumerate();
+        let fields: Vec<String> =
+            each.map(|(i, k)| format!("a{i}:{}", k.spell_inner(true))).collect();
+        let sig = format!("{ARGS_PACK}{{{}}}", fields.join(","));
+        let shape = parse_sig(&sig);
+        DataKind::Struct(shape.expect("the signature of an argument pack reads back"))
     }
 
     /// The name of a result of a function that can fail, for a message:

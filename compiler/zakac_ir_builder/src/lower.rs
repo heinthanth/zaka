@@ -36,6 +36,9 @@ use zakac_semcheck::semcheck::KindTable;
 use zakac_semcheck::semcheck::RESULT_NAME;
 use zakac_semcheck::semcheck::each_list;
 use zakac_semcheck::structs::StructTable;
+use zakac_semcheck::trait_value::TO_TRAIT_FN;
+use zakac_semcheck::trait_value::trait_call_index;
+use zakac_semcheck::trait_value::trait_decls;
 use zakac_semcheck::variants::Variants;
 use zakac_span::span::Span;
 
@@ -74,6 +77,7 @@ mod nested;
 mod rounds;
 mod table;
 mod threads;
+mod trait_values;
 
 use nested::Nested;
 use table::row_place;
@@ -110,7 +114,7 @@ pub fn lower(
         .filter(|s| matches!(s, st::Stmt::Fn(f) if !is_generic(f)))
         .count();
     #[rustfmt::skip]
-    let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs)
+    let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs).traits(trait_decls(program))
         .top_count(top_count as u32).platform(options.platform_bits)
         .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
         .maybe_repl_from(options.repl_from).build();
@@ -594,6 +598,12 @@ struct Lowerer<'k>
     nested: Vec<HashMap<Name, Nested>>,
     /// The kind of each declared struct, from the check.
     structs: &'k StructTable,
+    /// The traits of the program, under their names.
+    traits: HashMap<Name, st::TraitDecl>,
+    /// The dispatcher of each pair of trait value kind and held kind made so
+    /// far, under its number among the functions of the module.
+    #[builder(default)]
+    dispatchers: HashMap<(DataKind, DataKind), u32>,
     /// Bit count of the platform-sized kinds.
     platform: u16,
     /// The signatures of the functions the current file declares or
@@ -1200,6 +1210,10 @@ impl Lowerer<'_>
             }
             st::Stmt::Call(n) if let Some(pipe) = self.pipe_stmt(n) => out.push(pipe),
             st::Stmt::Call(n) if let Some(add) = self.atomic_stmt(n) => out.push(add),
+            st::Stmt::Call(n) if let Some(index) = trait_call_index(&n.callee.name) =>
+            {
+                _ = self.dispatch(index, &n.args, n.span);
+            }
             st::Stmt::Call(n) =>
             {
                 let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
@@ -3250,6 +3264,11 @@ impl Lowerer<'_>
                 let ret = self.kind_of(thread).as_task().and_then(|t| t.of);
                 (ret, ExprNode::Wait(Box::new(self.expr(thread))))
             }
+            None if let Some(index) = trait_call_index(&callee.name) =>
+            {
+                let held = self.dispatch(index, args, span).expect("the call can fail");
+                (Some(held.kind), dup(held).node)
+            }
             None =>
             {
                 let (target, sig) = self.call_target(callee, place);
@@ -3659,6 +3678,15 @@ impl Lowerer<'_>
         ret_if!(n.parallel, self.spawn_node(&n.callee, place, &n.args, n.apart));
         ret_if!(let Some(wait) = self.wait_node(n), wait);
         ret_if!(let Some(cas) = self.cas_node(n, kind), cas);
+        ret_if!(n.callee.name.as_str() == TO_TRAIT_FN, self.to_trait_node(n, kind));
+        if let Some(index) = trait_call_index(&n.callee.name)
+        {
+            // The result waits in a hidden slot that its scope drops; a use
+            // that keeps it takes a new count of it, as of each
+            // read of a place.
+            let held = self.dispatch(index, &n.args, n.span);
+            return held.expect("a call in a value has a result").node;
+        }
         let (target, sig) = self.call_target(&n.callee, n.place.as_deref());
         let args = self.lower_args(&n.args, &sig);
         ret_if!(self.post.is_empty(), target.node(args));

@@ -335,8 +335,8 @@ TraitNotAKind = ("ZK0360", Level::Error),
 /// printed, given an initial value or called as a function.
 TraitValueUse = ("ZK0361", Level::Error),
 /// A plain value goes into a trait value whose trait has a function that
-/// changes its first parameter: the change reaches the clone alone.
-TraitValueClones = ("ZK0362", Level::Warning),
+/// changes its first parameter: the change reaches the duplicate alone.
+TraitValueDuplicates = ("ZK0362", Level::Warning),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

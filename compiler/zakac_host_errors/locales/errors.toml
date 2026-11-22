@@ -94,7 +94,7 @@ en = "the config file %{p} gives %{name} a value of the wrong form: use text, a 
 en = "the config file %{p} gives %{name} a value the flag refuses: %{msg}"
 
 [errors.unknown_lint_name]
-en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow, naturalness, spoken, clones) or a code such as ZK0708"
+en = "%{name} names no lint: give a group (mem, leaks, frees, borrows, nulls, pointers, doubts, overflow, naturalness, spoken, duplicates) or a code such as ZK0708"
 
 [errors.not_a_lint]
 en = "%{code} is not a lint: its level cannot change"

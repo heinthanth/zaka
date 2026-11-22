@@ -579,8 +579,9 @@ impl Checker
     {
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
         let held = l.is_trait_value() || r.is_trait_value();
+        let compares = class.is_cmp() || class == OpClass::Same;
         let compare = rd::trait_value_use(span, TraitValueUse::Compare);
-        ret_if!(held, self.report(compare), None);
+        ret_if!(held && compares, self.report(compare), None);
         ret_if!(class == OpClass::Same, self.same_pair(l, r, span));
         let object = l.as_object().is_some() || r.as_object().is_some();
         ret_if!(object, self.fn_pair(class, l, r, span));

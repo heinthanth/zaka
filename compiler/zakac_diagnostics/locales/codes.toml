@@ -879,13 +879,13 @@ en = "call the functions of its trait on it, as \"x ၏ f()\""
 en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Comparing two trait values, printing one, its initial value and a call through it as a function value are not part of the language now."""
 
 [codes.ZK0362.title]
-en = "trait value holds a clone"
+en = "trait value holds a duplicate"
 [codes.ZK0362.message]
-en = "the trait value holds a clone of this %{k}; its function \"%{f}\" changes the clone, not this value"
+en = "the trait value holds a duplicate of this %{k}; its function \"%{f}\" changes the duplicate, not this value"
 [codes.ZK0362.help]
-en = "to share one value, make %{k} a shared object (\"မျှဝေနိုင်သော ဒေတာအစုအဝေး\"); to keep the clone, allow the lint with \"--lint-allow clones\""
+en = "to share one value, make %{k} a shared object (\"မျှဝေနိုင်သော ဒေတာအစုအဝေး\"); to keep the duplicate, allow the lint with \"--lint-allow duplicates\""
 [codes.ZK0362.explain]
-en = """A plain value goes into a trait value as a clone of its own, as it does when it goes into a variable. A function of the trait that changes its first parameter (\"ဒေတာ ပြောင်းလဲရန်\") changes the clone the trait value holds, and the value we put in keeps its old state. A shared object goes in as a reference, so changes through the trait value reach it. The lint group \"clones\" sets the level of this warning."""
+en = """A plain value goes into a trait value as a duplicate of its own, as it does when it goes into a variable. A function of the trait that changes its first parameter (\"ဒေတာ ပြောင်းလဲရန်\") changes the duplicate the trait value holds, and the value we put in keeps its old state. A shared object goes in as a reference, so changes through the trait value reach it. The lint group \"duplicates\" sets the level of this warning."""
 
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"

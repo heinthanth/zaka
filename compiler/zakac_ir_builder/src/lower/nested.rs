@@ -54,7 +54,7 @@ pub(super) struct Nested
 /// # Returns
 ///
 /// The kind.
-fn record_field(record: DataKind, n: usize) -> DataKind
+pub(super) fn record_field(record: DataKind, n: usize) -> DataKind
 {
     record.as_struct().expect("a closure record is a struct").fields()[n].1
 }

@@ -27,24 +27,24 @@ const ORDER: &str = "စီနိုင်သော ဟူသည့် ဂုဏ
 ";
 
 /// The codes of a program with these declarations and a function that
-/// takes `param` and runs `body`.
+/// takes `param` and runs `stmts`.
 ///
 /// # Arguments
 ///
 /// * `decls` - The declarations.
 /// * `param` - The kind phrase of the parameter `တ`.
-/// * `body` - The statements of the function.
+/// * `stmts` - The statements of the function.
 ///
 /// # Returns
 ///
 /// The codes.
-fn codes_of(decls: &str, param: &str, body: &str) -> Vec<Code>
+fn codes_of(decls: &str, param: &str, stmts: &str) -> Vec<Code>
 {
     let text = format!(
         "{decls}
 စမ်း ဟူသော လုပ်ဆောင်ချက် သည် တ ဟူသော {param} တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
-{body}
+{stmts}
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
@@ -181,12 +181,12 @@ fn a_list_holds_trait_values()
 /// A plain value that goes into a trait value whose trait has a function
 /// that changes its first parameter is ZK0362; a shared object is not.
 #[test]
-fn a_plain_value_goes_in_as_a_clone()
+fn a_plain_value_goes_in_as_a_duplicate()
 {
     let stmts = "ကိန်းရှင် တ သည် တိုးနိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကောင်တာ(အကြိမ်: ၀) ဖြစ်ပါစေ။
 ကိန်းရှင် ရ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် တ ၏ တိုး() ဖြစ်ပါစေ။";
     let plain = format!("{COUNT}{}", counter(false));
-    assert_eq!(run_codes(&plain, stmts), [Code::TraitValueClones]);
+    assert_eq!(run_codes(&plain, stmts), [Code::TraitValueDuplicates]);
     let shared = format!("{COUNT}{}", counter(true));
     assert!(run_codes(&shared, stmts).is_empty());
 }

@@ -33,7 +33,7 @@ mod switch_check;
 mod table;
 pub mod task;
 pub mod threads;
-mod trait_value;
+pub mod trait_value;
 mod traits;
 mod units;
 pub mod unsafe_code;

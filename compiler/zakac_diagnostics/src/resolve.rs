@@ -1187,7 +1187,7 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
 }
 
 /// A plain value goes into a trait value whose trait has a function that
-/// changes its first parameter, so that function changes the clone alone.
+/// changes its first parameter, so that function changes the duplicate alone.
 ///
 /// # Arguments
 ///
@@ -1198,9 +1198,9 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
 /// # Returns
 ///
 /// The `ZK0362` diagnostic.
-pub fn trait_value_clones(span: Span, kind: &str, func: &str) -> Diagnostic
+pub fn trait_value_duplicates(span: Span, kind: &str, func: &str) -> Diagnostic
 {
     let msg = t!("codes.ZK0362.message", k = kind, f = func);
-    Diagnostic::new(Code::TraitValueClones, msg, span)
+    Diagnostic::new(Code::TraitValueDuplicates, msg, span)
         .with_help(t!("codes.ZK0362.help", k = kind))
 }

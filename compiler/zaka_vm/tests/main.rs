@@ -17,6 +17,7 @@ mod spoken;
 mod stepping;
 mod text_consts;
 mod threads;
+mod trait_values;
 mod traps;
 mod values;
 mod vet;
