@@ -1086,6 +1086,7 @@ module:
         span:
           lo: 2457
           hi: 2764
+        par: null
     - set:
         place: l7
         value:

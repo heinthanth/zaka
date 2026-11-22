@@ -125,6 +125,7 @@ module:
         span:
           lo: 327
           hi: 706
+        par: null
     - counted:
         var: l1
         from:
@@ -360,6 +361,7 @@ module:
         span:
           lo: 1497
           hi: 2095
+        par: null
     shared_params: []
     owned: []
     owned_ret: false

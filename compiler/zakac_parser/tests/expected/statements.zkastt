@@ -389,6 +389,7 @@ program:
           lo: 1466
           hi: 1513
       parallel: false
+      threads: null
       span:
         lo: 1364
         hi: 1513

@@ -32,6 +32,8 @@ use zakac_span::span::Span;
 use crate::generic::in_core;
 use crate::generic::kind_ast;
 use crate::kind::DataKind;
+use crate::op_calls::CONVERT_FN;
+use crate::op_calls::TRY_CONVERT_FN;
 use crate::ops::Want;
 use crate::scope::FnSig;
 use crate::semcheck::Checker;
@@ -78,6 +80,10 @@ pub const PRINTABLE: &str = "စာသားအဖြစ်ပြောင်း
 /// The built-in trait of the kinds that convert to another: the pairs the
 /// conversion verb converts, and the kinds with `ပြောင်းလဲ`.
 pub const CONVERT: &str = "ပြောင်းလဲနိုင်သော";
+
+/// The built-in trait of the kinds that convert to another with a failure:
+/// the kinds with `စမ်းသပ်ပြောင်းလဲ`.
+pub const TRY_CONVERT: &str = "စမ်းသပ်ပြောင်းလဲနိုင်သော";
 
 /// The traits of a program, under their names, each with the unit that
 /// declares it; the first of a name wins.
@@ -316,8 +322,10 @@ impl Checker
         self.refer(&ident.name, ident.span, decl.name.span);
         // A marked trait: the built-in kinds have it through the compiler's
         // rule; a kind a file declares, through its functions.
-        let pair = || self.builtin_pair(&ident.name, kind, &need.args);
-        let rule = builtin(&ident.name, kind).or_else(pair).filter(|_| decl.builtin);
+        let rule = builtin(&ident.name, kind);
+        let rule =
+            rule.or_else(|| self.builtin_pair(&ident.name, kind, &need.args, span));
+        let rule = rule.filter(|_| decl.builtin);
         ret_if!(rule == Some(true), true);
         let declared = self.kind_home(kind).is_some();
         let lacks = rule == Some(false) && !declared;
@@ -343,25 +351,37 @@ impl Checker
         met
     }
 
-    /// Whether a kind has a built-in trait of two kinds through the
-    /// compiler's rule: `ပြောင်းလဲနိုင်သော` holds for each pair the conversion
-    /// verb converts. A pair the rule leaves out can still have the trait
-    /// through its functions.
+    /// Whether a kind has a conversion trait through the compiler's rule:
+    /// `ပြောင်းလဲနိုင်သော` holds for each pair the conversion verb converts, and
+    /// either trait for a pair a generic function of it converts, such as the
+    /// checked conversion of two integers. A pair the rule leaves out can still
+    /// have the trait through its plain functions.
     ///
     /// # Arguments
     ///
     /// * `name` - The trait.
     /// * `kind` - The kind that has it.
     /// * `args` - The kinds written after the first.
+    /// * `span` - The use.
     ///
     /// # Returns
     ///
     /// `Some(true)` when the rule gives the trait, `None` otherwise.
-    fn builtin_pair(&self, name: &str, kind: DataKind, args: &[Kind]) -> Option<bool>
+    fn builtin_pair(
+        &mut self, name: &str, kind: DataKind, args: &[Kind], span: Span,
+    ) -> Option<bool>
     {
-        ret_if!(name != CONVERT, None);
+        let convert = name == CONVERT;
+        ret_if!(!convert && name != TRY_CONVERT, None);
         let to = DataKind::from_ast(args.first()?, &self.structs);
-        tern!(kind.cast_allowed(to), Some(true), None)
+        ret_if!(convert && kind.cast_allowed(to), Some(true));
+        let err = args.get(1).map(|e| DataKind::from_ast(e, &self.structs));
+        let (func, want) = tern!(
+            convert,
+            (CONVERT_FN, (Some(to), None)),
+            (TRY_CONVERT_FN, (Some(to), err))
+        );
+        self.generic_converts(func, kind, to, want, span).then_some(true)
     }
 
     /// The kind phrase each kind parameter of a trait stands for: the kind

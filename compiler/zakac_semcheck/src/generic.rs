@@ -1028,7 +1028,7 @@ impl Checker
     /// # Returns
     ///
     /// The signature of the instance, or `None`.
-    fn instance_sig(
+    pub(crate) fn instance_sig(
         &mut self, template: &FnDecl, ident: &Ident, kinds: Option<Vec<DataKind>>,
     ) -> Option<FnSig>
     {

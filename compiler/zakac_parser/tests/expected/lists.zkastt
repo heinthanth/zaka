@@ -801,6 +801,7 @@ program:
                 lo: 3451
                 hi: 3571
             parallel: false
+            threads: null
             span:
               lo: 3375
               hi: 3571

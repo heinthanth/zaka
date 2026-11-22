@@ -176,6 +176,7 @@ program:
                 lo: 833
                 hi: 953
             parallel: false
+            threads: null
             span:
               lo: 757
               hi: 953

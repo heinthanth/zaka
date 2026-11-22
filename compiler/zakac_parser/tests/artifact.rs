@@ -19,9 +19,15 @@ fn sample(name: &str) -> (ParseArtifact, u32)
 {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join(format!("tests/inputs/{name}.zaka"));
+    sample_at(&path)
+}
+
+/// [`sample`] for a file at a path.
+fn sample_at(path: &std::path::Path) -> (ParseArtifact, u32)
+{
     let mut sm = SourceMap::new();
     sm.new_source_file(FileName::Custom("pad".into()), "pad".into());
-    let file = sm.load_file(&path).unwrap();
+    let file = sm.load_file(path).unwrap();
     (
         ParseArtifact::from_source(&file, &LexerOptions::default()),
         file.start_pos.as_u32(),
@@ -78,4 +84,18 @@ fn absolute_output_restores_spans()
         diags[0].span.lo.as_u32(),
         file.start_pos.as_u32() + "က ကို ".len() as u32
     );
+}
+
+/// A raw artifact keeps the count of threads of a parallel loop and of a
+/// parallel map: the raw form writes each field, so none may be left out.
+#[test]
+fn raw_round_trip_keeps_thread_counts()
+{
+    let inputs = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../zakac_codegen_target_c/tests/inputs");
+    for name in ["par_threads_trap.zaka", "par_map.zaka"]
+    {
+        let (artifact, _) = sample_at(&inputs.join(name));
+        assert_eq!(round_trip(&artifact, ArtifactFormat::Raw), artifact, "{name}");
+    }
 }

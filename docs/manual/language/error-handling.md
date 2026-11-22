@@ -290,7 +290,9 @@ a program keep its own error kind, and a caller gather them into one.
 ```
 
 - The compiler looks for the `ပြောင်းလဲ` in the file of the pass-on and in the files of the
-  two error kinds, as a conversion does. A generic `ပြောင်းလဲ` does not count here.
+  two error kinds, as a conversion does, and a generic `ပြောင်းလဲ` counts too, so one
+  generic function can take each error kind that prints, as in the sample
+  `samples/generics/conversion_bounds.zaka`.
 - With no such function, a pass-on with another error kind is ZK0446, and so is an error
   value of another kind ZK0401.
 - A `စမ်းသပ်ပြောင်းလဲ` does not convert an error value, because the conversion of an error

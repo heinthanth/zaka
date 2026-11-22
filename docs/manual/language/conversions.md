@@ -133,6 +133,10 @@ function:
   `ပြောင်းလဲ`, and then its value is the whole result.
 - `ပြောင်းလဲသော ရလဒ်ကောင်း` calls `စမ်းသပ်ပြောင်းလဲ` and passes a failure on, the same as
   `သည့် ရလဒ်ကောင်း` does for a call.
+- A generic function of either name converts each pair that its kind parameters take:
+  the kind parameter that its one parameter is written with stands for the source data
+  kind, and each other one for the target. Such a function also gives the built-in data
+  kinds the trait in a constraint, as the core's checked conversion of integers does.
 - Two functions of one name can share a parameter and differ in their results
   ([Overloads that differ in the result](functions-overloads.md#overloads-that-differ-in-the-result)),
   so one data kind can have a `ပြောင်းလဲ` for each data kind that it converts to.
@@ -253,8 +257,9 @@ as the data kind that it names.
 အမှားအယွင်း(စာလုံးဖတ်ခြင်းအမှားအယွင်းများထဲမှ စာလုံးတစ်လုံးထက်ပိုခြင်း)
 ```
 
-- An integer is read as a `ကိန်းပြည့်` first, so a value past the largest `ကိန်းပြည့်` fails
-  for `လက္ခဏာမဲ့ ကိန်းပြည့်` and `လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့်` too.
+- A signed integer is read as a `ကိန်းပြည့်` and an unsigned one as a
+  `လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့်`, then converted with a check that the value fits, so each
+  value of each integer kind can be read.
 - A `၃၂ ဘစ် ဒဿမကိန်း` is read as a `ဒဿမကိန်း`, then takes the nearest 32-bit value.
 - White space and words such as `inf` are no part of a number.
 

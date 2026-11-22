@@ -42,6 +42,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::generic::instance_name;
 use crate::generic::kind_ast;
 use crate::kind::DataKind;
 use crate::scope::FnSig;
@@ -424,12 +425,9 @@ impl Checker
         let templates = self.templates.fns_of(&Name::from(name));
         templates.iter().find_map(|t| {
             let kinds = conversion_kinds(t, from, to, &self.structs)?;
-            let before = self.diags.len();
-            let met = self.meets_bounds(&t.kind_params, &kinds, span);
-            self.diags.truncate(before);
+            self.generic_result(t, &kinds, span)?;
             let written = kinds.iter().map(|k| kind_ast(*k, span));
-            let kind_args = written.collect::<Option<Vec<Kind>>>().filter(|_| met)?;
-            Some(Via::Generic(name, kind_args))
+            Some(Via::Generic(name, written.collect::<Option<Vec<Kind>>>()?))
         })
     }
 
@@ -521,7 +519,7 @@ impl Checker
     }
 
     /// The `ပြောင်းလဲ` that turns one error kind into another: a plain function
-    /// of `ပြောင်းလဲနိုင်သော` for the pair.
+    /// of `ပြောင်းလဲနိုင်သော` for the pair, else the instance of a generic one.
     ///
     /// # Arguments
     ///
@@ -536,12 +534,98 @@ impl Checker
         &mut self, from: DataKind, to: DataKind, span: Span,
     ) -> Option<Name>
     {
-        let Via::Plain(sig) = self.conversion_fn(from, to, false, span)?
-        else
-        {
-            return None;
-        };
-        (sig.ret == Some(to)).then(|| self.known_name(&sig))
+        let sure =
+            self.taking(CONVERT_FN, from, to).into_iter().find(|s| s.ret == Some(to));
+        ret_if!(let Some(sig) = sure, Some(self.known_name(&sig)));
+        let templates = self.templates.fns_of(&Name::from(CONVERT_FN));
+        templates.iter().find_map(|t| self.error_instance(t, from, to, span))
+    }
+
+    /// The instance of a generic `ပြောင်းလဲ` that turns one error kind into
+    /// another, asked for when it fits.
+    ///
+    /// # Arguments
+    ///
+    /// * `t` - The generic function.
+    /// * `from` - The error kind of the value.
+    /// * `to` - The error kind the place wants.
+    /// * `span` - The value.
+    ///
+    /// # Returns
+    ///
+    /// The name of the instance, or `None` when the function does not fit or
+    /// its instance is not made yet.
+    fn error_instance(
+        &mut self, t: &FnDecl, from: DataKind, to: DataKind, span: Span,
+    ) -> Option<Name>
+    {
+        let kinds = conversion_kinds(t, from, to, &self.structs)?;
+        let parts = self.generic_result(t, &kinds, span)?;
+        ret_if!(parts != (Some(to), None), None);
+        // An empty span of its own keeps the instance apart from a call that
+        // ends at the same place.
+        let at = Span::new(span.hi, span.hi);
+        let ident = Ident::builder().name(CONVERT_FN).span(at).build();
+        let sig = self.instance_sig(t, &ident, Some(kinds.clone()))?;
+        (sig.ret == Some(to)).then(|| instance_name(t.name.name, &kinds))
+    }
+
+    /// What a generic conversion function gives for some kinds when they meet
+    /// its constraints: its good side and its error side, or its result as the
+    /// good side for a function that cannot fail.
+    ///
+    /// # Arguments
+    ///
+    /// * `t` - The generic function.
+    /// * `kinds` - The kind of each kind parameter.
+    /// * `span` - The use, for the kind phrases.
+    ///
+    /// # Returns
+    ///
+    /// The two sides, or `None` when the kinds do not meet the constraints.
+    pub(crate) fn generic_result(
+        &mut self, t: &FnDecl, kinds: &[DataKind], span: Span,
+    ) -> Option<(Option<DataKind>, Option<DataKind>)>
+    {
+        let before = self.diags.len();
+        let met = self.meets_bounds(&t.kind_params, kinds, span);
+        self.diags.truncate(before);
+        ret_if!(!met, None);
+        let phrases = kinds.iter().map(|k| kind_ast(*k, span));
+        let phrases = phrases.collect::<Option<Vec<Kind>>>()?;
+        let names = t.kind_params.iter().map(|p| p.name.name);
+        let bound: HashMap<Name, Kind> = names.zip(phrases).collect();
+        let mut ret = t.ret.clone()?;
+        ret.substitute(&bound);
+        let ret = DataKind::from_ast(&ret, &self.structs);
+        Some(ret.fallible_parts().unwrap_or((Some(ret), None)))
+    }
+
+    /// Whether a built-in kind has a conversion trait through a generic
+    /// function of it: the function converts the kind to `to` and gives
+    /// `want`, the two sides of its result.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The function of the trait.
+    /// * `kind` - The kind that converts.
+    /// * `to` - The target kind.
+    /// * `want` - The good side and the error side the trait names.
+    /// * `span` - The use.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a generic function of the name does.
+    pub(crate) fn generic_converts(
+        &mut self, name: &str, kind: DataKind, to: DataKind,
+        want: (Option<DataKind>, Option<DataKind>), span: Span,
+    ) -> bool
+    {
+        let templates = self.templates.fns_of(&Name::from(name));
+        templates.iter().any(|t| {
+            let kinds = conversion_kinds(t, kind, to, &self.structs);
+            kinds.and_then(|k| self.generic_result(t, &k, span)) == Some(want)
+        })
     }
 
     /// Check an error value against the error kind of its place: a value that

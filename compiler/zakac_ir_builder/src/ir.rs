@@ -221,7 +221,7 @@ pub struct ParMap
     pub out_kind: DataKind,
     /// The hidden slot of the count of threads, a `usize` the map was given;
     /// `None` for one thread for each core.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub threads: Option<Place>,
 }
 
@@ -242,7 +242,7 @@ pub struct ParRounds
     pub args: Vec<Expr>,
     /// The hidden slot of the count of threads, a `usize` the loop was given;
     /// `None` for one thread for each core.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub threads: Option<Place>,
 }
 
@@ -415,7 +415,7 @@ pub enum Stmt
         span: Span,
         /// For the loop of a parallel map, what a native build runs in its
         /// place: the rounds at once; the VM runs the loop.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
         par: Option<Box<Par>>,
     },
     /// Counted loop: `var` runs from `from` to `to`, both included.

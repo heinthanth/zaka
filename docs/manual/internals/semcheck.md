@@ -484,7 +484,7 @@ that each address points at (ZK0442).
 | a call statement to a function with an error kind | must pass the failure on | ZK0443 |
 | a pass-on | needs a callee that can fail | ZK0444 |
 | a pass-on in a function that cannot fail, in the program start block, or in top-level statements | refused | ZK0445 |
-| a pass-on with another error kind | converted through a plain `ပြောင်းလဲ` of the two kinds (`error_conversion`, `OpCalls::fault_vias`, then `CallExpr::fault_via` and `CallStmt::fault_via`, which `checked_call` lowers), else refused | ZK0446 |
+| a pass-on with another error kind | converted through a plain `ပြောင်းလဲ` of the two kinds, or the instance of a generic one (`error_conversion`, `error_instance`, `OpCalls::fault_vias`, then `CallExpr::fault_via` and `CallStmt::fault_via`, which `checked_call` lowers), else refused | ZK0446 |
 | the good result of a callee with none | refused | ZK0315 |
 | a whole result as an operand | refused | ZK0403 |
 
@@ -865,7 +865,10 @@ ZK0349.
   looks at the generic functions of the two names: the kind parameter that the one
   parameter is written with stands for the source data kind and each other one for the
   target (`conversion_kinds`), the constraints must hold in a trial that drops its
-  reports, and the call is checked with those kinds written (`Via::Generic`). A call that
+  reports (`generic_result`, which also gives the result kind with the kinds in place),
+  and the call is checked with those kinds written (`Via::Generic`). The same generic
+  functions give a built-in kind `ပြောင်းလဲနိုင်သော` or `စမ်းသပ်ပြောင်းလဲနိုင်သော` in a
+  constraint (`builtin_pair`, `generic_converts`). A call that
   writes kinds goes to the generics even when a plain function of the name takes its
   arguments (`plain_or_generic`). The core's `စမ်းသပ်ပြောင်းလဲ` over two integer kinds
   makes `ပြောင်းလဲသော ရလဒ်ကောင်း` between integers fail when the value does not fit.
