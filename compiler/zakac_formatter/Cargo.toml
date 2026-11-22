@@ -7,19 +7,26 @@ autotests = false
 [[bin]]
 name = "zakafmt"
 path = "src/main.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+# The `zakac fmt` command and the `zakafmt` executable; without it, the crate
+# is the formatter alone, which the language server and the explorer build.
+cli = ["dep:rust-i18n", "dep:zakac_cli_common", "dep:zakac_i18n", "dep:zakac_reporter"]
 
 [dependencies]
 bon = { workspace = true }
-rust-i18n = { workspace = true }
+rust-i18n = { workspace = true, optional = true }
 strum = { workspace = true }
 zakac_ast = { workspace = true }
-zakac_cli_common = { workspace = true }
+zakac_cli_common = { workspace = true, optional = true }
 zakac_diagnostics = { workspace = true }
 zakac_host_errors = { workspace = true }
-zakac_i18n = { workspace = true }
+zakac_i18n = { workspace = true, optional = true }
 zakac_lexer = { workspace = true }
 zakac_parser = { workspace = true }
-zakac_reporter = { workspace = true }
+zakac_reporter = { workspace = true, optional = true }
 zakac_rust_sugars = { workspace = true }
 zakac_span = { workspace = true }
 

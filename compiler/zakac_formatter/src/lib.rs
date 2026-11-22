@@ -6,6 +6,7 @@
 //! a word, and checks that its output lexes to the same words.
 
 pub mod check;
+#[cfg(feature = "cli")]
 pub mod cli;
 pub mod format;
 pub mod options;
@@ -16,4 +17,5 @@ pub use format::format;
 pub use format::format_text;
 pub use options::FmtOptions;
 
+#[cfg(feature = "cli")]
 zakac_i18n::init!();

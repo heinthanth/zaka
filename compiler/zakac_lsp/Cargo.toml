@@ -11,7 +11,7 @@ required-features = ["server"]
 [features]
 # The stdio server and the `lsp` command; without it, the crate is the logic
 # alone, which the explorer builds for the browser.
-server = ["dep:lsp-server", "dep:zakac_cli_common"]
+server = ["dep:lsp-server", "dep:zakac_cli_common", "zakac_formatter/cli"]
 
 [dependencies]
 bon = { workspace = true }
@@ -24,6 +24,7 @@ zakac_ast = { workspace = true }
 zakac_borrow_checker = { workspace = true }
 zakac_cli_common = { workspace = true, optional = true }
 zakac_diagnostics = { workspace = true }
+zakac_formatter = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_lexer = { workspace = true }

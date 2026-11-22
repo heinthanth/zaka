@@ -18,6 +18,9 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::config::nearest_local;
+use zakac_cli_common::config::parse_text;
+use zakac_cli_common::config::set_defaults;
 use zakac_host_errors::Error;
 use zakac_host_errors::errors::IOErrorAction;
 use zakac_host_errors::errors::IOErrorContext;
@@ -437,4 +440,26 @@ pub fn zaka_files(path: &Path) -> Vec<PathBuf>
         entries.filter(is_zaka).flat_map(|p| zaka_files(&p)).collect();
     found.sort();
     found
+}
+
+/// The settings of the `[fmt]` section of the `zakac.toml` nearest a folder,
+/// as the language server reads them: the defaults for each setting the file
+/// leaves out, or for a file that cannot be read.
+///
+/// # Arguments
+///
+/// * `dir` - The folder of the file being formatted.
+///
+/// # Returns
+///
+/// The settings.
+pub fn project_options(dir: &Path) -> FmtOptions
+{
+    let table = nearest_local(dir)
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .and_then(|text| parse_text(&text, "").ok());
+    let cmd = configure_fmt_command(clap::Command::new("fmt"));
+    let cmd = table.map_or(cmd.clone(), |t| set_defaults(cmd, &t, Some("fmt")));
+    let matches = cmd.try_get_matches_from(["fmt"]);
+    matches.map(|m| options_from(&m)).unwrap_or_default()
 }

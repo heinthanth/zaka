@@ -3,6 +3,7 @@ pub mod check;
 #[cfg(feature = "server")]
 pub mod cli;
 pub mod complete;
+pub mod format;
 pub mod hints;
 pub mod hover;
 pub mod lines;

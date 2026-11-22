@@ -27,14 +27,18 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use zakac_cli_common::lints::project_lint_levels;
+use zakac_formatter::FmtOptions;
+use zakac_formatter::cli::project_options;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
+use zakac_span::filename::FileName;
 
 use crate::actions::quick_fixes;
 use crate::check::Buffers;
 use crate::check::FileCheck;
 use crate::check::check_file;
 use crate::complete::completions;
+use crate::format::formatting;
 use crate::hints::call_hints;
 use crate::hover::hover;
 use crate::lines::change_text;
@@ -113,7 +117,7 @@ fn refresh_when_idle(
 
 /// What the server can do: the whole text on each change, hover, call
 /// hints, colored tokens, the outline, completions, definitions, references,
-/// renames and quick fixes, with positions in UTF-16 columns.
+/// renames, quick fixes and formatting, with positions in UTF-16 columns.
 ///
 /// # Returns
 ///
@@ -131,6 +135,7 @@ fn capabilities() -> serde_json::Value
         "referencesProvider": true,
         "renameProvider": { "prepareProvider": true },
         "codeActionProvider": { "codeActionKinds": ["quickfix"] },
+        "documentFormattingProvider": true,
         "semanticTokensProvider": {
             "legend": { "tokenTypes": TOKEN_KINDS, "tokenModifiers": [] },
             "full": true,
@@ -275,6 +280,10 @@ fn answer(state: &State, req: Request) -> Response
         {
             doc.map(|d| json!(file(&d).map(outline).unwrap_or_default()))
         }
+        "textDocument/formatting" =>
+        {
+            doc.map(|d| json!(file(&d).and_then(|f| formatting(f, &fmt_options(f)))))
+        }
         "textDocument/completion" => at.map(|p| {
             let found = state.checks.get(&p.text_document.uri);
             json!(completions(found, p.position))
@@ -397,4 +406,24 @@ struct Doc
 fn params<P: DeserializeOwned>(value: serde_json::Value) -> Option<P>
 {
     serde_json::from_value(value).ok()
+}
+
+/// The formatter settings of a file: the `[fmt]` section of the `zakac.toml`
+/// nearest its folder.
+///
+/// # Arguments
+///
+/// * `file` - The file.
+///
+/// # Returns
+///
+/// The settings.
+fn fmt_options(file: &FileCheck) -> FmtOptions
+{
+    let FileName::Real(real) = &file.root.name
+    else
+    {
+        return FmtOptions::default();
+    };
+    real.local_path.parent().map(project_options).unwrap_or_default()
 }

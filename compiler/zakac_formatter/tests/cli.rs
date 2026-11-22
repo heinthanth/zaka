@@ -143,3 +143,18 @@ fn settings_are_flags()
     assert_eq!(ran.code, ExitCode::Success, "{}", ran.stderr);
     assert!(!ran.stdout.contains("\n\n"), "{}", ran.stdout);
 }
+
+/// The `[fmt]` section of the nearest `zakac.toml` sets the defaults the
+/// language server formats with.
+#[test]
+fn project_options_read_the_nearest_config()
+{
+    let dir = tempfile::tempdir().unwrap();
+    let config = "[fmt]\nindent = 4\nspeech-mode = \"spoken\"\n";
+    std::fs::write(dir.path().join("zakac.toml"), config).unwrap();
+    let inner = dir.path().join("src");
+    std::fs::create_dir(&inner).unwrap();
+    let options = zakac_formatter::cli::project_options(&inner);
+    assert_eq!(options.indent, 4);
+    assert_eq!(options.speech_mode, zakac_formatter::options::SpeechMode::Spoken);
+}

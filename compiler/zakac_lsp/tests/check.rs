@@ -554,3 +554,23 @@ fn a_project_that_allows_the_spoken_spellings_checks_them_clean()
     let allowed = check("spoken.zaka", text, Buffers { lint, ..Buffers::default() });
     assert_eq!(spoken(&allowed), 0);
 }
+
+/// Formatting gives one edit that replaces the whole text, none for a file
+/// already formatted, and nothing for a file that does not parse.
+#[test]
+fn formatting_replaces_the_whole_text()
+{
+    let rough = include_str!("../../zakac_formatter/tests/inputs/hello.zaka");
+    let clean = include_str!("../../zakac_formatter/tests/expected/hello.zaka");
+    let options = zakac_formatter::FmtOptions::default();
+    let file = check("rough.zaka", rough, Buffers::default());
+    let edits = zakac_lsp::format::formatting(&file, &options).unwrap();
+    assert_eq!(edits.len(), 1);
+    assert_eq!(edits[0].new_text, clean);
+    assert_eq!(edits[0].range.end, file.lines.position(rough.len() as u32));
+    let file = check("clean.zaka", clean, Buffers::default());
+    assert_eq!(zakac_lsp::format::formatting(&file, &options), Some(Vec::new()));
+    let broken = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n";
+    let file = check("broken.zaka", broken, Buffers::default());
+    assert_eq!(zakac_lsp::format::formatting(&file, &options), None);
+}
