@@ -1353,8 +1353,13 @@ impl Checker
         let generic = tern!(open, self.templates.fns_of(&callee.name), Vec::new());
         ret_if!(generic.is_empty(), self.plain_callee(callee, kind_args, place));
         let plain = self.fns.get(&callee.name).cloned().unwrap_or_default();
+        // A call that writes kinds calls a generic function: a plain one takes
+        // none.
         let fits = plain.iter().any(|s| self.fits_call(s, args, written));
-        ret_if!(fits, self.plain_callee(callee, kind_args, place));
+        ret_if!(
+            fits && kind_args.is_empty(),
+            self.plain_callee(callee, kind_args, place)
+        );
         let template =
             self.choose_template(generic, callee, kind_args, args, written, expect)?;
         let sig = self.generic_callee(&template, callee, kind_args, args, expect);

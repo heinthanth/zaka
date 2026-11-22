@@ -283,12 +283,14 @@ since count prefixes go with it.
 
 The loader reads the core module, `"စံကား/အခြေခံအုတ်မြစ်"` (`stdlib/core/mod.zaka` in
 `STD_MODULES`), as a file of the program (`read_core`), ahead of the first file that names
-one of its traits and does not declare that name itself (`uses_core`). A part opened alone
+one of its traits or enumerations and does not declare that name itself, or that writes
+`ပြောင်းလဲသော ရလဒ်ကောင်း` (`uses_core`). A part opened alone
 in an editor counts as the core module (`std_module_at`), and the whole core module is
 then not read beside it.
 
-`mod.zaka` shares its parts, `kinds.zaka`, `traits.zaka`, `verbs.zaka` and `heap.zaka`,
-whole. A share of a part in `core/mod.zaka` reads it from `CORE_PARTS`
+`mod.zaka` shares its parts, `kinds.zaka`, `traits.zaka`, `verbs.zaka`, `heap.zaka` and
+`convert.zaka`, whole. The parse of each file knows the structs and enumerations of the
+core module as data kinds with no import (`core_kinds`). A share of a part in `core/mod.zaka` reads it from `CORE_PARTS`
 (`import_core_part`), each one a unit named `စံကား/အခြေခံအုတ်မြစ်/<part>`; an import from
 another file cannot reach a part. The check counts each of these units as the core module
 (`in_core`). The readers that take the declarations of the whole core module from its

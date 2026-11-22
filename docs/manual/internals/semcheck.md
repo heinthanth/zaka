@@ -841,8 +841,9 @@ one parameter for the first two, and the struct and the unsigned distance for a 
 
 Once the check settles, `write_op_calls` puts each call into the tree, with `!` around a
 negated one, fresh node numbers and their data kinds. A name that a file declares, or a
-variable, hides a generic of the core module (`templates_named`), and a template or a
-trait of a file hides one of the core module. The compiler mark outside the core module is
+variable, hides a generic of the core module (`templates_named`), a template of a file
+hides one of the core module with the same head (`same_head`, `Templates::add_fn`) and
+stands beside one with another head, and a trait of a file hides one of the core module. The compiler mark outside the core module is
 ZK0349.
 
 ## Calls a node stands for
@@ -860,7 +861,14 @@ ZK0349.
   `စာသား` of a value that prints goes into `OpCalls::texts`, and `write_methods` puts the
   template text `"{x}"` in its place (`to_template`), so a struct with
   `စာသားအဖြစ်ပြောင်း` gives that text. `ပြောင်းလဲနိုင်သော` holds for a pair of the table
-  through `builtin_pair` in `traits.rs`.
+  through `builtin_pair` in `traits.rs`. With no plain function, `generic_conversion`
+  looks at the generic functions of the two names: the kind parameter that the one
+  parameter is written with stands for the source data kind and each other one for the
+  target (`conversion_kinds`), the constraints must hold in a trial that drops its
+  reports, and the call is checked with those kinds written (`Via::Generic`). A call that
+  writes kinds goes to the generics even when a plain function of the name takes its
+  arguments (`plain_or_generic`). The core's `စမ်းသပ်ပြောင်းလဲ` over two integer kinds
+  makes `ပြောင်းလဲသော ရလဒ်ကောင်း` between integers fail when the value does not fit.
 - **Imports.** A name imported from several files is one overload set (`import_fn`). The
   call of one that another file declares gets the name of that file, `<name>@<stem>`
   (`name_foreign`). A generic function imported beside plain functions of its name gets a

@@ -128,6 +128,7 @@ pub static CORE_PARTS: &[(&str, &str)] = &[
     core_part!("traits.zaka"),
     core_part!("verbs.zaka"),
     core_part!("heap.zaka"),
+    core_part!("convert.zaka"),
 ];
 
 /// The parts of the core joined into one text, for the readers that take
@@ -140,6 +141,8 @@ pub const CORE_SOURCE: &str = concat!(
     include_str!("../../../stdlib/core/verbs.zaka"),
     "\n",
     include_str!("../../../stdlib/core/heap.zaka"),
+    "\n",
+    include_str!("../../../stdlib/core/convert.zaka"),
 );
 
 /// The file of the stdlib that a module or a part of the core is read
@@ -599,7 +602,9 @@ impl Loader<'_>
             ImportStmt { names, ..n.clone() }
         });
         let seen: Vec<ImportStmt> = seen.collect();
-        let structs = imported_structs(&seen, &targets, &self.structs);
+        let mut structs = imported_structs(&seen, &targets, &self.structs);
+        // The core's kinds need no import, as its traits do not.
+        structs.extend(core_kinds().iter().cloned());
         let prepositions = imported_prepositions(&seen, &targets, &self.prepositions);
         let hints = imported_hints(&seen, &targets, &self.hints);
         #[rustfmt::skip]
@@ -1379,8 +1384,8 @@ fn lib_paths_from(program: &mut Program, file: &Path)
 }
 
 /// Whether the words of a file name a declaration of the core: one of
-/// its traits, and no name the file declares itself, which
-/// hides the core's.
+/// its traits or enumerations, and no name the file declares itself, which
+/// hides the core's; or write a conversion that passes a failure on.
 ///
 /// # Arguments
 ///
@@ -1400,7 +1405,10 @@ fn uses_core(file: &SourceFile, lexed: &LexOutput) -> bool
         .tokens
         .windows(2)
         .any(|w| auto(&w[0]) && w[1].kind == TokenKind::Kw(Kw::Mem));
-    named || stats
+    // A conversion that passes a failure on can call the checked conversion
+    // of integers.
+    let good = |t: &Token| t.kind == TokenKind::Kw(Kw::ConvertGood);
+    named || stats || lexed.tokens.iter().any(good)
 }
 
 /// The facts of the target a file names and does not declare itself, each
@@ -1515,7 +1523,8 @@ fn fill_facts(program: &mut Program, target: &Target, mut next_id: u32)
     }
 }
 
-/// The names of the traits the core declares.
+/// The names of the traits, the enumerations and the constants the core
+/// declares.
 ///
 /// # Returns
 ///
@@ -1529,10 +1538,31 @@ fn core_names() -> &'static HashSet<String>
         let names = core_stmts().iter().filter_map(|s| match s
         {
             Stmt::Trait(d) => Some(d.name.name.to_string()),
+            Stmt::Enum(d) => Some(d.name.name.to_string()),
             Stmt::Decl(d) if d.builtin => Some(d.name.name.to_string()),
             _ => None,
         });
         names.collect()
+    })
+}
+
+/// The names of the structs and the enumerations the core declares, as a
+/// parse knows the kinds of a file, an enumeration with its stem.
+///
+/// # Returns
+///
+/// The names, read from the core once.
+fn core_kinds() -> &'static HashSet<String>
+{
+    static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
+    NAMES.get_or_init(|| {
+        let names = core_stmts().iter().filter_map(|s| match s
+        {
+            Stmt::Struct(d) => Some(vec![d.name.name.to_string()]),
+            Stmt::Enum(d) => Some(enum_names(&d.name.name)),
+            _ => None,
+        });
+        names.flatten().collect()
     })
 }
 

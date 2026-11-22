@@ -105,12 +105,18 @@ another file it is ZK0349.
 | `တူမတူစစ်ဆေးနိုင်သော` | the data kinds that work with `==` and `!=`: all data kinds |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the data kinds that `ပြသမည်` prints: all data kinds except a handle of a data kind from outside |
 | `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | the data kinds that convert to another with `အဖြစ် ပြောင်းလဲသော ရလဒ်`, through the compiler's table or a `ပြောင်းလဲ`, and those that convert with a failure, through a `စမ်းသပ်ပြောင်းလဲ` ([Conversions](conversions.md#conversions-through-traits)) |
+| `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း` | the failure of a number read from text, or of an integer that does not fit its kind ([Conversions](conversions.md#integers-that-must-fit)) |
+| `စမ်းသပ်ပြောင်းလဲ`, generic over two integer kinds | the conversion of one integer to another that fails when the value does not fit, which `ပြောင်းလဲသော ရလဒ်ကောင်း` calls |
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile time](compile-time.md#the-facts-of-the-target)) |
 
 - A name that a file declares hides the name of the core module, so a trait named
   `ပေါင်းနိုင်သော` in a file is the file's own trait.
-- The compiler reads the core module for a program that names one of its traits or one of
-  its constants.
+- The compiler reads the core module for a program that names one of its traits, its
+  enumerations or its constants, or writes `ပြောင်းလဲသော ရလဒ်ကောင်း`. A file sees the data
+  kinds of the core module with no import.
+- A generic function of a file with the name of a generic function of the core module
+  hides that one when the two take the same parameters and give the same result, and
+  stands beside it otherwise.
 - The built-in data kinds, verbs and counts are names, not reserved words ([Reserved
   words](../reference/reserved-words.md)).
 

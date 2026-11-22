@@ -17,6 +17,7 @@ use zaka_host::TIME_RANGE;
 use zaka_host::TermWorld;
 use zaka_host::World;
 use zaka_host::io_member;
+use zaka_host::numbers;
 use zaka_host::time;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -439,6 +440,39 @@ pub extern "C" fn zk_host_format_utc(slot: *mut u8, ret: *const ZkKind, ms: *con
         Some(stamp) => good(slot, ret, Some(stamp.as_bytes())),
         None => fault(slot, ret, TIME_RANGE),
     }
+}
+
+/// Read text as a 64-bit float.
+#[unsafe(export_name = stamped!("host_parse_float"))]
+pub extern "C" fn zk_host_parse_float(
+    slot: *mut u8, ret: *const ZkKind, text: *const u8,
+)
+{
+    let ret = kind(ret);
+    match numbers::parse_float(&string_at(text))
+    {
+        Ok(value) => good_float(slot, ret, value),
+        Err(member) => fault(slot, ret, member),
+    }
+}
+
+/// Write a good result that holds a 64-bit float.
+///
+/// # Arguments
+///
+/// * `slot` - The result.
+/// * `ret` - Its kind.
+/// * `value` - The float.
+fn good_float(slot: *mut u8, ret: &ZkKind, value: f64)
+{
+    set_tag(slot, ret, 1);
+    let Some(f) = ret.field("ok")
+    else
+    {
+        return;
+    };
+    // SAFETY: the field lies in the result and holds a 64-bit float.
+    unsafe { slot.add(f.offset).cast::<f64>().write_unaligned(value) };
 }
 
 /// A plain list of text at a slot, each text copied.

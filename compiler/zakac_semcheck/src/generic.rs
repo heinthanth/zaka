@@ -95,8 +95,8 @@ impl Templates
         inner.filter_map(|k| self.fns.get(k).cloned()).collect()
     }
 
-    /// Record a generic function as one more of its name. The ones of a file
-    /// hide those of the core.
+    /// Record a generic function as one more of its name. One of a file hides
+    /// one of the core with the same head; with another head, both stand.
     ///
     /// # Arguments
     ///
@@ -106,16 +106,19 @@ impl Templates
     fn add_fn(&mut self, program: &Program, decl: &FnDecl, unit: u32)
     {
         let name = decl.name.name;
-        let inner = self.of_name.get(&name).cloned().unwrap_or_default();
+        let count = self.of_name.get(&name).map_or(0, Vec::len);
         let core = |k: &Name| self.units.get(k).is_some_and(|u| in_core(program, *u));
-        let held_in_file = inner.iter().any(|k| !core(k));
-        ret_if!(in_core(program, unit) && held_in_file);
-        let hidden = !in_core(program, unit) && !inner.is_empty() && !held_in_file;
-        do_if!(hidden, self.drop_fns(&name));
         let held = self.fns_of(&name);
-        let twice = held.iter().any(|h| same_head(h, decl));
+        let same = held.iter().filter(|h| same_head(h, decl)).map(|h| h.name.name);
+        let (core_twins, file_twins): (Vec<Name>, Vec<Name>) =
+            same.partition(|k| core(k));
+        let from_core = in_core(program, unit);
+        ret_if!(from_core && !file_twins.is_empty());
+        do_if!(!from_core, self.drop_twins(&name, &core_twins));
+        let twice = !file_twins.is_empty() || (from_core && !core_twins.is_empty());
         ret_if!(twice, self.diags.push(rd::duplicate_function(decl.name.span, &name)));
-        let inner = overload_name(name, held.len());
+        // The count before a drop keeps each inner name new.
+        let inner = overload_name(name, count);
         let mut renamed = decl.clone();
         renamed.name.name = inner;
         self.fns.insert(inner, renamed);
@@ -123,18 +126,20 @@ impl Templates
         self.of_name.entry(name).or_default().push(inner);
     }
 
-    /// Forget each generic function of a name.
+    /// Forget some generic functions of a name.
     ///
     /// # Arguments
     ///
     /// * `name` - The written name.
-    fn drop_fns(&mut self, name: &Name)
+    /// * `twins` - The inner names of the functions to forget.
+    fn drop_twins(&mut self, name: &Name, twins: &[Name])
     {
-        let inner = self.of_name.remove(name).unwrap_or_default();
-        for each in inner
+        let kept = self.of_name.get_mut(name);
+        do_if!(let Some(kept) = kept, kept.retain(|k| !twins.contains(k)));
+        for each in twins
         {
-            self.fns.remove(&each);
-            self.units.remove(&each);
+            self.fns.remove(each);
+            self.units.remove(each);
         }
     }
 

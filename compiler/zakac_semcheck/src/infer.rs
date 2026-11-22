@@ -820,8 +820,8 @@ impl Checker
         let target = self.written_kind(kind_arg, KindUse::Other);
         let built_in = from.is_none_or(|f| f.cast_allowed(target));
         let open = from.filter(|_| !built_in || n.pass);
-        let via = open.and_then(|f| self.conversion_fn(f, target, n.pass));
-        ret_if!(let Some(sig) = via, self.infer_conversion(n, value, &sig));
+        let via = open.and_then(|f| self.conversion_fn(f, target, n.pass, n.span));
+        ret_if!(let Some(via) = via, self.infer_conversion(n, value, via));
         let printed =
             open.filter(|f| target == DataKind::TEXT && f.as_external().is_none());
         ret_if!(let Some(f) = printed, self.infer_to_text(n, value, f));

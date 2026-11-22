@@ -187,12 +187,15 @@ when we want to join a number to other text with `+`:
   value](../../manual/language/conversions.md#what-happens-to-the-value)).
 - **Which data kinds widen.** The full list of conversions that Zaka makes on its own is
   on [Widening](../../manual/language/conversions.md#widening-the-change-that-needs-no-words).
-- **Text to a number.** Text such as `"၄၂"` converts to an integer through a function of
-  the stdlib, and the conversion can fail ([Conversions in the
+- **Text to a number.** Text such as `"၄၂"` converts to a number or a character through a
+  function of the stdlib, and the conversion can fail ([Conversions in the
   stdlib](../../manual/language/conversions.md#conversions-in-the-stdlib)).
 - **Our own data kinds.** A struct converts to another data kind, and back, through the
   functions of the conversion traits, `ပြောင်းလဲ` and `စမ်းသပ်ပြောင်းလဲ` ([Conversions
   through traits](../../manual/language/conversions.md#conversions-through-traits)).
+- **Integers that must fit.** `ပြောင်းလဲသော ရလဒ်ကောင်း` between two integers fails instead of
+  wrapping when the value does not fit ([Integers that must
+  fit](../../manual/language/conversions.md#integers-that-must-fit)).
 - **Same data kind.** A conversion to the data kind that the value has changes nothing.
 
 ## Recap

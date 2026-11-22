@@ -173,7 +173,7 @@ not look at names.
 
 | Case | Code |
 | --- | --- |
-| `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair that cannot fail: a pair of the table, a pair with a `ပြောင်းလဲ` alone, or a conversion to text | ZK0444 |
+| `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair that cannot fail: a pair of the table other than two integers ([Integers that must fit](#integers-that-must-fit)), a pair with a `ပြောင်းလဲ` alone, or a conversion to text | ZK0444 |
 | no pair in the table, no function of the two traits, and no conversion to text | ZK0408 |
 
 ## Conversions to text
@@ -201,18 +201,25 @@ a data kind from outside has no text, so its conversion is ZK0408.
 
 | Module | Function | Converts |
 | --- | --- | --- |
-| `"စံကား/စာသား"` | `စမ်းသပ်ပြောင်းလဲ` | text to an integer: an optional `-`, then the digits `0`-`9` or `၀`-`၉` |
+| `"စံကား/စာသား"` | `စမ်းသပ်ပြောင်းလဲ` | text to each integer kind: an optional `-`, then the digits `0`-`9` or `၀`-`၉` |
+| `"စံကား/စာသား"` | `စမ်းသပ်ပြောင်းလဲ` | text to `ဒဿမကိန်း` and `၃၂ ဘစ် ဒဿမကိန်း`: an optional sign, digits, an optional point with digits, and an optional exponent such as `e3` |
+| `"စံကား/စာသား"` | `စမ်းသပ်ပြောင်းလဲ` | text that holds one character to `စာလုံး` |
 | `"စံကား/လမ်းကြောင်း"` | `ပြောင်းလဲ` | text to a path |
 
 A path converts to text through its `စာသားအဖြစ်ပြောင်း`, as each struct does. Text and the
-integers are declared in no file, so to read an integer from text we import
-`စမ်းသပ်ပြောင်းလဲ` from `"စံကား/စာသား"`. Its failure is a member of
-`ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`: `ဗလာစာသား` (blank text), `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း`
-(a character that is not a digit) or `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest
-`ကိန်းပြည့်`). A kind alias converts as the data kind that it names.
+numbers are declared in no file, so to read a number or a character from text we import
+`စမ်းသပ်ပြောင်းလဲ` from `"စံကား/စာသား"`, which brings each of these functions.
+
+A failure to read a number is a member of `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`, which the [core
+module](core.md) declares, so it needs no import: `ဗလာစာသား` (blank text),
+`ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is no part of the number) or
+`အကန့်အသတ်ကျော်ခြင်း` (a number outside the range of its data kind). A text with no
+character or with more than one fails with a member of `စာလုံးဖတ်ခြင်းအမှားအယွင်း`, which
+the text module declares: `ဗလာစာသား` or `စာလုံးတစ်လုံးထက်ပိုခြင်း`. A kind alias converts
+as the data kind that it names.
 
 ```zaka
-"စံကား/စာသား" မှ စမ်းသပ်ပြောင်းလဲ နှင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
+"စံကား/စာသား" မှ စမ်းသပ်ပြောင်းလဲ ကို ထည့်သွင်းမည်။
 
 နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
@@ -225,6 +232,10 @@ integers are declared in no file, so to read an integer from text we import
 "12a" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 နှစ်ဆ("၂၁") ကို ပြသမည်။
 နှစ်ဆ("") ကို ပြသမည်။
+"၂၅၆" ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+"၂.၅e၁" ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+"က" ကို စာလုံး တစ်လုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+"ကခ" ကို စာလုံး တစ်လုံး အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
@@ -233,7 +244,16 @@ integers are declared in no file, so to read an integer from text we import
 အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း)
 ရလဒ်ကောင်း(၄၂)
 အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ ဗလာစာသား)
+အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ အကန့်အသတ်ကျော်ခြင်း)
+ရလဒ်ကောင်း(၂၅.၀)
+ရလဒ်ကောင်း(က)
+အမှားအယွင်း(စာလုံးဖတ်ခြင်းအမှားအယွင်းများထဲမှ စာလုံးတစ်လုံးထက်ပိုခြင်း)
 ```
+
+- An integer is read as a `ကိန်းပြည့်` first, so a value past the largest `ကိန်းပြည့်` fails
+  for `လက္ခဏာမဲ့ ကိန်းပြည့်` and `လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့်` too.
+- A `၃၂ ဘစ် ဒဿမကိန်း` is read as a `ဒဿမကိန်း`, then takes the nearest 32-bit value.
+- White space and words such as `inf` are no part of a number.
 
 ## What happens to the value
 
@@ -299,6 +319,44 @@ A
 ၀
 ၁၆၇၇၇၂၁၆.၀
 ```
+
+## Integers that must fit
+
+```text
+<integer> ကို <integer kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
+```
+
+A conversion between two integer kinds keeps the low bits, as the table above states. To
+fail instead when the value does not fit the target data kind, we write
+`ပြောင်းလဲသော ရလဒ်ကောင်း`: the conversion goes through the `စမ်းသပ်ပြောင်းလဲ` of the core
+module, which returns the same value in the new data kind, or `အကန့်အသတ်ကျော်ခြင်း` of
+`ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`, and passes the failure on.
+
+```zaka
+ဘိုက်ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+န ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် ဘ သည် န ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း ဖြစ်ပါစေ။
+ဘ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ဘိုက်ယူ(၂၀၀) ကို ပြသမည်။
+ဘိုက်ယူ(၃၀၀) ကို ပြသမည်။
+ဘိုက်ယူ(-၁) ကို ပြသမည်။
+၃၀၀ ကို လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း(၂၀၀)
+အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ အကန့်အသတ်ကျော်ခြင်း)
+အမှားအယွင်း(ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ အကန့်အသတ်ကျော်ခြင်း)
+၄၄
+```
+
+A value fits when it reads back as the same value in its old data kind and keeps its sign,
+so `-၁` fits no unsigned data kind. The other pairs of the table cannot fail, and
+`ပြောင်းလဲသော ရလဒ်ကောင်း` on them is ZK0444.
 
 ## Widening: the change that needs no words
 
@@ -417,4 +475,4 @@ To join two data kinds that do not widen, we convert one side:
 | ZK0404 | the two operands of an operator have no common data kind |
 | ZK0406 | a literal does not fit the data kind that its place gives it |
 | ZK0408 | a conversion between two data kinds that cannot convert, with no pair in the table and no function of the conversion traits |
-| ZK0444 | `ပြောင်းလဲသော ရလဒ်ကောင်း` on a conversion that cannot fail |
+| ZK0444 | `ပြောင်းလဲသော ရလဒ်ကောင်း` on a conversion that cannot fail; between two integers it checks that the value fits |

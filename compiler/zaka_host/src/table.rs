@@ -14,6 +14,7 @@ use crate::kinds::INPUT_STREAM;
 use crate::kinds::IO_ERROR;
 use crate::kinds::NO_PERMISSION;
 use crate::kinds::NOT_FOUND;
+use crate::kinds::NUMBER_ERROR;
 use crate::kinds::OTHER;
 use crate::kinds::OUTPUT_STREAM;
 use crate::kinds::PATH_KIND;
@@ -130,6 +131,8 @@ host_fns! {
     UnixMs = "ယူနစ်အချိန်ကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(unix_ms);
     /// Format one Unix millisecond stamp in UTC.
     FormatUtc = "အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း"(I64) -> Some(TEXT), Some(TIME_ERROR), None, HostAction::Effect(format_utc);
+    /// Read text as a 64-bit float: the conversion of text to `ဒဿမကိန်း`.
+    ParseFloat = "စမ်းသပ်ပြောင်းလဲ"(TEXT) -> Some(F64), Some(NUMBER_ERROR), None, HostAction::Effect(parse_float);
 }
 
 /// Run [`HostFn::ReadLine`].
@@ -229,6 +232,15 @@ fn format_utc(args: &Args, _: &mut Effects<'_>) -> HostValue
     {
         Some(stamp) => HostValue::Good(Some(Box::new(HostValue::Text(stamp)))),
         None => HostValue::Fault(Box::new(HostValue::Member(TIME_RANGE))),
+    }
+}
+
+fn parse_float(args: &Args, _: &mut Effects<'_>) -> HostValue
+{
+    match crate::numbers::parse_float(&args.text(0))
+    {
+        Ok(value) => HostValue::Good(Some(Box::new(HostValue::Float(value.to_bits())))),
+        Err(member) => HostValue::Fault(Box::new(HostValue::Member(member))),
     }
 }
 

@@ -953,6 +953,7 @@ impl FnGen<'_, '_>
             HostFn::MonotonicMs => format!("zk_host_monotonic_ms({slot})"),
             HostFn::UnixMs => format!("zk_host_unix_ms({slot})"),
             HostFn::FormatUtc => format!("zk_host_format_utc({slot}, {r}, {})", v[0]),
+            HostFn::ParseFloat => format!("zk_host_parse_float({slot}, {r}, {})", v[0]),
             _ =>
             {
                 let op = func as u32;

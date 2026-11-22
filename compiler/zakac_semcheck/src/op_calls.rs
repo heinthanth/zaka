@@ -24,8 +24,11 @@ use zakac_ast::expr::PrefixOp;
 use zakac_ast::expr::StrExpr;
 use zakac_ast::expr::StrPiece;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::CallStmt;
+use zakac_ast::stmt::FnDecl;
+use zakac_ast::stmt::KindParam;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::VerbOp;
@@ -39,11 +42,13 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
+use crate::generic::kind_ast;
 use crate::kind::DataKind;
 use crate::scope::FnSig;
 use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::semcheck::KindTable;
+use crate::structs::StructTable;
 
 /// The function `+` calls.
 pub const ADD_FN: &str = "ပေါင်း";
@@ -82,6 +87,17 @@ pub const CONVERT_FN: &str = "ပြောင်းလဲ";
 /// The function of `စမ်းသပ်ပြောင်းလဲနိုင်သော`, which a conversion that can
 /// fail calls.
 pub const TRY_CONVERT_FN: &str = "စမ်းသပ်ပြောင်းလဲ";
+
+/// The function a conversion goes through.
+#[derive(Debug, Clone)]
+pub(crate) enum Via
+{
+    /// A plain function.
+    Plain(FnSig),
+    /// A generic function, under its name, with the kinds of its kind
+    /// parameters.
+    Generic(&'static str, Vec<Kind>),
+}
 
 /// A call that stands in place of an operator.
 #[derive(Debug, Clone, Copy)]
@@ -349,21 +365,23 @@ impl Checker
     /// The function a conversion goes through: a `ပြောင်းလဲ` that takes the
     /// source kind and gives the target kind, or a `စမ်းသပ်ပြောင်းလဲ` that gives a
     /// result whose good side is the target kind, from the file of the use or
-    /// the file of either kind. A conversion that passes a failure on takes the
-    /// second first, a plain one the first.
+    /// the file of either kind; else a generic function of one of these names
+    /// ([`Checker::generic_conversion`]). A conversion that passes a failure on
+    /// takes `စမ်းသပ်ပြောင်းလဲ` first, a plain one `ပြောင်းလဲ`.
     ///
     /// # Arguments
     ///
     /// * `from` - The source kind.
     /// * `to` - The target kind.
     /// * `pass` - Whether the conversion passes a failure on.
+    /// * `span` - The conversion, for the kinds a generic function takes.
     ///
     /// # Returns
     ///
     /// The function, or `None` when none fits.
     pub(crate) fn conversion_fn(
-        &self, from: DataKind, to: DataKind, pass: bool,
-    ) -> Option<FnSig>
+        &mut self, from: DataKind, to: DataKind, pass: bool, span: Span,
+    ) -> Option<Via>
     {
         let sure =
             self.taking(CONVERT_FN, from, to).into_iter().find(|s| s.ret == Some(to));
@@ -372,7 +390,42 @@ impl Checker
             fails.and_then(DataKind::fallible_parts).and_then(|(ok, _)| ok) == Some(to)
         };
         let tried = self.taking(TRY_CONVERT_FN, from, to).into_iter().find(good);
-        tern!(pass, tried.or(sure), sure.or(tried))
+        let order =
+            tern!(pass, [TRY_CONVERT_FN, CONVERT_FN], [CONVERT_FN, TRY_CONVERT_FN]);
+        let plain = tern!(pass, tried.clone().or(sure.clone()), sure.or(tried));
+        ret_if!(let Some(sig) = plain, Some(Via::Plain(sig)));
+        order.into_iter().find_map(|name| self.generic_conversion(name, from, to, span))
+    }
+
+    /// A generic function of a conversion trait that converts one kind to
+    /// another: it takes one value whose kind is a kind parameter or the source
+    /// kind, the kind parameter of the value stands for the source kind and
+    /// each other one for the target kind, and the kinds meet the constraints.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function.
+    /// * `from` - The source kind.
+    /// * `to` - The target kind.
+    /// * `span` - The conversion.
+    ///
+    /// # Returns
+    ///
+    /// The call through the generic function, or `None` when none fits.
+    fn generic_conversion(
+        &mut self, name: &'static str, from: DataKind, to: DataKind, span: Span,
+    ) -> Option<Via>
+    {
+        let templates = self.templates.fns_of(&Name::from(name));
+        templates.iter().find_map(|t| {
+            let kinds = conversion_kinds(t, from, to, &self.structs)?;
+            let before = self.diags.len();
+            let met = self.meets_bounds(&t.kind_params, &kinds, span);
+            self.diags.truncate(before);
+            let written = kinds.iter().map(|k| kind_ast(*k, span));
+            let kind_args = written.collect::<Option<Vec<Kind>>>().filter(|_| met)?;
+            Some(Via::Generic(name, kind_args))
+        })
     }
 
     /// The functions of a name that take one value of a kind, in the file of
@@ -403,28 +456,63 @@ impl Checker
     ///
     /// * `n` - The conversion.
     /// * `value` - The value it converts, checked before.
-    /// * `sig` - The function.
+    /// * `via` - The function.
     ///
     /// # Returns
     ///
     /// The result kind of the call: the good result when it passes a failure
     /// on.
     pub(crate) fn infer_conversion(
-        &mut self, n: &VerbExpr, value: &Expr, sig: &FnSig,
+        &mut self, n: &VerbExpr, value: &Expr, via: Via,
     ) -> Option<DataKind>
     {
+        let Via::Plain(sig) = via
+        else
+        {
+            return self.generic_conversion_call(n, value, via);
+        };
         let fails = sig.ret.and_then(DataKind::fallible_parts);
         let word = tern!(fails.is_some(), TRY_CONVERT_FN, CONVERT_FN);
         let written = Ident::builder().name(word).span(n.span).build();
         self.check_pass(&written, sig.ret, n.pass, false, n.span);
         let unsafe_call = format!("a call of \"{word}\", an unsafe function,");
         do_if!(sig.unchecked, self.need_unchecked(n.span, &unsafe_call));
-        let callee = Ident::builder().name(self.known_name(sig)).span(n.span).build();
+        let callee = Ident::builder().name(self.known_name(&sig)).span(n.span).build();
         #[rustfmt::skip]
         let call = CallExpr::builder().id(n.id).callee(callee).args(vec![value.clone()])
             .pass(n.pass).span(n.span).build();
         self.op_calls.methods.insert(n.id, call);
         tern!(let Some((ok, _)) = fails.filter(|_| n.pass), ok, sig.ret)
+    }
+
+    /// Check a conversion through a generic function as the call of it with
+    /// its kinds written, which takes the node of the conversion.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The conversion.
+    /// * `value` - The value it converts.
+    /// * `via` - The generic function and its kinds.
+    ///
+    /// # Returns
+    ///
+    /// The result kind of the call.
+    fn generic_conversion_call(
+        &mut self, n: &VerbExpr, value: &Expr, via: Via,
+    ) -> Option<DataKind>
+    {
+        let Via::Generic(name, kind_args) = via
+        else
+        {
+            return None;
+        };
+        let callee = Ident::builder().name(name).span(n.span).build();
+        #[rustfmt::skip]
+        let call = CallExpr::builder().id(n.id).callee(callee).kind_args(kind_args)
+            .args(vec![value.clone()]).pass(n.pass).span(n.span).build();
+        let kind = self.infer_call(&call);
+        self.op_calls.methods.insert(n.id, call);
+        kind
     }
 
     /// Check a conversion to text with no function of its own as the text the
@@ -683,4 +771,36 @@ fn to_template(n: &mut Expr)
     };
     let pieces = vec![StrPiece::TemplateSlot(Box::new(value))];
     *n = Expr::Str(StrExpr::builder().id(v.id).pieces(pieces).span(v.span).build());
+}
+
+/// The kinds of the kind parameters of a generic function of a conversion
+/// trait for one conversion: the kind parameter its one parameter is written
+/// with stands for the source kind, and each other one for the target kind.
+/// A parameter of a written kind must be the source kind.
+///
+/// # Arguments
+///
+/// * `t` - The generic function.
+/// * `from` - The source kind.
+/// * `to` - The target kind.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The kinds, or `None` when the function takes no such value.
+fn conversion_kinds(
+    t: &FnDecl, from: DataKind, to: DataKind, structs: &StructTable,
+) -> Option<Vec<DataKind>>
+{
+    let [param] = t.params.as_slice()
+    else
+    {
+        return None;
+    };
+    let bare = param.kind.args.is_empty() && param.kind.wraps.is_empty();
+    let named = param.kind.name.as_ref().map(|i| i.name).filter(|_| bare);
+    let source = |p: &KindParam| named == Some(p.name.name);
+    let generic = t.kind_params.iter().any(source);
+    ret_if!(!generic && DataKind::from_ast(&param.kind, structs) != from, None);
+    Some(t.kind_params.iter().map(|p| tern!(source(p), from, to)).collect())
 }

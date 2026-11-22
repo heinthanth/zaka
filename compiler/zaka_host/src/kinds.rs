@@ -39,6 +39,20 @@ pub const IO_ERROR: &str = "အချက်အလက်အဝင်အထွက�
 /// The error enumeration of the time module.
 pub const TIME_ERROR: &str = "အချိန်အမှားအယွင်း";
 
+/// The error enumeration of a number read from text, as the core declares it.
+pub const NUMBER_ERROR: &str = "ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း";
+
+/// The member of [`NUMBER_ERROR`] for blank text, `ဗလာစာသား`.
+pub const NUMBER_BLANK: u32 = 0;
+
+/// The member of [`NUMBER_ERROR`] for a character that no number holds,
+/// `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း`.
+pub const NUMBER_CHAR: u32 = 1;
+
+/// The member of [`NUMBER_ERROR`] for a number outside the range of its kind,
+/// `အကန့်အသတ်ကျော်ခြင်း`.
+pub const NUMBER_RANGE: u32 = 2;
+
 /// The member of [`TIME_ERROR`] for a stamp outside the calendar range.
 pub const TIME_RANGE: u32 = 0;
 

@@ -3,6 +3,9 @@
 //! null address. The VM, the check and the native runtime print through these,
 //! so their output cannot drift.
 
+use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
+
 /// The text a print op writes for `true`.
 pub const TRUE_TEXT: &str = "မှန်";
 /// The text a print op writes for `false`.
@@ -99,4 +102,45 @@ mod tests
         assert_eq!(float_text(32, u64::from(1.5f32.to_bits())), "၁.၅");
         assert_eq!(float_text(64, f64::INFINITY.to_bits()), "inf");
     }
+}
+
+/// Read text as a 64-bit float: an optional sign, digits `0`-`9` or `၀`-`၉`, an
+/// optional point with digits, and an optional exponent, `e` or `E` with an
+/// optional sign and digits. White space and words such as `inf` are no
+/// number.
+///
+/// # Arguments
+///
+/// * `text` - The text.
+///
+/// # Returns
+///
+/// The float, or the member of [`crate::NUMBER_ERROR`] that gives the reason
+/// the text is no float: blank text, a character no float holds, or a float too
+/// large for 64 bits.
+pub fn parse_float(text: &str) -> Result<f64, u32>
+{
+    ret_if!(text.is_empty(), Err(crate::NUMBER_BLANK));
+    let western: String = text.chars().map(western_digit).collect();
+    let allowed =
+        |c: char| c.is_ascii_digit() || matches!(c, '+' | '-' | '.' | 'e' | 'E');
+    ret_if!(!western.chars().all(allowed), Err(crate::NUMBER_CHAR));
+    let value: f64 = western.parse().map_err(|_| crate::NUMBER_CHAR)?;
+    tern!(value.is_finite(), Ok(value), Err(crate::NUMBER_RANGE))
+}
+
+/// The Western digit of a Burmese digit; another character stands as it is.
+///
+/// # Arguments
+///
+/// * `c` - The character.
+///
+/// # Returns
+///
+/// The character, with `၀`-`၉` read as `0`-`9`.
+fn western_digit(c: char) -> char
+{
+    let burmese = ('၀'..='၉').contains(&c);
+    let shift = |c: char| char::from_u32(c as u32 - '၀' as u32 + '0' as u32);
+    tern!(burmese, shift(c).unwrap_or(c), c)
 }

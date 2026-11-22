@@ -43,7 +43,7 @@ The [sign form](functions-calls.md#the-sign-form) also works.
 | `<text> တွင် <old> ကို <new> ဖြင့် အကုန်အစားထိုး` | the text with each old piece replaced, from the start on |
 | `<text> ကို <count> ကြိမ် ထပ်ခါထပ်ခါဆက်` | the text repeated exactly that many times, or empty text for a count of zero or less |
 | `<text> ကို စာလုံးကြီးပြောင်း`, `<text> ကို စာလုံးသေးပြောင်း` | the text with each Latin letter in upper or in lower case |
-| `<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` | the text read as an integer, or a failure. Import `စမ်းသပ်ပြောင်းလဲ` to use this conversion |
+| `<text> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်` | the text read as an integer, a decimal number or a character, or a failure ([Conversions in the stdlib](conversions.md#conversions-in-the-stdlib)). Import `စမ်းသပ်ပြောင်းလဲ` to use these conversions |
 
 A u8 number counts the u8s of the UTF-8 form of the text, as a [range of
 text](text.md#ranges) does, so `ကမ္ဘာ` starts at 22 in `မင်္ဂလာ ကမ္ဘာ`, because each
