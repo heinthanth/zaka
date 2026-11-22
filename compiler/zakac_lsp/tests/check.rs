@@ -34,6 +34,24 @@ fn check(name: &str, text: &str, buffers: Buffers) -> FileCheck
     check_file(&uri, &path, text, buffers)
 }
 
+/// The place of the `k`-th `needle` of `text`, counted from 0. A sample of the
+/// repo is found by its words, not by its lines, so a format of the sample
+/// leaves the test as it is.
+fn nth(text: &str, needle: &str, k: usize) -> Position
+{
+    let off = text.match_indices(needle).nth(k).map(|(i, _)| i).unwrap();
+    let line = text[..off].matches('\n').count();
+    let start = text[..off].rfind('\n').map_or(0, |n| n + 1);
+    let character = text[start..off].encode_utf16().count() as u32;
+    Position { line: line as u32, character }
+}
+
+/// The line of `text` that starts with `prefix`, counted from 0.
+fn line_starting(text: &str, prefix: &str) -> u32
+{
+    text.lines().position(|l| l.starts_with(prefix)).unwrap() as u32
+}
+
 /// The UTF-16 column of the first `needle` in line `line` of `text`.
 fn column(text: &str, line: usize, needle: &str) -> u32
 {
@@ -111,9 +129,8 @@ fn hover_gives_the_kind_of_a_variable()
 {
     let text = include_str!("../../../samples/basics/text.zaka");
     let file = check("text.zaka", text, Buffers::default());
-    let row = text.lines().nth(7).unwrap();
-    let at = row[..row.rfind(" န ").unwrap() + 1].encode_utf16().count() as u32;
-    let found = hover(&file, Position { line: 7, character: at }).unwrap();
+    let at = nth(text, " န ", 2);
+    let found = hover(&file, Position { character: at.character + 1, ..at }).unwrap();
     let Contents::MarkupContent(content) = found.contents
     else
     {
@@ -228,17 +245,18 @@ fn a_local_goes_to_its_declaration()
 {
     let text = include_str!("../../../samples/basics/text.zaka");
     let file = check("text.zaka", text, Buffers::default());
-    let row = text.lines().nth(8).unwrap();
-    let use_at = row[..row.rfind(" န ").unwrap() + 1].encode_utf16().count() as u32;
-    let found = definition(&file, Position { line: 8, character: use_at }).unwrap();
-    assert_eq!(found.range.start, at(text, 6, "န "));
+    let use_at = nth(text, " န ", 4);
+    let found =
+        definition(&file, Position { character: use_at.character + 1, ..use_at })
+            .unwrap();
+    assert_eq!(found.range.start, nth(text, "န ", 0));
 }
 
 #[test]
 fn an_imported_function_goes_to_its_file()
 {
     let (file, text) = points();
-    let found = definition(&file, at(text, 13, "ရွှေ့")).unwrap();
+    let found = definition(&file, nth(text, "ရွှေ့", 1)).unwrap();
     assert!(found.uri.path().ends_with("lib/point.zaka"), "{}", found.uri);
 }
 
@@ -246,8 +264,8 @@ fn an_imported_function_goes_to_its_file()
 fn a_struct_name_and_a_field_go_to_their_declarations()
 {
     let (file, text) = points();
-    let kind = definition(&file, at(text, 3, "နေရာ")).unwrap();
-    let field = definition(&file, at(text, 3, "x အနေဖြင့် ၃")).unwrap();
+    let kind = definition(&file, nth(text, "နေရာ", 1)).unwrap();
+    let field = definition(&file, nth(text, "x အနေဖြင့် ၃", 0)).unwrap();
     assert!(kind.uri.path().ends_with("lib/point.zaka"));
     assert_eq!((kind.range.start.line, field.range.start.line), (2, 3));
 }
@@ -256,7 +274,7 @@ fn a_struct_name_and_a_field_go_to_their_declarations()
 fn references_reach_each_file()
 {
     let (file, text) = points();
-    let found = references(std::iter::once(&file), &file, at(text, 13, "ရွှေ့"), true);
+    let found = references(std::iter::once(&file), &file, nth(text, "ရွှေ့", 1), true);
     let in_lib = found.iter().filter(|l| l.uri.path().ends_with("lib/point.zaka"));
     assert_eq!(in_lib.count(), 1, "{found:?}");
     assert!(found.len() >= 3, "{found:?}");
@@ -266,7 +284,7 @@ fn references_reach_each_file()
 fn a_rename_to_a_reserved_word_is_refused()
 {
     let (file, text) = points();
-    let pos = at(text, 13, "ရွှေ့");
+    let pos = nth(text, "ရွှေ့", 1);
     assert!(rename(std::iter::once(&file), &file, pos, "ပြီးဆုံးပါပြီး").is_err());
     let edit = rename(std::iter::once(&file), &file, pos, "ရွှေ့ပါ").unwrap();
     assert_eq!(edit.changes.unwrap().len(), 2);
@@ -285,7 +303,7 @@ fn the_outline_holds_the_functions_and_the_start_block()
 fn completion_offers_reserved_words_and_declared_names()
 {
     let (file, text) = points();
-    let labels: Vec<String> = completions(Some(&file), at(text, 17, "နှစ်ထပ်"))
+    let labels: Vec<String> = completions(Some(&file), nth(text, "နှစ်ထပ်", 3))
         .into_iter()
         .map(|c| c.label)
         .collect();
@@ -320,8 +338,8 @@ fn an_alias_goes_to_its_declaration()
 {
     let text = include_str!("../../../samples/structs/aliases.zaka");
     let file = check("aliases.zaka", text, Buffers::default());
-    let found = definition(&file, at(text, 20, "ကျောင်းသား")).unwrap();
-    assert_eq!(found.range.start, at(text, 5, "ကျောင်းသား"));
+    let found = definition(&file, nth(text, "ကျောင်းသား", 2)).unwrap();
+    assert_eq!(found.range.start, nth(text, "ကျောင်းသား", 0));
 }
 
 #[test]
@@ -345,8 +363,10 @@ fn completion_keeps_to_the_scope_at_the_cursor()
         let names = found.into_iter().filter(|c| c.detail.is_none());
         names.map(|c| c.label).collect()
     };
-    assert_eq!(names(7), ["ကွက်လပ်ရေ", "စာ", "န", "အဖြေ"]);
-    assert_eq!(names(15), ["ကွက်လပ်ရေ", "နှုတ်ခွန်း"]);
+    let in_loop = line_starting(text, "အကယ်၍ စာ ၏ အကွက် န ");
+    let at_end = line_starting(text, "နှုတ်ခွန်း ကို ပြသမည်။");
+    assert_eq!(names(in_loop), ["ကွက်လပ်ရေ", "စာ", "န", "အဖြေ"]);
+    assert_eq!(names(at_end), ["ကွက်လပ်ရေ", "နှုတ်ခွန်း"]);
 }
 
 /// The labels completion offers at the end of line `line` of `text`.
