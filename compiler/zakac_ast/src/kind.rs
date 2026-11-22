@@ -14,6 +14,9 @@ use crate::expr::Ident;
 use crate::expr::Phrases;
 use crate::name::Name;
 
+/// The head noun of a trait value kind, after the trait: `<trait> အရာ`.
+pub const TRAIT_HEAD: &str = "အရာ";
+
 /// The base of a kind, without its size or sign.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[derive(AsRefStr)]
@@ -45,6 +48,11 @@ pub enum BaseKind
     /// A ဇယား, with its index kind and value kind in [`Kind::table`]:
     /// `<index kind> ဖြင့် ညွှန်းသော <value kind> ဇယား`.
     Table,
+    /// A trait value, `<trait> အရာ`: a value of each kind that has the trait,
+    /// whose calls run the functions of the kind it holds. The trait is in
+    /// [`Kind::name`], its kinds after the first in [`Kind::args`].
+    #[strum(serialize = "trait_value")]
+    TraitValue,
 }
 
 /// The two kinds of a ဇယား kind.

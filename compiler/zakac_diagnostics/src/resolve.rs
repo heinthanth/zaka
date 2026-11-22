@@ -1104,3 +1104,103 @@ pub fn case_with_data(span: Span, owner: &str) -> Diagnostic
     let msg = t!("codes.ZK0359.message", e = owner);
     Diagnostic::new(Code::CaseWithData, msg, span).with_help(t!("codes.ZK0359.help"))
 }
+
+/// The reason a trait cannot be a kind, `<trait> အရာ`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotAKind
+{
+    /// The compiler gives the trait; it has no functions to run.
+    Marked,
+    /// A function does not take the trait's kind first.
+    First,
+    /// A function takes the trait's kind in another parameter too.
+    Elsewhere,
+    /// A function gives the trait's kind back inside another kind.
+    Result,
+    /// A function has kind parameters of its own.
+    Generic,
+}
+
+/// A trait used as a kind has a function a trait value cannot run.
+///
+/// # Arguments
+///
+/// * `span` - The trait where it is used as a kind.
+/// * `name` - The trait.
+/// * `cause` - The reason.
+/// * `func` - The function of the trait the reason is about.
+///
+/// # Returns
+///
+/// The `ZK0360` diagnostic.
+pub fn trait_not_a_kind(
+    span: Span, name: &str, cause: NotAKind, func: &str,
+) -> Diagnostic
+{
+    let reason = match cause
+    {
+        NotAKind::Marked => t!("codes.ZK0360.marked"),
+        NotAKind::First => t!("codes.ZK0360.first", f = func),
+        NotAKind::Elsewhere => t!("codes.ZK0360.elsewhere", f = func),
+        NotAKind::Result => t!("codes.ZK0360.result", f = func),
+        NotAKind::Generic => t!("codes.ZK0360.generic", f = func),
+    };
+    let msg = t!("codes.ZK0360.message", t = name, w = reason);
+    Diagnostic::new(Code::TraitNotAKind, msg, span).with_help(t!("codes.ZK0360.help"))
+}
+
+/// What a program does with a trait value that trait values do not have.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TraitValueUse
+{
+    /// `==`, `!=` or `တစ်ခုတည်း`.
+    Compare,
+    /// A print.
+    Print,
+    /// `ကနဦးတန်ဖိုး`.
+    Initial,
+    /// A call through it as a function value.
+    Call,
+}
+
+/// A trait value is used as trait values are not.
+///
+/// # Arguments
+///
+/// * `span` - The use.
+/// * `use_` - What the use does.
+///
+/// # Returns
+///
+/// The `ZK0361` diagnostic.
+pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
+{
+    let what = match use_
+    {
+        TraitValueUse::Compare => t!("codes.ZK0361.compare"),
+        TraitValueUse::Print => t!("codes.ZK0361.print"),
+        TraitValueUse::Initial => t!("codes.ZK0361.initial"),
+        TraitValueUse::Call => t!("codes.ZK0361.call"),
+    };
+    let msg = t!("codes.ZK0361.message", w = what);
+    Diagnostic::new(Code::TraitValueUse, msg, span).with_help(t!("codes.ZK0361.help"))
+}
+
+/// A plain value goes into a trait value whose trait has a function that
+/// changes its first parameter, so that function changes the clone alone.
+///
+/// # Arguments
+///
+/// * `span` - The value that goes in.
+/// * `kind` - Its kind.
+/// * `func` - The function that changes its first parameter.
+///
+/// # Returns
+///
+/// The `ZK0362` diagnostic.
+pub fn trait_value_clones(span: Span, kind: &str, func: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0362.message", k = kind, f = func);
+    Diagnostic::new(Code::TraitValueClones, msg, span)
+        .with_help(t!("codes.ZK0362.help", k = kind))
+}

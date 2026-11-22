@@ -31,8 +31,8 @@ pub enum LintLevel
 
 /// The codes whose level `--lint-allow`, `--lint-warn` and `--lint-error` set:
 /// the pointer lint, the warnings of the checks that a proof can leave in
-/// doubt, and the naturalness rules.
-pub const LINT_CODES: [Code; 25] = [
+/// doubt, the naturalness rules and the clones of trait values.
+pub const LINT_CODES: [Code; 26] = [
     Code::BadFree,
     Code::BorrowStored,
     Code::InvalidatedLoan,
@@ -58,6 +58,7 @@ pub const LINT_CODES: [Code; 25] = [
     Code::SpokenForm,
     Code::MixedForms,
     Code::VerbBeforeNot,
+    Code::TraitValueClones,
 ];
 
 /// The spoken spellings. Their mix with the written ones (ZK0511) is no
@@ -109,6 +110,9 @@ pub enum LintGroup
     Naturalness,
     /// The spoken spellings: `--lint-allow spoken` lets a program use them.
     Spoken,
+    /// A plain value that goes into a trait value as a clone, where a function
+    /// of the trait changes the clone alone.
+    Clones,
 }
 
 impl LintGroup
@@ -150,6 +154,7 @@ impl LintGroup
             LintGroup::Overflow => &[Code::OverflowProven],
             LintGroup::Naturalness => NATURALNESS_CODES,
             LintGroup::Spoken => SPOKEN_CODES,
+            LintGroup::Clones => &[Code::TraitValueClones],
         }
     }
 }

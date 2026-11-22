@@ -150,7 +150,7 @@ pub(crate) fn inheriting(program: &Program) -> Vec<(Kind, Name)>
 /// # Returns
 ///
 /// `Some` with the answer for a built-in trait, `None` for another name.
-fn builtin(name: &str, kind: DataKind) -> Option<bool>
+pub(crate) fn builtin(name: &str, kind: DataKind) -> Option<bool>
 {
     match name
     {
@@ -232,14 +232,14 @@ impl Checker
 
 /// A function a trait names, for one kind: its name, parameter kinds and
 /// result kind.
-struct Wanted
+pub(crate) struct Wanted
 {
     /// The function name.
-    name: Ident,
+    pub name: Ident,
     /// The parameter kinds.
-    params: Vec<DataKind>,
+    pub params: Vec<DataKind>,
     /// The result kind.
-    ret: Option<DataKind>,
+    pub ret: Option<DataKind>,
 }
 
 impl Checker
@@ -291,7 +291,7 @@ impl Checker
     /// # Returns
     ///
     /// `true` when the kind has the trait.
-    fn has_trait(
+    pub(crate) fn has_trait(
         &mut self, kind: DataKind, need: &Kind, span: Span, seen: &mut HashSet<Name>,
     ) -> bool
     {
@@ -300,6 +300,8 @@ impl Checker
         {
             return true;
         };
+        // A trait value of a trait has that trait, with the same kinds.
+        ret_if!(self.is_value_of(kind, &ident.name, &need.args), true);
         let decl = self.traits.get(&ident.name).map(|(_, d)| d.clone());
         let Some(decl) = decl
         else
@@ -351,6 +353,29 @@ impl Checker
         met
     }
 
+    /// Whether a kind is the trait value kind of a trait with these kinds.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    /// * `name` - The trait.
+    /// * `args` - The kinds written after the first.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    fn is_value_of(&self, kind: DataKind, name: &Name, args: &[Kind]) -> bool
+    {
+        let Some((held, kinds)) = kind.as_trait_value()
+        else
+        {
+            return false;
+        };
+        let written: Vec<DataKind> =
+            args.iter().map(|a| DataKind::from_ast(a, &self.structs)).collect();
+        held == *name && kinds == written
+    }
+
     /// Whether a kind has a conversion trait through the compiler's rule:
     /// `ပြောင်းလဲနိုင်သော` holds for each pair the conversion verb converts, and
     /// either trait for a pair a generic function of it converts, such as the
@@ -398,7 +423,7 @@ impl Checker
     /// # Returns
     ///
     /// The phrases, or `None` after a report or for a kind with no phrase.
-    fn trait_kinds(
+    pub(crate) fn trait_kinds(
         &mut self, decl: &TraitDecl, kind: DataKind, ident: &Ident, args: &[Kind],
     ) -> Option<HashMap<Name, Kind>>
     {
@@ -422,7 +447,9 @@ impl Checker
     /// # Returns
     ///
     /// The functions.
-    fn trait_fns(&self, decl: &TraitDecl, bound: &HashMap<Name, Kind>) -> Vec<Wanted>
+    pub(crate) fn trait_fns(
+        &self, decl: &TraitDecl, bound: &HashMap<Name, Kind>,
+    ) -> Vec<Wanted>
     {
         let kind_of = |k: &Kind| {
             let mut k = k.clone();
@@ -532,7 +559,7 @@ impl Checker
     /// # Returns
     ///
     /// The units.
-    fn places(&self, kind: DataKind, trait_name: &str) -> Vec<u32>
+    pub(crate) fn places(&self, kind: DataKind, trait_name: &str) -> Vec<u32>
     {
         let home = self.kind_home(kind);
         let of_trait = self.traits.get(trait_name).map(|(u, _)| *u);

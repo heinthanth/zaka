@@ -254,6 +254,12 @@ fn check_fields(decl: &StructDecl, names: &BTreeSet<&str>, diags: &mut Vec<Diagn
 /// The diagnostic, or `None` for a kind with no unknown name.
 pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagnostic>
 {
+    // A trait value names a trait; the check of trait values reports one
+    // that no trait declares.
+    if kind.base == BaseKind::TraitValue
+    {
+        return kind.args.iter().find_map(|k| unknown_name(k, names));
+    }
     if let Some(sig) = kind.sig.as_deref()
     {
         let params = sig.params.iter().map(|p| &p.kind);
@@ -331,7 +337,8 @@ fn field_text(
         let ret = sig.ret.as_ref().map(text);
         let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
         let phrases = phrases_inside(&sig.phrases);
-        let parts = FnText { params, ret: ret.as_deref(), phrases: phrases.as_deref() };
+        #[rustfmt::skip]
+        let parts = FnText { params, ret: ret.as_deref(), phrases: phrases.as_deref(), of_trait: None };
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("({}){}", join_fn(&parts), split_marks(&marks).1);
     }

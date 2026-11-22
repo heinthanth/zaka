@@ -7,6 +7,8 @@ use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::kinds as kd;
+use zakac_diagnostics::resolve as rd;
+use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_i18n::t;
 use zakac_lexer::token::Kw;
 use zakac_parser::describe::kw_text;
@@ -576,6 +578,9 @@ impl Checker
     ) -> Option<DataKind>
     {
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
+        let held = l.is_trait_value() || r.is_trait_value();
+        let compare = rd::trait_value_use(span, TraitValueUse::Compare);
+        ret_if!(held, self.report(compare), None);
         ret_if!(class == OpClass::Same, self.same_pair(l, r, span));
         let object = l.as_object().is_some() || r.as_object().is_some();
         ret_if!(object, self.fn_pair(class, l, r, span));

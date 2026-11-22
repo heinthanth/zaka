@@ -17,6 +17,7 @@ use zakac_ast::stmt::FnDecl;
 use zakac_ast::visit::Node;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::resolve as rd;
+use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_parser::load::core_builtin_fns;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -105,6 +106,8 @@ impl Checker
             self.report(kd::not_a_function(span, &name, &kind.name()));
             return None;
         };
+        let call = rd::trait_value_use(span, TraitValueUse::Call);
+        ret_if!(f.of_trait.is_some(), self.report(call), None);
         let sig = FnSig::builder()
             .params(f.param_kinds())
             .edits(f.edits())

@@ -842,6 +842,51 @@ en = "name the member alone, or give its data a name with \"<name> ဟူသည�
 [codes.ZK0359.explain]
 en = """A switch over an enumeration whose members hold data compares the member alone: \"<member> ဖြစ်လျှင်\" runs for each value of that member, whatever its data. To use the data in the arm, we name it in the arm, or read it with \"<x> ကို <member> အဖြစ် ပြောင်းလဲသော ရလဒ်\"."""
 
+[codes.ZK0360.title]
+en = "trait that cannot be a kind"
+[codes.ZK0360.message]
+en = "the trait \"%{t}\" cannot be a kind: %{w}"
+[codes.ZK0360.marked]
+en = "the compiler gives it to kinds, with no functions to call"
+[codes.ZK0360.first]
+en = "its function \"%{f}\" does not take the trait's kind as its first parameter"
+[codes.ZK0360.elsewhere]
+en = "its function \"%{f}\" takes the trait's kind in another parameter too"
+[codes.ZK0360.result]
+en = "its function \"%{f}\" gives back the trait's kind inside another kind"
+[codes.ZK0360.generic]
+en = "its function \"%{f}\" has kind parameters of its own"
+[codes.ZK0360.help]
+en = "for \"<trait> အရာ\", each function of the trait takes the trait's kind first, and the kind stands nowhere else but as the whole result"
+[codes.ZK0360.explain]
+en = """A trait value, \"<trait> အရာ\", holds a value of each kind that has the trait, and a call on it runs the function of the kind it holds. The call needs one value to pick that function: the first argument. So each function of the trait takes the trait's kind as its first parameter, takes it in no other parameter, and gives it back as its whole result or not at all. A trait the compiler gives, such as the operator traits, has no functions to run and cannot be a kind either."""
+
+[codes.ZK0361.title]
+en = "trait value used as another kind"
+[codes.ZK0361.message]
+en = "a trait value cannot %{w}"
+[codes.ZK0361.compare]
+en = "be compared"
+[codes.ZK0361.print]
+en = "be printed"
+[codes.ZK0361.initial]
+en = "have an initial value"
+[codes.ZK0361.call]
+en = "be called as a function"
+[codes.ZK0361.help]
+en = "call the functions of its trait on it, as \"x ၏ f()\""
+[codes.ZK0361.explain]
+en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Comparing two trait values, printing one, its initial value and a call through it as a function value are not part of the language now."""
+
+[codes.ZK0362.title]
+en = "trait value holds a clone"
+[codes.ZK0362.message]
+en = "the trait value holds a clone of this %{k}; its function \"%{f}\" changes the clone, not this value"
+[codes.ZK0362.help]
+en = "to share one value, make %{k} a shared object (\"မျှဝေနိုင်သော ဒေတာအစုအဝေး\"); to keep the clone, allow the lint with \"--lint-allow clones\""
+[codes.ZK0362.explain]
+en = """A plain value goes into a trait value as a clone of its own, as it does when it goes into a variable. A function of the trait that changes its first parameter (\"ဒေတာ ပြောင်းလဲရန်\") changes the clone the trait value holds, and the value we put in keeps its old state. A shared object goes in as a reference, so changes through the trait value reach it. The lint group \"clones\" sets the level of this warning."""
+
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
 [codes.ZK0338.message]

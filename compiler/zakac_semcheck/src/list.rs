@@ -89,6 +89,7 @@ impl Checker
         self.work_out_counts(written);
         let kind = DataKind::from_ast(written, &self.structs);
         self.check_table_kinds(written);
+        self.check_trait_values(written);
         let span = written.span;
         let names = self.structs.keys().map(|n| n.as_str()).collect();
         do_if!(let Some(d) = unknown_name(written, &names), self.report(d));
@@ -318,7 +319,8 @@ impl Checker
         let field = &n.field;
         // A function that takes the value wins over a field of the same name;
         // the name in braces, `x ၏ {f}`, reads the field.
-        ret_if!(!n.braced && self.fits_method(n), self.infer_method(n));
+        let dispatch = self.runs_through(base, &field.name);
+        ret_if!(!n.braced && (dispatch || self.fits_method(n)), self.infer_method(n));
         let Some(s) = base.object_struct()
         else
         {

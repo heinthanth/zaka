@@ -134,7 +134,7 @@ pub fn edit_crosses(kind: DataKind, platform: u16) -> bool
 /// `true` if it can.
 pub fn is_callback(kind: DataKind, platform: u16) -> bool
 {
-    let Some(f) = kind.as_fn()
+    let Some(f) = kind.as_fn().filter(|f| f.of_trait.is_none())
     else
     {
         return false;

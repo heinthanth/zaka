@@ -709,6 +709,11 @@ pub(crate) struct Checker
     /// The call each operator, print and template slot on a struct takes.
     #[builder(default)]
     pub op_calls: OpCalls,
+    /// The count of trial checks of a call against an overload still open: a
+    /// value that goes into a trait value records its conversion outside
+    /// them alone, once the call has chosen its function.
+    #[builder(default)]
+    pub trials: u32,
     /// The operator the next two-operand inference stands for, with its
     /// node, when a struct can take it through a function.
     pub pending_op: Option<(NodeId, (&'static str, bool))>,
@@ -953,6 +958,7 @@ impl Checker
     pub fn expect_fit(&mut self, e: &Expr, found: DataKind, want: DataKind)
     {
         ret_if!(found.widens_to(want, self.platform));
+        ret_if!(self.trait_fit(e, found, want));
         self.report(mismatch_report(e.span(), want, found));
     }
 
@@ -1057,11 +1063,16 @@ impl Checker
         ret_if!(let Some(ret) = self.pipe_call(callee, place, args), Some(ret));
         ret_if!(let Some(ret) = self.atomic_call(callee, place, args), Some(ret));
         let expect = self.call_expect.take();
-        let templates =
-            tern!(place.is_none(), self.templates_named(&callee.name), Vec::new());
+        let dispatch = tern!(place.is_none(), self.dispatch_sig(callee, args), None);
+        let templates = tern!(
+            place.is_none() && dispatch.is_none(),
+            self.templates_named(&callee.name),
+            Vec::new()
+        );
         let target =
             match templates.is_empty()
             {
+                _ if dispatch.is_some() => dispatch.map(|s| vec![s]),
                 false =>
                 {
                     let t = self.choose_template(
@@ -1390,9 +1401,11 @@ impl Checker
         ret_false!(!written.phrases_fit(sig.start, sig.end));
         ret_false!(written.has_prepositions() && !prepositions_fit(written, sig));
         let before = self.diags.len();
+        self.trials += 1;
         args.iter()
             .zip(&sig.params)
             .for_each(|(arg, kind)| self.expect_kind(arg, Some(*kind)));
+        self.trials -= 1;
         let clean = self.diags.len() == before;
         self.diags.truncate(before);
         clean

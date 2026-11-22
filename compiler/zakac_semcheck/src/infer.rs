@@ -21,6 +21,7 @@ use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::kinds::NoInitial;
 use zakac_diagnostics::naturalness as nd;
 use zakac_diagnostics::resolve as rd;
+use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_i18n::t;
 use zakac_lexer::reserved::AMONG;
 use zakac_lexer::reserved::CHAR_NAME;
@@ -715,6 +716,8 @@ impl Checker
             self.report(kd::initial_needs_kind(span));
             return None;
         };
+        let held = rd::trait_value_use(span, TraitValueUse::Initial);
+        ret_if!(kind.is_trait_value(), self.report(held), None);
         let Some(gap) = kind.initial_gap()
         else
         {

@@ -254,6 +254,8 @@ en = "An integer operation that overflows for each value it can see."
 en = "The naturalness rules: particles, classifiers, parentheses and the spoken spellings."
 [explorer.lint_group.spoken]
 en = "The spoken spellings of the reserved words."
+[explorer.lint_group.clones]
+en = "A plain value that goes into a trait value as a clone, where a function of the trait changes the clone alone."
 [explorer.c_check.divide]
 en = "A zero divisor stops the program."
 [explorer.c_check.shift]

@@ -328,6 +328,15 @@ WrongVariantProven = ("ZK0358", Level::Error),
 /// A case of a switch over an enumeration whose variants hold data gives
 /// the data too.
 CaseWithData = ("ZK0359", Level::Error),
+/// A trait used as a kind, `<trait> အရာ`, has a function that does not take
+/// the trait's kind first and nowhere else but as its whole result.
+TraitNotAKind = ("ZK0360", Level::Error),
+/// A trait value is used as trait values are not: compared,
+/// printed, given an initial value or called as a function.
+TraitValueUse = ("ZK0361", Level::Error),
+/// A plain value goes into a trait value whose trait has a function that
+/// changes its first parameter: the change reaches the clone alone.
+TraitValueClones = ("ZK0362", Level::Warning),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

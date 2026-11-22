@@ -9,6 +9,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
+use zakac_ast::name::Name;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
@@ -21,6 +22,7 @@ use crate::fn_kind::FnParam;
 use crate::fn_kind::bracket_step;
 use crate::fn_kind::is_fn_text;
 use crate::fn_kind::parse_fn_with;
+use crate::fn_kind::trait_marker;
 use crate::fn_kind::unwrap_parens;
 use crate::structs::StructKind;
 use crate::structs::StructTable;
@@ -404,6 +406,7 @@ impl DataKind
             BaseKind::Opaque => Base::Opaque,
             BaseKind::Named | BaseKind::Result => named_base(kind, structs),
             BaseKind::Fn => Base::Fn(fn_base(kind, structs)),
+            BaseKind::TraitValue => Base::Fn(trait_value_base(kind, structs)),
             // A ဇယား is the struct `DataKind::table` makes, and its levels
             // wrap that struct, as a result kind's do.
             BaseKind::Table => Base::Int(IntKind::new(true, width)),
@@ -1246,7 +1249,8 @@ impl DataKind
     pub(crate) fn spell_inner(self, full: bool) -> String
     {
         let name = self.spell(full);
-        tern!(self.is_fn(), format!("({name})"), name)
+        let bare = !full && self.is_trait_value();
+        tern!(self.is_fn() && !bare, format!("({name})"), name)
     }
 
     /// The function part of the kind.
@@ -1266,6 +1270,27 @@ impl DataKind
     ///
     /// `true` for a function kind.
     pub fn is_fn(self) -> bool { matches!(self, DataKind::Fn(_)) }
+
+    /// The trait of a trait value kind, `<trait> အရာ`, and its kinds after
+    /// the first.
+    ///
+    /// # Returns
+    ///
+    /// The name of the trait and its kinds, or `None` for another kind.
+    pub fn as_trait_value(self) -> Option<(Name, Vec<DataKind>)>
+    {
+        self.as_fn().and_then(FnKind::trait_parts)
+    }
+
+    /// Whether the kind is a trait value kind, `<trait> အရာ`.
+    ///
+    /// # Returns
+    ///
+    /// `true` for a trait value kind.
+    pub fn is_trait_value(self) -> bool
+    {
+        self.as_fn().is_some_and(|f| f.of_trait.is_some())
+    }
 
     /// The thread or channel part of the kind.
     ///
@@ -2051,6 +2076,25 @@ fn fn_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
     let phrase = |i: &Option<zakac_ast::expr::Ident>| i.as_ref().map(|i| i.name);
     let (start, end) = (phrase(&sig.phrases.start), phrase(&sig.phrases.end));
     FnKind::make_with(sig.params.iter().map(param).collect(), ret, start, end)
+}
+
+/// The function kind of a trait value kind phrase, `<trait> အရာ`: the trait's
+/// name and its kinds after the first, each kind made from its phrase.
+///
+/// # Arguments
+///
+/// * `kind` - The phrase.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The function kind.
+fn trait_value_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
+{
+    let name = kind.name.as_ref().map_or("", |n| n.name.as_str());
+    let args: Vec<DataKind> =
+        kind.args.iter().map(|a| DataKind::from_ast(a, structs)).collect();
+    FnKind::trait_value(trait_marker(name, &args))
 }
 
 /// The short name of an integer kind.

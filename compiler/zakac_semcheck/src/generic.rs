@@ -559,10 +559,32 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
         }
         DataKind::Struct(_) => struct_ast(kind, span),
         DataKind::Enum(e) => Some(named(&e.name, span)),
+        DataKind::Fn(f) if f.of_trait.is_some() => trait_value_ast(f, span),
         DataKind::Fn(f) => fn_ast(f, span),
         DataKind::Task(t) => task_ast(t, span),
         _ => None,
     }
+}
+
+/// [`kind_ast`] for a trait value kind: the trait with its kinds, then
+/// `အရာ`.
+///
+/// # Arguments
+///
+/// * `f` - The function kind of the trait value.
+/// * `span` - The span the phrase takes.
+///
+/// # Returns
+///
+/// The phrase, or `None` when a kind of the trait has none.
+fn trait_value_ast(f: &FnKind, span: Span) -> Option<Kind>
+{
+    let (name, args) = f.trait_parts()?;
+    let args: Option<Vec<Kind>> = args.iter().map(|a| kind_ast(*a, span)).collect();
+    let mut kind = named(name.as_str(), span);
+    kind.base = BaseKind::TraitValue;
+    kind.args = args?;
+    Some(kind)
 }
 
 /// [`kind_ast`] for a thread or a channel kind: the name the core declares,

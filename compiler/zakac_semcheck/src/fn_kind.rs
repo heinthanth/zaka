@@ -13,7 +13,9 @@ use std::sync::OnceLock;
 use std::sync::PoisonError;
 
 use strum::IntoStaticStr;
+use zakac_ast::kind::TRAIT_HEAD;
 use zakac_ast::name::Name;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
@@ -84,6 +86,11 @@ pub struct FnKind
     pub start: Option<Name>,
     /// The ending phrase a call through a value of the kind writes.
     pub end: Option<Name>,
+    /// The trait of a trait value, `<trait> အရာ`: its name, then its kinds
+    /// after the first as `<k၁,k၂>` when it has more. A trait value is a
+    /// function value that runs the function of the kind it holds; `None`
+    /// for each other function kind.
+    pub of_trait: Option<Name>,
 }
 
 /// Each function kind made so far, so a kind is made once and remains
@@ -137,7 +144,47 @@ impl FnKind
         end: Option<Name>,
     ) -> &'static FnKind
     {
-        let wanted = FnKind { params, ret, start, end };
+        FnKind::make_full(FnKind { params, ret, start, end, of_trait: None })
+    }
+
+    /// The kind of a trait value of a trait: a function value that takes the
+    /// number of the trait function to run and the address of its
+    /// arguments, made once and kept for the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `marker` - The trait, as [`FnKind::of_trait`] writes it.
+    ///
+    /// # Returns
+    ///
+    /// The kind.
+    pub fn trait_value(marker: Name) -> &'static FnKind
+    {
+        let param =
+            |kind| FnParam { kind, edit: false, fill: false, preposition: None };
+        let params =
+            vec![param(DataKind::USIZE), param(DataKind::OPAQUE.with_outer_raw())];
+        let wanted = FnKind {
+            params,
+            ret: None,
+            start: None,
+            end: None,
+            of_trait: Some(marker),
+        };
+        FnKind::make_full(wanted)
+    }
+
+    /// The function kind, made once and kept for the rest of the run.
+    ///
+    /// # Arguments
+    ///
+    /// * `wanted` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// The kind kept.
+    fn make_full(wanted: FnKind) -> &'static FnKind
+    {
         let fns = FNS.get_or_init(Mutex::default);
         let mut fns = fns.lock().unwrap_or_else(PoisonError::into_inner);
         ret_if!(let Some(found) = fns.get(&wanted), found);
@@ -187,6 +234,7 @@ impl FnKind
     /// The kind whose calls write no words beside the arguments.
     pub fn without_words(&self) -> &'static FnKind
     {
+        ret_if!(self.of_trait.is_some(), FnKind::make_full(self.clone()));
         let drop = |p: &FnParam| FnParam { preposition: None, ..p.clone() };
         FnKind::make(self.params.iter().map(drop).collect(), self.ret)
     }
@@ -224,6 +272,7 @@ impl FnKind
     pub fn fits(&self, want: &FnKind) -> bool
     {
         ret_if!(self == want, true);
+        ret_if!(self.of_trait.is_some() || want.of_trait.is_some(), false);
         let phrased = want.start.is_some() || want.end.is_some();
         let given = phrased || want.params.iter().any(|p| p.preposition.is_some());
         let (mine, theirs) =
@@ -252,6 +301,8 @@ impl FnKind
     /// The name.
     pub fn spell(&self, full: bool) -> String
     {
+        let marker = self.of_trait.map(|t| t.to_string());
+        ret_if!(let (Some(t), false) = (&marker, full), format!("{t} {TRAIT_HEAD}"));
         let param = |p: &FnParam| {
             let edit: &str = ParamMode::of(p.edit, p.fill).into();
             let preposition = p.preposition.map_or(String::new(), |m| format!("({m})"));
@@ -261,8 +312,50 @@ impl FnKind
         let ret = self
             .ret
             .map_or(String::new(), |r| format!("{ARROW}{}", r.spell_inner(full)));
-        format!("{OPEN}{}({}){ret}", self.phrases_text(), params.join(", "))
+        let marker = marker.map_or(String::new(), |t| format!("<{t}>"));
+        format!("{OPEN}{marker}{}({}){ret}", self.phrases_text(), params.join(", "))
     }
+
+    /// The trait of a trait value and its kinds after the first.
+    ///
+    /// # Returns
+    ///
+    /// The name of the trait and its kinds, or `None` for a plain function
+    /// kind or a marker that does not read.
+    pub fn trait_parts(&self) -> Option<(Name, Vec<DataKind>)>
+    {
+        let marker = self.of_trait?;
+        let text = marker.as_str();
+        let Some((name, args)) = text.split_once('<')
+        else
+        {
+            return Some((marker, Vec::new()));
+        };
+        let args = args.strip_suffix('>')?;
+        let kinds: Option<Vec<DataKind>> = split_top(args, ',')
+            .into_iter()
+            .map(|a| DataKind::parse(a.trim()))
+            .collect();
+        Some((Name::new(name), kinds?))
+    }
+}
+
+/// The marker of a trait value kind, [`FnKind::of_trait`], from the trait's
+/// name and its kinds after the first.
+///
+/// # Arguments
+///
+/// * `name` - The name of the trait.
+/// * `args` - Its kinds after the first.
+///
+/// # Returns
+///
+/// The marker.
+pub fn trait_marker(name: &str, args: &[DataKind]) -> Name
+{
+    ret_if!(args.is_empty(), Name::new(name));
+    let args: Vec<String> = args.iter().map(|k| k.spell_inner(true)).collect();
+    Name::from(format!("{name}<{}>", args.join(",")))
 }
 
 /// The text form of a function kind, split into its parts.
@@ -276,6 +369,8 @@ pub struct FnText<'a>
     pub ret: Option<&'a str>,
     /// The phrases inside their braces, `ဖိုင် … စာကို`, when written.
     pub phrases: Option<&'a str>,
+    /// The trait of a trait value inside its angle brackets, when written.
+    pub of_trait: Option<&'a str>,
 }
 
 /// How a character moves the bracket depth of a kind name: `(`, `{` and `<`
@@ -382,6 +477,12 @@ fn closes_at_end(text: &str) -> bool
 pub fn split_fn(text: &str) -> Option<FnText<'_>>
 {
     let rest = text.strip_prefix(OPEN)?;
+    let angled = rest.strip_prefix('<').and_then(|r| {
+        let close = matching_angle(r)?;
+        Some((&r[..close], &r[close + 1..]))
+    });
+    let of_trait = angled.map(|(t, _)| t);
+    let rest = angled.map_or(rest, |(_, r)| r);
     let braced = rest.strip_prefix('{').and_then(|r| r.split_once('}'));
     let phrases = braced.map(|(p, _)| p);
     let rest = braced.map_or(rest, |(_, r)| r).strip_prefix('(')?;
@@ -390,7 +491,28 @@ pub fn split_fn(text: &str) -> Option<FnText<'_>>
     let ret = tern!(tail.is_empty(), None, Some(tail.strip_prefix(ARROW)?));
     let parts = tern!(inner.is_empty(), Vec::new(), split_top(inner, ','));
     let params = parts.into_iter().map(|p| split_param(p.trim())).collect();
-    Some(FnText { params, ret, phrases })
+    Some(FnText { params, ret, phrases, of_trait })
+}
+
+/// The place of the `>` that closes text whose `<` came just before it.
+///
+/// # Arguments
+///
+/// * `text` - The text after the `<`.
+///
+/// # Returns
+///
+/// The octet offset of the `>`, or `None`.
+fn matching_angle(text: &str) -> Option<usize>
+{
+    let (mut depth, mut prev) = (1i32, Some('<'));
+    for (at, ch) in text.char_indices()
+    {
+        depth += bracket_step(prev, ch);
+        prev = Some(ch);
+        ret_if!(depth == 0, Some(at));
+    }
+    None
 }
 
 /// The starting and the ending phrase of the phrases of a short name,
@@ -495,7 +617,8 @@ pub fn join_fn(parts: &FnText<'_>) -> String
     let params: Vec<String> = parts.params.iter().map(param).collect();
     let ret = parts.ret.map_or(String::new(), |r| format!("{ARROW}{r}"));
     let phrases = parts.phrases.map_or(String::new(), |p| format!("{{{p}}}"));
-    format!("{OPEN}{phrases}({}){ret}", params.join(", "))
+    let marker = parts.of_trait.map_or(String::new(), |t| format!("<{t}>"));
+    format!("{OPEN}{marker}{phrases}({}){ret}", params.join(", "))
 }
 
 /// Read the short name of a function kind, each part read with `read`.
@@ -530,7 +653,39 @@ pub fn parse_fn_with(
         None => None,
     };
     let (start, end) = parts.phrases.map_or((None, None), split_phrases);
-    Some(DataKind::Fn(FnKind::make_with(params, ret, start, end)))
+    let of_trait = match parts.of_trait
+    {
+        Some(t) => Some(read_marker(t, read)?),
+        None => None,
+    };
+    let wanted = FnKind { params, ret, start, end, of_trait };
+    Some(DataKind::Fn(FnKind::make_full(wanted)))
+}
+
+/// Read the marker of a trait value, each kind in it read with `read` and
+/// written again as its signature, so the marker reads back alone.
+///
+/// # Arguments
+///
+/// * `text` - The marker.
+/// * `read` - Reads the name of a kind.
+///
+/// # Returns
+///
+/// The marker, or `None` when a kind does not read.
+fn read_marker(
+    text: &str, read: &mut impl FnMut(&str) -> Option<DataKind>,
+) -> Option<Name>
+{
+    let Some((name, args)) = text.split_once('<')
+    else
+    {
+        return Some(Name::new(text));
+    };
+    let args = args.strip_suffix('>')?;
+    let mut kinds = Vec::new();
+    do_for!(a in split_top(args, ','), kinds.push(read(a.trim())?));
+    Some(trait_marker(name, &kinds))
 }
 
 /// Whether text names a function kind, in parentheses or not.
@@ -545,7 +700,7 @@ pub fn parse_fn_with(
 pub fn is_fn_text(text: &str) -> bool
 {
     let rest = unwrap_parens(text).strip_prefix(OPEN);
-    rest.is_some_and(|r| r.starts_with(['(', '{']))
+    rest.is_some_and(|r| r.starts_with(['(', '{', '<']))
 }
 
 /// Map each part of the short name of a function kind, and write the name
@@ -574,7 +729,37 @@ pub fn map_fn_text(
         Some(r) => Some(f(r)?),
         None => None,
     };
+    let of_trait = match parts.of_trait
+    {
+        Some(t) => Some(map_marker(t, f)?),
+        None => None,
+    };
     let params = params.iter().map(|(e, k, m)| (*e, k.as_str(), *m)).collect();
-    let parts = FnText { params, ret: ret.as_deref(), phrases: parts.phrases };
+    #[rustfmt::skip]
+    let parts = FnText { params, ret: ret.as_deref(), phrases: parts.phrases, of_trait: of_trait.as_deref() };
     Some(format!("({})", join_fn(&parts)))
+}
+
+/// Map each kind of the marker of a trait value.
+///
+/// # Arguments
+///
+/// * `text` - The marker.
+/// * `f` - Maps the text of a kind.
+///
+/// # Returns
+///
+/// The marker, or `None` when a kind does not read.
+fn map_marker(text: &str, f: &mut impl FnMut(&str) -> Option<String>)
+-> Option<String>
+{
+    let Some((name, args)) = text.split_once('<')
+    else
+    {
+        return Some(text.to_string());
+    };
+    let args = args.strip_suffix('>')?;
+    let mut kinds = Vec::new();
+    do_for!(a in split_top(args, ','), kinds.push(f(a.trim())?));
+    Some(format!("{name}<{}>", kinds.join(",")))
 }

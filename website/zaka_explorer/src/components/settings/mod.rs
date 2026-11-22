@@ -428,6 +428,7 @@ fn group_note(group: LintGroup) -> Cow<'static, str>
         LintGroup::Overflow => t!("explorer.lint_group.overflow"),
         LintGroup::Naturalness => t!("explorer.lint_group.naturalness"),
         LintGroup::Spoken => t!("explorer.lint_group.spoken"),
+        LintGroup::Clones => t!("explorer.lint_group.clones"),
     }
 }
 

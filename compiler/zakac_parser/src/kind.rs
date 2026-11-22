@@ -3,6 +3,7 @@ use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Cells;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::ResultParts;
+use zakac_ast::kind::TRAIT_HEAD;
 use zakac_ast::kind::Wrap;
 use zakac_ast::threads::ATOMIC_WORDS;
 use zakac_ast::threads::PIPE_KIND;
@@ -278,6 +279,10 @@ impl Parser<'_>
     /// The token count, or `None` when no kind starts there.
     fn plain_kind_len(&self, at: usize) -> Option<usize>
     {
+        if let Some(core) = self.trait_value_len(at)
+        {
+            return Some(core + self.scan_suffixes(at + core, true).0);
+        }
         if let Some((_, core)) = self.hint_kind_at(at)
         {
             return Some(core + self.scan_suffixes(at + core, true).0);
@@ -295,6 +300,34 @@ impl Parser<'_>
         let angle = tern!(named, self.angle_len(at + n + 1).unwrap_or(0), 0);
         let (len, _) = self.scan_suffixes(at + n + 1 + angle, is_base);
         Some(n + 1 + angle + len)
+    }
+
+    /// The number of tokens in a trait value kind with no levels, `<trait>
+    /// အရာ`, that starts `at` tokens ahead: the trait as a hint, or as its
+    /// name with its kinds in signs, then `အရာ`.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no trait value kind starts there.
+    pub(crate) fn trait_value_len(&self, at: usize) -> Option<usize>
+    {
+        let head = |n: usize| {
+            let tok = self.peek_n(n);
+            tok.kind == TokenKind::Ident && self.text_of(tok.span) == TRAIT_HEAD
+        };
+        ret_if!(self.scanning_trait_value.get(), None);
+        self.scanning_trait_value.set(true);
+        let hinted = self.hint_trait_at(at).map(|(_, len)| len);
+        self.scanning_trait_value.set(false);
+        ret_if!(let Some(len) = hinted.filter(|len| head(at + len)), Some(len + 1));
+        let named = self.peek_n(at).kind == TokenKind::Ident && !head(at);
+        ret_if!(!named || self.builtin_at(at).is_some(), None);
+        let angle = self.angle_len(at + 1).unwrap_or(0);
+        head(at + 1 + angle).then_some(angle + 2)
     }
 
     /// Whether `အကွက် <count> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
@@ -804,6 +837,14 @@ impl Parser<'_>
         if let Some((idx, _)) = self.hint_kind_at(0)
         {
             return self.parse_hint(idx, None, start, self.fn_form());
+        }
+        if self.trait_value_len(0).is_some()
+        {
+            let mut kind = self.parse_trait_ref()?;
+            self.advance();
+            kind.base = BaseKind::TraitValue;
+            kind.span = start.to(&self.prev_span());
+            return Ok(kind);
         }
         if self.peek().kind == TokenKind::Ident && self.builtin_at(0).is_none()
         {

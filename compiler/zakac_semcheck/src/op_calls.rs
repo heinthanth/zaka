@@ -15,6 +15,7 @@ use std::collections::HashSet;
 
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FnAddrExpr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::InfixOp;
 use zakac_ast::expr::NodeId;
@@ -37,6 +38,8 @@ use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr_mut;
 use zakac_ast::visit::walk_stmt_mut;
+use zakac_diagnostics::resolve as rd;
+use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -50,6 +53,7 @@ use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::semcheck::KindTable;
 use crate::structs::StructTable;
+use crate::trait_value::TO_TRAIT_FN;
 
 /// The function `+` calls.
 pub const ADD_FN: &str = "ပေါင်း";
@@ -119,7 +123,7 @@ pub(crate) struct OpCalls
     pairs: HashMap<NodeId, OpCall>,
     /// The function each printed value, template slot or error value goes
     /// through, with the kind it gives.
-    wraps: HashMap<NodeId, (Name, DataKind)>,
+    pub(crate) wraps: HashMap<NodeId, (Name, DataKind)>,
     /// The call each field read stands for when no field fits, `x ၏ f` for
     /// `f(x)`, and each conversion that goes through a function, under the node
     /// of the read or the conversion.
@@ -135,6 +139,10 @@ pub(crate) struct OpCalls
     /// a function of the file of that name takes its operands, `l ကို ပြသမည်။`
     /// for `ပြသ(l)`, under the span of the statement.
     pub(crate) verbs: HashMap<Span, CallStmt>,
+    /// Each value that goes into a trait value, under its node: the trait
+    /// value kind, and for each function of the trait, in its order, the name
+    /// the later stages give the function that serves the value's kind.
+    pub(crate) to_traits: HashMap<NodeId, (DataKind, Vec<Name>)>,
 }
 
 /// The name of the function of the core a count stands for.
@@ -351,6 +359,8 @@ impl Checker
     /// * `kind` - Its kind.
     pub(crate) fn struct_text(&mut self, value: &Expr, kind: Option<DataKind>)
     {
+        let print = rd::trait_value_use(value.span(), TraitValueUse::Print);
+        ret_if!(kind.is_some_and(DataKind::is_trait_value), self.report(print));
         let Some(kind) =
             kind.filter(|k| k.as_struct().is_some() && self.kind_home(*k).is_some())
         else
@@ -705,7 +715,7 @@ impl Checker
     /// # Returns
     ///
     /// The name.
-    fn known_name(&self, sig: &FnSig) -> Name
+    pub(crate) fn known_name(&self, sig: &FnSig) -> Name
     {
         let Some(unit) = sig.unit.filter(|u| *u != self.unit)
         else
@@ -731,7 +741,9 @@ pub(crate) fn write_op_calls(
     program: &mut Program, calls: &OpCalls, kinds: &mut KindTable, next: u32,
 )
 {
-    ret_if!(calls.pairs.is_empty() && calls.wraps.is_empty());
+    ret_if!(
+        calls.pairs.is_empty() && calls.wraps.is_empty() && calls.to_traits.is_empty()
+    );
     let mut writer = Writer { calls, kinds, next };
     writer.visit_program_mut(program);
 }
@@ -802,6 +814,34 @@ impl Writer<'_>
         *n = tern!(call.negate, Expr::Prefix(not(made.clone())), made);
     }
 
+    /// Put the call that makes a trait value around a value: its arguments are
+    /// the value, then the address of each function that gives the value's
+    /// kind a function of the trait.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The value.
+    /// * `kind` - The trait value kind.
+    /// * `fns` - The functions, in the trait's order.
+    fn to_trait(&mut self, n: &mut Expr, kind: DataKind, fns: &[Name])
+    {
+        self.wrap(n, Name::new(TO_TRAIT_FN), kind);
+        let Expr::Call(call) = n
+        else
+        {
+            return;
+        };
+        let span = call.span;
+        for f in fns
+        {
+            let name = Ident::builder().name(*f).span(span).build();
+            let id = NodeId(self.next);
+            self.next += 1;
+            let addr = FnAddrExpr::builder().id(id).name(name).span(span).build();
+            call.args.push(Expr::FnAddr(addr));
+        }
+    }
+
     /// Put a call of a function around a value.
     ///
     /// # Arguments
@@ -836,6 +876,8 @@ impl VisitorMut for Writer<'_>
         do_if!(let Some(call) = self.calls.pairs.get(&id).copied(), self.pair(n, call));
         let wrap = self.calls.wraps.get(&id).copied();
         do_if!(let Some((callee, kind)) = wrap, self.wrap(n, callee, kind));
+        let to_trait = self.calls.to_traits.get(&id).cloned();
+        do_if!(let Some((kind, fns)) = to_trait, self.to_trait(n, kind, &fns));
     }
 }
 

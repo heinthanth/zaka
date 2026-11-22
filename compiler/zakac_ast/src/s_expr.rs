@@ -387,6 +387,14 @@ fn base_name(k: &Kind) -> String
             format!("({ok} ! {err})")
         }
         BaseKind::Fn => fn_kind_sexpr(k),
+        BaseKind::TraitValue =>
+        {
+            let name = k.name.as_ref().map_or(String::new(), |n| n.name.to_string());
+            let args: Vec<String> = k.args.iter().map(ToSexpr::to_sexpr).collect();
+            let args =
+                tern!(args.is_empty(), String::new(), format!(" {}", args.join(" ")));
+            format!("(trait-value {name}{args})")
+        }
         BaseKind::Table =>
         {
             let side = |f: fn(&TableParts) -> &Kind| {
