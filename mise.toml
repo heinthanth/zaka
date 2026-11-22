@@ -32,8 +32,8 @@ ZAKA_SITE_ORIGIN = '${ZAKA_SITE_ORIGIN:-http://localhost:8000}'
 CARGO_TERM_COLOR = '${CARGO_TERM_COLOR:-always}'
 
 [tasks.format]
-depends = ["format:rust", "format:c"]
-description = "Format the Rust code with rustfmt and the C runtime with clang-format"
+depends = ["format:rust", "format:c", "format:zaka"]
+description = "Format the Rust code with rustfmt, the C runtime with clang-format and the Zaka sources with zakac fmt"
 
 [tasks."format:rust"]
 run = "cargo +nightly fmt"
@@ -43,6 +43,12 @@ description = "Format the Rust code with rustfmt"
 run = "clang-format -i compiler/*/runtime/*.h"
 shell = "bun exec"
 description = "Format the C code with clang-format"
+
+[tasks."format:zaka"]
+# The samples written to show errors do not parse, so they are left out.
+run = "cargo run -q -p zakac -- fmt $(git ls-files --cached --others --exclude-standard 'samples/*.zaka' 'stdlib/*.zaka' ':!:*_errors.zaka')"
+shell = "bun exec"
+description = "Format the Zaka samples and stdlib modules with zakac fmt"
 
 # Test
 

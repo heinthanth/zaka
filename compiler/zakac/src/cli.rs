@@ -14,6 +14,7 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_formatter::cli::ZakacFormatter;
 use zakac_ir_builder::cli::ZakacIrBuilder;
 use zakac_lexer::cli::ZakacLexer;
 use zakac_lsp::cli::ZakacLsp;
@@ -88,6 +89,7 @@ impl Command for Zakac
             .add_subcommand::<ZakaVm>(Some("run"))
             .add_subcommand::<ZakacRepl>(Some("repl"))
             .add_subcommand::<ZakacLsp>(Some("lsp"))
+            .add_subcommand::<ZakacFormatter>(Some("fmt"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].

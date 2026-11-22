@@ -155,7 +155,7 @@ fn lines_of_blocks(file: &SourceFile, spans: &[Span]) -> Vec<(usize, usize)>
 /// # Returns
 ///
 /// The line, from 0.
-fn line_at(file: &SourceFile, at: usize) -> usize
+pub(crate) fn line_at(file: &SourceFile, at: usize) -> usize
 {
     file.lookup_line(&RelativePos::new(at as u32)).unwrap_or(0)
 }
@@ -170,7 +170,7 @@ fn line_at(file: &SourceFile, at: usize) -> usize
 /// # Returns
 ///
 /// The offset.
-fn relative(file: &SourceFile, pos: zakac_span::pos::Pos) -> usize
+pub(crate) fn relative(file: &SourceFile, pos: zakac_span::pos::Pos) -> usize
 {
     file.relative_position(&pos).as_u32() as usize
 }

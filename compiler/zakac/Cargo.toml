@@ -20,6 +20,7 @@ zakac_codegen_target_vm = { workspace = true }
 zakac_codegen_target_c = { workspace = true }
 zakac_codegen_target_native = { workspace = true, features = ["jit"] }
 zakac_lexer = { workspace = true }
+zakac_formatter = { workspace = true }
 zakac_lsp = { workspace = true, features = ["server"] }
 zakac_parser = { workspace = true }
 zakac_rust_sugars = { workspace = true }

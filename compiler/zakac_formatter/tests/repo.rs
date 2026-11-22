@@ -1,6 +1,7 @@
 //! The formatter over the samples and the stdlib modules of the repo.
 
 use std::path::Path;
+use std::path::PathBuf;
 
 use zakac_formatter::FmtError;
 use zakac_formatter::FmtOptions;
@@ -27,24 +28,20 @@ fn format_at(path: &Path, text: &str) -> Result<String, FmtError>
     format(&mut SourceMap::new(), name, text, &FmtOptions::default())
 }
 
-/// Each sample and stdlib module formats, and a second pass changes nothing;
-/// the samples written to show errors are left as they are.
+/// Each sample and stdlib module is formatted already, as `mise run format`
+/// leaves it; the samples written to show errors are left out, as the task
+/// leaves them out.
 #[test]
-fn samples_and_stdlib_format_and_settle()
+fn samples_and_stdlib_are_formatted()
 {
     let files =
         [zaka_files(&repo().join("samples")), zaka_files(&repo().join("stdlib"))];
-    for path in files.iter().flatten()
+    let errors = |p: &&PathBuf| p.display().to_string().ends_with("_errors.zaka");
+    for path in files.iter().flatten().filter(|p| !errors(p))
     {
         let text = std::fs::read_to_string(path).unwrap();
         let shown = path.display();
-        let broken = shown.to_string().ends_with("_errors.zaka");
-        match format_at(path, &text)
-        {
-            Ok(once) => assert_eq!(format_at(path, &once).unwrap(), once, "{shown}"),
-            Err(FmtError::Unparsed(_)) if broken =>
-            {}
-            Err(e) => panic!("{shown}: {e:?}"),
-        }
+        let out = format_at(path, &text).unwrap_or_else(|e| panic!("{shown}: {e:?}"));
+        assert_eq!(out, text, "{shown}");
     }
 }

@@ -130,3 +130,24 @@
 # cache = ".zakac_c_cache" # --cache <DIR>: the folder for the generated C
 # cflags = "-O3"           # variable CFLAGS: flags for the C compiler
 # ldflags = ["-L/opt/lib", "-lfoo"]  # variable LDFLAGS: flags for the linker
+
+# --------------------------------------------------------------------- zakac fmt
+# Commands: fmt, and the zakafmt executable.
+
+[fmt]
+# indent = 0               # --indent <SPACES>: spaces for each level of block
+                           # depth; 0 keeps each line flush left
+# continuation-indent = "preserve"  # --continuation-indent <SPACES>: the later
+                           # lines of one statement: preserve, or a count
+# blank-lines-max = 1      # --blank-lines-max <LINES>: the longest run of blank
+                           # lines that is kept
+# one-statement-per-line = true  # --one-statement-per-line <BOOL>: a new line
+                           # after ။ when two statements share a line
+# mark-order = true        # --mark-order <BOOL>: the Burmese marks in their
+                           # canonical order
+# speech-mode = "written"  # --speech-mode <MODE>: reserved words written or
+                           # spoken
+# digits = "preserve"      # --digits <SCRIPT>: number literals: preserve,
+                           # burmese or latin
+# import-order = "preserve"  # --import-order <ORDER>: preserve, or sorted with
+                           # the stdlib first

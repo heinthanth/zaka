@@ -6,6 +6,7 @@
 //! a word, and checks that its output lexes to the same words.
 
 pub mod check;
+pub mod cli;
 pub mod format;
 pub mod options;
 
@@ -13,3 +14,5 @@ pub use format::FmtError;
 pub use format::format;
 pub use format::format_text;
 pub use options::FmtOptions;
+
+zakac_i18n::init!();

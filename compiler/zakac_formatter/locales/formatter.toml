@@ -1,0 +1,37 @@
+_version = 2
+
+[formatter.about]
+en = "Format Zaka source files: the space between words, the line breaks and the indent."
+
+[formatter.paths]
+en = "Files and folders to format; a folder is walked for .zaka files. With none, or -, standard input is formatted to standard output."
+
+[formatter.check]
+en = "Write nothing: list the files that would change, and fail when one would."
+
+[formatter.indent]
+en = "Spaces for each level of block depth; 0 keeps each line flush left."
+
+[formatter.continuation_indent]
+en = "The indent of the later lines of one statement: preserve keeps the spaces as written, a number sets that count past the depth."
+
+[formatter.blank_lines_max]
+en = "The longest run of blank lines that is kept."
+
+[formatter.one_statement_per_line]
+en = "Start a new line after ။ when two statements share a line."
+
+[formatter.mark_order]
+en = "Write the Burmese marks in their canonical order."
+
+[formatter.speech_mode]
+en = "The form of each reserved word: written (ထားမည်) or spoken (ထားမယ်)."
+
+[formatter.digits]
+en = "The digits of number literals: preserve, burmese or latin."
+
+[formatter.import_order]
+en = "The order of the imports at the head of a file: preserve, or sorted with the stdlib first."
+
+[formatter.changed]
+en = "the formatted text of %{file} reads as other words, so it was left as it is; this is a fault of the formatter"
