@@ -49,6 +49,7 @@ zakac_codegen_target_native = { workspace = true, features = ["disasm"] }
 zakac_codegen_target_vm = { workspace = true }
 zakac_consts = { workspace = true }
 zakac_diagnostics = { workspace = true }
+zakac_formatter = { workspace = true }
 zakac_i18n = { workspace = true }
 zakac_ir_builder = { workspace = true }
 zakac_lexer = { workspace = true }

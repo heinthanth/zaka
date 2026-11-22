@@ -154,6 +154,9 @@ const STEP_OUT: [&str; 3] = ["M12 16V4", "m7 9 5-5 5 5", "M5 20h14"];
 const RESTART: [&str; 2] =
     ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5"];
 
+/// Lines set in from the left, with an arrow into them, on a 24 unit grid.
+const INDENT: [&str; 4] = ["M3 5h18", "M11 12h10", "M11 19h10", "m3 9 4 3-4 3"];
+
 /// A line icon drawn with the current text color.
 ///
 /// # Arguments
@@ -177,6 +180,13 @@ fn line_icon(paths: &'static [&'static str]) -> impl IntoView
         .attr("aria-hidden", "true")
         .child(strokes)
 }
+
+/// Lines set in from the left, for the button that formats the code.
+///
+/// # Returns
+///
+/// The view.
+pub fn indent() -> impl IntoView { line_icon(&INDENT) }
 
 /// The settings gear.
 ///

@@ -521,6 +521,8 @@ en = "Debugger controls"
 en = "Run the program"
 [explorer.run.stop]
 en = "Stop the program"
+[explorer.run.format]
+en = "Format the code"
 [explorer.run.reset]
 en = "Start again"
 [explorer.run.step]

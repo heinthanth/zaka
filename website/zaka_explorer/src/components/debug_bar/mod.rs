@@ -16,6 +16,8 @@ use zaka_web_ui_common::controls::dropdown::Dropdown;
 use zaka_web_ui_common::controls::dropdown::dropdown;
 use zaka_web_ui_common::icon;
 use zaka_web_ui_common::sheet;
+use zakac_formatter::FmtOptions;
+use zakac_formatter::format_text;
 use zakac_i18n::t;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
@@ -79,7 +81,13 @@ pub fn debug_bar() -> impl IntoView
 pub fn run_bar(state: AppState) -> impl IntoView
 {
     let options = RwSignal::new(false);
-    let head = (go_button(state), stop_button(state), rule(), options_button(options));
+    let head = (
+        go_button(state),
+        stop_button(state),
+        format_button(state),
+        rule(),
+        options_button(options),
+    );
     let bar = nav()
         .class(ClassName::RUN_CONTROLS)
         .attr(TOUR, "controls")
@@ -215,6 +223,43 @@ fn go_button(state: AppState) -> impl IntoView
         .attr("disabled", move || blocked().then_some(""))
         .on(ev::click, move |_| go(state))
         .child(icon::start())
+}
+
+/// Format the code of the editor with the default settings of `zakac fmt`.
+/// Code that does not parse is left as it is; the problems panel shows the
+/// reason.
+///
+/// shortcut: the text is set whole, which clears the undo stack of the
+/// editor; apply it as one edit once the editor binding can.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+fn format_code(state: AppState)
+{
+    let text = state.source.get_untracked();
+    let out = format_text(&text, &FmtOptions::default());
+    do_if!(let Ok(out) = out, state.load(out));
+}
+
+/// The button that formats the code.
+///
+/// # Arguments
+///
+/// * `state` - The state.
+///
+/// # Returns
+///
+/// The view.
+fn format_button(state: AppState) -> impl IntoView
+{
+    let name = t!("explorer.run.format");
+    button()
+        .class(Controls::ICON_BUTTON)
+        .title(name.clone())
+        .attr("aria-label", name)
+        .on(ev::click, move |_| format_code(state))
+        .child(icon::indent())
 }
 
 /// The stop button; it can be pressed while a run goes on.
@@ -402,6 +447,7 @@ fn controls(state: AppState, options: RwSignal<bool>) -> impl IntoView
             buttons,
             speed_picker(state.speed),
             rule(),
+            format_button(state),
             options_button(options),
             status_chip(state),
             run_chips(state),
