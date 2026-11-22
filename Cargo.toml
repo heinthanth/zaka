@@ -108,6 +108,7 @@ zakac_codegen_target_native = { path = "compiler/zakac_codegen_target_native", d
 zakac_consts = { path = "compiler/zakac_consts" }
 zakac_diagnostics = { path = "compiler/zakac_diagnostics" }
 zakac_diagnostics_fixes = { path = "compiler/zakac_diagnostics_fixes" }
+zakac_formatter = { path = "compiler/zakac_formatter" }
 zakac_host_errors = { path = "compiler/zakac_host_errors" }
 zakac_i18n = { path = "compiler/zakac_i18n" }
 zakac_ir_builder = { path = "compiler/zakac_ir_builder" }

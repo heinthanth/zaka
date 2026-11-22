@@ -6837,6 +6837,7 @@ dependencies = [
  "zakac_codegen_target_c",
  "zakac_codegen_target_native",
  "zakac_codegen_target_vm",
+ "zakac_formatter",
  "zakac_host_errors",
  "zakac_i18n",
  "zakac_ir_builder",
@@ -7084,6 +7085,28 @@ dependencies = [
  "strsim",
  "zakac_diagnostics",
  "zakac_i18n",
+ "zakac_rust_sugars",
+ "zakac_span",
+]
+
+[[package]]
+name = "zakac_formatter"
+version = "0.1.0"
+dependencies = [
+ "bon",
+ "cargo-build",
+ "rust-i18n",
+ "strum",
+ "tempfile",
+ "termcolor",
+ "zakac_ast",
+ "zakac_cli_common",
+ "zakac_diagnostics",
+ "zakac_host_errors",
+ "zakac_i18n",
+ "zakac_lexer",
+ "zakac_parser",
+ "zakac_reporter",
  "zakac_rust_sugars",
  "zakac_span",
 ]

@@ -475,6 +475,43 @@ pub fn load_resolved(
     Ok(Loaded { open_conds: open, ..loaded(program, imports, diagnostics, &fixed) })
 }
 
+/// Parse one file with the names its imports and the core bring, as a build
+/// reads it, and give back its statements as parsed: each arm of a
+/// compile-time conditional is kept, and no statement of another file is
+/// among them. Standard input imports from the working folder; a file
+/// that code names, with no path, imports from the stdlib alone.
+///
+/// # Arguments
+///
+/// * `root` - The file.
+/// * `source_map` - The map the file and its imports are read into.
+/// * `options` - The lexer options.
+///
+/// # Returns
+///
+/// The statements of the file and the diagnostics of each file read, or the
+/// error of an import that could not be read.
+pub fn parse_in_place(
+    root: &Arc<SourceFile>, source_map: &mut SourceMap, options: &LexerOptions,
+) -> zakac_host_errors::Result<(Vec<Stmt>, Vec<Diagnostic>)>
+{
+    let real = match &root.name
+    {
+        FileName::Real(real) => Some(normalize(&real.local_path)),
+        _ => None,
+    };
+    let folder = real.as_deref().and_then(Path::parent).map(Path::to_path_buf);
+    let path = real.clone().unwrap_or_else(|| PathBuf::from(root.name.to_string()));
+    let path = std_module_at(&path).map_or(path, PathBuf::from);
+    #[rustfmt::skip]
+    let mut loader = Loader::builder().source_map(source_map).options(options)
+        .folder(folder.unwrap_or_default()).disk(!matches!(root.name, FileName::Custom(_)))
+        .keep_first(true)
+        .build();
+    loader.visit(root.clone(), path)?;
+    Ok((loader.kept.unwrap_or_default(), loader.diagnostics))
+}
+
 /// The state of [`load`].
 #[derive(Builder)]
 struct Loader<'a>
@@ -538,6 +575,13 @@ struct Loader<'a>
     /// fact of the target.
     #[builder(default)]
     target_used: bool,
+    /// Whether the statements of the first file are kept as parsed, before
+    /// the compile-time conditionals are settled, in [`Loader::kept`].
+    #[builder(default)]
+    keep_first: bool,
+    /// The statements of the first file as parsed, when [`Loader::keep_first`]
+    /// asks for them.
+    kept: Option<Vec<Stmt>>,
     /// The truth of each condition that calls a comptime function, worked
     /// out in a read before.
     #[builder(default)]
@@ -613,6 +657,10 @@ impl Loader<'_>
         self.diagnostics.extend(lexed.diagnostics.iter().cloned());
         self.diagnostics.extend(parsed.diagnostics);
         let mut program = parsed.program;
+        // The chain holds no path again once the imports of the first file are
+        // read.
+        let first_file = self.keep_first && self.chain.is_empty();
+        do_if!(first_file, self.kept = Some(program.stmts.clone()));
         let (stmts, settled, met, open) =
             settle(program.stmts, &self.target, &text_of, &spot);
         program.stmts = stmts;
