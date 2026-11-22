@@ -9,6 +9,7 @@ pub mod check;
 pub mod cli;
 pub mod format;
 pub mod options;
+pub mod rewrite;
 
 pub use format::FmtError;
 pub use format::format;

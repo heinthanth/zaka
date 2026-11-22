@@ -55,6 +55,7 @@ use crate::comptime::CondPlace;
 use crate::comptime::Resolved;
 use crate::comptime::Spot;
 use crate::comptime::settle;
+use crate::glued::GluedEnds;
 use crate::hint::Hint;
 use crate::hint::exported_hints;
 use crate::parser::parse;
@@ -370,7 +371,7 @@ fn loaded(
 /// # Returns
 ///
 /// `true` when its path starts with [`STD_PREFIX`].
-fn is_std(n: &ImportStmt) -> bool
+pub fn is_std(n: &ImportStmt) -> bool
 {
     canonical(&n.path.lit.value).starts_with(STD_PREFIX)
 }
@@ -489,11 +490,10 @@ pub fn load_resolved(
 ///
 /// # Returns
 ///
-/// The statements of the file and the diagnostics of each file read, or the
-/// error of an import that could not be read.
+/// The file as parsed, or the error of an import that could not be read.
 pub fn parse_in_place(
     root: &Arc<SourceFile>, source_map: &mut SourceMap, options: &LexerOptions,
-) -> zakac_host_errors::Result<(Vec<Stmt>, Vec<Diagnostic>)>
+) -> zakac_host_errors::Result<InPlace>
 {
     let real = match &root.name
     {
@@ -509,7 +509,25 @@ pub fn parse_in_place(
         .keep_first(true)
         .build();
     loader.visit(root.clone(), path)?;
-    Ok((loader.kept.unwrap_or_default(), loader.diagnostics))
+    let (stmts, also_taken, glued_ends) = loader.kept.unwrap_or_default();
+    #[rustfmt::skip]
+    return Ok(InPlace::builder().stmts(stmts).diagnostics(loader.diagnostics)
+        .also_taken(also_taken).glued_ends(glued_ends).build());
+}
+
+/// One file parsed with the names its imports and the core bring.
+#[derive(Debug, Clone, Builder)]
+pub struct InPlace
+{
+    /// The statements of the file, each arm of a compile-time conditional kept.
+    pub stmts: Vec<Stmt>,
+    /// The diagnostics of each file read.
+    pub diagnostics: Vec<Diagnostic>,
+    /// The spoken words of the file the parser read as their second
+    /// word.
+    pub also_taken: Vec<Span>,
+    /// The spellings of the ends glued to calls in the file.
+    pub glued_ends: GluedEnds,
 }
 
 /// The state of [`load`].
@@ -579,9 +597,11 @@ struct Loader<'a>
     /// the compile-time conditionals are settled, in [`Loader::kept`].
     #[builder(default)]
     keep_first: bool,
-    /// The statements of the first file as parsed, when [`Loader::keep_first`]
-    /// asks for them.
-    kept: Option<Vec<Stmt>>,
+    /// The statements of the first file as parsed, and the spoken words the
+    /// parser read there as their second word, and the
+    /// spellings of its glued ends, when
+    /// [`Loader::keep_first`] asks for them.
+    kept: Option<(Vec<Stmt>, Vec<Span>, GluedEnds)>,
     /// The truth of each condition that calls a comptime function, worked
     /// out in a read before.
     #[builder(default)]
@@ -660,7 +680,8 @@ impl Loader<'_>
         // The chain holds no path again once the imports of the first file are
         // read.
         let first_file = self.keep_first && self.chain.is_empty();
-        do_if!(first_file, self.kept = Some(program.stmts.clone()));
+        let (also, ends) = (parsed.also_taken, parsed.glued_ends);
+        do_if!(first_file, self.kept = Some((program.stmts.clone(), also, ends)));
         let (stmts, settled, met, open) =
             settle(program.stmts, &self.target, &text_of, &spot);
         program.stmts = stmts;

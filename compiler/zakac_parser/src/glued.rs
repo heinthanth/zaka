@@ -265,19 +265,35 @@ pub(crate) fn clash_warnings(
 ///
 /// # Returns
 ///
-/// The diagnostics.
+/// The diagnostics, and the spellings of the glued ends.
 pub(crate) fn glued_spoken(
     text: &str, base: Pos, lexed: &LexOutput, functions: &Functions,
-) -> Vec<Diagnostic>
+) -> (Vec<Diagnostic>, GluedEnds)
 {
     let tokens = &lexed.tokens;
-    let end_diags = |at: usize| {
+    let end_lexed = |at: usize| {
         let tok = &tokens[at];
         let (front, stem, end) = glued_parts(text, base, tok, functions, &[])?;
         let at = tok.span.lo + front.map_or(0, |(_, len)| len) + stem;
-        Some(lex_at(end, at, &LexerOptions::default()).diagnostics)
+        Some(lex_at(end, at, &LexerOptions::default()))
     };
     let open = (0..tokens.len()).filter(|&at| !declared_at(tokens, at));
-    let found = open.filter_map(end_diags).flatten();
-    found.filter(|d| d.code == Code::SpokenForm).collect()
+    let ends: Vec<LexOutput> = open.filter_map(end_lexed).collect();
+    let spoken = ends.iter().flat_map(|e| e.spoken_words.iter().copied()).collect();
+    let written = ends.iter().flat_map(|e| e.written_words.iter().copied()).collect();
+    let found = ends.into_iter().flat_map(|e| e.diagnostics);
+    let diags = found.filter(|d| d.code == Code::SpokenForm).collect();
+    (diags, GluedEnds { spoken, written })
+}
+
+/// The spellings of the ends glued to calls, as the lexer gives them for
+/// words that stand alone.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct GluedEnds
+{
+    /// Each end in a spoken spelling, with its written spelling.
+    pub spoken: Vec<(Span, &'static str)>,
+    /// Each end in a written spelling that has a spoken one, with that
+    /// spoken spelling.
+    pub written: Vec<(Span, &'static str)>,
 }

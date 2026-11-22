@@ -36,6 +36,7 @@ use crate::describe::kw_text;
 use crate::describe::one_of;
 use crate::describe::quote;
 use crate::generics::angle_len_with;
+use crate::glued::GluedEnds;
 use crate::glued::clash_warnings;
 use crate::glued::glued_spoken;
 use crate::glued::split_glued;
@@ -66,6 +67,13 @@ pub struct ParseOutput
     /// another file can go on from it.
     #[builder(default)]
     pub next_id: u32,
+    /// The spoken words the parser read as their second word,
+    /// as `ရှိတဲ့` read as `ရှိသည့်`.
+    #[builder(default)]
+    pub also_taken: Vec<Span>,
+    /// The spellings of the ends glued to calls.
+    #[builder(default)]
+    pub glued_ends: GluedEnds,
 }
 
 /// Parse the tokens of a source file.
@@ -121,7 +129,9 @@ pub fn parse_with(
     parser.next_id = first_id;
     parser.structs.extend(structs.iter().flat_map(|s| spellings(s)));
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
-    parser.diags.extend(glued_spoken(text, base, lexed, &known));
+    let (spoken, ends) = glued_spoken(text, base, lexed, &known);
+    parser.diags.extend(spoken);
+    parser.glued_ends = ends;
     parser.set_functions(known);
     let own = declared_hints(text, base, &lexed.tokens);
     parser.set_hints(hints.iter().cloned().chain(own));
@@ -279,7 +289,8 @@ fn finish(mut parser: Parser<'_>, span: Span) -> ParseOutput
     let program = Program::builder().stmts(stmts).span(span).build();
     #[rustfmt::skip]
     return ParseOutput::builder().program(program).diagnostics(parser.diags)
-        .next_id(parser.next_id).build();
+        .next_id(parser.next_id).also_taken(parser.also_taken)
+        .glued_ends(parser.glued_ends).build();
 }
 
 /// Parse the tokens of `text`, which starts at the absolute position `base`.
@@ -303,7 +314,9 @@ pub fn parse_at(text: &str, base: Pos, lexed: &LexOutput) -> ParseOutput
     let mut parser = Parser::new(text, base, &split);
     parser.core_heap = heap;
     parser.diags.extend(clash_warnings(text, base, lexed, &known));
-    parser.diags.extend(glued_spoken(text, base, lexed, &known));
+    let (spoken, ends) = glued_spoken(text, base, lexed, &known);
+    parser.diags.extend(spoken);
+    parser.glued_ends = ends;
     parser.set_functions(known);
     parser.set_hints(declared_hints(text, base, &lexed.tokens));
     finish(parser, span)
@@ -462,6 +475,13 @@ pub(crate) struct Parser<'t>
     /// Diagnostics recorded after recovering from an error.
     #[builder(default)]
     pub(crate) diags: Vec<Diagnostic>,
+    /// The spoken words read as their second word, as
+    /// `ရှိတဲ့` read as `ရှိသည့်`.
+    #[builder(default)]
+    pub(crate) also_taken: Vec<Span>,
+    /// The spellings of the ends glued to calls.
+    #[builder(default)]
+    pub(crate) glued_ends: GluedEnds,
     /// Number for the next expression node.
     #[builder(default)]
     pub(crate) next_id: u32,
@@ -894,8 +914,10 @@ impl<'t> Parser<'t>
     /// The token, or an `expected-token` diagnostic.
     pub(crate) fn expect_reading(&mut self, kw: Kw) -> PResult<Token>
     {
-        ret_if!(self.reads_as(&self.peek(), kw), Ok(self.bump()));
-        self.expect(kw)
+        let tok = self.peek();
+        ret_if!(!self.reads_as(&tok, kw), self.expect(kw));
+        do_if!(kw_of(&tok) != Some(kw), self.also_taken.push(tok.span));
+        Ok(self.bump())
     }
 
     /// Whether the token `n` places ahead is the identifier `word`: a kind

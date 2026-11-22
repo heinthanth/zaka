@@ -144,6 +144,8 @@ impl Driver<'_, '_>
         self.out.tokens = join_named_phrases(tokens, self.text, self.base);
         mark_classifiers(&mut self.out.tokens, self.text, self.base);
         self.report_mix();
+        self.out.spoken_words = std::mem::take(&mut self.spoken);
+        self.out.written_words = std::mem::take(&mut self.written);
         let end = self.base + self.text.len();
         self.push(TokenKind::Eof, Span::new(end, end), false);
         self.out

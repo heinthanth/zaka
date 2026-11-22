@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use zakac_lexer::artifact::LexArtifact;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
+use zakac_lexer::token::LexOutput;
 use zakac_rust_sugars::extract;
 use zakac_session::artifact::ArtifactFormat;
 use zakac_session::artifact::dump_artifact;
@@ -88,7 +89,11 @@ fn spans_are_relative_and_map_back()
     );
     let registered = artifact.register_source(&mut sm2);
     assert_eq!(registered.start_pos, file.start_pos);
-    assert_eq!(artifact.absolute_output(&registered), out);
+    // The artifact leaves out the spellings of the reserved words, which the
+    // formatter reads from a lex of its own.
+    let spelled =
+        LexOutput { spoken_words: Vec::new(), written_words: Vec::new(), ..out };
+    assert_eq!(artifact.absolute_output(&registered), spelled);
 }
 
 #[test]

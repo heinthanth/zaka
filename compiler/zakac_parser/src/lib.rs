@@ -10,6 +10,7 @@ pub mod describe;
 mod fn_kind;
 mod generics;
 mod glued;
+pub use glued::GluedEnds;
 mod heap;
 pub mod hint;
 mod kind;

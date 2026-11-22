@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 use zakac_formatter::FmtOptions;
 use zakac_formatter::format_text;
+use zakac_formatter::options::SpeechMode;
+use zakac_rust_sugars::tern;
 
 use crate::common::repo;
 
@@ -88,11 +90,16 @@ fn book_fences_are_formatted()
     for page in books.iter().flatten()
     {
         let shared = SHARED_LINES.iter().any(|p| page.ends_with(p));
-        let options = FmtOptions::builder().one_statement_per_line(!shared).build();
         let text = std::fs::read_to_string(page).unwrap();
-        let off = fences(&text).into_iter().filter(
-            |(_, code)| !matches!(format_text(code, &options), Ok(out) if out == *code),
-        );
+        let off = fences(&text).into_iter().filter(|(info, code)| {
+            // A fence that allows spoken words is written in them.
+            let spoken = info.contains("lint-allow=spoken");
+            let speech = tern!(spoken, SpeechMode::Spoken, SpeechMode::Written);
+            #[rustfmt::skip]
+            let options = FmtOptions::builder().one_statement_per_line(!shared)
+                .speech_mode(speech).build();
+            !matches!(format_text(code, &options), Ok(out) if out == *code)
+        });
         changed.extend(off.map(|(info, _)| format!("{} [{info}]", page.display())));
     }
     assert!(changed.is_empty(), "not formatted:\n{}", changed.join("\n"));

@@ -4,4 +4,5 @@ mod books;
 mod cli;
 mod common;
 mod repo;
+mod rewrites;
 mod spacing;

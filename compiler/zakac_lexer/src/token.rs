@@ -993,4 +993,13 @@ pub struct LexOutput
     /// Lexer diagnostics, in source order.
     #[builder(default)]
     pub diagnostics: Vec<Diagnostic>,
+    /// Each word in a spoken spelling, with its written spelling.
+    #[builder(default)]
+    #[serde(skip)]
+    pub spoken_words: Vec<(Span, &'static str)>,
+    /// Each word in a written spelling that has a spoken one, with that
+    /// spoken spelling; a `သည်` that marks a topic is left out.
+    #[builder(default)]
+    #[serde(skip)]
+    pub written_words: Vec<(Span, &'static str)>,
 }

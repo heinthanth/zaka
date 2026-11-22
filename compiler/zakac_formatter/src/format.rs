@@ -1,6 +1,8 @@
 //! The shape of a file: each token and comment printed again, with the space
 //! between them set by the rules of [`FmtOptions`].
 
+use std::borrow::Cow;
+
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::walk_block;
@@ -25,6 +27,11 @@ use zakac_span::span::Span;
 use crate::check::same_words;
 use crate::options::ContinuationIndent;
 use crate::options::FmtOptions;
+use crate::options::ImportOrder;
+use crate::rewrite::Swap;
+use crate::rewrite::sort_imports;
+use crate::rewrite::swapped;
+use crate::rewrite::swaps;
 
 /// The reason a file was left as it is.
 #[derive(Debug)]
@@ -57,28 +64,40 @@ pub fn format(
     source_map: &mut SourceMap, name: FileName, text: &str, options: &FmtOptions,
 ) -> Result<String, FmtError>
 {
-    let file = source_map.new_source_file(name, text.to_string());
+    let file = source_map.new_source_file(name.clone(), text.to_string());
     let lexer = LexerOptions::default();
     let lexed = lex(&file, &lexer);
-    let (stmts, found) =
-        parse_in_place(&file, source_map, &lexer).map_err(FmtError::Unread)?;
+    let parsed = parse_in_place(&file, source_map, &lexer).map_err(FmtError::Unread)?;
     // The errors of the files it imports leave this file as it is not.
     let own =
         |d: &&Diagnostic| file.start_pos <= d.span.lo && d.span.lo <= file.end_pos();
-    let refused: Vec<Diagnostic> =
-        found.iter().filter(own).filter(|d| refuses(d)).cloned().collect();
+    let found = parsed.diagnostics.iter().filter(own);
+    let refused: Vec<Diagnostic> = found.filter(|d| refuses(d)).cloned().collect();
     ret_if!(!refused.is_empty(), Err(FmtError::Unparsed(refused)));
+    // Sorted imports move whole lines: the moved text is formatted
+    // as a file of its own.
+    let sorted = (options.import_order == ImportOrder::Sorted)
+        .then(|| sort_imports(&file, text, &lexed, &parsed.stmts))
+        .flatten();
+    if let Some(sorted) = sorted
+    {
+        let rest =
+            FmtOptions { import_order: ImportOrder::Preserve, ..options.clone() };
+        return format(source_map, name, &sorted, &rest);
+    }
+    let swaps = swaps(&file, &lexed, &parsed, options);
     let mut blocks = Blocks::default();
-    do_for!(s in &stmts, blocks.visit_stmt(s));
+    do_for!(s in &parsed.stmts, blocks.visit_stmt(s));
     let printer = Printer::builder()
         .file(&file)
         .original(text)
         .lexed(&lexed)
         .blocks(lines_of_blocks(&file, &blocks.spans))
+        .swaps(swaps.clone())
         .options(options)
         .build();
     let out = printer.print()?;
-    ret_if!(!same_words(&file, &lexed, &out), Err(FmtError::Changed));
+    ret_if!(!same_words(&file, &lexed, &swaps, &out), Err(FmtError::Changed));
     Ok(out)
 }
 
@@ -227,6 +246,8 @@ struct Printer<'a>
     lexed: &'a LexOutput,
     /// The line of the opener and the closer of each block.
     blocks: Vec<(usize, usize)>,
+    /// The words the rewrites swap in, in the order of the text.
+    swaps: Vec<Swap>,
     options: &'a FmtOptions,
 }
 
@@ -266,7 +287,7 @@ impl Printer<'_>
                 }
                 None => out.push_str(&self.lead(&pieces[i..], starts)),
             }
-            out.push_str(self.text_of(piece));
+            out.push_str(&self.swapped(piece));
             do_if!(!piece.comment, starts = piece.stop);
         }
         do_if!(!out.is_empty(), out.push('\n'));
@@ -344,6 +365,24 @@ impl Printer<'_>
     {
         let start = self.file.src[..at].rfind('\n').map_or(0, |n| n + 1);
         &self.file.src[start..at]
+    }
+
+    /// The text of a piece, with the words the rewrites swap in.
+    ///
+    /// # Arguments
+    ///
+    /// * `piece` - The piece.
+    ///
+    /// # Returns
+    ///
+    /// The text.
+    fn swapped(&self, piece: &Piece) -> Cow<'_, str>
+    {
+        let inside = |s: &Swap| piece.lo <= s.lo && s.hi <= piece.hi;
+        ret_if!(!self.swaps.iter().any(inside), Cow::Borrowed(self.text_of(piece)));
+        // A piece with a swap is written from the normalized text, as the word
+        // swapped in is.
+        swapped(&self.file.src, piece.lo, piece.hi, &self.swaps)
     }
 
     /// The text of a piece: from the normalized text, or as written when the
