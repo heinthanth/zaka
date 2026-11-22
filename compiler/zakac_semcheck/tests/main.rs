@@ -4,6 +4,7 @@ mod artifact;
 mod callbacks;
 mod cli;
 mod common;
+mod conversions;
 mod counts;
 mod edits;
 mod exports;

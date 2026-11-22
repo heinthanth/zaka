@@ -4,11 +4,14 @@
 //! values of a struct calls its `ပေါင်း`, `<` its `ငယ်မငယ်စစ်`, `>=` the
 //! negation of its `ငယ်မငယ်စစ်`, `<<` its `ဘစ်ဘယ်ရွေ့` with the distance, and so
 //! on. Printing
-//! and a template slot call its `စာသားအဖြစ်ပြောင်း`. The check records each
+//! and a template slot call its `စာသားအဖြစ်ပြောင်း`, and a conversion with no
+//! built-in rule calls the `ပြောင်းလဲ` or the `စမ်းသပ်ပြောင်းလဲ` of its two kinds,
+//! the functions of the conversion traits. The check records each
 //! such operator, and once it settles writes the call into the tree, so the
 //! later stages see a plain call.
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
@@ -18,6 +21,8 @@ use zakac_ast::expr::NodeId;
 use zakac_ast::expr::NullLit;
 use zakac_ast::expr::PrefixExpr;
 use zakac_ast::expr::PrefixOp;
+use zakac_ast::expr::StrExpr;
+use zakac_ast::expr::StrPiece;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::CallStmt;
@@ -72,6 +77,11 @@ pub const GREATER_FN: &str = "ကြီးမကြီးစစ်";
 pub const EQUAL_FN: &str = "ညီမညီစစ်";
 /// The function printing and a template slot call.
 pub const TEXT_FN: &str = "စာသားအဖြစ်ပြောင်း";
+/// The function of `ပြောင်းလဲနိုင်သော`, which a conversion calls.
+pub const CONVERT_FN: &str = "ပြောင်းလဲ";
+/// The function of `စမ်းသပ်ပြောင်းလဲနိုင်သော`, which a conversion that can
+/// fail calls.
+pub const TRY_CONVERT_FN: &str = "စမ်းသပ်ပြောင်းလဲ";
 
 /// A call that stands in place of an operator.
 #[derive(Debug, Clone, Copy)]
@@ -96,6 +106,9 @@ pub(crate) struct OpCalls
     /// `f(x)`, and each conversion that goes through a function, under the node
     /// of the read or the conversion.
     pub(crate) methods: HashMap<NodeId, CallExpr>,
+    /// Each conversion to text that takes the text its value prints as, which
+    /// becomes the template text `"{x}"`, under the node of the conversion.
+    pub(crate) texts: HashSet<NodeId>,
     /// The call each statement of a verb the compiler gives stands for when
     /// a function of the file of that name takes its operands, `l ကို ပြသမည်။`
     /// for `ပြသ(l)`, under the span of the statement.
@@ -333,6 +346,111 @@ impl Checker
         self.op_calls.wraps.insert(value.id(), callee);
     }
 
+    /// The function a conversion goes through: a `ပြောင်းလဲ` that takes the
+    /// source kind and gives the target kind, or a `စမ်းသပ်ပြောင်းလဲ` that gives a
+    /// result whose good side is the target kind, from the file of the use or
+    /// the file of either kind. A conversion that passes a failure on takes the
+    /// second first, a plain one the first.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The source kind.
+    /// * `to` - The target kind.
+    /// * `pass` - Whether the conversion passes a failure on.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `None` when none fits.
+    pub(crate) fn conversion_fn(
+        &self, from: DataKind, to: DataKind, pass: bool,
+    ) -> Option<FnSig>
+    {
+        let sure =
+            self.taking(CONVERT_FN, from, to).into_iter().find(|s| s.ret == Some(to));
+        let good = |s: &FnSig| {
+            let fails = s.ret.filter(|k| !k.is_optional());
+            fails.and_then(DataKind::fallible_parts).and_then(|(ok, _)| ok) == Some(to)
+        };
+        let tried = self.taking(TRY_CONVERT_FN, from, to).into_iter().find(good);
+        tern!(pass, tried.or(sure), sure.or(tried))
+    }
+
+    /// The functions of a name that take one value of a kind, in the file of
+    /// the use and the files of the two kinds of a conversion.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `from` - The kind of the parameter.
+    /// * `to` - The other kind, whose file is looked at too.
+    ///
+    /// # Returns
+    ///
+    /// The functions.
+    fn taking(&self, name: &str, from: DataKind, to: DataKind) -> Vec<FnSig>
+    {
+        let here = self.fns.get(name).into_iter().flatten();
+        let homes = [self.kind_home(from), self.kind_home(to)].into_iter().flatten();
+        let fns = homes.filter_map(|u| self.unit_fns.get(u as usize));
+        let there = fns.filter_map(|f| f.get(name)).flatten();
+        here.chain(there).filter(|s| s.params == [from]).cloned().collect()
+    }
+
+    /// Check a conversion that goes through a function as the call of it,
+    /// which takes the node of the conversion.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The conversion.
+    /// * `value` - The value it converts, checked before.
+    /// * `sig` - The function.
+    ///
+    /// # Returns
+    ///
+    /// The result kind of the call: the good result when it passes a failure
+    /// on.
+    pub(crate) fn infer_conversion(
+        &mut self, n: &VerbExpr, value: &Expr, sig: &FnSig,
+    ) -> Option<DataKind>
+    {
+        let fails = sig.ret.and_then(DataKind::fallible_parts);
+        let word = tern!(fails.is_some(), TRY_CONVERT_FN, CONVERT_FN);
+        let written = Ident::builder().name(word).span(n.span).build();
+        self.check_pass(&written, sig.ret, n.pass, false, n.span);
+        let unsafe_call = format!("a call of \"{word}\", an unsafe function,");
+        do_if!(sig.unchecked, self.need_unchecked(n.span, &unsafe_call));
+        let callee = Ident::builder().name(self.known_name(sig)).span(n.span).build();
+        #[rustfmt::skip]
+        let call = CallExpr::builder().id(n.id).callee(callee).args(vec![value.clone()])
+            .pass(n.pass).span(n.span).build();
+        self.op_calls.methods.insert(n.id, call);
+        tern!(let Some((ok, _)) = fails.filter(|_| n.pass), ok, sig.ret)
+    }
+
+    /// Check a conversion to text with no function of its own as the text the
+    /// value prints as, through the `စာသားအဖြစ်ပြောင်း` of a struct when it has
+    /// one. Such a conversion cannot fail.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The conversion.
+    /// * `value` - The value it converts, checked before.
+    /// * `from` - The kind of the value.
+    ///
+    /// # Returns
+    ///
+    /// `စာသား`.
+    pub(crate) fn infer_to_text(
+        &mut self, n: &VerbExpr, value: &Expr, from: DataKind,
+    ) -> Option<DataKind>
+    {
+        let word = Ident::builder().name(CONVERT_FN).span(n.span).build();
+        self.check_pass(&word, Some(DataKind::TEXT), n.pass, false, n.span);
+        self.struct_text(value, Some(from));
+        self.op_calls.texts.insert(n.id);
+        Some(DataKind::TEXT)
+    }
+
     /// The function of a name with these parameter kinds and no other, in the
     /// file of the use or the file of the kind.
     ///
@@ -506,8 +624,9 @@ impl VisitorMut for Writer<'_>
 /// * `calls` - The calls the check recorded.
 pub(crate) fn write_methods(program: &mut Program, calls: &OpCalls)
 {
-    ret_if!(calls.methods.is_empty() && calls.verbs.is_empty());
-    MethodWriter { methods: &calls.methods, verbs: &calls.verbs }
+    let blank = calls.methods.is_empty() && calls.verbs.is_empty();
+    ret_if!(blank && calls.texts.is_empty());
+    MethodWriter { methods: &calls.methods, verbs: &calls.verbs, texts: &calls.texts }
         .visit_program_mut(program);
 }
 
@@ -518,6 +637,8 @@ struct MethodWriter<'a>
     methods: &'a HashMap<NodeId, CallExpr>,
     /// The call of each verb statement, under its span.
     verbs: &'a HashMap<Span, CallStmt>,
+    /// The conversions to text that become template texts.
+    texts: &'a HashSet<NodeId>,
 }
 
 impl VisitorMut for MethodWriter<'_>
@@ -538,6 +659,28 @@ impl VisitorMut for MethodWriter<'_>
         let replaced = matches!(n, Expr::Field(_) | Expr::Verb(_));
         let call = tern!(replaced, self.methods.get(&n.id()), None);
         do_if!(let Some(call) = call, *n = Expr::Call(call.clone()));
+        do_if!(self.texts.contains(&n.id()), to_template(n));
         walk_expr_mut(self, n);
     }
+}
+
+/// Put the template text `"{x}"` in place of a conversion of `x` to text.
+///
+/// # Arguments
+///
+/// * `n` - The conversion.
+fn to_template(n: &mut Expr)
+{
+    let Expr::Verb(v) = n
+    else
+    {
+        return;
+    };
+    let Some(value) = v.args.pop()
+    else
+    {
+        return;
+    };
+    let pieces = vec![StrPiece::TemplateSlot(Box::new(value))];
+    *n = Expr::Str(StrExpr::builder().id(v.id).pieces(pieces).span(v.span).build());
 }

@@ -2,6 +2,7 @@ use zakac_burmese_segmenter::segmenter::SegmenterOptions;
 use zakac_burmese_segmenter::segmenter::segment;
 use zakac_lexer::ident::is_ident;
 use zakac_lexer::reserved::RESERVED;
+use zakac_lexer::reserved::WHOLE_NAMES;
 use zakac_lexer::reserved::lookup;
 use zakac_lexer::reserved::split_reserved;
 use zakac_lexer::role::builtin_count;
@@ -198,7 +199,8 @@ fn check_join(parts: &[&str])
 fn split_back_pair(a: &str, b: &str)
 {
     let text = format!("{a}{b}");
-    do_if!(lookup(&text).is_some(), return);
+    // A whole name of the core is one name, not two reserved words.
+    do_if!(lookup(&text).is_some() || WHOLE_NAMES.contains(&text.as_str()), return);
     check_join(&[a, b]);
 }
 

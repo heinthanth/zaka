@@ -1,6 +1,6 @@
 ---
 title: Conversions
-description: Turn a value of one data kind into another - the conversion expression, which pairs convert, what happens to the value, and the widening that needs no words.
+description: Turn a value of one data kind into another - the conversion expression, which pairs convert, the conversion traits, what happens to the value, and the widening that needs no words.
 ---
 
 # Conversions
@@ -75,7 +75,8 @@ An integer never becomes a true/false value, so to test an integer we compare it
 | From | To | Rule |
 | --- | --- | --- |
 | a plain list of `လက္ခဏာမဲ့ ၈ ဘစ် ကိန်းပြည့်` | `စာသား` | allowed; the VM checks that the u8s are UTF-8 and stops the program when the u8s are not ([Text](text.md)) |
-| each other list | a data kind | ZK0408 |
+| each other list | a data kind other than `စာသား` | ZK0408 |
+| each value but a handle of a data kind from outside | `စာသား` | the text that `ပြသမည်` prints ([Conversions to text](#conversions-to-text)) |
 | a counted list | a plain list | needs no conversion: it happens where a value goes into a place ([Counted lists and storage](counted-lists.md#forms)) |
 | a member of an enumeration | its value kind | allowed, and returns the member's value ([Enumerations](enums.md#values-of-an-enumeration)) |
 | a member whose value is a number, a character or a true/false value | each data kind that its value converts to | allowed |
@@ -106,44 +107,112 @@ hi
 error[ZK0408]: cannot convert isize to bool
 ```
 
-## Conversions through functions
+## Conversions through traits
 
 ```text
 <value> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်
 <value> ကို <kind> တစ်<measure word> အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း
 ```
 
-When the table has no pair for two data kinds, a conversion goes through a function that
-the file can see. The function must have a name that ends in `အဖြစ်ပြောင်း`, have one
-parameter of the source data kind, and return the target data kind, or a result whose
-good side is the target data kind. The stdlib names such a function `<K>အဖြစ်ပြောင်း`, with
-the word of the target data kind for `K`.
+When the table has no pair for two data kinds, a conversion goes through one of the two
+conversion [traits](traits.md#built-in-traits) (`From` and `TryFrom`) of the [core
+module](core.md):
 
-The conversion is then a call of that function, and its value is the result of the call.
-With `ပြောင်းလဲသော ရလဒ်ကောင်း`, the conversion passes a failure on, the same as
-`သည့် ရလဒ်ကောင်း` does for a call.
+| Trait | Its function | Use |
+| --- | --- | --- |
+| `ပြောင်းလဲနိုင်သော`, written `B အဖြစ် ပြောင်းလဲနိုင်သော` | `ပြောင်းလဲ`, which takes an `A` and returns a `B` | a conversion that cannot fail |
+| `စမ်းသပ်ပြောင်းလဲနိုင်သော`, written `B အဖြစ် E အမှားဖြင့် စမ်းသပ်ပြောင်းလဲနိုင်သော` | `စမ်းသပ်ပြောင်းလဲ`, which takes an `A` and returns `B သို့မဟုတ် အမှားအယွင်းအနေဖြင့် E ရှိနိုင်သော ဒေတာဆဲလ်` | a conversion that can fail with an error of data kind `E` |
+
+To let a data kind convert, we write the function of the trait for the pair, as a plain
+function or in a [trait block](traits.md#trait-blocks). The compiler looks for it in the
+file of the conversion and in the files of the two data kinds, so a conversion to a struct
+of another file needs no import of the function. The conversion is then a call of that
+function:
+
+- `ပြောင်းလဲသော ရလဒ်` calls `ပြောင်းလဲ`, or `စမ်းသပ်ပြောင်းလဲ` when the pair has no
+  `ပြောင်းလဲ`, and then its value is the whole result.
+- `ပြောင်းလဲသော ရလဒ်ကောင်း` calls `စမ်းသပ်ပြောင်းလဲ` and passes a failure on, the same as
+  `သည့် ရလဒ်ကောင်း` does for a call.
+- Two functions of one name can share a parameter and differ in their results
+  ([Overloads that differ in the result](functions-overloads.md#overloads-that-differ-in-the-result)),
+  so one data kind can have a `ပြောင်းလဲ` for each data kind that it converts to.
+
+```zaka
+မီတာ ဟူသော ဒေတာအစုအဝေးတွင် အရှည် ဟူသော ဒဿမကိန်း တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ခု ဖြစ်သည်။
+
+အရှည်အမှားအယွင်း ဟူသော ဒေတာအမျိုးအစားကွဲတွင်
+ဗလာ နှင့်
+သုညအောက် တို့ပါဝင်သည်။
+
+ပြောင်းလဲ ဟူသော လုပ်ဆောင်ချက် သည်
+မ ဟူသော မီတာ တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ဒဿမကိန်း တစ်ခု ကို ပြန်ပေးမည်။
+မ ၏ အရှည် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+စမ်းသပ်ပြောင်းလဲ ဟူသော လုပ်ဆောင်ချက် သည်
+ဒ ဟူသော ဒဿမကိန်း တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ မီတာ သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အရှည်အမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+အကယ်၍ ဒ < ၀.၀ လျှင် အရှည်အမှားအယွင်းများထဲမှ သုညအောက် ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+မီတာ(အရှည်: ဒ) ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+မီတာ(အရှည်: ၂.၅) ကို ဒဿမကိန်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+၃.၀ ကို မီတာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+-၁.၀ ကို မီတာ တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၂.၅
+ရလဒ်ကောင်း(မီတာ(အရှည်: ၃.၀))
+အမှားအယွင်း(အရှည်အမှားအယွင်းများထဲမှ သုညအောက်)
+```
+
+A function whose name ends in `အဖြစ်ပြောင်း` is a plain function: the conversion does
+not look at names.
 
 | Case | Code |
 | --- | --- |
-| `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair that the table converts, because that conversion cannot fail | ZK0444 |
-| no pair in the table and no such function | ZK0408 |
+| `ပြောင်းလဲသော ရလဒ်ကောင်း` on a pair that cannot fail: a pair of the table, a pair with a `ပြောင်းလဲ` alone, or a conversion to text | ZK0444 |
+| no pair in the table, no function of the two traits, and no conversion to text | ZK0408 |
 
-The stdlib has these conversion functions:
+## Conversions to text
+
+Each value converts to `စာသား` with no function of its own: the result is the text that
+`ပြသမည်` prints for the value, and a struct with `စာသားအဖြစ်ပြောင်း` gives the text of that
+function. A `ပြောင်းလဲ` that returns `စာသား` for the data kind replaces this rule. A handle of
+a data kind from outside has no text, so its conversion is ZK0408.
+
+```zaka
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+(၄၂ ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) + "!" ဟု ပြသမည်။
+'က' ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+မှန် ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+၄၂!
+က
+မှန်
+```
+
+## Conversions in the stdlib
 
 | Module | Function | Converts |
 | --- | --- | --- |
-| `"စံကား/စာသား"` | `ကိန်းပြည့်အဖြစ်ပြောင်း` | text to an integer: an optional `-`, then the digits `0`-`9` or `၀`-`၉` |
-| `"စံကား/လမ်းကြောင်း"` | `ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း` | text to a path |
-| `"စံကား/လမ်းကြောင်း"` | `စာသားအဖြစ်ပြောင်း` | a path to text |
+| `"စံကား/စာသား"` | `စမ်းသပ်ပြောင်းလဲ` | text to an integer: an optional `-`, then the digits `0`-`9` or `၀`-`၉` |
+| `"စံကား/လမ်းကြောင်း"` | `ပြောင်းလဲ` | text to a path |
 
-The failure of `ကိန်းပြည့်အဖြစ်ပြောင်း` is a member of `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`:
-`ဗလာစာသား` (blank text), `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is not a
-digit) or `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest `ကိန်းပြည့်`). A struct converts
-through a function with the same shape, written for that struct, and a kind alias converts
-as the data kind that it names.
+A path converts to text through its `စာသားအဖြစ်ပြောင်း`, as each struct does. Text and the
+integers are declared in no file, so to read an integer from text we import
+`စမ်းသပ်ပြောင်းလဲ` from `"စံကား/စာသား"`. Its failure is a member of
+`ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`: `ဗလာစာသား` (blank text), `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း`
+(a character that is not a digit) or `အကန့်အသတ်ကျော်ခြင်း` (a number past the largest
+`ကိန်းပြည့်`). A kind alias converts as the data kind that it names.
 
 ```zaka
-"စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း နှင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
+"စံကား/စာသား" မှ စမ်းသပ်ပြောင်းလဲ နှင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တို့ကို ထည့်သွင်းမည်။
 
 နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
@@ -347,5 +416,5 @@ To join two data kinds that do not widen, we convert one side:
 | ZK0403 | an operator gets an operand that it does not work on, such as `မှန် + ၁` |
 | ZK0404 | the two operands of an operator have no common data kind |
 | ZK0406 | a literal does not fit the data kind that its place gives it |
-| ZK0408 | a conversion between two data kinds that cannot convert |
+| ZK0408 | a conversion between two data kinds that cannot convert, with no pair in the table and no function of the conversion traits |
 | ZK0444 | `ပြောင်းလဲသော ရလဒ်ကောင်း` on a conversion that cannot fail |

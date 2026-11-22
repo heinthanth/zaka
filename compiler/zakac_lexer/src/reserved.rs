@@ -386,7 +386,9 @@ fn extend(
 
     let text = &word.text[lo..hi];
     let kind = lookup(text).map(TokenKind::Kw);
-    let kind = kind.or_else(|| is_kind_name(text).then_some(TokenKind::Ident))?;
+    let name = is_kind_name(text) || WHOLE_NAMES.contains(&text);
+    let kind = kind.filter(|_| !WHOLE_NAMES.contains(&text));
+    let kind = kind.or_else(|| name.then_some(TokenKind::Ident))?;
     let mut pieces = prefix.clone();
     pieces.push((kind, span));
     Some(pieces)
@@ -406,6 +408,11 @@ fn all_particles(pieces: &Pieces) -> bool
     let particle = |(kind, _): &(TokenKind, Span)| matches!(kind, TokenKind::Kw(kw) if kw.is_particle());
     pieces.iter().all(particle)
 }
+
+/// The names of the core made of reserved words alone, which a split keeps as
+/// one name: the trait `ပြောင်းလဲနိုင်သော` is `ပြောင်းလဲနိုင်` and `သော`, a form
+/// no rule of the language writes glued.
+pub const WHOLE_NAMES: &[&str] = &["ပြောင်းလဲနိုင်သော"];
 
 /// Split a word into reserved words and kind names.
 ///

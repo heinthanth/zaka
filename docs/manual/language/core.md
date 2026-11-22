@@ -104,6 +104,7 @@ another file it is ZK0349.
 | `နှိုင်းယှဉ်နိုင်သော` | the data kinds that work with `< > <= >=`: the numbers, the characters, and each data kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | the data kinds that work with `==` and `!=`: all data kinds |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the data kinds that `ပြသမည်` prints: all data kinds except a handle of a data kind from outside |
+| `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | the data kinds that convert to another with `အဖြစ် ပြောင်းလဲသော ရလဒ်`, through the compiler's table or a `ပြောင်းလဲ`, and those that convert with a failure, through a `စမ်းသပ်ပြောင်းလဲ` ([Conversions](conversions.md#conversions-through-traits)) |
 | `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile time](compile-time.md#the-facts-of-the-target)) |
 
 - A name that a file declares hides the name of the core module, so a trait named

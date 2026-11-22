@@ -275,6 +275,8 @@ compiler, and a struct has them through its functions, which its operators then 
 | `နှိုင်းယှဉ်နိုင်သော` | the numbers and the characters, and each data kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | all data kinds, because `==` and `!=` work on two values of one data kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | all data kinds except a handle of a data kind from outside, because `ပြသမည်` prints them |
+| `ပြောင်းလဲနိုင်သော` (`B အဖြစ် ပြောင်းလဲနိုင်သော`) | the pairs that the [conversion](conversions.md#conversions-through-traits) converts, because `အဖြစ် ပြောင်းလဲသော ရလဒ်` works on them, and each data kind with a `ပြောင်းလဲ` that returns `B` |
+| `စမ်းသပ်ပြောင်းလဲနိုင်သော` (`B အဖြစ် E အမှားဖြင့် စမ်းသပ်ပြောင်းလဲနိုင်သော`) | each data kind with a `စမ်းသပ်ပြောင်းလဲ` that returns `B`, or an error of data kind `E` |
 | `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` | the data kinds that threads can use: numbers, characters, true/false values, text, and lists, structs, optionals, results and tables of such data kinds, and the [objects threads can use](objects.md#objects-threads-can-use); not a plain shared object, a function value, a pointer or a handle of a data kind from outside |
 
 A trait that the program declares with one of these names hides the built-in one. The

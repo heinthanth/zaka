@@ -18,6 +18,7 @@ use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::Program;
 use zakac_ast::stmt::StructDecl;
+use zakac_ast::stmt::TraitBlock;
 use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr;
@@ -343,6 +344,13 @@ impl Leftovers<'_>
 impl Visitor for Leftovers<'_>
 {
     fn visit_kind(&mut self, n: &Kind) { self.kind(n) }
+
+    // The trait of a block takes its kinds as a trait, not as a generic kind.
+    fn visit_trait_block(&mut self, n: &TraitBlock)
+    {
+        self.kind(&n.kind);
+        do_for!(f in &n.fns, self.visit_fn(f));
+    }
 
     fn visit_expr(&mut self, n: &Expr)
     {

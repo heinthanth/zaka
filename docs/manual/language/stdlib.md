@@ -24,7 +24,7 @@ folder of the compiler, and an editor opens it through go to definition. Text an
 are values, so a function returns new text or a new list and leaves its argument as it
 was. The examples use sentence forms, including calls with
 [argument particles](functions-sentences.md#prepositions) and
-[conversions through functions](conversions.md#conversions-through-functions).
+[conversions through traits](conversions.md#conversions-through-traits).
 The [sign form](functions-calls.md#the-sign-form) also works.
 
 ## Text
@@ -43,7 +43,7 @@ The [sign form](functions-calls.md#the-sign-form) also works.
 | `<text> တွင် <old> ကို <new> ဖြင့် အကုန်အစားထိုး` | the text with each old piece replaced, from the start on |
 | `<text> ကို <count> ကြိမ် ထပ်ခါထပ်ခါဆက်` | the text repeated exactly that many times, or empty text for a count of zero or less |
 | `<text> ကို စာလုံးကြီးပြောင်း`, `<text> ကို စာလုံးသေးပြောင်း` | the text with each Latin letter in upper or in lower case |
-| `<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` | the text read as an integer, or a failure. Import `ကိန်းပြည့်အဖြစ်ပြောင်း` to use this conversion |
+| `<text> ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` | the text read as an integer, or a failure. Import `စမ်းသပ်ပြောင်းလဲ` to use this conversion |
 
 A u8 number counts the u8s of the UTF-8 form of the text, as a [range of
 text](text.md#ranges) does, so `ကမ္ဘာ` starts at 22 in `မင်္ဂလာ ကမ္ဘာ`, because each
@@ -96,7 +96,7 @@ file name or `p ၏ ဖိုင်တွဲလမ်းကြောင်း` t
 ([Calls on a value](functions-calls.md#calls-on-a-value)).
 
 ```zaka
-"စံကား/လမ်းကြောင်း" မှ ဖိုင်လမ်းကြောင်း၊ ဖိုင်လမ်းကြောင်းအဖြစ်ပြောင်း၊ ဖိုင်လမ်းကြောင်းဆက်၊ ဖိုင်အမည်၊ ဖိုင်အမည်နောက်တွဲ၊ ဖိုင်တွဲလမ်းကြောင်း နှင့် ရှင်းလင်းသေသပ်အောင်ပြုလုပ် တို့ကို ထည့်သွင်းမည်။
+"စံကား/လမ်းကြောင်း" မှ ဖိုင်လမ်းကြောင်း၊ ဖိုင်လမ်းကြောင်းဆက်၊ ဖိုင်အမည်၊ ဖိုင်အမည်နောက်တွဲ၊ ဖိုင်တွဲလမ်းကြောင်း နှင့် ရှင်းလင်းသေသပ်အောင်ပြုလုပ် တို့ကို ထည့်သွင်းမည်။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ကိန်းရှင် လ သည် "docs/ဖိုင်.txt" ကို ဖိုင်လမ်းကြောင်း တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ဖြစ်ပါစေ။

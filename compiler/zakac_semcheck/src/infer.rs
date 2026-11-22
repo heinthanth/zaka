@@ -52,7 +52,6 @@ use crate::ops::verb_label;
 use crate::place::place_of;
 use crate::proof::result_var;
 use crate::scope::Access;
-use crate::scope::FnSig;
 use crate::scope::Written;
 use crate::semcheck::Checker;
 use crate::structs::StructTable;
@@ -800,7 +799,11 @@ impl Checker
         Some(tern!(index.is_some(), DataKind::Char, DataKind::USIZE))
     }
 
-    /// Infer a conversion.
+    /// Infer a conversion: a pair the compiler converts, a function of the
+    /// conversion traits ([`Checker::conversion_fn`]), or a value turned into
+    /// the text it prints as ([`Checker::infer_to_text`]). A conversion that
+    /// passes a failure on looks for a function even for a pair the
+    /// compiler converts, since that pair cannot fail.
     ///
     /// # Arguments
     ///
@@ -816,9 +819,12 @@ impl Checker
         let kind_arg = n.kind_arg.as_ref()?;
         let target = self.written_kind(kind_arg, KindUse::Other);
         let built_in = from.is_none_or(|f| f.cast_allowed(target));
-        let via =
-            from.filter(|_| !built_in).and_then(|f| self.conversion_fn(f, target));
-        ret_if!(let Some(func) = via, self.infer_conversion(n, value, func));
+        let open = from.filter(|_| !built_in || n.pass);
+        let via = open.and_then(|f| self.conversion_fn(f, target, n.pass));
+        ret_if!(let Some(sig) = via, self.infer_conversion(n, value, &sig));
+        let printed =
+            open.filter(|f| target == DataKind::TEXT && f.as_external().is_none());
+        ret_if!(let Some(f) = printed, self.infer_to_text(n, value, f));
         let word =
             Ident::builder().name(kw_label(Kw::ConvertGood)).span(n.span).build();
         self.check_pass(&word, Some(target), n.pass, false, n.span);
@@ -827,59 +833,6 @@ impl Checker
         let pointer = target.is_address() || from.is_some_and(DataKind::is_address);
         do_if!(pointer, self.need_unchecked(n.span, "a pointer conversion"));
         Some(target)
-    }
-
-    /// The function a conversion goes through when the kinds have no built-in
-    /// conversion: a function the file sees whose name ends in `အဖြစ်ပြောင်း`,
-    /// that takes one value of the source kind, and gives the target kind or a
-    /// result whose good side is the target kind. The stdlib names such a
-    /// function `<K>အဖြစ်ပြောင်း`, `K` the word of the target kind.
-    ///
-    /// # Arguments
-    ///
-    /// * `from` - The source kind.
-    /// * `to` - The target kind.
-    ///
-    /// # Returns
-    ///
-    /// The function name, or `None` when no function fits.
-    fn conversion_fn(&self, from: DataKind, to: DataKind) -> Option<Name>
-    {
-        let gives = |ret: Option<DataKind>| {
-            let ok = ret.and_then(DataKind::fallible_parts).and_then(|(ok, _)| ok);
-            ret == Some(to) || ok == Some(to)
-        };
-        let fits = |sig: &FnSig| sig.params == [from] && gives(sig.ret);
-        let named = self.fns.iter().filter(|(name, _)| name.ends_with(CONVERT_SUFFIX));
-        let found = named.filter(|(_, sigs)| sigs.iter().any(fits));
-        let mut names: Vec<Name> = found.map(|(name, _)| *name).collect();
-        names.sort();
-        names.into_iter().next()
-    }
-
-    /// Check a conversion that goes through a function, `<K>အဖြစ်ပြောင်း`, as
-    /// the call of it, which takes the node of the conversion.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The conversion.
-    /// * `value` - The value it converts.
-    /// * `func` - The function.
-    ///
-    /// # Returns
-    ///
-    /// The result kind of the call, or `None` after an error.
-    fn infer_conversion(
-        &mut self, n: &VerbExpr, value: &Expr, func: Name,
-    ) -> Option<DataKind>
-    {
-        let callee = Ident::builder().name(func).span(n.span).build();
-        #[rustfmt::skip]
-        let call = CallExpr::builder().id(n.id).callee(callee).args(vec![value.clone()])
-            .pass(n.pass).span(n.span).build();
-        let kind = self.infer_call(&call);
-        self.op_calls.methods.insert(n.id, call);
-        kind
     }
 
     /// Infer a call expression.
@@ -919,9 +872,6 @@ impl Checker
         ret
     }
 }
-
-/// The end of the name of each function a conversion can go through.
-const CONVERT_SUFFIX: &str = "အဖြစ်ပြောင်း";
 
 /// The report of a conversion the verb cannot make. An integer headed for
 /// an owner or a borrow, and a cast that reads stored addresses as another

@@ -75,6 +75,10 @@ pub const EQUAL: &str = "တူမတူစစ်ဆေးနိုင်သေ�
 /// a kind from outside.
 pub const PRINTABLE: &str = "စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော";
 
+/// The built-in trait of the kinds that convert to another: the pairs the
+/// conversion verb converts, and the kinds with `ပြောင်းလဲ`.
+pub const CONVERT: &str = "ပြောင်းလဲနိုင်သော";
+
 /// The traits of a program, under their names, each with the unit that
 /// declares it; the first of a name wins.
 pub(crate) type Traits = HashMap<Name, (u32, TraitDecl)>;
@@ -312,7 +316,8 @@ impl Checker
         self.refer(&ident.name, ident.span, decl.name.span);
         // A marked trait: the built-in kinds have it through the compiler's
         // rule; a kind a file declares, through its functions.
-        let rule = builtin(&ident.name, kind).filter(|_| decl.builtin);
+        let pair = || self.builtin_pair(&ident.name, kind, &need.args);
+        let rule = builtin(&ident.name, kind).or_else(pair).filter(|_| decl.builtin);
         ret_if!(rule == Some(true), true);
         let declared = self.kind_home(kind).is_some();
         let lacks = rule == Some(false) && !declared;
@@ -336,6 +341,27 @@ impl Checker
             met &= self.gives(kind, &ident.name, &want, span);
         }
         met
+    }
+
+    /// Whether a kind has a built-in trait of two kinds through the
+    /// compiler's rule: `ပြောင်းလဲနိုင်သော` holds for each pair the conversion
+    /// verb converts. A pair the rule leaves out can still have the trait
+    /// through its functions.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The trait.
+    /// * `kind` - The kind that has it.
+    /// * `args` - The kinds written after the first.
+    ///
+    /// # Returns
+    ///
+    /// `Some(true)` when the rule gives the trait, `None` otherwise.
+    fn builtin_pair(&self, name: &str, kind: DataKind, args: &[Kind]) -> Option<bool>
+    {
+        ret_if!(name != CONVERT, None);
+        let to = DataKind::from_ast(args.first()?, &self.structs);
+        tern!(kind.cast_allowed(to), Some(true), None)
     }
 
     /// The kind phrase each kind parameter of a trait stands for: the kind

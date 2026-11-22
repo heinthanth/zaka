@@ -61,7 +61,7 @@ capital.
 
 ## Text as an integer
 
-When we import `ကိန်းပြည့်အဖြစ်ပြောင်း` from the text module, the conversion
+When we import `စမ်းသပ်ပြောင်းလဲ` from the text module, the conversion
 `ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` also works on text:
 
 ```
@@ -73,7 +73,7 @@ has either the number or an error value, as [Errors and
 results](../error-handling/README.md) shows:
 
 ```zaka
-"စံကား/စာသား" မှ ကိန်းပြည့်အဖြစ်ပြောင်း ကို ထည့်သွင်းမည်။
+"စံကား/စာသား" မှ စမ်းသပ်ပြောင်းလဲ ကို ထည့်သွင်းမည်။
 
 "၄၂" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။
 "လေးဆယ်" ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြသမည်။

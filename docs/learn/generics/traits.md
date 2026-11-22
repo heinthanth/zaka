@@ -215,6 +215,7 @@ it:
 | `နှိုင်းယှဉ်နိုင်သော` | numbers and characters, which `<`, `>`, `<=` and `>=` work on |
 | `တူမတူစစ်ဆေးနိုင်သော` | all data kinds, because `==` compares two values of one data kind |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | all data kinds that `ပြသမည်` prints |
+| `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | the data kinds that convert to another, without a failure and with one ([Converting between data kinds](../operators/conversion.md)) |
 
 So a generic can require a built-in trait in the same form as a trait of the program:
 

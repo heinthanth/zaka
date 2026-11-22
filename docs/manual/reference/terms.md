@@ -107,6 +107,7 @@ is first used, as in "data kind (type)".
 | trait block | `impl` block | | [Traits](../language/traits.md) |
 | default function | default method | | [Traits](../language/traits.md) |
 | written-as hint | no counterpart; a second spelling for a data kind or a trait | | [Generics](../language/generics.md#written-as-hints) |
+| conversion trait | `From` and `TryFrom`, `Into` and `TryInto` | `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | [Conversions](../language/conversions.md#conversions-through-traits) |
 | share | re-export | | [Modules](../language/modules.md) |
 | thread | thread, task | `အပြိုင်လုပ်ငန်း` | [Threads](../language/threads.md) |
 | channel | channel, message queue | | [Threads](../language/threads.md) |

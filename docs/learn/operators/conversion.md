@@ -16,6 +16,7 @@ and Zaka writes it as a Burmese phrase, with no sign form.
 - which conversions can lose part of the value
 - which conversions Zaka refuses
 - when Zaka converts a value on its own, and when we must write the conversion
+- how to turn a value into text
 
 ```zaka
 ကိန်းရှင် အသက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃၇ ဖြစ်ပါစေ။
@@ -158,6 +159,24 @@ them. A conversion is a word phrase, so inside a sum with signs we put it in par
 
 The next page, [Grouping and order](grouping.md), explains the reason for the parentheses.
 
+## Converting to text
+
+```text
+<value> ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်
+```
+
+Each value converts to text, and the text is what `ပြသမည်` would print for it. This helps
+when we want to join a number to other text with `+`:
+
+```zaka
+ကိန်းရှင် အမှတ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၉၅ ဖြစ်ပါစေ။ // score
+"ရမှတ်: " + (အမှတ် ကို စာသား တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်) ဟု ပြသမည်။
+```
+
+```text
+ရမှတ်: ၉၅
+```
+
 ## Details
 
 - **Which pairs convert.** Integers, decimal numbers, characters and true/false values
@@ -169,8 +188,11 @@ The next page, [Grouping and order](grouping.md), explains the reason for the pa
 - **Which data kinds widen.** The full list of conversions that Zaka makes on its own is
   on [Widening](../../manual/language/conversions.md#widening-the-change-that-needs-no-words).
 - **Text to a number.** Text such as `"၄၂"` converts to an integer through a function of
-  the stdlib, and the conversion can fail ([Conversions through
-  functions](../../manual/language/conversions.md#conversions-through-functions)).
+  the stdlib, and the conversion can fail ([Conversions in the
+  stdlib](../../manual/language/conversions.md#conversions-in-the-stdlib)).
+- **Our own data kinds.** A struct converts to another data kind, and back, through the
+  functions of the conversion traits, `ပြောင်းလဲ` and `စမ်းသပ်ပြောင်းလဲ` ([Conversions
+  through traits](../../manual/language/conversions.md#conversions-through-traits)).
 - **Same data kind.** A conversion to the data kind that the value has changes nothing.
 
 ## Recap
@@ -178,6 +200,7 @@ The next page, [Grouping and order](grouping.md), explains the reason for the pa
 - We write `<value> ကို <kind> တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်` to convert a value.
 - A conversion can drop a fraction or wrap a number around.
 - Zaka refuses conversions that make no sense, such as a number to a true/false value.
+- Each value converts to the text that `ပြသမည်` prints for it.
 - A smaller data kind widens into a bigger one on its own, but a plain `ကိန်းပြည့်` needs
   a conversion to become a decimal number.
 

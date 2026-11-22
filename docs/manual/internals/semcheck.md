@@ -848,11 +848,19 @@ ZK0349.
 ## Calls a node stands for
 
 - **`x ၏ f`.** A field read that finds no field, with no brace on the name, checks the call
-  `f(x)` instead (`infer_method`). A conversion with no built-in pair checks the call of a
-  function that the file sees whose name ends in `အဖြစ်ပြောင်း`, that accepts the source
-  data kind and returns the target data kind or a result with it (`conversion_fn`). Each
-  records its call in `OpCalls::methods`, and `write_methods` puts it in place of the node
-  before the overloads get their inner names.
+  `f(x)` instead (`infer_method`). Each records its call in `OpCalls::methods`, and
+  `write_methods` puts it in place of the node before the overloads get their inner names.
+- **Conversions.** A conversion with no built-in pair, or one that passes a failure on,
+  looks for a function of the conversion traits (`conversion_fn` in `op_calls.rs`): a
+  `ပြောင်းလဲ` that takes the source data kind and returns the target, or a
+  `စမ်းသပ်ပြောင်းလဲ` that returns a result whose good side is the target, in the file of the
+  use and the files of the two data kinds. A pass-on takes the second first, a plain
+  conversion the first. `infer_conversion` records the call under its inner name, with the
+  `@<stem>` of another file, in `OpCalls::methods`. With no such function, a conversion to
+  `စာသား` of a value that prints goes into `OpCalls::texts`, and `write_methods` puts the
+  template text `"{x}"` in its place (`to_template`), so a struct with
+  `စာသားအဖြစ်ပြောင်း` gives that text. `ပြောင်းလဲနိုင်သော` holds for a pair of the table
+  through `builtin_pair` in `traits.rs`.
 - **Imports.** A name imported from several files is one overload set (`import_fn`). The
   call of one that another file declares gets the name of that file, `<name>@<stem>`
   (`name_foreign`). A generic function imported beside plain functions of its name gets a

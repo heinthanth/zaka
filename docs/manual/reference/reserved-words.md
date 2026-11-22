@@ -61,7 +61,7 @@ with a link to the page that teaches it or states its rules.
 | `ကြီး`, `မကြီး` | "greater", "not greater" | `>`, `<=` | [Comparison](../../learn/operators/comparison.md) |
 | `ငယ်`, `မငယ်` | "less", "not less" | `<`, `>=` | [Comparison](../../learn/operators/comparison.md) |
 | `ပြောင်းလဲသော ရလဒ်` | "changed result": to convert a value to another data kind | | [Converting between data kinds](../../learn/operators/conversion.md) |
-| `ပြောင်းလဲသော ရလဒ်ကောင်း` | "good changed result": to convert through a function that can fail, and pass the failure on | | [Conversions](../language/conversions.md#conversions-through-functions) |
+| `ပြောင်းလဲသော ရလဒ်ကောင်း` | "good changed result": to convert through a `စမ်းသပ်ပြောင်းလဲ`, which can fail, and pass the failure on | | [Conversions](../language/conversions.md#conversions-through-traits) |
 | `လုပ်ဆောင်သော ရလဒ်` | "result of running": to use the result of a long call as a value | | [Results](../../learn/functions/results.md) |
 | `သည့် ရလဒ်` | "the result that ...": at the end of the short call `<arguments> ကို သုံး၍ <name> သည့် ရလဒ်`, to use its result as a value | | [Results](../../learn/functions/results.md#arguments-first-with-a-result) |
 | `သည့် ရလဒ်ကောင်း` | "the good result that ...": the same short call, which passes a failure on | `?` after a call | [Functions](../language/functions.md) |

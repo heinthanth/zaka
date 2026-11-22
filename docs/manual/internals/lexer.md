@@ -349,6 +349,10 @@ Some notes on these words:
 - The fallback of an optional, `၊ မရှိလျှင်`, needs no new word: `မရှိ` and `လျှင်` are
   in the table for the tests of an optional.
 - `ဇယား` itself is a data kind name, not a reserved word.
+- A word made of reserved words alone splits into them, except the names of the core in
+  `WHOLE_NAMES` (`reserved.rs`): `ပြောင်းလဲနိုင်သော`, the conversion trait, is
+  `ပြောင်းလဲနိုင်` and `သော`, and remains one name, glued to a following word as in
+  `ပြောင်းလဲနိုင်သောဟု` too.
 - `မှတ်ချက်` is both the comment marker (rule 1 sees it first) and `Kw::Note`, so
   `မှတ်ချက်ကို` still splits.
 - `မိတ္တူ` is no reserved word: the parser recognizes it after `၏` alone.
