@@ -90,9 +90,17 @@ max-depth = 8192        # run alone
 ```
 
 The sections are the names of the commands: `segment`, `lex`, `parse`, `semcheck`,
-`irgen`, `borrowck`, `build`, `run` and `lsp`. The program of one stage reads the section
-of its command, as that command does: `zakac_lexer` reads `[lex]`, `zaka_vm` reads
-`[run]`, and the code generators read `[build]`.
+`irgen`, `borrowck`, `build`, `run`, `lsp` and `fmt`. The program of one stage reads the
+section of its command, as that command does: `zakac_lexer` reads `[lex]`, `zaka_vm` reads
+`[run]`, the code generators read `[build]`, and `zakafmt` reads `[fmt]`. The editors read
+the `[fmt]` section of the nearest `zakac.toml` to format a file:
+
+```toml
+[fmt]
+indent = 2                      # two spaces for each level of block depth
+speech-mode = "spoken"          # reserved words in their spoken spellings
+import-order = "sorted"         # the stdlib imports first
+```
 
 ## Values
 

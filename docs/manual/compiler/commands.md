@@ -32,13 +32,14 @@ made, the *artifact*, while `run` goes to the end and runs the program.
 | `run` | run the program | nothing: the program runs | |
 | `repl` | run statements as we write them, with no program start block | nothing: each statement runs | |
 | `lsp` | serve an editor | errors, colors and hovers, to the editor | |
+| `fmt` | format source files | each file, in place, or the formatted text | |
 
 [Stages](stages.md) shows what each artifact contains. Each stage also builds as a
 program apart from `zakac`, with the same flags as its command: `zakac_burmese_segmenter`,
 `zakac_lexer`, `zakac_parser`, `zakac_semcheck`, `zakac_ir_builder`,
 `zakac_borrow_checker` and `zaka_vm` (for `run`). So do the targets of `build`
-(`zakac_codegen_target_vm`, `zakac_codegen_target_c` and `zakac_codegen_target_native`)
-and the language server, `zakac_lsp`.
+(`zakac_codegen_target_vm`, `zakac_codegen_target_c` and `zakac_codegen_target_native`),
+the language server, `zakac_lsp`, and the formatter, `zakafmt`.
 
 ## A small session
 
@@ -568,6 +569,66 @@ zakac lsp [--config FILE]
 `zakac lsp` reads no input file. It serves the protocol over standard input and output
 until the editor shuts it down. [Editors](editors.md) shows what it does and how to set it
 up.
+
+## fmt
+
+Format source files: the space between words, the line breaks and the indent.
+
+```text
+zakac fmt [flags] [PATH...]
+```
+
+`zakac fmt` rewrites each file that a path names in place, and walks a folder and its
+subfolders for `.zaka` files. With no path, or with `-`, it reads standard input and
+writes the formatted text to standard output, so an editor can pipe a file through it. The
+same command builds as the program `zakafmt`, and the editors and the
+[compiler explorer](/explorer/) run the same code (see [Editors](editors.md#formatting)).
+
+The formatter prints each word of the file as it is written and changes the space
+between words: it never splits or joins a word, since the end of a word changes how the
+lexer reads it. It checks its output through a second lex, and when the words differ it
+writes nothing and reports a fault of the formatter. A file that does not parse is left as
+it is, with its errors shown, and the exit code is then 1. A file that imports other files
+is read with them, as a build reads it, so a call written as a sentence parses as it
+should.
+
+These rules hold for each file:
+
+- One space between two words that the file keeps apart, and none between joined words.
+- A line break that the author put inside a statement is kept.
+- No space at the end of a line, and one line break at the end of the file.
+- A comment on a line of its own takes the depth of the statement after it, and a
+  comment after code has one space before it.
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--check` | off | write nothing: list the files that would change, and exit with 1 when one would |
+| `--indent <SPACES>` | `0` | spaces for each level of block depth; `0` keeps each line flush left |
+| `--continuation-indent <SPACES>` | `preserve` | the later lines of one statement: `preserve` keeps the spaces the author wrote, and a number sets that count past the depth of the statement |
+| `--blank-lines-max <LINES>` | `1` | the longest run of blank lines that is kept |
+| `--one-statement-per-line <BOOL>` | `true` | a line break after `။` when two statements share a line |
+| `--mark-order <BOOL>` | `true` | the Burmese marks in their canonical order, the asat ahead of the dot below |
+| `--speech-mode <MODE>` | `written` | each reserved word in its `written` spelling (`ထားမည်`) or its `spoken` one (`ထားမယ်`) |
+| `--digits <SCRIPT>` | `preserve` | the digits of number literals: `preserve`, `burmese` (`၁၀`) or `latin` (`10`) |
+| `--import-order <ORDER>` | `preserve` | `sorted` sorts each run of imports at the head of a file: the stdlib first, then the others, each group in the order of its path |
+
+`--speech-mode` changes reserved words and the ends of calls, never names, strings or
+comments. A spoken spelling that stands for two written words, as `ရှိတဲ့` stands for
+`ရှိသော` and `ရှိသည့်`, becomes the word the parser read in that place. The spoken
+spellings are an error unless the lint allows them (see
+[Spoken Burmese](../language/spoken.md)). `--digits` leaves a literal with letters, such
+as one in base 16 or with an exponent, as it is. With `--import-order sorted`, a blank
+line or a comment on a line of its own ends a run of imports, so the groups the author
+made remain apart, and the `///` comments above an import move with it.
+
+Each flag is also a setting of the `[fmt]` section of `zakac.toml`, such as
+`indent = 2`, and the editors read that section too.
+
+```console
+$ zakac fmt --check samples
+samples/basics/rough.zaka
+$ zakac fmt samples
+```
 
 ## Config file
 

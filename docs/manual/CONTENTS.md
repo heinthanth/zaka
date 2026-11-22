@@ -77,6 +77,7 @@
   - [Names and data kinds](internals/semcheck.md)
   - [The flow checker](internals/borrow-checker.md)
   - [Fixes](internals/fixes.md)
+  - [The formatter](internals/formatter.md)
   - [The IR](internals/codegen.md)
   - [The VM target](internals/vm-target.md)
   - [Inside the VM](internals/vm-internals.md)

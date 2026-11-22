@@ -13,6 +13,7 @@ and hosts a compiler explorer that runs in the browser.
 | `compiler/zaka_vm` | the VM and its checked mem |
 | `compiler/zaka_host` | the host functions a program can call: their table, values and worlds |
 | `compiler/zaka_runtime` | the runtime of native programs, in Rust: a static lib that `zakac` carries and the C and native targets link |
+| `compiler/zakac_formatter` | the formatter: `zakac fmt` and `zakafmt` (feature `cli`); the language server and the explorer use the same code |
 | `compiler/zakac_lsp` | the language server (`zakac lsp`, feature `server`): errors, colors, hover, completion, definitions, uses, renames and the outline; the explorer runs the same code in the page |
 | `editors/vscode` | the VS Code extension: a Rust client built with wasm-pack; its manifest, comment rules and grammar are TOML that `build.rs` turns into JSON |
 | `editors/zed` | the Zed extension; outside the workspace, as Zed builds it on its own |
@@ -42,7 +43,7 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Test the Learn and Docs pages | `mise run test:books` (`cargo nextest run -p zaka_website books::`) |
 | Test the web crates: the site, the books and the explorer | `mise run test:web` |
 | Headers for the editor of the C runtime | `mise run editor:mock-header` (a build of hello and of a lib in `target/c-headers`, which `runtime/.clangd` reads; again after a change to `zaka_runtime`) |
-| Format | `mise run format` (rustfmt, then clang-format on the C runtime headers; run after each edit) |
+| Format | `mise run format` (rustfmt, clang-format on the C runtime headers, then `zakac fmt` on the samples and the stdlib; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |
 | Build the VS Code extension | `mise run editor:build-vscode` (wasm-pack, bun, vsce); `editor:install-vscode` and `editor:install-cursor` install it |

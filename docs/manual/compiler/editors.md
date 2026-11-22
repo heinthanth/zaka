@@ -68,6 +68,8 @@ ships with `zakac`, so it matches the version of the compiler. See
     kinds, and it follows a chain of fields and list cells such as `က ၏ အိမ် ၏` or
     `l ၏ အကွက် n + ၁ ၏`: each cell of a list has the cell's data kind, whatever its number.
   - After `<enumeration>များထဲမှ` it offers the members, through a kind alias too.
+- **Formatting** of the whole file, as `zakac fmt` formats it (see
+  [Formatting](#formatting)).
 - **A compiler bug** on half-written text shows as one message at the start of the file,
   and the server goes on.
 
@@ -83,6 +85,14 @@ shows the parse error alone.
 The server reads the `[lint]` section of the nearest `zakac.toml`, so a project that
 allows the [spoken spellings](../language/spoken.md) shows no ZK0510 in the editor either
 ([Lint levels](configuration.md#lint-levels)).
+
+## Formatting
+
+The server formats the open file when the editor asks, as `zakac fmt` does, with the
+settings of the `[fmt]` section of the nearest `zakac.toml`
+([fmt](commands.md#fmt)). It answers with one edit that replaces the whole text, and with
+no edit for a file that does not parse, so the editor keeps the text as it is. VS Code
+formats on save with `"editor.formatOnSave": true`, and Zed formats on save unless its settings turn that off.
 
 ## Which zakac
 
@@ -166,7 +176,8 @@ The [compiler explorer](/explorer/) runs the same code in the page, with no serv
 editor shows the data kind of an expression on hover, completes words, names, fields and
 members, goes to a declaration (F12), finds the uses of a name (Shift+F12), renames it
 (F2), and lists the outline (Ctrl+Shift+O, or Cmd+Shift+O on a Mac). The explorer has one
-file, so these reach that file and the stdlib modules it imports.
+file, so these reach that file and the stdlib modules it imports. The format button of its
+run bar formats the code with the default settings of `zakac fmt`.
 
 ## Other editors
 
@@ -179,8 +190,8 @@ An editor with an LSP client runs `zakac lsp` with no arguments for files that e
 - answers `textDocument/hover`, `textDocument/semanticTokens/full` (a `range` request gets
   the tokens of the whole file), `textDocument/inlayHint`, `textDocument/definition`,
   `textDocument/references`, `textDocument/prepareRename`, `textDocument/rename`,
-  `textDocument/documentSymbol`, `textDocument/completion` and `textDocument/codeAction`
-  (quick fixes alone);
+  `textDocument/documentSymbol`, `textDocument/completion`, `textDocument/codeAction`
+  (quick fixes alone) and `textDocument/formatting`;
 - names its token kinds with the standard LSP names (`keyword`, `function`, `operator`,
   `modifier`, `type`, `enumMember`, `variable`, `number`, `string`, `comment`), so a theme
   colors them with no extra rules.

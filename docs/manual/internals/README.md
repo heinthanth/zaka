@@ -58,7 +58,7 @@ the workspace (`exclude`): Zed builds it alone, with the target folder inside it
 
 | Crate | What it does |
 | --- | --- |
-| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `build`, `run` and `lsp`; `build` hands the program to the code generator that `--backend` names |
+| `zakac` | the `zakac` command: one program with the subcommands `segment`, `lex`, `parse`, `semcheck`, `irgen`, `borrowck`, `build`, `run`, `repl`, `lsp` and `fmt`; `build` hands the program to the code generator that `--backend` names |
 | `zakac_span` | source files, the source map, positions and spans, the text normalizer (NFC plus a fixed order of Burmese signs), and `text_range`: spans back to ranges of the text as written, and UTF-8 to UTF-16 offsets |
 | `zakac_burmese_segmenter` | cuts text into vannas, digits and other characters; the `segment` subcommand |
 | `zakac_lexer` | tokens, particles, comments and text tables, the reserved words and their spellings; `TokenRole`, the role of a token that decides its color |
@@ -73,6 +73,7 @@ the workspace (`exclude`): Zed builds it alone, with the target folder inside it
 | `zakac_codegen_target_native` | the IR lowered to Cranelift IR: run at once in `zakac` (`run --jit`), or written as an object file and linked (`build --backend native`) |
 | `zaka_runtime` | the runtime of native programs, in Rust: a static lib that the C and native targets link, and that `zakac` links for the JIT |
 | `zakac_lsp` | the language server: it checks the files an editor has open and returns errors, colors, hovers, completions, definitions, uses, renames, the outline and quick fixes; the `lsp` subcommand, behind the feature `server`, which `zakac` turns on; without it the crate builds for the browser, and the explorer uses it |
+| `zakac_formatter` | the formatter: the tokens of a file printed again with the space between them set, the rewrites of words, and the check of its output; the `fmt` subcommand and the program `zakafmt`, behind the feature `cli` ([The formatter](formatter.md)) |
 | `zaka_vm` | the VM: the stack of values, storage blocks, traps; the `run` subcommand |
 | `zaka_host` | the functions the host serves to a program (`HOST_FNS`), the values that cross over, and the worlds those functions reach: the terminal and one in storage |
 | `zakac_diagnostics` | `Diagnostic`, the `Code` catalogue, one constructor for each message, the texts in `locales/codes.toml`; its build script reads the page of each code from the See column of the page of error messages |
