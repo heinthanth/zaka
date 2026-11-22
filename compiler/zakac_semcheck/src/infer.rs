@@ -746,7 +746,7 @@ impl Checker
             self.report(kd::fault_needs_result(value.span()));
             return None;
         };
-        self.expect_kind(value, Some(err));
+        self.expect_error(value, err);
         result
     }
 

@@ -218,13 +218,13 @@ declaration or after a return.
 
 ### Where a pass-on fits
 
-A pass-on needs a function around it that can fail with the same error kind, because the
-error value goes out as it is and Zaka does not convert one error kind into another.
+A pass-on needs a function around it that can fail with the same error kind, or with an
+error kind that the error value [converts to](#converting-the-error-kind).
 
 | Case | Code |
 | --- | --- |
 | a pass-on in a function that cannot fail, in the [program start block](#the-program-start-block), or in the top-level statements of a file | ZK0445 |
-| a pass-on whose error kind differs from the error kind of the function around it | ZK0446 |
+| a pass-on whose error kind differs from the error kind of the function around it, with no `ပြောင်းလဲ` between the two | ZK0446 |
 | a call statement to a function that can fail, with no pass-on, so a failure is never dropped without a word | ZK0443 |
 | a pass-on for a function that cannot fail, or for one that returns an [optional](optionals.md), which is no failure | ZK0444 |
 | `ရလဒ်ကောင်း` or `?` used as a value, on a function whose good side has no value, as for each function with no result | ZK0315 |
@@ -232,6 +232,69 @@ error value goes out as it is and Zaka does not convert one error kind into anot
 The pass-on also works on a call through a [function value](function-values.md) whose
 function kind can fail, and with each result kind, as [Passing on and
 reading](result-kinds.md#passing-on-and-reading) states.
+
+## Converting the error kind
+
+When the error kind of the called function differs from the error kind of the function
+around the pass-on, the pass-on converts the error value through a `ပြောင်းလဲ` of the
+[conversion trait](conversions.md#conversions-through-traits) `ပြောင်းလဲနိုင်သော`: a function
+that takes a value of the one error kind and returns a value of the other. An error value
+that `<value> ဟူသော အမှားအယွင်း` gives back converts as well. This lets each part of
+a program keep its own error kind, and a caller gather them into one.
+
+```zaka
+"စံကား/စာသား" မှ စမ်းသပ်ပြောင်းလဲ ကို ထည့်သွင်းမည်။
+
+အော်ဒါအမှား ဟူသော ဒေတာအမျိုးအစားကွဲတွင်
+အရေအတွက်မှား နှင့်
+ပစ္စည်းမရှိ တို့ပါဝင်သည်။
+
+ပြောင်းလဲ ဟူသော လုပ်ဆောင်ချက် သည်
+အ ဟူသော ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ အော်ဒါအမှား တစ်ခု ကို ပြန်ပေးမည်။
+အော်ဒါအမှားများထဲမှ အရေအတွက်မှား ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+အရေအတွက်ဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အော်ဒါအမှား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် န သည် စ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ်ကောင်း ဖြစ်ပါစေ။
+အကယ်၍ န < ၀ လျှင် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်းများထဲမှ အကန့်အသတ်ကျော်ခြင်း ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
+န ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ဂဏန်းဖတ် ဟူသော လုပ်ဆောင်ချက် သည်
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+စ ကို ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+စစ်ဆေး ဟူသော လုပ်ဆောင်ချက် သည်
+စ ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား သို့မဟုတ် အမှားအယွင်းအနေဖြင့် အော်ဒါအမှား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+ဂဏန်းဖတ် ဟူသော လုပ်ဆောင်ချက်ကို စ ဖြင့် လုပ်ဆောင်မည်၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်။
+"ကောင်း" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+အရေအတွက်ဖတ်("၁၂") ကို ပြသမည်။
+အရေအတွက်ဖတ်("x") ကို ပြသမည်။
+အရေအတွက်ဖတ်("-၃") ကို ပြသမည်။
+စစ်ဆေး("၅") ကို ပြသမည်။
+စစ်ဆေး("") ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+ရလဒ်ကောင်း(၁၂)
+အမှားအယွင်း(အော်ဒါအမှားများထဲမှ အရေအတွက်မှား)
+အမှားအယွင်း(အော်ဒါအမှားများထဲမှ အရေအတွက်မှား)
+ရလဒ်ကောင်း("ကောင်း")
+အမှားအယွင်း(အော်ဒါအမှားများထဲမှ အရေအတွက်မှား)
+```
+
+- The compiler looks for the `ပြောင်းလဲ` in the file of the pass-on and in the files of the
+  two error kinds, as a conversion does. A generic `ပြောင်းလဲ` does not count here.
+- With no such function, a pass-on with another error kind is ZK0446, and so is an error
+  value of another kind ZK0401.
+- A `စမ်းသပ်ပြောင်းလဲ` does not convert an error value, because the conversion of an error
+  must not fail.
 
 ## Order of work
 
@@ -339,7 +402,7 @@ These are the codes of errors and results on all three pages:
 | ZK0443 | a call statement to a function that can fail, with no pass-on | below |
 | ZK0444 | a pass-on for a function that cannot fail, or for one that returns an optional | below |
 | ZK0445 | a pass-on in a function that cannot fail, in the program start block, or in top-level statements | below |
-| ZK0446 | a pass-on whose error kind differs from the error kind of the function around the call | below |
+| ZK0446 | a pass-on whose error kind differs from the error kind of the function around the call, with no `ပြောင်းလဲ` between the two | below |
 | ZK0447 | a failure with no value in a function that cannot fail | [Result kinds](result-kinds.md#ending-a-function-with-no-value) |
 | ZK0448 | a test or a read of a value that is neither a result nor an optional | [Reading a result](reading-results.md#errors) |
 | ZK0449 | a read of the good result of a function with no good value | [Reading a result](reading-results.md#errors) |
@@ -436,8 +499,6 @@ error[ZK0446]: the called function fails with "text", but the function around th
 - Zaka has no block that catches a failure and goes on with its own code. [Reading a
   result](reading-results.md) covers that need, with a test in `အကယ်၍` and a read for
   each part.
-- Zaka does not convert one error kind into another, so a pass-on needs the same error
-  kind in both functions.
 
 How the compiler lowers a function that can fail is in [The
 IR](../internals/codegen.md#lowering).

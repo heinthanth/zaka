@@ -885,6 +885,7 @@ program:
                           lo: 4221
                           hi: 4224
                     pass: false
+                    fault_via: null
                     parallel: false
                     apart: false
                     using: null
@@ -946,6 +947,7 @@ program:
                           lo: 4407
                           hi: 4484
                     pass: false
+                    fault_via: null
                     parallel: false
                     apart: false
                     using: null

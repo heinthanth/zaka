@@ -1184,7 +1184,13 @@ impl Lowerer<'_>
             st::Stmt::Call(n) if n.pass =>
             {
                 self.pending = 0;
-                self.checked_call(&n.callee, n.place.as_deref(), &n.args, n.span);
+                let via = n.fault_via.as_ref();
+                self.checked_call(
+                    &n.callee,
+                    n.place.as_deref(),
+                    &n.args,
+                    (via, n.span),
+                );
             }
             st::Stmt::Call(n) if n.parallel => self.spawn_stmt(n),
             st::Stmt::Call(n) if let Some(wait) = self.wait_stmt(n) => out.push(wait),
@@ -3224,16 +3230,18 @@ impl Lowerer<'_>
     /// * `callee` - The function name.
     /// * `place` - The place that holds the function value, when written.
     /// * `args` - The arguments.
-    /// * `span` - The call.
+    /// * `at` - The function that turns the error value into the error kind of
+    ///   the calling function, when the check found one, and the call.
     ///
     /// # Returns
     ///
     /// The hidden slot and what the function gives back.
     fn checked_call(
         &mut self, callee: &ast::Ident, place: Option<&ast::Expr>, args: &[ast::Expr],
-        span: Span,
+        at: (Option<&ast::Ident>, Span),
     ) -> (Place, Fault)
     {
+        let (via, span) = at;
         // A wait for a thread passes on a failure of what the thread gave back.
         let (ret, call) = match self.waited(callee, place, args)
         {
@@ -3266,6 +3274,11 @@ impl Lowerer<'_>
         let err = err.map(|e| tern!(e.kind.holds_text(), dup(e), e));
         let own = self.frame.as_ref().and_then(|f| f.fault);
         let own = own.expect("the check allows a pass-on in a function that can fail");
+        let err = match via
+        {
+            Some(f) => err.map(|e| self.converted_fault(f, e, own, span)),
+            None => err,
+        };
         let mut leave = Vec::new();
         self.leave_with(
             own.value(true, None, err, self.platform, span),
@@ -3275,6 +3288,28 @@ impl Lowerer<'_>
         let cond = fault.failed(held, self.platform, span);
         self.pre.push(Stmt::If { cond, then: leave, els: Vec::new(), span });
         (held, fault)
+    }
+
+    /// The call of the function that turns an error value into the error
+    /// kind of the calling function.
+    ///
+    /// # Arguments
+    ///
+    /// * `via` - The function.
+    /// * `err` - The error value, owned.
+    /// * `own` - What the calling function gives back.
+    /// * `span` - The call that passes the failure on.
+    ///
+    /// # Returns
+    ///
+    /// The converted error value.
+    fn converted_fault(
+        &mut self, via: &ast::Ident, err: Expr, own: Fault, span: Span,
+    ) -> Expr
+    {
+        let (target, _) = self.call_target(via, None);
+        let kind = own.err.expect("the check converts to an error kind");
+        node_expr(kind, target.node(vec![err]), span)
     }
 
     /// Lower a test of what a result or an optional holds, such as
@@ -3390,8 +3425,9 @@ impl Lowerer<'_>
     fn pass_call(&mut self, n: &ast::CallExpr) -> ExprNode
     {
         self.pending = self.pending.saturating_sub(1);
+        let via = n.fault_via.as_ref();
         let (held, fault) =
-            self.checked_call(&n.callee, n.place.as_deref(), &n.args, n.span);
+            self.checked_call(&n.callee, n.place.as_deref(), &n.args, (via, n.span));
         fault.field(held, "ok", self.platform, n.span).node
     }
 

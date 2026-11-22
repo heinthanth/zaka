@@ -484,7 +484,7 @@ that each address points at (ZK0442).
 | a call statement to a function with an error kind | must pass the failure on | ZK0443 |
 | a pass-on | needs a callee that can fail | ZK0444 |
 | a pass-on in a function that cannot fail, in the program start block, or in top-level statements | refused | ZK0445 |
-| a pass-on with another error kind | refused | ZK0446 |
+| a pass-on with another error kind | converted through a plain `ပြောင်းလဲ` of the two kinds (`error_conversion`, `OpCalls::fault_vias`, then `CallExpr::fault_via` and `CallStmt::fault_via`, which `checked_call` lowers), else refused | ZK0446 |
 | the good result of a callee with none | refused | ZK0315 |
 | a whole result as an operand | refused | ZK0403 |
 

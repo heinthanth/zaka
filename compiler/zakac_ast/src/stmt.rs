@@ -696,6 +696,11 @@ pub struct CallStmt
     #[builder(default)]
     #[serde(default)]
     pub pass: bool,
+    /// The function that turns the error value into the error kind of the
+    /// calling function when the two differ, the `ပြောင်းလဲ` the check found,
+    /// under the name the later stages know it.
+    #[serde(default)]
+    pub fault_via: Option<Ident>,
     /// `true` for `... အပြိုင် လုပ်ဆောင်မည်`: the call runs as a thread of its
     /// own, and the statement goes on at once.
     #[builder(default)]

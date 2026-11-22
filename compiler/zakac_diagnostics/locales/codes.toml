@@ -1148,9 +1148,9 @@ en = "pass-on with another error kind"
 [codes.ZK0446.message]
 en = "the called function fails with \"%{found}\", but the function around the call fails with \"%{want}\""
 [codes.ZK0446.help]
-en = "give both functions the same error kind"
+en = "give both functions the same error kind, or write a \"ပြောင်းလဲ\" that takes the one error kind and returns the other"
 [codes.ZK0446.explain]
-en = """Passing a failure on gives back the error value of the called function as it is, so it must have the error kind of the function around the call. Both result clauses must name the same kind after \"အမှားအယွင်းအနေဖြင့်\". Zaka does not convert one error kind into another."""
+en = """Passing a failure on gives back the error value of the called function, so it must have the error kind of the function around the call. Both result clauses must name the same kind after \"အမှားအယွင်းအနေဖြင့်\", unless a \"ပြောင်းလဲ\" of the conversion trait takes a value of the one error kind and returns the other: the pass-on then converts the error value through it."""
 
 [codes.ZK0447.title]
 en = "error value from a function that cannot fail"

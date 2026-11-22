@@ -136,6 +136,9 @@ function:
 - Two functions of one name can share a parameter and differ in their results
   ([Overloads that differ in the result](functions-overloads.md#overloads-that-differ-in-the-result)),
   so one data kind can have a `ပြောင်းလဲ` for each data kind that it converts to.
+- A pass-on and an error value that `<value> ဟူသော အမှားအယွင်း` gives back convert an error
+  kind through `ပြောင်းလဲ` too ([Converting the error
+  kind](error-handling.md#converting-the-error-kind)).
 
 ```zaka
 မီတာ ဟူသော ဒေတာအစုအဝေးတွင် အရှည် ဟူသော ဒဿမကိန်း တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ခု ဖြစ်သည်။

@@ -348,6 +348,7 @@ program:
                       lo: 1783
                       hi: 1821
                 pass: false
+                fault_via: null
                 parallel: false
                 apart: false
                 using: null

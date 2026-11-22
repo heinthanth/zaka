@@ -1489,6 +1489,9 @@ impl Checker
         {
             return self.report(kd::pass_outside_failing(span));
         };
+        let pair = found.zip(want).filter(|(f, w)| f != w);
+        let via = pair.and_then(|(f, w)| self.error_conversion(f, w, span));
+        ret_if!(let Some(callee) = via, _ = self.op_calls.fault_vias.insert(span, callee));
         let differs = kd::fault_kind_differs(span, &err_name(found), &err_name(want));
         do_if!(found != want, self.report(differs));
     }
@@ -1511,7 +1514,7 @@ impl Checker
         };
         match (&n.value, err)
         {
-            (Some(v), Some(err)) => self.expect_kind(v, Some(err)),
+            (Some(v), Some(err)) => self.expect_error(v, err),
             (Some(v), None) =>
             {
                 self.report(kd::fault_needs_result(v.span()));

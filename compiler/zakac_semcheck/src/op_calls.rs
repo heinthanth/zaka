@@ -116,8 +116,9 @@ pub(crate) struct OpCalls
 {
     /// The call each operator takes, on its operands.
     pairs: HashMap<NodeId, OpCall>,
-    /// The function each printed value or template slot goes through.
-    wraps: HashMap<NodeId, Name>,
+    /// The function each printed value, template slot or error value goes
+    /// through, with the kind it gives.
+    wraps: HashMap<NodeId, (Name, DataKind)>,
     /// The call each field read stands for when no field fits, `x ၏ f` for
     /// `f(x)`, and each conversion that goes through a function, under the node
     /// of the read or the conversion.
@@ -125,6 +126,10 @@ pub(crate) struct OpCalls
     /// Each conversion to text that takes the text its value prints as, which
     /// becomes the template text `"{x}"`, under the node of the conversion.
     pub(crate) texts: HashSet<NodeId>,
+    /// The function each call that passes a failure on turns its error value
+    /// through, into the error kind of the calling function, under the span
+    /// of the call.
+    pub(crate) fault_vias: HashMap<Span, Name>,
     /// The call each statement of a verb the compiler gives stands for when
     /// a function of the file of that name takes its operands, `l ကို ပြသမည်။`
     /// for `ပြသ(l)`, under the span of the statement.
@@ -359,7 +364,7 @@ impl Checker
             return;
         };
         let callee = self.known_name(&sig);
-        self.op_calls.wraps.insert(value.id(), callee);
+        self.op_calls.wraps.insert(value.id(), (callee, DataKind::TEXT));
     }
 
     /// The function a conversion goes through: a `ပြောင်းလဲ` that takes the
@@ -513,6 +518,51 @@ impl Checker
         let kind = self.infer_call(&call);
         self.op_calls.methods.insert(n.id, call);
         kind
+    }
+
+    /// The `ပြောင်းလဲ` that turns one error kind into another: a plain function
+    /// of `ပြောင်းလဲနိုင်သော` for the pair.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The error kind of the value.
+    /// * `to` - The error kind the place wants.
+    /// * `span` - The value, for the lookup.
+    ///
+    /// # Returns
+    ///
+    /// The function, under the name the later stages know it, or `None`.
+    pub(crate) fn error_conversion(
+        &mut self, from: DataKind, to: DataKind, span: Span,
+    ) -> Option<Name>
+    {
+        let Via::Plain(sig) = self.conversion_fn(from, to, false, span)?
+        else
+        {
+            return None;
+        };
+        (sig.ret == Some(to)).then(|| self.known_name(&sig))
+    }
+
+    /// Check an error value against the error kind of its place: a value that
+    /// does not widen to it goes through the `ပြောင်းလဲ` of the two kinds when
+    /// there is one.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The error value.
+    /// * `err` - The error kind of the place.
+    pub(crate) fn expect_error(&mut self, value: &Expr, err: DataKind)
+    {
+        let Some(found) = self.infer(value, Some(err))
+        else
+        {
+            return;
+        };
+        let fits = found.widens_to(err, self.platform);
+        let via = tern!(fits, None, self.error_conversion(found, err, value.span()));
+        ret_if!(let Some(callee) = via, _ = self.op_calls.wraps.insert(value.id(), (callee, err)));
+        self.expect_fit(value, found, err);
     }
 
     /// Check a conversion to text with no function of its own as the text the
@@ -674,10 +724,11 @@ impl Writer<'_>
     ///
     /// * `n` - The value.
     /// * `callee` - The function.
-    fn wrap(&mut self, n: &mut Expr, callee: Name)
+    /// * `kind` - The kind the function gives.
+    fn wrap(&mut self, n: &mut Expr, callee: Name, kind: DataKind)
     {
         let span = n.span();
-        let at = self.fresh(DataKind::TEXT);
+        let at = self.fresh(kind);
         let callee = Ident::builder().name(callee).span(span).build();
         let placeholder = Expr::Null(NullLit::builder().id(at).span(span).build());
         let value = std::mem::replace(n, placeholder);
@@ -699,7 +750,8 @@ impl VisitorMut for Writer<'_>
         walk_expr_mut(self, n);
         let id = n.id();
         do_if!(let Some(call) = self.calls.pairs.get(&id).copied(), self.pair(n, call));
-        do_if!(let Some(callee) = self.calls.wraps.get(&id).copied(), self.wrap(n, callee));
+        let wrap = self.calls.wraps.get(&id).copied();
+        do_if!(let Some((callee, kind)) = wrap, self.wrap(n, callee, kind));
     }
 }
 
@@ -713,9 +765,10 @@ impl VisitorMut for Writer<'_>
 pub(crate) fn write_methods(program: &mut Program, calls: &OpCalls)
 {
     let blank = calls.methods.is_empty() && calls.verbs.is_empty();
-    ret_if!(blank && calls.texts.is_empty());
-    MethodWriter { methods: &calls.methods, verbs: &calls.verbs, texts: &calls.texts }
-        .visit_program_mut(program);
+    ret_if!(blank && calls.texts.is_empty() && calls.fault_vias.is_empty());
+    #[rustfmt::skip]
+    MethodWriter { methods: &calls.methods, verbs: &calls.verbs, texts: &calls.texts,
+        fault_vias: &calls.fault_vias }.visit_program_mut(program);
 }
 
 /// The walker that puts a call in place of a field read.
@@ -727,6 +780,28 @@ struct MethodWriter<'a>
     verbs: &'a HashMap<Span, CallStmt>,
     /// The conversions to text that become template texts.
     texts: &'a HashSet<NodeId>,
+    /// The function each call that passes a failure on turns its error value
+    /// through, under the span of the call.
+    fault_vias: &'a HashMap<Span, Name>,
+}
+
+impl MethodWriter<'_>
+{
+    /// The function a call that passes a failure on turns its error value
+    /// through.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The name, at the call, or `None`.
+    fn via(&self, span: Span) -> Option<Ident>
+    {
+        let name = self.fault_vias.get(&span)?;
+        Some(Ident::builder().name(*name).span(span).build())
+    }
 }
 
 impl VisitorMut for MethodWriter<'_>
@@ -739,6 +814,7 @@ impl VisitorMut for MethodWriter<'_>
         );
         let call = tern!(verb, self.verbs.get(&n.span()), None);
         do_if!(let Some(call) = call, *n = Stmt::Call(call.clone()));
+        do_if!(let Stmt::Call(c) = n, c.fault_via = self.via(c.span));
         walk_stmt_mut(self, n);
     }
 
@@ -748,6 +824,7 @@ impl VisitorMut for MethodWriter<'_>
         let call = tern!(replaced, self.methods.get(&n.id()), None);
         do_if!(let Some(call) = call, *n = Expr::Call(call.clone()));
         do_if!(self.texts.contains(&n.id()), to_template(n));
+        do_if!(let Expr::Call(c) = n, c.fault_via = self.via(c.span));
         walk_expr_mut(self, n);
     }
 }

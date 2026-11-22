@@ -217,8 +217,9 @@ error[ZK0443]: "စစ်" can fail, but the call does not pass the failure on
 ```
 
 The function around a pass-on must be able to fail, and with the same data kind (type) of
-error value, because Zaka does not convert one error value into another. Here the callee
-fails with text, while the caller fails with an integer:
+error value, unless a `ပြောင်းလဲ` converts the one error value into the other (see
+Details). Here the callee fails with text, while the caller fails with an integer, and no
+function converts text to an integer:
 
 ```zaka-error ZK0446
 စစ် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -244,6 +245,9 @@ whole result and tests it, as [Reading a whole result](results.md) shows.
 ## Details
 
 - The `?` must touch the `)`, with no space between them.
+- **Converting the error.** A function of our own, `ပြောင်းလဲ`, that takes the error value
+  of the callee and returns one of the caller's error kind lets the pass-on convert it
+  ([Converting the error kind](../../manual/language/error-handling.md#converting-the-error-kind)).
 - Writing a result kind on the program start block is the mistake ZK0441, because its result
   is an integer (the exit code) or nothing. The sentences at the top level of a file are not
   inside a function either, so a pass-on there is ZK0445 too.

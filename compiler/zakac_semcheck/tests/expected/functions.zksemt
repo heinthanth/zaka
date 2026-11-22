@@ -490,6 +490,7 @@ program:
             place: null
             args: []
             pass: false
+            fault_via: null
             parallel: false
             apart: false
             using: null
@@ -540,6 +541,7 @@ program:
                       lo: 2400
                       hi: 2403
                 pass: false
+                fault_via: null
                 parallel: false
                 apart: false
                 using: null

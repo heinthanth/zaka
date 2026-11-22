@@ -254,7 +254,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0443 | a call statement of a function that can fail, with no pass-on | [Errors and results](../language/error-handling.md) |
 | ZK0444 | a pass-on for a function that cannot fail | [Errors and results](../language/error-handling.md) |
 | ZK0445 | a pass-on in a function that cannot fail, in the program start block, or in top-level statements | [Errors and results](../language/error-handling.md) |
-| ZK0446 | a pass-on whose error kind differs from the error kind of the function around the call | [Errors and results](../language/error-handling.md) |
+| ZK0446 | a pass-on whose error kind differs from the error kind of the function around the call, with no `ပြောင်းလဲ` between the two | [Errors and results](../language/error-handling.md) |
 | ZK0447 | an error value returned from a function that cannot fail, or `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` in such a function | [Result kinds](../language/result-kinds.md) |
 | ZK0448 | a test or a read (`ထဲတွင် … ရှိ`, `ထဲမှ ဒေတာ`, `ထဲမှ အမှားအယွင်း ဒေတာ`) of a value that is neither a result nor an optional | [Reading a result](../language/reading-results.md) |
 | ZK0449 | a read of the good value, `ထဲမှ ဒေတာ`, of a result whose good side has no value | [Reading a result](../language/reading-results.md) |
