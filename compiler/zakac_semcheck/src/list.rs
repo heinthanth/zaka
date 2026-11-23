@@ -10,6 +10,7 @@ use zakac_ast::expr::ListLit;
 use zakac_ast::expr::NameExpr;
 use zakac_ast::expr::RangeExpr;
 use zakac_ast::expr::StructLit;
+use zakac_ast::kind::BASE_FIELD;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::verb::VerbOp;
@@ -340,6 +341,11 @@ impl Checker
             }
             false => s.field(&field.name).map(|(_, kind)| kind),
         };
+        if found.is_none()
+        {
+            ret_if!(let Some(kind) = self.promoted_field(n, base), kind);
+            ret_if!(let Some(kind) = self.promoted_method(n), kind);
+        }
         do_if!(
             found.is_none(),
             self.report(rd::unknown_field(field.span, &s.name, &field.name))
@@ -444,18 +450,23 @@ impl Checker
                 self.report(rd::field_set_twice(field.span, &name.name, &field.name))
             );
             do_if!(let Some(s) = s, self.refer_field(&s.name, field));
-            let want = s.and_then(|s| s.field(&field.name)).map(|(_, k)| k);
+            let want = s.and_then(|s| s.literal_field(&field.name)).map(|(_, k)| k);
             let unknown = s.filter(|_| want.is_none());
             let unknown =
                 unknown.map(|s| rd::unknown_field(field.span, &s.name, &field.name));
             do_if!(let Some(d) = unknown, self.report(d));
             self.expect_kind(&init.value, want);
         }
+        // A part takes the label of the struct it holds.
+        let set = |f: &str| {
+            seen.contains(f)
+                || f.strip_prefix(BASE_FIELD).is_some_and(|l| seen.contains(l))
+        };
         let left: Vec<String> = s
-            .map(|s| s.fields().iter().filter(|(f, _)| !seen.contains(f.as_str())))
+            .map(|s| s.fields().iter().filter(|(f, _)| !set(f)))
             .into_iter()
             .flatten()
-            .map(|(f, _)| format!("\"{f}\""))
+            .map(|(f, _)| format!("\"{}\"", f.strip_prefix(BASE_FIELD).unwrap_or(f)))
             .collect();
         let report = kd::field_left_out(n.span, &name.name, &left.join(", "));
         do_if!(!left.is_empty(), self.report(report));

@@ -33,6 +33,7 @@
   - [How text is stored](language/text-storage.md)
   - [Structs](language/structs.md)
   - [Values and objects](language/objects.md)
+  - [Structs based on structs](language/based-structs.md)
   - [Enumerations](language/enums.md)
   - [Kind aliases](language/aliases.md)
   - [Generics](language/generics.md)

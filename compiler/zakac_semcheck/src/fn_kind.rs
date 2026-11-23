@@ -333,7 +333,7 @@ impl FnKind
             )
         };
         let traits: Vec<String> = self.trait_list().iter().map(one).collect();
-        format!("{} {TRAIT_HEAD}", traits.join(" နှင့် "))
+        format!("{} {TRAIT_HEAD}", traits.join(" နှင့် "))
     }
 
     /// The trait of a trait value and its kinds after the first.
@@ -348,7 +348,7 @@ impl FnKind
     }
 
     /// Each trait of a trait value, with its kinds after the first, in the
-    /// order written: one for `<trait> အရာ`, more for `<trait> နှင့် <trait> အရာ`.
+    /// order written: one for `<trait> အရာ`, more for `<trait> နှင့် <trait> အရာ`.
     ///
     /// # Returns
     ///

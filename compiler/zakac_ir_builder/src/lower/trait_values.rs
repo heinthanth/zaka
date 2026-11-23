@@ -20,6 +20,7 @@
 //! old record keeps the value it holds.
 
 use zakac_semcheck::fn_kind::FnParam;
+use zakac_semcheck::trait_value::PART_PATH;
 use zakac_semcheck::trait_value::dispatch_shape;
 use zakac_semcheck::trait_value::held_kind;
 use zakac_semcheck::trait_value::value_fns;
@@ -396,6 +397,12 @@ impl Lowerer<'_>
         let (params, ret) = shape.expect("the check found the trait function");
         let fields = pack_fields(d.value, &params, ret);
         let pack = DataKind::args_pack(&fields);
+        // A function of a part names the fields of the path to the part after
+        // it.
+        let text = func.to_string();
+        let mut words = text.split(PART_PATH);
+        let func = Name::new(words.next().unwrap_or_default());
+        let path: Vec<&str> = words.collect();
         let sig = self
             .sigs
             .get(&func)
@@ -410,19 +417,32 @@ impl Lowerer<'_>
         let record =
             node_expr(d.record, ExprNode::Load { addr: Box::new(record) }, span);
         let held_at = field_addr(&record, RECORD_HEAD, platform);
-        let held = node_expr(d.held, ExprNode::Load { addr: Box::new(held_at) }, span);
         let mut out = Vec::new();
         // A function that changes its first parameter changes a duplicate in a
         // local of the arm.
         let clone = changes.then(|| d.local("%clone", d.held, true));
-        do_if!(let Some(c) = clone, out.push(Stmt::Set { place: c, value: dup_held(held.clone()), span }));
+        let held =
+            node_expr(d.held, ExprNode::Load { addr: Box::new(held_at.clone()) }, span);
+        do_if!(let Some(c) = clone, out.push(Stmt::Set { place: c, value: dup_held(held), span }));
+        let root = match clone
+        {
+            Some(c) => node_expr(d.held.pointer_to(), ExprNode::AddrOf(c), span),
+            None => held_at,
+        };
+        let at = self.base_part_addr(root, &path);
         let first = match clone
         {
-            Some(c) =>
+            Some(_) =>
             {
-                node_expr(d.held.pointer_to().as_borrowed(), ExprNode::AddrOf(c), span)
+                let kind =
+                    at.kind.pointee().expect("an address").pointer_to().as_borrowed();
+                Expr { kind, ..at }
             }
-            None => dup_held(held),
+            None =>
+            {
+                let kind = at.kind.pointee().expect("an address");
+                dup_held(node_expr(kind, ExprNode::Load { addr: Box::new(at) }, span))
+            }
         };
         let first = coerce_lowered(first, sig.params[0], platform);
         let skip = usize::from(changes);
@@ -485,6 +505,33 @@ impl Lowerer<'_>
     {
         let next = self.kind_numbers.len() as u32 + 1;
         *self.kind_numbers.entry(held).or_insert(next)
+    }
+
+    /// The address of a part of a held value, through the fields of the parts:
+    /// a shared object is read through its box.
+    ///
+    /// # Arguments
+    ///
+    /// * `root` - The address of the held value.
+    /// * `path` - The fields of the parts.
+    ///
+    /// # Returns
+    ///
+    /// The address of the part; `root` for no path.
+    fn base_part_addr(&self, root: Expr, path: &[&str]) -> Expr
+    {
+        let mut at = root;
+        for name in path
+        {
+            let (kind, span) = (at.kind.pointee().expect("an address"), at.span);
+            let value = node_expr(kind, ExprNode::Load { addr: Box::new(at) }, span);
+            let fields =
+                tern!(kind.as_object().is_some(), self.object_fields(value), value);
+            let shape = fields.kind.as_struct().expect("a part is a struct");
+            let index = shape.field(name).expect("the check found the part").0;
+            at = field_addr(&fields, index, self.platform);
+        }
+        at
     }
 
     /// The arm of a dispatcher that writes the number of its held data kind

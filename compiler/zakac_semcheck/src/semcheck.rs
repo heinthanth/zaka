@@ -556,6 +556,10 @@ fn check_once(
         .core_units((0..program.units.len() as u32).filter(|u| generic::in_core(program, *u)).collect())
         .traits(traits(program)).inheriting(inheriting(program)).build();
     checker.scopes.push();
+    checker.next_node = generic::next_id(program);
+    checker.has_parts = program.stmts.iter().filter_map(as_struct_decl).any(|s| {
+        s.fields.iter().any(|f| f.name.name.starts_with(zakac_ast::kind::BASE_FIELD))
+    });
     checker.check_struct_bounds();
     checker.visit_program(program);
     let site_diags = checker.site_diags.take();
@@ -718,6 +722,13 @@ pub(crate) struct Checker
     /// facts of a check.
     #[builder(default)]
     pub held_kinds: Vec<DataKind>,
+    /// The next node number free for a node the check adds.
+    #[builder(default)]
+    pub next_node: u32,
+    /// Whether a struct of the program is based on another, so a read or a
+    /// call can reach a part.
+    #[builder(default)]
+    pub has_parts: bool,
     /// The operator the next two-operand inference stands for, with its
     /// node, when a struct can take it through a function.
     pub pending_op: Option<(NodeId, (&'static str, bool))>,
@@ -2790,6 +2801,7 @@ impl Visitor for Checker
 
     fn visit_struct(&mut self, n: &StructDecl)
     {
+        self.check_parts(n);
         do_for!(f in &n.fields, self.work_out_counts(&f.kind));
         do_for!(f in &n.fields, self.check_trait_values(&f.kind));
         // A kind parameter has no index kind to check until an instance names

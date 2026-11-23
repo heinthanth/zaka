@@ -932,6 +932,12 @@ pub struct StructDecl
     #[serde(default)]
     pub kind_params: Vec<KindParam>,
     /// The fields in order, each a kind and a name.
+    /// The structs it is based on, `<struct> ကို အခြေခံသော`: each is held
+    /// as a part of it, whose fields and functions a value of it reaches as
+    /// its own.
+    #[builder(default)]
+    #[serde(default)]
+    pub bases: Vec<Kind>,
     pub fields: Vec<Param>,
     /// The classifier that counts values of the struct, when written.
     pub classifier: Option<Ident>,

@@ -678,6 +678,9 @@ trait function, the address of an argument pack and its record.
 - **The dispatcher.** An `if` chain on the number picks the function of the held data kind;
   the held value is field `c0` of the record. A result of the trait's own data kind is
   wrapped in a new record of the same dispatcher.
+- **A part.** The name of the function of a held kind that gets a trait through a part
+  carries the fields of the path after `PART_PATH`; the arm passes the address of that
+  part (`base_part_addr`), through the box of a shared object.
 - **A change.** For a function that changes its first parameter, the pack starts with a
   field for the new trait value. The dispatcher duplicates the held value into a local,
   passes the address of the local, and writes a new trait value of that local into the

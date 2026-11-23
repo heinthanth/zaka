@@ -14,6 +14,14 @@ use crate::expr::Ident;
 use crate::expr::Phrases;
 use crate::name::Name;
 
+/// The word that ends the mark of the structs a struct is based on:
+/// `<struct> ကို အခြေခံသော`.
+pub const BASED_ON: &str = "အခြေခံသော";
+
+/// The start of the name of the field that holds a struct a struct is based
+/// on, before the name of that struct: no program can write it.
+pub const BASE_FIELD: &str = "%%";
+
 /// The head noun of a trait value kind, after the trait: `<trait> အရာ`.
 pub const TRAIT_HEAD: &str = "အရာ";
 
@@ -218,7 +226,7 @@ pub struct Kind
     #[serde(default)]
     pub args: Vec<Kind>,
     /// The traits after the first of a trait value that has several,
-    /// `<trait> နှင့် <trait> အရာ`, each with its kinds in its own [`Kind::args`].
+    /// `<trait> နှင့် <trait> အရာ`, each with its kinds in its own [`Kind::args`].
     #[builder(default)]
     #[serde(default)]
     pub also: Vec<Kind>,

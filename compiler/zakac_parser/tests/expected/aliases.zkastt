@@ -12,6 +12,7 @@ program:
           lo: 76
           hi: 82
       kind_params: []
+      bases: []
       fields:
       - edit: false
         fill: false

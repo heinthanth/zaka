@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::PoisonError;
 
+use zakac_ast::kind::BASE_FIELD;
 use zakac_ast::name::Name;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -136,7 +137,23 @@ impl StructKind
         self.fields.get().map_or(&[], Vec::as_slice)
     }
 
-    /// The field with a name.
+    /// The position and the kind of the field a label of a struct literal
+    /// names: a field, or the part of a struct it is based on, under the name
+    /// of that struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The label.
+    ///
+    /// # Returns
+    ///
+    /// The position and the kind, or `None` for no such field.
+    pub fn literal_field(&self, name: &str) -> Option<(usize, DataKind)>
+    {
+        self.field(name).or_else(|| self.field(&format!("{BASE_FIELD}{name}")))
+    }
+
+    /// The position and the kind of a field.
     ///
     /// # Arguments
     ///
@@ -144,8 +161,7 @@ impl StructKind
     ///
     /// # Returns
     ///
-    /// The position of the field and its kind, or `None` for a name the
-    /// struct does not have.
+    /// The position and the kind, or `None` for no such field.
     pub fn field(&self, name: &str) -> Option<(usize, DataKind)>
     {
         self.fields()

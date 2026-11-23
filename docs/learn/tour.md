@@ -405,8 +405,12 @@ leaves `ကျော်` as it was. When we add `မျှဝေနိုင်�
 object (reference type), which works like an object in Python or Java: both names point to
 the same object. To duplicate a shared object, we use `ကူးထည့်မည်`, and for a deep copy we
 use `အကုန်ကူးထည့်မည်`.
+A struct can be based on another, `… သည် လူ ကို အခြေခံသော ဒေတာအစုအဝေး ဖြစ်၍ …`, as
+struct embedding in Go: it reaches the fields and the functions of that part as its own,
+and a function of its own wins.
 
-Learn: [Structs](structs/README.md), [Shared objects](structs/objects.md).
+Learn: [Structs](structs/README.md), [Shared objects](structs/objects.md),
+[Based on another struct](structs/based.md).
 Docs: [Structs](../manual/language/structs.md), [Values and objects](../manual/language/objects.md).
 
 ## Enumerations and switches

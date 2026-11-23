@@ -387,14 +387,16 @@ struct with a C name or from outside, and the threads mark on an enumeration, is
 (`mark_clash`).
 
 `parse_struct_decl` reads a struct after `ဒေတာအစုအဝေး`. With `တွင်` it reads the fields at
-once. With `သည်` it first reads a mark (`parse_struct_mark`), each one closed with
-`ဒေတာအစုအဝေး` and `ဖြစ်၍`:
+once. With `သည်` it first reads the marks (`parse_struct_marks`, each one through
+`parse_struct_mark` or `parse_bases`, with `mark_gap` taking the `၊` between two, ZK0266),
+closed with `ဒေတာအစုအဝေး` and `ဖြစ်၍`:
 
 | Mark | Meaning |
 | --- | --- |
 | `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော` (`parse_struct_c_name`, `Kw::UsableOutside`) | gives the struct to C under that name (`StructDecl.c_name`) |
 | `ပြင်ပမှ လာသော` (`Kw::External`) | a data kind from outside the program (`external_kind`) |
 | `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` (`Kw::InCompiler`, `Kw::IncludedWith`) | a struct the compiler gives, in the core module |
+| `<kind> [နှင့် <kind>] ကို|တို့ကို အခြေခံသော` (`bases_len`, `parse_bases`; `အခြေခံသော` is no reserved word) | the structs it is based on (`StructDecl.bases`); each becomes a first field named `%%<struct>` (`base_field`); with `ပြင်ပမှ လာသော` it is ZK0263 |
 
 Then come the kind parameters in words and `၎င်း`. A mark that does not go with kind
 parameters is ZK0263 (`check_mark_params`), since C cannot declare a generic struct and a

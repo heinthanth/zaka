@@ -54,6 +54,7 @@
 - [Structs](structs/README.md)
   - [Struct mistakes](structs/mistakes.md)
   - [Shared objects](structs/objects.md)
+  - [Based on another struct](structs/based.md)
 - [Enumerations and switches](enums/README.md)
   - [Members that hold data](enums/data.md)
   - [Enumeration mistakes](enums/mistakes.md)

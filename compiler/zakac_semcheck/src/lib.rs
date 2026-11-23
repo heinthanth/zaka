@@ -6,6 +6,7 @@ mod collect;
 pub mod comptime_calls;
 pub mod const_op;
 mod consts;
+mod embed;
 mod enum_check;
 pub mod enums;
 pub mod fn_kind;

@@ -206,6 +206,10 @@ fn inner_kinds(kind: &Kind) -> Vec<&Kind>
 /// value; the IR builder makes the trait value from it.
 pub const TO_TRAIT_FN: &str = "%trait-value";
 
+/// The mark in the name of the function that gives a held kind a function of
+/// a trait through a part, before each field of the path to the part.
+pub const PART_PATH: char = '\u{1f}';
+
 /// The start of the name a call through a trait value takes, then the
 /// number of the function among the functions of the trait.
 pub const TRAIT_CALL: &str = "%trait-call:";
@@ -307,6 +311,17 @@ impl Checker
             .find(fits)
             .cloned();
         ret_if!(let Some(sig) = found, Some(self.known_name(&sig)));
+        // A part's own function, with the path to the part after the name.
+        if let Some((path, part)) = self.part_gives(kind, &name, want)
+        {
+            let mut params = want.params.clone();
+            params[0] = part;
+            let want = Wanted { name: want.name.clone(), params, ret: want.ret };
+            let base = self.impl_of(part, name, &want, at)?;
+            let mut text = base.to_string();
+            do_for!(field in path, { text.push(PART_PATH); text.push_str(&field) });
+            return Some(Name::from(text));
+        }
         // The default: the generic function whose kind needs the trait.
         let needs = |t: &FnDecl| {
             let first = t.kind_params.first();

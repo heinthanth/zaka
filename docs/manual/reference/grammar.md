@@ -190,11 +190,13 @@ builtin-kind = name "သည်" compiler-mark [ "အများသုံးန�
 
 struct-decl  = name [ sign-params ] "ဟူသော" [ "အများသုံးနိုင်သော" ] [ threads-mark ] [ "မျှဝေနိုင်သော" ]
                "ဒေတာအစုအဝေး"
-               ( "တွင်" | "သည်" [ struct-mark "ဒေတာအစုအဝေး" "ဖြစ်၍" ] [ word-params-open ] "၎င်း" "တွင်" )
+               ( "တွင်" | "သည်" [ struct-marks "ဒေတာအစုအဝေး" "ဖြစ်၍" ] [ word-params-open ] "၎င်း" "တွင်" )
                fields ( closer | hinted-closer ) "။" ;
 hinted-closer = ( "ပါဝင်ပြီး" | "တို့ပါဝင်ပြီး" ) "မျိုးပြပစ္စည်းမှာ" classifier
                "ဖြစ်၍" hint "ရေးသားနိုင်သည်" ;
+struct-marks = struct-mark { "၊" struct-mark } ;  (* "၊" between two marks, ZK0266 *)
 struct-mark  = string-lit "အမည်ဖြင့်" "ပြင်ပမှ ယူသုံးနိုင်သော"   (* a struct a lib gives to C *)
+             | kind { "နှင့်" kind } ( "ကို" | "တို့ကို" ) "အခြေခံသော"  (* its bases; no reserved word *)
              | "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;         (* a struct the compiler gives *)
 handle-decl  = name "ဟူသော" [ "အများသုံးနိုင်သော" ] "ဒေတာအစုအဝေး" "သည်" "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
                ( "ဖြစ်သည်" | "ဖြစ်၍" "၎င်း" "တွင်" fields ( "ပါဝင်သည်" | "တို့ပါဝင်သည်" ) ) "။" ;

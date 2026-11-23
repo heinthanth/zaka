@@ -891,6 +891,24 @@ en = "to share one value, make %{k} a shared object (\"မျှဝေနို�
 [codes.ZK0362.explain]
 en = """A plain value goes into a trait value as a duplicate of its own, as it does when it goes into a variable. A function of the trait that changes its first parameter (\"ဒေတာ ပြောင်းလဲရန်\") changes the duplicate the trait value holds, and the value we put in keeps its old state. A shared object goes in as a reference, so changes through the trait value reach it. The lint group \"duplicates\" sets the level of this warning."""
 
+[codes.ZK0363.title]
+en = "base that is no struct"
+[codes.ZK0363.message]
+en = "a struct is based on %{k}, which is no struct"
+[codes.ZK0363.help]
+en = "base it on a struct or a shared object"
+[codes.ZK0363.explain]
+en = """A struct can be based on another struct, \"<struct> ကို အခြေခံသော\": it holds that struct as a part, and reaches its fields and functions as its own. A number, text, a list or another data kind has no fields to reach, so a struct cannot be based on it."""
+
+[codes.ZK0364.title]
+en = "name in two parts"
+[codes.ZK0364.message]
+en = "\"%{n}\" is in two parts of %{k} at one depth: %{a} and %{b}"
+[codes.ZK0364.help]
+en = "read the part first, as \"<x> ကို <part> အဖြစ် ပြောင်းလဲသော ရလဒ်\", then the name"
+[codes.ZK0364.explain]
+en = """A struct reaches the fields and the functions of the structs it is based on, the nearest first: its own, then those of its parts, then those of their parts. When two parts at one depth both have the name, the compiler cannot pick one, and the program reads the part it means first."""
+
 [codes.ZK0338.title]
 en = "C function declared twice with other kinds"
 [codes.ZK0338.message]

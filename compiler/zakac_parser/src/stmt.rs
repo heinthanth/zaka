@@ -2,6 +2,8 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::Phrases;
 use zakac_ast::expr::VerbExpr;
+use zakac_ast::kind::BASE_FIELD;
+use zakac_ast::kind::BASED_ON;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
@@ -56,6 +58,7 @@ use crate::clause::Mode;
 use crate::decl_head::DeclHead;
 use crate::describe::kw_text;
 use crate::describe::quote;
+use crate::fn_kind::FnForm;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
 use crate::parser::Parser;
@@ -117,6 +120,45 @@ enum StructMark
     External,
     /// `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော`: a struct the compiler gives.
     Builtin,
+}
+
+/// The field that holds a struct a struct is based on: the name of the struct
+/// after [`BASE_FIELD`].
+///
+/// # Arguments
+///
+/// * `base` - The struct, as written.
+///
+/// # Returns
+///
+/// The field.
+fn base_field(base: &Kind) -> Param
+{
+    let written = base.name.as_ref().map_or("", |n| n.name.as_str());
+    let name = Ident::builder()
+        .name(format!("{BASE_FIELD}{written}").as_str())
+        .span(base.span)
+        .build();
+    Param::builder().kind(base.clone()).name(name).span(base.span).build()
+}
+
+/// The words of a mark of a struct, for a message.
+///
+/// # Arguments
+///
+/// * `mark` - The mark.
+///
+/// # Returns
+///
+/// The words.
+fn struct_mark_text(mark: &StructMark) -> String
+{
+    match mark
+    {
+        StructMark::CName(_) => USABLE_MARK.to_string(),
+        StructMark::External => OUTSIDE_MARK.to_string(),
+        _ => kw_text(Kw::InCompiler),
+    }
 }
 
 /// The direction a counted-loop word names.
@@ -1456,10 +1498,17 @@ impl Parser<'_>
     ) -> PResult<Stmt>
     {
         let opened = self.eat(Kw::Thi);
-        let mark = tern!(opened, self.parse_struct_mark()?, StructMark::None);
+        let (mark, bases) =
+            tern!(opened, self.parse_struct_marks()?, (StructMark::None, Vec::new()));
         let external = mark == StructMark::External;
+        do_if!(!bases.is_empty() && mark != StructMark::None, {
+            let other = struct_mark_text(&mark);
+            self.diags.push(diag::mark_clash(name.span, BASED_ON, &other));
+        });
+        let marked = mark != StructMark::None || !bases.is_empty();
+        do_if!(marked, _ = self.expect(Kw::StructWord)?);
         ret_if!(external && self.eat(Kw::Is), self.external_kind(start, name, false));
-        do_if!(mark != StructMark::None, _ = self.expect(Kw::And)?);
+        do_if!(marked, _ = self.expect(Kw::And)?);
         if opened
         {
             kind_params.extend(self.parse_word_params_open()?);
@@ -1471,14 +1520,17 @@ impl Parser<'_>
         let added = self.add_kind_names(&kind_params);
         let fields = self.parse_listed_fields(true);
         self.drop_kind_names(added);
-        let fields = fields?;
+        // Each struct it is based on is a part of it, held in a field whose
+        // name no program can write.
+        let parts = bases.iter().map(base_field);
+        let fields: Vec<Param> = parts.chain(fields?).collect();
         let hint_of = Some((&name, kind_params.as_slice()));
         let (classifier, hint, span) = self.parse_decl_end(start, hint_of)?;
         do_if!(self.nested(), self.diags.push(diag::nested_struct(span)));
         let builtin = mark == StructMark::Builtin;
         let c_name = tern!(let StructMark::CName(c) = mark, Some(c), None);
         #[rustfmt::skip]
-        let node = StructDecl::builder().name(name).kind_params(kind_params).fields(fields)
+        let node = StructDecl::builder().name(name).kind_params(kind_params).bases(bases).fields(fields)
             .maybe_classifier(classifier).maybe_c_name(c_name).builtin(builtin).hint(hint)
             .span(span).build();
         Ok(Stmt::Struct(node))
@@ -1488,6 +1540,94 @@ impl Parser<'_>
     /// `ဒေတာအစုအဝေး` after it: a C name, `ပြင်ပမှ လာသော`, or the mark of a
     /// struct the compiler gives. The phrase of a C name with no text before
     /// it is an error.
+    ///
+    /// # Returns
+    ///
+    /// The mark, `StructMark::None` when none starts here, or a diagnostic.
+    fn parse_struct_marks(&mut self) -> PResult<(StructMark, Vec<Kind>)>
+    {
+        let (mut mark, mut bases) = (StructMark::None, Vec::new());
+        loop
+        {
+            if let Some(more) = self.parse_bases()?
+            {
+                bases.extend(more);
+            }
+            else
+            {
+                let one = self.parse_struct_mark()?;
+                ret_if!(one == StructMark::None, Ok((mark, bases)));
+                mark = one;
+            }
+            self.mark_gap(|p, n| p.struct_mark_at(n))?;
+            ret_if!(!self.struct_mark_at(0), Ok((mark, bases)));
+        }
+    }
+
+    /// Whether a mark of a struct after `သည်` starts `n` tokens ahead: a C
+    /// name, `ပြင်ပမှ လာသော`, the compiler mark, or the structs it is based on.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn struct_mark_at(&self, n: usize) -> bool
+    {
+        let named = matches!(self.peek_n(n).kind, TokenKind::Str(_))
+            && self.peek_n(n + 1).kind == TokenKind::Kw(Kw::UnderName);
+        let word =
+            matches!(kw_of(&self.peek_n(n)), Some(Kw::External | Kw::InCompiler));
+        named || word || self.bases_len(n).is_some()
+    }
+
+    /// The number of tokens of the structs a struct is based on, `n` tokens
+    /// ahead: a kind, or kinds joined with `နှင့်`, then `ကို` or `တို့ကို`, then
+    /// `အခြေခံသော`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no such mark starts there.
+    fn bases_len(&self, n: usize) -> Option<usize>
+    {
+        let mut len = self.kind_len_at(n, FnForm::NoParams)?;
+        while self.at_kw_n(n + len, Kw::Hnint)
+        {
+            len += 1 + self.kind_len_at(n + len + 1, FnForm::NoParams)?;
+        }
+        let object = matches!(kw_of(&self.peek_n(n + len)), Some(Kw::Ko | Kw::ListKo));
+        let word = self.peek_n(n + len + 1);
+        let based =
+            word.kind == TokenKind::Ident && self.text_of(word.span) == BASED_ON;
+        (object && based).then_some(len + 2)
+    }
+
+    /// Parse the structs a struct is based on, `<struct> ကို အခြေခံသော`, when
+    /// the mark stands here.
+    ///
+    /// # Returns
+    ///
+    /// The structs, `None` when no such mark stands here, or a diagnostic.
+    fn parse_bases(&mut self) -> PResult<Option<Vec<Kind>>>
+    {
+        ret_if!(self.bases_len(0).is_none(), Ok(None));
+        let mut bases = vec![self.parse_kind()?];
+        while self.eat(Kw::Hnint)
+        {
+            bases.push(self.parse_kind()?);
+        }
+        self.bump();
+        self.bump();
+        Ok(Some(bases))
+    }
+
+    /// Parse one mark of a struct after `ဒေတာအစုအဝေးသည်`.
     ///
     /// # Returns
     ///
@@ -1508,7 +1648,6 @@ impl Parser<'_>
             }
             () => return Ok(StructMark::None),
         };
-        self.expect(Kw::StructWord)?;
         Ok(mark)
     }
 

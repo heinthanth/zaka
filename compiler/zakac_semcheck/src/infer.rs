@@ -530,7 +530,7 @@ impl Checker
             }
             (VerbOp::VariantData, [value, Expr::Variant(v)]) =>
             {
-                return self.infer_variant_data(value, v);
+                return self.infer_variant_data(n, value, v);
             }
             (VerbOp::Row | VerbOp::RowValue, [table, index]) =>
             {
@@ -821,6 +821,8 @@ impl Checker
         let from = self.infer(value, None);
         let kind_arg = n.kind_arg.as_ref()?;
         let target = self.written_kind(kind_arg, KindUse::Other);
+        let part = from.and_then(|f| self.part_read(n, value, f, target));
+        ret_if!(let Some(kind) = part, kind);
         let built_in = from.is_none_or(|f| f.cast_allowed(target));
         let open = from.filter(|_| !built_in || n.pass);
         let via = open.and_then(|f| self.conversion_fn(f, target, n.pass, n.span));
@@ -855,6 +857,7 @@ impl Checker
             self.op_calls.methods.insert(n.id, through);
             return kind;
         }
+        ret_if!(let Some(kind) = self.promoted_call(n), kind);
         let place = n.place.as_deref();
         let ret = self.check_call(
             &n.callee,

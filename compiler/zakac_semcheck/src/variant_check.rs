@@ -344,17 +344,24 @@ impl Checker
     ///
     /// # Arguments
     ///
+    /// * `n` - The read.
     /// * `value` - The value read.
-    /// * `variant` - The variant.
+    /// * `variant` - The variant, or the struct of a part.
     ///
     /// # Returns
     ///
     /// The kind of the data, or `None` after an error.
     pub(crate) fn infer_variant_data(
-        &mut self, value: &Expr, variant: &VariantExpr,
+        &mut self, n: &VerbExpr, value: &Expr, variant: &VariantExpr,
     ) -> Option<DataKind>
     {
         let kind = self.infer(value, None)?;
+        // A struct based on another reads its part of that struct.
+        let base = held_kind(&variant.variant.name, &self.structs);
+        let part =
+            base.filter(|_| kind.as_variants().is_none() && !kind.is_trait_value());
+        let part = part.and_then(|b| self.part_read(n, value, kind, b));
+        ret_if!(let Some(part) = part, part);
         let at = self.variant_at(kind, &variant.variant, value.span())?;
         let name = &variant.variant.name;
         let Some(data) = at.data

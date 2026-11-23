@@ -480,10 +480,12 @@ impl Checker
         let found = self.fitting(want, self.places(kind, trait_name));
         let default =
             found == 0 && self.takes_default(kind, trait_name, &want.name.name);
+        let promoted =
+            found == 0 && !default && self.part_gives(kind, trait_name, want).is_some();
         match found
         {
             1 => true,
-            0 if default => true,
+            0 if default || promoted => true,
             0 =>
             {
                 let name = &want.name.name;
@@ -534,7 +536,7 @@ impl Checker
     /// # Returns
     ///
     /// The count.
-    fn fitting(&self, want: &Wanted, units: Vec<u32>) -> usize
+    pub(crate) fn fitting(&self, want: &Wanted, units: Vec<u32>) -> usize
     {
         let fits = |s: &&FnSig| s.params == want.params && s.ret == want.ret;
         let sigs = units.iter().filter_map(|u| self.unit_fns.get(*u as usize));

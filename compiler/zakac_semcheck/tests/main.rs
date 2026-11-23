@@ -7,6 +7,7 @@ mod common;
 mod conversions;
 mod counts;
 mod edits;
+mod embedding;
 mod exports;
 mod external;
 mod faults;

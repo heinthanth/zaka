@@ -143,6 +143,9 @@ pub(crate) struct OpCalls
     /// value kind, and for each function of the trait, in its order, the name
     /// the later stages give the function that serves the value's kind.
     pub(crate) to_traits: HashMap<NodeId, (DataKind, Vec<Name>)>,
+    /// The read of a part that each read of a field or of a part stands for,
+    /// `x ၏ %%B ၏ f` for `x ၏ f`, under the node of the read.
+    pub(crate) fields: HashMap<NodeId, Expr>,
 }
 
 /// The name of the function of the core a count stands for.
@@ -890,11 +893,12 @@ impl VisitorMut for Writer<'_>
 /// * `calls` - The calls the check recorded.
 pub(crate) fn write_methods(program: &mut Program, calls: &OpCalls)
 {
-    let blank = calls.methods.is_empty() && calls.verbs.is_empty();
+    let blank =
+        calls.methods.is_empty() && calls.verbs.is_empty() && calls.fields.is_empty();
     ret_if!(blank && calls.texts.is_empty() && calls.fault_vias.is_empty());
     #[rustfmt::skip]
     MethodWriter { methods: &calls.methods, verbs: &calls.verbs, texts: &calls.texts,
-        fault_vias: &calls.fault_vias }.visit_program_mut(program);
+        fault_vias: &calls.fault_vias, fields: &calls.fields }.visit_program_mut(program);
 }
 
 /// The walker that puts a call in place of a field read.
@@ -909,6 +913,8 @@ struct MethodWriter<'a>
     /// The function each call that passes a failure on turns its error value
     /// through, under the span of the call.
     fault_vias: &'a HashMap<Span, Name>,
+    /// The read of a part each read stands for.
+    fields: &'a HashMap<NodeId, Expr>,
 }
 
 impl MethodWriter<'_>
@@ -946,6 +952,8 @@ impl VisitorMut for MethodWriter<'_>
 
     fn visit_expr_mut(&mut self, n: &mut Expr)
     {
+        let read = self.fields.get(&n.id()).cloned();
+        do_if!(let Some(read) = read, *n = read);
         let replaced = matches!(n, Expr::Field(_) | Expr::Verb(_) | Expr::Call(_));
         let call = tern!(replaced, self.methods.get(&n.id()), None);
         do_if!(let Some(call) = call, *n = Expr::Call(call.clone()));

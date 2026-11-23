@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 use bon::Builder;
 use zakac_ast::expr as ast;
+use zakac_ast::kind::BASE_FIELD;
 use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt as st;
@@ -4287,7 +4288,15 @@ impl Lowerer<'_>
             return self.make_box(value, n.span).node;
         }
         let s = kind.as_struct().expect("a struct literal has a struct kind");
-        let init = |name: &str| n.fields.iter().find(|f| f.field.name == name);
+        // A part of a struct it is based on takes the label of that struct.
+        let label =
+            |name: &str| name.strip_prefix(BASE_FIELD).unwrap_or(name).to_string();
+        let init = |name: &str| {
+            let label = label(name);
+            n.fields
+                .iter()
+                .find(|f| f.field.name == name || f.field.name.as_str() == label)
+        };
         let fields = s.fields().iter().map(|(name, k)| {
             init(name).map_or_else(
                 || default_constant(*k, n.span),

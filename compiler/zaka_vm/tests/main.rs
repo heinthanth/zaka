@@ -4,6 +4,7 @@ mod callbacks;
 mod cli;
 mod common;
 mod comptime_fns;
+mod embedding;
 mod heap;
 mod host;
 mod machine;

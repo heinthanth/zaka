@@ -291,4 +291,4 @@ frees it.
 - Build a ring of three `အဆစ်` nodes, make a deep duplicate, change a value in the
   duplicate, and print both rings.
 
-Next: [Enumerations and switches](../enums/README.md).
+Next: [Based on another struct](based.md).

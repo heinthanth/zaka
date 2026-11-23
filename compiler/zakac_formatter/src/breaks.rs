@@ -1,7 +1,7 @@
 //! The lines of a declaration: a struct with a field on each line, an
 //! enumeration with a member on each line, and a function signature with its
 //! name on a line, a parameter on each line and its opener on a line of its
-//! own. A separator (`၊`, `နှင့်`, `လည်းကောင်း`) ends its line.
+//! own. A separator (`၊`, `နှင့်`, `လည်းကောင်း`) ends its line.
 //!
 //! With [`Lines::Fit`], a declaration that fits in the widest line goes on
 //! one line, and one that does not is broken; with [`Lines::Split`] it is

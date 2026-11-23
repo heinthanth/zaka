@@ -300,7 +300,7 @@ the field `f` of `x`. Reads chain from the left, so `x ၏ a ၏ f` is `f(x ၏ 
 - A field that holds a function value: when no function, generic, variable or trait
   function `f` accepts `x`, and the field `f` of `x` holds a
   [function value](function-values.md), `x ၏ f(a)` calls that function value with `a`. It
-  is the short form of `(x ၏ f) ဟူသော လုပ်ဆောင်ချက်ကို a ဖြင့် လုပ်ဆောင်သော ရလဒ်`, and it needs
+  is the short form of `(x ၏ f) ဟူသော လုပ်ဆောင်ချက်ကို a ဖြင့် လုပ်ဆောင်သော ရလဒ်`, and it needs
   the parentheses, so `x ၏ f` with none still reads the field.
 
 ```zaka

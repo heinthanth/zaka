@@ -339,6 +339,11 @@ TraitValueUse = ("ZK0361", Level::Error),
 /// A plain value goes into a trait value whose trait has a function that
 /// changes its first parameter: the change reaches the duplicate alone.
 TraitValueDuplicates = ("ZK0362", Level::Warning),
+/// A struct is based on a kind that is no struct and no shared object.
+BaseNotAStruct = ("ZK0363", Level::Error),
+/// A name reaches a field or a function through two parts of a struct at
+/// one depth.
+BaseNameTwice = ("ZK0364", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

@@ -1223,3 +1223,40 @@ pub fn trait_value_duplicates(span: Span, kind: &str, func: &str) -> Diagnostic
     Diagnostic::new(Code::TraitValueDuplicates, msg, span)
         .with_help(t!("codes.ZK0362.help", k = kind))
 }
+
+/// A struct is based on a kind that is no struct and no shared object.
+///
+/// # Arguments
+///
+/// * `span` - The base as written.
+/// * `kind` - The kind.
+///
+/// # Returns
+///
+/// The `ZK0363` diagnostic.
+pub fn base_not_a_struct(span: Span, kind: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0363.message", k = kind);
+    Diagnostic::new(Code::BaseNotAStruct, msg, span).with_help(t!("codes.ZK0363.help"))
+}
+
+/// A name reaches a field or a function through two parts of a struct at one
+/// depth.
+///
+/// # Arguments
+///
+/// * `span` - The name.
+/// * `name` - The name.
+/// * `kind` - The struct.
+/// * `parts` - The two parts.
+///
+/// # Returns
+///
+/// The `ZK0364` diagnostic.
+pub fn base_name_twice(
+    span: Span, name: &str, kind: &str, parts: (&str, &str),
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0364.message", n = name, k = kind, a = parts.0, b = parts.1);
+    Diagnostic::new(Code::BaseNameTwice, msg, span).with_help(t!("codes.ZK0364.help"))
+}
