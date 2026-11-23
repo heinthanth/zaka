@@ -37,6 +37,8 @@ pub mod libs;
 mod local;
 pub mod native;
 pub mod out;
+#[cfg(all(feature = "guard", windows, target_arch = "aarch64"))]
+mod plain_jump;
 pub mod program;
 pub mod rights;
 pub mod seqs;
@@ -65,7 +67,7 @@ pub fn exports() -> &'static [(&'static str, *const u8)]
     TABLE.0
 }
 
-#[cfg(feature = "guard")]
+#[cfg(all(feature = "guard", not(all(windows, target_arch = "aarch64"))))]
 unsafe extern "C" {
     /// The guard of a thread, in C: runs the step, and gives 1 once a trap
     /// jumped back to it.
@@ -75,6 +77,13 @@ unsafe extern "C" {
     #[link_name = stamped!("thread_leave")]
     fn thread_leave(trap: i32) -> !;
 }
+
+// On Windows on ARM64 the guard and its jump are Rust, since the `longjmp` of
+// that OS unwinds through the code of the JIT.
+#[cfg(all(feature = "guard", windows, target_arch = "aarch64"))]
+use plain_jump::thread_guard;
+#[cfg(all(feature = "guard", windows, target_arch = "aarch64"))]
+use plain_jump::thread_leave;
 
 /// The guard of a thread and its jump, under the plain names the code of a
 /// thread calls, for a JIT: a build of a program compiles its own.

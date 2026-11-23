@@ -182,7 +182,12 @@ feature `guard`, which the `jit` feature of this crate turns on, the build scrip
 `zaka_runtime` compiles `c/thread_guard.c` through `cc`, with the prefix of the runtime on
 each name, and `zaka_runtime::thread_glue` passes the JIT its addresses under the plain
 names `zk_thread_guard` and `zk_thread_leave`. On 64-bit Windows, that guard clears the
-frame of its jump buffer, because the code of the JIT has no table to unwind.
+frame of its jump buffer, because the code of the JIT has no table to unwind. That is not
+enough on Windows on ARM64, whose `longjmp` unwinds even so (`STATUS_BAD_FUNCTION_TABLE`),
+so there the guard and its jump are naked Rust functions (`plain_jump.rs`): the guard saves
+the registers a call keeps and puts the stack pointer and the address to go on at in its
+frame, and the jump loads them back, with no unwind. The build script compiles no C guard
+for that target.
 
 ## JIT and AOT
 

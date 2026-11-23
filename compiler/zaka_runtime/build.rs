@@ -42,6 +42,10 @@ fn main()
 #[cfg(feature = "guard")]
 fn build_guard(prefix: &str)
 {
+    // Windows on ARM64 takes the guard of `plain_jump.rs`, in Rust.
+    let os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    ret_if!(os == "windows" && arch == "aarch64");
     println!("cargo:rerun-if-changed=c/thread_guard.c");
     // C11, as each build of the C target: MSVC knows `_Noreturn` in it alone.
     cc::Build::new()
