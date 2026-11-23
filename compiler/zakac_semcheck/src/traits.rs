@@ -482,10 +482,14 @@ impl Checker
             found == 0 && self.takes_default(kind, trait_name, &want.name.name);
         let promoted =
             found == 0 && !default && self.part_gives(kind, trait_name, want).is_some();
+        let part_default = found == 0
+            && !default
+            && !promoted
+            && self.part_takes_default(kind, trait_name, &want.name.name);
         match found
         {
             1 => true,
-            0 if default || promoted => true,
+            0 if default || promoted || part_default => true,
             0 =>
             {
                 let name = &want.name.name;
@@ -513,7 +517,9 @@ impl Checker
     /// # Returns
     ///
     /// `true` when it does.
-    fn takes_default(&self, kind: DataKind, trait_name: &str, name: &Name) -> bool
+    pub(crate) fn takes_default(
+        &self, kind: DataKind, trait_name: &str, name: &Name,
+    ) -> bool
     {
         let decl = self.traits.get(&Name::from(trait_name)).map(|(_, d)| d);
         let has = decl.is_some_and(|d| {

@@ -70,8 +70,10 @@ and a part with no initial value must be set, as each other field.
 `f` of the nearest part that has one: the parts of `x` first, then their parts. A write
 reaches the same field. A call on a value, `x ၏ g(a)`, and a call `g(x၊ a)` run the
 function `g` of the struct of `x`, and when no function `g` takes `x`, the function `g` of
-the nearest part, with that part as the first argument. So a struct overrides a function of
-its part with its own function of the name, which wins.
+the nearest part, with that part as the first argument. The long call statement,
+`g ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်။`, follows the same rule, and a mutable
+parameter of `g` changes the part in place. So a struct overrides a function of its part
+with its own function of the name, which wins.
 
 When two parts at one depth have the name, the compiler cannot pick one, and the read is
 ZK0364:
@@ -100,6 +102,11 @@ functions of a part do. So a `ကျောင်းသား` based on a `လူ
 that requires `နှုတ်ဆက်နိုင်သော`, and into a `နှုတ်ဆက်နိုင်သော အရာ`, where a call runs the
 function of the part. A function of the trait that gives back the trait's data kind is no
 function a part gives, since the part's function gives back the part.
+
+A [default function](traits.md#default-functions) is different. When the trait block of a
+part takes the default, the struct takes it too, and the default runs on the whole struct: each function of the trait that it calls is the one of the struct, its own
+when it has one and the one of its part otherwise. With a `နာမည်ယူ` of its own, a `ဆရာ`
+based on a `လူ` that takes the default `နှုတ်ဆက်` greets with its own name.
 
 A function of a part sees the part alone: when a function of `လူ` calls another function
 on its `လူ`, it runs the one of `လူ`, even when `ကျောင်းသား` has its own. Code that must reach

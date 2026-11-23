@@ -2780,6 +2780,7 @@ impl Visitor for Checker
 
     fn visit_call_stmt(&mut self, n: &CallStmt)
     {
+        ret_if!(self.promoted_stmt(n));
         let place = n.place.as_deref();
         let ret = self.check_call(
             &n.callee,

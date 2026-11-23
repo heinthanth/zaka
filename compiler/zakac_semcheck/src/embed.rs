@@ -17,11 +17,15 @@ use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::VerbExpr;
 use zakac_ast::kind::BASE_FIELD;
+use zakac_ast::name::Name;
+use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::StructDecl;
 use zakac_ast::visit::Node;
+use zakac_ast::visit::Visitor;
 use zakac_diagnostics::resolve as rd;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::ret_false;
 use zakac_rust_sugars::ret_if;
 use zakac_span::span::Span;
 
@@ -209,14 +213,78 @@ impl Checker
     /// after a report.
     pub(crate) fn promoted_call(&mut self, n: &CallExpr) -> Option<Option<DataKind>>
     {
-        let first = n.args.first()?;
-        ret_if!(!self.has_parts || n.place.is_some() || n.parallel, None);
-        let name = n.callee.name;
+        ret_if!(n.place.is_some() || n.parallel, None);
+        let written = Written::of(&n.prepositions, &n.phrases);
+        let Some(path) = self.call_part_path(&n.callee, &n.args, written)?
+        else
+        {
+            return Some(None);
+        };
+        let mut through = n.clone();
+        through.args[0] = self.path_expr(n.args[0].clone(), &path, n.args[0].span());
+        through.field_id = None;
+        let kind = self.infer_call(&through);
+        self.op_calls.methods.insert(n.id, through);
+        Some(kind)
+    }
+
+    /// Check a call statement whose first argument has no function of the
+    /// name but a part does, as the call on that part:
+    /// `g ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်။` for the call with
+    /// `x ၏ %%B`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The statement.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the statement went to a part, or after a report.
+    pub(crate) fn promoted_stmt(&mut self, n: &CallStmt) -> bool
+    {
+        ret_false!(n.place.is_some() || n.parallel);
+        let written = Written::of(&n.prepositions, &n.phrases);
+        let Some(path) = self.call_part_path(&n.callee, &n.args, written)
+        else
+        {
+            return false;
+        };
+        let Some(path) = path
+        else
+        {
+            return true;
+        };
+        let mut through = n.clone();
+        through.args[0] = self.path_expr(n.args[0].clone(), &path, n.args[0].span());
+        self.visit_call_stmt(&through);
+        self.op_calls.verbs.insert(n.span, through);
+        true
+    }
+
+    /// The path to the nearest part that a function of the name takes, for a
+    /// call whose first argument no function of the name takes.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee` - The name of the function.
+    /// * `args` - The arguments.
+    /// * `written` - The prepositions and phrases of the call.
+    ///
+    /// # Returns
+    ///
+    /// The fields of the parts down to that part, `None` when the call runs as
+    /// written, or `Some(None)` after a report.
+    fn call_part_path(
+        &mut self, callee: &Ident, args: &[Expr], written: Written,
+    ) -> Option<Option<Vec<String>>>
+    {
+        let first = args.first()?;
+        ret_if!(!self.has_parts, None);
+        let name = callee.name;
         ret_if!(self.scopes.lookup(&name).is_some(), None);
         ret_if!(!self.templates_named(&name).is_empty(), None);
         let sigs = self.fns.get(&name).cloned()?;
-        let written = Written::of(&n.prepositions, &n.phrases);
-        ret_if!(sigs.iter().any(|s| self.fits_call(s, &n.args, written)), None);
+        ret_if!(sigs.iter().any(|s| self.fits_call(s, args, written)), None);
         let before = self.diags.len();
         let base = self.infer(first, None);
         self.diags.truncate(before);
@@ -227,26 +295,17 @@ impl Checker
             sigs.iter()
                 .any(|s| s.params.first().is_some_and(|p| k.widens_to(*p, platform)))
         };
-        let path = match self.search_parts(base, |_, k| takes(k))
+        match self.search_parts(base, |_, k| takes(k))
         {
-            Ok(path) => path?,
+            Ok(path) => Some(Some(path?)),
             Err((a, b)) =>
             {
-                self.report(rd::base_name_twice(
-                    n.callee.span,
-                    &name,
-                    &base.name(),
-                    (&a, &b),
-                ));
-                return Some(None);
+                let clash =
+                    rd::base_name_twice(callee.span, &name, &base.name(), (&a, &b));
+                self.report(clash);
+                Some(None)
             }
-        };
-        let mut through = n.clone();
-        through.args[0] = self.path_expr(first.clone(), &path, first.span());
-        through.field_id = None;
-        let kind = self.infer_call(&through);
-        self.op_calls.methods.insert(n.id, through);
-        Some(kind)
+        }
     }
 
     /// Infer a read of a field with no field of the name as the call of a
@@ -336,6 +395,28 @@ impl Checker
         let path = self.search_parts(kind, gives).ok().flatten()?;
         let part = path_kind(kind, &path)?;
         Some((path, part))
+    }
+
+    /// Whether a part of a kind takes the default of a function of a trait.
+    /// The kind then takes the default too: it runs on the whole value, so a
+    /// function the kind gives itself wins in it.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    /// * `trait_name` - The trait.
+    /// * `name` - The function.
+    ///
+    /// # Returns
+    ///
+    /// `true` when a part takes it.
+    pub(crate) fn part_takes_default(
+        &self, kind: DataKind, trait_name: &str, name: &Name,
+    ) -> bool
+    {
+        ret_false!(!self.has_parts);
+        let takes = |s: &Self, part: DataKind| s.takes_default(part, trait_name, name);
+        self.search_parts(kind, takes).ok().flatten().is_some()
     }
 
     /// Check the parts of a struct: each is a struct or a shared object

@@ -865,11 +865,13 @@ ZK0349.
   writes what each read stands for with nodes numbered past the program's
   (`Checker::next_node`, `fresh_node`): a field of a part, `x ၏ f` for `x ၏ %%B ၏ f`
   (`promoted_field`, into `OpCalls::fields`); a function of a part, `g(x)` for
-  `g(x ၏ %%B)` (`promoted_call`, `promoted_method`, into `OpCalls::methods`, tried when
+  `g(x ၏ %%B)` (`promoted_call`, `promoted_method`, into `OpCalls::methods`; a call statement through
+  `promoted_stmt`, into `OpCalls::verbs`; tried when
   `has_parts` and no function takes `x`); and the part itself, `x ကို B အဖြစ်
   ပြောင်းလဲသော ရလဒ်` (`part_read`, from `infer_cast` and the read of a member). A struct
   has a trait through a part (`part_gives` in `gives`), and the function of a trait value
-  names the path to the part after `PART_PATH`. Two parts at one depth are ZK0364, a base
+  names the path to the part after `PART_PATH`. A default that a part takes, the struct
+  takes for itself (`part_takes_default`), so the default is an instance for the struct. Two parts at one depth are ZK0364, a base
   that is no struct ZK0363 (`check_parts`), and a literal sets a part under the name of its
   struct (`StructKind::literal_field`).
 - **A call through a field.** The parser gives each call on a value, `x ၏ f(…)`, a node

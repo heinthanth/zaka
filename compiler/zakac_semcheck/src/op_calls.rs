@@ -137,7 +137,8 @@ pub(crate) struct OpCalls
     pub(crate) fault_vias: HashMap<Span, Name>,
     /// The call each statement of a verb the compiler gives stands for when
     /// a function of the file of that name takes its operands, `l ကို ပြသမည်။`
-    /// for `ပြသ(l)`, under the span of the statement.
+    /// for `ပြသ(l)`, and each call statement that goes to a part, under the
+    /// span of the statement.
     pub(crate) verbs: HashMap<Span, CallStmt>,
     /// Each value that goes into a trait value, under its node: the trait
     /// value kind, and for each function of the trait, in its order, the name
@@ -942,7 +943,11 @@ impl VisitorMut for MethodWriter<'_>
     {
         let verb = matches!(
             n,
-            Stmt::Print(_) | Stmt::Add(_) | Stmt::Remove(_) | Stmt::Replace(_)
+            Stmt::Print(_)
+                | Stmt::Add(_)
+                | Stmt::Remove(_)
+                | Stmt::Replace(_)
+                | Stmt::Call(_)
         );
         let call = tern!(verb, self.verbs.get(&n.span()), None);
         do_if!(let Some(call) = call, *n = Stmt::Call(call.clone()));

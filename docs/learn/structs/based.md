@@ -111,7 +111,9 @@ can pass it to a function that takes that struct: `ပြ(က ကို လူ �
   or a function of one name, `x ၏` that name is ZK0364, and we read the part first.
 - **Parts of parts.** A part can be based on a struct too, and the nearest part with the name
   wins.
-- **Traits.** A struct has the traits its parts give, so it goes into a trait value of them
+- **Traits.** A struct has the traits its parts give, so it goes into a trait value of them.
+  A default function that a part takes runs on the whole struct, where a function of the
+  struct wins
   ([Structs based on structs](../../manual/language/based-structs.md#traits-through-parts)).
 - **Shared objects.** A struct based on a [shared object](objects.md) holds a reference to it.
 
