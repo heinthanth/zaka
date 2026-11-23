@@ -301,8 +301,8 @@ impl FnKind
     /// The name.
     pub fn spell(&self, full: bool) -> String
     {
+        ret_if!(!full && self.of_trait.is_some(), self.trait_value_name());
         let marker = self.of_trait.map(|t| t.to_string());
-        ret_if!(let (Some(t), false) = (&marker, full), format!("{t} {TRAIT_HEAD}"));
         let param = |p: &FnParam| {
             let edit: &str = ParamMode::of(p.edit, p.fill).into();
             let preposition = p.preposition.map_or(String::new(), |m| format!("({m})"));
@@ -314,6 +314,24 @@ impl FnKind
             .map_or(String::new(), |r| format!("{ARROW}{}", r.spell_inner(full)));
         let marker = marker.map_or(String::new(), |t| format!("<{t}>"));
         format!("{OPEN}{marker}{}({}){ret}", self.phrases_text(), params.join(", "))
+    }
+
+    /// The short name of a trait value kind: the trait, its kinds after the
+    /// first under their short names, then `အရာ`.
+    ///
+    /// # Returns
+    ///
+    /// The name.
+    fn trait_value_name(&self) -> String
+    {
+        let marker = self.of_trait.map_or_else(String::new, |t| t.to_string());
+        let Some((name, args)) = self.trait_parts().filter(|(_, a)| !a.is_empty())
+        else
+        {
+            return format!("{marker} {TRAIT_HEAD}");
+        };
+        let args: Vec<String> = args.iter().map(|k| k.name()).collect();
+        format!("{name}<{}> {TRAIT_HEAD}", args.join("၊ "))
     }
 
     /// The trait of a trait value and its kinds after the first.

@@ -244,3 +244,41 @@ fn the_program_names_the_conversion_and_the_call()
     assert!(calls.0.contains(&("%trait-value".to_string(), 2)), "{:?}", calls.0);
     assert!(calls.0.contains(&("%trait-call:0".to_string(), 1)), "{:?}", calls.0);
 }
+
+/// The trait of a trait value kind in a struct field is checked as in each
+/// other place: ZK0360 for a trait that cannot be a data kind.
+#[test]
+fn a_field_checks_its_trait()
+{
+    let field = "ဘူး ဟူသော ဒေတာအစုအဝေးတွင် ဝ ဟူသော စီနိုင်သော အရာ တစ်ခု ပါဝင်သည်။\n";
+    let found = run_codes(&format!("{ORDER}{field}"), "");
+    assert_eq!(found, [Code::TraitNotAKind]);
+}
+
+/// ZK0343 for a value that goes into a trait value names the trait value,
+/// not a generic.
+#[test]
+fn a_value_without_the_trait_names_the_trait_value()
+{
+    let text = format!(
+        "{GREET}
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် တ သည် နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ ဖြစ်ပါစေ။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+"
+    );
+    let checked = check_as_is(&text, &SemcheckOptions::default());
+    let lacks = &checked.out.diagnostics[0];
+    assert_eq!(lacks.code, Code::BoundNotMet);
+    assert!(lacks.message.contains("trait value"), "{}", lacks.message);
+}
+
+/// A call through a trait value does not run as a thread: ZK0361.
+#[test]
+fn a_call_through_a_trait_value_runs_in_no_thread()
+{
+    let decls = format!("{GREET}{PERSON}");
+    let stmts = "ကိန်းရှင် တ သည် နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: \"မောင်\") ဖြစ်ပါစေ။
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။";
+    assert!(run_codes(&decls, stmts).contains(&Code::TraitValueUse));
+}

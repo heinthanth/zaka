@@ -24,6 +24,7 @@ use zakac_ast::visit::walk_replace;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
+use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -35,6 +36,7 @@ use crate::scope::FnSig;
 use crate::semcheck::Checker;
 use crate::semcheck::each_list;
 use crate::task;
+use crate::trait_value::trait_call_index;
 
 /// The verb of the core that waits for a thread.
 pub const WAIT: &str = "စောင့်";
@@ -598,6 +600,11 @@ impl Checker
         let name = callee.name.as_str();
         let sigs = self.fns.get(&callee.name).filter(|_| place.is_none());
         let chosen = self.chosen.get(&(self.top, callee.span)).copied();
+        // A call through a trait value passes its arguments in the frame of the
+        // caller, which a thread can outlive.
+        let through = chosen.is_some_and(|c| trait_call_index(&c).is_some());
+        let thread = rd::trait_value_use(callee.span, TraitValueUse::Thread);
+        ret_if!(through, self.report(thread));
         let sig = sigs.and_then(|s| {
             let one = s.first().filter(|_| s.len() == 1);
             s.iter().find(|f| Some(f.inner) == chosen).or(one).cloned()

@@ -20,6 +20,7 @@ use zakac_rust_sugars::tern;
 use crate::buildable::report_unbuildable;
 use crate::enum_check::variants_decl;
 use crate::enums::stem_of;
+use crate::fn_kind::FnKind;
 use crate::fn_kind::FnText;
 use crate::fn_kind::ParamMode;
 use crate::fn_kind::join_fn;
@@ -353,6 +354,22 @@ fn field_text(
         let (ok, err) = (side(ok_name, &parts.ok), side("err", &parts.err));
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("{FALLIBLE}{{tag:u8{ok}{err}}}{}", split_marks(&marks).1);
+    }
+    if kind.base == BaseKind::TraitValue
+    {
+        // The kinds of the trait keep their bare struct names, which the
+        // signature reads back as for each other field.
+        let args: Vec<String> =
+            kind.args.iter().map(|k| field_text(k, names, shared, enums)).collect();
+        let trait_name = kind.name.as_ref().map_or("", |n| n.name.as_str());
+        let marker = tern!(
+            args.is_empty(),
+            trait_name.to_string(),
+            format!("{trait_name}<{}>", args.join(","))
+        );
+        let value = DataKind::Fn(FnKind::trait_value(Name::from(marker)));
+        let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
+        return format!("{}{}", value.spell_inner(true), split_marks(&marks).1);
     }
     if let Some(t) = kind.table.as_deref()
     {

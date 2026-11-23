@@ -2787,6 +2787,7 @@ impl Visitor for Checker
     fn visit_struct(&mut self, n: &StructDecl)
     {
         do_for!(f in &n.fields, self.work_out_counts(&f.kind));
+        do_for!(f in &n.fields, self.check_trait_values(&f.kind));
         // A kind parameter has no index kind to check until an instance names
         // it.
         ret_if!(!n.kind_params.is_empty());

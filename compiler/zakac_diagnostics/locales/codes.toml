@@ -689,6 +689,8 @@ en = """The compiler makes one instance of a generic function for each set of ki
 en = "constraint not met"
 [codes.ZK0343.message]
 en = "%{k} does not have the trait \"%{t}\" that this generic needs"
+[codes.ZK0343.message_value]
+en = "%{k} does not have the trait \"%{t}\" that this trait value holds"
 [codes.ZK0343.help]
 en = "give %{k} the function \"%{f}\" of the trait, in a trait block or as a plain function"
 [codes.ZK0343.help_builtin]
@@ -873,10 +875,12 @@ en = "be printed"
 en = "have an initial value"
 [codes.ZK0361.call]
 en = "be called as a function"
+[codes.ZK0361.thread]
+en = "run a call of its trait as a thread"
 [codes.ZK0361.help]
 en = "call the functions of its trait on it, as \"x ၏ f()\""
 [codes.ZK0361.explain]
-en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Comparing two trait values, printing one, its initial value and a call through it as a function value are not part of the language now."""
+en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Comparing two trait values, printing one, its initial value, a call through it as a function value, and a call of its trait as a thread are not part of the language now. For a thread, call the trait function inside a function of our own, and run that function as the thread."""
 
 [codes.ZK0362.title]
 en = "trait value holds a duplicate"

@@ -20,6 +20,7 @@ use zakac_ast::stmt::Program;
 use zakac_ast::stmt::TraitDecl;
 use zakac_ast::threads::USABLE_IN_THREADS;
 use zakac_ast::visit::Node;
+use zakac_diagnostics::Code;
 use zakac_diagnostics::resolve as rd;
 use zakac_diagnostics::resolve::NotAKind;
 use zakac_rust_sugars::do_for;
@@ -233,7 +234,12 @@ impl Checker
         };
         ret_if!(found.is_trait_value(), false);
         let need = trait_phrase(name, &args, e.span());
+        let before = self.diags.len();
         let met = self.has_trait(found, &need, e.span(), &mut HashSet::new());
+        let message = rd::bound_not_met_value(&found.name(), &name);
+        let lacks =
+            self.diags[before..].iter_mut().filter(|d| d.code == Code::BoundNotMet);
+        lacks.for_each(|d| d.message = message.clone());
         ret_if!(!met || self.trials > 0, true);
         let at = Span::new(e.span().lo, e.span().lo);
         let Some(fns) = self.impl_names(found, name, &args, at)

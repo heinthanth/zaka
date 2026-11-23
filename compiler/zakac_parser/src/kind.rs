@@ -302,6 +302,10 @@ impl Parser<'_>
         Some(n + 1 + angle + len)
     }
 
+    /// The token count within which a trait value kind reaches its head noun,
+    /// `အရာ`: the words of a hint of a trait and the kinds in its slots.
+    const TRAIT_REACH: usize = 16;
+
     /// The number of tokens in a trait value kind with no levels, `<trait>
     /// အရာ`, that starts `at` tokens ahead: the trait as a hint, or as its
     /// name with its kinds in signs, then `အရာ`.
@@ -319,10 +323,16 @@ impl Parser<'_>
             let tok = self.peek_n(n);
             tok.kind == TokenKind::Ident && self.text_of(tok.span) == TRAIT_HEAD
         };
-        ret_if!(self.scanning_trait_value.get(), None);
-        self.scanning_trait_value.set(true);
+        // A trait value ends in its head noun soon after it starts; most kinds
+        // have none near, and skip the scan of the hints.
+        ret_if!(!(1..=Self::TRAIT_REACH).any(|n| head(at + n)), None);
+        // The kind slot a trait's hint starts with stands at this same place,
+        // where it is no trait value of its own.
+        let here = self.cur.pos() + at;
+        ret_if!(self.trait_value_at.get() == Some(here), None);
+        let outer = self.trait_value_at.replace(Some(here));
         let hinted = self.hint_trait_at(at).map(|(_, len)| len);
-        self.scanning_trait_value.set(false);
+        self.trait_value_at.set(outer);
         ret_if!(let Some(len) = hinted.filter(|len| head(at + len)), Some(len + 1));
         let named = self.peek_n(at).kind == TokenKind::Ident && !head(at);
         ret_if!(!named || self.builtin_at(at).is_some(), None);
@@ -840,7 +850,10 @@ impl Parser<'_>
         }
         if self.trait_value_len(0).is_some()
         {
-            let mut kind = self.parse_trait_ref()?;
+            let outer = self.trait_value_at.replace(Some(self.cur.pos()));
+            let trait_ref = self.parse_trait_ref();
+            self.trait_value_at.set(outer);
+            let mut kind = trait_ref?;
             self.advance();
             kind.base = BaseKind::TraitValue;
             kind.span = start.to(&self.prev_span());

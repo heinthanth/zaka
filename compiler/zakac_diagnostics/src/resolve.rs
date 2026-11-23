@@ -795,6 +795,22 @@ pub fn bound_not_met(span: Span, kind: &str, bound: &str, missing: &str) -> Diag
     Diagnostic::new(Code::BoundNotMet, msg, span).with_help(help)
 }
 
+/// The message of ZK0343 for a value that goes into a trait value: the
+/// trait value needs the trait, where a generic needs it otherwise.
+///
+/// # Arguments
+///
+/// * `kind` - The data kind of the value.
+/// * `bound` - The trait.
+///
+/// # Returns
+///
+/// The message.
+pub fn bound_not_met_value(kind: &str, bound: &str) -> String
+{
+    t!("codes.ZK0343.message_value", k = kind, t = bound).to_string()
+}
+
 /// A constraint or a trait block names no trait.
 ///
 /// # Arguments
@@ -1161,6 +1177,8 @@ pub enum TraitValueUse
     Initial,
     /// A call through it as a function value.
     Call,
+    /// A call through it that runs as a thread.
+    Thread,
 }
 
 /// A trait value is used as trait values are not.
@@ -1181,6 +1199,7 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
         TraitValueUse::Print => t!("codes.ZK0361.print"),
         TraitValueUse::Initial => t!("codes.ZK0361.initial"),
         TraitValueUse::Call => t!("codes.ZK0361.call"),
+        TraitValueUse::Thread => t!("codes.ZK0361.thread"),
     };
     let msg = t!("codes.ZK0361.message", w = what);
     Diagnostic::new(Code::TraitValueUse, msg, span).with_help(t!("codes.ZK0361.help"))

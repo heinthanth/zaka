@@ -316,6 +316,9 @@ impl Leftovers<'_>
     fn kind(&mut self, kind: &Kind)
     {
         do_for!(inner in inner_of(kind), self.kind(inner));
+        // The name of a trait value is a trait, which takes its kinds as
+        // written.
+        ret_if!(kind.base == BaseKind::TraitValue);
         do_if!(let Some(ident) = &kind.name, self.report(ident, &kind.args));
     }
 

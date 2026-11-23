@@ -227,7 +227,10 @@ A trait value is used through the functions of its trait. These uses are ZK0361 
 - a comparison with `==`, `!=` or `တစ်ခုတည်း`;
 - a print, and a template slot in text;
 - the initial value, `ကနဦးတန်ဖိုး`;
-- a call through it as a [function value](function-values.md).
+- a call through it as a [function value](function-values.md);
+- a call of its trait that runs as a [thread](threads.md), since the call passes its
+  arguments in the frame of the caller; a function of our own that makes the call can run
+  as the thread instead.
 
 A trait value cannot go to C either: a C function or an export that takes or gives one is
 ZK0465, as for each data kind that C cannot hold. Getting the held data kind back, a test
@@ -260,5 +263,5 @@ that changes the held value makes a new block for the changed value. The details
 | ZK0343 | a value goes into a trait value whose trait its data kind lacks |
 | ZK0344 | a trait value of a name that is not a trait |
 | ZK0360 | a trait that cannot be a data kind used as one |
-| ZK0361 | a trait value compared, printed, given an initial value or called as a function value |
+| ZK0361 | a trait value compared, printed, given an initial value or called as a function value, or a call of its trait run as a thread |
 | ZK0362 | a plain value goes into a trait value whose trait has a function that changes its first parameter (warning, lint group `duplicates`) |

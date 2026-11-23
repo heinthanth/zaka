@@ -562,10 +562,11 @@ pub(crate) struct Parser<'t>
     /// scan of a kind inside it does not start another.
     #[builder(default)]
     pub(crate) scanning_kind_args: std::cell::Cell<bool>,
-    /// Whether a scan for a trait value kind is running, so the kind slot a
-    /// trait's hint starts with does not start another scan at that place.
+    /// The token where a trait value kind is being scanned or read, so the
+    /// kind slot its trait's hint starts with, at that same token, is read as
+    /// a plain kind.
     #[builder(default)]
-    pub(crate) scanning_trait_value: std::cell::Cell<bool>,
+    pub(crate) trait_value_at: std::cell::Cell<Option<usize>>,
     /// Whether a statement other than an import has been parsed at the top
     /// level, so a later import is out of place.
     #[builder(default)]
