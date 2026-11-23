@@ -578,10 +578,13 @@ impl Checker
     ) -> Option<DataKind>
     {
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
-        let held = l.is_trait_value() || r.is_trait_value();
+        // A trait value inside another value has no comparison of its own.
+        let inside = l.holds_trait_value_inside() || r.holds_trait_value_inside();
         let compares = class.is_cmp() || class == OpClass::Same;
         let compare = rd::trait_value_use(span, TraitValueUse::Compare);
-        ret_if!(held && compares, self.report(compare), None);
+        ret_if!(inside && compares, self.report(compare), None);
+        let held = l.is_trait_value() || r.is_trait_value();
+        ret_if!(held, self.trait_value_pair(class, l, r, span));
         ret_if!(class == OpClass::Same, self.same_pair(l, r, span));
         let object = l.as_object().is_some() || r.as_object().is_some();
         ret_if!(object, self.fn_pair(class, l, r, span));
@@ -617,6 +620,32 @@ impl Checker
         let meets = l.widens_to(r, p) || r.widens_to(l, p);
         ret_if!(held(l) && held(r) && meets, Some(DataKind::Bool));
         self.report(kd::sameness_of_values(span, &l.name(), &r.name()));
+        None
+    }
+
+    /// Infer a two-operand operation where at least one side is a trait
+    /// value: `==` and `!=` compare the held values, `တစ်ခုတည်း` the held
+    /// objects, of two trait values of one kind; no other operator takes one.
+    ///
+    /// # Arguments
+    ///
+    /// * `class` - The operator class.
+    /// * `l` - The left kind.
+    /// * `r` - The right kind.
+    /// * `span` - The operation.
+    ///
+    /// # Returns
+    ///
+    /// `bool`, or `None` after an error.
+    fn trait_value_pair(
+        &mut self, class: OpClass, l: DataKind, r: DataKind, span: Span,
+    ) -> Option<DataKind>
+    {
+        let compares = matches!(class, OpClass::Equal | OpClass::Same);
+        ret_if!(compares && l == r, Some(DataKind::Bool));
+        let same = rd::trait_value_use(span, TraitValueUse::Compare);
+        ret_if!(!compares, self.report(same), None);
+        self.report(kd::incompatible_operands(span, &l.name(), &r.name()));
         None
     }
 

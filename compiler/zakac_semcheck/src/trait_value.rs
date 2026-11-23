@@ -216,8 +216,9 @@ pub const TRAIT_CALL: &str = "%trait-call:";
 
 impl Checker
 {
-    /// Whether a value of kind `found` goes into a place of a trait value kind:
-    /// its kind has the trait (ZK0343 when not). Outside trial checks, the
+    /// Whether a value of kind `found` goes into a place of a trait value kind,
+    /// or of an optional or a result whose good side is one: its kind has the
+    /// trait (ZK0343 when not). Outside trial checks, the
     /// conversion is recorded, and a plain value whose trait has a function
     /// that changes its first parameter is ZK0362.
     ///
@@ -235,6 +236,10 @@ impl Checker
         &mut self, e: &Expr, found: DataKind, want: DataKind,
     ) -> bool
     {
+        // A value goes into an optional or a result of a trait value as the
+        // trait value, which then widens to the optional or the result.
+        let good = want.fallible_parts().and_then(|(good, _)| good);
+        let want = good.filter(|g| g.is_trait_value()).unwrap_or(want);
         let traits = want.trait_list();
         ret_if!(traits.is_empty() || found.is_trait_value(), false);
         let met =
@@ -251,6 +256,9 @@ impl Checker
             };
             fns.extend(more);
         }
+        // The text function of the held kind comes after the functions of
+        // the traits, for a print of the trait value.
+        fns.extend(self.text_fn(found));
         self.op_calls.to_traits.insert(e.id(), (want, fns));
         do_for!((name, _) in traits, self.duplicate_lint(e, found, name));
         true

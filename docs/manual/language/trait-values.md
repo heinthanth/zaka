@@ -348,12 +348,81 @@ no trait value of the trait can hold one.
 မောင်မောင်
 ```
 
+## Comparing and printing
+
+Two trait values of one trait value kind compare through the values the two hold:
+
+- `==` is true when both hold a value of one data kind and the two values are equal, as
+  `==` compares them; values of two data kinds are never equal, and `!=` is the opposite
+  of `==`;
+- `X နှင့် Y သည် တစ်ခုတည်း` is true when both hold one and the same
+  [shared object](objects.md) or function value. A plain value goes in as a
+  duplicate, so two trait values that hold plain values are never the same.
+
+A print, or a template slot in text, shows the held value as a print of it would: through
+the `စာသားအဖြစ်ပြောင်း` of its struct when the struct has one
+([Conversions](conversions.md)).
+
+```zaka
+အမည်ရှိသော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
+၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+အမည်ယူ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော A တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။
+ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+ကြောင် ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ကောင် ဖြစ်သည်။
+
+အမည်ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က ၏ နာမည် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+အမည်ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကြောင် တစ်ကောင် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က ၏ နာမည် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+စာသားအဖြစ်ပြောင်း ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကြောင် တစ်ကောင် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"ကြောင် {က ၏ နာမည်}" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် အမည်ရှိသော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: "မောင်") ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် အမည်ရှိသော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: "မောင်") ဖြစ်ပါစေ။
+ကိန်းရှင် ဂ သည် အမည်ရှိသော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကြောင်(နာမည်: "မောင်") ဖြစ်ပါစေ။
+က == ခ ကို ပြသမည်။
+က == ဂ ကို ပြသမည်။
+က နှင့် ခ သည် တစ်ခုတည်း ကို ပြသမည်။
+က ကို ပြသမည်။
+"[{ဂ}]" ဟု ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+မမှန်
+မမှန်
+လူ(နာမည်: "မောင်")
+[ကြောင် မောင်]
+```
+
+A trait value holds a value from the start, so it has no initial value. A place that is
+blank at first is an [optional](optionals.md) trait value,
+`<trait> အရာ ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, which starts as `အလွတ်` and takes a value of
+each data kind with the trait.
+
 ## What a trait value cannot do
 
-A trait value is used through the functions of its trait. These uses are ZK0361 for now:
+A trait value is used through the functions of its trait, and through the comparisons and
+the print above. These uses are ZK0361:
 
-- a comparison with `==`, `!=` or `တစ်ခုတည်း`;
-- a print, and a template slot in text;
+- an ordering, `<`, `>`, `<=` or `>=`;
+- a comparison or a print of a list, a struct or an object that holds a trait value inside
+  it, which would not reach the held values;
 - the initial value, `ကနဦးတန်ဖိုး`;
 - a call through it as a [function value](function-values.md);
 - a call of its trait that runs as a [thread](threads.md), since the call passes its
@@ -390,5 +459,5 @@ that changes the held value makes a new block for the changed value. The details
 | ZK0343 | a value goes into a trait value whose trait its data kind lacks |
 | ZK0344 | a trait value of a name that is not a trait |
 | ZK0360 | a trait that cannot be a data kind used as one |
-| ZK0361 | a trait value compared, printed, given an initial value or called as a function value, or a call of its trait run as a thread |
+| ZK0361 | a trait value ordered, compared or printed inside another value, given an initial value or called as a function value, or a call of its trait run as a thread |
 | ZK0362 | a plain value goes into a trait value whose trait has a function that changes its first parameter (warning, lint group `duplicates`) |

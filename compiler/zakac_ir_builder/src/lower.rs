@@ -1786,7 +1786,8 @@ impl Lowerer<'_>
     }
 
     /// A lowered value labelled with its enumeration kind, so a print writes
-    /// the name of the member; each other value as it is. Codegen reads the
+    /// the name of the member; the text of the held value of a trait value;
+    /// each other value as it is. Codegen reads the
     /// value as its value kind.
     ///
     /// # Arguments
@@ -1797,8 +1798,9 @@ impl Lowerer<'_>
     /// # Returns
     ///
     /// The value.
-    fn shown(&self, e: &ast::Expr, lowered: Expr) -> Expr
+    fn shown(&mut self, e: &ast::Expr, lowered: Expr) -> Expr
     {
+        ret_if!(lowered.kind.is_trait_value(), self.held_text(lowered));
         let kind = self.shown_kind(e);
         ret_if!(kind.as_enum().is_none(), lowered);
         Expr::builder().kind(kind).node(lowered.node).span(lowered.span).build()
@@ -1914,7 +1916,11 @@ impl Lowerer<'_>
             self.drops.last_mut().expect("a scope is open").push((place, kind));
         }
         out.extend(std::mem::take(&mut self.pre));
-        out.push(Stmt::Set { place, value: lowered, span });
+        // A load reads a value another place owns: the slot, which its scope
+        // drops, takes a new count of it.
+        let load = matches!(lowered.node, ExprNode::Load { .. });
+        let value = tern!(load && kind.holds_text(), dup(lowered), lowered);
+        out.push(Stmt::Set { place, value, span });
         read(place, kind, span)
     }
 
@@ -4480,6 +4486,11 @@ impl Lowerer<'_>
     /// The comparison.
     fn compare(&mut self, op: CmpOp, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
     {
+        let held = self.kind_of(lhs).is_trait_value();
+        ret_if!(
+            held,
+            self.trait_compare(lhs, rhs, Some(op), lhs.span().to(&rhs.span()))
+        );
         // Text and a view of text compare their u8s, each in its own kind.
         let texts = self.kind_of(lhs).is_text() && self.kind_of(rhs).is_text();
         ret_if!(
@@ -4536,6 +4547,8 @@ impl Lowerer<'_>
     /// The comparison.
     fn same(&mut self, lhs: &ast::Expr, rhs: &ast::Expr) -> ExprNode
     {
+        let held = self.kind_of(lhs).is_trait_value();
+        ret_if!(held, self.trait_compare(lhs, rhs, None, lhs.span().to(&rhs.span())));
         let common = concrete(self.common(self.kind_of(lhs), self.kind_of(rhs)));
         let (l, r) = (self.coerce(lhs, common), self.coerce(rhs, common));
         let word = |e: Expr| {

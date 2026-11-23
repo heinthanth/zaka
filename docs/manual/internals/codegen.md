@@ -678,6 +678,15 @@ trait function, the address of an argument pack and its record.
 - **The dispatcher.** An `if` chain on the number picks the function of the held data kind;
   the held value is field `c0` of the record. A result of the trait's own data kind is
   wrapped in a new record of the same dispatcher.
+- **Selectors past the trait functions.** After the arm of each trait function, the
+  dispatcher answers six more numbers, each with a pack of its own: the number of the held
+  data kind (`NUMBER`, for tests and switches), a new count of the held value (`READ`), the
+  address of the record (`RECORD`), `==` and `တစ်ခုတည်း` (`EQUAL`, `SAME`), and the text
+  of the held value (`TEXT`). `trait_compare` asks the left trait value for its number and
+  its record, then the right one to compare: its arm reads the other held value from that
+  record when the numbers match, which makes the shapes match too. `TEXT` calls the
+  `စာသားအဖြစ်ပြောင်း` of the held data kind, which the check passes after the trait
+  functions, or formats the value as a print does.
 - **A part.** The name of the function of a held kind that gets a trait through a part
   carries the fields of the path after `PART_PATH`; the arm passes the address of that
   part (`base_part_addr`), through the box of a shared object.

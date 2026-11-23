@@ -185,7 +185,11 @@ trait as a data kind:
 - **Results of the trait's data kind.** A function of the trait that returns the trait's
   data kind gives back a new trait value through the call
   ([Trait values](../../manual/language/trait-values.md#results-of-the-traits-data-kind)).
-- **Not now.** A trait value cannot be compared, printed or given an initial value (ZK0361).
+- **Comparing and printing.** `==` compares the held values, `တစ်ခုတည်း` asks whether two
+  trait values hold one shared object, and a print shows the held value
+  ([Trait values](../../manual/language/trait-values.md#comparing-and-printing)).
+- **Not now.** A trait value has no initial value, and a list of trait values is neither
+  compared nor printed as a whole (ZK0361); an optional trait value starts blank.
 - **The held data kind.** `လ သည် ကျောင်းသား အဖြစ်သို့ ပြောင်းလဲနိုင်သည်` tests which data kind
   a trait value holds, and `လ ကို ကျောင်းသား အဖြစ် ပြောင်းလဲသော ရလဒ်` reads it, with the
   words of members that hold data

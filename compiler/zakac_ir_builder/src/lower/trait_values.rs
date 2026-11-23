@@ -28,6 +28,58 @@ use zakac_semcheck::trait_value::value_fns;
 use super::nested::record_field;
 use super::*;
 
+/// The selector past the trait functions that asks for the number of the
+/// held data kind.
+const NUMBER: usize = 0;
+/// The selector that asks for a new count of the held value.
+const READ: usize = 1;
+/// The selector that asks for the address of the record.
+const RECORD: usize = 2;
+/// The selector that compares the held value with another, `==`.
+const EQUAL: usize = 3;
+/// The selector that asks whether two held values are one, `တစ်ခုတည်း`.
+const SAME: usize = 4;
+/// The selector that asks for the text of the held value.
+const TEXT: usize = 5;
+/// The count of the selectors past the trait functions.
+const SELECTORS: usize = 6;
+
+/// The held value of a record, read where it sits.
+///
+/// # Arguments
+///
+/// * `d` - The dispatcher being built.
+/// * `record` - The raw address of the record.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The value.
+fn held_of(d: &Dispatch, record: Expr, platform: u16) -> Expr
+{
+    let span = d.span;
+    let record = node_expr(d.record, ExprNode::Load { addr: Box::new(record) }, span);
+    let held_at = field_addr(&record, RECORD_HEAD, platform);
+    node_expr(d.held, ExprNode::Load { addr: Box::new(held_at) }, span)
+}
+
+/// The first word of a value, the address of the box of an object.
+///
+/// # Arguments
+///
+/// * `e` - The value.
+///
+/// # Returns
+///
+/// The word.
+fn first_word(e: Expr) -> Expr
+{
+    let span = e.span;
+    let node = ExprNode::FieldAddr { base: Box::new(e), field: 0, offset: 0 };
+    let addr = node_expr(DataKind::OPAQUE.pointer_to(), node, span);
+    node_expr(DataKind::OPAQUE, ExprNode::Load { addr: Box::new(addr) }, span)
+}
+
 /// The kind of each field of the argument pack of a trait function: the new
 /// trait value first when the function changes its first parameter, then
 /// each argument after the first (a borrow of its place for a parameter the
@@ -350,7 +402,7 @@ impl Lowerer<'_>
         d.local("%record", record.raw_pointer_to(), false);
         let mut els = vec![Stmt::Return { value: None, span }];
         let count = fns.len();
-        for i in (0..count + 2).rev()
+        for i in (0..count + SELECTORS).rev()
         {
             let arm = match fns.get(i)
             {
@@ -358,8 +410,7 @@ impl Lowerer<'_>
                 {
                     self.dispatch_arm(&mut d, (decl, targs, *at), impls[i])
                 }
-                None if i == count => self.number_arm(&d),
-                None => self.read_arm(&d),
+                None => self.selector_arm(&d, i - count, impls.get(count).copied()),
             };
             let number = read(Place::Local(0), DataKind::USIZE, span);
             let cond =
@@ -534,6 +585,33 @@ impl Lowerer<'_>
         at
     }
 
+    /// The arm of a dispatcher for a selector past the trait functions.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    /// * `selector` - The selector, counted from the first past the trait
+    ///   functions.
+    /// * `text_fn` - The text function of the held data kind, or `None`.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn selector_arm(
+        &mut self, d: &Dispatch, selector: usize, text_fn: Option<Name>,
+    ) -> Vec<Stmt>
+    {
+        match selector
+        {
+            NUMBER => self.number_arm(d),
+            READ => self.read_arm(d),
+            RECORD => self.record_arm(d),
+            EQUAL => self.compare_arm(d, false),
+            SAME => self.compare_arm(d, true),
+            _ => self.text_arm(d, text_fn),
+        }
+    }
+
     /// The arm of a dispatcher that writes the number of its held data kind
     /// into the first field of the pack.
     ///
@@ -550,7 +628,7 @@ impl Lowerer<'_>
         let number = self.kind_number(d.held);
         let value = self.usize_const(number, d.span);
         vec![Stmt::Store {
-            addr: pack_field(pack, d.span, self.platform),
+            addr: pack_field(pack, 0, d.span, self.platform),
             value,
             span: d.span,
         }]
@@ -572,12 +650,124 @@ impl Lowerer<'_>
         let span = d.span;
         let pack = DataKind::args_pack(&[d.held]);
         let record = read(Place::Local(2), d.record.raw_pointer_to(), span);
-        let record =
-            node_expr(d.record, ExprNode::Load { addr: Box::new(record) }, span);
-        let held_at = field_addr(&record, RECORD_HEAD, self.platform);
-        let held = node_expr(d.held, ExprNode::Load { addr: Box::new(held_at) }, span);
-        let addr = pack_field(pack, span, self.platform);
+        let held = held_of(d, record, self.platform);
+        let addr = pack_field(pack, 0, span, self.platform);
         vec![Stmt::Store { addr, value: dup_held(held), span }]
+    }
+
+    /// The arm of a dispatcher that writes the address of its record into the
+    /// first field of the pack, for a comparison with another trait value
+    /// that holds a value of the same data kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn record_arm(&self, d: &Dispatch) -> Vec<Stmt>
+    {
+        let (span, raw) = (d.span, DataKind::OPAQUE.with_outer_raw());
+        let pack = DataKind::args_pack(&[raw]);
+        let record = read(Place::Local(2), d.record.raw_pointer_to(), span);
+        let value = node_expr(
+            raw,
+            ExprNode::Convert { operand: Box::new(record), implicit: false },
+            span,
+        );
+        let addr = pack_field(pack, 0, span, self.platform);
+        vec![Stmt::Store { addr, value, span }]
+    }
+
+    /// The arm of a dispatcher that compares its held value with the one of
+    /// another trait value, whose pack holds the number of the other held
+    /// data kind, the address of its record and the result, `false` until
+    /// the arm writes it. Values of two data kinds are never equal. `==`
+    /// compares the held values as `==` does; `တစ်ခုတည်း` asks whether the two are
+    /// one object or one function value, and a plain value is never the same
+    /// as another.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    /// * `same` - Whether the arm asks `တစ်ခုတည်း`.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn compare_arm(&mut self, d: &Dispatch, same: bool) -> Vec<Stmt>
+    {
+        let (span, platform) = (d.span, self.platform);
+        let held = d.held;
+        let one_object = held.as_object().is_some() || held.is_fn();
+        ret_if!(same && !one_object, Vec::new());
+        let raw = DataKind::OPAQUE.with_outer_raw();
+        let pack = DataKind::args_pack(&[DataKind::USIZE, raw, DataKind::Bool]);
+        let load = |field, kind| {
+            let addr = pack_field(pack, field, span, platform);
+            node_expr(kind, ExprNode::Load { addr: Box::new(addr) }, span)
+        };
+        let mine = self.kind_number(held);
+        let mine = self.usize_const(mine, span);
+        let cond = compare_node(CmpOp::Eq, load(0, DataKind::USIZE), mine);
+        let cond = node_expr(DataKind::Bool, cond, span);
+        let other =
+            ExprNode::Convert { operand: Box::new(load(1, raw)), implicit: false };
+        let other = node_expr(d.record.raw_pointer_to(), other, span);
+        let own = read(Place::Local(2), d.record.raw_pointer_to(), span);
+        let (own, other) = (held_of(d, own, platform), held_of(d, other, platform));
+        let (own, other) = tern!(
+            same && !held.is_fn(),
+            (first_word(own), first_word(other)),
+            (own, other)
+        );
+        let result =
+            node_expr(DataKind::Bool, compare_node(CmpOp::Eq, own, other), span);
+        let addr = pack_field(pack, 2, span, platform);
+        let then = vec![Stmt::Store { addr, value: result, span }];
+        vec![Stmt::If { cond, then, els: Vec::new(), span }]
+    }
+
+    /// The arm of a dispatcher that writes the text of its held value into
+    /// the first field of the pack: through the `စာသားအဖြစ်ပြောင်း` of the held
+    /// data kind when it has one, else as a print writes the value.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    /// * `text_fn` - The text function of the held data kind, or `None`.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn text_arm(&self, d: &Dispatch, text_fn: Option<Name>) -> Vec<Stmt>
+    {
+        let (span, platform) = (d.span, self.platform);
+        let pack = DataKind::args_pack(&[DataKind::TEXT]);
+        let record = read(Place::Local(2), d.record.raw_pointer_to(), span);
+        let held = held_of(d, record, platform);
+        let value = match text_fn
+            .and_then(|f| self.sigs.get(&f).cloned().map(|s| (f, s)))
+        {
+            Some((f, sig)) =>
+            {
+                let arg = coerce_lowered(dup_held(held), sig.params[0], platform);
+                let call = ExprNode::Call {
+                    func: sig.index,
+                    name: f.to_string(),
+                    args: vec![arg],
+                };
+                node_expr(DataKind::TEXT, call, span)
+            }
+            None => node_expr(
+                DataKind::TEXT,
+                ExprNode::Format(vec![FmtPiece::Value(held)]),
+                span,
+            ),
+        };
+        let addr = pack_field(pack, 0, span, platform);
+        vec![Stmt::Store { addr, value, span }]
     }
 
     /// The count of the functions of the trait of a trait value kind: the
@@ -612,7 +802,31 @@ impl Lowerer<'_>
         &mut self, subject: &Expr, selector: usize, field: DataKind, span: Span,
     ) -> Expr
     {
-        let pack = DataKind::args_pack(&[field]);
+        let cells = vec![default_constant(field, span)];
+        let base = self.ask_pack(subject, selector, cells, span);
+        let addr = field_addr(&base, 0, self.platform);
+        node_expr(field, ExprNode::Load { addr: Box::new(addr) }, span)
+    }
+
+    /// Call a trait value with a selector past its trait functions and a pack
+    /// of these cells: the statements go to [`Self::pre`].
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The trait value, read where it sits.
+    /// * `selector` - The selector.
+    /// * `cells` - The cells of the pack.
+    /// * `span` - The use.
+    ///
+    /// # Returns
+    ///
+    /// The pack, read where it sits, after the call.
+    fn ask_pack(
+        &mut self, subject: &Expr, selector: usize, cells: Vec<Expr>, span: Span,
+    ) -> Expr
+    {
+        let fields: Vec<DataKind> = cells.iter().map(|c| c.kind).collect();
+        let pack = DataKind::args_pack(&fields);
         let slot = self.hidden(pack, span);
         if pack.holds_text()
         {
@@ -620,8 +834,7 @@ impl Lowerer<'_>
             self.pre_init.push(Stmt::Set { place: slot, value: blank, span });
             self.drops.last_mut().expect("a scope is open").push((slot, pack));
         }
-        let cells =
-            node_expr(pack, ExprNode::List(vec![default_constant(field, span)]), span);
+        let cells = node_expr(pack, ExprNode::List(cells), span);
         self.pre.push(Stmt::Set { place: slot, value: cells, span });
         self.slot(slot).addressed = true;
         let at = node_expr(pack.raw_pointer_to(), ExprNode::AddrOf(slot), span);
@@ -633,9 +846,63 @@ impl Lowerer<'_>
         );
         let args = vec![self.usize_const(selector as u32, span), at];
         self.pre.push(Stmt::CallValue { callee: subject.clone(), args, span });
-        let base = read(slot, pack, span);
-        let addr = field_addr(&base, 0, self.platform);
-        node_expr(field, ExprNode::Load { addr: Box::new(addr) }, span)
+        read(slot, pack, span)
+    }
+
+    /// Lower `==`, `!=` or `တစ်ခုတည်း` on two trait values of one kind: ask the
+    /// left one for the number of its held data kind and the address of its
+    /// record, then the right one to compare its held value with that.
+    ///
+    /// # Arguments
+    ///
+    /// * `lhs` - The left trait value.
+    /// * `rhs` - The right trait value.
+    /// * `op` - `Eq` or `Ne`; `None` for `တစ်ခုတည်း`.
+    /// * `span` - The comparison.
+    ///
+    /// # Returns
+    ///
+    /// The comparison, a boolean.
+    pub(super) fn trait_compare(
+        &mut self, lhs: &ast::Expr, rhs: &ast::Expr, op: Option<CmpOp>, span: Span,
+    ) -> ExprNode
+    {
+        let l = self.expr(lhs);
+        let l = self.held_subject(l);
+        let r = self.expr(rhs);
+        let r = self.held_subject(r);
+        let count = self.trait_fn_count(l.kind);
+        let number = self.ask_held(&l, count + NUMBER, DataKind::USIZE, span);
+        let number = self.spill(number);
+        let raw = DataKind::OPAQUE.with_outer_raw();
+        let record = self.ask_held(&l, count + RECORD, raw, span);
+        let record = self.spill(record);
+        let selector = count + tern!(op.is_none(), SAME, EQUAL);
+        let cells = vec![number, record, default_constant(DataKind::Bool, span)];
+        let base = self.ask_pack(&r, selector, cells, span);
+        let addr = field_addr(&base, 2, self.platform);
+        let equal =
+            node_expr(DataKind::Bool, ExprNode::Load { addr: Box::new(addr) }, span);
+        ret_if!(op != Some(CmpOp::Ne), equal.node);
+        prefix_node(PrefixOp::Not, equal)
+    }
+
+    /// The text of the value a trait value holds, for a print or a template
+    /// slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `lowered` - The trait value.
+    ///
+    /// # Returns
+    ///
+    /// The text, held in a pack its scope drops.
+    pub(super) fn held_text(&mut self, lowered: Expr) -> Expr
+    {
+        let span = lowered.span;
+        let subject = self.held_subject(lowered);
+        let count = self.trait_fn_count(subject.kind);
+        self.ask_held(&subject, count + TEXT, DataKind::TEXT, span)
     }
 
     /// The test whether a trait value holds a value of the data kind a name
@@ -655,7 +922,7 @@ impl Lowerer<'_>
         let held =
             held_kind(name, self.structs).expect("the check found the data kind");
         let count = self.trait_fn_count(subject.kind);
-        let number = self.ask_held(subject, count, DataKind::USIZE, span);
+        let number = self.ask_held(subject, count + NUMBER, DataKind::USIZE, span);
         let number = self.spill(number);
         let wanted = self.kind_number(held);
         let want = self.usize_const(wanted, span);
@@ -679,7 +946,7 @@ impl Lowerer<'_>
         let held =
             held_kind(name, self.structs).expect("the check found the data kind");
         let count = self.trait_fn_count(subject.kind);
-        let value = self.ask_held(subject, count + 1, held, span);
+        let value = self.ask_held(subject, count + READ, held, span);
         self.spill(value)
     }
 
@@ -748,7 +1015,7 @@ impl Lowerer<'_>
         let lowered = self.expr(&n.subject);
         let subject = self.switch_subject(lowered, out);
         let count = self.trait_fn_count(subject.kind);
-        let number = self.ask_held(&subject, count, DataKind::USIZE, n.span);
+        let number = self.ask_held(&subject, count + NUMBER, DataKind::USIZE, n.span);
         let number = self.spill(number);
         out.extend(std::mem::take(&mut self.pre));
         let mut arms = Vec::new();
@@ -817,23 +1084,24 @@ fn case_kind_name(case: &ast::Expr) -> Option<&str>
     }
 }
 
-/// The address of the first field of a pack, through the raw address the
+/// The address of one field of a pack, through the raw address the
 /// dispatcher takes as its second parameter.
 ///
 /// # Arguments
 ///
 /// * `pack` - The pack kind.
+/// * `field` - The field number.
 /// * `span` - The span the code takes.
 /// * `platform` - Bit count of the platform-sized kinds.
 ///
 /// # Returns
 ///
 /// The address.
-fn pack_field(pack: DataKind, span: Span, platform: u16) -> Expr
+fn pack_field(pack: DataKind, field: usize, span: Span, platform: u16) -> Expr
 {
     let raw = read(Place::Local(1), DataKind::OPAQUE.with_outer_raw(), span);
     let shaped = ExprNode::Convert { operand: Box::new(raw), implicit: false };
     let shaped = node_expr(pack.raw_pointer_to(), shaped, span);
     let base = node_expr(pack, ExprNode::Load { addr: Box::new(shaped) }, span);
-    field_addr(&base, 0, platform)
+    field_addr(&base, field, platform)
 }

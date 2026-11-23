@@ -1169,9 +1169,10 @@ pub fn trait_not_a_kind(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TraitValueUse
 {
-    /// `==`, `!=` or `တစ်ခုတည်း`.
+    /// `==`, `!=` or `တစ်ခုတည်း` on a value that holds a trait value inside
+    /// it, or an ordering of two trait values.
     Compare,
-    /// A print.
+    /// A print of a value that holds a trait value inside it.
     Print,
     /// `ကနဦးတန်ဖိုး`.
     Initial,
@@ -1202,7 +1203,12 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
         TraitValueUse::Thread => t!("codes.ZK0361.thread"),
     };
     let msg = t!("codes.ZK0361.message", w = what);
-    Diagnostic::new(Code::TraitValueUse, msg, span).with_help(t!("codes.ZK0361.help"))
+    let help = tern!(
+        use_ == TraitValueUse::Initial,
+        t!("codes.ZK0361.initial_help"),
+        t!("codes.ZK0361.help")
+    );
+    Diagnostic::new(Code::TraitValueUse, msg, span).with_help(help)
 }
 
 /// A plain value goes into a trait value whose trait has a function that

@@ -230,7 +230,7 @@ impl Checker
 
     /// Check a call statement whose first argument has no function of the
     /// name but a part does, as the call on that part:
-    /// `g ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်။` for the call with
+    /// `g ဟူသော လုပ်ဆောင်ချက်ကို x ဖြင့် လုပ်ဆောင်မည်။` for the call with
     /// `x ၏ %%B`.
     ///
     /// # Arguments

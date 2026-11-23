@@ -363,23 +363,34 @@ impl Checker
     /// * `kind` - Its kind.
     pub(crate) fn struct_text(&mut self, value: &Expr, kind: Option<DataKind>)
     {
+        // A trait value prints its held value, which its dispatcher knows; one
+        // inside another value has no print of its own.
         let print = rd::trait_value_use(value.span(), TraitValueUse::Print);
-        ret_if!(kind.is_some_and(DataKind::is_trait_value), self.report(print));
-        let Some(kind) =
-            kind.filter(|k| k.as_struct().is_some() && self.kind_home(*k).is_some())
+        let inside = kind.is_some_and(DataKind::holds_trait_value_inside);
+        ret_if!(inside, self.report(print));
+        let Some(callee) = kind.and_then(|k| self.text_fn(k))
         else
         {
             return;
         };
-        let Some(sig) = self
-            .struct_fn(TEXT_FN, &[kind])
-            .filter(|s| s.ret.is_some_and(DataKind::is_text))
-        else
-        {
-            return;
-        };
-        let callee = self.known_name(&sig);
         self.op_calls.wraps.insert(value.id(), (callee, DataKind::TEXT));
+    }
+
+    /// The `စာသားအဖြစ်ပြောင်း` of a struct, which a print of it calls.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind.
+    ///
+    /// # Returns
+    ///
+    /// The name the later stages give the function, or `None` for a kind
+    /// with none.
+    pub(crate) fn text_fn(&mut self, kind: DataKind) -> Option<Name>
+    {
+        ret_if!(kind.as_struct().is_none() || self.kind_home(kind).is_none(), None);
+        let sig = self.struct_fn(TEXT_FN, &[kind])?;
+        sig.ret.is_some_and(DataKind::is_text).then(|| self.known_name(&sig))
     }
 
     /// The function a conversion goes through: a `ပြောင်းလဲ` that takes the

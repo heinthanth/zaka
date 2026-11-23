@@ -645,6 +645,41 @@ impl DataKind
         self.is_fn()
     }
 
+    /// Whether a value of the kind holds a trait value inside it, in a cell,
+    /// a field, an object or the data of a member, and is no trait value
+    /// itself.
+    ///
+    /// # Returns
+    ///
+    /// `true` for such a kind.
+    pub fn holds_trait_value_inside(self) -> bool
+    {
+        !self.is_trait_value() && self.reaches_trait_value(&mut Vec::new())
+    }
+
+    /// Whether the kind is a trait value or holds one, through the kinds not
+    /// in `seen`, the kinds walked so far, which stops a ring of objects.
+    ///
+    /// # Arguments
+    ///
+    /// * `seen` - The kinds walked so far.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it reaches a trait value.
+    fn reaches_trait_value(self, seen: &mut Vec<DataKind>) -> bool
+    {
+        ret_true!(self.is_trait_value());
+        ret_false!(seen.contains(&self));
+        seen.push(self);
+        let fields =
+            self.as_struct().map(|s| s.fields().iter().map(|(_, k)| *k).collect());
+        let mut inner: Vec<DataKind> = fields.unwrap_or_default();
+        inner.extend(self.cell_kind());
+        inner.extend(self.as_enum().map(|e| e.under()));
+        inner.into_iter().any(|k| k.reaches_trait_value(seen))
+    }
+
     /// Whether a value of the kind holds a plain list: the list itself, or a
     /// counted list or a struct with one inside.
     ///
