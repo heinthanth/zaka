@@ -99,15 +99,22 @@ expression with `ဘိုက်စာ` when that word follows (`octets_after`),
 
 ## Reads after ၏
 
-`parse_notation` reads the `၏` reads of notation after its expression (`ei_readings` in
-`clause.rs`), as operators that close the whole notation before them:
+A field and a call in the sign form after `၏` bind tighter than each operator:
+`data_reads` reads them after each atom (`tight_field`, `tight_call` in `notation.rs`), so
+`x ၏ f + ၁` is `(x ၏ f) + ၁` and `x ၏ f ၏ g` chains. At the top of a part of a larger
+read, such as the number of a cell, the two go with the whole read, so in
+`ပ ၏ အကွက် န ၏ y` the field goes with the cell (`bare_level`, which `bare` sets to the
+depth of that part; a part in parentheses is deeper and reads as usual).
+
+`parse_notation` reads the other `၏` reads of notation after its expression
+(`ei_readings` in `clause.rs`), as operators that close the whole notation before them:
 
 | Read | Built through |
 | --- | --- |
 | `၏ တန်ဖိုး`, `၏ လိပ်စာ` | the verb rows (`reduce`) |
 | `၏ အကွက် <index>`, `၏ အကွက် <start> မှစ၍ <length> ကွက်` | `push_index`, a cell counted from 0 or a range |
-| `၏ <field>` | `field_of` |
-| `၏ <fn>(<args>)` | `method_of`: `x ၏ f(a)` is `f(x, a)` |
+| `၏ <field>`, after the number of a cell | `field_of` |
+| `၏ <fn>(<args>)`, after the number of a cell | `method_of`: `x ၏ f(a)` is `f(x, a)` (`method_call`) |
 
 So `ပ + ၁ ၏ တန်ဖိုး` reads the value at `ပ + ၁`, and the nodes are the ones the clause
 engine builds for the same words. A name after `၏` is a field unless a function or a

@@ -173,24 +173,6 @@ error[ZK0426]: "အသက်" is read as a field, but the value before "၏" is 
 `က` is an integer, and an integer has no fields. The fix is to declare `က` as a struct
 that has the field `အသက်`.
 
-## A field read in a sum
-
-```zaka-error ZK0204
-လူ ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
-
-ကိန်းရှင် ကျော် သည် လူ(အသက်: ၂၀) ဖြစ်ပါစေ။
-ကျော် ၏ အသက် + ၁ ကို ပြသမည်။
-```
-
-```text
-error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
-```
-
-A field read with `၏` is a word phrase, and a word phrase cannot go straight inside a sum
-with signs, so the compiler cannot make sense of the sentence ([Grouping and
-order](../operators/grouping.md)). The fix is to put the field in parentheses:
-`(ကျော် ၏ အသက်) + ၁`.
-
 ## A struct that contains itself
 
 ```zaka-error ZK0427
@@ -272,7 +254,7 @@ warning[ZK0509]: လူ is counted with "ယောက်", not "ခု"
   kind alias or value uses.
 - A struct literal gives each field one value, and `ကနဦးတန်ဖိုး` fills a field with its
   initial value.
-- A field in a sum goes in parentheses, and structs compare with `==` and `!=` alone.
+- Structs compare with `==` and `!=` alone.
 - A struct cannot contain itself.
 - The wrong measure word gives a warning, not an error.
 

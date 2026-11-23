@@ -345,6 +345,7 @@ join         = notation { "၊" notation } "နှင့်" notation "တို
 
 notation     = prefix-expr { infix-op prefix-expr } { ei-read } [ "ဘိုက်စာ" ] ;   (* with ဘိုက်စာ: a size in octets *)
 ei-read      = "၏" ( "တန်ဖိုး" | "လိပ်စာ" | "အကွက်" notation [ "မှစ၍" notation "ကွက်" ] | name ) ;
+               (* a name here reads a field of a cell, after the number of the cell *)
 prefix-expr  = { prefix-op } atom { data-read } ;
 prefix-op    = "-" | "အနုတ်" | "~" | "!" | "*" | "&" ;   (* * and &: the value at an address, an address *)
 infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
@@ -352,7 +353,8 @@ infix-op     = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|"
 atom         = name | "(" expr ")" | literal | fn-value | size-of | size | long-call | sign-call
              | collector-stats ;
 collector-stats = "အလိုအလျောက်" mem "ရှင်းလင်းသည့်" "အခြေအနေ" ;   (* the stats of the collector *)
-data-read    = "ထဲမှ" "ဒေတာ" [ fallback ] | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ"
+data-read    = "၏" name | "၏" sign-call   (* a field, or a call with the value first *)
+             | "ထဲမှ" "ဒေတာ" [ fallback ] | "ထဲမှ" "အမှားအယွင်း" "ဒေတာ"
              | "ထဲမှ" "အညွှန်း" notation [ "၏" "တန်ဖိုး" ]   (* a row of a ဇယား, or its value *)
              | receive | par-map ;               (* see Threads *)
 fallback     = "၊" "မရှိလျှင်" prefix-expr ;

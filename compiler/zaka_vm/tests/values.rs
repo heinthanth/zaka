@@ -459,6 +459,36 @@ const COMPARED_TEMPORARIES: &str = r#"ဆက် ဟူသော လုပ်ဆ�
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 "#;
 
+/// Reads after a value next to operators: a field, a call on the value, a
+/// chain of fields, and a field of a cell, which goes with the cell.
+const TIGHT_READS: &str = r#"အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
+မျဉ်း ဟူသော ဒေတာအစုအဝေးတွင် စ ဟူသော အမှတ် တစ်ခု နှင့် ဆုံး ဟူသော အမှတ် တစ်ခု တို့ပါဝင်သည်။
+
+အလျား ဟူသော လုပ်ဆောင်ချက် သည် မ ဟူသော မျဉ်း တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+မ ၏ ဆုံး ၏ x - မ ၏ စ ၏ x ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် မ သည် မျဉ်း(စ: အမှတ်(x: ၁၊ y: ၂)၊ ဆုံး: အမှတ်(x: ၇၊ y: ၂)) ဖြစ်ပါစေ။
+မ ၏ စ ၏ x + ၁ ကို ပြသမည်။
+၁၀ - မ ၏ ဆုံး ၏ x ကို ပြသမည်။
+မ ၏ အလျား() * ၂ ကို ပြသမည်။
+-မ ၏ စ ၏ y ကို ပြသမည်။
+မ ၏ စ ၏ x < မ ၏ ဆုံး ၏ x ကို ပြသမည်။
+ကိန်းရှင် ပ သည် အမှတ် စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [အမှတ်(x: ၃၊ y: ၄)] ဖြစ်ပါစေ။
+ကိန်းရှင် န သည် ၀ ဖြစ်ပါစေ။
+ပ ၏ အကွက် န ၏ y ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+"#;
+
+/// A field read and a call on a value bind tighter than an operator.
+#[test]
+fn reads_after_a_value_bind_tighter_than_operators_in_each_mode()
+{
+    runs_in_each_mode(TIGHT_READS, "၂\n၃\n၁၂\n-၂\nမှန်\n၄\n")
+}
+
 /// The values a comparison makes for itself are dropped after it.
 #[test]
 fn compared_temporaries_are_dropped_in_each_mode()

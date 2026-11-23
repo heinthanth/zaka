@@ -13,7 +13,7 @@ teaches the same rules through examples.
 
 | Level | Operators | Grouping | Notes |
 | --- | --- | --- | --- |
-| 1 | literals, names, `( ... )`, function calls | | the values that operators work on |
+| 1 | literals, names, `( ... )`, function calls, and the reads after a value: a field `x ၏ f`, a call on it `x ၏ f(a)`, `x ထဲမှ ဒေတာ` | left to right | the values that operators work on; `x ၏ f + ၁` is `(x ၏ f) + ၁` |
 | 2 | `-` `အနုတ်` `~` `!` in front of a value; `*` and `&` in front of a value in [unsafe code](../language/pointers.md#reading-and-writing-through-a-pointer) | right to left | `-က * ခ` is `(-က) * ခ`; `*ပ + ၁` is `(*ပ) + ၁` |
 | 3 | `*` `/` `%` | left to right | |
 | 4 | `+` `-` | left to right | |
@@ -33,6 +33,8 @@ teaches the same rules through examples.
 | Written | Means |
 | --- | --- |
 | `၂ + ၃ * ၄` | `၂ + (၃ * ၄)` = 14 |
+| `လ ၏ အသက် + ၁` | `(လ ၏ အသက်) + ၁` |
+| `က ၏ အသက်ယူ() < ခ ၏ အသက်ယူ()` | `(က ၏ အသက်ယူ()) < (ခ ၏ အသက်ယူ())` |
 | `၁၀ - ၃ - ၂` | `(၁၀ - ၃) - ၂` = 5 |
 | `က + ခ နှင့် ဂ ၏ မြှောက်လဒ်` | `(က + ခ) * ဂ` |
 | `!က == ခ` | `(!က) == ခ` |

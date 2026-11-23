@@ -5,6 +5,7 @@ use zakac_ast::expr::BoolLit;
 use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::CharLit;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::FnAddrExpr;
 use zakac_ast::expr::GroupExpr;
 use zakac_ast::expr::Ident;
@@ -34,12 +35,14 @@ use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::extract;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
 
 use crate::clause::ClauseOut;
 use crate::clause::Mode;
+use crate::clause::is_sign_call;
 use crate::describe::quote;
 use crate::parser::MAX_NEST;
 use crate::parser::PResult;
@@ -169,7 +172,25 @@ impl Parser<'_>
     pub(crate) fn parse_bare_notation(&mut self) -> PResult<Expr>
     {
         self.bare_notation = true;
-        self.parse_notation()
+        self.bare(Self::parse_notation)
+    }
+
+    /// Run a parse in which the reads after `၏` at its top go with the whole
+    /// read, not with the value before each.
+    ///
+    /// # Arguments
+    ///
+    /// * `parse` - The parse.
+    ///
+    /// # Returns
+    ///
+    /// What the parse gives.
+    pub(crate) fn bare<T>(&mut self, parse: impl FnOnce(&mut Self) -> T) -> T
+    {
+        let outer = self.bare_level.replace(self.nest + 1);
+        let parsed = parse(self);
+        self.bare_level = outer;
+        parsed
     }
 
     /// Parse a notation expression whose operators bind at least `min`.
@@ -715,8 +736,10 @@ impl Parser<'_>
     /// `true` if one does.
     fn at_data_read(&self, n: usize) -> bool { self.data_read_at(n).is_some() }
 
-    /// Wrap a value in each read of its data that follows it: `ထဲမှ ဒေတာ`
-    /// or `ထဲမှ အမှားအယွင်း ဒေတာ`. A read binds tighter than an operator.
+    /// Wrap a value in each read that follows it: a field, `x ၏ f`, a call on
+    /// it in the sign form, `x ၏ f(a)`, and a read of its data, `ထဲမှ ဒေတာ` or
+    /// `ထဲမှ အမှားအယွင်း ဒေတာ`. A read binds tighter than an operator, so
+    /// `x ၏ f + ၁` adds to the field.
     ///
     /// # Arguments
     ///
@@ -727,8 +750,19 @@ impl Parser<'_>
     /// The value under its reads.
     fn data_reads(&mut self, mut value: Expr) -> PResult<Expr>
     {
+        let tight = self.bare_level != Some(self.nest);
         loop
         {
+            if tight && self.at_punct(Punct::Ei) && self.field_name_at(1)
+            {
+                value = self.tight_field(value);
+                continue;
+            }
+            if tight && self.at_punct(Punct::Ei) && self.sign_call_at(1)
+            {
+                value = self.tight_call(value)?;
+                continue;
+            }
             if self.at_row_read(0)
             {
                 value = self.parse_row(value)?;
@@ -759,6 +793,69 @@ impl Parser<'_>
                 false => self.dup_expr(op, value, span, last.particle),
             };
         }
+    }
+
+    /// Whether a call in the sign form starts `n` tokens ahead: a name with
+    /// `(` right after it.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    fn sign_call_at(&self, n: usize) -> bool
+    {
+        let open = self.peek_n(n + 1);
+        let named =
+            matches!(self.peek_n(n).kind, TokenKind::Ident | TokenKind::RawIdent);
+        named && open.kind == TokenKind::Punct(Punct::LParen) && open.joined
+    }
+
+    /// Read the field after `၏`, which is the current token.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The value before `၏`.
+    ///
+    /// # Returns
+    ///
+    /// The read of the field.
+    fn tight_field(&mut self, base: Expr) -> Expr
+    {
+        self.bump();
+        extract!(Expr::Name(name) = self.parse_name());
+        let span = base.span().to(&name.span);
+        let braced = self.text_of(name.span).starts_with('{');
+        let field = Ident::builder().name(name.name).span(name.span).build();
+        let id = self.new_id();
+        #[rustfmt::skip]
+        let node = FieldExpr::builder().id(id).base(base).field(field).braced(braced).span(span).build();
+        Expr::Field(node)
+    }
+
+    /// Read the call in the sign form after `၏`, which is the current token,
+    /// on the value before it: `x ၏ f(a)` is `f(x, a)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The value before `၏`.
+    ///
+    /// # Returns
+    ///
+    /// The call, or a diagnostic.
+    fn tight_call(&mut self, base: Expr) -> PResult<Expr>
+    {
+        self.bump();
+        let call = self.parse_atom()?;
+        let Expr::Call(call) = call.clone()
+        else
+        {
+            return Ok(call);
+        };
+        ret_if!(!is_sign_call(&call), Ok(Expr::Call(call)));
+        Ok(self.method_call(base, call))
     }
 
     /// Parse `စာရင်းအလွတ်`, which is the current token, and its kind when

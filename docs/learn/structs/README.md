@@ -82,9 +82,10 @@ To reach a field, we write the variable, `၏` and the field name, so `ကျေ
 လူ(အသက်: ၂၀၊ အမြင့်: ၁.၇၅)
 ```
 
-When a field is part of an expression with an operator, we put it in parentheses, just as
-we do with a list cell: `(ကျော် ၏ အသက်) + ၁`. Here `ကျော်` is declared without a value,
-so we must set each field before we read the whole struct.
+A field read binds tighter than an operator, so `ကျော် ၏ အသက် + ၁` adds 1 to the field,
+as `x.age + 1` does in other languages; a list cell still goes in parentheses,
+`(ကိန်းများ ၏ အကွက် ၀) + ၁`. Here `ကျော်` is declared without a value, so we must set
+each field before we read the whole struct.
 
 ## Writing a struct out
 

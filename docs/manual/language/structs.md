@@ -355,9 +355,10 @@ address.
   struct does not have is ZK0320.
 - The value before `၏` must be a struct or a shared object (ZK0426). To reach a field
   through a pointer, we first read the pointer with `တန်ဖိုး`, so `p ၏ အသက်` is ZK0426.
-- When a field is part of an expression with an operator, we put it in parentheses, just
-  as we do with a list cell: `(ကျော် ၏ အသက်) + ၁`. Without the parentheses, the sentence
-  is ZK0209 or ZK0206.
+- A field read, and a call on a value in the sign form, `x ၏ f(a)`, bind tighter than an
+  operator, so `ကျော် ၏ အသက် + ၁` is `(ကျော် ၏ အသက်) + ၁` ([Operator
+  precedence](../reference/precedence.md)). A list cell is a word phrase, and before an
+  operator it goes in parentheses: `(ကိန်းများ ၏ အကွက် ၀) + ၁`.
 
 ```zaka
 အမှတ် ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။

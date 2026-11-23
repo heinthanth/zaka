@@ -286,7 +286,7 @@ impl Parser<'_>
     /// # Returns
     ///
     /// `true` if it does.
-    fn field_name_at(&self, n: usize) -> bool
+    pub(crate) fn field_name_at(&self, n: usize) -> bool
     {
         let tok = self.peek_n(n);
         ret_true!(tok.kind == TokenKind::RawIdent);
@@ -691,7 +691,11 @@ impl Parser<'_>
         ret_if!(as_slot(&tok).is_some(), Err(diag::double_particle(tok.span, first)));
         // A name after `၏` is a field, and a reading after it reads the field.
         self.bare_notation = slot == Slot::Ei;
-        let expr = self.parse_operand();
+        let expr = tern!(
+            slot == Slot::Ei,
+            self.bare(Self::parse_operand),
+            self.parse_operand()
+        );
         self.bare_notation = false;
         let expr = expr?;
         let is_field = slot == Slot::Ei && !self.at(Kw::Ordinal);
@@ -810,12 +814,27 @@ impl Parser<'_>
     /// # Returns
     ///
     /// The call.
-    fn method_of(&mut self, stack: &mut Vec<Item>, mut call: CallExpr) -> Expr
+    fn method_of(&mut self, stack: &mut Vec<Item>, call: CallExpr) -> Expr
     {
         let base = into_expr(stack.pop().expect("the top operand holds ၏"));
+        self.method_call(base, call)
+    }
+
+    /// The call `x ၏ f(a)` stands for, `f(x, a)`, with a node for the read of a
+    /// field of the name, for a value with no function of the name that
+    /// takes it.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The value before `၏`.
+    /// * `call` - The call after `၏`.
+    ///
+    /// # Returns
+    ///
+    /// The call.
+    pub(crate) fn method_call(&mut self, base: Expr, mut call: CallExpr) -> Expr
+    {
         call.span = base.span().to(&call.span);
-        // A node for the read of a field of the name, for a value with no
-        // function of the name that takes it.
         do_if!(call.place.is_none(), call.field_id = Some(self.new_id()));
         call.args.insert(0, base);
         Expr::Call(call)
@@ -1757,7 +1776,7 @@ fn reads_a_name(expr: &Expr) -> bool
 /// # Returns
 ///
 /// `true` for such a call.
-fn is_sign_call(call: &CallExpr) -> bool
+pub(crate) fn is_sign_call(call: &CallExpr) -> bool
 {
     call.using.is_none() && call.prepositions.is_empty() && call.place.is_none()
 }

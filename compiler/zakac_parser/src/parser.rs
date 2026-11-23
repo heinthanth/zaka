@@ -539,6 +539,11 @@ pub(crate) struct Parser<'t>
     /// field name after `၏`, or a part of a larger read.
     #[builder(default)]
     pub(crate) bare_notation: bool,
+    /// The depth of notation at which a field read or a call after `၏` does
+    /// not bind to the value before it: the top of the number of a cell, or
+    /// of the operand after a `၏` of a clause, whose reads go with the whole
+    /// read.
+    pub(crate) bare_level: Option<u32>,
     /// The heap functions of the core the file sees, which no function of
     /// its own hides: a call statement of one is its heap statement.
     #[builder(default)]
