@@ -112,7 +112,9 @@ error[ZK0332]: no function "ပြ" takes these arguments
 Two functions of one name can also take the same parameters and give different data kinds.
 A call then runs the one whose result data kind is the data kind that the place of the call
 expects: the data kind of a declaration, of a parameter, or of the value that a function
-returns. A call whose place expects no data kind, such as a call that `ပြသမည်` prints, fits
+returns. When no result has that data kind, the call runs the one whose result widens to it,
+as an `၈ ဘစ် ကိန်းပြည့်` result widens to a `ကိန်းပြည့်` place; when two results widen, the call
+is ZK0333. A call whose place expects no data kind, such as a call that `ပြသမည်` prints, fits
 both, and is ZK0333.
 
 ```zaka

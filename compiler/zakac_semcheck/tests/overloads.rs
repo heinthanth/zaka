@@ -111,6 +111,43 @@ fn the_place_of_a_call_picks_among_results()
     assert_eq!(codes_as_is(&start("ယူ(မှန်) ကို ပြသမည်။")), [Code::OverloadUnclear]);
 }
 
+/// The result of `ရ`, one function for each of these kinds.
+fn small_results(kinds: &[&str]) -> String
+{
+    let one = |k: &&str| {
+        let value = if *k == "စာသား"
+        {
+            "\"x\""
+        }
+        else
+        {
+            "၁"
+        };
+        format!(
+            "ရ ဟူသော လုပ်ဆောင်ချက် သည်\nက ဟူသော မှန်မှားတန်ဖိုး တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ {k} \
+             တစ်ခု ကို ပြန်ပေးမည်။\n{value} ကို ပြန်ပေးမည်။\nလုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။\n\n"
+        )
+    };
+    let fns: String = kinds.iter().map(one).collect();
+    format!(
+        "{fns}ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် န သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ရ(မှန်) \
+         ဖြစ်ပါစေ။\nပရိုဂရမ် ပြီးဆုံးပါပြီး။"
+    )
+}
+
+/// With no result of the place's kind, a result that widens to it is picked;
+/// two that widen are ZK0333.
+#[test]
+fn a_result_that_widens_to_the_place_is_picked()
+{
+    let one = small_results(&["၈ ဘစ် ကိန်းပြည့်", "စာသား"]);
+    assert_eq!(codes_as_is(&one), []);
+    let exact = small_results(&["၈ ဘစ် ကိန်းပြည့်", "ကိန်းပြည့်"]);
+    assert_eq!(codes_as_is(&exact), []);
+    let two = small_results(&["၈ ဘစ် ကိန်းပြည့်", "၁၆ ဘစ် ကိန်းပြည့်"]);
+    assert_eq!(codes_as_is(&two), [Code::OverloadUnclear]);
+}
+
 /// A function of a file with the name, the kinds and the prepositions of a verb
 /// the core gives is ZK0350; one with other kinds adds an overload, quietly.
 #[test]

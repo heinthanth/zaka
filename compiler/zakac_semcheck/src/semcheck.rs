@@ -1329,7 +1329,12 @@ impl Checker
         let mut fits: Vec<&FnSig> =
             sigs.iter().filter(|s| self.fits_call(s, args, written)).collect();
         let wanted = |s: &&FnSig| expect.is_some() && s.ret == expect;
-        let kept: Vec<&FnSig> = fits.iter().copied().filter(wanted).collect();
+        // A result that widens to the place counts when no result is the
+        // place's kind; two that widen stay unclear.
+        let platform = self.platform;
+        let widens = |s: &&FnSig| matches!((s.ret, expect), (Some(r), Some(e)) if r.widens_to(e, platform));
+        let mut kept: Vec<&FnSig> = fits.iter().copied().filter(wanted).collect();
+        do_if!(kept.is_empty(), kept = fits.iter().copied().filter(widens).collect());
         do_if!(fits.len() > 1 && !kept.is_empty(), fits = kept);
         let list = || sigs.iter().map(params_text).collect::<Vec<_>>().join(" / ");
         match fits.as_slice()
