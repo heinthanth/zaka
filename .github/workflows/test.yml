@@ -22,19 +22,43 @@ jobs:
       ZAKA_REQUIRE_CC: "1"
     strategy:
       fail-fast: false
-      # Windows runs twice: zakac built with the GNU host and with the MSVC
-      # host. Each carries the runtime lib of both ABIs and tests both.
+      # Each Windows CPU runs twice: zakac built with the GNU host and with
+      # the MSVC host. Each carries the runtime lib of both ABIs and tests
+      # both. On ARM64 the GNU ABI is `gnullvm`, the MinGW of LLVM, whose C
+      # compiler is the clang of MSYS2's CLANGARM64.
       matrix:
         include:
           - os: ubuntu-latest
           - os: ubuntu-24.04-arm
           - os: macos-latest
           - os: windows-latest
+            arch: x86_64
             host: gnu
             other: msvc
+            msystem: UCRT64
+            mingw: mingw-w64-ucrt-x86_64-gcc
+            mingw_bin: ucrt64
           - os: windows-latest
+            arch: x86_64
             host: msvc
             other: gnu
+            msystem: UCRT64
+            mingw: mingw-w64-ucrt-x86_64-gcc
+            mingw_bin: ucrt64
+          - os: windows-11-arm
+            arch: aarch64
+            host: gnullvm
+            other: msvc
+            msystem: CLANGARM64
+            mingw: mingw-w64-clang-aarch64-clang
+            mingw_bin: clangarm64
+          - os: windows-11-arm
+            arch: aarch64
+            host: msvc
+            other: gnullvm
+            msystem: CLANGARM64
+            mingw: mingw-w64-clang-aarch64-clang
+            mingw_bin: clangarm64
     steps:
       - uses: actions/checkout@v4
 
@@ -43,10 +67,10 @@ jobs:
       # whose runtime libs zakac carries as well.
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.host && format('stable-x86_64-pc-windows-{0}', matrix.host) || 'stable' }}
-          targets: ${{ matrix.other && format('x86_64-pc-windows-{0},wasm32-wasip1,wasm32-wasip2', matrix.other) || 'wasm32-wasip1,wasm32-wasip2' }}
+          toolchain: ${{ matrix.host && format('stable-{0}-pc-windows-{1}', matrix.arch, matrix.host) || 'stable' }}
+          targets: ${{ matrix.other && format('{0}-pc-windows-{1},wasm32-wasip1,wasm32-wasip2', matrix.arch, matrix.other) || 'wasm32-wasip1,wasm32-wasip2' }}
 
-      # windows-latest has no gcc on the PATH: MinGW from MSYS2 gives the GNU
+      # Windows has no gcc or clang on the PATH: MinGW from MSYS2 gives the GNU
       # ABI a compiler, and the Visual Studio of the runner gives MSVC its `cl`.
       # The runtime lib carries its own libffi on each host.
       - name: Install MinGW (Windows)
@@ -54,24 +78,36 @@ jobs:
         id: msys2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
           update: false
           install: >-
-            mingw-w64-ucrt-x86_64-gcc
+            ${{ matrix.mingw }}
             make
 
-      # The ucrt64 folder alone joins the PATH, so `cc` and `gcc` are found
-      # and the MSYS tools do not shadow the Windows ones.
+      # The folder of the MinGW compiler alone joins the PATH, so `cc`, `gcc`
+      # or `clang` is found and the MSYS tools do not shadow the Windows ones.
       - name: Put MinGW on the PATH (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $bin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' 'ucrt64\bin'
+          $bin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' '${{ matrix.mingw_bin }}\bin'
           Add-Content -Path $env:GITHUB_PATH -Value $bin
 
+      # Rust links `gnullvm` with `aarch64-w64-mingw32-clang`, and cc-rs looks
+      # for a compiler of that name: the clang of CLANGARM64 does both.
+      - name: Point the gnullvm target at clang (Windows ARM64)
+        if: runner.os == 'Windows' && matrix.arch == 'aarch64'
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER=clang"
+          Add-Content -Path $env:GITHUB_ENV -Value "CC_aarch64_pc_windows_gnullvm=clang"
+          Add-Content -Path $env:GITHUB_ENV -Value "AR_aarch64_pc_windows_gnullvm=llvm-ar"
+
+      # wasmtime runs the WASI tests, which Linux runs; it gives no build for
+      # Windows on ARM64.
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest,wasmtime
+          tool: ${{ matrix.arch == 'aarch64' && 'cargo-nextest' || 'cargo-nextest,wasmtime' }}
 
       # The WASI tests build with the Clang of wasi-sdk and run under
       # wasmtime; Linux runs them, and fails rather than skips them. The
@@ -114,7 +150,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          ZAKA_TEST_ABI: ${{ matrix.other }}
+          # zakac names the MinGW ABI `gnu`, `gnullvm` on ARM64 too.
+          ZAKA_TEST_ABI: ${{ matrix.other == 'msvc' && 'msvc' || 'gnu' }}
         run: |
           $kept = ($env:PATH -split ';') | Where-Object { $_ -notlike '*\Git\*' }
           $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"

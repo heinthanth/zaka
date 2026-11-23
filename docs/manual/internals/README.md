@@ -150,8 +150,10 @@ cargo +nightly fmt                         # format
 tasks that serve the explorer and the site with live reload (`explorer:dev`,
 `website:dev`) are Bun Shell scripts in `.mise-tasks/`.
 
-CI (`.github/workflows/test.yml`) runs the workspace on Linux (x86-64), macOS and
-Windows, with a C compiler on the PATH of each (gcc, clang, MinGW gcc). It sets
+CI (`.github/workflows/test.yml`) runs the workspace on Linux (x86-64 and ARM64), macOS
+and Windows (x86-64 and ARM64, each with `zakac` built for the GNU ABI and for MSVC), with
+a C compiler on the PATH of each (gcc, clang, the MinGW gcc of MSYS2 UCRT64 on x86-64 and
+its clang of CLANGARM64 on ARM64). It sets
 `ZAKA_REQUIRE_CC=1`, so the tests that build native executables fail when no C compiler
 is found; on a host with `ZAKA_REQUIRE_CC` unset, these tests note it and pass.
 

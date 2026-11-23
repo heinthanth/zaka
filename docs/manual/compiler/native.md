@@ -41,7 +41,7 @@ We build a Windows executable for one of two ABIs, which `--target-abi` picks:
 
 | ABI | Toolchain | Flags |
 | --- | --- | --- |
-| `gnu` | MinGW: the gcc or Clang of MSYS2 UCRT64, llvm-mingw, w64devkit, or `zig cc` | as on the other hosts |
+| `gnu` | MinGW: the gcc or Clang of MSYS2 UCRT64, llvm-mingw, w64devkit, or `zig cc`; on ARM64, the Clang of MSYS2 CLANGARM64 or llvm-mingw, since no MinGW gcc builds for ARM64 (Rust names this target `aarch64-pc-windows-gnullvm`) | as on the other hosts |
 | `msvc` | Visual Studio, or its Build Tools, with "Desktop development with C++": `cl` or `clang-cl` | `/std:c11 /nologo /O2 /w /fp:precise /utf-8 /MD`; a lib is `X.lib`, and the options of the linker follow `/link` |
 
 When we leave out `--target-abi`, the ABI is the one `zakac` itself was built for. `zakac`

@@ -98,7 +98,9 @@ fn build_other(root: &Path, out: &Path, name: &str, triple: Option<&str>)
     write(&libs, native_libs(&printed).as_bytes());
 }
 
-/// The Windows target of the other ABI, for a Windows target.
+/// The Windows target of the other ABI, for a Windows target. On ARM64 the
+/// GNU ABI is `gnullvm`, the MinGW of LLVM, since no MinGW gcc builds for
+/// ARM64.
 ///
 /// # Arguments
 ///
@@ -106,13 +108,15 @@ fn build_other(root: &Path, out: &Path, name: &str, triple: Option<&str>)
 ///
 /// # Returns
 ///
-/// The triple with `gnu` and `msvc` swapped, or `None` off Windows.
+/// The triple of the other ABI, or `None` off Windows.
 fn other_windows(target: &str) -> Option<&'static str>
 {
     match target
     {
         "x86_64-pc-windows-gnu" => Some("x86_64-pc-windows-msvc"),
         "x86_64-pc-windows-msvc" => Some("x86_64-pc-windows-gnu"),
+        "aarch64-pc-windows-gnullvm" => Some("aarch64-pc-windows-msvc"),
+        "aarch64-pc-windows-msvc" => Some("aarch64-pc-windows-gnullvm"),
         _ => None,
     }
 }

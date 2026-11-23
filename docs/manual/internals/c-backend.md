@@ -382,7 +382,8 @@ for `wasm32` (the explorer) gets blank libs.
 
 Beside the lib of the host, `build_other` builds the libs of other targets at once, each
 in its own thread and target folder. On Windows, it builds the lib of the other ABI
-(`other_windows`: `x86_64-pc-windows-gnu` and `-msvc` swapped), named as that ABI names it
+(`other_windows`: `x86_64-pc-windows-gnu` and `-msvc` swapped, and on ARM64
+`aarch64-pc-windows-gnullvm` and `-msvc`), named as that ABI names it
 (`zaka_runtime.lib` for MSVC, `libzaka_runtime.a` for GNU). On each host, it builds the
 libs of `wasm32-wasip1` and `wasm32-wasip2`, which are not stripped, because the `strip`
 of the host reads no WebAssembly. When a lib cannot build (the Rust target or the C tools
