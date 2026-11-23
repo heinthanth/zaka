@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
+use zakac_rust_sugars::do_if;
 use zakac_semcheck::enums::MemberValue;
 use zakac_semcheck::kind::DataKind;
 use zakac_semcheck::kind::FALLIBLE;
@@ -43,7 +44,7 @@ pub struct KindRow
     pub fields: Vec<(String, u32, usize)>,
     /// Each member: its value as text, and the text a print writes.
     pub members: Vec<(String, String)>,
-    /// The name of a struct.
+    /// The name of a struct, or of the trait of a trait value.
     pub name: Option<String>,
     /// Whether a value holds text, a plain list or a closure on the heap.
     pub holds_text: bool,
@@ -142,6 +143,9 @@ impl Descriptors
             owns: kind.holds_owner_ptr(),
             boxed: kind.is_box(),
         };
+        // A trait value names its trait, so the runtime prints and compares it
+        // through the value it holds; each other function kind has no name.
+        do_if!(kind.is_trait_value(), row.name = Some(kind.name()));
         if let Some(s) = kind.as_struct()
         {
             let each = s.fields().iter().enumerate();

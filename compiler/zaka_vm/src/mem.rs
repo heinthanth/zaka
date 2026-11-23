@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::ops::Range;
 
@@ -201,6 +202,10 @@ pub struct Mem
     /// shown as the function it holds.
     #[builder(default)]
     fns: Vec<String>,
+    /// The kind of the record of each closure, under the number of its
+    /// thunk, noted as the closure is made.
+    #[builder(default)]
+    records: HashMap<u32, DataKind>,
 }
 
 impl Mem
@@ -274,6 +279,41 @@ impl Mem
     pub fn closure_record(&self, word: u64) -> Option<u64>
     {
         (word > self.fns.len() as u64).then_some(word & !1)
+    }
+
+    /// Note the kind of the records of the closures of a thunk.
+    ///
+    /// # Arguments
+    ///
+    /// * `thunk` - The number of the thunk.
+    /// * `kind` - The kind of its records.
+    pub fn note_record(&mut self, thunk: u32, kind: DataKind)
+    {
+        self.records.insert(thunk, kind);
+    }
+
+    /// The record of a closure and its kind, when a function value is one.
+    ///
+    /// # Arguments
+    ///
+    /// * `word` - The function value.
+    ///
+    /// # Returns
+    ///
+    /// The address and the kind of the record, `None` for a function or the
+    /// zero word, or the trap a read hits.
+    pub fn record_of(&self, word: u64) -> Result<Option<(u64, DataKind)>, TrapKind>
+    {
+        let Some(at) = self.closure_record(word)
+        else
+        {
+            return Ok(None);
+        };
+        let thunk = self.thunk_word(at)?.saturating_sub(1);
+        let kind = u32::try_from(thunk).ok().and_then(|t| self.records.get(&t));
+        let reason = "a closure names no record kind".to_string();
+        let kind = kind.ok_or(TrapKind::Malformed { reason })?;
+        Ok(Some((at, *kind)))
     }
 
     /// The function value of the thunk a closure record names, in its first

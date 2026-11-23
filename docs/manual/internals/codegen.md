@@ -687,6 +687,13 @@ trait function, the address of an argument pack and its record.
   record when the numbers match, which makes the shapes match too. `TEXT` calls the
   `စာသားအဖြစ်ပြောင်း` of the held data kind, which the check passes after the trait
   functions, or formats the value as a print does.
+- **Inside another value.** The backends print and compare a trait value inside a list, a
+  struct or an object themselves, through field `c0` of its record, whose kind the record
+  names: the VM through `Mem::record_of` (`print.rs` and `held_equal`), the runtime through
+  `held_of` (`show.rs`, for C and native). A kind row of a trait value carries its trait as
+  `name`, which a plain function kind leaves NULL, so the runtime tells the two apart.
+- **Temporaries of a comparison.** An operand that the comparison makes, a literal, a call,
+  a join or a template, goes to a hidden slot its scope drops (`compared`).
 - **A thread.** A call through a trait value that runs as a thread starts in a function
   made for it, `%trait-thread#<n>` (`trait_thread_fn`): it takes the trait value and the
   other arguments, so the pack lives in the frame of the thread, calls through the trait

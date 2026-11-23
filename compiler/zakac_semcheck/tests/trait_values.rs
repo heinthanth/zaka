@@ -66,9 +66,8 @@ fn which_traits_can_be_a_data_kind()
     assert_eq!(codes_of("", "နံပါတ်နှင့်တူသော အရာ", ""), [Code::TraitNotAKind]);
 }
 
-/// Two trait values of one kind compare and a trait value prints; an
-/// ordering, a list of trait values compared or printed, and an initial value
-/// are ZK0361.
+/// Two trait values of one kind compare and a trait value prints, alone or in
+/// a list; an ordering and an initial value are ZK0361.
 #[test]
 fn what_a_trait_value_can_and_cannot_do()
 {
@@ -82,10 +81,8 @@ fn what_a_trait_value_can_and_cannot_do()
     let order = codes_of(GREET, param, "အကယ်၍ တ < တ ဖြစ်လျှင် ၁ ကို ပြသမည်။");
     assert!(order.contains(&Code::TraitValueUse), "{order:?}");
     let list = "ကိန်းရှင် စ သည် နှုတ်ဆက်နိုင်သော အရာ စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [တ] ဖြစ်ပါစေ။\n";
-    let printed = codes_of(GREET, param, &format!("{list}စ ကို ပြသမည်။"));
-    assert!(printed.contains(&Code::TraitValueUse), "{printed:?}");
-    let compared = codes_of(GREET, param, &format!("{list}စ == စ ကို ပြသမည်။"));
-    assert!(compared.contains(&Code::TraitValueUse), "{compared:?}");
+    assert_eq!(codes_of(GREET, param, &format!("{list}စ ကို ပြသမည်။")), []);
+    assert_eq!(codes_of(GREET, param, &format!("{list}စ == စ ကို ပြသမည်။")), []);
     let initial = "ကိန်းရှင် ဥ သည် နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။";
     assert!(codes_of(GREET, param, initial).contains(&Code::TraitValueUse));
 }

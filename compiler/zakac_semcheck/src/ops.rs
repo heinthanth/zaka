@@ -578,11 +578,6 @@ impl Checker
     ) -> Option<DataKind>
     {
         let ((l, lhs), (r, rhs)) = (lhs, rhs);
-        // A trait value inside another value has no comparison of its own.
-        let inside = l.holds_trait_value_inside() || r.holds_trait_value_inside();
-        let compares = class.is_cmp() || class == OpClass::Same;
-        let compare = rd::trait_value_use(span, TraitValueUse::Compare);
-        ret_if!(inside && compares, self.report(compare), None);
         let held = l.is_trait_value() || r.is_trait_value();
         ret_if!(held, self.trait_value_pair(class, l, r, span));
         ret_if!(class == OpClass::Same, self.same_pair(l, r, span));

@@ -1169,11 +1169,8 @@ pub fn trait_not_a_kind(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TraitValueUse
 {
-    /// `==`, `!=` or `တစ်ခုတည်း` on a value that holds a trait value inside
-    /// it, or an ordering of two trait values.
+    /// An ordering of two trait values, `<`, `>`, `<=` or `>=`.
     Compare,
-    /// A print of a value that holds a trait value inside it.
-    Print,
     /// `ကနဦးတန်ဖိုး`.
     Initial,
     /// A call through it as a function value.
@@ -1195,7 +1192,6 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
     let what = match use_
     {
         TraitValueUse::Compare => t!("codes.ZK0361.compare"),
-        TraitValueUse::Print => t!("codes.ZK0361.print"),
         TraitValueUse::Initial => t!("codes.ZK0361.initial"),
         TraitValueUse::Call => t!("codes.ZK0361.call"),
     };

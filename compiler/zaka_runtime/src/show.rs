@@ -11,6 +11,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
 use crate::heap::ZkFn;
+use crate::heap::held_of;
 use crate::heap::ld;
 use crate::heap::move_octets;
 use crate::heap::seq_grow;
@@ -176,6 +177,7 @@ fn eq_step(
             do_for!(f in k.field_list(), steps.push(pair(at(a, f.offset), at(b, f.offset), f.kind)));
             true
         }
+        tag::FN if !k.name.is_null() => held_eq_step(a, b, steps),
         tag::FLOAT if k.size == 4 => ld::<f32>(a) == ld::<f32>(b),
         tag::FLOAT => ld::<f64>(a) == ld::<f64>(b),
         // SAFETY: two values of one kind hold `size` octets each.
@@ -185,6 +187,32 @@ fn eq_step(
                 == std::slice::from_raw_parts(b, k.size)
         },
     }
+}
+
+/// Compare two trait values through the values held inside: values of two data
+/// kinds differ, and the held values of one data kind join the steps.
+///
+/// # Arguments
+///
+/// * `a` - The first trait value.
+/// * `b` - The second trait value.
+/// * `steps` - The steps, added to.
+///
+/// # Returns
+///
+/// `false` when the pair differs.
+fn held_eq_step(a: *const u8, b: *const u8, steps: &mut Vec<Step>) -> bool
+{
+    let (fa, fb): (ZkFn, ZkFn) = (ld(a), ld(b));
+    ret_if!(fa as usize & !1 == fb as usize & !1, true);
+    let (Some((ha, k, ra)), Some((hb, _, rb))) = (held_of(fa), held_of(fb))
+    else
+    {
+        return false;
+    };
+    ret_if!(ra != rb, false);
+    steps.push(Step::Value { a: ha, b: hb, k, nested: false });
+    true
 }
 
 /// Add the steps that compare two runs of cells, each to the cell at the same
@@ -548,8 +576,28 @@ fn show_step(step: Step, s: &mut Vec<Step>, inside: &mut HashSet<usize>)
         tag::SEQ if k.boxed != 0 => push_object(s, inside, p, k),
         tag::SEQ => push_cells(s, zk_seq_base(p), k.cell, zk_seq_len(p)),
         tag::LIST => push_cells(s, p, k.cell, k.len),
+        tag::FN if !k.name.is_null() => push_held(s, p, nested),
         _ => show_scalar(p, k),
     }
+}
+
+/// Add the step that writes the value a trait value holds, as that value
+/// prints.
+///
+/// # Arguments
+///
+/// * `s` - The steps.
+/// * `p` - The trait value.
+/// * `nested` - Whether text is written in quotes.
+fn push_held(s: &mut Vec<Step>, p: *const u8, nested: bool)
+{
+    let f: ZkFn = ld(p);
+    let Some((at, k, _)) = held_of(f)
+    else
+    {
+        return zk_put_fn(f);
+    };
+    s.push(Step::Value { a: at, b: std::ptr::null(), k, nested });
 }
 
 /// Write a value, as the VM prints it.

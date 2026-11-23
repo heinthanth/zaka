@@ -308,7 +308,8 @@ pub struct ZkKind
     pub fields: *const ZkField,
     /// The members of an enumeration.
     pub members: *const ZkMember,
-    /// The name of a struct.
+    /// The name of a struct, or of the trait of a trait value; NULL for each
+    /// other function kind.
     pub name: *const c_char,
     /// Whether a value holds text, a plain list or a closure on the heap.
     pub holds_text: i32,

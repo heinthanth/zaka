@@ -785,6 +785,32 @@ fn fn_kind(f: ZkFn) -> *const ZkKind
 #[unsafe(export_name = stamped!("fn_bound"))]
 pub extern "C" fn zk_fn_bound(f: ZkFn) -> i32 { i32::from(!fn_kind(f).is_null()) }
 
+/// The field of the record of a trait value that holds its value.
+const HELD_FIELD: &[u8] = b"c0";
+
+/// The value a trait value holds: field `c0` of the record of its closure,
+/// with its kind and the kind of the record, which names the held data kind.
+///
+/// # Arguments
+///
+/// * `f` - The trait value.
+///
+/// # Returns
+///
+/// The address of the held value, its kind and the kind of the record, or
+/// `None` for the null value or a function with no record.
+pub fn held_of(f: ZkFn) -> Option<(*const u8, *const ZkKind, *const ZkKind)>
+{
+    ret_if!(f.is_null() || zk_fn_bound(f) == 0, None);
+    let record = fn_kind(f);
+    // SAFETY: a closure record names its kind, a struct of its fields.
+    let fields = unsafe { (*record).field_list() };
+    let held = fields.iter().find(|f| crate::program::text(f.name) == HELD_FIELD)?;
+    // SAFETY: the field lies inside the record.
+    let at = unsafe { zk_fn_rec(f).add(held.offset) };
+    Some((at, held.kind, record))
+}
+
 /// Whether a function value holds a count of a closure record: a closure that
 /// is not lent.
 ///

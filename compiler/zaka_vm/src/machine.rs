@@ -49,6 +49,7 @@ use zaka_host::World;
 
 use crate::mem::Mem;
 use crate::mem::Origin;
+use crate::print::HELD_FIELD;
 use crate::print::list_text;
 use crate::print::shown_text;
 use crate::print::slice_parts;
@@ -517,10 +518,6 @@ pub struct Machine
         allow(dead_code)
     )]
     callbacks: ffi::Callbacks,
-    /// The record kind of the closures of each thunk made so far, which a
-    /// duplicate and a drop of a closure walk.
-    #[builder(default)]
-    records: HashMap<u32, DataKind>,
     /// The blocks let go and still to free, each with its cell count and
     /// kind; the outermost drop frees them in a loop.
     #[builder(default)]
@@ -1948,7 +1945,7 @@ impl Machine
     fn closure(&mut self, thunk: u32, record: DataKind) -> Step
     {
         let from = self.pop_ptr("closure")?;
-        self.records.insert(thunk, record);
+        self.mem.note_record(thunk, record);
         let block = self.move_record(from, record)?;
         self.mem.store(block, Value::Ptr(u64::from(thunk) + 1))?;
         self.push(Value::Ptr(block))
@@ -1989,15 +1986,7 @@ impl Machine
     /// trap the read of the code word hits.
     fn record_of(&self, word: u64) -> Result<Option<(u64, DataKind)>, TrapKind>
     {
-        let Some(at) = self.mem.closure_record(word)
-        else
-        {
-            return Ok(None);
-        };
-        let thunk = self.mem.thunk_word(at)?.saturating_sub(1);
-        let kind = u32::try_from(thunk).ok().and_then(|t| self.records.get(&t));
-        let kind = kind.ok_or_else(|| malformed("a closure names no record kind"))?;
-        Ok(Some((at, *kind)))
+        self.mem.record_of(word)
     }
 
     /// Let go of the record of the closure at an address, then leave the zero
@@ -3497,6 +3486,7 @@ impl Machine
     {
         let kind = kind.repr();
         let platform = self.module.platform_bits;
+        ret_if!(kind.is_trait_value(), self.held_equal(l, r, kind, work));
         ret_if!(kind.is_text(), Ok(text_at(&self.mem, l)? == text_at(&self.mem, r)?));
         ret_if!(kind.is_table(), self.table_equal(l, r, kind, work));
         if let Some(seq) = kind.as_seq()
@@ -3529,6 +3519,43 @@ impl Machine
             (0..u64::from(list.len))
                 .map(|i| (l + i * stride, r + i * stride, list.cell)),
         );
+        Ok(true)
+    }
+
+    /// Compare two trait values through the values held inside: values of two
+    /// data kinds differ, and the held values of one data kind join the
+    /// pairs to compare.
+    ///
+    /// # Arguments
+    ///
+    /// * `l` - The address of the first trait value.
+    /// * `r` - The address of the second.
+    /// * `kind` - The trait value kind.
+    /// * `work` - The pairs still to compare, added to.
+    ///
+    /// # Returns
+    ///
+    /// `false` when the pair differs, else `true`, or the trap a read hits.
+    fn held_equal(
+        &self, l: u64, r: u64, kind: DataKind, work: &mut Vec<(u64, u64, DataKind)>,
+    ) -> Result<bool, TrapKind>
+    {
+        let word =
+            |at: u64| self.mem.load(at, kind).map(|v| v.as_ptr().unwrap_or(0) & !1);
+        let (lw, rw) = (word(l)?, word(r)?);
+        ret_if!(lw == rw, Ok(true));
+        let (Some((lr, lk)), Some((rr, rk))) =
+            (self.record_of(lw)?, self.record_of(rw)?)
+        else
+        {
+            return Ok(false);
+        };
+        ret_if!(lk != rk, Ok(false));
+        let shape = lk.as_struct().ok_or_else(|| malformed("a closure record"))?;
+        let (at, held) =
+            shape.field(HELD_FIELD).ok_or_else(|| malformed("a held value"))?;
+        let offset = u64::from(shape.offset(at, self.module.platform_bits));
+        work.push((lr + offset, rr + offset, held));
         Ok(true)
     }
 

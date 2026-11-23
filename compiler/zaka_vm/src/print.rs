@@ -103,6 +103,7 @@ fn show(
         Ok(())
     };
     ret_if!(let Some(e) = kind.as_enum(), done(tasks, member_text(mem, addr, e)?));
+    ret_if!(kind.is_trait_value(), held_tasks(mem, (addr, kind, quoted), tasks));
     if kind.is_fn()
     {
         let v = mem.load(addr, kind)?;
@@ -193,6 +194,56 @@ pub fn shown_text(mem: &Mem, v: Value, kind: DataKind) -> Result<String, TrapKin
     let at = e.find(|m| m.scalar() == Some(v));
     Ok(at.map_or_else(|| text(v), |at| e.text_at(at)))
 }
+
+/// Push the task of the value a trait value holds, which prints as that value
+/// does: the field `c0` of the record of the closure, of the kind the record
+/// names.
+///
+/// # Arguments
+///
+/// * `mem` - The RAM that holds the value.
+/// * `value` - The address of the trait value, its kind, and whether text is
+///   written in quotes.
+/// * `tasks` - The tasks still to run, added to.
+///
+/// # Returns
+///
+/// `Ok`, or the trap a read hits.
+fn held_tasks(
+    mem: &Mem, value: (u64, DataKind, bool), tasks: &mut Vec<Task>,
+) -> Result<(), TrapKind>
+{
+    let (addr, kind, quoted) = value;
+    let word = mem.load(addr, kind)?.as_ptr().unwrap_or(0);
+    let Some((record, shape)) = mem.record_of(word)?
+    else
+    {
+        tasks.push(Task::Piece(fn_value_text(mem, Value::Ptr(word))));
+        return Ok(());
+    };
+    let shape = shape.as_struct().ok_or_else(|| bad_record(record))?;
+    let (at, held) = shape.field(HELD_FIELD).ok_or_else(|| bad_record(record))?;
+    let addr = record + u64::from(shape.offset(at, mem.platform()));
+    tasks.push(Task::Show { addr, kind: held, quoted });
+    Ok(())
+}
+
+/// The trap of a closure record with no held value.
+///
+/// # Arguments
+///
+/// * `record` - The address of the record.
+///
+/// # Returns
+///
+/// The trap.
+fn bad_record(record: u64) -> TrapKind
+{
+    TrapKind::BadValue { addr: record, kind: "closure record".to_string() }
+}
+
+/// The field of the record of a trait value that holds its value.
+pub const HELD_FIELD: &str = "c0";
 
 /// The text of a function value: the function it holds, in the form that
 /// reads back, or the zero word.

@@ -363,6 +363,14 @@ A print, or a template slot in text, shows the held value as a print of it would
 the `စာသားအဖြစ်ပြောင်း` of its struct when the struct has one
 ([Conversions](conversions.md)).
 
+A trait value inside a list, a struct, an object, a table or an optional compares and prints
+through its held value too, as each cell and field does: `[က၊ ဂ]` prints as
+`[လူ(နာမည်: "မောင်")၊ ကြောင်(နာမည်: "မောင်")]`, and two lists of trait values are equal when
+each pair of held values is. Inside another value, a held struct prints in the plain form,
+as a struct in a list does, without its `စာသားအဖြစ်ပြောင်း`. An object that reaches itself
+through a trait value prints and compares as each ring does ([Values and
+objects](objects.md)).
+
 ```zaka
 အမည်ရှိသော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
 ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
@@ -458,8 +466,6 @@ A trait value is used through the functions of its trait, and through the compar
 the print above. These uses are ZK0361:
 
 - an ordering, `<`, `>`, `<=` or `>=`;
-- a comparison or a print of a list, a struct or an object that holds a trait value inside
-  it, which would not reach the held values;
 - the initial value, `ကနဦးတန်ဖိုး`;
 - a call through it as a [function value](function-values.md).
 
@@ -493,5 +499,5 @@ that changes the held value makes a new block for the changed value. The details
 | ZK0343 | a value goes into a trait value whose trait its data kind lacks |
 | ZK0344 | a trait value of a name that is not a trait |
 | ZK0360 | a trait that cannot be a data kind used as one |
-| ZK0361 | a trait value ordered, compared or printed inside another value, given an initial value or called as a function value |
+| ZK0361 | a trait value ordered, given an initial value or called as a function value |
 | ZK0362 | a plain value goes into a trait value whose trait has a function that changes its first parameter (warning, lint group `duplicates`) |

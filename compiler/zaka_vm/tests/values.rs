@@ -442,6 +442,30 @@ fn text_compares_its_u8s_in_each_mode()
     runs_in_each_mode(COMPARES, "မှန်\nမှန်\nမှန်\nမမှန်\nမှန်\n")
 }
 
+/// Values a comparison makes for itself: a call, a join of text, a template
+/// and a list literal of values made at run time.
+const COMPARED_TEMPORARIES: &str = r#"ဆက် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော စာသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+က + "!" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် "က" + "ခ" ဖြစ်ပါစေ။
+ဆက်(က) == ဆက်(က) ကို ပြသမည်။
+က + "ဂ" == က ကို ပြသမည်။
+"{က}" == က ကို ပြသမည်။
+ကိန်းရှင် စ သည် စာသား စာရင်း တစ်ခု ဖြစ်၍ တန်ဖိုးသည် [က] ဖြစ်ပါစေ။
+စ == [က + "ဂ"] ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+"#;
+
+/// The values a comparison makes for itself are dropped after it.
+#[test]
+fn compared_temporaries_are_dropped_in_each_mode()
+{
+    runs_in_each_mode(COMPARED_TEMPORARIES, "မှန်\nမမှန်\nမှန်\nမမှန်\n")
+}
+
 #[test]
 fn each_loops_walk_cells_and_characters_in_each_mode()
 {

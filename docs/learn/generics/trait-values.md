@@ -191,8 +191,8 @@ trait as a data kind:
 - **Threads.** `နှုတ်ဆက်နိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ` holds values
   that threads can use, so it goes to a thread, and a call of its trait runs as one
   ([Trait values](../../manual/language/trait-values.md#trait-values-and-threads)).
-- **Not now.** A trait value has no initial value, and a list of trait values is neither
-  compared nor printed as a whole (ZK0361); an optional trait value starts blank.
+- **Not now.** A trait value has no initial value (ZK0361); an optional trait value starts
+  blank. A list of trait values prints and compares through the held values.
 - **The held data kind.** `လ သည် ကျောင်းသား အဖြစ်သို့ ပြောင်းလဲနိုင်သည်` tests which data kind
   a trait value holds, and `လ ကို ကျောင်းသား အဖြစ် ပြောင်းလဲသော ရလဒ်` reads it, with the
   words of members that hold data

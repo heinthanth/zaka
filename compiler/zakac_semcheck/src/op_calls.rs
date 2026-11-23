@@ -38,8 +38,6 @@ use zakac_ast::visit::Visitor;
 use zakac_ast::visit::VisitorMut;
 use zakac_ast::visit::walk_expr_mut;
 use zakac_ast::visit::walk_stmt_mut;
-use zakac_diagnostics::resolve as rd;
-use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -363,11 +361,6 @@ impl Checker
     /// * `kind` - Its kind.
     pub(crate) fn struct_text(&mut self, value: &Expr, kind: Option<DataKind>)
     {
-        // A trait value prints its held value, which its dispatcher knows; one
-        // inside another value has no print of its own.
-        let print = rd::trait_value_use(value.span(), TraitValueUse::Print);
-        let inside = kind.is_some_and(DataKind::holds_trait_value_inside);
-        ret_if!(inside, self.report(print));
         let Some(callee) = kind.and_then(|k| self.text_fn(k))
         else
         {

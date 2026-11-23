@@ -4493,18 +4493,42 @@ impl Lowerer<'_>
         );
         // Text and a view of text compare their u8s, each in its own kind.
         let texts = self.kind_of(lhs).is_text() && self.kind_of(rhs).is_text();
-        ret_if!(
-            texts,
-            ExprNode::Compare {
-                op,
-                lhs: Box::new(self.expr(lhs)),
-                rhs: Box::new(self.expr(rhs))
-            }
-        );
+        if texts
+        {
+            let (l, r) = (self.expr(lhs), self.expr(rhs));
+            let (l, r) = (self.compared(l), self.compared(r));
+            return ExprNode::Compare { op, lhs: Box::new(l), rhs: Box::new(r) };
+        }
         let common = concrete(self.common(self.kind_of(lhs), self.kind_of(rhs)));
-        let lhs = Box::new(self.coerce(lhs, common));
-        let rhs = Box::new(self.coerce(rhs, common));
-        ExprNode::Compare { op, lhs, rhs }
+        let (l, r) = (self.coerce(lhs, common), self.coerce(rhs, common));
+        let (l, r) = (self.compared(l), self.compared(r));
+        ExprNode::Compare { op, lhs: Box::new(l), rhs: Box::new(r) }
+    }
+
+    /// An operand of a comparison: a value the operand makes, which owns a
+    /// block, goes to a hidden slot its scope drops, since the comparison
+    /// just reads it; a read of a place and each other value as it is.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The operand.
+    ///
+    /// # Returns
+    ///
+    /// The operand.
+    fn compared(&mut self, e: Expr) -> Expr
+    {
+        let literal = |o: &Expr| matches!(o.node, ExprNode::List(_));
+        let made = match &e.node
+        {
+            ExprNode::List(_)
+            | ExprNode::Format(_)
+            | ExprNode::Call { .. }
+            | ExprNode::Infix { .. } => true,
+            ExprNode::Convert { operand, .. } => literal(operand),
+            _ => false,
+        };
+        tern!(made && e.kind.holds_text(), self.spill(e), e)
     }
 
     /// A duplicate of a value. A value is duplicated as it is read; a shallow
