@@ -229,7 +229,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("မမှန်", Kw::False),
     ("အနုတ်", Kw::Negate),
     (NOTE_MARKER, Kw::Note),
-    ("အများသုံး", Kw::Export),
+    ("အများသုံးနိုင်သော", Kw::Export),
     ("မျှဝေနိုင်သော", Kw::Shareable),
     ("စိတ်မချရသော", Kw::Unsafe),
     ("စိတ်မချရသော်လည်း", Kw::UnsafeThough),

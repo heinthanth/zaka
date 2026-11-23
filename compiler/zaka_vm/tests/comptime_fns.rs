@@ -119,7 +119,7 @@ fn text_and_a_plain_list_come_back_as_constants()
 fn an_imported_starting_value_can_come_from_a_comptime_call()
 {
     let lib = format!(
-        "{DOUBLE}အများသုံး ကိန်းရှင် အစ သည် နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ် \
+        "{DOUBLE}အများသုံးနိုင်သော ကိန်းရှင် အစ သည် နှစ်ဆ ဟူသော လုပ်ဆောင်ချက်ကို ၅ ဖြင့် လုပ်ဆောင်သော ရလဒ် \
          ဖြစ်ပါစေ။\n"
     );
     let main = format!("\"lib.zaka\" မှ အစ ကို ထည့်သွင်းမည်။\n{}", printing("အစ"));

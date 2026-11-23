@@ -1,6 +1,6 @@
 ---
 title: Modules
-description: Split a program into several files, share names with အများသုံး, and bring them into another file with ထည့်သွင်းမည်.
+description: Split a program into several files, share names with အများသုံးနိုင်သော, and bring them into another file with ထည့်သွင်းမည်.
 ---
 
 # Modules
@@ -23,7 +23,7 @@ save them and run the second one with `zakac run`:
 
 ```zaka-file
 // math.zaka
-နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+နှစ်ထပ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -43,43 +43,43 @@ $ zakac run main.zaka
 ၄၉
 ```
 
-In `math.zaka`, we write `အများသုံး` after `ဟူသော` to share the function, and in
+In `math.zaka`, we write `အများသုံးနိုင်သော` after `ဟူသော` to share the function, and in
 `main.zaka`, we write an import sentence to bring it in:
 
 ```
-<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် …
+<name> ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် …
 "<file>" မှ <name> ကို ထည့်သွင်းမည်။
 ```
 
 | Zaka | Reads as |
 | --- | --- |
-| `နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက်` | "the function `နှစ်ထပ်`, for common use" |
+| `နှစ်ထပ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက်` | "the function `နှစ်ထပ်`, for common use" |
 | `"math.zaka" မှ` | "from `math.zaka`" |
 | `နှစ်ထပ် ကို ထည့်သွင်းမည်` | "bring in `နှစ်ထပ်`" |
 
 ## Sharing names
 
 A function, a struct, a variable or a constant at the top level of a file belongs to that
-file, and we use `အများသုံး` ("for common use") to share it with other files. On a
+file, and we use `အများသုံးနိုင်သော` ("for common use") to share it with other files. On a
 function, a struct or an enumeration, we write it after `ဟူသော`, and on a variable or a
 constant, we write it at the start:
 
 ```
-<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် …
-<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် …
-အများသုံး ကိန်းရှင် <name> သည် …
-အများသုံး ကိန်းသေ <name> သည် …
+<name> ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် …
+<name> ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးတွင် …
+အများသုံးနိုင်သော ကိန်းရှင် <name> သည် …
+အများသုံးနိုင်သော ကိန်းသေ <name> သည် …
 ```
 
-A name without `အများသုံး` remains private, so a file can keep helper functions
+A name without `အများသုံးနိုင်သော` remains private, so a file can keep helper functions
 that no other file sees:
 
 ```zaka-file
 // math.zaka
-အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀၀ ဖြစ်ပါစေ။
 
 // shared: other files can import it
-ကန့်သတ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+ကန့်သတ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 အကယ်၍ ကျော်လွန် ဟူသော လုပ်ဆောင်ချက်ကို က ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်လျှင် အများဆုံး ကို ပြန်ပေးမည်။
@@ -187,10 +187,10 @@ its variables later, so each variable gets its value in its declaration:
 
 ```zaka-file
 // counter.zaka
-အများသုံး ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။
-အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းသေ အများဆုံး သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁၀ * ၃ ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 
-တိုး ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+တိုး ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 အရေ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 အကယ်၍ အကြိမ် + အရေ သည် အများဆုံး ထက် ကြီးလျှင် ပြန်ပေးမည်။
@@ -247,7 +247,7 @@ one file changes it, the others see the change.
 ## Recap
 
 - Each `.zaka` file is a module, and its names are private unless we mark them with
-  `အများသုံး`.
+  `အများသုံးနိုင်သော`.
 - `"<file>" မှ <name> ကို ထည့်သွင်းမည်။` imports a name, and `"<file>" ကို ထည့်သွင်းမည်။`
   imports each name that the file shares.
 - Imports come first in a file, and the file name is relative to the folder of the file.

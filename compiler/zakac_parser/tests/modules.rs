@@ -90,8 +90,9 @@ fn import_names(loaded: &Loaded) -> Vec<(Option<u32>, Vec<String>)>
 /// A file that exports each of `names` as a constant.
 fn exporting(names: &[&str]) -> String
 {
-    let decl =
-        |n: &&str| format!("အများသုံး ကိန်းသေ {n} သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။\n");
+    let decl = |n: &&str| {
+        format!("အများသုံးနိုင်သော ကိန်းသေ {n} သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၁ ဖြစ်ပါစေ။\n")
+    };
     names.iter().map(decl).collect()
 }
 
@@ -163,11 +164,11 @@ fn a_share_of_a_name_not_imported_is_zk0261()
 #[test]
 fn the_export_mark_sets_the_flag_of_a_declaration()
 {
-    let var = "အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
+    let var = "အများသုံးနိုင်သော ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert!(stmt(var).starts_with("(export (var က"), "{}", stmt(var));
-    let record = "လူ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
+    let record = "လူ ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။";
     assert!(stmt(record).starts_with("(export (struct လူ"), "{}", stmt(record));
-    let func = "ဖ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၁ ကို \
+    let func = "ဖ ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n၁ ကို \
                 ပြသမည်။\nလုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert!(stmt(func).starts_with("(export (fn ဖ"), "{}", stmt(func));
     let plain = "ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
@@ -177,8 +178,8 @@ fn the_export_mark_sets_the_flag_of_a_declaration()
 #[test]
 fn the_export_mark_before_a_statement_is_zk0229()
 {
-    assert_eq!(codes("အများသုံး ၁ ကို ပြသမည်။"), [Code::ExportNotOnDecl]);
-    let nested = "အကယ်၍ မှန် ဖြစ်လျှင် အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
+    assert_eq!(codes("အများသုံးနိုင်သော ၁ ကို ပြသမည်။"), [Code::ExportNotOnDecl]);
+    let nested = "အကယ်၍ မှန် ဖြစ်လျှင် အများသုံးနိုင်သော ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။";
     assert_eq!(codes(nested), [Code::ExportNotOnDecl]);
 }
 
@@ -201,15 +202,18 @@ fn a_file_imported_twice_is_read_once_and_imports_come_first()
         ),
         (
             "/m/a.zaka",
-            "\"lib/c.zaka\" မှ ဂ ကို ထည့်သွင်းမည်။\nအများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် \
-             ၁ + ၁ ဖြစ်ပါစေ။",
+            "\"lib/c.zaka\" မှ ဂ ကို ထည့်သွင်းမည်။\nအများသုံးနိုင်သော ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ \
+             တန်ဖိုးသည် ၁ + ၁ ဖြစ်ပါစေ။",
         ),
         (
             "/m/lib/b.zaka",
-            "\"./c.zaka\" မှ ဂ ကို ထည့်သွင်းမည်။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၂ \
-             + ၂ ဖြစ်ပါစေ။",
+            "\"./c.zaka\" မှ ဂ ကို ထည့်သွင်းမည်။\nအများသုံးနိုင်သော ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ \
+             တန်ဖိုးသည် ၂ + ၂ ဖြစ်ပါစေ။",
         ),
-        ("/m/lib/c.zaka", "အများသုံး ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ + ၃ ဖြစ်ပါစေ။"),
+        (
+            "/m/lib/c.zaka",
+            "အများသုံးနိုင်သော ကိန်းရှင် ဂ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ၃ + ၃ ဖြစ်ပါစေ။",
+        ),
     ];
     let loaded = load_files(&files, "/m/main.zaka").unwrap();
     assert_eq!(loaded_codes(&loaded), []);
@@ -244,7 +248,7 @@ fn files_that_import_each_other_are_zk0231()
         ("/m/a.zaka", "\"b.zaka\" မှ ခ ကို ထည့်သွင်းမည်။"),
         (
             "/m/b.zaka",
-            "\"a.zaka\" မှ က ကို ထည့်သွင်းမည်။\nအများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
+            "\"a.zaka\" မှ က ကို ထည့်သွင်းမည်။\nအများသုံးနိုင်သော ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။",
         ),
     ];
     let loaded = load_files(&files, "/m/a.zaka").unwrap();
@@ -281,7 +285,10 @@ fn an_imported_struct_name_starts_a_kind()
             "/m/main.zaka",
             "\"lib.zaka\" မှ နေရာ ကို ထည့်သွင်းမည်။\nကိန်းရှင် န သည် နေရာ တစ်ခု ဖြစ်ပါစေ။",
         ),
-        ("/m/lib.zaka", "နေရာ ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။"),
+        (
+            "/m/lib.zaka",
+            "နေရာ ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။",
+        ),
     ];
     let loaded = load_files(&files, "/m/main.zaka").unwrap();
     assert_eq!(loaded_codes(&loaded), []);

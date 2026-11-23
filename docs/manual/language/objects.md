@@ -101,13 +101,13 @@ and both structs reach the same object:
 ## Shared objects
 
 ```text
-<name> ဟူသော [အများသုံး] မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် <fields> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် <fields> တို့ပါဝင်သည်။
 ```
 
 To declare a shared object, we put `မျှဝေနိုင်သော` ("that can be shared") before
 `ဒေတာအစုအဝေး`. The literal, the fields, the measure word and printing all work as for a
 struct ([Structs](structs.md)), and the declaration is the one difference. To export the
-data kind, we put `အများသုံး` after `ဟူသော`, before `မျှဝေနိုင်သော`.
+data kind, we put `အများသုံးနိုင်သော` after `ဟူသော`, before `မျှဝေနိုင်သော`.
 
 ```zaka
 အကောင့် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင်
@@ -155,7 +155,7 @@ children in a plain list and its parent in an optional, because the root has no 
 ## Objects threads can use
 
 ```text
-<name> ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် <fields> တို့ပါဝင်သည်။
+<name> ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော၊ မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် <fields> တို့ပါဝင်သည်။
 ```
 
 To make objects that threads can use, we put the mark
@@ -165,7 +165,7 @@ each object. We can write the words apart or glued
 
 ```zaka-file
 // account.zaka
-အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+အကောင့် ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော၊ မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 ```
 
 - The same phrase names the built-in trait of the data kinds that threads can use

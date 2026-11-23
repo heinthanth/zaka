@@ -6,12 +6,12 @@ description: How a program spans several files - the export mark, the import sen
 # Modules
 
 A module is one source file. A top-level name is local to that file unless the
-declaration marks it as exported with `အများသုံး`. Another file can import the exported
+declaration marks it as exported with `အများသုံးနိုင်သော`. Another file can import the exported
 name. For examples, see [Modules](../../learn/modules/README.md) in Learn.
 
 ```zaka-file
 // math.zaka
-နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+နှစ်ထပ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -41,19 +41,19 @@ name. For examples, see [Modules](../../learn/modules/README.md) in Learn.
 ## The export mark
 
 ```text
-<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...
-<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...
-<name> ဟူသော အများသုံး ဒေတာအမျိုးအစားကွဲတွင် ...
-အများသုံး ဒေတာအမျိုးအစား <alias> ကို <kind> ...
-အများသုံး ကိန်းရှင် <name> သည် ...
-အများသုံး ကိန်းသေ <name> သည် ...
+<name> ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် ...
+<name> ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးတွင် ...
+<name> ဟူသော အများသုံးနိုင်သော ဒေတာအမျိုးအစားကွဲတွင် ...
+အများသုံးနိုင်သော ဒေတာအမျိုးအစား <alias> ကို <kind> ...
+အများသုံးနိုင်သော ကိန်းရှင် <name> သည် ...
+အများသုံးနိုင်သော ကိန်းသေ <name> သည် ...
 ```
 
-We write `အများသုံး` to export a function, a struct, an enumeration, a [kind
+We write `အများသုံးနိုင်သော` to export a function, a struct, an enumeration, a [kind
 alias](aliases.md), a variable or a constant at the top level of a file, so that other
 files can import it. A declaration without the mark is private to its file.
 
-| Declaration | Where `အများသုံး` goes |
+| Declaration | Where `အများသုံးနိုင်သော` goes |
 | --- | --- |
 | a function | after `ဟူသော`, together with the other marks of the function |
 | a struct or an enumeration | after `ဟူသော`, before `မျှဝေနိုင်သော` or `ပြင်ပမှ လာသော` |
@@ -155,7 +155,7 @@ import, gets the declaration from the file where the name comes from.
 
 - We use the first two forms to share names that the file imports, through a named or a
   whole import. A name that the file does not import is ZK0261, and a declaration of the
-  file itself uses the mark `အများသုံး` instead.
+  file itself uses the mark `အများသုံးနိုင်သော` instead.
 - We use the third form to share each name that another file exports, without bringing one
   of them in: the sharing file does not see them, and imports what it uses itself. The
   compiler reads that file, as it reads an imported one.
@@ -202,7 +202,7 @@ other value fits.
 
 ```zaka-file
 // counter.zaka
-အများသုံး ကိန်းရှင် ရေတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။      // not "ကိန်းပြည့် တစ်ခု" alone
+အများသုံးနိုင်သော ကိန်းရှင် ရေတွက် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။      // not "ကိန်းပြည့် တစ်ခု" alone
 ```
 
 ## Names across files
@@ -234,7 +234,7 @@ the stdlib is the exception ([Input and output](io.md#the-rules)).
 
 | Code | When |
 | --- | --- |
-| ZK0229 | `အများသုံး` before something other than a top-level declaration |
+| ZK0229 | `အများသုံးနိုင်သော` before something other than a top-level declaration |
 | ZK0230 | an import or a share after a declaration or a statement, or inside a block |
 | ZK0231 | files that import each other |
 | ZK0232 | an import in a program that was not read from a file |

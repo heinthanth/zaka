@@ -153,7 +153,7 @@ pub enum Stmt
     /// `ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။`
     Alias(AliasDecl),
     /// `<kind> သည် [ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်]
-    /// ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`
+    /// ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစား ဖြစ်သည်။`
     BuiltinKind(BuiltinKindDecl),
     /// `<name> ဟူသည့် ဂုဏ်သတ္တိ သည် … ၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။ …`
     Trait(TraitDecl),
@@ -174,7 +174,7 @@ pub struct DeclStmt
     pub is_const: bool,
     /// The initial value, when written.
     pub init: Option<Expr>,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// `true` for a constant the compiler gives, marked
@@ -569,7 +569,7 @@ pub struct FnDecl
     pub ret: Option<Kind>,
     /// The function block.
     pub block: BlockStmt,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// `true` for an unsafe function, `စိတ်မချရသော`: its statements can work
@@ -935,7 +935,7 @@ pub struct StructDecl
     pub fields: Vec<Param>,
     /// The classifier that counts values of the struct, when written.
     pub classifier: Option<Ident>,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// `true` when `မျှဝေနိုင်သော` marks it: each value is an object that
@@ -1015,7 +1015,7 @@ pub struct EnumDecl
     /// The classifier that counts values of the enumeration, when written.
     #[serde(default)]
     pub classifier: Option<Ident>,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// The written-as hint, `ရေးသားရာတွင် <words> ဟု ရေးသားနိုင်သည်`: its words in
@@ -1047,7 +1047,7 @@ pub struct AliasDecl
     /// none, the alias counts with the word of its kind.
     #[serde(default)]
     pub classifier: Option<Ident>,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// Source region, the full stop included.
@@ -1166,7 +1166,7 @@ pub struct TraitDecl
     /// The function heads, with no block.
     #[builder(default)]
     pub fns: Vec<FnDecl>,
-    /// `true` when `အများသုံး` marks it, so other files can import it.
+    /// `true` when `အများသုံးနိုင်သော` marks it, so other files can import it.
     #[builder(default)]
     pub exported: bool,
     /// `true` for a trait the compiler gives, marked
@@ -1186,8 +1186,8 @@ pub struct TraitDecl
 }
 
 /// A built-in kind as the core names it, for its doc comment:
-/// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, with
-/// the kind parameters of a list or a table between `သည်` and the mark.
+/// `<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစား ဖြစ်သည်။`,
+/// with the kind parameters of a list or a table between `သည်` and the mark.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
 pub struct BuiltinKindDecl
 {
@@ -1199,7 +1199,7 @@ pub struct BuiltinKindDecl
     #[builder(default)]
     #[serde(default)]
     pub kind_params: Vec<KindParam>,
-    /// `true` when `အများသုံး` stands before `ဒေတာအမျိုးအစား`.
+    /// `true` when `အများသုံးနိုင်သော` stands before `ဒေတာအမျိုးအစား`.
     #[builder(default)]
     #[serde(default)]
     pub exported: bool,

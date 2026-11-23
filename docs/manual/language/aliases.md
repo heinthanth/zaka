@@ -35,8 +35,8 @@ For examples, see [Structs](../../learn/structs/README.md#another-name-for-a-kin
 ## Declaring an alias
 
 ```text
-[အများသုံး] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
-[အများသုံး] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+[အများသုံးနိုင်သော] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပါသည်။
+[အများသုံးနိုင်သော] ဒေတာအမျိုးအစား <alias> ကို <kind> ဟုလည်း မှတ်ယူနိုင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
 ```
 
 To declare an alias, we write `ဒေတာအမျိုးအစား`, the new name, `ကို`, the data kind that it
@@ -54,7 +54,7 @@ kind](function-values.md#function-kinds), or another alias.
 - We declare an alias at the top level of a file, and the rest of the program can use it
   even above the declaration, because the compiler reads all declarations first.
 - An alias can name another alias, declared above it or below it.
-- To export an alias, we put `အများသုံး` at the start of the declaration, and another file
+- To export an alias, we put `အများသုံးနိုင်သော` at the start of the declaration, and another file
   imports it with its name, as it imports a struct ([Modules](modules.md)).
 
 | Mistake | Code |

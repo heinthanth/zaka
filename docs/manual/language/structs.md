@@ -28,9 +28,9 @@ while the Learn book teaches structs in small steps in [Structs](../../learn/str
 ## Declaring a struct
 
 ```text
-<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word> ပါဝင်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် <field> ဟူသော <kind> တစ်<word> တို့ပါဝင်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် … တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word> ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် <field> ဟူသော <kind> တစ်<word> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအစုအဝေးတွင် <field> ဟူသော <kind> တစ်<word>၊ … နှင့် … တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
 ```
 
 To declare a struct, we write its name, `ဟူသော`, the word `ဒေတာအစုအဝေးတွင်` and then its
@@ -77,7 +77,7 @@ is ZK0481 ([Data kinds no program can build](objects.md#data-kinds-no-program-ca
   ([Names](words.md#names)), so `အချက်အလက်အစုအဝေး` works the same as `ဒေတာအစုအဝေး`,
   and a struct name written with either spelling names one struct.
 - We can join `တွင်` to `ဒေတာအစုအဝေး` or write it apart; these pages join them.
-- To export a struct from its module, we put `အများသုံး` after `ဟူသော`, before
+- To export a struct from its module, we put `အများသုံးနိုင်သော` after `ဟူသော`, before
   `မျှဝေနိုင်သော` and `ဒေတာအစုအဝေး` ([Modules](modules.md)).
 - When we add `မျှဝေနိုင်သော` before `ဒေတာအစုအဝေး`, as in
   `<name> ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် ...`, we declare a shared object
@@ -91,7 +91,7 @@ is ZK0481 ([Data kinds no program can build](objects.md#data-kinds-no-program-ca
 ## Marks after the head
 
 ```text
-<name> ဟူသော [အများသုံး] [မျှဝေနိုင်သော] ဒေတာအစုအဝေးသည် [<mark> ဒေတာအစုအဝေး ဖြစ်၍] [<kind parameters>] ၎င်းတွင် <fields> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] [မျှဝေနိုင်သော] ဒေတာအစုအဝေးသည် [<mark> ဒေတာအစုအဝေး ဖြစ်၍] [<kind parameters>] ၎င်းတွင် <fields> တို့ပါဝင်သည်။
 ```
 
 The first part of a struct declaration, up to the fields, can also have a mark that

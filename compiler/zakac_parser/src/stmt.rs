@@ -47,7 +47,6 @@ use zakac_lexer::token::Token;
 use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
-use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
@@ -447,7 +446,7 @@ impl Parser<'_>
         do_if!(late, self.diags.push(diag::import_not_first(span)));
     }
 
-    /// Parse a declaration after the export mark `အများသုံး` and mark it
+    /// Parse a declaration after the export mark `အများသုံးနိုင်သော` and mark it
     /// exported: a variable, a constant or a kind alias. A function, a struct
     /// and an enumeration hold the mark after `ဟူသော`. The mark before another
     /// statement, or before a declaration inside a block, is reported.
@@ -484,15 +483,15 @@ impl Parser<'_>
     /// `true` when the marks stand there.
     fn at_marked_start(&self) -> bool
     {
-        let is_mark =
-            |n: &usize| kw_of(&self.peek_n(*n)).is_some_and(|k| FN_MARKS.contains(&k));
-        let after = (0..).find(|n| !is_mark(n)).unwrap_or(0);
+        let sep =
+            |n: usize| self.at_punct_n(n, Punct::ListSep) && self.fn_mark_at(n + 1);
+        let after = (0..).find(|n| !self.fn_mark_at(*n) && !sep(*n)).unwrap_or(0);
         kw_of(&self.peek_n(after)) == Some(Kw::Program)
     }
 
     /// Parse the start block after the marks of a function head, and report
-    /// each mark: ZK0229 for `အများသုံး`, ZK0257 for `စိတ်မချရသော` and ZK0256 for
-    /// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`.
+    /// each mark: ZK0229 for `အများသုံးနိုင်သော`, ZK0257 for `စိတ်မချရသော` and ZK0256
+    /// for `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`.
     ///
     /// # Returns
     ///
@@ -500,7 +499,11 @@ impl Parser<'_>
     fn parse_marked_start(&mut self) -> PResult<Stmt>
     {
         let mut marks = Vec::new();
-        do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
+        while self.fn_mark_at(0)
+        {
+            marks.push(self.bump());
+            self.mark_gap(|p, n| p.fn_mark_at(n))?;
+        }
         let stmt = self.parse_fn_decl()?;
         let reports = marks.iter().map(|m| match kw_of(m)
         {
@@ -1037,7 +1040,7 @@ impl Parser<'_>
     /// Parse a function declaration:
     /// `f ဟူသော လုပ်ဆောင်ချက် သည် <params>? အောက်ပါတို့ကို လုပ်ဆောင်မည်။`, or with
     /// a result, `... အောက်ပါတို့ကို လုပ်ဆောင်ကာ <kind> ရလဒ် ကို ပြန်ပေးမည်။`. The
-    /// marks `အများသုံး`, `စိတ်မချရသော` and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`
+    /// marks `အများသုံးနိုင်သော`, `စိတ်မချရသော` and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`
     /// stand between `ဟူသော` and `လုပ်ဆောင်ချက်`, as on a struct. The start block
     /// has the same parts after `ပရိုဂရမ်သည်`, with no name.
     ///
@@ -1059,7 +1062,11 @@ impl Parser<'_>
         let mut kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
         let mut marks = Vec::new();
-        do_while!(FN_MARKS.iter().any(|m| self.at(*m)), marks.push(self.bump()));
+        while self.fn_mark_at(0)
+        {
+            marks.push(self.bump());
+            self.mark_gap(|p, n| p.fn_mark_at(n))?;
+        }
         self.expect(Kw::Function)?;
         self.expect(Kw::Thi)?;
         let c_name = self.parse_c_name()?;
@@ -1351,7 +1358,7 @@ impl Parser<'_>
     pub(crate) fn at_fn_decl(&self) -> bool { fn_head_at(self.cur.rest()).is_some() }
 
     /// Whether a struct or an enumeration declaration starts here:
-    /// `<name> ဟူသော`, then the marks `အများသုံး` or `မျှဝေနိုင်သော`, then
+    /// `<name> ဟူသော`, then the marks `အများသုံးနိုင်သော` or `မျှဝေနိုင်သော`, then
     /// `ဒေတာအစုအဝေး` or `ဒေတာအမျိုးအစားကွဲ`.
     ///
     /// # Returns
@@ -1382,7 +1389,9 @@ impl Parser<'_>
         let kind_params = self.parse_notation_params()?;
         self.expect(Kw::Called)?;
         let exported = self.eat(Kw::Export);
+        do_if!(exported, self.mark_gap(|p, n| p.kind_mark_at(n))?);
         let threads = self.eat_threads_phrase();
+        do_if!(threads, self.mark_gap(|p, n| p.kind_mark_at(n))?);
         let shared = self.eat(Kw::Shareable);
         let word = tern!(
             shared,
@@ -1653,7 +1662,7 @@ impl Parser<'_>
     }
 
     /// Parse an enumeration declaration after
-    /// `<name>[<kind parameters>] ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ`, with
+    /// `<name>[<kind parameters>] ဟူသော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစားကွဲ`, with
     /// `သည် <kind parameters> ၎င်း` before `တွင်` in the word form of a generic
     /// one: `တွင် <member>၊ ... နှင့် <member> တို့ပါဝင်သည်။`, or with one member
     /// `တွင် <member> ပါဝင်သည်။`; the `ပြီး` form of the closer, then
@@ -2408,11 +2417,11 @@ fn each_part(kw: Kw) -> Option<EachPart>
 }
 
 /// The reserved words that can stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in the
-/// head of a function: `အများသုံး`, `စိတ်မချရသော` and
+/// head of a function: `အများသုံးနိုင်သော`, `စိတ်မချရသော` and
 /// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`.
 pub(crate) const FN_MARKS: [Kw; 3] = [Kw::Export, Kw::Unsafe, Kw::Comptime];
 
-/// Set the flag of one mark of a function head on the function. `အများသုံး`
+/// Set the flag of one mark of a function head on the function. `အများသုံးနိုင်သော`
 /// stands on a function at the top level alone (ZK0229), and
 /// `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` on a function with statements at the
 /// top level alone (ZK0256).

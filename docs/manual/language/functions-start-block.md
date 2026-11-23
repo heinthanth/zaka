@@ -96,7 +96,7 @@ unsafe block (`စိတ်မချရသော်လည်း`) inside it, or 
 | A return value must have an integer data kind (type). A result kind (result type) raises the same error as other non-integer kinds. | ZK0441 |
 | the program start block cannot fail, so it has no pass-on ([Errors and results](error-handling.md#the-program-start-block)) | ZK0445 |
 | it is declared at the top level, not inside a block | ZK0214 |
-| `အများသုံး` does not export it | ZK0229 |
+| `အများသုံးနိုင်သော` does not export it | ZK0229 |
 
 No call can name the program start block.
 
@@ -158,7 +158,7 @@ top-level statements in the file we run. This mode is built into
 
 - A statement that runs, at the top level, moves into the program start block, in order.
 - A variable or constant moves in with them, as a local of the block, so the values are
-  set in source order. A declaration remains at the top level if it has `အများသုံး` or
+  set in source order. A declaration remains at the top level if it has `အများသုံးနိုင်သော` or
   if a function or another declaration that remains at the top level uses it.
 - Functions, structs, enumerations, traits, kind aliases and imports remain in their places.
 - A file with a program start block compiles as it does without the mode, so a statement

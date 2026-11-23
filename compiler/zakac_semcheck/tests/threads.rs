@@ -47,13 +47,13 @@ fn codes(marks: &str) -> Vec<Code>
 #[test]
 fn an_object_with_the_mark_meets_the_bound()
 {
-    assert!(codes("အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော").is_empty());
+    assert!(codes("အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော၊ မျှဝေနိုင်သော").is_empty());
 }
 
 #[test]
 fn the_words_of_the_mark_read_glued()
 {
-    assert!(codes("အပြိုင်လုပ်ငန်းများတွင်အသုံးပြုနိုင်သော မျှဝေနိုင်သော").is_empty());
+    assert!(codes("အပြိုင်လုပ်ငန်းများတွင်အသုံးပြုနိုင်သော၊ မျှဝေနိုင်သော").is_empty());
 }
 
 #[test]

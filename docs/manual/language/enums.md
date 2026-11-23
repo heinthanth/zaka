@@ -31,9 +31,9 @@ enumerations in small steps in [Enumerations and switches](../../learn/enums/REA
 ## Declaring an enumeration
 
 ```text
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member>၊ … နှင့် <member> တို့ပါဝင်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member> နှင့် … <member> တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲတွင် <member> ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစားကွဲတွင် <member>၊ … နှင့် <member> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစားကွဲတွင် <member> နှင့် … <member> တို့ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ <word> ဖြစ်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစားကွဲတွင် <member> ပါဝင်သည်။
 
 member := [ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်] [တန်ဖိုးအနေဖြင့် <value> ရှိသည့်] <name>
 ```
@@ -51,7 +51,7 @@ An enumeration needs at least one member. We declare it at the top level of a fi
 rest of the program can use it even above the declaration, because the compiler reads all
 declarations first. `အချက်အလက်အမျိုးအစားကွဲ` is the same word as `ဒေတာအမျိုးအစားကွဲ`, as
 `အချက်အလက်` and `ဒေတာ` are, and we can join `တွင်` to the word or write it apart. To export
-an enumeration, we put `အများသုံး` after `ဟူသော`, as for a struct ([Modules](modules.md)).
+an enumeration, we put `အများသုံးနိုင်သော` after `ဟူသော`, as for a struct ([Modules](modules.md)).
 
 | Mistake | Code |
 | --- | --- |

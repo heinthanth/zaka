@@ -81,7 +81,7 @@ the trait, and we end the trait with `ဂုဏ်သတ္တိတွင် �
   which gives its first kind parameter the traits that it requires, so a data kind has the
   trait when it also has those. A trait cannot declare local kinds.
 - We declare a trait at the top level of a file (ZK0247 inside a block), and to let other
-  files import it, we put `အများသုံး` before it.
+  files import it, we put `အများသုံးနိုင်သော` before it.
 
 ## When a data kind has a trait
 
@@ -136,7 +136,7 @@ defaults runs the default when the data kind does not give its own function with
 
 - The default is a generic function of the file, with the kind parameters of the trait,
   and its first kind parameter requires the trait.
-- `အများသုံး` on the trait exports the defaults too.
+- `အများသုံးနိုင်သော` on the trait exports the defaults too.
 - A default counts for a data kind through a trait block alone. A data kind with no block
   has the trait when it gives each function itself, defaults included.
 

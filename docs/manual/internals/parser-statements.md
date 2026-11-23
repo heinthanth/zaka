@@ -65,8 +65,8 @@ Then the reserved word at the start:
 | `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | a declaration or a generic loop |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the program start block (entry point) |
 | `ဒေတာအမျိုးအစား` (`Kw::DataKindOpen`) | `parse_alias_decl` | a kind alias |
-| `အများသုံး` | `parse_exported` | a variable, constant or kind alias that a module exports |
-| `စိတ်မချရသော`, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`, then `ပရိုဂရမ်` | `parse_marked_start` | the marks of a function on the program start block: ZK0257, ZK0256 (and ZK0229 for `အများသုံး`) |
+| `အများသုံးနိုင်သော` | `parse_exported` | a variable, constant or kind alias that a module exports |
+| `စိတ်မချရသော`, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`, then `ပရိုဂရမ်` | `parse_marked_start` | the marks of a function on the program start block: ZK0257, ZK0256 (and ZK0229 for `အများသုံးနိုင်သော`) |
 | a block opener, plain or unsafe | `parse_block` | opener, `။`, statements up to the block closer, the block closer, `။` |
 | `ကွင်းဆက်` | `parse_break` | `ကွင်းဆက် ကို ရပ်မည်။` |
 | `မင်မိုရီရှိ` (`Kw::Mem`, `at_rings_collect`) | `parse_rings_collect` | a run of the ring collector |
@@ -246,7 +246,7 @@ A function declaration starts with its name. `fn_head_at` (in `parser.rs`) tells
 `parse_fn_decl` reads it in this order:
 
 1. the name, and the kind parameters in the notation form (`parse_notation_params`);
-2. `ဟူသော`, then the marks of `FN_MARKS` (`အများသုံး`, `စိတ်မချရသော`,
+2. `ဟူသော`, then the marks of `FN_MARKS` (`အများသုံးနိုင်သော`, `စိတ်မချရသော`,
    `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`), then `လုပ်ဆောင်ချက်` and `သည်`;
 3. the C name of a function that code outside the program can call (`parse_c_name`, see
    below);
@@ -258,7 +258,7 @@ A function declaration starts with its name. `fn_head_at` (in `parser.rs`) tells
 
 While the parts of a generic function are read, its kind parameters are data kind names
 (`add_kind_names`, `drop_kind_names`). `mark_fn` then sets the flag of each mark:
-`FnDecl.exported` for `အများသုံး`, which a function inside a block cannot have (ZK0229);
+`FnDecl.exported` for `အများသုံးနိုင်သော`, which a function inside a block cannot have (ZK0229);
 `FnDecl.unchecked` for `စိတ်မချရသော`; and `FnDecl.comptime` for the comptime mark, which
 needs a function with statements at the top level (ZK0256).
 
@@ -372,15 +372,15 @@ error.
 ## Structs and enumerations
 
 ```text
-<name> ဟူသော [အများသုံး] [<threads mark>] [မျှဝေနိုင်သော] ဒေတာအစုအဝေး တွင် <fields> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] [<threads mark>] [မျှဝေနိုင်သော] ဒေတာအစုအဝေး တွင် <fields> တို့ပါဝင်သည်။
 <name> ဟူသော ... ဒေတာအစုအဝေး သည် [<mark> ဒေတာအစုအဝေး ဖြစ်၍] [<kind parameters>] ၎င်းတွင် <fields> တို့ပါဝင်သည်။
-<name> ဟူသော [အများသုံး] ဒေတာအမျိုးအစားကွဲ တွင် <members> တို့ပါဝင်သည်။
+<name> ဟူသော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစားကွဲ တွင် <members> တို့ပါဝင်သည်။
 ```
 
 `at_kind_decl` checks for `<name> ဟူသော`, then the marks (`past_marks` in `threads.rs`),
 then `ဒေတာအစုအဝေး` (`Kw::StructWord`) or `ဒေတာအမျိုးအစားကွဲ` (`Kw::EnumWord`). The
 check runs before each other form. `parse_kind_decl` reads the marks in order:
-`အများသုံး` sets `exported`, the phrase `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`
+`အများသုံးနိုင်သော` sets `exported`, the phrase `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော`
 (`eat_threads_phrase`) sets `StructDecl.threads`, and `မျှဝေနိုင်သော` (`Kw::Shareable`)
 sets `StructDecl.shared` and requires a struct. A shared mark or the threads mark on a
 struct with a C name or from outside, and the threads mark on an enumeration, is ZK0263
@@ -449,9 +449,9 @@ The marks of a declaration sit in three places, depending on what is declared:
 
 | Declaration | Where the marks go | Read with |
 | --- | --- | --- |
-| a variable, a constant, a kind alias | `အများသုံး` before the statement | `parse_exported`, which parses the next statement and sets `exported` |
-| a function | `အများသုံး`, `စိတ်မချရသော`, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` between `ဟူသော` and `လုပ်ဆောင်ချက်` | `parse_fn_decl` and `mark_fn` |
-| a struct, an enumeration | `အများသုံး`, the threads phrase, `မျှဝေနိုင်သော` after `ဟူသော` | `parse_kind_decl` |
+| a variable, a constant, a kind alias | `အများသုံးနိုင်သော` before the statement | `parse_exported`, which parses the next statement and sets `exported` |
+| a function | `အများသုံးနိုင်သော`, `စိတ်မချရသော`, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` between `ဟူသော` and `လုပ်ဆောင်ချက်` | `parse_fn_decl` and `mark_fn` |
+| a struct, an enumeration | `အများသုံးနိုင်သော`, the threads phrase, `မျှဝေနိုင်သော` after `ဟူသော` | `parse_kind_decl` |
 
 `parse_exported` reports the mark before another statement, or before a declaration
 inside a block (ZK0229). An unsafe block opens with the joined token `UnsafeBlockOpen`,
@@ -485,10 +485,10 @@ compiler itself provides. Each one has the compiler mark
 `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` (`eat_builtin_mark`):
 
 - a data kind, `Stmt::BuiltinKind` (`at_builtin_kind`, `parse_builtin_kind`): a name,
-  `စာရင်း` or `ဇယား`, `သည်`, the mark, `[အများသုံး]` and `ဒေတာအမျိုးအစား`, then `ဖြစ်သည်`,
+  `စာရင်း` or `ဇယား`, `သည်`, the mark, `[အများသုံးနိုင်သော]` and `ဒေတာအမျိုးအစား`, then `ဖြစ်သည်`,
   or `ဖြစ်၍`, the kind parameters in the word form and `၎င်းကို` before the written-as
   hint; kind parameters before the mark are ZK0201;
-- a trait, after `ဟူသည့်`, with `[အများသုံး]` after the mark;
+- a trait, after `ဟူသည့်`, with `[အများသုံးနိုင်သော]` after the mark;
 - a function, `FnDecl.builtin` (`parse_builtin_fn`), with no block: the mark comes right
   after `သည်`, then `လုပ်ဆောင်ချက်ဖြစ်၍`, the kind parameters in the word form with
   `၎င်းသည်` (`parse_word_params_then_thi`), the phrases and the parameters

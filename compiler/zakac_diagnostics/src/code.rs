@@ -198,6 +198,8 @@ MarkClash = ("ZK0263", Level::Error),
 SelectNoArm = ("ZK0264", Level::Error),
 /// A wait on several channels has both a time limit and a no-data arm.
 SelectTwoEnds = ("ZK0265", Level::Error),
+/// Two marks of a declaration head stand with no `၊` between them.
+MarksNeedSeparator = ("ZK0266", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

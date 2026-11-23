@@ -609,7 +609,7 @@ Docs: [Generics](../manual/language/generics.md), [Traits](../manual/language/tr
 ## Modules
 
 ```text
-<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် …
+<name> ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် …
 "<file>" မှ <name> နှင့် <name> တို့ကို ထည့်သွင်းမည်။
 "<file>" ကို ထည့်သွင်းမည်။
 "စံကား/<module>" မှ <name> ကို ထည့်သွင်းမည်။
@@ -617,7 +617,7 @@ Docs: [Generics](../manual/language/generics.md), [Traits](../manual/language/tr
 
 ```zaka-file
 // math.zaka
-နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+နှစ်ထပ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -650,13 +650,13 @@ write the same import with a path that starts with `စံကား/`:
 
 | Zaka | In other languages |
 | --- | --- |
-| `အများသုံး` | `pub` |
+| `အများသုံးနိုင်သော` | `pub` |
 | `"math.zaka" မှ နှစ်ထပ် ကို ထည့်သွင်းမည်။` | `from math import square`, `use math::square;` |
 | `"math.zaka" ကို ထည့်သွင်းမည်။` | `from math import *` |
 | `"စံကား/စာသား" မှ ခွဲ ကို ထည့်သွင်းမည်။` | `use std::…`, `#include <string.h>` |
 
 A module is one file, and its top-level names are private unless we mark them with
-`အများသုံး`. In an import, we write the path in quotes, relative to the folder of the
+`အများသုံးနိုင်သော`. In an import, we write the path in quotes, relative to the folder of the
 importing file, and each file is read once, even when several files import it. Two files that
 import each other are an error (ZK0231). `ပြသမည်` and the other built-ins come from
 the core module (prelude), so these need no import.

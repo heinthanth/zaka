@@ -132,6 +132,29 @@ error[ZK0234]: a kind here takes "တစ်" and a classifier
 error[ZK0430]: the value gives no kind for "ပ"
 ```
 
+## Marks
+
+A declaration can take marks, each a word or a phrase that ends in `သော`, and these stand
+in two places of its head. Before the noun of the declaration stand the marks that change
+how others can use it: `အများသုံးနိုင်သော` (exported), `စိတ်မချရသော` (unsafe),
+`ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` (comptime), `မျှဝေနိုင်သော` (shared) and the mark of
+threads. After `သည်` stand the marks that tell what the declaration is: where it comes from
+or where it goes. Two marks in one place stand
+with `၊` between them, as the items of a list do, and a missing `၊` is ZK0266:
+
+```zaka-file
+// marks.zaka
+အကောင့် ဟူသော အများသုံးနိုင်သော၊ မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+```
+
+| Place | Marks | Pages |
+| --- | --- | --- |
+| before `လုပ်ဆောင်ချက်` | `အများသုံးနိုင်သော`, `စိတ်မချရသော`, `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` | [Modules](modules.md), [Unsafe code](unsafe.md), [Compile time](compile-time.md) |
+| before `ဒေတာအစုအဝေး` | `အများသုံးနိုင်သော`, the mark of threads, `မျှဝေနိုင်သော` | [Values and objects](objects.md), [Threads](threads.md) |
+| before `ကိန်းရှင်`, `ကိန်းသေ`, `ဒေတာအမျိုးအစား`, `ဒေတာအမျိုးအစားကွဲ`, `ဂုဏ်သတ္တိ` | `အများသုံးနိုင်သော` | [Modules](modules.md) |
+| after `သည်`, in a function | `"<lib>" မှလာသော`, `ပြင်ပမှလာသော`, `"<C name>" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော` | [C functions](functions-c.md) |
+| after `သည်`, in a struct | `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, `ပြင်ပမှ လာသော` | [Structs](structs.md) |
+
 ## Set before read
 
 No variable, field or cell is read before the program gives it a value. A declaration can

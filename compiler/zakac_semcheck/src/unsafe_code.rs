@@ -40,7 +40,8 @@ const FUNCTION: &str = "လုပ်ဆောင်ချက်";
 
 /// The words of the marks that stand between `ဟူသော` and `လုပ်ဆောင်ချက်` in a
 /// function header.
-const MARK_WORDS: [&str; 4] = ["အများသုံး", "စိတ်မချရသော", "ကွန်ပိုင်းလုပ်ချိန်တွင်", "လုပ်ဆောင်နိုင်သော"];
+const MARK_WORDS: [&str; 4] =
+    ["အများသုံးနိုင်သော", "စိတ်မချရသော", "ကွန်ပိုင်းလုပ်ချိန်တွင်", "လုပ်ဆောင်နိုင်သော"];
 
 /// The word that opens a start block.
 const START: &str = "ပရိုဂရမ်သည်";
@@ -257,8 +258,11 @@ fn is_header(line: &str) -> bool
 {
     let mut words = line.split_whitespace().skip(1).peekable();
     ret_if!(Some(CALLED.trim_end()) != words.next(), false);
-    let marks: Vec<&str> =
-        std::iter::from_fn(|| words.next_if(|w| MARK_WORDS.contains(w))).collect();
+    // A mark can hold the `၊` that parts it from the next one.
+    let mark = |w: &&str| MARK_WORDS.contains(&w.trim_end_matches('၊'));
+    let marks: Vec<&str> = std::iter::from_fn(|| words.next_if(mark))
+        .map(|w| w.trim_end_matches('၊'))
+        .collect();
     ret_if!(marks.contains(&UNSAFE_WORD.trim_end()), false);
     let noun = words.next();
     let glued = noun.and_then(|w| w.strip_prefix(FUNCTION)) == Some("သည်");

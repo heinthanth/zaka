@@ -143,7 +143,7 @@ to name another target, and `--target-os wasi` uses the CPU `wasm32` unless
 ## Comptime functions
 
 ```text
-<name> ဟူသော [အများသုံး] ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော [စိတ်မချရသော] လုပ်ဆောင်ချက် သည် ...
+<name> ဟူသော [အများသုံးနိုင်သော] ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော [စိတ်မချရသော] လုပ်ဆောင်ချက် သည် ...
 ```
 
 To declare a comptime function, we write `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော`

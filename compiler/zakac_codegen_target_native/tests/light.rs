@@ -76,7 +76,7 @@ fn two_thousand_sleeping_threads_run_as_light_tasks()
 /// themselves in, then wait in a loop until each has: a task whose turn is
 /// over gives its OS thread on, so each gets to count itself in. A loop gives
 /// up after a bound, so a pool with no turns ends too, with a lower sum.
-const TURNS: &str = "ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
+const TURNS: &str = "ကောင်တာ ဟူသော အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော၊ မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် \
                      ကြိမ် ဟူသော အက်တမ်မစ် ဖြစ်သော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
 
 စောင့်လည် ဟူသော လုပ်ဆောင်ချက် သည် ရေတွက် ဟူသော ကောင်တာ တစ်ခု ကို လည်းကောင်း လမ်း ဟူသော ကိန်းပြည့် ပို့နိုင်သော \

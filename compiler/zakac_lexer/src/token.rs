@@ -631,7 +631,7 @@ pub enum Kw
     Negate,
     /// `မှတ်ချက်`, when it is part of a longer word made of reserved words.
     Note,
-    /// `အများသုံး`, which marks a top-level declaration as exported
+    /// `အများသုံးနိုင်သော`, which marks a top-level declaration as exported
     Export,
     /// `မျှဝေနိုင်သော`, which marks a struct whose values are shared objects
     Shareable,

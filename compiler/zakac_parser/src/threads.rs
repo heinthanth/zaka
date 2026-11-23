@@ -25,6 +25,7 @@ use zakac_rust_sugars::tern;
 
 use crate::parser::PResult;
 use crate::parser::Parser;
+use crate::parser::kw_of;
 
 /// The tokens the phrase takes from `at` on: 2 for the words apart, 1 for
 /// the words glued, or `None` when the phrase does not stand there.
@@ -57,7 +58,7 @@ pub(crate) fn threads_phrase_at(
 }
 
 /// The first token past the marks of a kind declaration from `at` on:
-/// `အများသုံး`, `မျှဝေနိုင်သော` and the phrase, in each order.
+/// `အများသုံးနိုင်သော`, `မျှဝေနိုင်သော` and the phrase, in each order.
 ///
 /// # Arguments
 ///
@@ -77,11 +78,22 @@ pub(crate) fn past_marks(
         let plain = matches!(kw, Some(TokenKind::Kw(Kw::Export | Kw::Shareable)));
         tern!(plain, Some(1), threads_phrase_at(tokens, n, text_of))
     };
-    while let Some(len) = mark(at)
+    // A `၊` between two marks belongs to the marks.
+    let sep = |n: usize| {
+        let list =
+            tokens.get(n).is_some_and(|t| t.kind == TokenKind::Punct(Punct::ListSep));
+        list && mark(n + 1).is_some()
+    };
+    loop
     {
+        do_if!(sep(at), at += 1);
+        let Some(len) = mark(at)
+        else
+        {
+            return at;
+        };
         at += len;
     }
-    at
 }
 
 /// The word before the call end that runs a call as a thread.
@@ -454,6 +466,23 @@ impl Parser<'_>
             .name(USABLE_IN_THREADS)
             .span(start.to(&self.prev_span()))
             .build()
+    }
+
+    /// Whether a mark of the head of a kind starts `n` tokens ahead:
+    /// `အများသုံးနိုင်သော`, the phrase of threads, or `မျှဝေနိုင်သော`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn kind_mark_at(&self, n: usize) -> bool
+    {
+        let kw = kw_of(&self.peek_n(n));
+        matches!(kw, Some(Kw::Export | Kw::Shareable))
+            || self.threads_phrase_ahead(n).is_some()
     }
 
     /// Move past the phrase when it stands at the cursor.

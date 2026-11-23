@@ -1058,3 +1058,21 @@ pub fn select_two_ends(span: Span) -> Diagnostic
     let msg = t!("codes.ZK0265.message");
     Diagnostic::new(Code::SelectTwoEnds, msg, span).with_help(t!("codes.ZK0265.help"))
 }
+
+/// Two marks of a declaration head stand with no `၊` between them.
+///
+/// # Arguments
+///
+/// * `span` - The second mark.
+/// * `after` - The end of the first mark.
+///
+/// # Returns
+///
+/// The `ZK0266` diagnostic, with the fix that adds the `၊`.
+pub fn marks_need_separator(span: Span, after: Pos) -> Diagnostic
+{
+    let at = Span::new(after, after);
+    Diagnostic::new(Code::MarksNeedSeparator, t!("codes.ZK0266.message"), span)
+        .with_help(t!("codes.ZK0266.help"))
+        .with_fix(t!("codes.ZK0266.fix"), at, "၊")
+}

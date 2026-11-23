@@ -53,15 +53,15 @@ because the compiler provides their meaning.
 ## The compiler mark
 
 ```text
-<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား (ဖြစ်သည်။|ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။|ဖြစ်၍ <params> ၎င်းကို ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။)
-<name>[<<params>>] ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံး] ဂုဏ်သတ္တိ …
-<name> ဟူသော [အများသုံး] လုပ်ဆောင်ချက် သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍ [<params> ၎င်းသည်] [<phrases> ကို သုံး၍] <parameters> လက်ခံမည်။
-[အများသုံး] ကိန်းသေ <name> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော <kind> တစ်<word> ဖြစ်သည်။
+<kind> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစား (ဖြစ်သည်။|ဖြစ်ပြီး ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။|ဖြစ်၍ <params> ၎င်းကို ရေးသားရာတွင် <hint> ဟု ရေးသားနိုင်သည်။)
+<name>[<<params>>] ဟူသည့် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော [အများသုံးနိုင်သော] ဂုဏ်သတ္တိ …
+<name> ဟူသော [အများသုံးနိုင်သော] လုပ်ဆောင်ချက် သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍ [<params> ၎င်းသည်] [<phrases> ကို သုံး၍] <parameters> လက်ခံမည်။
+[အများသုံးနိုင်သော] ကိန်းသေ <name> သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော <kind> တစ်<word> ဖြစ်သည်။
 ```
 
 We write `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` ("included inside the compiler") to mark a
 data kind, a trait, a function or a constant of the core module. In the declaration of a
-data kind or a trait, `အများသုံး` goes right before the noun, after the mark, and in a
+data kind or a trait, `အများသုံးနိုင်သော` goes right before the noun, after the mark, and in a
 function signature it goes after `ဟူသော`. `<params>` is the word form of the kind
 parameters, `ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍`.
 

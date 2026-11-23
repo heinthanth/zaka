@@ -99,8 +99,9 @@ impl Parser<'_>
         let name = self.parse_ident()?;
         let mut params = self.parse_notation_params()?;
         self.expect_reading(Kw::CalledRel)?;
-        // `အများသုံး` stands right before `ဂုဏ်သတ္တိ`, after the compiler mark.
+        // `အများသုံးနိုင်သော` stands right before `ဂုဏ်သတ္တိ`, after the compiler mark.
         let builtin = self.eat_builtin_mark()?;
+        do_if!(builtin, self.mark_gap(|p, n| p.at_kw_n(n, Kw::Export))?);
         let exported = self.eat(Kw::Export);
         self.expect(Kw::Trait)?;
         let mut hint = Vec::new();
@@ -436,7 +437,7 @@ impl Parser<'_>
     }
 
     /// Parse a built-in kind of the core: `<kind> သည် ကွန်ပိုင်လာထဲတွင်
-    /// တစ်ပါတည်းပါဝင်သော [အများသုံး] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for a list or a
+    /// တစ်ပါတည်းပါဝင်သော [အများသုံးနိုင်သော] ဒေတာအမျိုးအစား ဖြစ်သည်။`, or for a list or a
     /// table, the mark first, then `ဖြစ်၍`, the kind parameters in words and
     /// `၎င်းကို`, then the written-as hint: `<word> သည် ကွန်ပိုင်လာထဲတွင် … ဒေတာအမျိုးအစား
     /// ဖြစ်၍ ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် … ဟု
@@ -453,6 +454,7 @@ impl Parser<'_>
         self.expect(Kw::Thi)?;
         self.expect(Kw::InCompiler)?;
         self.expect(Kw::IncludedWith)?;
+        self.mark_gap(|p, n| p.at_kw_n(n, Kw::Export))?;
         let exported = self.eat(Kw::Export);
         self.expect(Kw::DataKindOpen)?;
         // `ဖြစ်၍` starts the kind parameters, or the hint when `ရေးသားရာတွင်`

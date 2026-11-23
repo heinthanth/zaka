@@ -74,7 +74,7 @@ ships with `zakac`, so it matches the version of the compiler. See
   and the server goes on.
 
 The server checks the files that the editor has open from their unsaved text, and reads
-each other file from the disk. A file that exports a name (`အများသုံး`) and has no
+each other file from the disk. A file that exports a name (`အများသုံးနိုင်သော`) and has no
 program start block is a module that other files import, so the server checks it as one:
 it needs no program start block, and ZK0327 is not reported for it. A change to one open
 file checks the other open files again, since one can import another. While a line does

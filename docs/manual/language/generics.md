@@ -412,7 +412,7 @@ a data kind with either name hides the one of the core module.
 ## Generics in modules
 
 To let other files import a generic function, a generic struct or a trait, we mark it with
-`အများသုံး`, and other files import it with its name. An instance of a function belongs to
+`အများသုံးနိုင်သော`, and other files import it with its name. An instance of a function belongs to
 the file of its generic, so it sees each name of that file, private functions, variables
 and constants included. It also sees the functions of the file of each of its data kinds
 and of the file of each trait that it requires, so a generic in a module can call the trait

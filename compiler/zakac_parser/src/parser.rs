@@ -381,8 +381,10 @@ pub(crate) fn fn_head_at(tokens: &[Token]) -> Option<usize>
     ret_if!(!matches!(kind_at(0), TokenKind::Ident | TokenKind::RawIdent), None);
     let called = 1 + angle_len_with(1, kind_at).unwrap_or(0);
     ret_if!(kind_at(called) != TokenKind::Kw(Kw::Called), None);
-    let is_mark = |n: &usize| FN_MARKS.iter().any(|m| kind_at(*n) == TokenKind::Kw(*m));
-    let noun = (called + 1..).find(|n| !is_mark(n))?;
+    let mark = |n: usize| FN_MARKS.iter().any(|m| kind_at(n) == TokenKind::Kw(*m));
+    // A `၊` between two marks belongs to the marks.
+    let sep = |n: usize| kind_at(n) == TokenKind::Punct(Punct::ListSep) && mark(n + 1);
+    let noun = (called + 1..).find(|n| !mark(*n) && !sep(*n))?;
     let head = kind_at(noun) == TokenKind::Kw(Kw::Function)
         && kind_at(noun + 1) == TokenKind::Kw(Kw::Thi);
     tern!(head, Some(noun), None)
@@ -803,6 +805,72 @@ impl<'t> Parser<'t>
 
     /// Move past the current token without returning it.
     pub(crate) fn advance(&mut self) { self.cur.bump(); }
+
+    /// After a mark of a declaration head, eat the `၊` before the next mark
+    /// of the head: two marks need one between them (ZK0266).
+    ///
+    /// # Arguments
+    ///
+    /// * `is_mark` - Whether a mark of the head starts some tokens ahead.
+    ///
+    /// # Returns
+    ///
+    /// `Ok`, or ZK0266 for a mark right after the one before.
+    pub(crate) fn mark_gap(
+        &mut self, is_mark: impl Fn(&Self, usize) -> bool,
+    ) -> PResult<()>
+    {
+        let sep = self.at_punct(Punct::ListSep) && is_mark(self, 1);
+        do_if!(sep, self.advance());
+        ret_if!(sep, Ok(()));
+        let glued = diag::marks_need_separator(self.peek().span, self.prev_span().hi);
+        ret_if!(is_mark(self, 0), Err(glued));
+        Ok(())
+    }
+
+    /// Whether the token `n` ahead is the sign `punct`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    /// * `punct` - The sign.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    pub(crate) fn at_punct_n(&self, n: usize, punct: Punct) -> bool
+    {
+        self.peek_n(n).kind == TokenKind::Punct(punct)
+    }
+
+    /// Whether the token `n` ahead is the reserved word `kw`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    /// * `kw` - The reserved word.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it is.
+    pub(crate) fn at_kw_n(&self, n: usize, kw: Kw) -> bool
+    {
+        kw_of(&self.peek_n(n)) == Some(kw)
+    }
+
+    /// Whether a mark of a function head starts `n` tokens ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    pub(crate) fn fn_mark_at(&self, n: usize) -> bool
+    {
+        kw_of(&self.peek_n(n)).is_some_and(|k| FN_MARKS.contains(&k))
+    }
 
     /// Whether the current token is the reserved word `kw`.
     ///

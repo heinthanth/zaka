@@ -103,7 +103,7 @@ inside a block, the parser reads it and reports an error. See
 declaration  = var-decl | fn-decl | external-fn | builtin-fn | struct-decl | handle-decl
              | enum-decl | alias-decl | builtin-kind | trait-decl | trait-block ;
 
-var-decl     = [ "အများသုံး" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
+var-decl     = [ "အများသုံးနိုင်သော" ] ( "ကိန်းရှင်" | "ကိန်းသေ" ) name
                ( "သည်" decl-head "ဖြစ်ပါစေ"
                | "သည်" compiler-mark slot-kind "ဖြစ်သည်"     (* a constant of the core module *)
                | "ထဲသို့" clause "ကို" ( "ကူးထည့်မည်" | "အကုန်ကူးထည့်မည်" ) ) "။" ;
@@ -116,7 +116,7 @@ fn-decl      = name [ sign-params ] "ဟူသော" fn-marks "လုပ်ဆ�
                [ notes ]
                { stmt }
                block-close "။" ;
-fn-marks     = { "အများသုံး" | "စိတ်မချရသော" | "ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော" } ;
+fn-marks     = { "အများသုံးနိုင်သော" | "စိတ်မချရသော" | "ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော" } ;
 c-callable   = string-lit "အမည်ဖြင့်" "ပြင်ပမှ ခေါ်ဆိုနိုင်သော" "လုပ်ဆောင်ချက်" [ "တစ်ခု" ]
                "ဖြစ်၍" ;                          (* a function that C can call, under that C name *)
 
@@ -133,7 +133,7 @@ notes        = "ဤနေရာတွင်" "သတိပြုရန်မှ�
                | name "တွင်" items(trait-ref "ဂုဏ်သတ္တိ") [ "တို့" ] "ရှိသည်" "။" }
                "သတိပြုစရာများ" done "။" ;
 
-trait-decl   = name [ sign-params ] "ဟူသည့်" [ compiler-mark ] [ "အများသုံး" ] "ဂုဏ်သတ္တိ"
+trait-decl   = name [ sign-params ] "ဟူသည့်" [ compiler-mark ] [ "အများသုံးနိုင်သော" ] "ဂုဏ်သတ္တိ"
                ( [ "သည်" hint "ရေးသားနိုင်ပြီး" "၎င်း" ]     (* with sign-params *)
                | "သည်" word-params-open [ hint "ရေးသားနိုင်ပြီး" ] "၎င်း" )
                "တွင်" "အောက်ပါ" "လုပ်ဆောင်ချက်များ" "ပါဝင်ရမည်" "။"
@@ -185,10 +185,10 @@ builtin-fn   = name [ sign-params ] "ဟူသော" fn-marks "လုပ်ဆ�
                ( "ဖြစ်သည်"
                | "ဖြစ်၍" [ word-params "သည်" ] [ phrases ]
                  params ( "လက်ခံမည်" | "လက်ခံပြီး" result ) ) "။" ;
-builtin-kind = name "သည်" compiler-mark [ "အများသုံး" ] "ဒေတာအမျိုးအစား"
+builtin-kind = name "သည်" compiler-mark [ "အများသုံးနိုင်သော" ] "ဒေတာအမျိုးအစား"
                ( "ဖြစ်သည်" | "ဖြစ်၍" [ word-params "ကို" ] hint "ရေးသားနိုင်သည်" ) "။" ;
 
-struct-decl  = name [ sign-params ] "ဟူသော" [ "အများသုံး" ] [ threads-mark ] [ "မျှဝေနိုင်သော" ]
+struct-decl  = name [ sign-params ] "ဟူသော" [ "အများသုံးနိုင်သော" ] [ threads-mark ] [ "မျှဝေနိုင်သော" ]
                "ဒေတာအစုအဝေး"
                ( "တွင်" | "သည်" [ struct-mark "ဒေတာအစုအဝေး" "ဖြစ်၍" ] [ word-params-open ] "၎င်း" "တွင်" )
                fields ( closer | hinted-closer ) "။" ;
@@ -196,12 +196,12 @@ hinted-closer = ( "ပါဝင်ပြီး" | "တို့ပါဝင်�
                "ဖြစ်၍" hint "ရေးသားနိုင်သည်" ;
 struct-mark  = string-lit "အမည်ဖြင့်" "ပြင်ပမှ ယူသုံးနိုင်သော"   (* a struct a lib gives to C *)
              | "ကွန်ပိုင်လာထဲတွင်" "တစ်ပါတည်းပါဝင်သော" ;         (* a struct the compiler gives *)
-handle-decl  = name "ဟူသော" [ "အများသုံး" ] "ဒေတာအစုအဝေး" "သည်" "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
+handle-decl  = name "ဟူသော" [ "အများသုံးနိုင်သော" ] "ဒေတာအစုအဝေး" "သည်" "ပြင်ပမှ လာသော" "ဒေတာအစုအဝေး"
                ( "ဖြစ်သည်" | "ဖြစ်၍" "၎င်း" "တွင်" fields ( "ပါဝင်သည်" | "တို့ပါဝင်သည်" ) ) "။" ;
 fields       = items(field) ;
 field        = name "ဟူသော" listed-kind ;
 
-enum-decl    = name [ sign-params ] "ဟူသော" [ "အများသုံး" ] [ threads-mark ] "ဒေတာအမျိုးအစားကွဲ"   (* threads-mark: ZK0263 *)
+enum-decl    = name [ sign-params ] "ဟူသော" [ "အများသုံးနိုင်သော" ] [ threads-mark ] "ဒေတာအမျိုးအစားကွဲ"   (* threads-mark: ZK0263 *)
                ( "တွင်" | "သည်" word-params "တွင်" )   (* kind parameters: members with data *)
                items(variant) closer "။" ;
 variant      = [ "ကနဦးတန်ဖိုးအနေဖြင့် သုံးမည့်" ] [ "တန်ဖိုးအနေဖြင့်" expr "ရှိသည့်" ]
@@ -211,7 +211,7 @@ closer       = ( "ပါဝင်သည်" | "ပါဝင်ပြီး" word
              | ( "တို့ပါဝင်သည်" | "တို့ပါဝင်ပြီး" word-clause ) ;  (* after two or more *)
 word-clause  = "မျိုးပြပစ္စည်းမှာ" classifier "ဖြစ်သည်" ;
 
-alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုးအစား" name
+alias-decl   = [ "အများသုံးနိုင်သော" ] "ဒေတာအမျိုးအစား" name
                ( [ sign-params ] "ကို" | "သည်" word-params "ကို" ) kind
                ( "ဟုလည်း မှတ်ယူနိုင်ပါသည်" | "ဟုလည်း မှတ်ယူနိုင်ပြီး" word-clause ) "။" ;
 ```
@@ -228,9 +228,9 @@ alias-decl   = [ "အများသုံး" ] "ဒေတာအမျိုး
   `word-params` after `သည်`. A trait has one kind parameter or more. The functions of a
   trait block are functions of its file. A trait or a trait block inside a block is
   ZK0247.
-- We write the marks of a struct in the order of the rule: `အများသုံး`, then
+- We write the marks of a struct in the order of the rule: `အများသုံးနိုင်သော`, then
   `threads-mark`, then `မျှဝေနိုင်သော`. In a trait, the compiler mark comes before
-  `အများသုံး`. The compiler mark, `builtin-fn` and `builtin-kind` belong to the core module
+  `အများသုံးနိုင်သော`. The compiler mark, `builtin-fn` and `builtin-kind` belong to the core module
   alone (ZK0349).
 - A written-as hint (`hint`) gives the words that a use of a generic struct, a data kind
   of the core module or a trait can be written with. Each word that is a kind parameter of
@@ -639,7 +639,7 @@ channel-kind = kind [ digits name ] ( "ပို့နိုင်သော" | "
   `ယူ၍`.
 - We can write the two words of `threads-mark` glued or apart. The mark is for a shared
   object kind, and on another struct it is the warning ZK0493. In `struct-decl` it goes
-  between `အများသုံး` and `မျှဝေနိုင်သော`, and in `trait-ref` it is the name of a built-in
+  between `အများသုံးနိုင်သော` and `မျှဝေနိုင်သော`, and in `trait-ref` it is the name of a built-in
   trait.
 - `thread-kind` and `channel-kind` are written-as hints of the core module
   ([Data kinds](#data-kinds)). In a channel kind, `digits name` is the room of a bounded

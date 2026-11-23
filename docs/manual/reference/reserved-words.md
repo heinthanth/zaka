@@ -316,7 +316,7 @@ words, so a name that a program declares hides the trait of the core module.
 
 | Word | Reads as | Page |
 | --- | --- | --- |
-| `အများသုံး` | "for common use": to export a top-level declaration | [Modules](../../learn/modules/README.md#sharing-names) |
+| `အများသုံးနိုင်သော` | "for common use": to export a top-level declaration | [Modules](../../learn/modules/README.md#sharing-names) |
 | `ထည့်သွင်းမည်` | "will bring in": at the end of an import, after `"<file>" မှ <name> ကို` or `"<file>" ကို` | [Modules](../../learn/modules/README.md#importing-names) |
 | `အများသုံးနိုင်ရန်` | "for common use": in a share, after the names that the file passes on | [Modules](../language/modules.md#sharing-imported-names) |
 | `ပြန်လည်` | "again": the first word of `ပြန်လည် မျှဝေမည်` | [Modules](../language/modules.md#sharing-imported-names) |

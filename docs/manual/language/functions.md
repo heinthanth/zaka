@@ -69,7 +69,7 @@ these rules:
 | Part | Rule |
 | --- | --- |
 | name | a name like other names; it comes first, then `ဟူသော`, as in the declaration of a [struct](structs.md) |
-| words before `လုပ်ဆောင်ချက်` | we can write `အများသုံး` to export the function ([Modules](modules.md)), `စိတ်မချရသော` to make it unsafe ([Unsafe Zaka](unsafe.md)) and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` to make it a comptime function ([Compile time](compile-time.md#comptime-functions)), between `ဟူသော` and `လုပ်ဆောင်ချက်`, in either order |
+| words before `လုပ်ဆောင်ချက်` | we can write `အများသုံးနိုင်သော` to export the function ([Modules](modules.md)), `စိတ်မချရသော` to make it unsafe ([Unsafe Zaka](unsafe.md)) and `ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော` to make it a comptime function ([Compile time](compile-time.md#comptime-functions)), between `ဟူသော` and `လုပ်ဆောင်ချက်`, in either order |
 | phrases | a starting phrase, an ending phrase or both: words that a call written as a sentence puts around its arguments ([Starting and ending phrases](functions-sentences.md#starting-and-ending-phrases)) |
 | parameters | each one written `<name> ဟူသော <kind> တစ်<word> ကို`, then its markers ([Function parameters](functions-parameters.md)) |
 | `လည်းကောင်း` | after each parameter when there are two or more; after a lone parameter we can write it or leave it out |

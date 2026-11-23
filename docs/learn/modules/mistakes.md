@@ -12,23 +12,23 @@ one file are checked on the page as well.
 
 ## You will learn
 
-- Where `အများသုံး` and an import sentence can go in a file.
+- Where `အများသုံးနိုင်သော` and an import sentence can go in a file.
 - Which names a file can import from another file.
 - What an imported file cannot contain.
 - The reason a program without a file cannot import.
 
 ## The export mark in the wrong place
 
-We can use `အများသုံး` on a declaration at the top level of a file: a function, a struct,
+We can use `အများသုံးနိုင်သော` on a declaration at the top level of a file: a function, a struct,
 an enumeration, a variable or a constant. Before a sentence, or before a declaration
 inside a block, it has no meaning, so the compiler stops with the error ZK0229:
 
 ```zaka-error ZK0229
-အများသုံး ၁ ကို ပြသမည်။
+အများသုံးနိုင်သော ၁ ကို ပြသမည်။
 ```
 
 ```text
-error[ZK0229]: "အများသုံး" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after "ဟူသော" in a function, a struct or an enumeration
+error[ZK0229]: "အများသုံးနိုင်သော" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after "ဟူသော" in a function, a struct or an enumeration
 ```
 
 ## An import below a statement
@@ -62,8 +62,8 @@ read either file first:
 ```zaka-file
 // b.zaka
 "a.zaka" မှ က ကို ထည့်သွင်းမည်။
-အများသုံး ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
-အများသုံး ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် ခ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် က သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 ```
 
 ```text
@@ -79,7 +79,7 @@ Here `math.zaka` shares `နှစ်ထပ်` and keeps `သုံးထပ်
 
 ```zaka-file
 // math.zaka
-နှစ်ထပ် ဟူသော အများသုံး လုပ်ဆောင်ချက် သည်
+နှစ်ထပ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
 က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 က * က ကို ပြန်ပေးမည်။
@@ -102,12 +102,12 @@ Here `math.zaka` shares `နှစ်ထပ်` and keeps `သုံးထပ်
 
 ```text
 error[ZK0322]: "math.zaka" exports nothing named "သုံးထပ်"
-  = help: "သုံးထပ်" is declared there without "အများသုံး"; add the mark to share it
+  = help: "သုံးထပ်" is declared there without "အများသုံးနိုင်သော"; add the mark to share it
 error[ZK0303]: function "သုံးထပ်" is not declared
-  = help: "သုံးထပ်" is declared in "math.zaka"; mark it "အများသုံး" there and import it here
+  = help: "သုံးထပ်" is declared in "math.zaka"; mark it "အများသုံးနိုင်သော" there and import it here
 ```
 
-To fix it, we mark `သုံးထပ်` with `အများသုံး` in `math.zaka`. When `math.zaka` does not
+To fix it, we mark `သုံးထပ်` with `အများသုံးနိုင်သော` in `math.zaka`. When `math.zaka` does not
 declare the name at all, we get ZK0322 without the help line, and we check the spelling
 of the name.
 
@@ -119,7 +119,7 @@ data kind, `နေရာ`, is private to the file:
 
 ```zaka-error ZK0324
 နေရာ ဟူသော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
-အများသုံး ကိန်းရှင် မူလ သည် နေရာ တစ်ခု ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် မူလ သည် နေရာ တစ်ခု ဖြစ်ပါစေ။
 
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
@@ -127,7 +127,7 @@ data kind, `နေရာ`, is private to the file:
 
 ```text
 error[ZK0324]: "မူလ" is exported, but its kind names the private struct "နေရာ"
-  = help: mark "နေရာ" with "အများသုံး" as well, or keep "မူလ" private
+  = help: mark "နေရာ" with "အများသုံးနိုင်သော" as well, or keep "မူလ" private
 ```
 
 The rule is the same for the parameters and the result of a function and for the fields
@@ -141,7 +141,7 @@ it, because the program would run that sentence at a moment that no one chose:
 
 ```zaka-file
 // counter.zaka
-အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကနဦးတန်ဖိုး ဖြစ်ပါစေ။
 "စတင်ပြီ" ဟု ပြသမည်။
 ```
 
@@ -171,7 +171,7 @@ compile time, and a call of a plain function is not known then:
 အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
 မိနစ် * ၆၀ ကို ပြန်ပေးမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
-အများသုံး ကိန်းသေ တစ်နာရီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စက္ကန့် ဟူသော လုပ်ဆောင်ချက်ကို ၆၀ ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းသေ တစ်နာရီ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် စက္ကန့် ဟူသော လုပ်ဆောင်ချက်ကို ၆၀ ဖြင့် လုပ်ဆောင်သော ရလဒ် ဖြစ်ပါစေ။
 ```
 
 ```zaka-file
@@ -197,7 +197,7 @@ For this reason, each of its variables needs a value in its declaration:
 
 ```zaka-file
 // counter.zaka
-အများသုံး ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+အများသုံးနိုင်သော ကိန်းရှင် အကြိမ် သည် ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
 ```
 
 ```zaka-file
@@ -238,9 +238,9 @@ To fix it, we save the program in a file next to `math.zaka` and run that file.
 
 ## Recap
 
-- `အများသုံး` and imports belong at the top level, and the imports come first.
+- `အများသုံးနိုင်သော` and imports belong at the top level, and the imports come first.
 - Two files cannot import each other, so we move the shared part to a third file.
-- A file can import just the names that the other file marks with `အများသုံး`, and an
+- A file can import just the names that the other file marks with `အများသုံးနိုင်သော`, and an
   exported declaration can name just exported structs.
 - An imported file contains declarations, and each of its variables gets a value that is
   known at compile time.

@@ -270,7 +270,7 @@ fn the_start_block_has_the_parts_of_a_function()
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးပါပြီ။";
     assert_eq!(codes(nested), [Code::NestedFunction]);
-    let exported = "အများသုံး ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
+    let exported = "အများသုံးနိုင်သော ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ ပရိုဂရမ် ပြီးဆုံးပါပြီး။";
     assert_eq!(codes(exported), [Code::ExportNotOnDecl]);
     let wrong_closer = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။";
     assert_eq!(codes(wrong_closer), [Code::ExpectedToken]);
@@ -819,7 +819,7 @@ fn the_compiler_mark_comes_before_the_kind_parameters()
     let kinds = "ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည်";
     let mark = "ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော လုပ်ဆောင်ချက်ဖြစ်၍";
     let head = |middle: &str| {
-        format!("ပြ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် {middle} ပစ္စည်း ဟူသော A တစ်ခု ကို လက်ခံမည်။")
+        format!("ပြ ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် {middle} ပစ္စည်း ဟူသော A တစ်ခု ကို လက်ခံမည်။")
     };
     assert!(stmt(&head(&format!("{mark} {kinds}"))).contains("ပြ<A>"));
     assert_eq!(codes(&head(&format!("{kinds} {mark}"))), [Code::ExpectedToken]);
@@ -830,11 +830,11 @@ fn the_compiler_mark_comes_before_the_kind_parameters()
 #[test]
 fn a_built_in_kind_takes_its_kind_parameters_after_the_mark()
 {
-    let new = "စာရင်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်၍ \
+    let new = "စာရင်း သည် ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော၊ အများသုံးနိုင်သော ဒေတာအမျိုးအစား ဖြစ်၍ \
                ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းကို ရေးသားရာတွင် A စာရင်းဟု ရေးသားနိုင်သည်။";
     assert!(stmt(new).contains("စာရင်း<A>"), "{}", stmt(new));
     let old = "စာရင်း သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍ ၎င်းသည် ကွန်ပိုင်လာထဲတွင် \
-               တစ်ပါတည်းပါဝင်သော အများသုံး ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် A စာရင်းဟု \
+               တစ်ပါတည်းပါဝင်သော အများသုံးနိုင်သော ဒေတာအမျိုးအစား ဖြစ်ပြီး ရေးသားရာတွင် A စာရင်းဟု \
                ရေးသားနိုင်သည်။";
     assert!(codes(old).contains(&Code::ExpectedToken), "{:?}", codes(old));
 }
@@ -1022,8 +1022,8 @@ fn a_kind_from_outside_parses()
          တစ်ခု ပါဝင်သည်။",
     );
     assert_eq!(fields, "(external_struct စက\u{103a} [i32 n])");
-    // `အများသုံး` stands before the noun, as for each struct.
-    let shown = "စက် ဟူသော အများသုံး ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။";
+    // `အများသုံးနိုင်သော` stands before the noun, as for each struct.
+    let shown = "စက် ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးသည် ပြင်ပမှ လာသော ဒေတာအစုအဝေး ဖြစ်သည်။";
     assert_eq!(codes(shown), []);
     assert!(stmt(shown).contains("export"), "{}", stmt(shown));
     // The head of before, with the mark before the noun, is no head.
@@ -1143,11 +1143,11 @@ fn the_marks_of_a_function_stand_after_its_name()
         let f = one_fn(&format!("ပြ ဟူသော {marks} လုပ်ဆောင်ချက် သည် {EMPTY_FN}"));
         (f.exported, f.unchecked, f.comptime)
     };
-    assert_eq!(flags("အများသုံး"), (true, false, false));
+    assert_eq!(flags("အများသုံးနိုင်သော"), (true, false, false));
     assert_eq!(flags("စိတ်မချရသော"), (false, true, false));
     assert_eq!(flags("ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော"), (false, false, true));
-    assert_eq!(flags("အများသုံး စိတ်မချရသော"), (true, true, false));
-    assert_eq!(flags("စိတ်မချရသော အများသုံး"), (true, true, false));
+    assert_eq!(flags("အများသုံးနိုင်သော၊ စိတ်မချရသော"), (true, true, false));
+    assert_eq!(flags("စိတ်မချရသော၊ အများသုံးနိုင်သော"), (true, true, false));
 }
 
 #[test]
@@ -1155,13 +1155,13 @@ fn a_function_head_in_another_order_is_no_declaration()
 {
     let old = format!("လုပ်ဆောင်ချက် ပြ သည် {EMPTY_FN}");
     assert!(!codes(&old).is_empty(), "{old}");
-    let mark_first = format!("အများသုံး ပြ ဟူသော လုပ်ဆောင်ချက် သည် {EMPTY_FN}");
+    let mark_first = format!("အများသုံးနိုင်သော ပြ ဟူသော လုပ်ဆောင်ချက် သည် {EMPTY_FN}");
     assert!(!codes(&mark_first).is_empty(), "{mark_first}");
     let named = format!("ပြ မည့် လုပ်ဆောင်ချက် သည် {EMPTY_FN}");
     assert!(!codes(&named).is_empty(), "{named}");
     let nested = format!(
-        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nပြ ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် {EMPTY_FN}ပရိုဂရမ် \
-         ပြီးဆုံးပါပြီး။\n"
+        "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nပြ ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် \
+         {EMPTY_FN}ပရိုဂရမ် ပြီးဆုံးပါပြီး။\n"
     );
     assert_eq!(codes(&nested), [Code::ExportNotOnDecl]);
 }
@@ -1174,7 +1174,10 @@ fn the_marks_of_a_function_on_the_start_block_name_their_misuse()
     };
     assert_eq!(start("စိတ်မချရသော"), [Code::UnsafeStart]);
     assert_eq!(start("ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော"), [Code::ComptimeMarkMisplaced]);
-    assert_eq!(start("စိတ်မချရသော အများသုံး"), [Code::UnsafeStart, Code::ExportNotOnDecl]);
+    assert_eq!(
+        start("စိတ်မချရသော၊ အများသုံးနိုင်သော"),
+        [Code::UnsafeStart, Code::ExportNotOnDecl]
+    );
 }
 
 /// `ကူးထည့်` is a verb of the core, and `အကုန်` before it makes the
@@ -1254,7 +1257,7 @@ fn the_mark_of_threads_clashes_with_an_enumeration_and_c()
 {
     let threads = "အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော";
     let ok =
-        format!("pt ဟူသော {threads} မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
+        format!("pt ဟူသော {threads}၊ မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် x ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။");
     assert_eq!(codes(&ok), []);
     let enumeration = format!("အရောင် ဟူသော {threads} ဒေတာအမျိုးအစားကွဲတွင် နီ နှင့် ပြာ တို့ပါဝင်သည်။");
     assert_eq!(codes(&enumeration), [Code::MarkClash]);

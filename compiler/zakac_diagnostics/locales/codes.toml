@@ -268,9 +268,9 @@ en = """A struct declaration, \"<name> ဟူသော ဒေတာအစုအ�
 [codes.ZK0229.title]
 en = "misplaced export mark"
 [codes.ZK0229.message]
-en = "\"အများသုံး\" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after \"ဟူသော\" in a function, a struct or an enumeration"
+en = "\"အများသုံးနိုင်သော\" marks a declaration at the top level: it stands before a variable, a constant or a kind alias, and after \"ဟူသော\" in a function, a struct or an enumeration"
 [codes.ZK0229.explain]
-en = """The export mark \"အများသုံး\" stands right before \"ဒေတာအမျိုးအစား\" (an alias), \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. A function, a struct or an enumeration carries it after \"ဟူသော\": \"<name> ဟူသော အများသုံး လုပ်ဆောင်ချက် သည် ...\", \"<name> ဟူသော အများသုံး ဒေတာအစုအဝေးတွင် ...\". It cannot mark a statement, a loop, or a declaration inside a block."""
+en = """The export mark \"အများသုံးနိုင်သော\" stands right before \"ဒေတာအမျိုးအစား\" (an alias), \"ကိန်းရှင်\" or \"ကိန်းသေ\" at the top level of a file, and lets other files import that declaration. A function, a struct or an enumeration carries it after \"ဟူသော\": \"<name> ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည် ...\", \"<name> ဟူသော အများသုံးနိုင်သော ဒေတာအစုအဝေးတွင် ...\". It cannot mark a statement, a loop, or a declaration inside a block."""
 
 [codes.ZK0230.title]
 en = "misplaced import"
@@ -510,11 +510,11 @@ en = "nothing to import"
 [codes.ZK0322.message]
 en = "\"%{f}\" exports nothing named \"%{n}\""
 [codes.ZK0322.help_private]
-en = "\"%{n}\" is declared there without \"အများသုံး\"; add the mark to share it"
+en = "\"%{n}\" is declared there without \"အများသုံးနိုင်သော\"; add the mark to share it"
 [codes.ZK0322.help_hidden]
-en = "\"%{n}\" is declared in \"%{f}\"; mark it \"အများသုံး\" there and import it here"
+en = "\"%{n}\" is declared in \"%{f}\"; mark it \"အများသုံးနိုင်သော\" there and import it here"
 [codes.ZK0322.explain]
-en = """An import takes names that the other file exports. A declaration is exported when \"အများသုံး\" stands before it; without the mark it is private to its file."""
+en = """An import takes names that the other file exports. A declaration is exported when \"အများသုံးနိုင်သော\" stands before it; without the mark it is private to its file."""
 
 [codes.ZK0323.title]
 en = "statement in an imported file"
@@ -555,9 +555,9 @@ en = "private struct in an export"
 [codes.ZK0324.message]
 en = "\"%{n}\" is exported, but its kind names the private struct \"%{s}\""
 [codes.ZK0324.help]
-en = "mark \"%{s}\" with \"အများသုံး\" as well, or keep \"%{n}\" private"
+en = "mark \"%{s}\" with \"အများသုံးနိုင်သော\" as well, or keep \"%{n}\" private"
 [codes.ZK0324.explain]
-en = """An exported function, struct, variable or constant can be used from other files, so each struct its kinds name must be usable there too. A struct that the file declares without \"အများသုံး\" is private to the file. Export the struct as well, or remove the mark from the declaration that uses it."""
+en = """An exported function, struct, variable or constant can be used from other files, so each struct its kinds name must be usable there too. A struct that the file declares without \"အများသုံးနိုင်သော\" is private to the file. Export the struct as well, or remove the mark from the declaration that uses it."""
 
 [codes.ZK0328.title]
 en = "duplicate member"
@@ -1897,9 +1897,9 @@ en = "share of a name not imported"
 [codes.ZK0261.message]
 en = "\"%{n}\" is not imported in this file, so it cannot be shared again"
 [codes.ZK0261.help]
-en = "import \"%{n}\" first, or mark its declaration with \"အများသုံး\""
+en = "import \"%{n}\" first, or mark its declaration with \"အများသုံးနိုင်သော\""
 [codes.ZK0261.explain]
-en = """A sentence ending in \"အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်\" passes names this file imports on to the files that import it. A name the file declares itself is exported with the mark \"အများသုံး\" on its declaration instead."""
+en = """A sentence ending in \"အများသုံးနိုင်ရန် ပြန်လည် မျှဝေမည်\" passes names this file imports on to the files that import it. A name the file declares itself is exported with the mark \"အများသုံးနိုင်သော\" on its declaration instead."""
 
 [codes.ZK0263.title]
 en = "marks that do not go together"
@@ -1909,6 +1909,17 @@ en = "a struct cannot be both \"%{a}\" and \"%{b}\""
 en = "drop one of the two"
 [codes.ZK0263.explain]
 en = """Some marks of a struct do not go together. A struct that a lib gives to C, `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော`, cannot be generic, since a C header cannot declare a generic struct, nor `မျှဝေနိုင်သော`, since C passes the struct whole. A kind from outside, `ပြင်ပမှ လာသော`, is one struct of C, so it is not generic either, and each of its values is a shared one, so `မျှဝေနိုင်သော` adds nothing."""
+
+[codes.ZK0266.title]
+en = "marks with no separator"
+[codes.ZK0266.message]
+en = "two marks of a head need \"၊\" between them"
+[codes.ZK0266.help]
+en = "write \"၊\" after the mark before"
+[codes.ZK0266.fix]
+en = "add \"၊\""
+[codes.ZK0266.explain]
+en = """A declaration can take several marks, each a word that ends in \"သော\", such as \"အများသုံးနိုင်သော\" and \"မျှဝေနိုင်သော\" before \"ဒေတာအစုအဝေး\", or \"လူ ကို အခြေခံသော\" after \"သည်\". Two marks stand with \"၊\" between them, as the items of a list do."""
 
 [codes.ZK0264.title]
 en = "wait on channels with no channel"

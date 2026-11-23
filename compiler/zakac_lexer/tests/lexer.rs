@@ -237,7 +237,7 @@ fn import_and_export_words()
         TokenKind::Punct(Punct::FullStop),
     ];
     assert_eq!(kinds(import), want);
-    assert_eq!(kws("အများသုံး လုပ်ဆောင်ချက်"), [Kw::Export, Kw::Function]);
+    assert_eq!(kws("အများသုံးနိုင်သော လုပ်ဆောင်ချက်"), [Kw::Export, Kw::Function]);
 }
 
 /// The words of the arguments-first and short calls, glued or apart.
