@@ -393,7 +393,13 @@ fn base_name(k: &Kind) -> String
             let args: Vec<String> = k.args.iter().map(ToSexpr::to_sexpr).collect();
             let args =
                 tern!(args.is_empty(), String::new(), format!(" {}", args.join(" ")));
-            format!("(trait-value {name}{args})")
+            let also: Vec<String> = k.also.iter().map(ToSexpr::to_sexpr).collect();
+            let also = tern!(
+                also.is_empty(),
+                String::new(),
+                format!(" + {}", also.join(" + "))
+            );
+            format!("(trait-value {name}{args}{also})")
         }
         BaseKind::Table =>
         {

@@ -849,6 +849,12 @@ impl Checker
     /// The result kind of the function, or `None` after an error.
     pub(crate) fn infer_call(&mut self, n: &CallExpr) -> Option<DataKind>
     {
+        if let Some(through) = self.field_call(n)
+        {
+            let kind = self.infer_call(&through);
+            self.op_calls.methods.insert(n.id, through);
+            return kind;
+        }
         let place = n.place.as_deref();
         let ret = self.check_call(
             &n.callee,

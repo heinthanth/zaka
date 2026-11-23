@@ -217,6 +217,11 @@ pub struct Kind
     #[builder(default)]
     #[serde(default)]
     pub args: Vec<Kind>,
+    /// The traits after the first of a trait value that has several,
+    /// `<trait> နှင့် <trait> အရာ`, each with its kinds in its own [`Kind::args`].
+    #[builder(default)]
+    #[serde(default)]
+    pub also: Vec<Kind>,
     /// The room of a bounded channel, `<kind> <n> ခု ပို့နိုင်သော
     /// ဒေတာလမ်းကြောင်း`: the most values that wait in it. It is no part of the
     /// kind; the channel a declaration makes takes it.
@@ -241,12 +246,13 @@ impl Serialize for Kind
         let skip_word = skip && self.classifier.is_none();
         let skip_alias = skip && self.alias.is_none();
         let skip_args = skip && self.args.is_empty();
+        let skip_also = skip && self.also.is_empty();
         let skip_room = skip && self.room.is_none();
         /// The number of fields, each that can be left out included.
-        const FIELDS: usize = 13;
+        const FIELDS: usize = 14;
         let skipped = [
             skip_name, skip_parts, skip_sig, skip_table, skip_word, skip_alias,
-            skip_args, skip_room,
+            skip_args, skip_also, skip_room,
         ]
         .map(usize::from);
         let n = FIELDS - skipped.iter().sum::<usize>();
@@ -289,6 +295,11 @@ impl Serialize for Kind
             skip_args,
             state.skip_field("args")?,
             state.serialize_field("args", &self.args)?
+        );
+        tern!(
+            skip_also,
+            state.skip_field("also")?,
+            state.serialize_field("also", &self.also)?
         );
         tern!(
             skip_room,
@@ -348,6 +359,7 @@ impl Kind
             sig.ret.iter_mut().for_each(|k| k.substitute(bound));
         }
         self.args.iter_mut().for_each(|k| k.substitute(bound));
+        self.also.iter_mut().for_each(|k| k.substitute(bound));
         let named = self.base == BaseKind::Named;
         let found =
             self.name.as_ref().filter(|_| named).and_then(|n| bound.get(&n.name));

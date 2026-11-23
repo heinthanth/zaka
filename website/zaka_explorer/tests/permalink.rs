@@ -68,7 +68,7 @@ fn links_keep_the_stage_and_the_ast_view()
     assert!(
         shown.starts_with(
             "10.64.7.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
-             0000000000000000000000000.parse.graph.folded."
+             00000000000000000000000000.parse.graph.folded."
         ),
         "{shown}"
     );
@@ -92,7 +92,7 @@ fn links_keep_the_foldings_and_the_lowering_view()
             assert!(
                 hash.starts_with(&format!(
                     "10.64.{n}.warn.4.in-place.apart.vm.63.linux.x86_64.usual.\
-                     0000000000000000000000000.lower."
+                     00000000000000000000000000.lower."
                 )),
                 "{hash}"
             );
@@ -136,7 +136,7 @@ fn links_keep_the_result_mode()
         assert!(
             hash.starts_with(&format!(
                 "10.64.7.warn.4.{word}.apart.vm.63.linux.x86_64.usual.\
-                 0000000000000000000000000."
+                 00000000000000000000000000."
             )),
             "{hash}"
         );
@@ -156,7 +156,7 @@ fn links_keep_the_scratch_mode()
         assert!(
             hash.starts_with(&format!(
                 "10.64.7.warn.4.in-place.{word}.vm.63.linux.x86_64.usual.\
-                 0000000000000000000000000."
+                 00000000000000000000000000."
             )),
             "{hash}"
         );
@@ -362,7 +362,7 @@ fn links_keep_the_overflow_mode_in_the_mem_flags()
     assert_eq!(
         decode(
             "9.64.7.warn.8.in-place.apart.vm.63.linux.x86_64.\
-             0000000000000000000000000.lex.tree.folded.eA"
+             00000000000000000000000000.lex.tree.folded.eA"
         ),
         None
     );

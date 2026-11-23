@@ -604,6 +604,10 @@ struct Lowerer<'k>
     /// far, under its number among the functions of the module.
     #[builder(default)]
     dispatchers: HashMap<(DataKind, DataKind), u32>,
+    /// The number of each data kind a trait value can hold, as its tests read
+    /// it.
+    #[builder(default)]
+    kind_numbers: HashMap<DataKind, u32>,
     /// Bit count of the platform-sized kinds.
     platform: u16,
     /// The signatures of the functions the current file declares or
@@ -1839,6 +1843,7 @@ impl Lowerer<'_>
     /// * `out` - The list the statements go to.
     fn switch_stmt(&mut self, n: &st::SwitchStmt, out: &mut Vec<Stmt>)
     {
+        ret_if!(self.shown_kind(&n.subject).is_trait_value(), self.held_switch(n, out));
         let owner = self.shown_kind(&n.subject).as_enum();
         let variants = self.shown_kind(&n.subject).as_variants();
         let lowered = self.expr(&n.subject);
@@ -2022,6 +2027,11 @@ impl Lowerer<'_>
     {
         let kind = self.shown_kind(value);
         let subject = self.expr(value);
+        if kind.is_trait_value()
+        {
+            let subject = self.held_subject(subject);
+            return self.held_test(&subject, name, span);
+        }
         if let Some(owner) = kind.as_variants()
         {
             let at = owner.position(name).expect("the check found the variant");
@@ -2053,6 +2063,10 @@ impl Lowerer<'_>
     /// The read of the data.
     fn variant_data(&mut self, value: &ast::Expr, name: &str, span: Span) -> ExprNode
     {
+        ret_if!(
+            self.shown_kind(value).is_trait_value(),
+            self.held_data(value, name, span)
+        );
         let owner = self
             .shown_kind(value)
             .as_variants()
@@ -2106,6 +2120,18 @@ impl Lowerer<'_>
         let (test, variant) = variant_test(&arm.cond)?;
         let bind = variant.bind.as_ref()?;
         let value = &test.args[0];
+        if self.shown_kind(value).is_trait_value()
+        {
+            let lowered = self.expr(value);
+            let subject = self.held_subject(lowered);
+            let cond = self.held_test(&subject, &variant.variant.name, test.span);
+            let held = (bind, variant.variant.name.as_str());
+            return Some((
+                cond,
+                self.held_block(&subject, held, &arm.block.stmts),
+                arm.span,
+            ));
+        }
         let owner = self.shown_kind(value).as_variants()?;
         let at = owner.position(&variant.variant.name)?;
         let lowered = self.expr(value);

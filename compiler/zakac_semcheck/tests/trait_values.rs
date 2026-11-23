@@ -282,3 +282,54 @@ fn a_call_through_a_trait_value_runs_in_no_thread()
 နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။";
     assert!(run_codes(&decls, stmts).contains(&Code::TraitValueUse));
 }
+
+/// A struct with a field of a function kind, and a function that fits it.
+const SHAPE: &str = "ပုံ ဟူသော ဒေတာအစုအဝေးတွင် ဧရိယာ ဟူသော (ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးသော လုပ်ဆောင်ချက် \
+                     အမျိုးအစား) တစ်ခု ပါဝင်သည်။
+ကိုး ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+၉ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+
+/// `x ၏ f()` calls the function value of the field `f` when no function `f`
+/// takes `x`.
+#[test]
+fn a_call_on_a_value_falls_back_to_its_field()
+{
+    let stmts = "ကိန်းရှင် ပ သည် ပုံ(ဧရိယာ: ကိုး ဟူသော လုပ်ဆောင်ချက်) ဖြစ်ပါစေ။
+ကိန်းရှင် ရ သည် ကိန်းပြည့် တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ပ ၏ ဧရိယာ() ဖြစ်ပါစေ။";
+    let found = run_codes(SHAPE, stmts);
+    assert!(found.is_empty(), "{found:?}");
+}
+
+/// A test of a trait value names a data kind with the trait: an unknown name
+/// is ZK0318, and a data kind without the trait ZK0343.
+#[test]
+fn a_test_names_a_kind_with_the_trait()
+{
+    let decls = format!("{GREET}{PERSON}");
+    let made = "ကိန်းရှင် တ သည် နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: \"မောင်\") ဖြစ်ပါစေ။\n";
+    let test = |kind: &str| format!("{made}တ သည် {kind} အဖြစ်သို့ ပြောင်းလဲနိုင်သည် ဟု ပြသမည်။");
+    let clean = run_codes(&decls, &test("လူ"));
+    assert!(clean.iter().all(|c| *c == Code::PrintValueWithHu), "{clean:?}");
+    assert!(run_codes(&decls, &test("ပျံသန်း")).contains(&Code::UnknownKindName));
+    assert!(run_codes(&decls, &test("စာသား")).contains(&Code::BoundNotMet));
+}
+
+/// A value goes into a trait value of two traits when its data kind has
+/// both: one that lacks the second is ZK0343, and a second trait that
+/// cannot be a data kind is ZK0360.
+#[test]
+fn two_traits_at_once_need_both()
+{
+    let decls = format!("{GREET}{ORDER}{PERSON}");
+    let made = |kind: &str| {
+        format!("ကိန်းရှင် တ သည် {kind} အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: \"မောင်\") ဖြစ်ပါစေ။")
+    };
+    let both = run_codes(&decls, &made("နှုတ်ဆက်နိုင်သော နှင့် စီနိုင်သော"));
+    assert!(both.contains(&Code::TraitNotAKind), "{both:?}");
+    let count = "တိုးနိုင်သော";
+    let lacks =
+        run_codes(&format!("{decls}{COUNT}"), &made(&format!("နှုတ်ဆက်နိုင်သော နှင့် {count}")));
+    assert!(lacks.contains(&Code::BoundNotMet), "{lacks:?}");
+}

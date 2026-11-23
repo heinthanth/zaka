@@ -714,6 +714,10 @@ pub(crate) struct Checker
     /// them alone, once the call has chosen its function.
     #[builder(default)]
     pub trials: u32,
+    /// Each data kind a test of a trait value names, under its number for the
+    /// facts of a check.
+    #[builder(default)]
+    pub held_kinds: Vec<DataKind>,
     /// The operator the next two-operand inference stands for, with its
     /// node, when a struct can take it through a function.
     pub pending_op: Option<(NodeId, (&'static str, bool))>,

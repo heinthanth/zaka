@@ -19,6 +19,7 @@ use zakac_rust_sugars::tern;
 use crate::enums::EnumKind;
 use crate::fn_kind::FnKind;
 use crate::fn_kind::FnParam;
+use crate::fn_kind::TRAIT_JOIN;
 use crate::fn_kind::bracket_step;
 use crate::fn_kind::is_fn_text;
 use crate::fn_kind::parse_fn_with;
@@ -1305,6 +1306,16 @@ impl DataKind
         self.as_fn().and_then(FnKind::trait_parts)
     }
 
+    /// Each trait of a trait value kind, with its kinds after the first.
+    ///
+    /// # Returns
+    ///
+    /// The traits; none for another kind.
+    pub fn trait_list(self) -> Vec<(Name, Vec<DataKind>)>
+    {
+        self.as_fn().map_or_else(Vec::new, FnKind::trait_list)
+    }
+
     /// Whether the kind is a trait value kind, `<trait> အရာ`.
     ///
     /// # Returns
@@ -2114,10 +2125,15 @@ fn fn_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
 /// The function kind.
 fn trait_value_base(kind: &Kind, structs: &StructTable) -> &'static FnKind
 {
-    let name = kind.name.as_ref().map_or("", |n| n.name.as_str());
-    let args: Vec<DataKind> =
-        kind.args.iter().map(|a| DataKind::from_ast(a, structs)).collect();
-    FnKind::trait_value(trait_marker(name, &args))
+    let marker = |k: &Kind| {
+        let name = k.name.as_ref().map_or("", |n| n.name.as_str());
+        let args: Vec<DataKind> =
+            k.args.iter().map(|a| DataKind::from_ast(a, structs)).collect();
+        trait_marker(name, &args).to_string()
+    };
+    let traits: Vec<String> =
+        std::iter::once(kind).chain(&kind.also).map(marker).collect();
+    FnKind::trait_value(Name::from(traits.join(&TRAIT_JOIN.to_string())))
 }
 
 /// The short name of an integer kind.

@@ -579,11 +579,17 @@ pub(crate) fn kind_ast(kind: DataKind, span: Span) -> Option<Kind>
 /// The phrase, or `None` when a kind of the trait has none.
 fn trait_value_ast(f: &FnKind, span: Span) -> Option<Kind>
 {
-    let (name, args) = f.trait_parts()?;
-    let args: Option<Vec<Kind>> = args.iter().map(|a| kind_ast(*a, span)).collect();
-    let mut kind = named(name.as_str(), span);
+    let one = |(name, args): &(Name, Vec<DataKind>)| {
+        let args: Option<Vec<Kind>> = args.iter().map(|a| kind_ast(*a, span)).collect();
+        let mut kind = named(name.as_str(), span);
+        kind.args = args?;
+        Some(kind)
+    };
+    let traits: Option<Vec<Kind>> = f.trait_list().iter().map(one).collect();
+    let mut traits = traits?.into_iter();
+    let mut kind = traits.next()?;
     kind.base = BaseKind::TraitValue;
-    kind.args = args?;
+    kind.also = traits.collect();
     Some(kind)
 }
 

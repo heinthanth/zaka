@@ -21,6 +21,8 @@
 
 use zakac_semcheck::fn_kind::FnParam;
 use zakac_semcheck::trait_value::dispatch_shape;
+use zakac_semcheck::trait_value::held_kind;
+use zakac_semcheck::trait_value::value_fns;
 
 use super::nested::record_field;
 use super::*;
@@ -232,9 +234,10 @@ impl Lowerer<'_>
     ) -> Option<Expr>
     {
         let value = self.kind_of(&args[0]);
-        let (name, _) = value.as_trait_value().expect("the check found a trait value");
-        let decl = self.traits.get(&name).cloned().expect("the check found the trait");
-        let shape = dispatch_shape(&decl, value, index, self.structs);
+        let fns = value_fns(value, &self.traits);
+        let (decl, targs, at) =
+            fns.get(index).expect("the check found the trait function");
+        let shape = dispatch_shape(decl, value, targs, *at, self.structs);
         let (params, ret) = shape.expect("the check found the trait function");
         let fields = pack_fields(value, &params, ret);
         let pack = DataKind::args_pack(&fields);
@@ -335,8 +338,7 @@ impl Lowerer<'_>
         self.dispatchers.insert((value, held), index);
         self.lifted.push(None);
         let (trait_name, _) = value.as_trait_value().expect("a trait value kind");
-        let decl =
-            self.traits.get(&trait_name).cloned().expect("the check found the trait");
+        let fns = value_fns(value, &self.traits);
         let record = DataKind::closure_record(&[held]);
         let name = format!("{trait_name}<{}>#{index}{}", held.name(), self.suffix);
         let raw = DataKind::OPAQUE.with_outer_raw();
@@ -346,9 +348,18 @@ impl Lowerer<'_>
         d.local("%pack", raw, false);
         d.local("%record", record.raw_pointer_to(), false);
         let mut els = vec![Stmt::Return { value: None, span }];
-        for i in (0..decl.fns.len()).rev()
+        let count = fns.len();
+        for i in (0..count + 2).rev()
         {
-            let arm = self.dispatch_arm(&mut d, &decl, i, impls[i]);
+            let arm = match fns.get(i)
+            {
+                Some((decl, targs, at)) =>
+                {
+                    self.dispatch_arm(&mut d, (decl, targs, *at), impls[i])
+                }
+                None if i == count => self.number_arm(&d),
+                None => self.read_arm(&d),
+            };
             let number = read(Place::Local(0), DataKind::USIZE, span);
             let cond =
                 compare_node(CmpOp::Eq, number, self.usize_const(i as u32, span));
@@ -367,19 +378,21 @@ impl Lowerer<'_>
     /// # Arguments
     ///
     /// * `d` - The dispatcher being built.
-    /// * `decl` - The trait.
-    /// * `i` - The number of the trait function.
+    /// * `trait_fn` - The trait, its kinds after the first, and the number of
+    ///   the function in it.
     /// * `func` - The function of the held kind.
     ///
     /// # Returns
     ///
     /// The statements of the arm.
     fn dispatch_arm(
-        &mut self, d: &mut Dispatch, decl: &st::TraitDecl, i: usize, func: Name,
+        &mut self, d: &mut Dispatch, trait_fn: (&st::TraitDecl, &[DataKind], usize),
+        func: Name,
     ) -> Vec<Stmt>
     {
         let (span, platform) = (d.span, self.platform);
-        let shape = dispatch_shape(decl, d.value, i, self.structs);
+        let (decl, targs, i) = trait_fn;
+        let shape = dispatch_shape(decl, d.value, targs, i, self.structs);
         let (params, ret) = shape.expect("the check found the trait function");
         let fields = pack_fields(d.value, &params, ret);
         let pack = DataKind::args_pack(&fields);
@@ -454,4 +467,326 @@ impl Lowerer<'_>
         });
         out
     }
+}
+
+impl Lowerer<'_>
+{
+    /// The number that names a held data kind in the tests of trait values,
+    /// the same for each trait: 1 for the first data kind asked, and so on.
+    ///
+    /// # Arguments
+    ///
+    /// * `held` - The data kind.
+    ///
+    /// # Returns
+    ///
+    /// The number.
+    fn kind_number(&mut self, held: DataKind) -> u32
+    {
+        let next = self.kind_numbers.len() as u32 + 1;
+        *self.kind_numbers.entry(held).or_insert(next)
+    }
+
+    /// The arm of a dispatcher that writes the number of its held data kind
+    /// into the first field of the pack.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn number_arm(&mut self, d: &Dispatch) -> Vec<Stmt>
+    {
+        let pack = DataKind::args_pack(&[DataKind::USIZE]);
+        let number = self.kind_number(d.held);
+        let value = self.usize_const(number, d.span);
+        vec![Stmt::Store {
+            addr: pack_field(pack, d.span, self.platform),
+            value,
+            span: d.span,
+        }]
+    }
+
+    /// The arm of a dispatcher that writes a new count of its held value into
+    /// the first field of the pack, which the caller laid out for that data
+    /// kind after a test of the number.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The dispatcher being built.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    fn read_arm(&mut self, d: &Dispatch) -> Vec<Stmt>
+    {
+        let span = d.span;
+        let pack = DataKind::args_pack(&[d.held]);
+        let record = read(Place::Local(2), d.record.raw_pointer_to(), span);
+        let record =
+            node_expr(d.record, ExprNode::Load { addr: Box::new(record) }, span);
+        let held_at = field_addr(&record, RECORD_HEAD, self.platform);
+        let held = node_expr(d.held, ExprNode::Load { addr: Box::new(held_at) }, span);
+        let addr = pack_field(pack, span, self.platform);
+        vec![Stmt::Store { addr, value: dup_held(held), span }]
+    }
+
+    /// The count of the functions of the trait of a trait value kind: the
+    /// number of the selector that asks for the held data kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The trait value kind.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    fn trait_fn_count(&self, value: DataKind) -> usize
+    {
+        value_fns(value, &self.traits).len()
+    }
+
+    /// Call a trait value with a selector past its trait functions and a pack
+    /// of one field of a data kind: the statements go to [`Self::pre`].
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The trait value, read where it sits.
+    /// * `selector` - The selector.
+    /// * `field` - The data kind of the field.
+    /// * `span` - The use.
+    ///
+    /// # Returns
+    ///
+    /// A read of the field, after the call.
+    fn ask_held(
+        &mut self, subject: &Expr, selector: usize, field: DataKind, span: Span,
+    ) -> Expr
+    {
+        let pack = DataKind::args_pack(&[field]);
+        let slot = self.hidden(pack, span);
+        if pack.holds_text()
+        {
+            let blank = default_constant(pack, span);
+            self.pre_init.push(Stmt::Set { place: slot, value: blank, span });
+            self.drops.last_mut().expect("a scope is open").push((slot, pack));
+        }
+        let cells =
+            node_expr(pack, ExprNode::List(vec![default_constant(field, span)]), span);
+        self.pre.push(Stmt::Set { place: slot, value: cells, span });
+        self.slot(slot).addressed = true;
+        let at = node_expr(pack.raw_pointer_to(), ExprNode::AddrOf(slot), span);
+        let raw = DataKind::OPAQUE.with_outer_raw();
+        let at = node_expr(
+            raw,
+            ExprNode::Convert { operand: Box::new(at), implicit: false },
+            span,
+        );
+        let args = vec![self.usize_const(selector as u32, span), at];
+        self.pre.push(Stmt::CallValue { callee: subject.clone(), args, span });
+        let base = read(slot, pack, span);
+        let addr = field_addr(&base, 0, self.platform);
+        node_expr(field, ExprNode::Load { addr: Box::new(addr) }, span)
+    }
+
+    /// The test whether a trait value holds a value of the data kind a name
+    /// names: the number of its held data kind `==` the number of that one.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The trait value, read where it sits.
+    /// * `name` - The name of the data kind.
+    /// * `span` - The test.
+    ///
+    /// # Returns
+    ///
+    /// The test, a boolean.
+    pub(super) fn held_test(&mut self, subject: &Expr, name: &str, span: Span) -> Expr
+    {
+        let held =
+            held_kind(name, self.structs).expect("the check found the data kind");
+        let count = self.trait_fn_count(subject.kind);
+        let number = self.ask_held(subject, count, DataKind::USIZE, span);
+        let number = self.spill(number);
+        let wanted = self.kind_number(held);
+        let want = self.usize_const(wanted, span);
+        node_expr(DataKind::Bool, compare_node(CmpOp::Eq, number, want), span)
+    }
+
+    /// The read of the value a trait value holds, as the data kind a name
+    /// names; the caller tests the data kind first.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The trait value, read where it sits.
+    /// * `name` - The name of the data kind.
+    /// * `span` - The read.
+    ///
+    /// # Returns
+    ///
+    /// A read of the value, held in a hidden slot its scope drops.
+    pub(super) fn held_read(&mut self, subject: &Expr, name: &str, span: Span) -> Expr
+    {
+        let held =
+            held_kind(name, self.structs).expect("the check found the data kind");
+        let count = self.trait_fn_count(subject.kind);
+        let value = self.ask_held(subject, count + 1, held, span);
+        self.spill(value)
+    }
+
+    /// The read of the value of a data kind out of a trait value, which stops
+    /// the run when the trait value holds a value of another data kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The trait value.
+    /// * `name` - The name of the data kind.
+    /// * `span` - The read.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    pub(super) fn held_data(
+        &mut self, value: &ast::Expr, name: &str, span: Span,
+    ) -> ExprNode
+    {
+        let lowered = self.expr(value);
+        let subject = self.held_subject(lowered);
+        let test = self.held_test(&subject, name, span);
+        let wrong = node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, test), span);
+        let halt = Stmt::Halt { cause: HaltCause::WrongVariant, value: None, span };
+        self.pre.push(Stmt::If {
+            cond: wrong,
+            then: vec![halt],
+            els: Vec::new(),
+            span,
+        });
+        self.held_read(&subject, name, span).node
+    }
+
+    /// The block of an arm that names the value of the data kind it tests:
+    /// the read runs inside the arm, after the test passed.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The trait value, read where it sits.
+    /// * `bind` - The name and the data kind it names.
+    /// * `stmts` - The statements of the arm.
+    ///
+    /// # Returns
+    ///
+    /// The statements of the arm.
+    pub(super) fn held_block(
+        &mut self, subject: &Expr, bind: (&ast::Ident, &str), stmts: &[st::Stmt],
+    ) -> Vec<Stmt>
+    {
+        let (name, held) = bind;
+        let (mut out, data) = self.with_pre(|l| l.held_read(subject, held, name.span));
+        out.extend(self.bound_block(Some((name, data)), stmts));
+        out
+    }
+
+    /// Lower a switch over a trait value: the number of its held data kind
+    /// once, then an arm for each case of a data kind, which can name the
+    /// value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The switch.
+    /// * `out` - The list the statements go to.
+    pub(super) fn held_switch(&mut self, n: &st::SwitchStmt, out: &mut Vec<Stmt>)
+    {
+        let lowered = self.expr(&n.subject);
+        let subject = self.switch_subject(lowered, out);
+        let count = self.trait_fn_count(subject.kind);
+        let number = self.ask_held(&subject, count, DataKind::USIZE, n.span);
+        let number = self.spill(number);
+        out.extend(std::mem::take(&mut self.pre));
+        let mut arms = Vec::new();
+        for arm in &n.arms
+        {
+            let names: Vec<&str> =
+                arm.cases.iter().filter_map(case_kind_name).collect();
+            let tests = names.iter().map(|name| {
+                let held = held_kind(name, self.structs)
+                    .expect("the check found the data kind");
+                let wanted = self.kind_number(held);
+                let want = self.usize_const(wanted, arm.span);
+                node_expr(
+                    DataKind::Bool,
+                    compare_node(CmpOp::Eq, number.clone(), want),
+                    arm.span,
+                )
+            });
+            let tests: Vec<Expr> = tests.collect();
+            let cond = tests.into_iter().reduce(|lhs, rhs| {
+                let node = ExprNode::Logic {
+                    op: LogicOp::Or,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                };
+                node_expr(DataKind::Bool, node, arm.span)
+            });
+            let cond = cond.expect("an arm has a case");
+            let bind = match arm.cases.as_slice()
+            {
+                [ast::Expr::Variant(v)] => v.bind.as_ref().map(|b| (b, v.variant.name)),
+                _ => None,
+            };
+            let block = match bind
+            {
+                Some((b, held)) =>
+                {
+                    self.held_block(&subject, (b, held.as_str()), &arm.block.stmts)
+                }
+                None => self.block(&arm.block.stmts),
+            };
+            arms.push((Vec::new(), (cond, block, arm.span)));
+        }
+        let els =
+            n.default.as_ref().map_or_else(Vec::new, |d| self.block(&d.block.stmts));
+        out.push(if_chain(arms, els, n.span));
+    }
+}
+
+/// The name of the data kind a case of a switch over a trait value names.
+///
+/// # Arguments
+///
+/// * `case` - The case.
+///
+/// # Returns
+///
+/// The name, or `None` for another case.
+fn case_kind_name(case: &ast::Expr) -> Option<&str>
+{
+    match case
+    {
+        ast::Expr::Name(n) => Some(n.name.as_str()),
+        ast::Expr::Variant(v) => Some(v.variant.name.as_str()),
+        _ => None,
+    }
+}
+
+/// The address of the first field of a pack, through the raw address the
+/// dispatcher takes as its second parameter.
+///
+/// # Arguments
+///
+/// * `pack` - The pack kind.
+/// * `span` - The span the code takes.
+/// * `platform` - Bit count of the platform-sized kinds.
+///
+/// # Returns
+///
+/// The address.
+fn pack_field(pack: DataKind, span: Span, platform: u16) -> Expr
+{
+    let raw = read(Place::Local(1), DataKind::OPAQUE.with_outer_raw(), span);
+    let shaped = ExprNode::Convert { operand: Box::new(raw), implicit: false };
+    let shaped = node_expr(pack.raw_pointer_to(), shaped, span);
+    let base = node_expr(pack, ExprNode::Load { addr: Box::new(shaped) }, span);
+    field_addr(&base, 0, platform)
 }

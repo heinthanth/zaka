@@ -860,6 +860,12 @@ ZK0349.
   `dispatch_sig` builds from the trait function, and its name becomes `%trait-call:<n>` in
   `chosen`. `check_trait_values`, called from `written_kind`, checks the trait of each
   written trait value kind: ZK0344, ZK0340 and ZK0360.
+- **A call through a field.** The parser gives each call on a value, `x ၏ f(…)`, a node
+  number for the read of the field `f` (`CallExpr::field_id`). `field_call` (in
+  `fn_value.rs`), called first in `infer_call`, makes the call one through that field when
+  no function, generic, variable or trait function `f` takes `x` and the field holds a
+  function value: the place is the read of the field, the arguments those after `x`, and
+  `write_methods` puts the call in place of the old one.
 - **`x ၏ f`.** A field read that finds no field, with no brace on the name, checks the call
   `f(x)` instead (`infer_method`). Each records its call in `OpCalls::methods`, and
   `write_methods` puts it in place of the node before the overloads get their inner names.

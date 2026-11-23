@@ -33,3 +33,5 @@ mod word_list;
 pub mod wrap;
 
 zakac_i18n::init!();
+
+pub use kind::builtin_kind;

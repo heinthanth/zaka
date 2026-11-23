@@ -9,7 +9,9 @@
 //! same rule: a declared function of the name is a direct call, else the call
 //! goes through the value.
 
+use zakac_ast::expr::CallExpr;
 use zakac_ast::expr::Expr;
+use zakac_ast::expr::FieldExpr;
 use zakac_ast::expr::FnAddrExpr;
 use zakac_ast::expr::Ident;
 use zakac_ast::name::Name;
@@ -29,6 +31,7 @@ use crate::fn_kind::FnParam;
 use crate::kind::DataKind;
 use crate::scope::Capture;
 use crate::scope::FnSig;
+use crate::scope::Written;
 use crate::semcheck::Checker;
 
 impl Checker
@@ -311,4 +314,48 @@ fn head_text(decl: &FnDecl) -> String
     let words: Vec<String> =
         start.chain(args).chain(end).chain([decl.name.name.to_string()]).collect();
     words.join(" ")
+}
+
+impl Checker
+{
+    /// The call through a field that a call on a value, `x ၏ f(…)`, stands
+    /// for: the field `f` of `x` holds a function value, and no function,
+    /// generic, variable or trait function of the name takes `x`.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The call through the field, with the arguments after `x`, or `None`
+    /// for a call that runs as written.
+    pub(crate) fn field_call(&mut self, n: &CallExpr) -> Option<CallExpr>
+    {
+        let id = n.field_id?;
+        ret_if!(n.place.is_some() || n.parallel, None);
+        let name = &n.callee.name;
+        ret_if!(self.scopes.lookup(name).is_some(), None);
+        ret_if!(!self.templates_named(name).is_empty(), None);
+        let written = Written::of(&n.prepositions, &n.phrases);
+        let sigs = self.fns.get(name).cloned().unwrap_or_default();
+        ret_if!(sigs.iter().any(|s| self.fits_call(s, &n.args, written)), None);
+        let before = self.diags.len();
+        let base = self.infer(n.args.first()?, None);
+        self.diags.truncate(before);
+        let base = base?;
+        ret_if!(self.runs_through(base, name), None);
+        let held = base.object_struct()?.field(name).map(|(_, k)| k)?;
+        ret_if!(!held.is_fn() || held.is_trait_value(), None);
+        let base = n.args[0].clone();
+        let span = base.span().to(&n.callee.span);
+        #[rustfmt::skip]
+        let field = FieldExpr::builder().id(id).base(base).field(n.callee.clone()).braced(true)
+            .span(span).build();
+        let mut through = n.clone();
+        through.place = Some(Box::new(Expr::Field(field)));
+        through.args = n.args[1..].to_vec();
+        through.field_id = None;
+        Some(through)
+    }
 }

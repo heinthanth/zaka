@@ -366,14 +366,9 @@ impl Checker
     /// `true` if it is.
     fn is_value_of(&self, kind: DataKind, name: &Name, args: &[Kind]) -> bool
     {
-        let Some((held, kinds)) = kind.as_trait_value()
-        else
-        {
-            return false;
-        };
         let written: Vec<DataKind> =
             args.iter().map(|a| DataKind::from_ast(a, &self.structs)).collect();
-        held == *name && kinds == written
+        kind.trait_list().iter().any(|(held, kinds)| held == name && *kinds == written)
     }
 
     /// Whether a kind has a conversion trait through the compiler's rule:

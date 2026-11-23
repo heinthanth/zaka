@@ -68,7 +68,7 @@ const FLOAT_BITS: &[u16] = &[32, 64];
 /// # Returns
 ///
 /// The base kind, or `None` for another name.
-fn builtin_kind(text: &str) -> Option<BaseKind>
+pub fn builtin_kind(text: &str) -> Option<BaseKind>
 {
     match text
     {
@@ -319,13 +319,45 @@ impl Parser<'_>
     /// The token count, or `None` when no trait value kind starts there.
     pub(crate) fn trait_value_len(&self, at: usize) -> Option<usize>
     {
-        let head = |n: usize| {
-            let tok = self.peek_n(n);
-            tok.kind == TokenKind::Ident && self.text_of(tok.span) == TRAIT_HEAD
-        };
         // A trait value ends in its head noun soon after it starts; most kinds
         // have none near, and skip the scan of the hints.
-        ret_if!(!(1..=Self::TRAIT_REACH).any(|n| head(at + n)), None);
+        ret_if!(!(1..=Self::TRAIT_REACH).any(|n| self.trait_head_at(at + n)), None);
+        let mut len = self.trait_ref_len(at)?;
+        while kw_of(&self.peek_n(at + len)) == Some(Kw::Hnint)
+        {
+            len += 1 + self.trait_ref_len(at + len + 1)?;
+        }
+        self.trait_head_at(at + len).then_some(len + 1)
+    }
+
+    /// Whether the head noun of a trait value, `အရာ`, stands `at` tokens
+    /// ahead.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// `true` if it does.
+    fn trait_head_at(&self, at: usize) -> bool
+    {
+        let tok = self.peek_n(at);
+        tok.kind == TokenKind::Ident && self.text_of(tok.span) == TRAIT_HEAD
+    }
+
+    /// The number of tokens of one trait of a trait value kind, `at` tokens
+    /// ahead: a hint of a trait, or a name with its kinds in signs.
+    ///
+    /// # Arguments
+    ///
+    /// * `at` - How far ahead.
+    ///
+    /// # Returns
+    ///
+    /// The token count, or `None` when no trait stands there.
+    fn trait_ref_len(&self, at: usize) -> Option<usize>
+    {
         // The kind slot a trait's hint starts with stands at this same place,
         // where it is no trait value of its own.
         let here = self.cur.pos() + at;
@@ -333,11 +365,10 @@ impl Parser<'_>
         let outer = self.trait_value_at.replace(Some(here));
         let hinted = self.hint_trait_at(at).map(|(_, len)| len);
         self.trait_value_at.set(outer);
-        ret_if!(let Some(len) = hinted.filter(|len| head(at + len)), Some(len + 1));
-        let named = self.peek_n(at).kind == TokenKind::Ident && !head(at);
+        ret_if!(let Some(len) = hinted, Some(len));
+        let named = self.peek_n(at).kind == TokenKind::Ident && !self.trait_head_at(at);
         ret_if!(!named || self.builtin_at(at).is_some(), None);
-        let angle = self.angle_len(at + 1).unwrap_or(0);
-        head(at + 1 + angle).then_some(angle + 2)
+        Some(1 + self.angle_len(at + 1).unwrap_or(0))
     }
 
     /// Whether `အကွက် <count> ခုရှိသော|ရှိသော` starts `n` tokens ahead.
@@ -850,10 +881,12 @@ impl Parser<'_>
         }
         if self.trait_value_len(0).is_some()
         {
-            let outer = self.trait_value_at.replace(Some(self.cur.pos()));
-            let trait_ref = self.parse_trait_ref();
-            self.trait_value_at.set(outer);
-            let mut kind = trait_ref?;
+            let mut kind = self.parse_value_trait()?;
+            while self.eat(Kw::Hnint)
+            {
+                let next = self.parse_value_trait()?;
+                kind.also.push(next);
+            }
             self.advance();
             kind.base = BaseKind::TraitValue;
             kind.span = start.to(&self.prev_span());
@@ -884,6 +917,20 @@ impl Parser<'_>
             .maybe_signed(signed)
             .span(span)
             .build())
+    }
+
+    /// Parse one trait of a trait value kind, with the kind slot its hint
+    /// starts with read as a plain kind.
+    ///
+    /// # Returns
+    ///
+    /// The trait as a named kind with its kinds, or a diagnostic.
+    fn parse_value_trait(&mut self) -> PResult<Kind>
+    {
+        let outer = self.trait_value_at.replace(Some(self.cur.pos()));
+        let trait_ref = self.parse_trait_ref();
+        self.trait_value_at.set(outer);
+        trait_ref
     }
 
     /// Parse `N ဘစ်` when it comes next.

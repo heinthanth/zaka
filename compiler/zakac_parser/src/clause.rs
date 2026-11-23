@@ -293,6 +293,10 @@ impl Parser<'_>
         let reading = self.name_at(n, CHAR_NAME) || self.name_at(n, DUP_WORD);
         let ordinal = kw_of(&self.peek_n(n + 1)) == Some(Kw::Ordinal);
         ret_false!(tok.kind != TokenKind::Ident || reading || ordinal);
+        // A name with `(` right after it is a call in the sign form, which
+        // runs a function of the name or the function value of the field.
+        let open = self.peek_n(n + 1);
+        ret_false!(open.kind == TokenKind::Punct(Punct::LParen) && open.joined);
         let text = self.callee_text(&tok);
         !self.functions.contains_key(&text) && !self.preposition_words.contains(&text)
     }
@@ -810,6 +814,9 @@ impl Parser<'_>
     {
         let base = into_expr(stack.pop().expect("the top operand holds ၏"));
         call.span = base.span().to(&call.span);
+        // A node for the read of a field of the name, for a value with no
+        // function of the name that takes it.
+        do_if!(call.place.is_none(), call.field_id = Some(self.new_id()));
         call.args.insert(0, base);
         Expr::Call(call)
     }

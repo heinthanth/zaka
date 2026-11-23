@@ -519,7 +519,7 @@ core         = [ sign ] [ digits "ဘစ်" ] base
              | name [ kind-args ]                 (* a struct, an enumeration, an alias, or စာရင်း and ဇယား *)
              | word-kinds "အစားထိုးအသုံးပြုသည့်" name   (* a generic with its data kinds *)
              | hint-use                           (* a hint that starts with a word *)
-             | trait-ref "အရာ"                    (* a trait value; အရာ is no reserved word *)
+             | trait-ref { "နှင့်" trait-ref } "အရာ"   (* a trait value; အရာ is no reserved word *)
              | "လိပ်စာ" ;                          (* an address of no data kind *)
 sign         = "လက္ခဏာရှိ" | "လက္ခဏာမဲ့" ;          (* integers alone *)
 base         = "ကိန်းပြည့်" | "ဒဿမကိန်း" | "စာလုံး" | "စာသား"

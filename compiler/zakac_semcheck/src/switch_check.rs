@@ -56,6 +56,11 @@ impl Checker
         let hit = match (case, subject.as_variants())
         {
             (Expr::Variant(v), _) => self.variant_case(v, subject),
+            (Expr::Name(n), None) if subject.is_trait_value() =>
+            {
+                let name = Ident::builder().name(n.name).span(n.span).build();
+                self.variant_at(subject, &name, n.span).map(|at| CaseHit::Member(at.at))
+            }
             (_, Some(owner)) => self.data_case(case, owner),
             _ => match self.member_case(case, subject)
             {

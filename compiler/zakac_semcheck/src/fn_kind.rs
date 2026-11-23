@@ -324,14 +324,16 @@ impl FnKind
     /// The name.
     fn trait_value_name(&self) -> String
     {
-        let marker = self.of_trait.map_or_else(String::new, |t| t.to_string());
-        let Some((name, args)) = self.trait_parts().filter(|(_, a)| !a.is_empty())
-        else
-        {
-            return format!("{marker} {TRAIT_HEAD}");
+        let one = |(name, args): &(Name, Vec<DataKind>)| {
+            let args: Vec<String> = args.iter().map(|k| k.name()).collect();
+            tern!(
+                args.is_empty(),
+                name.to_string(),
+                format!("{name}<{}>", args.join("၊ "))
+            )
         };
-        let args: Vec<String> = args.iter().map(|k| k.name()).collect();
-        format!("{name}<{}> {TRAIT_HEAD}", args.join("၊ "))
+        let traits: Vec<String> = self.trait_list().iter().map(one).collect();
+        format!("{} {TRAIT_HEAD}", traits.join(" နှင့် "))
     }
 
     /// The trait of a trait value and its kinds after the first.
@@ -342,20 +344,53 @@ impl FnKind
     /// kind or a marker that does not read.
     pub fn trait_parts(&self) -> Option<(Name, Vec<DataKind>)>
     {
-        let marker = self.of_trait?;
-        let text = marker.as_str();
-        let Some((name, args)) = text.split_once('<')
+        self.trait_list().into_iter().next()
+    }
+
+    /// Each trait of a trait value, with its kinds after the first, in the
+    /// order written: one for `<trait> အရာ`, more for `<trait> နှင့် <trait> အရာ`.
+    ///
+    /// # Returns
+    ///
+    /// The traits; none for a plain function kind.
+    pub fn trait_list(&self) -> Vec<(Name, Vec<DataKind>)>
+    {
+        let Some(marker) = self.of_trait
         else
         {
-            return Some((marker, Vec::new()));
+            return Vec::new();
         };
-        let args = args.strip_suffix('>')?;
-        let kinds: Option<Vec<DataKind>> = split_top(args, ',')
+        split_top(marker.as_str(), TRAIT_JOIN)
             .into_iter()
-            .map(|a| DataKind::parse(a.trim()))
-            .collect();
-        Some((Name::new(name), kinds?))
+            .filter_map(one_trait)
+            .collect()
     }
+}
+
+/// The mark between two traits of a trait value that has several, in its
+/// marker.
+pub const TRAIT_JOIN: char = '+';
+
+/// One trait of the marker of a trait value, with its kinds after the first.
+///
+/// # Arguments
+///
+/// * `text` - The part of the marker.
+///
+/// # Returns
+///
+/// The trait and its kinds, or `None` when a kind does not read.
+fn one_trait(text: &str) -> Option<(Name, Vec<DataKind>)>
+{
+    let Some((name, args)) = text.split_once('<')
+    else
+    {
+        return Some((Name::new(text), Vec::new()));
+    };
+    let args = args.strip_suffix('>')?;
+    let kinds: Option<Vec<DataKind>> =
+        split_top(args, ',').into_iter().map(|a| DataKind::parse(a.trim())).collect();
+    Some((Name::new(name), kinds?))
 }
 
 /// The marker of a trait value kind, [`FnKind::of_trait`], from the trait's
@@ -695,15 +730,21 @@ fn read_marker(
     text: &str, read: &mut impl FnMut(&str) -> Option<DataKind>,
 ) -> Option<Name>
 {
-    let Some((name, args)) = text.split_once('<')
-    else
+    let mut parts = Vec::new();
+    for part in split_top(text, TRAIT_JOIN)
     {
-        return Some(Name::new(text));
-    };
-    let args = args.strip_suffix('>')?;
-    let mut kinds = Vec::new();
-    do_for!(a in split_top(args, ','), kinds.push(read(a.trim())?));
-    Some(trait_marker(name, &kinds))
+        let Some((name, args)) = part.split_once('<')
+        else
+        {
+            parts.push(part.to_string());
+            continue;
+        };
+        let args = args.strip_suffix('>')?;
+        let mut kinds = Vec::new();
+        do_for!(a in split_top(args, ','), kinds.push(read(a.trim())?));
+        parts.push(trait_marker(name, &kinds).to_string());
+    }
+    Some(Name::from(parts.join(&TRAIT_JOIN.to_string())))
 }
 
 /// Whether text names a function kind, in parentheses or not.
@@ -771,13 +812,19 @@ pub fn map_fn_text(
 fn map_marker(text: &str, f: &mut impl FnMut(&str) -> Option<String>)
 -> Option<String>
 {
-    let Some((name, args)) = text.split_once('<')
-    else
+    let mut parts = Vec::new();
+    for part in split_top(text, TRAIT_JOIN)
     {
-        return Some(text.to_string());
-    };
-    let args = args.strip_suffix('>')?;
-    let mut kinds = Vec::new();
-    do_for!(a in split_top(args, ','), kinds.push(f(a.trim())?));
-    Some(format!("{name}<{}>", kinds.join(",")))
+        let Some((name, args)) = part.split_once('<')
+        else
+        {
+            parts.push(part.to_string());
+            continue;
+        };
+        let args = args.strip_suffix('>')?;
+        let mut kinds = Vec::new();
+        do_for!(a in split_top(args, ','), kinds.push(f(a.trim())?));
+        parts.push(format!("{name}<{}>", kinds.join(",")));
+    }
+    Some(parts.join(&TRAIT_JOIN.to_string()))
 }

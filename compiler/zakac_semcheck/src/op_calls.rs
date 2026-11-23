@@ -946,7 +946,7 @@ impl VisitorMut for MethodWriter<'_>
 
     fn visit_expr_mut(&mut self, n: &mut Expr)
     {
-        let replaced = matches!(n, Expr::Field(_) | Expr::Verb(_));
+        let replaced = matches!(n, Expr::Field(_) | Expr::Verb(_) | Expr::Call(_));
         let call = tern!(replaced, self.methods.get(&n.id()), None);
         do_if!(let Some(call) = call, *n = Expr::Call(call.clone()));
         do_if!(self.texts.contains(&n.id()), to_template(n));

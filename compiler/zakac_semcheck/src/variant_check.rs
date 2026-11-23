@@ -25,6 +25,7 @@ use crate::kind::DataKind;
 use crate::list::KindUse;
 use crate::proof::result_var;
 use crate::semcheck::Checker;
+use crate::trait_value::held_kind;
 use crate::variants::TAG_FIELD;
 use crate::variants::Variants;
 use crate::variants::data_field;
@@ -105,6 +106,7 @@ impl Checker
         &mut self, kind: DataKind, variant: &Ident, value: zakac_span::span::Span,
     ) -> Option<VariantAt>
     {
+        ret_if!(kind.is_trait_value(), self.held_kind_at(kind, variant));
         let found = match (kind.as_enum(), kind.as_variants())
         {
             (Some(e), _) => e
@@ -405,6 +407,7 @@ impl Checker
     /// The kind, or `None` for no such variant or a variant with no data.
     pub(crate) fn data_of(&self, kind: DataKind, variant: &str) -> Option<DataKind>
     {
+        ret_if!(kind.is_trait_value(), held_kind(variant, &self.structs));
         let owner = kind.as_variants()?;
         owner.data(owner.position(variant)?).map(|(_, k)| k)
     }

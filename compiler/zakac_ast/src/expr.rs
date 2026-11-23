@@ -862,6 +862,11 @@ pub struct CallExpr
     /// the call before it in a sign-form chain, `f(a)(b)`.
     #[serde(default)]
     pub place: Option<Box<Expr>>,
+    /// For a call on a value, `x ၏ f(…)`, the node of the read of the field
+    /// `f` of `x`: the call goes through the function value of that field
+    /// when no function `f` takes `x`.
+    #[serde(default)]
+    pub field_id: Option<NodeId>,
     /// The arguments.
     #[builder(default)]
     pub args: Vec<Expr>,

@@ -23,6 +23,7 @@ use crate::enums::stem_of;
 use crate::fn_kind::FnKind;
 use crate::fn_kind::FnText;
 use crate::fn_kind::ParamMode;
+use crate::fn_kind::TRAIT_JOIN;
 use crate::fn_kind::join_fn;
 use crate::foreign;
 use crate::kind::DataKind;
@@ -259,7 +260,8 @@ pub(crate) fn unknown_name(kind: &Kind, names: &BTreeSet<&str>) -> Option<Diagno
     // that no trait declares.
     if kind.base == BaseKind::TraitValue
     {
-        return kind.args.iter().find_map(|k| unknown_name(k, names));
+        let args = kind.args.iter().chain(kind.also.iter().flat_map(|k| &k.args));
+        return args.into_iter().find_map(|k| unknown_name(k, names));
     }
     if let Some(sig) = kind.sig.as_deref()
     {
@@ -357,16 +359,21 @@ fn field_text(
     }
     if kind.base == BaseKind::TraitValue
     {
-        // The kinds of the trait keep their bare struct names, which the
+        // The kinds of each trait keep their bare struct names, which the
         // signature reads back as for each other field.
-        let args: Vec<String> =
-            kind.args.iter().map(|k| field_text(k, names, shared, enums)).collect();
-        let trait_name = kind.name.as_ref().map_or("", |n| n.name.as_str());
-        let marker = tern!(
-            args.is_empty(),
-            trait_name.to_string(),
-            format!("{trait_name}<{}>", args.join(","))
-        );
+        let one = |k: &Kind| {
+            let args: Vec<String> =
+                k.args.iter().map(|a| field_text(a, names, shared, enums)).collect();
+            let name = k.name.as_ref().map_or("", |n| n.name.as_str());
+            tern!(
+                args.is_empty(),
+                name.to_string(),
+                format!("{name}<{}>", args.join(","))
+            )
+        };
+        let traits: Vec<String> =
+            std::iter::once(kind).chain(&kind.also).map(one).collect();
+        let marker = traits.join(&TRAIT_JOIN.to_string());
         let value = DataKind::Fn(FnKind::trait_value(Name::from(marker)));
         let marks = DataKind::from_ast(kind, &StructTable::new()).sig_name();
         return format!("{}{}", value.spell_inner(true), split_marks(&marks).1);

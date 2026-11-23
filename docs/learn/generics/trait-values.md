@@ -185,8 +185,14 @@ trait as a data kind:
 - **Results of the trait's data kind.** A function of the trait that returns the trait's
   data kind gives back a new trait value through the call
   ([Trait values](../../manual/language/trait-values.md#results-of-the-traits-data-kind)).
-- **Not now.** A trait value cannot be compared, printed or given an initial value (ZK0361),
-  and we cannot get the held data kind back from it.
+- **Not now.** A trait value cannot be compared, printed or given an initial value (ZK0361).
+- **The held data kind.** `လ သည် ကျောင်းသား အဖြစ်သို့ ပြောင်းလဲနိုင်သည်` tests which data kind
+  a trait value holds, and `လ ကို ကျောင်းသား အဖြစ် ပြောင်းလဲသော ရလဒ်` reads it, with the
+  words of members that hold data
+  ([Trait values](../../manual/language/trait-values.md#testing-the-held-data-kind)).
+- **Two traits.** `နှုတ်ဆက်နိုင်သော နှင့် အမည်ရှိသော အရာ` holds a value of each data kind with
+  both traits, and runs the functions of both
+  ([Trait values](../../manual/language/trait-values.md#two-traits-at-once)).
 - **Names.** A [kind alias](../../manual/language/aliases.md) gives a trait value a noun
   name, such as `လူ`, with a measure word of its own.
 - **Cost.** Putting a value into a trait value makes one counted block, and a duplicate of

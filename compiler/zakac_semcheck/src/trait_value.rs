@@ -24,7 +24,6 @@ use zakac_diagnostics::Code;
 use zakac_diagnostics::resolve as rd;
 use zakac_diagnostics::resolve::NotAKind;
 use zakac_rust_sugars::do_for;
-use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_span::span::Span;
@@ -38,6 +37,7 @@ use crate::structs::StructTable;
 use crate::traits::Wanted;
 use crate::traits::builtin;
 use crate::traits::traits;
+use crate::variant_check::VariantAt;
 
 impl Checker
 {
@@ -49,7 +49,10 @@ impl Checker
     /// * `written` - The kind phrase.
     pub(crate) fn check_trait_values(&mut self, written: &Kind)
     {
-        do_if!(written.base == BaseKind::TraitValue, self.check_trait_value(written));
+        let traits = std::iter::once(written).chain(&written.also);
+        let traits: Vec<&Kind> =
+            traits.filter(|_| written.base == BaseKind::TraitValue).collect();
+        do_for!(one in traits, self.check_trait_value(one));
         do_for!(inner in inner_kinds(written), self.check_trait_values(inner));
     }
 
@@ -181,7 +184,8 @@ fn mentions(kind: &Kind, name: Name) -> bool
 /// The inner phrases.
 fn inner_kinds(kind: &Kind) -> Vec<&Kind>
 {
-    let mut out: Vec<&Kind> = kind.args.iter().collect();
+    let mut out: Vec<&Kind> =
+        kind.args.iter().chain(kind.also.iter().flat_map(|k| &k.args)).collect();
     if let Some(sig) = kind.sig.as_deref()
     {
         out.extend(sig.params.iter().map(|p| &p.kind));
@@ -227,28 +231,24 @@ impl Checker
         &mut self, e: &Expr, found: DataKind, want: DataKind,
     ) -> bool
     {
-        let Some((name, args)) = want.as_trait_value()
-        else
-        {
-            return false;
-        };
-        ret_if!(found.is_trait_value(), false);
-        let need = trait_phrase(name, &args, e.span());
-        let before = self.diags.len();
-        let met = self.has_trait(found, &need, e.span(), &mut HashSet::new());
-        let message = rd::bound_not_met_value(&found.name(), &name);
-        let lacks =
-            self.diags[before..].iter_mut().filter(|d| d.code == Code::BoundNotMet);
-        lacks.for_each(|d| d.message = message.clone());
+        let traits = want.trait_list();
+        ret_if!(traits.is_empty() || found.is_trait_value(), false);
+        let met =
+            traits.iter().all(|(n, a)| self.value_has_trait(found, *n, a, e.span()));
         ret_if!(!met || self.trials > 0, true);
         let at = Span::new(e.span().lo, e.span().lo);
-        let Some(fns) = self.impl_names(found, name, &args, at)
-        else
+        let mut fns = Vec::new();
+        for (name, args) in &traits
         {
-            return true;
-        };
+            let Some(more) = self.impl_names(found, *name, args, at)
+            else
+            {
+                return true;
+            };
+            fns.extend(more);
+        }
         self.op_calls.to_traits.insert(e.id(), (want, fns));
-        self.duplicate_lint(e, found, name);
+        do_for!((name, _) in traits, self.duplicate_lint(e, found, name));
         true
     }
 
@@ -358,13 +358,11 @@ impl Checker
     /// `true` if it does.
     pub(crate) fn runs_through(&self, kind: DataKind, name: &str) -> bool
     {
-        let Some((trait_name, _)) = kind.as_trait_value()
-        else
-        {
-            return false;
+        let has = |t: &Name| {
+            let decl = self.traits.get(t);
+            decl.is_some_and(|(_, d)| d.fns.iter().any(|f| f.name.name == name))
         };
-        let decl = self.traits.get(&trait_name);
-        decl.is_some_and(|(_, d)| d.fns.iter().any(|f| f.name.name == name))
+        kind.trait_list().iter().any(|(t, _)| has(t))
     }
 
     /// The function a call runs when its first argument is a trait value whose
@@ -397,17 +395,20 @@ impl Checker
         let kind = kind.filter(|k| self.runs_through(*k, &callee.name))?;
         let plain = self.fns.get(&callee.name).cloned().unwrap_or_default();
         ret_if!(plain.iter().any(|s| s.params.first() == Some(&kind)), None);
-        let (name, _) = kind.as_trait_value()?;
-        let decl = self.traits.get(&name).map(|(_, d)| d.clone())?;
-        let index = decl.fns.iter().position(|f| f.name.name == callee.name)?;
-        let (params, ret) = dispatch_shape(&decl, kind, index, &self.structs)?;
+        let decls: HashMap<Name, TraitDecl> =
+            self.traits.iter().map(|(n, (_, d))| (*n, d.clone())).collect();
+        let fns = value_fns(kind, &decls);
+        let index =
+            fns.iter().position(|(d, _, at)| d.fns[*at].name.name == callee.name)?;
+        let (decl, args, at) = &fns[index];
+        let (params, ret) = dispatch_shape(decl, kind, args, *at, &self.structs)?;
         let inner = Name::from(format!("{TRAIT_CALL}{index}"));
         #[rustfmt::skip]
         let sig = FnSig::builder().params(params.iter().map(|p| p.kind).collect())
             .edits(params.iter().map(|p| p.edit).collect())
             .fills(params.iter().map(|p| p.fill).collect()).maybe_ret(ret)
             .prepositions(params.iter().map(|p| p.preposition).collect())
-            .decl(decl.fns[index].name.span).inner(inner).build();
+            .decl(decl.fns[*at].name.span).inner(inner).build();
         self.chosen.insert((self.top, callee.span), inner);
         self.refer(&callee.name, callee.span, sig.decl);
         Some(sig)
@@ -437,6 +438,8 @@ pub fn trait_decls(program: &Program) -> HashMap<Name, TraitDecl>
 ///
 /// * `decl` - The trait.
 /// * `value` - The trait value kind.
+/// * `args` - The kinds of the trait after the first, as the trait value writes
+///   them.
 /// * `index` - The number of the function among the functions of the trait.
 /// * `structs` - The kind of each declared struct.
 ///
@@ -445,10 +448,10 @@ pub fn trait_decls(program: &Program) -> HashMap<Name, TraitDecl>
 /// The parameters and the result, or `None` for a number past the functions
 /// or a kind with no phrase.
 pub fn dispatch_shape(
-    decl: &TraitDecl, value: DataKind, index: usize, structs: &StructTable,
+    decl: &TraitDecl, value: DataKind, args: &[DataKind], index: usize,
+    structs: &StructTable,
 ) -> Option<(Vec<FnParam>, Option<DataKind>)>
 {
-    let (_, args) = value.as_trait_value()?;
     let f = decl.fns.get(index)?;
     let span = f.name.span;
     let mut phrases = vec![kind_ast(value, span)?];
@@ -467,6 +470,29 @@ pub fn dispatch_shape(
         preposition: p.preposition.as_ref().map(|m| m.name),
     };
     Some((f.params.iter().map(param).collect(), f.ret.as_ref().map(kind_of)))
+}
+
+/// Each function a call through a trait value can run, in the order of its
+/// numbers: the functions of its first trait, then those of each later one.
+///
+/// # Arguments
+///
+/// * `value` - The trait value kind.
+/// * `traits` - The traits of the program.
+///
+/// # Returns
+///
+/// For each function, its trait, the kinds of the trait after the first, and
+/// its number in the trait.
+pub fn value_fns(
+    value: DataKind, traits: &HashMap<Name, TraitDecl>,
+) -> Vec<(TraitDecl, Vec<DataKind>, usize)>
+{
+    let each = value.trait_list().into_iter().filter_map(|(name, args)| {
+        let decl = traits.get(&name)?;
+        Some((0..decl.fns.len()).map(move |at| (decl.clone(), args.clone(), at)))
+    });
+    each.flatten().collect()
 }
 
 /// The number of the function of a call through a trait value, from the
@@ -501,4 +527,93 @@ fn trait_phrase(name: Name, args: &[DataKind], span: Span) -> Kind
     let ident = Ident::builder().name(name).span(span).build();
     let args = args.iter().filter_map(|k| kind_ast(*k, span)).collect();
     Kind::builder().base(BaseKind::Named).name(ident).args(args).span(span).build()
+}
+
+/// The data kind a test, a read or a switch case of a trait value names: a
+/// struct, an enumeration, an alias, or a kind name the compiler gives.
+///
+/// # Arguments
+///
+/// * `name` - The name.
+/// * `structs` - The kind of each declared struct.
+///
+/// # Returns
+///
+/// The data kind, or `None` for a name that names none.
+pub fn held_kind(name: &str, structs: &StructTable) -> Option<DataKind>
+{
+    ret_if!(let Some(kind) = structs.get(&Name::new(name)), Some(*kind));
+    let base = zakac_parser::builtin_kind(name)?;
+    let phrase = Kind::builder().base(base).span(Span::default()).build();
+    Some(DataKind::from_ast(&phrase, structs))
+}
+
+impl Checker
+{
+    /// The data kind a test, a read or a switch case of a trait value names,
+    /// as the member of an enumeration: its data is a value of that data
+    /// kind. A name that names no data kind is ZK0318, and a data kind
+    /// without the trait ZK0343, since no value of it is ever held.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The trait value kind.
+    /// * `name` - The name of the data kind.
+    ///
+    /// # Returns
+    ///
+    /// The data kind as a member, or `None` after a report.
+    pub(crate) fn held_kind_at(
+        &mut self, value: DataKind, name: &Ident,
+    ) -> Option<VariantAt>
+    {
+        let Some(kind) = held_kind(&name.name, &self.structs)
+        else
+        {
+            self.report(rd::unknown_kind_name(name.span, &name.name));
+            return None;
+        };
+        let traits = value.trait_list();
+        let met =
+            traits.iter().all(|(t, a)| self.value_has_trait(kind, *t, a, name.span));
+        ret_if!(!met, None);
+        let at = match self.held_kinds.iter().position(|k| *k == kind)
+        {
+            Some(at) => at,
+            None =>
+            {
+                self.held_kinds.push(kind);
+                self.held_kinds.len() - 1
+            }
+        };
+        let owner = value.name();
+        Some(VariantAt { owner: owner.clone(), stem: owner, at, data: Some(kind) })
+    }
+
+    /// Whether a data kind has the trait of a trait value; ZK0343 when not,
+    /// in the words of a trait value.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The data kind.
+    /// * `name` - The trait.
+    /// * `args` - Its kinds after the first.
+    /// * `span` - The use.
+    ///
+    /// # Returns
+    ///
+    /// `true` when the data kind has the trait.
+    fn value_has_trait(
+        &mut self, kind: DataKind, name: Name, args: &[DataKind], span: Span,
+    ) -> bool
+    {
+        let need = trait_phrase(name, args, span);
+        let before = self.diags.len();
+        let met = self.has_trait(kind, &need, span, &mut HashSet::new());
+        let message = rd::bound_not_met_value(&kind.name(), &name);
+        let lacks =
+            self.diags[before..].iter_mut().filter(|d| d.code == Code::BoundNotMet);
+        lacks.for_each(|d| d.message = message.clone());
+        met
+    }
 }
