@@ -62,7 +62,8 @@ are those of a C struct; a struct a lib gives to C can be, and C sees each part 
 of the struct of the part.
 
 A literal sets each part under the name of its struct, `ကျောင်းသား(လူ: လူ(…)၊ ကျောင်း: …)`,
-and a part with no initial value must be set, as each other field.
+and a part with no initial value must be set, as each other field. A print shows the part
+in the same form, under the name of its struct.
 
 ## Fields and functions of parts
 

@@ -1,6 +1,7 @@
 use gen_lsp_types::DocumentSymbol;
 use gen_lsp_types::SymbolKind;
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::BASE_FIELD;
 use zakac_ast::stmt::FnDecl;
 use zakac_ast::stmt::Param;
 use zakac_ast::stmt::Program;
@@ -163,7 +164,8 @@ fn node(
 }
 
 /// The name as written: the check renames the second and later functions of
-/// one name `name#2`, `name#3`, ...; the outline shows the written name.
+/// one name `name#2`, `name#3`, ..., and the parser names the part of a struct
+/// based on another `%%<struct>`; the outline shows the written name.
 ///
 /// # Arguments
 ///
@@ -175,5 +177,6 @@ fn node(
 pub fn shown_name(name: &Ident) -> String
 {
     let text = name.name.as_str();
+    let text = text.strip_prefix(BASE_FIELD).unwrap_or(text);
     text.split_once('#').map_or(text, |(written, _)| written).to_string()
 }

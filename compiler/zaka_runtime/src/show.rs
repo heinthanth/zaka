@@ -81,6 +81,23 @@ const SEP: &[u8] = "\u{104a} ".as_bytes();
 /// The step.
 fn piece(p: *const c_char) -> Step { Step::Piece(text(p)) }
 
+/// The step of the label of a field: a part of a struct based on another
+/// prints under the name of that struct, as a literal sets it, without the
+/// `%%` of its field.
+///
+/// # Arguments
+///
+/// * `p` - The name of the field.
+///
+/// # Returns
+///
+/// The step.
+fn label(p: *const c_char) -> Step
+{
+    let name = text(p);
+    Step::Piece(name.strip_prefix(b"%%").unwrap_or(name))
+}
+
 /// The field of a struct with a name.
 ///
 /// # Arguments
@@ -394,7 +411,7 @@ fn push_struct(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
             nested: true,
         });
         s.push(Step::Piece(b": "));
-        s.push(piece(f.name));
+        s.push(label(f.name));
         do_if!(i > 0, s.push(Step::Piece(SEP)));
     }
     s.push(Step::Piece(b"("));

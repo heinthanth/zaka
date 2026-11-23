@@ -9,6 +9,8 @@ use zakac_ast::expr::Expr;
 use zakac_ast::expr::Ident;
 use zakac_ast::expr::NodeId;
 use zakac_ast::expr::Phrases;
+use zakac_ast::kind::BASE_FIELD;
+use zakac_ast::kind::BASED_ON;
 use zakac_ast::kind::Kind;
 use zakac_ast::s_expr::ToSexpr;
 use zakac_ast::stmt::AliasDecl;
@@ -532,7 +534,12 @@ impl CardMaker<'_>
         let name = shown_name(&n.name);
         if self.is_target(&n.name)
         {
-            let lines = fields.iter().map(|(f, k)| format!("\n    {f}: {}", k.name()));
+            let line = |(f, k): &(String, DataKind)| match f.strip_prefix(BASE_FIELD)
+            {
+                Some(_) => format!("\n    {} ကို {BASED_ON}", k.name()),
+                None => format!("\n    {f}: {}", k.name()),
+            };
+            let lines = fields.iter().map(line);
             let mark = tern!(n.shared, format!("{SHARED} "), String::new());
             let lines = lines.collect::<String>();
             let code = format!("{name} {CALLED} {mark}{STRUCT_WORD}{lines}");
@@ -552,6 +559,7 @@ impl CardMaker<'_>
         let offset =
             kind.and_then(DataKind::as_struct).map(|s| s.offset(at, platform()));
         let place = t!("lsp.hover_field", name = name, offset = offset.unwrap_or(0));
+        let field = field.strip_prefix(BASE_FIELD).unwrap_or(&field);
         let code = format!("{name} {EI} {field}: {}", field_kind.name());
         self.keep(code, vec![Some(place.to_string()), size_note(field_kind)], None);
     }

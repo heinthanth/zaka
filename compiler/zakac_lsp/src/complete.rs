@@ -6,6 +6,7 @@ use gen_lsp_types::CompletionItemKind;
 use gen_lsp_types::InsertTextFormat;
 use gen_lsp_types::Position;
 use zakac_ast::expr::Ident;
+use zakac_ast::kind::BASE_FIELD;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::kind::Wrap;
@@ -234,12 +235,48 @@ fn fields_after(
     let scope = scope_at(file, pos)?;
     let start = scope.kinds.get(&root).copied()?;
     let end = steps.iter().try_fold(start, |kind, step| step.follow(kind))?;
-    let fields = end.as_struct()?.fields();
+    end.object_struct()?;
     let field = |(name, kind): &(String, DataKind)| {
         item(name.clone(), CompletionItemKind::Field, &kind.name())
     };
-    Some(fields.iter().map(field).collect())
+    Some(reachable_fields(end).iter().map(field).collect())
 }
+
+/// The fields a value of a struct reaches through a name: its own, then those
+/// of its parts that no nearer field hides, nearest first. A part itself is a
+/// field no program writes.
+///
+/// # Arguments
+///
+/// * `kind` - The struct or the shared object.
+///
+/// # Returns
+///
+/// The names and kinds.
+fn reachable_fields(kind: DataKind) -> Vec<(String, DataKind)>
+{
+    let mut out: Vec<(String, DataKind)> = Vec::new();
+    let mut level = vec![kind];
+    for _ in 0..MAX_PART_DEPTH
+    {
+        let fields: Vec<(String, DataKind)> = level
+            .iter()
+            .filter_map(|k| k.object_struct())
+            .flat_map(|s| s.fields().to_vec())
+            .collect();
+        ret_if!(fields.is_empty(), out);
+        let (parts, own): (Vec<_>, Vec<_>) =
+            fields.into_iter().partition(|(n, _)| n.starts_with(BASE_FIELD));
+        let fresh: Vec<_> =
+            own.into_iter().filter(|(n, _)| out.iter().all(|(m, _)| m != n)).collect();
+        out.extend(fresh);
+        level = parts.into_iter().map(|(_, k)| k).collect();
+    }
+    out
+}
+
+/// The deepest a list of fields goes through the parts of parts.
+const MAX_PART_DEPTH: usize = 32;
 
 /// One step of a chain after its first name.
 enum Step
@@ -266,7 +303,11 @@ impl Step
     {
         match self
         {
-            Step::Field(name) => kind.as_struct()?.field(name).map(|(_, k)| k),
+            Step::Field(name) =>
+            {
+                let fields = reachable_fields(kind);
+                fields.into_iter().find(|(n, _)| n == name).map(|(_, k)| k)
+            }
             Step::Cell =>
             {
                 let held = kind.cell_kind();

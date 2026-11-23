@@ -422,6 +422,9 @@ fn struct_tasks(
     tasks.push(Task::Piece(")".to_string()));
     for (i, (name, kind)) in s.fields().iter().enumerate().rev()
     {
+        // A part of a struct based on another prints under the name of that
+        // struct, as a literal sets it, without the `%%` of its field.
+        let name = name.strip_prefix("%%").unwrap_or(name);
         tasks.push(Task::Show { addr: at(i), kind: *kind, quoted: true });
         tasks.push(Task::Piece(tern!(
             i > 0,

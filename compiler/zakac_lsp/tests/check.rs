@@ -390,6 +390,18 @@ fn completion_after_ei_offers_the_fields_of_a_chain()
     assert_eq!(offered_at_end(text, 5), ["x", "y"]);
 }
 
+/// The fields of a struct based on another: its own first, then those of
+/// its part, and never the part itself.
+#[test]
+fn completion_after_ei_offers_the_fields_of_parts()
+{
+    let text = "လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်သည်။\nကျောင်းသား ဟူသော \
+                ဒေတာအစုအဝေး သည် လူ ကို အခြေခံသော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် ကျောင်း ဟူသော စာသား \
+                တစ်ခု ပါဝင်သည်။\nပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\nကိန်းရှင် က သည် ကျောင်းသား တစ်ခု \
+                ဖြစ်ပါစေ။\nက ၏ \nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n";
+    assert_eq!(offered_at_end(text, 4), ["ကျောင်း", "နာမည်"]);
+}
+
 #[test]
 fn completion_after_among_offers_the_members()
 {
