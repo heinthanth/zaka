@@ -27,6 +27,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
           - os: macos-latest
           - os: windows-latest
             host: gnu
@@ -73,12 +74,14 @@ jobs:
           tool: cargo-nextest,wasmtime
 
       # The WASI tests build with the Clang of wasi-sdk and run under
-      # wasmtime; Linux runs them, and fails rather than skips them.
+      # wasmtime; Linux runs them, and fails rather than skips them. The
+      # build of wasi-sdk matches the CPU of the runner, x86_64 or arm64.
       - name: Install wasi-sdk (Linux)
         if: runner.os == 'Linux'
         run: |
-          curl -sSfL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz | tar xz -C "$RUNNER_TEMP"
-          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
+          arch=$([ "$RUNNER_ARCH" = "ARM64" ] && echo arm64 || echo x86_64)
+          curl -sSfL "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-$arch-linux.tar.gz" | tar xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-34.0-$arch-linux" >> "$GITHUB_ENV"
           echo "ZAKA_REQUIRE_WASI=1" >> "$GITHUB_ENV"
 
       - uses: Swatinem/rust-cache@v2
