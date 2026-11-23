@@ -78,7 +78,14 @@ fn ran(cmd: &mut Command, what: &str) -> String
 {
     let out = cmd.output().unwrap();
     let errors = String::from_utf8_lossy(&out.stderr);
-    assert!(out.status.success(), "{what} failed:\n{errors}");
+    let printed = String::from_utf8_lossy(&out.stdout);
+    // The code of a crash tells its kind on Windows, as 0xC0000005 does.
+    let code =
+        out.status.code().map_or("none".into(), |c| format!("{c} ({:#x})", c as u32));
+    assert!(
+        out.status.success(),
+        "{what} failed with code {code}:\nstdout:\n{printed}\nstderr:\n{errors}"
+    );
     // The C of Windows writes a line end as `\r\n`; the runtime writes `\n`.
     String::from_utf8(out.stdout).unwrap().replace("\r\n", "\n")
 }
