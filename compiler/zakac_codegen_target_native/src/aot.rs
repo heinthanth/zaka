@@ -110,7 +110,13 @@ pub fn object(
 ) -> Result<Object, Error>
 {
     let mut flags = base_flags()?;
-    flags.set("is_pic", "true").map_err(module_error)?;
+    // COFF has no GOT for ARM64, so code for Windows on ARM64 reaches each
+    // name it links to through an absolute address, which the linker
+    // relocates.
+    let arm_windows =
+        target.os == TargetOs::Windows && target.arch == TargetArch::Aarch64;
+    let pic = if arm_windows { "false" } else { "true" };
+    flags.set("is_pic", pic).map_err(module_error)?;
     let isa = cranelift_codegen::isa::lookup_by_name(&triple(target))
         .map_err(module_error)?;
     let isa = isa.finish(settings::Flags::new(flags)).map_err(module_error)?;

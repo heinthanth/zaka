@@ -85,7 +85,7 @@ and returns the product.
 | `blob.rs` | `Blob`, data set out as C sets out a struct, with the addresses of other data and functions as relocations |
 | `jit.rs` | the JIT module: each runtime function from `zaka_runtime::exports()`, each C function from its lib, then the run |
 | `aot.rs` | the object module for the triple of the target, and the CLIF text |
-| `unwind.rs` | the unwind tables of 64-bit Windows (`.xdata` and `.pdata`), which `cranelift-object` does not write there, so a debugger and a `longjmp` can walk the frames |
+| `unwind.rs` | the unwind tables of 64-bit Windows (`.xdata` and `.pdata`), which `cranelift-object` does not write there, so a debugger and a `longjmp` can walk the frames; on ARM64, `arm_xdata` puts a header word (the length of the function, the words of codes, no epilog) before the codes of Cranelift and fills their last word with `end`, and a row of `.pdata` holds two image offsets |
 | `debug.rs` | the DWARF line table of an object: a row for the code of each statement, and a subprogram with the Zaka name of each function |
 | `disasm.rs` | with the feature `disasm`, the listing of the machine code of an object (x86-64 through iced-x86, aarch64 through yaxpeax-arm), each function under its Zaka name and each call to the runtime named |
 | `main.rs` | the test program: `zakac run` with the JIT in place, so a stop ends a child process |
@@ -192,7 +192,11 @@ place. The program runs on the OS thread of `zakac`, so a stop ends `zakac`.
 
 The AOT path builds an `ObjectModule` for the triple of the target, as
 position-independent code: `x86_64`, `aarch64` or `riscv64` on Windows
-(`pc-windows-gnu`, or `pc-windows-msvc` for the ABI of MSVC), macOS or Linux.
+(`pc-windows-gnu`, or `pc-windows-msvc` for the ABI of MSVC), macOS or Linux. Windows on
+ARM64 is the exception: `cranelift-object` writes no COFF relocation for the GOT or the
+page of a name on ARM64, so its code is not position-independent, and `far_refs` marks
+each name a function refers to as not colocated, so the code loads each address from a
+pool through `IMAGE_REL_ARM64_ADDR64`, which the linker relocates.
 `build_main` writes `main.o` (`main.obj` for MSVC) into the cache folder beside the
 runtime lib of the ABI, and links both through the C toolchain of the C target
 (`build_and_link`), with no C to compile. An executable is linked for the OS and the CPU
@@ -216,7 +220,7 @@ glue.
 | `tests/ffi_lib.rs` | the C lib of the C target's tests: structs as values, other values, text results, handles and closures given to C, through the JIT and as an executable; NULL from C where the program wants none stops the run |
 | `tests/debug_info.rs` | the DWARF line table maps the code of each statement to its source line, unless the build is for release |
 | `tests/disasm.rs` | the listing of the machine code of an object, each function under its Zaka name, for x86-64 and aarch64 |
-| `tests/unwind.rs` | the unwind tables of 64-bit Windows in an object: `.xdata` with the unwind codes of each function, and `.pdata` with a row of three image offsets for each |
+| `tests/unwind.rs` | the unwind tables of 64-bit Windows in an object: `.xdata` with the unwind codes of each function, and `.pdata` with a row of three image offsets for each on x64 and two on ARM64 |
 
 The tests run the program in a child process (the test program
 `zakac_codegen_target_native` for the JIT), each in its own folder, so a stop ends that

@@ -7,11 +7,14 @@ use std::sync::Arc;
 
 use cranelift_codegen::Context;
 use cranelift_codegen::ir::AbiParam;
+use cranelift_codegen::ir::Function;
+use cranelift_codegen::ir::GlobalValueData;
 use cranelift_codegen::ir::Signature;
 use cranelift_codegen::ir::SourceLoc;
 use cranelift_codegen::ir::Type;
 use cranelift_codegen::ir::UserFuncName;
 use cranelift_codegen::ir::types;
+use cranelift_codegen::isa::TargetIsa;
 use cranelift_frontend::FunctionBuilderContext;
 use cranelift_module::DataId;
 use cranelift_module::FuncId;
@@ -39,6 +42,7 @@ use zakac_ir_builder::ir::Func;
 use zakac_ir_builder::ir::Module as IrModule;
 use zakac_ir_builder::ir::shown_name;
 use zakac_ir_builder::spans::spell_repeats;
+use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -674,6 +678,7 @@ fn define_fn<'m, M: Module>(
     {
         String::new()
     };
+    do_if!(far_names(s.m.isa()), far_refs(&mut ctx.func));
     let defined = tern!(s.missing.is_none(), s.m.define_function(id, &mut ctx), Ok(()));
     do_if!(let Err(e) = defined, s.missing(format!("{e:?}")));
     let base = ctx.func.params.base_srcloc();
@@ -682,6 +687,39 @@ fn define_fn<'m, M: Module>(
     let unwind = ctx.compiled_code().and_then(|c| fn_unwind(id, c, s.m.isa()));
     s.unwinds.extend(unwind);
     text
+}
+
+/// Whether the code of a target reaches each name it links to through an
+/// address in a pool of its own: Windows on ARM64, whose COFF has no
+/// relocation for the page of a name that cranelift-object writes.
+///
+/// # Arguments
+///
+/// * `isa` - The target.
+///
+/// # Returns
+///
+/// `true` for such a target.
+fn far_names(isa: &dyn TargetIsa) -> bool
+{
+    let triple = isa.triple().to_string();
+    triple.starts_with("aarch64-") && triple.contains("-windows")
+}
+
+/// Mark each function and datum a function refers to as far, so the code
+/// loads its address from a pool, through an absolute relocation, in place of
+/// the page relocations of ARM64.
+///
+/// # Arguments
+///
+/// * `func` - The function.
+fn far_refs(func: &mut Function)
+{
+    do_for!(f in func.dfg.ext_funcs.values_mut(), f.colocated = false);
+    for gv in func.global_values.values_mut()
+    {
+        do_if!(let GlobalValueData::Symbol { colocated, .. } = gv, *colocated = false);
+    }
 }
 
 /// The lines of a compiled function: the start of each run of code that

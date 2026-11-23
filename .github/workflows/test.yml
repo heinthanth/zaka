@@ -93,6 +93,14 @@ jobs:
           $bin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' '${{ matrix.mingw_bin }}\bin'
           Add-Content -Path $env:GITHUB_PATH -Value $bin
 
+      # ring builds its C for ARM64 MSVC with clang, which needs the headers
+      # and libs of Visual Studio that its developer environment names.
+      - name: Set up the MSVC environment (Windows ARM64, MSVC host)
+        if: runner.os == 'Windows' && matrix.arch == 'aarch64' && matrix.host == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
       # Rust links `gnullvm` with `aarch64-w64-mingw32-clang`, and cc-rs looks
       # for a compiler of that name: the clang of CLANGARM64 does both.
       - name: Point the gnullvm target at clang (Windows ARM64)
