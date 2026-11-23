@@ -52,7 +52,14 @@ impl Checker
         let traits = std::iter::once(written).chain(&written.also);
         let traits: Vec<&Kind> =
             traits.filter(|_| written.base == BaseKind::TraitValue).collect();
-        do_for!(one in traits, self.check_trait_value(one));
+        // The trait of threads joins another trait: it marks a trait value
+        // that threads can use, and gives no function.
+        let joined = traits.len() > 1;
+        let threads = |k: &&Kind| {
+            joined
+                && k.name.as_ref().is_some_and(|n| n.name.as_str() == USABLE_IN_THREADS)
+        };
+        do_for!(one in traits.iter().filter(|k| !threads(k)), self.check_trait_value(one));
         do_for!(inner in inner_kinds(written), self.check_trait_values(inner));
     }
 
@@ -247,7 +254,8 @@ impl Checker
         ret_if!(!met || self.trials > 0, true);
         let at = Span::new(e.span().lo, e.span().lo);
         let mut fns = Vec::new();
-        for (name, args) in &traits
+        for (name, args) in
+            traits.iter().filter(|(n, _)| n.as_str() != USABLE_IN_THREADS)
         {
             let Some(more) = self.impl_names(found, *name, args, at)
             else
@@ -342,6 +350,26 @@ impl Checker
         let ident = Ident::builder().name(want.name.name).span(at).build();
         let sig = self.instance_sig(&template, &ident, Some(vec![kind]))?;
         Some(self.known_name(&sig))
+    }
+
+    /// The function of a trait that a call through a trait value of a kind
+    /// runs, from its number among the functions of the traits of the kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The trait value kind.
+    /// * `index` - The number.
+    ///
+    /// # Returns
+    ///
+    /// The function head, or `None` for a number past the functions.
+    pub(crate) fn trait_fn_at(&self, value: DataKind, index: usize) -> Option<FnDecl>
+    {
+        let decls = value
+            .trait_list()
+            .into_iter()
+            .filter_map(|(name, _)| self.traits.get(&name).map(|(_, d)| d.fns.clone()));
+        decls.flatten().nth(index)
     }
 
     /// Report ZK0362 for a plain value that goes into a trait value whose

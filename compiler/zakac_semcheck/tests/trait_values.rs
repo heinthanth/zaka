@@ -90,6 +90,28 @@ fn what_a_trait_value_can_and_cannot_do()
     assert!(codes_of(GREET, param, initial).contains(&Code::TraitValueUse));
 }
 
+/// A trait value joined with the trait of threads goes to a thread, and a call
+/// of its trait runs as one; a plain trait value does not go (ZK0494), a
+/// function that changes its first parameter does not run as a thread
+/// (ZK0498), and the trait of threads alone is no kind (ZK0360).
+#[test]
+fn a_trait_value_of_threads_goes_to_a_thread()
+{
+    let joined = "နှုတ်ဆက်နိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ";
+    let start = "ကိန်းရှင် ခ သည် နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း \
+                 ဖြစ်ပါစေ။\nခ ကို စောင့်မည်။";
+    assert_eq!(codes_of(GREET, joined, start), []);
+    let plain = codes_of(GREET, "နှုတ်ဆက်နိုင်သော အရာ", start);
+    assert!(plain.contains(&Code::NotForThreads), "{plain:?}");
+    let counted = "တိုးနိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ";
+    let bump = "ကိန်းရှင် ခ သည် တိုး ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။\nခ \
+                ကို စောင့်မည်။";
+    let changes = codes_of(COUNT, counted, bump);
+    assert!(changes.contains(&Code::ThreadChangesArgs), "{changes:?}");
+    let alone = codes_of(GREET, "အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ", "");
+    assert!(alone.contains(&Code::TraitNotAKind), "{alone:?}");
+}
+
 /// A struct with the greeting trait, through a plain function.
 const PERSON: &str = "လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ \
                       ယောက် ဖြစ်သည်။
@@ -283,16 +305,6 @@ fn a_value_without_the_trait_names_the_trait_value()
     let lacks = &checked.out.diagnostics[0];
     assert_eq!(lacks.code, Code::BoundNotMet);
     assert!(lacks.message.contains("trait value"), "{}", lacks.message);
-}
-
-/// A call through a trait value does not run as a thread: ZK0361.
-#[test]
-fn a_call_through_a_trait_value_runs_in_no_thread()
-{
-    let decls = format!("{GREET}{PERSON}");
-    let stmts = "ကိန်းရှင် တ သည် နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် လူ(နာမည်: \"မောင်\") ဖြစ်ပါစေ။
-နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်မည်။";
-    assert!(run_codes(&decls, stmts).contains(&Code::TraitValueUse));
 }
 
 /// A struct with a field of a function kind, and a function that fits it.

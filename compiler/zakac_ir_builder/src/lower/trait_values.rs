@@ -83,7 +83,8 @@ fn first_word(e: Expr) -> Expr
 /// The kind of each field of the argument pack of a trait function: the new
 /// trait value first when the function changes its first parameter, then
 /// each argument after the first (a borrow of its place for a parameter the
-/// function can change or fill), then the result.
+/// function can change or fill), then the result; one unused field when
+/// there is nothing else.
 ///
 /// # Arguments
 ///
@@ -105,7 +106,10 @@ fn pack_fields(
     };
     let args = params.iter().skip(1).map(arg);
     let new = changes.then_some(value);
-    new.into_iter().chain(args).chain(ret).collect()
+    let fields: Vec<DataKind> = new.into_iter().chain(args).chain(ret).collect();
+    // A struct holds a field at least: a function that takes the trait value
+    // alone and gives nothing gets one that no one reads.
+    tern!(fields.is_empty(), vec![DataKind::Bool], fields)
 }
 
 /// A value with a new count of each block it holds, for a value that holds
@@ -287,24 +291,11 @@ impl Lowerer<'_>
     ) -> Option<Expr>
     {
         let value = self.kind_of(&args[0]);
-        let fns = value_fns(value, &self.traits);
-        let (decl, targs, at) =
-            fns.get(index).expect("the check found the trait function");
-        let shape = dispatch_shape(decl, value, targs, *at, self.structs);
-        let (params, ret) = shape.expect("the check found the trait function");
-        let fields = pack_fields(value, &params, ret);
-        let pack = DataKind::args_pack(&fields);
+        let (params, ret) = self.trait_fn_shape(value, index);
         let changes = params[0].edit;
         let callee = self.expr(&args[0]);
         let place = matches!(callee.node, ExprNode::Read(_) | ExprNode::Load { .. });
         let callee = tern!(place, callee, self.spill(callee));
-        let slot = self.hidden(pack, span);
-        if pack.holds_text()
-        {
-            let blank = default_constant(pack, span);
-            self.pre_init.push(Stmt::Set { place: slot, value: blank, span });
-            self.drops.last_mut().expect("a scope is open").push((slot, pack));
-        }
         let mut cells = Vec::new();
         do_if!(changes, cells.push(default_constant(value, span)));
         for (a, p) in args[1..].iter().zip(&params[1..])
@@ -317,7 +308,70 @@ impl Lowerer<'_>
                 self.owned(a, p.kind)
             ));
         }
-        do_if!(let Some(r) = ret, cells.push(default_constant(r, span)));
+        let fields = pack_fields(value, &params, ret);
+        let base = self.call_pack(index, &callee, &fields, cells, span);
+        do_if!(changes, self.write_back(&args[0], &base, span));
+        let ret_at = fields.len() - 1;
+        ret.map(|r| {
+            let addr = field_addr(&base, ret_at, self.platform);
+            self.spill(node_expr(r, ExprNode::Load { addr: Box::new(addr) }, span))
+        })
+    }
+
+    /// The parameters and the result of a function of the trait of a trait
+    /// value kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The trait value kind.
+    /// * `index` - The number of the trait function.
+    ///
+    /// # Returns
+    ///
+    /// The parameters, the trait value kind first, and the result kind.
+    fn trait_fn_shape(
+        &self, value: DataKind, index: usize,
+    ) -> (Vec<FnParam>, Option<DataKind>)
+    {
+        let fns = value_fns(value, &self.traits);
+        let (decl, targs, at) =
+            fns.get(index).expect("the check found the trait function");
+        let shape = dispatch_shape(decl, value, targs, *at, self.structs);
+        shape.expect("the check found the trait function")
+    }
+
+    /// Fill a hidden argument pack of the caller and call a trait value with
+    /// the number of a trait function and the raw address of the pack: the
+    /// statements go to [`Self::pre`], and the scope drops the pack.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The number of the trait function.
+    /// * `callee` - The trait value, read where it sits.
+    /// * `fields` - The kinds of the fields of the pack.
+    /// * `cells` - The values of the fields, the result a blank one.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The pack, read where it sits, after the call.
+    fn call_pack(
+        &mut self, index: usize, callee: &Expr, fields: &[DataKind],
+        mut cells: Vec<Expr>, span: Span,
+    ) -> Expr
+    {
+        let pack = DataKind::args_pack(fields);
+        let slot = self.hidden(pack, span);
+        if pack.holds_text()
+        {
+            let blank = default_constant(pack, span);
+            self.pre_init.push(Stmt::Set { place: slot, value: blank, span });
+            self.drops.last_mut().expect("a scope is open").push((slot, pack));
+        }
+        do_if!(
+            cells.len() < fields.len(),
+            cells.push(default_constant(fields[fields.len() - 1], span))
+        );
         self.pre.push(Stmt::Set {
             place: slot,
             value: node_expr(pack, ExprNode::List(cells), span),
@@ -332,15 +386,110 @@ impl Lowerer<'_>
             span,
         );
         let passed = vec![self.usize_const(index as u32, span), at];
-        self.pre.push(Stmt::CallValue { callee, args: passed, span });
+        self.pre.push(Stmt::CallValue { callee: callee.clone(), args: passed, span });
         self.pre.append(&mut self.post);
-        let base = read(slot, pack, span);
-        do_if!(changes, self.write_back(&args[0], &base, span));
-        let ret_at = fields.len() - 1;
-        ret.map(|r| {
-            let addr = field_addr(&base, ret_at, self.platform);
-            self.spill(node_expr(r, ExprNode::Load { addr: Box::new(addr) }, span))
-        })
+        read(slot, pack, span)
+    }
+
+    /// The thread a call through a trait value starts: a function made for
+    /// the call takes a duplicate of each argument, so the pack lives in the
+    /// frame of the thread, and runs the call there.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The number of the trait function.
+    /// * `args` - The arguments, the trait value first.
+    /// * `apart` - Whether the call asks for an OS thread of its own.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The spawn.
+    pub(super) fn trait_spawn(
+        &mut self, index: usize, args: &[ast::Expr], apart: bool, span: Span,
+    ) -> ExprNode
+    {
+        let value = self.kind_of(&args[0]);
+        let (params, ret) = self.trait_fn_shape(value, index);
+        let kinds: Vec<DataKind> =
+            std::iter::once(value).chain(params[1..].iter().map(|p| p.kind)).collect();
+        let lowered = args.iter().zip(&kinds).map(|(a, k)| self.owned(a, *k)).collect();
+        let (func, name) = self.trait_thread_fn(index, &kinds, ret, span);
+        ExprNode::Spawn { func, name, args: lowered, apart, detached: false }
+    }
+
+    /// The function a thread of a call through a trait value starts in: it
+    /// takes the trait value and the other arguments, makes the call, and
+    /// gives back its result. Its frame drops each parameter and the pack.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The number of the trait function.
+    /// * `kinds` - The kinds of the parameters, the trait value kind first.
+    /// * `ret` - The result kind of the trait function.
+    /// * `span` - The call.
+    ///
+    /// # Returns
+    ///
+    /// The number of the function among the functions of the module, and its
+    /// name.
+    fn trait_thread_fn(
+        &mut self, index: usize, kinds: &[DataKind], ret: Option<DataKind>, span: Span,
+    ) -> (u32, String)
+    {
+        let func = self.top_count + self.lifted.len() as u32;
+        self.lifted.push(None);
+        let saved = self.set_aside();
+        let depth = self.scopes.len();
+        #[rustfmt::skip]
+        let outer = self.frame.replace(Frame { locals: Vec::new(), ret, fault: None, depth, edits: HashSet::new(), boxes: HashSet::new(), atomics: HashSet::new(), boxed: HashSet::new(), write_backs: Vec::new(), owned_ret: false, session: false });
+        let mut block = Vec::new();
+        self.scoped(|l| {
+            let places: Vec<Place> = kinds
+                .iter()
+                .enumerate()
+                .map(|(i, k)| {
+                    let ident = ast::Ident::builder()
+                        .name(format!("%arg{i}"))
+                        .span(span)
+                        .build();
+                    l.declare(&ident, *k, Access::Var)
+                })
+                .collect();
+            let callee = read(places[0], kinds[0], span);
+            // The pack takes a new count of each argument: the frame drops the
+            // parameters as it ends.
+            let cells = places[1..]
+                .iter()
+                .zip(&kinds[1..])
+                .map(|(p, k)| dup_held(read(*p, *k, span)))
+                .collect();
+            let (params, _) = l.trait_fn_shape(kinds[0], index);
+            let fields = pack_fields(kinds[0], &params, ret);
+            let base = l.call_pack(index, &callee, &fields, cells, span);
+            block.append(&mut l.pre_init);
+            block.append(&mut l.pre);
+            let Some(r) = ret
+            else
+            {
+                block.extend(l.exit_drops(depth, span));
+                block.push(Stmt::Return { value: None, span });
+                return;
+            };
+            let addr = field_addr(&base, fields.len() - 1, l.platform);
+            let value =
+                dup_held(node_expr(r, ExprNode::Load { addr: Box::new(addr) }, span));
+            l.leave_with(value, span, &mut block);
+        });
+        let frame =
+            std::mem::replace(&mut self.frame, outer).expect("the frame is set");
+        self.restore(saved);
+        let name = format!("%trait-thread#{func}{}", self.suffix);
+        #[rustfmt::skip]
+        let made = Func::builder().name(name.clone()).params(kinds.len() as u32).maybe_ret(ret)
+            .locals(frame.locals).block(block).span(span).build();
+        self.lifted[(func - self.top_count) as usize] = Some(made);
+        (func, name)
     }
 
     /// Put the new trait value a call that changes its first parameter wrote

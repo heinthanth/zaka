@@ -687,6 +687,11 @@ trait function, the address of an argument pack and its record.
   record when the numbers match, which makes the shapes match too. `TEXT` calls the
   `စာသားအဖြစ်ပြောင်း` of the held data kind, which the check passes after the trait
   functions, or formats the value as a print does.
+- **A thread.** A call through a trait value that runs as a thread starts in a function
+  made for it, `%trait-thread#<n>` (`trait_thread_fn`): it takes the trait value and the
+  other arguments, so the pack lives in the frame of the thread, calls through the trait
+  value as `dispatch` does (`call_pack`), and gives back the result. An argument pack
+  with no field gets one that no one reads.
 - **A part.** The name of the function of a held kind that gets a trait through a part
   carries the fields of the path after `PART_PATH`; the arm passes the address of that
   part (`base_part_addr`), through the box of a shared object.

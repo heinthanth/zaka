@@ -15,6 +15,7 @@ use std::sync::PoisonError;
 use strum::IntoStaticStr;
 use zakac_ast::kind::TRAIT_HEAD;
 use zakac_ast::name::Name;
+use zakac_ast::threads::USABLE_IN_THREADS;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -385,12 +386,30 @@ fn one_trait(text: &str) -> Option<(Name, Vec<DataKind>)>
     let Some((name, args)) = text.split_once('<')
     else
     {
-        return Some((Name::new(text), Vec::new()));
+        return Some((written_trait(text), Vec::new()));
     };
     let args = args.strip_suffix('>')?;
     let kinds: Option<Vec<DataKind>> =
         split_top(args, ',').into_iter().map(|a| DataKind::parse(a.trim())).collect();
-    Some((Name::new(name), kinds?))
+    Some((written_trait(name), kinds?))
+}
+
+/// The spelling of the trait of threads in a marker: a marker holds no space,
+/// so `_` stands for the space between its two words.
+const THREADS_MARK: &str = "အပြိုင်လုပ်ငန်းများတွင်_အသုံးပြုနိုင်သော";
+
+/// The name of a trait as written, from its spelling in a marker.
+///
+/// # Arguments
+///
+/// * `text` - The spelling.
+///
+/// # Returns
+///
+/// The name.
+fn written_trait(text: &str) -> Name
+{
+    Name::new(tern!(text == THREADS_MARK, USABLE_IN_THREADS, text))
 }
 
 /// The marker of a trait value kind, [`FnKind::of_trait`], from the trait's
@@ -406,6 +425,7 @@ fn one_trait(text: &str) -> Option<(Name, Vec<DataKind>)>
 /// The marker.
 pub fn trait_marker(name: &str, args: &[DataKind]) -> Name
 {
+    let name = tern!(name == USABLE_IN_THREADS, THREADS_MARK, name);
     ret_if!(args.is_empty(), Name::new(name));
     let args: Vec<String> = args.iter().map(|k| k.spell_inner(true)).collect();
     Name::from(format!("{name}<{}>", args.join(",")))

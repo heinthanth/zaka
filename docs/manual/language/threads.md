@@ -219,9 +219,11 @@ which means a data kind with the built-in trait `အပြိုင်လုပ�
 ("usable in threads", [Built-in traits](traits.md#built-in-traits)). Numbers, text,
 lists, plain structs, enumerations, results and tables of these have the trait, and so do
 the objects of a struct with that mark ([Objects threads can
-use](objects.md#objects-threads-can-use)). A plain shared object (reference type) does not
-have it, because two threads could write to it at once, so passing one to a thread is
-ZK0494.
+use](objects.md#objects-threads-can-use)), and a trait value joined with the trait, as in
+`<trait> နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ` ([Trait
+values](trait-values.md#trait-values-and-threads)). A plain shared object (reference type)
+does not have it, because two threads could write to it at once, so passing one to a
+thread is ZK0494.
 
 ```zaka-error ZK0494
 အကောင့် ဟူသော မျှဝေနိုင်သော ဒေတာအစုအဝေးတွင် လက်ကျန် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။

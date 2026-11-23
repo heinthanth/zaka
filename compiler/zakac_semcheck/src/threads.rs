@@ -24,7 +24,6 @@ use zakac_ast::visit::walk_replace;
 use zakac_diagnostics::kinds as kd;
 use zakac_diagnostics::ownership as od;
 use zakac_diagnostics::resolve as rd;
-use zakac_diagnostics::resolve::TraitValueUse;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -589,22 +588,30 @@ impl Checker
 
     /// Report the function a call that runs as a thread starts in when it is no
     /// function the program declares in Zaka (ZK0497), or when it changes or
-    /// fills a parameter (ZK0498).
+    /// fills a parameter (ZK0498). A call through a trait value runs the
+    /// function of its trait, which must change and fill no parameter either.
     ///
     /// # Arguments
     ///
     /// * `callee` - The name at the call.
     /// * `place` - The value a call on a value names, or `None`.
-    pub(crate) fn check_thread_callee(&mut self, callee: &Ident, place: Option<&Expr>)
+    /// * `first` - The first argument, or `None`.
+    pub(crate) fn check_thread_callee(
+        &mut self, callee: &Ident, place: Option<&Expr>, first: Option<&Expr>,
+    )
     {
         let name = callee.name.as_str();
         let sigs = self.fns.get(&callee.name).filter(|_| place.is_none());
         let chosen = self.chosen.get(&(self.top, callee.span)).copied();
-        // A call through a trait value passes its arguments in the frame of the
-        // caller, which a thread can outlive.
-        let through = chosen.is_some_and(|c| trait_call_index(&c).is_some());
-        let thread = rd::trait_value_use(callee.span, TraitValueUse::Thread);
-        ret_if!(through, self.report(thread));
+        if let Some(index) = chosen.and_then(|c| trait_call_index(&c))
+        {
+            let value = first.and_then(|a| self.kinds.get(&a.id()).copied());
+            let func = value.and_then(|v| self.trait_fn_at(v, index));
+            let changes =
+                func.is_some_and(|f| f.params.iter().any(|p| p.edit || p.fill));
+            do_if!(changes, self.report(kd::thread_changes_args(callee.span, name)));
+            return;
+        }
         let sig = sigs.and_then(|s| {
             let one = s.first().filter(|_| s.len() == 1);
             s.iter().find(|f| Some(f.inner) == chosen).or(one).cloned()
@@ -804,7 +811,7 @@ impl Checker
             return None;
         };
         self.refer(&f.name, f.span, sig.decl);
-        self.check_thread_callee(&callee, None);
+        self.check_thread_callee(&callee, None, None);
         self.goes_to_thread(cell, list.span());
         let ret = sig.ret?;
         self.goes_to_thread(ret, f.span);

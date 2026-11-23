@@ -415,6 +415,43 @@ blank at first is an [optional](optionals.md) trait value,
 `<trait> အရာ ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, which starts as `အလွတ်` and takes a value of
 each data kind with the trait.
 
+## Trait values and threads
+
+A trait value can hold a plain shared object, which two threads could write at once, so a
+plain trait value does not go to a [thread](threads.md) (ZK0494). Joined with the built-in
+trait of threads, as in `နှုတ်ဆက်နိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ`,
+a trait value takes values of data kinds that threads can use alone (ZK0343 for another
+data kind), and it goes to a thread as each such value does. A call of its trait then runs
+as a thread too, unless the trait function changes or fills a parameter (ZK0498). The
+trait of threads gives no function, so alone it is no trait value kind (ZK0360).
+
+```zaka
+နှုတ်ဆက်နိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
+၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော A တစ်ခု ကို လက်ခံပြီး စာသား တစ်ခု ကို ပြန်ပေးမည်။
+ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ ယောက် ဖြစ်သည်။
+
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော လူ တစ်ယောက် ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ စာသား တစ်ခု ကို ပြန်ပေးမည်။
+"မင်္ဂလာပါ {က ၏ နာမည်}" ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် တ သည် နှုတ်ဆက်နိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ တစ်ခု ဖြစ်၍
+တန်ဖိုးသည် လူ(နာမည်: "မောင်") ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည်
+နှုတ်ဆက် ဟူသော လုပ်ဆောင်ချက်ကို တ ဖြင့် အပြိုင် လုပ်ဆောင်သော လုပ်ငန်း ဖြစ်ပါစေ။
+စောင့်(ခ) ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မင်္ဂလာပါ မောင်
+```
+
 ## What a trait value cannot do
 
 A trait value is used through the functions of its trait, and through the comparisons and
@@ -424,10 +461,7 @@ the print above. These uses are ZK0361:
 - a comparison or a print of a list, a struct or an object that holds a trait value inside
   it, which would not reach the held values;
 - the initial value, `ကနဦးတန်ဖိုး`;
-- a call through it as a [function value](function-values.md);
-- a call of its trait that runs as a [thread](threads.md), since the call passes its
-  arguments in the frame of the caller; a function of our own that makes the call can run
-  as the thread instead.
+- a call through it as a [function value](function-values.md).
 
 A trait value cannot go to C either: a C function or an export that takes or gives one is
 ZK0465, as for each data kind that C cannot hold.
@@ -459,5 +493,5 @@ that changes the held value makes a new block for the changed value. The details
 | ZK0343 | a value goes into a trait value whose trait its data kind lacks |
 | ZK0344 | a trait value of a name that is not a trait |
 | ZK0360 | a trait that cannot be a data kind used as one |
-| ZK0361 | a trait value ordered, compared or printed inside another value, given an initial value or called as a function value, or a call of its trait run as a thread |
+| ZK0361 | a trait value ordered, compared or printed inside another value, given an initial value or called as a function value |
 | ZK0362 | a plain value goes into a trait value whose trait has a function that changes its first parameter (warning, lint group `duplicates`) |

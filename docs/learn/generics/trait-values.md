@@ -188,6 +188,9 @@ trait as a data kind:
 - **Comparing and printing.** `==` compares the held values, `တစ်ခုတည်း` asks whether two
   trait values hold one shared object, and a print shows the held value
   ([Trait values](../../manual/language/trait-values.md#comparing-and-printing)).
+- **Threads.** `နှုတ်ဆက်နိုင်သော နှင့် အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော အရာ` holds values
+  that threads can use, so it goes to a thread, and a call of its trait runs as one
+  ([Trait values](../../manual/language/trait-values.md#trait-values-and-threads)).
 - **Not now.** A trait value has no initial value, and a list of trait values is neither
   compared nor printed as a whole (ZK0361); an optional trait value starts blank.
 - **The held data kind.** `လ သည် ကျောင်းသား အဖြစ်သို့ ပြောင်းလဲနိုင်သည်` tests which data kind

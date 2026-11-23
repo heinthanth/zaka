@@ -213,7 +213,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0358 | a read of the data of a member that a test of the variable ruled out | [Enumerations](../language/enums.md#members-that-hold-data) |
 | ZK0359 | a case of a switch over an enumeration whose members hold data gives data | [Enumerations](../language/enums.md#switch) |
 | ZK0360 | a trait used as a data kind (`<trait> အရာ`) has a function that does not take the trait's data kind first, or takes it elsewhere | [Trait values](../language/trait-values.md#which-traits-can-be-a-data-kind) |
-| ZK0361 | a trait value is ordered, compared or printed inside another value, given an initial value or called as a function value, or a call of its trait runs as a thread | [Trait values](../language/trait-values.md#what-a-trait-value-cannot-do) |
+| ZK0361 | a trait value is ordered, compared or printed inside another value, given an initial value or called as a function value | [Trait values](../language/trait-values.md#what-a-trait-value-cannot-do) |
 | ZK0362 | a warning of the lint group `duplicates`: a plain value goes into a trait value whose trait has a function that changes its first parameter | [Trait values](../language/trait-values.md#changes-through-a-trait-value) |
 | ZK0363 | a struct based on a data kind that is no struct and no shared object | [Structs based on structs](../language/based-structs.md#the-head-and-the-literal) |
 | ZK0364 | a field, a function or a part that two parts of a struct have at one depth | [Structs based on structs](../language/based-structs.md#fields-and-functions-of-parts) |

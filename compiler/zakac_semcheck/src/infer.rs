@@ -871,7 +871,7 @@ impl Checker
         // function gives back, or of none.
         if n.parallel
         {
-            self.check_thread_callee(&n.callee, place);
+            self.check_thread_callee(&n.callee, place, n.args.first());
             return Some(self.start_thread(&n.args, ret, n.span));
         }
         self.check_pass(&n.callee, ret, n.pass, false, n.span);

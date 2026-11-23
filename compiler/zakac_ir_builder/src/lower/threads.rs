@@ -35,6 +35,11 @@ impl Lowerer<'_>
         apart: bool,
     ) -> ExprNode
     {
+        // A call through a trait value runs in a function made for the thread.
+        if let Some(index) = trait_call_index(&callee.name)
+        {
+            return self.trait_spawn(index, args, apart, callee.span);
+        }
         let (target, sig) = self.call_target(callee, place);
         let args = self.lower_args(args, &sig);
         // A thread gets no copies back: the check refuses a parameter the

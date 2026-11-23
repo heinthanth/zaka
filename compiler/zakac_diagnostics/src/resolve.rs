@@ -1178,8 +1178,6 @@ pub enum TraitValueUse
     Initial,
     /// A call through it as a function value.
     Call,
-    /// A call through it that runs as a thread.
-    Thread,
 }
 
 /// A trait value is used as trait values are not.
@@ -1200,7 +1198,6 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
         TraitValueUse::Print => t!("codes.ZK0361.print"),
         TraitValueUse::Initial => t!("codes.ZK0361.initial"),
         TraitValueUse::Call => t!("codes.ZK0361.call"),
-        TraitValueUse::Thread => t!("codes.ZK0361.thread"),
     };
     let msg = t!("codes.ZK0361.message", w = what);
     let help = tern!(

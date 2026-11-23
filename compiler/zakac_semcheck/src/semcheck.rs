@@ -2795,7 +2795,7 @@ impl Visitor for Checker
         {
             return;
         };
-        do_if!(n.parallel, self.check_thread_callee(&n.callee, place));
+        do_if!(n.parallel, self.check_thread_callee(&n.callee, place, n.args.first()));
         ret_if!(n.parallel, _ = self.start_thread(&n.args, ret, n.span));
         self.check_pass(&n.callee, ret, n.pass, true, n.span);
     }

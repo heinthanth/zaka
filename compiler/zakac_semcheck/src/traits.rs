@@ -204,6 +204,11 @@ impl Checker
         let kind = kind.repr();
         ret_true!(seen.contains(&kind));
         seen.push(kind);
+        // A trait value joined with the trait of threads holds a value of a
+        // kind threads can use, which the conversion into it checks.
+        let marked =
+            kind.trait_list().iter().any(|(n, _)| n.as_str() == USABLE_IN_THREADS);
+        ret_true!(marked);
         let shared = kind.is_fn() || kind.is_ptr() || kind.as_external().is_some();
         ret_false!(shared);
         let cell = kind.cell_kind().filter(|_| !kind.is_text());

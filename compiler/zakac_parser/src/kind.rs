@@ -347,7 +347,8 @@ impl Parser<'_>
     }
 
     /// The number of tokens of one trait of a trait value kind, `at` tokens
-    /// ahead: a hint of a trait, or a name with its kinds in signs.
+    /// ahead: a hint of a trait, the phrase of the trait of threads, or a name
+    /// with its kinds in signs.
     ///
     /// # Arguments
     ///
@@ -366,6 +367,8 @@ impl Parser<'_>
         let hinted = self.hint_trait_at(at).map(|(_, len)| len);
         self.trait_value_at.set(outer);
         ret_if!(let Some(len) = hinted, Some(len));
+        // The trait of threads is a phrase of two words.
+        ret_if!(let Some(len) = self.threads_phrase_ahead(at), Some(len));
         let named = self.peek_n(at).kind == TokenKind::Ident && !self.trait_head_at(at);
         ret_if!(!named || self.builtin_at(at).is_some(), None);
         Some(1 + self.angle_len(at + 1).unwrap_or(0))
