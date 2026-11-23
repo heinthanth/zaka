@@ -127,12 +127,16 @@ pub fn lower(
     // each is still lowered, so each slot and function keeps its number.
     let mut done = Vec::new();
     let mut imported_inits = 0;
+    // The imported files of a REPL session ran with its first chunk: a later
+    // chunk starts past the start of the session text.
+    let imports_ran = options.repl_from.is_some_and(|f| f > program.span.lo.as_u32());
     for (i, s) in program.stmts.iter().enumerate()
     {
         let unit = program.unit_of(i);
         lowerer.enter_unit(unit);
         lowerer.suffix = unit_suffix(program, unit);
-        lowerer.top_stmt(s, tern!(lowerer.ran_before(s), &mut done, &mut main));
+        let ran = tern!(program.is_root(unit), lowerer.ran_before(s), imports_ran);
+        lowerer.top_stmt(s, tern!(ran, &mut done, &mut main));
         do_if!(!program.is_root(unit), imported_inits = main.len() as u32);
     }
     let host = lowerer.start_call(&mut main);

@@ -1425,7 +1425,9 @@ pub struct LowerOptions
     /// In a REPL session, the place in the session text where the new chunk
     /// starts: the code of the statements before it is left out, since that
     /// code ran on the kept VM, and the variables of the start block live in
-    /// globals that the VM keeps from chunk to chunk.
+    /// globals that the VM keeps from chunk to chunk. Past the start of the
+    /// session text, the code of the imported files is left out too: it ran
+    /// with the first chunk.
     pub repl_from: Option<u32>,
 }
 

@@ -209,7 +209,8 @@ impl Session
     {
         let machine = self.machine.as_ref()?;
         let (slots, module) = session_module(checked, from);
-        let kept = reuse(&self.slots, &slots, from)?;
+        let end = checked.program.span.hi.as_u32();
+        let kept = reuse(&self.slots, &slots, (from, end))?;
         ret_if!(!same_fns(machine.module(), &module), None);
         let mut next = machine.clone();
         next.go_on(module, &kept);
@@ -318,27 +319,53 @@ fn session_module(checked: &Checked, from: u32) -> (Vec<ir::Slot>, Module)
 
 /// Which old global each global of a new module takes over: a variable
 /// declared before the chunk takes over the one of the same name, place and
-/// kind; each other global, a hidden one among them, gets a block of its own.
+/// kind; a global of an imported file, the one of the same name and kind at
+/// the same distance past the session text, since the code that sets it ran
+/// with the first chunk; each other global, a hidden one among them, gets a
+/// block of its own.
 ///
 /// # Arguments
 ///
 /// * `old` - The globals of the module the VM ran last.
 /// * `new` - The globals of the new module.
-/// * `from` - Where the chunk starts.
+/// * `text` - Where the chunk starts, which is where the session text of the
+///   old module ended, and where the session text ends now.
 ///
 /// # Returns
 ///
 /// The old global of each new one, or `None` when a variable from before the
-/// chunk has no match, so the VM cannot go on.
-fn reuse(old: &[ir::Slot], new: &[ir::Slot], from: u32) -> Option<Vec<Option<u32>>>
+/// chunk or a global of an imported file has no match, so the VM cannot go on.
+fn reuse(
+    old: &[ir::Slot], new: &[ir::Slot], text: (u32, u32),
+) -> Option<Vec<Option<u32>>>
 {
+    let (from, end) = text;
+    let imported = |s: &ir::Slot| s.span.lo.as_u32() >= end;
     let earlier = |s: &ir::Slot| s.span.lo.as_u32() < from && !s.name.starts_with('%');
+    // A global of an imported file moves on as far as the session text grew.
+    let place = |s: &ir::Slot| {
+        let lo = s.span.lo.as_u32();
+        tern!(
+            imported(s),
+            (lo - end, s.span.hi.as_u32() - end),
+            (lo, s.span.hi.as_u32())
+        )
+    };
+    let was = |o: &ir::Slot| {
+        let lo = o.span.lo.as_u32();
+        tern!(
+            lo >= from,
+            (lo - from, o.span.hi.as_u32() - from),
+            (lo, o.span.hi.as_u32())
+        )
+    };
     let same = |s: &ir::Slot, o: &ir::Slot| {
-        (&o.name, o.span, o.kind) == (&s.name, s.span, s.kind)
+        (&o.name, was(o), o.kind) == (&s.name, place(s), s.kind)
+            && (o.span.lo.as_u32() >= from) == imported(s)
     };
     let take = |s: &ir::Slot| {
         let found = old.iter().position(|o| same(s, o)).map(|i| i as u32);
-        tern!(earlier(s), found.map(Some), Some(None))
+        tern!(earlier(s) || imported(s), found.map(Some), Some(None))
     };
     new.iter().map(take).collect()
 }
@@ -673,7 +700,10 @@ mod tests
         let new = [slot("ခ", 4), slot("%new", 2), slot("က", 0), slot("ဂ", 9)];
         // A hidden global never shares a block; one from the new chunk gets
         // its own.
-        assert_eq!(reuse(&old, &new, 8), Some(vec![Some(2), None, Some(0), None]));
+        assert_eq!(
+            reuse(&old, &new, (8, 12)),
+            Some(vec![Some(2), None, Some(0), None])
+        );
     }
 
     #[test]
@@ -681,6 +711,19 @@ mod tests
     {
         let old = [slot("က", 0)];
         let new = [slot("က", 0), slot("ခ", 4)];
-        assert_eq!(reuse(&old, &new, 8), None);
+        assert_eq!(reuse(&old, &new, (8, 12)), None);
+    }
+
+    /// The session text grew from 8 to 12 octets: a global of an imported
+    /// file moves on 4 octets and takes over its old block, and one with no
+    /// match, from a file the chunk imports, stops the VM.
+    #[test]
+    fn a_global_of_an_imported_file_takes_over_its_old_block()
+    {
+        let old = [slot("က", 0), slot("ပ", 10)];
+        let new = [slot("က", 0), slot("ပ", 14)];
+        assert_eq!(reuse(&old, &new, (8, 12)), Some(vec![Some(0), Some(1)]));
+        let added = [slot("က", 0), slot("ပ", 14), slot("သစ်", 20)];
+        assert_eq!(reuse(&old, &added, (8, 12)), None);
     }
 }

@@ -589,7 +589,10 @@ slot, which the blit fills.
   (`Frame::session`), with no drop, and `main` ends with no drops of the globals, so the
   VM keeps the values for the next chunk. The statements before `repl_from` are still
   lowered, so each slot and function keeps its number, but their code is thrown away,
-  since that code ran in earlier chunks. A box of such a variable is in `global_boxes`.
+  since that code ran in earlier chunks. The code of the imported files is left out
+  too once `repl_from` is past the start of the session text: it ran with the first chunk,
+  and the REPL hands each of their globals its old block, found at the same distance past
+  the session text. A box of such a variable is in `global_boxes`.
 
 Threads, locks, atomic numbers and parallel loops lower to the nodes in the tables above,
 and [Inside the VM](vm-internals.md#threads) follows each of them from the lowering to the

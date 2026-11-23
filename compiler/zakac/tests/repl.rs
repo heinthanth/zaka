@@ -172,3 +172,22 @@ fn a_chunk_that_is_one_expression_prints_its_value()
     assert!(!err.contains("..."), "{err}");
     assert!(!err.contains("ZK0507"), "{err}");
 }
+
+/// The globals of the imported files are set with the first chunk and keep
+/// their values through the later ones, a module imported in a later chunk
+/// among them, and the facts of the target from the core too.
+#[test]
+fn the_globals_of_imported_files_live_on_into_later_chunks()
+{
+    let input = "\"စံကား/အဝင်အထွက်\" မှ စံပြုအထွက် ကို ထည့်သွင်းမည်။
+\"စံကား/သင်္ချာ\" မှ ပိုင် ကို ထည့်သွင်းမည်။
+စံပြုအထွက် ကို ပြသမည်။
+ကိန်းရှင် က သည် ၁ ဖြစ်ပါစေ။
+ပိုင် ကို ပြသမည်။
+စံပြုအထွက် ကို ပြသမည်။
+က ကို ပြသမည်။
+";
+    let (out, err) = session(input);
+    let stream = "အချက်အလက်အထွက်စီးကြောင်း(ဖိုင်အညွှန်း: ၁)";
+    assert_eq!(out, format!("{stream}\n၃.၁၄၁၅၉၂၆၅၃၅၈၉၇၉၃\n{stream}\n၁\n"), "{err}");
+}
