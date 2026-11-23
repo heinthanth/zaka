@@ -830,10 +830,13 @@ ZK0351. The built-in traits are predicates on the data kind (`traits::builtin`).
 
 ## Operators on structs
 
-An operator on two values of one struct that a file declares calls the function that its
-trait names, when the file of the use or of the struct has one with those parameter kinds
-(`op_calls.rs`). `infer_infix` and `infer_verb` leave the operator in `pending_op`,
-`infer_pair` picks it up before the operands, and `struct_operator` records the call. `~`,
+An operator with a struct or a trait value on at least one side calls the function that its
+trait names, when the file of the use or the file of either operand kind (`kind_home`; for
+a trait value kind, the file of its trait) has one that takes the left kind first and the
+right kind second, as written or with operands that widen to its parameters
+(`operator_fn`, `op_calls.rs`). `infer_infix` and `infer_verb` leave the operator in
+`pending_op`, `infer_pair` picks it up before the operands, and `struct_operator` records
+the call. `~`,
 the `-` of one operand and the shifts, whose operands are not two values of one struct,
 record their calls through `struct_call` (`infer_prefix`, `infer_neg`, `infer_shift`):
 one parameter for the first two, and the struct and the unsigned distance for a shift.

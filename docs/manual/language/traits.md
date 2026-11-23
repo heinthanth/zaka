@@ -287,6 +287,14 @@ compiler, and a struct has them through its functions, which its operators then 
 | `စမ်းသပ်ပြောင်းလဲနိုင်သော` (`B အဖြစ် E အမှားဖြင့် စမ်းသပ်ပြောင်းလဲနိုင်သော`) | each data kind with a `စမ်းသပ်ပြောင်းလဲ` that returns `B`, or an error of data kind `E` |
 | `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` | the data kinds that threads can use: numbers, characters, true/false values, text, and lists, structs, optionals, results and tables of such data kinds, and the [objects threads can use](objects.md#objects-threads-can-use); not a plain shared object, a function value, a pointer or a handle of a data kind from outside |
 
+An operator calls the function of its name when at least one operand is a struct or a
+[trait value](trait-values.md#ordering), and the function takes the left operand first and
+the right operand second. The two can be of different data kinds: a `ငယ်မငယ်စစ်` that
+takes a struct and a `ကိန်းပြည့်` makes `x < ၃၀` work, and `၃၀ < x` needs one that takes
+the number first. A function that takes the two data kinds as written wins over one whose
+parameters the operands widen to. `>=`, `<=` and `!=` call `ငယ်မငယ်စစ်`, `ကြီးမကြီးစစ်` and
+`ညီမညီစစ်` and turn the answer around.
+
 A trait that the program declares with one of these names hides the built-in one. The
 last trait has two words, which the core module does not declare, so these words are
 still free to use as names.

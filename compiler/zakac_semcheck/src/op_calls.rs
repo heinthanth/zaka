@@ -301,8 +301,10 @@ pub(crate) fn verb_fn(op: VerbOp) -> Option<(&'static str, bool)>
 
 impl Checker
 {
-    /// The kind of an operator on two values of one struct that has the
-    /// function the operator stands for, which the operator then calls.
+    /// The kind of an operator whose operands, a struct or a trait value on at
+    /// least one side, have the function the operator stands for, which takes
+    /// the left kind first and the right kind second; the operator then calls
+    /// it. The two kinds can differ, as in a trait value and a number.
     ///
     /// # Arguments
     ///
@@ -318,8 +320,11 @@ impl Checker
     ) -> Option<DataKind>
     {
         let (id, (name, negate)) = op;
-        ret_if!(l != r || l.as_struct().is_none() || self.kind_home(l).is_none(), None);
-        let sig = self.struct_fn(name, &[l, l])?;
+        let own = |s: &Self, k: DataKind| {
+            (k.as_struct().is_some() || k.is_trait_value()) && s.kind_home(k).is_some()
+        };
+        ret_if!(!own(self, l) && !own(self, r), None);
+        let sig = self.operator_fn(name, l, r)?;
         let test = matches!(name, LESS_FN | GREATER_FN | EQUAL_FN);
         ret_if!(test && sig.ret != Some(DataKind::Bool), None);
         let callee = self.known_name(&sig);
@@ -689,6 +694,37 @@ impl Checker
         self.struct_text(value, Some(from));
         self.op_calls.texts.insert(n.id);
         Some(DataKind::TEXT)
+    }
+
+    /// The operator function of a name for two operand kinds, in the file of
+    /// the use or the file of either kind: one that takes the two kinds as
+    /// written, else one whose parameters the operands widen to.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name.
+    /// * `l` - The kind of the left operand.
+    /// * `r` - The kind of the right operand.
+    ///
+    /// # Returns
+    ///
+    /// The function, or `None`.
+    fn operator_fn(&self, name: &str, l: DataKind, r: DataKind) -> Option<FnSig>
+    {
+        let here = self.fns.get(name).into_iter().flatten();
+        let homes = [self.kind_home(l), self.kind_home(r)];
+        let files =
+            homes.into_iter().flatten().filter_map(|u| self.unit_fns.get(u as usize));
+        let there = files.filter_map(|f| f.get(name)).flatten();
+        let all: Vec<&FnSig> = here.chain(there).collect();
+        let platform = self.platform;
+        let widens = |s: &&&FnSig| {
+            s.params.len() == 2
+                && l.widens_to(s.params[0], platform)
+                && r.widens_to(s.params[1], platform)
+        };
+        let exact = all.iter().find(|s| s.params == [l, r]);
+        exact.or_else(|| all.iter().find(widens)).map(|s| (*s).clone())
     }
 
     /// The function of a name with these parameter kinds and no other, in the

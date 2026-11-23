@@ -109,6 +109,28 @@ fn a_trait_value_of_threads_goes_to_a_thread()
     assert!(alone.contains(&Code::TraitNotAKind), "{alone:?}");
 }
 
+/// A `<` of a trait value calls the `ငယ်မငယ်စစ်` of its two operand kinds,
+/// which can be a trait value and a number; with none, the ordering is ZK0361.
+#[test]
+fn an_ordering_of_trait_values_calls_their_function()
+{
+    let param = "နှုတ်ဆက်နိုင်သော အရာ";
+    let order = "အကယ်၍ တ < ၃ ဖြစ်လျှင် ၁ ကို ပြသမည်။";
+    let plain = codes_of(GREET, param, order);
+    assert!(plain.contains(&Code::TraitValueUse), "{plain:?}");
+    let less = "ငယ်မငယ်စစ် ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော နှုတ်ဆက်နိုင်သော အရာ တစ်ခု ကို လည်းကောင်း
+ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
+ခ > ၀ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+";
+    let decls = format!("{GREET}{less}");
+    assert_eq!(codes_of(&decls, param, order), []);
+    let swapped = codes_of(&decls, param, "အကယ်၍ ၃ < တ ဖြစ်လျှင် ၁ ကို ပြသမည်။");
+    assert!(!swapped.is_empty(), "{swapped:?}");
+}
+
 /// A struct with the greeting trait, through a plain function.
 const PERSON: &str = "လူ ဟူသော ဒေတာအစုအဝေးတွင် နာမည် ဟူသော စာသား တစ်ခု ပါဝင်ပြီး မျိုးပြပစ္စည်းမှာ \
                       ယောက် ဖြစ်သည်။

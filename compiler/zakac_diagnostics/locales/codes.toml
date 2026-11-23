@@ -875,10 +875,12 @@ en = "have an initial value"
 en = "be called as a function"
 [codes.ZK0361.help]
 en = "call the functions of its trait on it, as \"x ၏ f()\""
+[codes.ZK0361.order_help]
+en = "declare `ငယ်မငယ်စစ်` or `ကြီးမကြီးစစ်` for the two operand kinds, as a struct does; it gives back a true/false value"
 [codes.ZK0361.initial_help]
 en = "a trait value holds a value from the start; an optional one, \"<trait> အရာ ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်\", starts as အလွတ်"
 [codes.ZK0361.explain]
-en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Two trait values of one kind compare with \"==\" and \"!=\" as their held values do, and with \"တစ်ခုတည်း\" as their held objects; a print shows the held value. A trait value has no initial value, since it holds a value from the start: an optional trait value starts blank. A trait value inside a list, a struct or an object compares and prints as its held value too. A trait value has no order, and it is no function value to call."""
+en = """A trait value, \"<trait> အရာ\", is used through the functions of its trait. Two trait values of one kind compare with \"==\" and \"!=\" as their held values do, and with \"တစ်ခုတည်း\" as their held objects; a print shows the held value. A trait value has no initial value, since it holds a value from the start: an optional trait value starts blank. A trait value inside a list, a struct or an object compares and prints as its held value too. A trait value has no order of its own: `<` and `>` call a `ငယ်မငယ်စစ်` or a `ကြီးမကြီးစစ်` the program declares for the two operand kinds. A trait value is no function value to call."""
 
 [codes.ZK0362.title]
 en = "trait value holds a duplicate"

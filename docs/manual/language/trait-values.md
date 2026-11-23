@@ -423,6 +423,49 @@ blank at first is an [optional](optionals.md) trait value,
 `<trait> အရာ ရှိကောင်းရှိနိုင်သော ဒေတာဆဲလ်`, which starts as `အလွတ်` and takes a value of
 each data kind with the trait.
 
+## Ordering
+
+A trait value has no order of its own, since two of them can hold values of two data kinds.
+As for a struct, `<` and `>` call a `ငယ်မငယ်စစ်` or a `ကြီးမကြီးစစ်` that the program
+declares for the two operand kinds ([Built-in traits](traits.md#built-in-traits)), in the
+file of the trait or of the use; with neither, the ordering is ZK0361. The function decides
+how two data kinds compare, often through a function of the trait, and the other operand
+can be of another data kind, such as a number. With both functions for two trait values,
+the trait value kind has `နှိုင်းယှဉ်နိုင်သော`, so a list of trait values sorts.
+
+```zaka
+လူနှင့်တူသော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍
+၎င်းတွင် အောက်ပါလုပ်ဆောင်ချက်များ ပါဝင်ရမည်။
+အသက်ယူ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော A တစ်ခု ကို လက်ခံပြီး ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+ဂုဏ်သတ္တိတွင် ပါသော လုပ်ဆောင်ချက်များ ပြီးဆုံးပါပြီး။
+
+ကျောင်းသား ဟူသော ဒေတာအစုအဝေးတွင် အသက် ဟူသော ကိန်းပြည့် တစ်ခု ပါဝင်သည်။
+
+အသက်ယူ ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကျောင်းသား တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+က ၏ အသက် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ငယ်မငယ်စစ် ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော လူနှင့်တူသော အရာ တစ်ခု ကို လည်းကောင်း
+ခ ဟူသော ကိန်းပြည့် တစ်ခု ကို လည်းကောင်း လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ မှန်မှားတန်ဖိုး တစ်ခု ကို ပြန်ပေးမည်။
+(က ၏ အသက်ယူ()) < ခ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် က သည် လူနှင့်တူသော အရာ တစ်ခု ဖြစ်၍ တန်ဖိုးသည် ကျောင်းသား(အသက်: ၁၉) ဖြစ်ပါစေ။
+က < ၃၀ ကို ပြသမည်။
+က >= ၃၀ ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+မှန်
+မမှန်
+```
+
 ## Trait values and threads
 
 A trait value can hold a plain shared object, which two threads could write at once, so a
@@ -465,7 +508,8 @@ trait of threads gives no function, so alone it is no trait value kind (ZK0360).
 A trait value is used through the functions of its trait, and through the comparisons and
 the print above. These uses are ZK0361:
 
-- an ordering, `<`, `>`, `<=` or `>=`;
+- an ordering, `<`, `>`, `<=` or `>=`, with no `ငယ်မငယ်စစ်` or `ကြီးမကြီးစစ်` for its operand
+  kinds;
 - the initial value, `ကနဦးတန်ဖိုး`;
 - a call through it as a [function value](function-values.md).
 
@@ -499,5 +543,5 @@ that changes the held value makes a new block for the changed value. The details
 | ZK0343 | a value goes into a trait value whose trait its data kind lacks |
 | ZK0344 | a trait value of a name that is not a trait |
 | ZK0360 | a trait that cannot be a data kind used as one |
-| ZK0361 | a trait value ordered, given an initial value or called as a function value |
+| ZK0361 | a trait value ordered with no function for it, given an initial value, or called as a function value |
 | ZK0362 | a plain value goes into a trait value whose trait has a function that changes its first parameter (warning, lint group `duplicates`) |

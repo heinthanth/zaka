@@ -1196,11 +1196,12 @@ pub fn trait_value_use(span: Span, use_: TraitValueUse) -> Diagnostic
         TraitValueUse::Call => t!("codes.ZK0361.call"),
     };
     let msg = t!("codes.ZK0361.message", w = what);
-    let help = tern!(
-        use_ == TraitValueUse::Initial,
-        t!("codes.ZK0361.initial_help"),
-        t!("codes.ZK0361.help")
-    );
+    let help = match use_
+    {
+        TraitValueUse::Initial => t!("codes.ZK0361.initial_help"),
+        TraitValueUse::Compare => t!("codes.ZK0361.order_help"),
+        TraitValueUse::Call => t!("codes.ZK0361.help"),
+    };
     Diagnostic::new(Code::TraitValueUse, msg, span).with_help(help)
 }
 

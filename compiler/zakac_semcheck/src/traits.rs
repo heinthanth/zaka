@@ -576,7 +576,8 @@ impl Checker
         units
     }
 
-    /// The file that declares the struct or the enumeration of a kind.
+    /// The file that declares the struct or the enumeration of a kind, or the
+    /// trait of a trait value kind.
     ///
     /// # Arguments
     ///
@@ -587,6 +588,8 @@ impl Checker
     /// The unit, or `None` for a kind no file declares.
     pub(crate) fn kind_home(&self, kind: DataKind) -> Option<u32>
     {
+        let first = kind.trait_list().into_iter().next();
+        ret_if!(let Some((name, _)) = first, self.traits.get(&name).map(|(u, _)| *u));
         let name = kind.as_struct().map(|s| s.name.clone());
         let name = name.or_else(|| kind.as_enum().map(|e| e.name.clone()))?;
         self.homes.get(name.as_str()).map(|(u, _)| *u)
