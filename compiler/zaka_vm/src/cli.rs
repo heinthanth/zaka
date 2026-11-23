@@ -1,8 +1,10 @@
 use std::ffi::OsString;
+use std::io::Write;
 use std::sync::Arc;
 
 use zaka_host::Gate;
 use zaka_host::TermWorld;
+use zaka_host::World;
 use zakac_ast::target::BuildTarget;
 use zakac_ast::target::Target;
 use zakac_borrow_checker::cli::attach_borrow_check_args;
@@ -59,10 +61,10 @@ use zakac_span::source_map::SourceMap;
 
 use crate::asker::TermAsker;
 use crate::machine::HostData;
-use crate::machine::Machine;
 use crate::machine::RunOptions;
 use crate::machine::run_in;
 use crate::trap::Backtrace;
+use crate::trap::Trap;
 use crate::trap::hex;
 use crate::vet::Malformed;
 use crate::vet::vet_module;
@@ -353,11 +355,13 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     };
     let env = std::env::vars_os().map(pair).collect();
     let host = HostData::builder().args(args).env(env).build();
-    let world = Box::new(TermWorld);
-    let gate = run_gate(matches);
+    let reach = (Box::new(TermWorld) as Box<dyn World>, run_gate(matches));
+    let stderr = &mut *io.stderr;
+    let mut stopped = |n: usize, trap: &Trap| {
+        write_thread_trap(stderr, &cmd_info, (n, trap), &source_map)
+    };
     let (machine, result) =
-        run_in(&module, &mut *io.stdout, &options, &host, world, gate);
-    write_thread_traps(io, &cmd_info, &machine, &source_map);
+        run_in(&module, &mut *io.stdout, &options, &host, reach, &mut stopped);
     let Err(trap) = result
     else
     {
@@ -372,27 +376,26 @@ fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     ExitCode::Failure
 }
 
-/// Report each trap that ended a thread while the program went on, as
+/// Report a trap that ended a thread while the program went on, as
 /// `<name>: thread <n> stopped: <reason>`: the program did not stop, so the
 /// line has no "the program stopped" head, as in native code.
 ///
 /// # Arguments
 ///
-/// * `io` - The standard streams.
+/// * `stderr` - Where the line goes.
 /// * `cmd_info` - The command, for the report.
-/// * `machine` - The machine where the run stopped.
+/// * `stop` - The number of the thread and its trap.
 /// * `source_map` - The source map.
-fn write_thread_traps(
-    io: &mut CommandIO<'_>, cmd_info: &CommandInfo, machine: &Machine,
+fn write_thread_trap(
+    stderr: &mut dyn Write, cmd_info: &CommandInfo, stop: (usize, &Trap),
     source_map: &SourceMap,
 )
 {
-    for (thread, trap) in machine.thread_traps()
-    {
-        let head = t!("vm.trap.thread_stopped", thread = thread);
-        let msg = format!("{head}: {}", trap.report(source_map, backtrace()));
-        let _ = writeln!(io.stderr, "{}", format_command_error(cmd_info, msg));
-    }
+    let (thread, trap) = stop;
+    let head = t!("vm.trap.thread_stopped", thread = thread);
+    let msg = format!("{head}: {}", trap.report(source_map, backtrace()));
+    let _ = writeln!(stderr, "{}", format_command_error(cmd_info, msg));
+    let _ = stderr.flush();
 }
 
 /// The arguments of the start block: the name of the program, then each

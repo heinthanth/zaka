@@ -214,7 +214,14 @@ pub fn run_and_keep(
     // A run in storage touches no file or variable of the host, so it holds
     // each right.
     let gate = Gate::new(zaka_host::Grants::all());
-    run_in(module, out, options, host, Box::new(MemWorld::default()), gate)
+    run_in(
+        module,
+        out,
+        options,
+        host,
+        (Box::new(MemWorld::default()), gate),
+        &mut |_, _| {},
+    )
 }
 
 /// Run a module like [`run_and_keep`], with the host functions reaching a
@@ -226,7 +233,9 @@ pub fn run_and_keep(
 /// * `out` - Where print ops write.
 /// * `options` - The limits.
 /// * `host` - The arguments and the environment for the start block.
-/// * `world` - The world.
+/// * `reach` - The world, and the gate of its rights.
+/// * `stopped` - Told of each thread that stops at a trap while the program
+///   goes on, as it stops, with its number.
 ///
 /// # Returns
 ///
@@ -234,14 +243,15 @@ pub fn run_and_keep(
 /// returned or the trap that stopped it.
 pub fn run_in(
     module: &Module, out: &mut dyn Write, options: &RunOptions, host: &HostData,
-    world: Box<dyn World>, gate: Gate,
+    reach: (Box<dyn World>, Gate), stopped: &mut dyn FnMut(usize, &Trap),
 ) -> (Machine, Result<(), Box<Trap>>)
 {
+    let (world, gate) = reach;
     let mut machine = Machine::new(module.clone(), *options);
     machine.set_gate(gate);
     machine.set_host(host);
     machine.set_world(world);
-    let result = drive(&mut machine, out);
+    let result = drive(&mut machine, out, stopped);
     (machine, result)
 }
 
@@ -251,18 +261,50 @@ pub fn run_in(
 ///
 /// * `machine` - The machine.
 /// * `out` - Where print ops write.
+/// * `stopped` - Told of each thread that stops at a trap from here on, as it
+///   stops, after the output so far is flushed.
 ///
 /// # Returns
 ///
 /// `Ok` when the main function returns, or the trap that stopped it.
-pub fn drive(machine: &mut Machine, out: &mut dyn Write) -> Result<(), Box<Trap>>
+pub fn drive(
+    machine: &mut Machine, out: &mut dyn Write, stopped: &mut dyn FnMut(usize, &Trap),
+) -> Result<(), Box<Trap>>
 {
+    let mut told = machine.thread_stop_count();
     while machine.running()
     {
         machine.step();
         drain(machine, out)?;
+        do_if!(
+            machine.thread_stop_count() != told,
+            told = tell_stops(machine, out, told, stopped)
+        );
     }
     machine.state().trap().cloned().map_or(Ok(()), |t| Err(Box::new(t)))
+}
+
+/// Flush the output so far, then tell of each thread stop past the ones told,
+/// as native code writes its line once the output before it is out.
+///
+/// # Arguments
+///
+/// * `machine` - The machine.
+/// * `out` - Where print ops write.
+/// * `told` - The count of stops told before.
+/// * `stopped` - Told of each new stop.
+///
+/// # Returns
+///
+/// The count of stops told now.
+fn tell_stops(
+    machine: &Machine, out: &mut dyn Write, told: usize,
+    stopped: &mut dyn FnMut(usize, &Trap),
+) -> usize
+{
+    let _ = out.flush();
+    machine.thread_stops(told).for_each(|(n, t)| stopped(n, t));
+    machine.thread_stop_count()
 }
 
 /// Write what the machine printed since the last call, and clear it.
@@ -1040,6 +1082,29 @@ impl Machine
     ///
     /// The traps, in thread order.
     pub fn thread_traps(&self) -> Vec<(usize, &Trap)> { self.threads.traps() }
+
+    /// The threads that stopped at a trap while the program went on, in the
+    /// order they stopped, each with its trap.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The count of stops to skip, the ones told before.
+    ///
+    /// # Returns
+    ///
+    /// The thread numbers and their traps.
+    pub fn thread_stops(&self, from: usize) -> impl Iterator<Item = (usize, &Trap)>
+    {
+        let stopped = self.threads.stopped().iter().skip(from);
+        stopped.filter_map(|&n| self.threads.trap_of(n).map(|t| (n, t)))
+    }
+
+    /// The count of threads that stopped at a trap so far.
+    ///
+    /// # Returns
+    ///
+    /// The count.
+    pub fn thread_stop_count(&self) -> usize { self.threads.stopped().len() }
 
     /// Put a plain list of texts in a global, each text and the list in a
     /// heap block of its own.

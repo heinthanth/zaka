@@ -9,6 +9,7 @@ use rustyline::error::ReadlineError;
 use zaka_host::Gate;
 use zaka_host::Grants;
 use zaka_host::MemWorld;
+use zaka_host::World;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
@@ -214,7 +215,7 @@ impl Session
         next.go_on(module, &kept);
         next.set_host(&HostData::program(FILE_NAME));
         let mut out = Vec::new();
-        let ran = drive(&mut next, &mut out);
+        let ran = drive(&mut next, &mut out, &mut |_, _| {});
         let _ = io.stdout.write_all(&out);
         let _ = io.stdout.flush();
         if let Err(trap) = ran
@@ -246,11 +247,12 @@ impl Session
     {
         let (slots, module) = session_module(checked, base);
         let mut out = Vec::new();
-        let world = Box::new(MemWorld::builder().build());
-        let gate = Gate::new(Grants { ffi: false, ..Grants::all() });
+        let world: Box<dyn World> = Box::new(MemWorld::builder().build());
+        let reach = (world, Gate::new(Grants { ffi: false, ..Grants::all() }));
         let host = HostData::program(FILE_NAME);
+        let options = RunOptions::default();
         let (machine, ran) =
-            run_in(&module, &mut out, &RunOptions::default(), &host, world, gate);
+            run_in(&module, &mut out, &options, &host, reach, &mut |_, _| {});
         let _ = io.stdout.write_all(out.get(self.shown..).unwrap_or_default());
         let _ = io.stdout.flush();
         if let Err(trap) = ran

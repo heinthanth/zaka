@@ -3,10 +3,19 @@
 //! ends its thread alone under `--trap unwind`, and the whole program under
 //! `--trap abort`. Channels take values from one thread to another.
 
+use std::cell::RefCell;
+use std::io::Write;
+
+use zaka_host::Gate;
+use zaka_host::Grants;
+use zaka_host::MemWorld;
+use zaka_host::World;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::TrapMode;
 use zaka_vm::machine::run_and_keep;
+use zaka_vm::machine::run_in;
+use zaka_vm::trap::Trap;
 use zaka_vm::trap::TrapKind;
 use zakac_codegen_target_vm::artifact::run_phases;
 use zakac_codegen_target_vm::options::ResultMode;
@@ -129,6 +138,49 @@ fn a_trap_ends_its_thread_alone_and_the_program_ends_with_code_one()
     assert_eq!(traps.len(), 1);
     assert_eq!((traps[0].0, &traps[0].1.kind), (1, &TrapKind::ZeroDivisor));
     assert_eq!(machine.exit_code(), Some(1));
+}
+
+/// A writer that adds to a shared buffer, so a test can read what was
+/// written while the run goes on.
+struct Shared<'a>(&'a RefCell<Vec<u8>>);
+
+impl Write for Shared<'_>
+{
+    fn write(&mut self, data: &[u8]) -> std::io::Result<usize>
+    {
+        self.0.borrow_mut().extend_from_slice(data);
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+}
+
+/// A thread stop is told as the thread stops, with the output before it
+/// written and the output after it still to come, as native code writes it.
+#[test]
+fn a_thread_stop_is_told_as_it_happens()
+{
+    let text = program(&format!("\"ရှေ့\" ဟု ပြသမည်။\n{TRAPS}"));
+    let module = compile(&text);
+    let written = RefCell::new(Vec::new());
+    let mut told = Vec::new();
+    let mut stopped = |n: usize, t: &Trap| {
+        told.push((n, t.kind.clone(), String::from_utf8(written.borrow().clone())))
+    };
+    let reach: (Box<dyn World>, Gate) =
+        (Box::new(MemWorld::default()), Gate::new(Grants::all()));
+    let (_, result) = run_in(
+        &module,
+        &mut Shared(&written),
+        &RunOptions::default(),
+        &HostData::default(),
+        reach,
+        &mut stopped,
+    );
+    assert!(result.is_ok(), "{result:?}");
+    let at_stop = "ရှေ့\n".to_string();
+    assert_eq!(told, [(1, TrapKind::ZeroDivisor, Ok(at_stop))]);
+    assert_eq!(String::from_utf8(written.into_inner()).unwrap(), "ရှေ့\n၅\n");
 }
 
 #[test]

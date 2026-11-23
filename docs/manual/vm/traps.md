@@ -52,7 +52,8 @@ program.zaka: the program stopped: the thread 1 this waits for stopped at a trap
 ```
 
 The line reads `<program>: thread <n> stopped: <reason>` from native code, and
-`zaka_vm: thread <n> stopped: <reason>` from the VM.
+`zaka_vm: thread <n> stopped: <reason>` from the VM. Both write it as the thread stops,
+after the output printed before it.
 
 ## All the traps
 

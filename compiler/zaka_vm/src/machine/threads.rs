@@ -143,6 +143,8 @@ pub struct Threads
     rng: Option<fastrand::Rng>,
     /// The count of picks with no seed so far, so the picks take turns.
     picks: usize,
+    /// The threads that stopped at a trap, in the order they stopped.
+    stopped: Vec<usize>,
 }
 
 impl Default for Threads
@@ -151,7 +153,7 @@ impl Default for Threads
     {
         #[rustfmt::skip]
         let threads = Threads { list: vec![Thread::default()], pipes: Vec::new(), locks: Vec::new(),
-            now: 0, left: TURN, spare: Vec::new(), rng: None, picks: 0 };
+            now: 0, left: TURN, spare: Vec::new(), rng: None, picks: 0, stopped: Vec::new() };
         threads
     }
 }
@@ -167,6 +169,31 @@ impl Threads
     pub fn lost_trap(&self) -> bool
     {
         self.list.iter().any(|j| matches!(j.end, End::Trapped(_)) && !j.awaited)
+    }
+
+    /// The threads that stopped at a trap, in the order they stopped.
+    ///
+    /// # Returns
+    ///
+    /// The thread numbers.
+    pub fn stopped(&self) -> &[usize] { &self.stopped }
+
+    /// The trap that ended a thread.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The thread number.
+    ///
+    /// # Returns
+    ///
+    /// The trap, or `None` when the thread did not stop at one.
+    pub fn trap_of(&self, n: usize) -> Option<&Trap>
+    {
+        match &self.list.get(n)?.end
+        {
+            End::Trapped(t) => Some(t.as_ref()),
+            _ => None,
+        }
     }
 
     /// The traps that ended threads, each with the number of its thread.
@@ -796,6 +823,7 @@ impl Machine
         ret_if!(whole, State::Trapped(trap));
         let now = self.threads.now;
         self.threads.list[now].end = End::Trapped(Box::new(trap));
+        self.threads.stopped.push(now);
         // The locks it held remain taken, broken: a later lock of each traps.
         self.threads
             .locks

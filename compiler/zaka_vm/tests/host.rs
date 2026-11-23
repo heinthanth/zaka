@@ -5,6 +5,7 @@ use zaka_host::Grants;
 use zaka_host::HOST_FNS;
 use zaka_host::HostFn;
 use zaka_host::MemWorld;
+use zaka_host::World;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
@@ -49,15 +50,15 @@ const WORK: &str = "\
 fn host_functions_serve_a_program_from_a_world_in_storage()
 {
     let module = compile_checked(&format!("{IMPORT}\n{WORK}"));
-    let world = Box::new(MemWorld::builder().input("Hein\n").build());
+    let world: Box<dyn World> = Box::new(MemWorld::builder().input("Hein\n").build());
     let mut out = Vec::new();
     let (_, result) = run_in(
         &module,
         &mut out,
         &RunOptions::default(),
         &HostData::default(),
-        world,
-        Gate::new(Grants::all()),
+        (world, Gate::new(Grants::all())),
+        &mut |_, _| {},
     );
     result.expect("the run ends");
     let want = "\
@@ -106,8 +107,8 @@ fn time_reads_advance_with_a_world_in_storage()
         &mut out,
         &RunOptions::default(),
         &HostData::default(),
-        Box::new(MemWorld::default()),
-        Gate::new(Grants::default()),
+        (Box::new(MemWorld::default()), Gate::new(Grants::default())),
+        &mut |_, _| {},
     );
     result.expect("the run ends");
     assert_eq!(String::from_utf8(out).unwrap(), "၀\n၀\n၂\n၂\n");
