@@ -514,7 +514,7 @@ it. The `zaka_vm` program carries no Cranelift and runs each program on the VM.
 Run statements as we write them, as a REPL (read-eval-print loop) does.
 
 ```text
-zakac repl
+zakac repl [--allow-read[=PATHS]] [--allow-write[=PATHS]] [--allow-env[=NAMES]] [-A]
 ```
 
 `zakac repl` compiles in [REPL mode](../language/functions-start-block.md#repl-mode), so
@@ -556,8 +556,17 @@ The variables of the session live in globals of the VM, which the VM keeps from 
 to the next. A line that changes the shape of the program so much that the VM cannot go
 on runs the whole session again on a new VM and prints the part of the output that is new.
 That happens when a line declares a function after the session made a closure or ran a
-parallel loop, and when a line imports a module. The program works in a world held in storage: it reads no standard
-input, its files never reach the disk, and it cannot call C.
+parallel loop, and when a line imports a module.
+
+A line reads standard input and works with files and the environment as `zakac run` does,
+with the same rights: `--allow-read`, `--allow-write`, `--allow-env` and `-A` give them,
+and on a terminal a line that needs a right asks for it (see
+[Permissions](../vm/running.md#permissions)). With input from a pipe, a line that reads
+standard input takes the line after it. When the whole session runs again, the lines
+before the new one run in storage: their writes do not reach the disk a second time, and
+a read of standard input or of a file in them gives the end of the input or an error, so
+a variable that took such a read holds that result from then on. A session cannot call C,
+since a run again would call it twice.
 
 ## lsp
 

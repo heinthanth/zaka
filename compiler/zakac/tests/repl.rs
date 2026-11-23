@@ -4,6 +4,7 @@
 //! value.
 
 use std::io::Write;
+use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -14,10 +15,27 @@ use std::process::Stdio;
 /// What it wrote to stdout and to stderr.
 fn session(input: &str) -> (String, String)
 {
+    session_in(&std::env::temp_dir(), &[], input)
+}
+
+/// Run a session of `zakac repl` in a folder, with flags.
+///
+/// # Arguments
+///
+/// * `dir` - The working folder.
+/// * `flags` - The flags after `repl`.
+/// * `input` - The lines.
+///
+/// # Returns
+///
+/// What it wrote to stdout and to stderr.
+fn session_in(dir: &Path, flags: &[&str], input: &str) -> (String, String)
+{
     let mut child = Command::new(env!("CARGO_BIN_EXE_zakac"))
         .env("ZAKAC_NO_CONFIG", "1")
         .arg("repl")
-        .current_dir(std::env::temp_dir())
+        .args(flags)
+        .current_dir(dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -190,4 +208,63 @@ fn the_globals_of_imported_files_live_on_into_later_chunks()
     let (out, err) = session(input);
     let stream = "အချက်အလက်အထွက်စီးကြောင်း(ဖိုင်အညွှန်း: ၁)";
     assert_eq!(out, format!("{stream}\n၃.၁၄၁၅၉၂၆၅၃၅၈၉၇၉၃\n{stream}\n၁\n"), "{err}");
+}
+
+/// A chunk reads standard input and the files with the rights of the flags;
+/// when a later chunk makes the session run again, the earlier chunks run
+/// in storage, so the line those chunks wrote is not written twice, and the
+/// line read there comes back as the end of the input.
+#[test]
+fn a_chunk_reaches_stdin_and_the_files_and_a_run_again_repeats_neither()
+{
+    let dir = std::env::temp_dir().join(format!("zaka-repl-io-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = "\"စံကား/အဝင်အထွက်\" မှ ဖိုင်ကိုဖတ်၊ နောက်ဆုံးမှဆက်ရေး၊ စာကြောင်းတစ်ကြောင်းဖတ် နှင့် စံပြုအဝင် \
+                 တို့ကို ထည့်သွင်းမည်။
+\"က\" ကို \"a.txt\" ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ် ကို ပြသမည်။
+ကိန်းရှင် လိုင်း သည် စံပြုအဝင် မှ စာကြောင်းတစ်ကြောင်းဖတ် သည့် ရလဒ် ဖြစ်ပါစေ။
+hello
+လိုင်း ကို ပြသမည်။
+ရေတွက်စက် ဟူသော လုပ်ဆောင်ချက် သည် စ ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ (လုပ်ဆောင်ချက် အမျိုးအစား) တစ်ခု ကို ပြန်ပေးမည်။
+ကိန်းရှင် ကြိမ် သည် စ ဖြစ်ပါစေ။
+တိုး ဟူသော လုပ်ဆောင်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကြိမ် ကို ကြိမ် + ၁ ဟု ထားမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+တိုး ဟူသော လုပ်ဆောင်ချက် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+နှစ်ဆ ဟူသော လုပ်ဆောင်ချက် သည် က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို \
+                 ပြန်ပေးမည်။
+က * ၂ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+နှစ်ဆ(၂) ကို ပြသမည်။
+\"a.txt\" ၌ရှိသော ဖိုင်ကိုဖတ် သည့် ရလဒ် ကို ပြသမည်။
+လိုင်း ကို ပြသမည်။
+";
+    let (out, err) = session_in(&dir, &["--allow-read", "--allow-write"], input);
+    let written = std::fs::read_to_string(dir.join("a.txt"));
+    let _ = std::fs::remove_dir_all(&dir);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[..4],
+        ["အောင်မြင်သည့်သတင်း", "ရလဒ်ကောင်း(\"hello\")", "၄", "ရလဒ်ကောင်း(\"က\")"],
+        "{err}"
+    );
+    assert!(lines[4].starts_with("အမှားအယွင်း("), "{out}");
+    assert_eq!(written.unwrap(), "က");
+}
+
+/// With no right to write, a write in a chunk fails, and the session goes on.
+#[test]
+fn a_chunk_has_the_rights_of_the_flags_alone()
+{
+    let input = "\"စံကား/အဝင်အထွက်\" မှ နောက်ဆုံးမှဆက်ရေး ကို ထည့်သွင်းမည်။
+\"က\" ကို \"zaka-repl-denied.txt\" ၏ နောက်ဆုံးမှဆက်ရေး သည့် ရလဒ် ကို ပြသမည်။
+";
+    let (out, err) = session(input);
+    assert!(out.starts_with("အမှားအယွင်း("), "{out}{err}");
+    assert!(!std::env::temp_dir().join("zaka-repl-denied.txt").exists());
 }

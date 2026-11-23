@@ -9,12 +9,12 @@ use rustyline::error::ReadlineError;
 use zaka_host::Gate;
 use zaka_host::Grants;
 use zaka_host::MemWorld;
-use zaka_host::World;
+use zaka_host::TermWorld;
+use zaka_vm::cli::run_gate;
 use zaka_vm::machine::HostData;
 use zaka_vm::machine::Machine;
 use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::drive;
-use zaka_vm::machine::run_in;
 use zaka_vm::trap::Backtrace;
 use zakac_ast::stmt::START_NAME;
 use zakac_borrow_checker::borrow_check;
@@ -26,6 +26,8 @@ use zakac_cli_common::command::CommandIO;
 use zakac_cli_common::command::CommandMode;
 use zakac_cli_common::command::CommandSetup;
 use zakac_cli_common::command::ExitCode;
+use zakac_cli_common::grants::Granted;
+use zakac_cli_common::grants::attach_grant_args;
 use zakac_codegen_target_vm::artifact::Emitted;
 use zakac_codegen_target_vm::artifact::run_phases;
 use zakac_codegen_target_vm::bc::Module;
@@ -42,6 +44,7 @@ use zakac_lexer::lexer::lex;
 use zakac_parser::parser::parse;
 use zakac_reporter::render::write_diagnostics;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::do_while;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::artifact::Checked;
@@ -158,8 +161,9 @@ impl Session
     /// # Arguments
     ///
     /// * `chunk` - The chunk.
+    /// * `gate` - The rights of the program, which the chunk reaches.
     /// * `io` - The standard streams.
-    fn take(&mut self, chunk: &str, io: &mut CommandIO<'_>)
+    fn take(&mut self, chunk: &str, gate: &Gate, io: &mut CommandIO<'_>)
     {
         ret_if!(chunk.trim().is_empty());
         let first = self.compile(chunk);
@@ -183,8 +187,9 @@ impl Session
         ret_if!(compiled.emitted.module.is_none());
         let checked = &compiled.emitted.borrowchecked.lowered.checked;
         let ran = self.go_on(checked, from, &compiled.sm, io);
-        let ran = ran
-            .unwrap_or_else(|| self.run_all(checked, compiled.base, &compiled.sm, io));
+        let text = (compiled.base, from);
+        let ran =
+            ran.unwrap_or_else(|| self.run_all(checked, text, gate, &compiled.sm, io));
         do_if!(ran, self.kept.push_str(chunk));
     }
 
@@ -231,11 +236,15 @@ impl Session
 
     /// Run the whole session on a new VM, and print the output past what was
     /// shown: for the first chunk, and for a module the kept VM cannot run.
+    /// The chunks that ran before run again in storage, so their reads and
+    /// writes are not done twice; the new chunk reaches standard input and the
+    /// files, with the rights of the program.
     ///
     /// # Arguments
     ///
     /// * `checked` - The checked session.
-    /// * `base` - Where the session text starts.
+    /// * `text` - Where the session text starts, and where the chunk starts.
+    /// * `gate` - The rights of the program.
     /// * `sm` - The source map, for a report.
     /// * `io` - The standard streams.
     ///
@@ -243,17 +252,22 @@ impl Session
     ///
     /// Whether the run reached its end.
     fn run_all(
-        &mut self, checked: &Checked, base: u32, sm: &SourceMap, io: &mut CommandIO<'_>,
+        &mut self, checked: &Checked, text: (u32, u32), gate: &Gate, sm: &SourceMap,
+        io: &mut CommandIO<'_>,
     ) -> bool
     {
+        let (base, from) = text;
         let (slots, module) = session_module(checked, base);
+        let mut machine = Machine::new(module, RunOptions::default());
+        machine.set_host(&HostData::program(FILE_NAME));
+        machine.set_world(Box::new(MemWorld::builder().build()));
+        machine.set_gate(Gate::new(Grants { ffi: false, ..Grants::all() }));
+        let chunk = (from, checked.program.span.hi.as_u32());
+        do_while!(machine.running() && !in_chunk(&machine, chunk), let _ = machine.step());
+        machine.set_world(Box::new(TermWorld));
+        machine.set_gate(gate.clone());
         let mut out = Vec::new();
-        let world: Box<dyn World> = Box::new(MemWorld::builder().build());
-        let reach = (world, Gate::new(Grants { ffi: false, ..Grants::all() }));
-        let host = HostData::program(FILE_NAME);
-        let options = RunOptions::default();
-        let (machine, ran) =
-            run_in(&module, &mut out, &options, &host, reach, &mut |_, _| {});
+        let ran = drive(&mut machine, &mut out, &mut |_, _| {});
         let _ = io.stdout.write_all(out.get(self.shown..).unwrap_or_default());
         let _ = io.stdout.flush();
         if let Err(trap) = ran
@@ -265,6 +279,28 @@ impl Session
         (self.machine, self.slots) = (Some(machine), slots);
         true
     }
+}
+
+/// Whether the next op of a VM is code of the chunk.
+///
+/// # Arguments
+///
+/// * `machine` - The VM.
+/// * `chunk` - Where the chunk starts and ends in the session text.
+///
+/// # Returns
+///
+/// `true` if the source region of the op starts inside the chunk.
+fn in_chunk(machine: &Machine, chunk: (u32, u32)) -> bool
+{
+    let Some((func, pc)) = machine.position()
+    else
+    {
+        return false;
+    };
+    let funcs = &machine.module().funcs;
+    let span = funcs.get(func as usize).and_then(|f| f.spans.get(pc as usize));
+    span.is_some_and(|s| (chunk.0..chunk.1).contains(&s.lo.as_u32()))
 }
 
 /// A chunk as a print of its value, for a chunk that is one expression.
@@ -513,7 +549,9 @@ fn plain_line(prompt: &str, io: &mut CommandIO<'_>) -> Got
     let _ = write!(io.stderr, "{prompt}");
     let _ = io.stderr.flush();
     let mut line = String::new();
-    let read = io.stdin.read_line(&mut line).unwrap_or(0);
+    // The shared standard input of the process, which a program's reads take
+    // their lines from too, so a read in a chunk takes the line after it.
+    let read = std::io::stdin().read_line(&mut line).unwrap_or(0);
     ret_if!(read == 0, Got::End);
     Got::Line(line.trim_end_matches(['\n', '\r']).to_string())
 }
@@ -560,13 +598,18 @@ fn read_chunk(
 ///
 /// # Arguments
 ///
+/// * `matches` - The matches of the CLI arguments, for the rights.
 /// * `io` - The standard streams.
 ///
 /// # Returns
 ///
 /// [`ExitCode::Success`].
-fn command_main(io: &mut CommandIO<'_>) -> ExitCode
+fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
 {
+    // shortcut: a session makes no C calls, since an earlier chunk runs again
+    // in storage and a C call cannot; allow it once a run again can skip them.
+    let mut gate = run_gate(matches);
+    gate.grants.ffi = false;
     let _ = writeln!(io.stderr, "{}", t!("repl.welcome"));
     let mut session = Session::default();
     let mut lines = Lines::open();
@@ -585,7 +628,7 @@ fn command_main(io: &mut CommandIO<'_>) -> ExitCode
             {
                 let _ = writeln!(io.stderr, "{}", t!("repl.unknown", c = word));
             }
-            _ => session.take(&chunk, io),
+            _ => session.take(&chunk, &gate, io),
         }
     }
     lines.save();
@@ -634,7 +677,7 @@ impl Command for ZakacRepl
     /// The configured setup.
     fn configure(setup: CommandSetup, _mode: CommandMode) -> CommandSetup
     {
-        setup.with(|cmd| cmd.about(t!("repl.about")))
+        setup.with(|cmd| attach_grant_args(cmd.about(t!("repl.about")), Granted::Run))
     }
 
     /// Build the command from its setup.
@@ -669,9 +712,9 @@ impl Command for ZakacRepl
     /// # Returns
     ///
     /// The exit code.
-    fn main(&self, _matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
+    fn main(&self, matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     {
-        command_main(io)
+        command_main(matches, io)
     }
 }
 

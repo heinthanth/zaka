@@ -53,7 +53,9 @@ the heap, the world, the rights, the threads and the closures remain. Each globa
 new module takes over the block of an old global, or gets a new block (`take_global`). The
 static texts and lists of the new module get blocks of their own, and the old ones remain
 for the values that point at them. The REPL clones the machine before each chunk and goes
-back to the clone when the chunk traps.
+back to the clone when the chunk traps. When the REPL runs the whole session again, it runs the earlier
+chunks on a world in storage, stepping until the next operation is code of the new chunk
+(`in_chunk`), then sets the terminal world and the rights of the session and runs on.
 
 ## Calls and frames
 

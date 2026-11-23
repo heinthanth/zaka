@@ -424,7 +424,7 @@ fn run_args(matches: &ArgMatches) -> Vec<String>
 /// # Returns
 ///
 /// The gate.
-fn run_gate(matches: &ArgMatches) -> Gate
+pub fn run_gate(matches: &ArgMatches) -> Gate
 {
     let gate = Gate::new(grants_from(matches, Granted::Run));
     match TermAsker::on_terminal()
