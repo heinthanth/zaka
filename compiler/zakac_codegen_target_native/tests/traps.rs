@@ -88,6 +88,15 @@ fn a_stop_names_its_line_and_the_calls()
     assert!(!run.stderr.contains("  main"), "{}", run.stderr);
 }
 
+/// A check that fails in the middle of a statement names the column of its
+/// expression, as the VM does.
+#[test]
+fn a_stop_names_the_column_of_its_expression()
+{
+    let run = run_jit(&c_inputs().join("stop_mid_statement.zaka"), &[]);
+    assert!(run.stderr.contains("stop_mid_statement.zaka:5:22)"), "{}", run.stderr);
+}
+
 /// A list that grows past `--max-heap` stops the program.
 #[test]
 fn a_heap_past_the_cap_stops_the_program()

@@ -44,7 +44,57 @@ pub extern "C" fn zk_leave_call()
     unsafe { (*zk_ctx()).depth -= 1 };
 }
 
-/// Note the site of the statement that runs, in a build with debug info.
+/// The site of no source region: a call of the runtime given it keeps the
+/// site it runs under, which a trap inside it then names.
+pub const NO_SITE: u32 = u32::MAX;
+
+/// The site of a call of the runtime in progress, kept in the context of the
+/// thread until the call ends, so a trap inside the call names the expression
+/// that made it; the site before it comes back as the guard drops.
+pub struct AtSite(Option<u32>);
+
+/// Note the site of a call of the runtime for the traps inside it.
+///
+/// # Arguments
+///
+/// * `site` - The site of the expression that makes the call, or [`NO_SITE`].
+///
+/// # Returns
+///
+/// The guard that puts the site before it back.
+pub fn at_site(site: u32) -> AtSite
+{
+    ret_if!(site == NO_SITE, AtSite(None));
+    // SAFETY: the context of the thread lives as long as the thread.
+    let ctx = unsafe { &mut *zk_ctx() };
+    AtSite(Some(std::mem::replace(&mut ctx.call_site, site)))
+}
+
+impl Drop for AtSite
+{
+    fn drop(&mut self)
+    {
+        let Some(site) = self.0
+        else
+        {
+            return;
+        };
+        // SAFETY: the context of the thread lives as long as the thread.
+        unsafe { (*zk_ctx()).call_site = site };
+    }
+}
+
+/// Note the site of the call of the runtime in progress in the frame of the
+/// call that made it, as a trap stops the run, and clear it.
+pub fn mark_call_site()
+{
+    // SAFETY: the context of the thread lives as long as the thread.
+    let site = unsafe { std::mem::replace(&mut (*zk_ctx()).call_site, NO_SITE) };
+    zk_at_site(site);
+}
+
+/// Note the site of the statement that runs, or of the expression whose
+/// check failed, in a build with debug info; [`NO_SITE`] notes nothing.
 ///
 /// # Arguments
 ///
@@ -52,7 +102,7 @@ pub extern "C" fn zk_leave_call()
 #[unsafe(export_name = stamped!("at_site"))]
 pub extern "C" fn zk_at_site(site: u32)
 {
-    ret_if!(prog().debug_info == 0);
+    ret_if!(prog().debug_info == 0 || site == NO_SITE);
     // SAFETY: the context of the thread lives as long as the thread, and its
     // frames hold the depth limit plus main.
     unsafe {

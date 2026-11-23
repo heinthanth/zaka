@@ -132,7 +132,9 @@ which writes the message and the backtrace and ends the process with status 1, a
 block after the call is marked unreachable. When the depth check or the debug info is
 on, `zk_enter_call` and `zk_leave_call` wrap each function, and `zk_at_site` sets the site
 of the top frame before each statement whose site differs from the last one, as
-`ZK_ENTER`, `ZK_LEAVE` and `ZK_AT` do in C.
+`ZK_ENTER`, `ZK_LEAVE` and `ZK_AT` do in C. A failed check inside an expression calls
+`zk_at_site` with the site of that expression first, and a call of the runtime that checks
+a value (the list `SITED` in `func.rs`) takes that site as its last argument, as in C.
 
 `FnGen` tracks whether the current block can be reached (`live`, and the set `reached`).
 After a return, a stop or a jump, the next statement writes no code until a label reaches

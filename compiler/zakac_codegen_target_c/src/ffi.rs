@@ -467,7 +467,9 @@ impl Names<'_>
         let taken = def.ret.filter(|k| is_c_text_result(*k)).map(|k| {
             let ok_at = k.as_struct().map_or(0, |s| s.offset(1, self.platform));
             let size = k.size(self.platform);
-            let line = format!("    zk_text_from_c(zk_out, {size}, {ok_at}, zk_r);\n");
+            let line = format!(
+                "    zk_text_from_c(zk_out, {size}, {ok_at}, zk_r, ZK_NO_SITE);\n"
+            );
             // A string C hands over is freed once its octets are copied.
             let free = tern!(def.owned_ret, "    free((void *)zk_r);\n", "");
             format!("{line}{free}")
@@ -514,7 +516,7 @@ impl Names<'_>
             let cast = self.declarator(f, "");
             let shape = self.shapes.iter().position(|k| *k == kind);
             let code = shape.map_or_else(
-                || format!("zk_fn_code(zk_fn_c(zk_a{i}))"),
+                || format!("zk_fn_code(zk_fn_c(zk_a{i}, ZK_NO_SITE))"),
                 |n| format!("zk_cb_code(zk_a{i}, {})", shape_ref(n)),
             );
             return format!("    {decl} = zk_a{i} ? ({cast}){code} : ({cast})0;\n");

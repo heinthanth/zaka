@@ -317,7 +317,8 @@ impl FnGen<'_, '_>
             return self.line(&format!("zk_put_block({a}, {v}, {size});"));
         }
         let n = self.shared.mem(value.kind);
-        self.line(&format!("zk_st_{n}({a}, {v});"));
+        let site = self.check_site();
+        self.line(&format!("zk_st_{n}({a}, {v}, {site});"));
     }
 
     /// Generate a return: the value goes back, then the function ends.
@@ -593,7 +594,8 @@ impl FnGen<'_, '_>
             return self.line(&format!("zk_put_block({at}, {v}, {size});"));
         }
         let n = self.shared.mem(kind);
-        self.line(&format!("zk_st_{n}({at}, {v});"));
+        let site = self.check_site();
+        self.line(&format!("zk_st_{n}({at}, {v}, {site});"));
     }
 
     /// The size of a unit of a heap statement: the kind, or one octet.
@@ -634,7 +636,12 @@ impl FnGen<'_, '_>
             {
                 let a = self.expr(at);
                 let a = self.spill(at.kind, a);
-                (format!("zk_ld_p({a})"), format!("zk_st_p({a}, "), ");")
+                // A statement: its checks stop at its own site.
+                (
+                    format!("zk_ld_p({a}, ZK_NO_SITE)"),
+                    format!("zk_st_p({a}, "),
+                    ", ZK_NO_SITE);",
+                )
             }
         }
     }
@@ -796,7 +803,8 @@ impl FnGen<'_, '_>
         };
         // The value is read once; a closure runs its thunk, which takes the
         // record last.
-        let f = self.spill(c.kind, format!("zk_fn_check({f})"));
+        let site = self.check_site();
+        let f = self.spill(c.kind, format!("zk_fn_check({f}, {site})"));
         let kind = c.kind.as_fn();
         let shapes = kind.map(|k| {
             (self.shared.fn_pointer(k, false), self.shared.fn_pointer(k, true))

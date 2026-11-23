@@ -33,6 +33,8 @@ use crate::heap::zk_fn_rec;
 use crate::heap::zk_fn_release;
 use crate::heap::zk_fn_size;
 use crate::heap::zk_threads_begin;
+use crate::native::NO_SITE;
+use crate::native::at_site;
 use crate::program::ZkKind;
 use crate::program::prog;
 use crate::seqs::at;
@@ -491,11 +493,14 @@ pub extern "C" fn zk_cb_revoke(f: ZkFn)
 /// * `out` - Where the handle goes.
 /// * `addr` - Where the address C passed lies.
 /// * `list` - The kind of the cells of the box, as a list of one cell.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("cb_handle"))]
 pub extern "C" fn zk_cb_handle(
-    out: *mut u8, addr: *const *mut c_void, list: *const ZkKind,
+    out: *mut u8, addr: *const *mut c_void, list: *const ZkKind, site: u32,
 )
 {
+    let _at = at_site(site);
     // SAFETY: the bridge hands the address of an argument.
     do_if!(unsafe { *addr }.is_null(), zk_plain_trap(trap::NULL_FROM_C));
     zk_to_heap(out, addr.cast(), list, 0)
@@ -512,18 +517,21 @@ pub extern "C" fn zk_cb_handle(
 /// * `ok_at` - The offset of the handle in it.
 /// * `addr` - Where the address C passed lies.
 /// * `list` - The kind of the cells of the box, as a list of one cell.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("cb_opt_handle"))]
 pub extern "C" fn zk_cb_opt_handle(
     out: *mut u8, size: usize, ok_at: usize, addr: *const *mut c_void,
-    list: *const ZkKind,
+    list: *const ZkKind, site: u32,
 )
 {
+    let _at = at_site(site);
     zero(out, size);
     // SAFETY: the bridge hands the address of an argument.
     ret_if!(unsafe { *addr }.is_null());
     // SAFETY: the tag is the first octet of the optional.
     unsafe { *out = 1 };
-    zk_cb_handle(at(out, ok_at), addr, list)
+    zk_cb_handle(at(out, ok_at), addr, list, NO_SITE)
 }
 
 /// The count of closures lent now.

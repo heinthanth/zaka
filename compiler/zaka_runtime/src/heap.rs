@@ -13,6 +13,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::native::at_site;
 use crate::program::NULL_BIT;
 use crate::program::OVERLAP_BIT;
 use crate::program::ZkKind;
@@ -541,13 +542,18 @@ pub extern "C" fn zk_put_block(to: *mut u8, from: *const u8, size: usize)
 /// * `p` - The address.
 /// * `count` - The steps, of each sign.
 /// * `stride` - The octets of a step.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The address.
 #[unsafe(export_name = stamped!("ptr_add"))]
-pub extern "C" fn zk_ptr_add(p: *mut u8, count: i64, stride: usize) -> *mut u8
+pub extern "C" fn zk_ptr_add(
+    p: *mut u8, count: i64, stride: usize, site: u32,
+) -> *mut u8
 {
+    let _at = at_site(site);
     do_if!(check_on(NULL_BIT) && p.is_null() && count != 0, zk_null_deref(p.cast()));
     let step = (count as u64).wrapping_mul(stride as u64) as usize;
     (p as usize).wrapping_add(step) as *mut u8
@@ -722,13 +728,16 @@ pub struct ZkFnRec
 /// # Arguments
 ///
 /// * `f` - The value.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The value; the run stops when it is null.
 #[unsafe(export_name = stamped!("fn_check"))]
-pub extern "C" fn zk_fn_check(f: ZkFn) -> ZkFn
+pub extern "C" fn zk_fn_check(f: ZkFn, site: u32) -> ZkFn
 {
+    let _at = at_site(site);
     do_if!(f.is_null(), zk_plain_trap(trap::NULL_CALL));
     f
 }
@@ -861,13 +870,16 @@ pub extern "C" fn zk_closure(record: *mut u8, thunk: ZkCode, k: *const ZkKind) -
 /// # Arguments
 ///
 /// * `f` - The value.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The value.
 #[unsafe(export_name = stamped!("fn_c"))]
-pub extern "C" fn zk_fn_c(f: ZkFn) -> ZkFn
+pub extern "C" fn zk_fn_c(f: ZkFn, site: u32) -> ZkFn
 {
+    let _at = at_site(site);
     do_if!(!f.is_null() && zk_fn_bound(f) != 0, zk_plain_trap(trap::CLOSURE_ESCAPE));
     f
 }

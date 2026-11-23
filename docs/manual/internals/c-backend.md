@@ -222,7 +222,13 @@ table `zk_c->frames`, one row for each call in progress, with the function numbe
 site. `ZK_AT(site)` comes before each statement whose site differs from the last one, and
 sets the site of the top row. The sites (file, line, column of the start of a statement)
 are tables in `zaka_kinds.c` that the program table points at, and a `--release` build
-writes neither the tables nor the marks. With the checks of depth and debug info both off,
+writes neither the tables nor the marks. A check inside an expression names the site of
+that expression, as the VM does: each checked operation of the header (`zk_div_<N>`,
+`zk_ld_<N>` and the rest) and each call of the runtime that checks a value
+(`zk_cell_of`, `zk_char_at` and the others) takes the site last, or `ZK_NO_SITE` outside
+an expression. The header notes it on the failing branch alone (`ZK_STOP_AT`), so the
+order C gives the arguments of a call never mixes two sites; a call of the runtime keeps
+it in `call_site` of the context while it runs, and the stop notes it. With the checks of depth and debug info both off,
 the pair counts nothing.
 
 A stop writes the function and the place, then the backtrace from the frames of its

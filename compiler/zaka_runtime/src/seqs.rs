@@ -42,6 +42,8 @@ use crate::heap::zk_fn_rec;
 use crate::heap::zk_ptr_add;
 use crate::heap::zk_seq_free;
 pub use crate::heap::zk_seq_new;
+use crate::native::NO_SITE;
+use crate::native::at_site;
 use crate::program::BOUNDS_BIT;
 use crate::program::TEXT_BIT;
 use crate::program::ZkKind;
@@ -1324,13 +1326,16 @@ pub extern "C" fn zk_to_heap(
 /// * `index` - The number.
 /// * `len` - The cell count.
 /// * `first` - The number of the first cell: 0 or 1.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The cell, counted from 0.
 #[unsafe(export_name = stamped!("cell_of"))]
-pub extern "C" fn zk_cell_of(index: i64, len: usize, first: i32) -> usize
+pub extern "C" fn zk_cell_of(index: i64, len: usize, first: i32, site: u32) -> usize
 {
+    let _at = at_site(site);
     in_range(trap::INDEX_OUT_OF_RANGE, index, len as i64, first, 1)
 }
 
@@ -1396,13 +1401,16 @@ fn place_of(index: i64, count: usize, first: i32) -> usize
 /// # Arguments
 ///
 /// * `p` - The box.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The address of the fields.
 #[unsafe(export_name = stamped!("object_cell"))]
-pub extern "C" fn zk_object_cell(p: *const u8) -> *mut u8
+pub extern "C" fn zk_object_cell(p: *const u8, site: u32) -> *mut u8
 {
+    let _at = at_site(site);
     do_if!(zk_seq_len(p) == 0, zk_plain_trap(trap::NULL_OBJECT));
     zk_seq_base(p)
 }
@@ -1415,16 +1423,19 @@ pub extern "C" fn zk_object_cell(p: *const u8) -> *mut u8
 /// * `index` - The number.
 /// * `first` - The number of the first cell.
 /// * `stride` - The octets of a cell.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The address.
 #[unsafe(export_name = stamped!("slice_cell"))]
 pub extern "C" fn zk_slice_cell(
-    p: *const u8, index: i64, first: i32, stride: usize,
+    p: *const u8, index: i64, first: i32, stride: usize, site: u32,
 ) -> *mut u8
 {
-    at(zk_seq_base(p), zk_cell_of(index, zk_seq_len(p), first) * stride)
+    let _at = at_site(site);
+    at(zk_seq_base(p), zk_cell_of(index, zk_seq_len(p), first, NO_SITE) * stride)
 }
 
 /// Stop the run when an octet of text is inside a character.
@@ -1450,12 +1461,15 @@ fn edge_check(base: *const u8, n: usize)
 /// * `limit` - The cell count of the source, or the largest size for none.
 /// * `stride` - The octets of a cell.
 /// * `text` - 1 for text, whose ends must fall between characters.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("make_slice"))]
 pub extern "C" fn zk_make_slice(
     slot: *mut u8, base: *mut u8, start: u64, len: u64, limit: usize, stride: usize,
-    text: i32,
+    text: i32, site: u32,
 )
 {
+    let _at = at_site(site);
     let end = start.wrapping_add(len);
     let bounded = limit != usize::MAX;
     if check_on(BOUNDS_BIT) && bounded && (end < start || end > limit as u64)
@@ -1470,7 +1484,7 @@ pub extern "C" fn zk_make_slice(
     let edges = check_on(TEXT_BIT) && text != 0 && bounded && !base.is_null();
     do_if!(edges && start < limit as u64, edge_check(base, start as usize));
     do_if!(edges && end < limit as u64, edge_check(base, end as usize));
-    st(slot, zk_ptr_add(base, start as i64, stride));
+    st(slot, zk_ptr_add(base, start as i64, stride, NO_SITE));
     st(at(slot, WORD), len as usize);
 }
 
@@ -1526,9 +1540,12 @@ pub extern "C" fn zk_is_utf8(s: *const u8, n: usize) -> i32
 /// # Arguments
 ///
 /// * `p` - The plain list.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("check_utf8"))]
-pub extern "C" fn zk_check_utf8(p: *const u8)
+pub extern "C" fn zk_check_utf8(p: *const u8, site: u32)
 {
+    let _at = at_site(site);
     ret_if!(!check_on(TEXT_BIT));
     let raw = octets(p);
     let mut i = 0;
@@ -1869,7 +1886,7 @@ fn span(p: *const u8, start: i64, end: i64, chars: i32) -> (usize, usize)
         }
         else
         {
-            zk_cell_of(n, count, 0)
+            zk_cell_of(n, count, 0, NO_SITE)
         }
     };
     let (lo, hi) = (pick(start), pick(end));
@@ -1956,13 +1973,16 @@ pub extern "C" fn zk_char_count(p: *const u8) -> usize { chars_in(octets(p)) }
 /// * `p` - The text.
 /// * `index` - The number.
 /// * `first` - The number of the first character.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The character.
 #[unsafe(export_name = stamped!("char_at"))]
-pub extern "C" fn zk_char_at(p: *const u8, index: i64, first: i32) -> u32
+pub extern "C" fn zk_char_at(p: *const u8, index: i64, first: i32, site: u32) -> u32
 {
+    let _at = at_site(site);
     let s = octets(p);
     let from = char_start(s, char_index(index, chars_in(s), first));
     decode(&s[from..])
@@ -1974,13 +1994,16 @@ pub extern "C" fn zk_char_at(p: *const u8, index: i64, first: i32) -> u32
 ///
 /// * `p` - The text.
 /// * `index` - The octet, counted from 0.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
 /// The character.
 #[unsafe(export_name = stamped!("char_at_octet"))]
-pub extern "C" fn zk_char_at_octet(p: *const u8, index: u64) -> u32
+pub extern "C" fn zk_char_at_octet(p: *const u8, index: u64, site: u32) -> u32
 {
+    let _at = at_site(site);
     let s = octets(p);
     let inside = index < s.len() as u64;
     let c = if inside

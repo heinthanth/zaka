@@ -33,6 +33,34 @@ use zakac_rust_sugars::ret_if;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
+/// The functions of the runtime that take the site of the expression that
+/// calls them as their last argument, for a trap inside them; [`FnGen::rt`]
+/// adds it.
+const SITED: &[&str] = &[
+    "zk_cell_of",
+    "zk_slice_cell",
+    "zk_object_cell",
+    "zk_char_at",
+    "zk_char_at_octet",
+    "zk_check_utf8",
+    "zk_make_slice",
+    "zk_ptr_add",
+    "zk_from_c",
+    "zk_text_from_c",
+    "zk_text_of_c",
+    "zk_cb_handle",
+    "zk_cb_opt_handle",
+    "zk_fn_c",
+    "zk_fn_check",
+    "zk_pipe_receive",
+    "zk_thread_wait",
+    "zk_par_map",
+];
+
+/// The site of no source region, `NO_SITE` of the runtime: a check given it
+/// stops at the site of the statement.
+const NO_SITE: u32 = u32::MAX;
+
 use crate::emit::Shared;
 
 /// Where a local lives.
@@ -65,6 +93,9 @@ pub struct FnGen<'s, 'm, M: Module>
     /// The site the last statement marked, while no branch or loop came
     /// between.
     pub last_site: Option<u32>,
+    /// The source region of the innermost expression being lowered, whose
+    /// site a check in it names; `None` outside an expression.
+    pub expr_span: Option<Span>,
     /// Whether the code being lowered can run: false after a return, a break
     /// or a stop, until a block that something jumps to.
     pub live: bool,
@@ -100,7 +131,7 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
         b.switch_to_block(first);
         #[rustfmt::skip]
         return FnGen { s, b, func: None, homes: Vec::new(), ret_ptr: None, loops: Vec::new(),
-            last_site: None, live: true, reached: HashSet::from([first]), refs: HashMap::new(),
+            last_site: None, expr_span: None, live: true, reached: HashSet::from([first]), refs: HashMap::new(),
             gvs: HashMap::new() };
     }
 
@@ -197,7 +228,66 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
         r
     }
 
-    /// Call a function of the runtime.
+    /// Call a function of the runtime; one of [`SITED`] gets the site of the
+    /// expression as its last argument.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Its C name.
+    /// * `params` - The CLIF kind of each parameter, the site left out.
+    /// * `rets` - The CLIF kind of its result.
+    /// * `args` - The arguments, the site left out.
+    ///
+    /// # Returns
+    ///
+    /// The result, when it has one.
+    pub fn rt(
+        &mut self, name: &'static str, params: &[Type], rets: &[Type], args: &[Value],
+    ) -> Option<Value>
+    {
+        ret_if!(!self.live, rets.first().map(|t| self.zero_of(*t)));
+        ret_if!(SITED.contains(&name), self.rt_sited(name, params, rets, args));
+        self.rt_call(name, params, rets, args)
+    }
+
+    /// Call a function of [`SITED`], with the site of the expression last.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Its C name.
+    /// * `params` - The CLIF kind of each parameter, the site left out.
+    /// * `rets` - The CLIF kind of its result.
+    /// * `args` - The arguments, the site left out.
+    ///
+    /// # Returns
+    ///
+    /// The result, when it has one.
+    fn rt_sited(
+        &mut self, name: &'static str, params: &[Type], rets: &[Type], args: &[Value],
+    ) -> Option<Value>
+    {
+        let site = self.check_site();
+        let site = self.b.ins().iconst(types::I32, i64::from(site));
+        let params: Vec<Type> = params.iter().copied().chain([types::I32]).collect();
+        let args: Vec<Value> = args.iter().copied().chain([site]).collect();
+        self.rt_call(name, &params, rets, &args)
+    }
+
+    /// The site a check of the expression being lowered names: the site of
+    /// the innermost expression, or `NO_SITE` outside an expression and in a
+    /// build with no debug info, so the check stops at the site of the
+    /// statement, as the VM does.
+    ///
+    /// # Returns
+    ///
+    /// The site.
+    fn check_site(&mut self) -> u32
+    {
+        let span = self.expr_span.filter(|_| self.s.options.debug_info);
+        span.and_then(|s| self.s.site_of(s)).unwrap_or(NO_SITE)
+    }
+
+    /// Call a function of the runtime with these arguments alone.
     ///
     /// # Arguments
     ///
@@ -209,11 +299,10 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
     /// # Returns
     ///
     /// The result, when it has one.
-    pub fn rt(
+    fn rt_call(
         &mut self, name: &'static str, params: &[Type], rets: &[Type], args: &[Value],
     ) -> Option<Value>
     {
-        ret_if!(!self.live, rets.first().map(|t| self.zero_of(*t)));
         let id = self.s.runtime_fn(name, params, rets);
         let r = self.func_ref(id);
         let inst = self.b.ins().call(r, args);
@@ -229,6 +318,13 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
     /// * `args` - The arguments.
     pub fn rt_stop(&mut self, name: &'static str, params: &[Type], args: &[Value])
     {
+        // The stop names the expression whose check failed, noted on the
+        // failing branch alone.
+        let site = self.check_site();
+        do_if!(site != NO_SITE, {
+            let v = self.b.ins().iconst(types::I32, i64::from(site));
+            self.rt("zk_at_site", &[types::I32], &[], &[v]);
+        });
         self.rt(name, params, &[], args);
         self.unreachable();
     }

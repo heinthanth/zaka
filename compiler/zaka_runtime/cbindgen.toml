@@ -14,7 +14,11 @@ after_includes = """
 #define ZK_NORETURN __attribute__((noreturn))
 #else
 #define ZK_NORETURN
-#endif"""
+#endif
+
+/* The site of no source region, `NO_SITE` of the runtime: a call or a check given it
+ * names the site of the statement. */
+#define ZK_NO_SITE UINT32_MAX"""
 documentation_style = "doxy"
 documentation_length = "full"
 style = "both"

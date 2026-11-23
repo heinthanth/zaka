@@ -45,6 +45,25 @@ impl<M: Module> FnGen<'_, '_, M>
     /// The value.
     pub fn expr(&mut self, e: &Expr) -> Value
     {
+        // A check inside names the site of the innermost expression, as the
+        // VM gives each operation the region of its expression.
+        let outer = self.expr_span.replace(e.span);
+        let v = self.expr_value(e);
+        self.expr_span = outer;
+        v
+    }
+
+    /// Lower an expression, as [`Self::expr`] does.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn expr_value(&mut self, e: &Expr) -> Value
+    {
         let ptr = self.s.ptr;
         match &e.node
         {

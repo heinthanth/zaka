@@ -52,6 +52,25 @@ impl FnGen<'_, '_>
     /// The C text.
     pub(crate) fn expr(&mut self, e: &Expr) -> String
     {
+        // A check inside names the site of the innermost expression, as the
+        // VM gives each operation the region of its expression.
+        let outer = self.expr_span.replace(e.span);
+        let text = self.expr_text(e);
+        self.expr_span = outer;
+        text
+    }
+
+    /// The C text of an expression, as [`Self::expr`] gives it.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The expression.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    fn expr_text(&mut self, e: &Expr) -> String
+    {
         let platform = self.platform();
         match &e.node
         {
@@ -139,9 +158,10 @@ impl FnGen<'_, '_>
             let platform = self.shared.platform();
             let ok_at = kind.as_struct().map_or(0, |s| s.offset(1, platform));
             let t = self.blob_temp(kind);
+            let site = self.check_site();
             self.line(&format!(
                 "{{ const char *zk_s; memcpy(&zk_s, {at}, sizeof zk_s); \
-                 zk_text_from_c({t}, {size}, {ok_at}, zk_s); }}"
+                 zk_text_from_c({t}, {size}, {ok_at}, zk_s, {site}); }}"
             ));
             return t;
         }
@@ -174,7 +194,8 @@ impl FnGen<'_, '_>
             {
                 let a = self.expr(addr);
                 ret_if!(is_blob(e.kind), a);
-                format!("zk_ld_{}({a})", self.shared.mem(e.kind))
+                let site = self.check_site();
+                format!("zk_ld_{}({a}, {site})", self.shared.mem(e.kind))
             }
             ExprNode::AtomicLoad { addr } =>
             {
@@ -205,7 +226,8 @@ impl FnGen<'_, '_>
             {
                 let stride = self.stride(base.kind);
                 let (b, o) = self.pair(base, offset);
-                format!("zk_ptr_add({b}, (zk_imax)({o}), {stride})")
+                let site = self.check_site();
+                format!("zk_ptr_add({b}, (zk_imax)({o}), {stride}, {site})")
             }
             ExprNode::PtrSub { lhs, rhs } =>
             {
@@ -219,13 +241,14 @@ impl FnGen<'_, '_>
             ExprNode::CellAddr { list, .. } if list.kind.as_object().is_some() =>
             {
                 let l = self.expr(list);
-                format!("zk_object_cell({l})")
+                format!("zk_object_cell({l}, {})", self.check_site())
             }
             ExprNode::CellAddr { list, index, len, first, checked } =>
             {
                 let stride = self.stride(e.kind);
                 let (l, i) = self.pair(list, index);
-                cell_addr(&l, &i, *len, (*first, *checked), stride)
+                let site = self.check_site();
+                cell_addr(&l, &i, *len, (*first, *checked), stride, &site)
             }
             ExprNode::MakeSlice { source, start, len, from, checked } =>
             {
@@ -484,7 +507,7 @@ impl FnGen<'_, '_>
             PrefixOp::Neg if stop =>
             {
                 let n = self.shared.ops(kind);
-                format!("zk_neg_{n}({a}, \"{}\")", kind.name())
+                format!("zk_neg_{n}({a}, \"{}\", {})", kind.name(), self.check_site())
             }
             PrefixOp::Neg => format!("zk_wneg_{}({a})", self.shared.ops(kind)),
             PrefixOp::BitNot => format!("(({t})~{a})"),
@@ -516,7 +539,7 @@ impl FnGen<'_, '_>
         {
             InfixOp::Add | InfixOp::Sub | InfixOp::Mul if stop =>
             {
-                format!("zk_{name}_{n}({a}, {b}, \"{k}\")")
+                format!("zk_{name}_{n}({a}, {b}, \"{k}\", {})", self.check_site())
             }
             InfixOp::Add | InfixOp::Sub | InfixOp::Mul =>
             {
@@ -524,9 +547,13 @@ impl FnGen<'_, '_>
             }
             InfixOp::Div | InfixOp::Rem =>
             {
-                format!("zk_{name}_{n}({a}, {b}, {}, \"{k}\")", u8::from(stop))
+                let site = self.check_site();
+                format!("zk_{name}_{n}({a}, {b}, {}, \"{k}\", {site})", u8::from(stop))
             }
-            InfixOp::Shl | InfixOp::Shr => format!("zk_{name}_{n}({a}, {b})"),
+            InfixOp::Shl | InfixOp::Shr =>
+            {
+                format!("zk_{name}_{n}({a}, {b}, {})", self.check_site())
+            }
             InfixOp::BitAnd | InfixOp::BitOr | InfixOp::BitXor =>
             {
                 let mark: &str = op.into();
@@ -574,7 +601,8 @@ impl FnGen<'_, '_>
         if to.is_text() && from.is_seq()
         {
             let at = self.spill(from, a);
-            self.line(&format!("zk_check_utf8({at});"));
+            let site = self.check_site();
+            self.line(&format!("zk_check_utf8({at}, {site});"));
             return at;
         }
         ret_if!(is_blob(to), a);
@@ -691,7 +719,8 @@ impl FnGen<'_, '_>
         else
         {
             let n = self.shared.mem(kind);
-            self.spill(kind, format!("zk_ld_{n}({at})"))
+            let site = self.check_site();
+            self.spill(kind, format!("zk_ld_{n}({at}, {site})"))
         };
         self.line(&format!("zk_zero({at}, {size});"));
         held
@@ -788,9 +817,10 @@ impl FnGen<'_, '_>
         };
         let text = u8::from(kind.is_text() && !checked);
         let t = self.temp(kind);
+        let site = self.check_site();
         self.line(&format!(
             "zk_make_slice({t}, {base}, (zk_umax)({}), (zk_umax)({}), {limit}, \
-             {stride}, {text});",
+             {stride}, {text}, {site});",
             v[1], v[2]
         ));
         // A view of a list or text lends its cells: a room of 0, which `own`
@@ -887,11 +917,13 @@ impl FnGen<'_, '_>
             (None, _) => format!("(({t})zk_char_count({}))", v[0]),
             (Some(_), true) =>
             {
-                format!("zk_char_at_octet({}, (zk_umax)({}))", v[0], v[1])
+                let site = self.check_site();
+                format!("zk_char_at_octet({}, (zk_umax)({}), {site})", v[0], v[1])
             }
             (Some(_), false) =>
             {
-                format!("zk_char_at({}, (zk_imax)({}), {first})", v[0], v[1])
+                let site = self.check_site();
+                format!("zk_char_at({}, (zk_imax)({}), {first}, {site})", v[0], v[1])
             }
         };
         ret_if!(!fresh(text), call);
@@ -990,12 +1022,13 @@ fn do_if_holds(g: &mut FnGen<'_, '_>, kind: DataKind, line: &str)
 /// * `flags` - The number of the first cell, and whether the number is known to
 ///   be in range.
 /// * `stride` - The octets of a cell.
+/// * `site` - The site a number out of range names, as C text.
 ///
 /// # Returns
 ///
 /// The C text.
 fn cell_addr(
-    l: &str, i: &str, len: Option<u32>, flags: (u8, bool), stride: u32,
+    l: &str, i: &str, len: Option<u32>, flags: (u8, bool), stride: u32, site: &str,
 ) -> String
 {
     let (first, checked) = flags;
@@ -1005,10 +1038,15 @@ fn cell_addr(
         Some(_) if direct => format!("({l} + (size_t)({i}) * {stride})"),
         Some(n) =>
         {
-            format!("({l} + zk_cell_of((zk_imax)({i}), {n}, {first}) * {stride})")
+            format!(
+                "({l} + zk_cell_of((zk_imax)({i}), {n}, {first}, {site}) * {stride})"
+            )
         }
         None if direct => format!("(zk_seq_base({l}) + (size_t)({i}) * {stride})"),
-        None => format!("zk_slice_cell({l}, (zk_imax)({i}), {first}, {stride})"),
+        None =>
+        {
+            format!("zk_slice_cell({l}, (zk_imax)({i}), {first}, {stride}, {site})")
+        }
     }
 }
 

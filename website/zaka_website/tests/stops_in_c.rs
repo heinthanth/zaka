@@ -1,10 +1,19 @@
 //! Each program a page shows stopping stops alike as a native executable
-//! from the C target: the same output, then the same reason.
+//! from the C target: the same output, then the same reason, at the same
+//! place as on the VM.
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::io::Write;
 use std::process::Stdio;
 
+use zaka_host::Gate;
+use zaka_host::Grants;
+use zaka_host::MemWorld;
+use zaka_host::World;
+use zaka_vm::machine::HostData;
+use zaka_vm::machine::RunOptions;
+use zaka_vm::machine::run_in;
+use zaka_vm::trap::Backtrace;
 use zaka_website::book::Book;
 use zaka_website::book::render::Block;
 use zaka_website::book::render::Sample;
@@ -19,6 +28,8 @@ use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_codegen_target_c::toolchain;
 use zakac_codegen_target_c::toolchain::BuildPlan;
 use zakac_codegen_target_c::toolchain::Tool;
+use zakac_codegen_target_vm::artifact::run_phases;
+use zakac_codegen_target_vm::options::ResultMode;
 use zakac_ir_builder::ir::FoldOptions;
 use zakac_lexer::lexer::LexerOptions;
 use zakac_parser::load::Loaded;
@@ -75,8 +86,64 @@ fn without_addresses(text: &str) -> String
     out
 }
 
+/// The place a stop line names, ` (in <func>, at <file>:<line>:<column>)`.
+///
+/// # Arguments
+///
+/// * `line` - The stop line.
+///
+/// # Returns
+///
+/// The place, or no text for a line with none.
+fn place_of(line: &str) -> &str
+{
+    let Some(at) = line.rfind(" (in ")
+    else
+    {
+        return "";
+    };
+    let end = line[at..].find(')').map_or(line.len(), |e| at + e + 1);
+    &line[at..end]
+}
+
+/// Run a program on the VM with its input, and give the place it stopped.
+///
+/// # Arguments
+///
+/// * `sample` - The program.
+///
+/// # Returns
+///
+/// The place, or `None` when the VM did not stop it.
+fn vm_place(sample: &Sample) -> Option<String>
+{
+    let mut sm = SourceMap::new();
+    let name = FileName::Custom("main.zaka".into());
+    let file = sm.new_source_file(name, sample.source.clone());
+    let fence = sample.options;
+    let options = SemcheckOptions::builder().no_unsafe(fence.no_unsafe).build();
+    #[rustfmt::skip]
+    let mem = BorrowCheckOptions::builder().check(fence.check).strict(fence.strict)
+        .overflow(fence.overflow).build();
+    let lexer = LexerOptions::default();
+    let fold = FoldOptions::default();
+    let emitted =
+        run_phases(&file, &lexer, &options, &fold, &mem, ResultMode::default());
+    let module = emitted.module?;
+    let world: Box<dyn World> =
+        Box::new(MemWorld::builder().input(sample.input.as_str()).build());
+    let reach = (world, Gate::new(Grants::all()));
+    let options = RunOptions::default();
+    let host = HostData::default();
+    let trap = run_in(&module, &mut Vec::new(), &options, &host, reach, &mut |_, _| {})
+        .1
+        .err()?;
+    Some(place_of(&trap.report(&sm, Backtrace::Off)).to_string())
+}
+
 /// Build a program with the C target, run it with its input, and give
-/// what it printed and the reason it stopped, as its page writes them.
+/// what it printed and the reason it stopped, as its page writes them, and
+/// the place it stopped.
 ///
 /// # Arguments
 ///
@@ -85,8 +152,9 @@ fn without_addresses(text: &str) -> String
 ///
 /// # Returns
 ///
-/// The output, or `None` when the C target cannot build the program.
-fn native_output(cc: &Tool, sample: &Sample) -> Option<String>
+/// The output and the place, or `None` when the C target cannot build the
+/// program.
+fn native_output(cc: &Tool, sample: &Sample) -> Option<(String, String)>
 {
     let mut sm = SourceMap::new();
     let name = FileName::Custom("main.zaka".into());
@@ -135,7 +203,7 @@ fn native_output(cc: &Tool, sample: &Sample) -> Option<String>
     let line = err.lines().find(|l| l.contains(marker)).unwrap_or_default();
     let from = &line[line.find(marker).unwrap_or(0)..];
     let reason = from.rfind(" (in ").map_or(from, |at| &from[..at]);
-    Some(format!("{printed}{reason}\n"))
+    Some((format!("{printed}{reason}\n"), place_of(line).to_string()))
 }
 
 #[test]
@@ -152,11 +220,14 @@ fn each_stop_of_the_books_stops_the_same_way_in_c()
     let all = stops();
     assert!(all.len() > 20, "the books hold their stops: {}", all.len());
     let differ = |(path, s): &(&str, Sample)| {
-        let native = native_output(&cc, s)?;
+        let (native, place) = native_output(&cc, s)?;
+        let vm = vm_place(s).unwrap_or_else(|| "(no stop on the VM)".to_string());
         let same = without_addresses(&native) == without_addresses(&s.expected);
-        let shown =
-            format!("{path}: prints\n{native}not\n{}---\n{}", s.expected, s.source);
-        (!same).then_some(shown)
+        let shown = format!(
+            "{path}: prints\n{native}{place}\nnot\n{}{vm}\n---\n{}",
+            s.expected, s.source
+        );
+        (!same || place != vm).then_some(shown)
     };
     let wrong: Vec<String> = all.iter().filter_map(differ).collect();
     assert!(

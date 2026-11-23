@@ -351,6 +351,7 @@ fn count_line(tmpl: *const c_char, n: u64) -> Vec<u8>
 /// * `pairs` - Each name of its template and its value.
 pub fn stop(trap: i32, pairs: &[(&str, &[u8])]) -> !
 {
+    crate::native::mark_call_site();
     flush_out();
     if let Some((jump, thread)) = crate::threads::leave()
     {

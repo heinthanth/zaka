@@ -31,6 +31,8 @@ use zakac_rust_sugars::tern;
 
 use crate::heap::zk_threads_begin;
 use crate::local::Local;
+use crate::native::NO_SITE;
+use crate::native::at_site;
 use crate::program::ZkKind;
 use crate::seqs::kind;
 use crate::seqs::zk_add_cell;
@@ -895,6 +897,8 @@ pub(crate) fn thread_ended(n: usize, status: i32)
 /// # Arguments
 ///
 /// * `n` - The number of the thread.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 ///
 /// # Returns
 ///
@@ -903,8 +907,9 @@ pub(crate) fn thread_ended(n: usize, status: i32)
 /// thread that stopped at a trap stops the waiter with the trap `thread
 /// trapped`.
 #[unsafe(export_name = stamped!("thread_wait"))]
-pub extern "C" fn zk_thread_wait(n: usize) -> *mut u8
+pub extern "C" fn zk_thread_wait(n: usize, site: u32) -> *mut u8
 {
+    let _at = at_site(site);
     let st = state();
     // A wait took the result of a thread whose row went back.
     let Some(at) = live_row(&st, n)
@@ -957,7 +962,7 @@ pub extern "C" fn zk_thread_taken(n: usize)
 #[unsafe(export_name = stamped!("thread_drop"))]
 pub extern "C" fn zk_thread_drop(n: usize)
 {
-    let data = zk_thread_wait(n);
+    let data = zk_thread_wait(n, NO_SITE);
     let ret = state().threads[row_at(n)].ret;
     do_if!(ret != 0, zk_drop(data, ret as *const ZkKind));
     zk_thread_taken(n);
@@ -1340,13 +1345,16 @@ extern "C" fn map_round(data: *mut u8, i: usize)
 /// * `jump` - The function that jumps back to the guard on a trap.
 /// * `abort` - 1 when a trap stops the whole program.
 /// * `threads` - The count of threads the map was given, 0 for none.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("par_map"))]
 pub extern "C" fn zk_par_map(
     src: *mut u8, src_kind: *const ZkKind, out: *mut u8, out_kind: *const ZkKind,
     step: ZkMapStep, guard: ZkGuard, jump: extern "C" fn(i32), abort: i32,
-    threads: usize,
+    threads: usize, site: u32,
 )
 {
+    let _at = at_site(site);
     let (base, n) = (zk_seq_base(src) as usize, zk_seq_len(src));
     let cell = kind(kind(src_kind).cell).size;
     let ret = kind(kind(out_kind).cell).size;
@@ -1489,9 +1497,12 @@ pub extern "C" fn zk_pipe_send(n: usize, value: *mut u8, k: *const ZkKind)
 /// * `n` - The number of the channel.
 /// * `out` - The optional.
 /// * `k` - The kind of the optional: its fields are the tag and the data.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("pipe_receive"))]
-pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind)
+pub extern "C" fn zk_pipe_receive(n: usize, out: *mut u8, k: *const ZkKind, site: u32)
 {
+    let _at = at_site(site);
     let optional = kind(k);
     let (at, cell) = pipe_at(n);
     let came = || {

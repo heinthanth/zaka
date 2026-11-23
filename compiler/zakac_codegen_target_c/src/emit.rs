@@ -908,6 +908,9 @@ pub(crate) struct FnGen<'s, 'm>
     /// The site the last statement marked, while no branch or loop came
     /// between, so a run of statements of one site marks it once.
     pub(crate) last_site: Option<u32>,
+    /// The source region of the innermost expression being written, whose
+    /// site a check in it names; `None` outside an expression.
+    pub(crate) expr_span: Option<Span>,
 }
 
 impl<'s, 'm> FnGen<'s, 'm>
@@ -926,7 +929,7 @@ impl<'s, 'm> FnGen<'s, 'm>
     {
         #[rustfmt::skip]
         return FnGen { shared, func, out: String::new(), depth: 1, loops: Vec::new(), next: 0,
-            last_site: None };
+            last_site: None, expr_span: None };
     }
 
     /// The bit count of the platform-sized kinds.
@@ -1194,6 +1197,21 @@ impl<'s, 'm> FnGen<'s, 'm>
         self.block(stmts);
         self.last_site = None;
         self.depth -= 1;
+    }
+
+    /// The site a check of the expression being written names, as C text:
+    /// the site of the innermost expression, or `ZK_NO_SITE` outside an
+    /// expression and in a build with no debug info, so the check stops at
+    /// the site of the statement, as the VM does.
+    ///
+    /// # Returns
+    ///
+    /// The C text.
+    pub(crate) fn check_site(&mut self) -> String
+    {
+        let span = self.expr_span.filter(|_| self.shared.options.debug_info);
+        let site = span.and_then(|s| self.shared.site_of(s));
+        site.map_or_else(|| "ZK_NO_SITE".to_string(), |n| format!("{n}u"))
     }
 
     /// Note the site of a statement in the frame of the call, in a build

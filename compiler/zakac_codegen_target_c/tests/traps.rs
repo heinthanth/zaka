@@ -109,6 +109,22 @@ fn a_stop_names_its_line_and_the_calls()
     assert!(!run.stderr.contains("  main"), "{}", run.stderr);
 }
 
+/// A check that fails in the middle of a statement names the column of its
+/// expression, as the VM does.
+#[test]
+fn a_stop_names_the_column_of_its_expression()
+{
+    let Some(cc) = cc()
+    else
+    {
+        return;
+    };
+    let path = root().join("tests/inputs/stop_mid_statement.zaka");
+    let files = c_files(&path, OverflowMode::Stop, Checks::Default).unwrap();
+    let run = compile_and_run(&cc, &files, Checks::Default);
+    assert!(run.stderr.contains("stop_mid_statement.zaka:5:22)"), "{}", run.stderr);
+}
+
 /// A release build keeps no lines: a stop names the function alone.
 #[test]
 fn a_release_build_names_the_function()

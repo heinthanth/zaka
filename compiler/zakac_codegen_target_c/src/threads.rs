@@ -189,8 +189,9 @@ pub fn round_parts(
 fn round_step(shared: &mut Shared<'_>, f: u32) -> String
 {
     let (each, _) = round_parts(shared.module, f, shared.options.platform_bits);
-    let loads =
-        each.iter().map(|(k, at)| format!("zk_ld_{}(zk_b + {at})", shared.mem(*k)));
+    let loads = each
+        .iter()
+        .map(|(k, at)| format!("zk_ld_{}(zk_b + {at}, ZK_NO_SITE)", shared.mem(*k)));
     let args: Vec<String> = std::iter::once("zk_i".to_string()).chain(loads).collect();
     let name = shared.module.funcs[f as usize].name.replace("*/", "* /");
     format!(
@@ -233,14 +234,18 @@ fn map_step(shared: &mut Shared<'_>, f: u32) -> String
     let arg = tern!(
         is_blob(param),
         "zk_l".to_string(),
-        format!("zk_ld_{}(zk_c)", shared.mem(param))
+        format!("zk_ld_{}(zk_c, ZK_NO_SITE)", shared.mem(param))
     );
     let call = match ret
     {
         Some(k) if is_blob(k) => format!("    {}(zk_o, {arg});\n", func_name(f)),
         Some(k) =>
         {
-            format!("    zk_st_{}(zk_o, {}({arg}));\n", shared.mem(k), func_name(f))
+            format!(
+                "    zk_st_{}(zk_o, {}({arg}), ZK_NO_SITE);\n",
+                shared.mem(k),
+                func_name(f)
+            )
         }
         None => format!("    {}({arg});\n", func_name(f)),
     };
@@ -277,7 +282,7 @@ fn step(shared: &mut Shared<'_>, f: u32) -> String
         let arg = match is_blob(k)
         {
             true => place.clone(),
-            false => format!("zk_ld_{}({place})", shared.mem(k)),
+            false => format!("zk_ld_{}({place}, ZK_NO_SITE)", shared.mem(k)),
         };
         args.push(arg);
     }
@@ -288,7 +293,10 @@ fn step(shared: &mut Shared<'_>, f: u32) -> String
     let call_line = match ret
     {
         Some(k) if is_blob(k) => format!("    {};\n", call(Some("zk_b"))),
-        Some(k) => format!("    zk_st_{}(zk_b, {});\n", shared.mem(k), call(None)),
+        Some(k) =>
+        {
+            format!("    zk_st_{}(zk_b, {}, ZK_NO_SITE);\n", shared.mem(k), call(None))
+        }
         None => format!("    {};\n", call(None)),
     };
     format!(
@@ -373,9 +381,10 @@ impl FnGen<'_, '_>
             (self.shared.descr.of(p.src_kind), self.shared.descr.of(p.out_kind));
         let abort = i32::from(self.shared.options.trap_abort);
         let threads = p.threads.map_or_else(|| "0".to_string(), |t| self.place(t));
+        let site = self.check_site();
         self.line(&format!(
             "zk_par_map({src}, {sk}, {out}, {ok}, zk_map_step_{}, zk_thread_guard, \
-             zk_thread_leave, {abort}, {threads});",
+             zk_thread_leave, {abort}, {threads}, {site});",
             p.func
         ));
     }
@@ -477,10 +486,11 @@ impl FnGen<'_, '_>
     {
         let j = self.expr(thread);
         let j = self.spill(thread.kind, j);
-        let at = self.spill(DataKind::OPAQUE, format!("zk_thread_wait({j})"));
+        let site = self.check_site();
+        let at = self.spill(DataKind::OPAQUE, format!("zk_thread_wait({j}, {site})"));
         if !is_blob(kind)
         {
-            let load = format!("zk_ld_{}({at})", self.shared.mem(kind));
+            let load = format!("zk_ld_{}({at}, {site})", self.shared.mem(kind));
             let v = self.spill(kind, load);
             self.line(&format!("zk_thread_taken({j});"));
             return v;
@@ -507,7 +517,8 @@ impl FnGen<'_, '_>
         let p = self.expr(pipe);
         let t = self.temp(kind);
         let d = self.shared.descr.of(kind);
-        self.line(&format!("zk_pipe_receive({p}, {t}, {d});"));
+        let site = self.check_site();
+        self.line(&format!("zk_pipe_receive({p}, {t}, {d}, {site});"));
         t
     }
 

@@ -163,8 +163,9 @@ divide: the program stopped: integer division or remainder with zero as divisor 
 A debug build, the default, names the function and the place of the statement that
 stopped, and lists the calls in progress as the VM does: when more than one call waits,
 the lines after the trap are a stack backtrace, the most recent call first. The place is
-the start of the statement, where the VM names the operation (instruction), so the VM's
-column can be later in the line. `ZAKA_BACKTRACE` works the same as for the VM (see [How a
+the one the VM names: the start of the expression whose check failed, such as a division
+in the middle of a line, or of the statement for a stop of the statement itself. A line of
+the backtrace names the statement of its call. `ZAKA_BACKTRACE` works the same as for the VM (see [How a
 run ends](../vm/running.md#how-a-run-ends)): unset gives a short backtrace, `full` lists
 each call, and `0` none. The C of `main` is left out of the list.
 

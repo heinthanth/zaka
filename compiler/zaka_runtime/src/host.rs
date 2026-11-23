@@ -22,6 +22,8 @@ use zaka_host::time;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::native::NO_SITE;
+use crate::native::at_site;
 use crate::out::emit;
 use crate::out::flush_out;
 use crate::program::ZkKind;
@@ -520,9 +522,12 @@ pub extern "C" fn zk_text_list(at: *mut u8, count: i32, items: *mut *mut c_char)
 ///
 /// * `out` - Where the text goes.
 /// * `s` - What C passed.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("text_of_c"))]
-pub extern "C" fn zk_text_of_c(out: *mut u8, s: *const c_char)
+pub extern "C" fn zk_text_of_c(out: *mut u8, s: *const c_char, site: u32)
 {
+    let _at = at_site(site);
     do_if!(s.is_null(), zk_plain_trap(trap::NULL_FROM_C));
     // SAFETY: C hands a NUL-ended string.
     let raw = unsafe { CStr::from_ptr(s) }.to_bytes();
@@ -540,16 +545,19 @@ pub extern "C" fn zk_text_of_c(out: *mut u8, s: *const c_char)
 /// * `size` - The size of the result.
 /// * `ok_at` - The offset of the text in it.
 /// * `s` - What C gave back.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("text_from_c"))]
 pub extern "C" fn zk_text_from_c(
-    out: *mut u8, size: usize, ok_at: usize, s: *const c_char,
+    out: *mut u8, size: usize, ok_at: usize, s: *const c_char, site: u32,
 )
 {
+    let _at = at_site(site);
     // SAFETY: the result holds `size` octets.
     unsafe { std::ptr::write_bytes(out, 0, size) };
     ret_if!(s.is_null());
     // SAFETY: the text lies in the result.
-    zk_text_of_c(unsafe { out.add(ok_at) }, s);
+    zk_text_of_c(unsafe { out.add(ok_at) }, s, NO_SITE);
     // SAFETY: the tag is the first octet of the result.
     unsafe { *out = 1 };
 }

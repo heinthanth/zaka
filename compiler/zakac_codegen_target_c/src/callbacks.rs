@@ -656,14 +656,22 @@ impl Bridge<'_>
         let fill = match crossing
         {
             Crossing::Struct => format!("memcpy(zk_v{i}, {at}, {size});"),
-            Crossing::Rich => format!("zk_from_c({at}, {d}, zk_v{i});"),
-            Crossing::Text => format!("zk_text_of_c(zk_v{i}, {chars});"),
+            Crossing::Rich => format!("zk_from_c({at}, {d}, zk_v{i}, ZK_NO_SITE);"),
+            Crossing::Text => format!("zk_text_of_c(zk_v{i}, {chars}, ZK_NO_SITE);"),
             Crossing::OptText =>
             {
-                format!("zk_text_from_c(zk_v{i}, {size}, {ok_at}, {chars});")
+                format!(
+                    "zk_text_from_c(zk_v{i}, {size}, {ok_at}, {chars}, ZK_NO_SITE);"
+                )
             }
-            Crossing::Handle => format!("zk_cb_handle(zk_v{i}, {at}, {cells});"),
-            _ => format!("zk_cb_opt_handle(zk_v{i}, {size}, {ok_at}, {at}, {cells});"),
+            Crossing::Handle =>
+            {
+                format!("zk_cb_handle(zk_v{i}, {at}, {cells}, ZK_NO_SITE);")
+            }
+            _ => format!(
+                "zk_cb_opt_handle(zk_v{i}, {size}, {ok_at}, {at}, {cells}, \
+                 ZK_NO_SITE);"
+            ),
         };
         let _ = writeln!(steps, "    {fill}");
         ret_if!(crossing == Crossing::Struct, format!("zk_v{i}"));

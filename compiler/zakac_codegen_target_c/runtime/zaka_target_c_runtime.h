@@ -86,6 +86,17 @@ static inline zk_context *zk_enter(uint32_t func)
 /* clang-format on */
 
 /**
+ * Stop the run at the site of the expression whose check failed: note the
+ * site in the frame of the call, then stop. The site is noted on the failing
+ * branch alone, so the order C gives the arguments of a call never mixes the
+ * sites of two checks.
+ *
+ * @param S The site of the expression, or ZK_NO_SITE.
+ * @param STOP The call of the runtime that stops the run.
+ */
+#define ZK_STOP_AT(S, STOP) (zk_at_site(S), STOP)
+
+/**
  * A safe point of the ring collector at each round of a loop of a program
  * with threads: an OS thread a collection asks to halt waits in it until the
  * collection ends. It reads one flag of the runtime.
@@ -101,30 +112,30 @@ static inline zk_context *zk_enter(uint32_t func)
 #endif
 
 #if ZK_CHECK_NULL
-#define ZK_NULL_CHECK(p) ((p) == NULL ? zk_null_deref(p) : (void)0)
+#define ZK_NULL_CHECK(p, s) ((p) == NULL ? ZK_STOP_AT(s, zk_null_deref(p)) : (void)0)
 #else
-#define ZK_NULL_CHECK(p) ((void)0)
+#define ZK_NULL_CHECK(p, s) ((void)(s))
 #endif
 
 /**
  * A load and a store of a scalar of each C kind through an address:
- * `zk_ld_<N>(p)` and `zk_st_<N>(p, v)`, through memcpy, so each address works
+ * `zk_ld_<N>(p, s)` and `zk_st_<N>(p, v, s)`, through memcpy, so each address works
  * whatever its alignment and its kind.
  *
  * @param N The name of the kind in function names, such as `i32`.
  * @param T The C kind.
  */
 #define ZK_MEM_OPS(N, T)                                                               \
-    static inline T zk_ld_##N(const unsigned char *p)                                  \
+    static inline T zk_ld_##N(const unsigned char *p, uint32_t s)                      \
     {                                                                                  \
         T v;                                                                           \
-        ZK_NULL_CHECK(p);                                                              \
+        ZK_NULL_CHECK(p, s);                                                           \
         memcpy(&v, p, sizeof v);                                                       \
         return v;                                                                      \
     }                                                                                  \
-    static inline void zk_st_##N(unsigned char *p, T v)                                \
+    static inline void zk_st_##N(unsigned char *p, T v, uint32_t s)                    \
     {                                                                                  \
-        ZK_NULL_CHECK(p);                                                              \
+        ZK_NULL_CHECK(p, s);                                                           \
         memcpy(p, &v, sizeof v);                                                       \
     }
 
@@ -188,6 +199,9 @@ ZK_MEM_OPS(fn, zk_fn)
  *   the range at the nearest end, NaN at 0, as Rust converts.
  * - `zk_char_<N>`: the character the value names, or U+FFFD.
  *
+ * Each operation with a check takes `s`, the site of its expression, which
+ * a failed check notes before it stops the run (ZK_STOP_AT).
+ *
  * @param N The name of the kind in function names, such as `i32`.
  * @param T The C kind.
  * @param W An unsigned kind at least as wide as `T` and as `unsigned int`,
@@ -198,52 +212,54 @@ ZK_MEM_OPS(fn, zk_fn)
  */
 #define ZK_SIGNED_OPS(N, T, W, MIN, MAX, BITS)                                         \
     ZK_SMUL_TEST(N, T, MIN, MAX)                                                       \
-    static inline T zk_add_##N(T a, T b, const char *k)                                \
+    static inline T zk_add_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if ((b > 0 && a > (MAX) - b) || (b < 0 && a < (MIN) - b)) zk_overflow("+", k); \
+        if ((b > 0 && a > (MAX) - b) || (b < 0 && a < (MIN) - b))                      \
+            ZK_STOP_AT(s, zk_overflow("+", k));                                        \
         return (T)(a + b);                                                             \
     }                                                                                  \
-    static inline T zk_sub_##N(T a, T b, const char *k)                                \
+    static inline T zk_sub_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if ((b < 0 && a > (MAX) + b) || (b > 0 && a < (MIN) + b)) zk_overflow("-", k); \
+        if ((b < 0 && a > (MAX) + b) || (b > 0 && a < (MIN) + b))                      \
+            ZK_STOP_AT(s, zk_overflow("-", k));                                        \
         return (T)(a - b);                                                             \
     }                                                                                  \
-    static inline T zk_mul_##N(T a, T b, const char *k)                                \
+    static inline T zk_mul_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if (zk_mul_ovf_##N(a, b)) zk_overflow("*", k);                                 \
+        if (zk_mul_ovf_##N(a, b)) ZK_STOP_AT(s, zk_overflow("*", k));                  \
         return (T)((W)a * (W)b);                                                       \
     }                                                                                  \
-    static inline T zk_neg_##N(T a, const char *k)                                     \
+    static inline T zk_neg_##N(T a, const char *k, uint32_t s)                         \
     {                                                                                  \
-        if (a == (MIN)) zk_overflow("neg", k);                                         \
+        if (a == (MIN)) ZK_STOP_AT(s, zk_overflow("neg", k));                          \
         return (T) - a;                                                                \
     }                                                                                  \
     static inline T zk_wadd_##N(T a, T b) { return (T)((W)a + (W)b); }                 \
     static inline T zk_wsub_##N(T a, T b) { return (T)((W)a - (W)b); }                 \
     static inline T zk_wmul_##N(T a, T b) { return (T)((W)a * (W)b); }                 \
     static inline T zk_wneg_##N(T a) { return (T)((W)0 - (W)a); }                      \
-    static inline T zk_div_##N(T a, T b, int stop, const char *k)                      \
+    static inline T zk_div_##N(T a, T b, int stop, const char *k, uint32_t s)          \
     {                                                                                  \
-        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
+        if (ZK_CHECK_DIVIDE && b == 0) ZK_STOP_AT(s, zk_zero_divisor());               \
         if (b != -1 || a != (MIN)) return (T)(a / b);                                  \
-        if (stop) zk_overflow("/", k);                                                 \
+        if (stop) ZK_STOP_AT(s, zk_overflow("/", k));                                  \
         return (MIN);                                                                  \
     }                                                                                  \
-    static inline T zk_rem_##N(T a, T b, int stop, const char *k)                      \
+    static inline T zk_rem_##N(T a, T b, int stop, const char *k, uint32_t s)          \
     {                                                                                  \
-        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
+        if (ZK_CHECK_DIVIDE && b == 0) ZK_STOP_AT(s, zk_zero_divisor());               \
         if (b != -1) return (T)(a % b);                                                \
-        if (stop && a == (MIN)) zk_overflow("%", k);                                   \
+        if (stop && a == (MIN)) ZK_STOP_AT(s, zk_overflow("%", k));                    \
         return 0;                                                                      \
     }                                                                                  \
-    static inline T zk_shl_##N(T a, zk_umax d)                                         \
+    static inline T zk_shl_##N(T a, zk_umax d, uint32_t s)                             \
     {                                                                                  \
-        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) ZK_STOP_AT(s, zk_shift_too_far(d, (BITS))); \
         return (T)((W)a << d);                                                         \
     }                                                                                  \
-    static inline T zk_shr_##N(T a, zk_umax d)                                         \
+    static inline T zk_shr_##N(T a, zk_umax d, uint32_t s)                             \
     {                                                                                  \
-        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) ZK_STOP_AT(s, zk_shift_too_far(d, (BITS))); \
         return a < 0 ? (T) ~(~a >> d) : (T)(a >> d);                                   \
     }                                                                                  \
     static inline T zk_f2i_##N(double x)                                               \
@@ -268,52 +284,52 @@ ZK_MEM_OPS(fn, zk_fn)
  */
 #define ZK_UNSIGNED_OPS(N, T, W, MAX, BITS)                                            \
     ZK_UMUL_TEST(N, T, MAX)                                                            \
-    static inline T zk_add_##N(T a, T b, const char *k)                                \
+    static inline T zk_add_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if (a > (MAX) - b) zk_overflow("+", k);                                        \
+        if (a > (MAX) - b) ZK_STOP_AT(s, zk_overflow("+", k));                         \
         return (T)(a + b);                                                             \
     }                                                                                  \
-    static inline T zk_sub_##N(T a, T b, const char *k)                                \
+    static inline T zk_sub_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if (a < b) zk_overflow("-", k);                                                \
+        if (a < b) ZK_STOP_AT(s, zk_overflow("-", k));                                 \
         return (T)(a - b);                                                             \
     }                                                                                  \
-    static inline T zk_mul_##N(T a, T b, const char *k)                                \
+    static inline T zk_mul_##N(T a, T b, const char *k, uint32_t s)                    \
     {                                                                                  \
-        if (zk_mul_ovf_##N(a, b)) zk_overflow("*", k);                                 \
+        if (zk_mul_ovf_##N(a, b)) ZK_STOP_AT(s, zk_overflow("*", k));                  \
         return (T)((W)a * (W)b);                                                       \
     }                                                                                  \
-    static inline T zk_neg_##N(T a, const char *k)                                     \
+    static inline T zk_neg_##N(T a, const char *k, uint32_t s)                         \
     {                                                                                  \
-        if (a != 0) zk_overflow("neg", k);                                             \
+        if (a != 0) ZK_STOP_AT(s, zk_overflow("neg", k));                              \
         return 0;                                                                      \
     }                                                                                  \
     static inline T zk_wadd_##N(T a, T b) { return (T)((W)a + (W)b); }                 \
     static inline T zk_wsub_##N(T a, T b) { return (T)((W)a - (W)b); }                 \
     static inline T zk_wmul_##N(T a, T b) { return (T)((W)a * (W)b); }                 \
     static inline T zk_wneg_##N(T a) { return (T)((W)0 - (W)a); }                      \
-    static inline T zk_div_##N(T a, T b, int stop, const char *k)                      \
+    static inline T zk_div_##N(T a, T b, int stop, const char *k, uint32_t s)          \
     {                                                                                  \
         (void)stop;                                                                    \
         (void)k;                                                                       \
-        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
+        if (ZK_CHECK_DIVIDE && b == 0) ZK_STOP_AT(s, zk_zero_divisor());               \
         return (T)(a / b);                                                             \
     }                                                                                  \
-    static inline T zk_rem_##N(T a, T b, int stop, const char *k)                      \
+    static inline T zk_rem_##N(T a, T b, int stop, const char *k, uint32_t s)          \
     {                                                                                  \
         (void)stop;                                                                    \
         (void)k;                                                                       \
-        if (ZK_CHECK_DIVIDE && b == 0) zk_zero_divisor();                              \
+        if (ZK_CHECK_DIVIDE && b == 0) ZK_STOP_AT(s, zk_zero_divisor());               \
         return (T)(a % b);                                                             \
     }                                                                                  \
-    static inline T zk_shl_##N(T a, zk_umax d)                                         \
+    static inline T zk_shl_##N(T a, zk_umax d, uint32_t s)                             \
     {                                                                                  \
-        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) ZK_STOP_AT(s, zk_shift_too_far(d, (BITS))); \
         return (T)((W)a << d);                                                         \
     }                                                                                  \
-    static inline T zk_shr_##N(T a, zk_umax d)                                         \
+    static inline T zk_shr_##N(T a, zk_umax d, uint32_t s)                             \
     {                                                                                  \
-        if (ZK_CHECK_SHIFT && d >= (BITS)) zk_shift_too_far(d, (BITS));                \
+        if (ZK_CHECK_SHIFT && d >= (BITS)) ZK_STOP_AT(s, zk_shift_too_far(d, (BITS))); \
         return (T)(a >> d);                                                            \
     }                                                                                  \
     static inline T zk_f2i_##N(double x)                                               \

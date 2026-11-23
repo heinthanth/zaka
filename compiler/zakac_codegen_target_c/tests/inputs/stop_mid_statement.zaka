@@ -1,0 +1,7 @@
+// A division by zero in the middle of a statement stops at the column of the
+// division, as on the VM, not at the start of the statement.
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် သုည သည် ၀ ဟူသော ကိန်းပြည့် တစ်ခု ဖြစ်ပါစေ။
+ကိန်းရှင် က သည် ၁ + (၁၀ / သုည) ဖြစ်ပါစေ။
+က ကို ပြသမည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။

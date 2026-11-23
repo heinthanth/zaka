@@ -10,6 +10,7 @@ use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
+use crate::native::NO_SITE;
 use crate::program::ZkFrame;
 use crate::program::prog;
 use crate::program::prog_ptr;
@@ -27,13 +28,18 @@ pub struct ZkCtx
     pub frames: *mut ZkFrame,
     /// The rows `frames` has room for.
     pub room: usize,
+    /// The site of the expression whose call of the runtime is in progress,
+    /// for a trap inside that call; `NO_SITE` outside such a call. It is kept
+    /// here, not on the OS thread, since a light task that waits goes on on
+    /// another OS thread.
+    pub call_site: u32,
 }
 
 thread_local! {
     /// The calls in progress on this OS thread. No destructor runs on it, so the
     /// collection at the end of the program still reaches it.
     static CTX: UnsafeCell<ZkCtx> =
-        const { UnsafeCell::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 }) };
+        const { UnsafeCell::new(ZkCtx { depth: 0, frames: null_mut(), room: 0, call_site: NO_SITE }) };
     /// The context of the thread this OS thread runs now, when it is not
     /// [`CTX`]: a thread holds its own, so the context that the code of a call
     /// keeps is still the thread's when the thread goes on on another OS
@@ -88,7 +94,8 @@ pub(crate) fn swap_active(ctx: &mut *mut ZkCtx) { *ctx = ACTIVE.replace(*ctx); }
 /// The context.
 pub(crate) fn new_ctx(rows: usize) -> *mut ZkCtx
 {
-    let mut ctx = Box::new(ZkCtx { depth: 0, frames: null_mut(), room: 0 });
+    let mut ctx =
+        Box::new(ZkCtx { depth: 0, frames: null_mut(), room: 0, call_site: NO_SITE });
     do_if!(rows > 0, grow(&mut ctx, rows));
     Box::into_raw(ctx)
 }
@@ -232,7 +239,8 @@ mod tests
     #[test]
     fn a_growth_keeps_the_calls_and_frees_the_table_before()
     {
-        let mut ctx = ZkCtx { depth: 2, frames: null_mut(), room: 0 };
+        let mut ctx =
+            ZkCtx { depth: 2, frames: null_mut(), room: 0, call_site: NO_SITE };
         grow(&mut ctx, 3);
         // SAFETY: the table has 3 rows.
         unsafe { (*ctx.frames.add(2)).func = 7 };

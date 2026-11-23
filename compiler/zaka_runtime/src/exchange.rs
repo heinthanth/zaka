@@ -25,6 +25,8 @@ use crate::heap::move_octets;
 use crate::heap::st;
 use crate::heap::zk_seq_new;
 use crate::host::zk_text_of_c;
+use crate::native::NO_SITE;
+use crate::native::at_site;
 use crate::program::ZkKind;
 use crate::seqs::at;
 use crate::seqs::octets;
@@ -138,22 +140,23 @@ pub extern "C" fn zk_to_c(from: *const u8, k: *const ZkKind, to: *mut u8)
 /// * `from` - The C form.
 /// * `k` - The kind of the value.
 /// * `to` - Where the value goes.
+/// * `site` - The site of the expression that makes the call, for a trap inside
+///   it; `NO_SITE` keeps the site the call runs under.
 #[unsafe(export_name = stamped!("from_c"))]
-pub extern "C" fn zk_from_c(from: *const u8, k: *const ZkKind, to: *mut u8)
+pub extern "C" fn zk_from_c(from: *const u8, k: *const ZkKind, to: *mut u8, site: u32)
 {
+    let _at = at_site(site);
     let k = kind(k);
     match k.tag
     {
-        tag::TEXT => zk_text_of_c(to, ld(from)),
+        tag::TEXT => zk_text_of_c(to, ld(from), NO_SITE),
         tag::SEQ => seq_from_c(from, k, to),
-        tag::LIST =>
-        {
-            each_cell(k, to, from.cast_mut(), &|t, cell, f| zk_from_c(f, cell, t))
-        }
-        tag::STRUCT =>
-        {
-            each_field(k, to, from.cast_mut(), &|t, field, f| zk_from_c(f, field, t))
-        }
+        tag::LIST => each_cell(k, to, from.cast_mut(), &|t, cell, f| {
+            zk_from_c(f, cell, t, NO_SITE)
+        }),
+        tag::STRUCT => each_field(k, to, from.cast_mut(), &|t, field, f| {
+            zk_from_c(f, field, t, NO_SITE)
+        }),
         _ => move_octets(to, from, k.size),
     }
 }
@@ -325,7 +328,12 @@ fn seq_from_c(from: *const u8, k: &ZkKind, to: *mut u8)
     ret_if!(size == 0 || cells.is_null(), zk_seq_put(to, std::ptr::null_mut(), 0, 0));
     let (block, c_size) = (zk_seq_new(size), c_form(cell).0);
     let each = |i: usize| {
-        zk_from_c(at(cells.cast_mut(), i * c_size), k.cell, at(block, i * cell.size))
+        zk_from_c(
+            at(cells.cast_mut(), i * c_size),
+            k.cell,
+            at(block, i * cell.size),
+            NO_SITE,
+        )
     };
     do_for!(i in 0..count, each(i));
     zk_seq_put(to, block, count, size);
