@@ -48,7 +48,10 @@ pub(crate) fn collect_fns(
     }
     let decls = program.stmts.iter().enumerate().filter_map(|(i, s)| {
         let decl = tern!(let Stmt::Fn(decl) = s, Some(decl), None)?;
-        let plain = !decl.start && decl.kind_params.is_empty() && !decl.builtin;
+        // No call names the start block or a test, so neither is a function of
+        // the table.
+        let plain =
+            !decl.start && !decl.test && decl.kind_params.is_empty() && !decl.builtin;
         tern!(plain, Some((program.unit_of(i) as usize, decl)), None)
     });
     do_for!((unit, decl) in decls, add_fn(&mut fns[unit], decl, structs, diags, Some(unit as u32)));

@@ -594,6 +594,13 @@ slot, which the blit fills.
   global `%exit`. `host` (`Host { args, env, exit }`) records the numbers of these
   globals, each `None` when the program start block does not use it. Nothing else in the
   IR, the flow checker or the operations knows about the program start block.
+- A [test block](../language/tests.md) (unit test, `FnDecl::test`) lowers to a function in its
+  place too. With `LowerOptions.test_at` set, which `zakac test` gives as the place where
+  the name of one test starts, that test takes the place of the program start block: it is
+  the function that `main` calls, and the program start block becomes a plain function
+  that nothing calls. Each other test, and each test of a build with no `test_at`, lowers
+  with its statements dropped, to a function with no statements, so a build carries no code
+  of it and each function after it keeps its number.
 - A REPL session lowers each chunk with `LowerOptions.repl_from`, the place where the
   chunk starts. Each variable of the program start block's own scope lives in a global
   (`Frame::session`), with no drop, and `main` ends with no drops of the globals, so the

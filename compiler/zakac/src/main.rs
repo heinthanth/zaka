@@ -18,5 +18,7 @@ fn main() -> std::process::ExitCode
     );
     zaka_vm::comptime::install_with(steps, editor);
     let _ = zaka_vm::cli::JIT_RUNNER.set(zakac_codegen_target_native::cli::run_jit);
+    let _ =
+        zaka_vm::test_run::JIT_TEST.set(zakac_codegen_target_native::cli::run_jit_test);
     executable_main::<cli::Zakac>()
 }

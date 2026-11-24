@@ -537,10 +537,12 @@ To check a result, we use `ထဲတွင် အမှားအယွင်း 
 with `ထဲတွင် ဒေတာ ရှိလျှင်` or give a fallback with `ထဲမှ ဒေတာ၊ မရှိလျှင် <value>`. Nothing
 but a pointer can be null, and reading `ထဲမှ ဒေတာ` from a blank optional stops the program.
 For a mistake that should never happen, an assert (assertion), `<condition> ဖြစ်ရမည်။`,
-stops the program when the condition is false and shows both sides of a comparison.
+stops the program when the condition is false and shows both sides of a comparison. A
+test block (unit test), `<name> ဟူသော စမ်းသပ်ချက် သည် …`, holds asserts that `zakac test`
+runs, as `cargo test` runs a `#[test]` function, and a build leaves it out.
 
-Learn: [Errors and results](error-handling/README.md), [Asserts](error-handling/asserts.md), [Optional values](optionals/README.md).
-Docs: [Errors and results](../manual/language/error-handling.md), [Asserts](../manual/language/asserts.md), [Optional values](../manual/language/optionals.md).
+Learn: [Errors and results](error-handling/README.md), [Asserts](error-handling/asserts.md), [Tests](error-handling/tests.md), [Optional values](optionals/README.md).
+Docs: [Errors and results](../manual/language/error-handling.md), [Asserts](../manual/language/asserts.md), [Tests](../manual/language/tests.md), [Optional values](../manual/language/optionals.md).
 
 ## Generics and traits
 

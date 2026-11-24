@@ -27,6 +27,7 @@
   - [Result kinds](language/result-kinds.md)
   - [Optional values](language/optionals.md)
   - [Asserts](language/asserts.md)
+  - [Tests](language/tests.md)
   - [Lists](language/lists.md)
   - [Counted lists and storage](language/counted-lists.md)
   - [Tables](language/tables.md)

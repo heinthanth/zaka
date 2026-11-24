@@ -17,7 +17,7 @@
                            # message and links the page of Learn or Docs on it
 
 # ------------------------------------------------------------ the compile stages
-# Commands: irgen, borrowck, build, run.
+# Commands: irgen, borrowck, build, run, test.
 
 # fold = "all"             # --fold <LIST>: all, none, or a list of exprs, consts
                            # and branches
@@ -106,6 +106,20 @@
 # allow-ffi = false        # --allow-ffi: call C functions
 # allow-all = false        # --allow-all (-A): each of the four
 # no-permission-prompt = false  # --no-permission-prompt: ask nothing, refuse at once
+
+# -------------------------------------------------------------------- zakac test
+# Commands: test. The flags of the compile stages and the rights of [run] hold
+# here too.
+
+[test]
+# paths = ["tests"]        # --paths <PATH>: the files and folders to read when
+                           # the command line names none
+# filter = "add"           # --filter <WORD>: run the tests whose name holds it
+# jit = false              # --jit: run each test as native code made with
+                           # Cranelift, in a process of its own
+# max-steps = 100000000    # --max-steps <OPS>: the most ops one test runs on the VM
+# time-limit = 60          # --time-limit <SECONDS>: the most seconds one test runs
+                           # with --jit
 
 # ------------------------------------------------------------------- zakac build
 # Commands: build.

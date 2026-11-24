@@ -219,6 +219,7 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::PassFault
         | Kw::WhenDone
         | Kw::Function
+        | Kw::Test
         | Kw::Program
         | Kw::Const
         | Kw::Var

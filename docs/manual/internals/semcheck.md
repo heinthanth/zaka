@@ -205,13 +205,15 @@ once.
 | `--lint-allow`, `--lint-warn`, `--lint-error` | the lint levels |
 | `--comptime-allow-*` | the rights of the comptime runs (`set_grants`) |
 
-These become `SemcheckOptions { platform_bits, lint, no_unsafe, as_module }`, and the
+These become `SemcheckOptions { platform_bits, lint, no_unsafe, as_module, test_at }`, and the
 later stages receive the same options. `no_unsafe` comes from `--no-unsafe` of the later
 commands (`irgen` and on), and the `semcheck` command leaves it off. `SemcheckOptions::levels`
 returns the lint levels, which `settled` uses while the program is read and `check_loaded`
 after the check, so an allowed code stops no pass. The option `as_module` has no flag: the
-language server sets it for an open module, and the check then asks for no program start
-block (ZK0327).
+language server sets it for an open module or a file of tests, and `zakac test` for each
+file it reads, and the check then asks for no program start block (ZK0327). `test_at`
+has no flag either: `zakac test` sets it to the place where the name of the test to run
+starts, and the lowering receives it as `LowerOptions::test_at`.
 
 ### References for the editors
 
@@ -543,9 +545,11 @@ there.
 
 `start_rules` looks at the file that is run before the walk: a second program start block
 is ZK0325, each top-level statement that runs is ZK0326, and a file with no program start
-block is ZK0327, reported at its start. `collect_fns` leaves the program start block out
-of the function map, so no call finds it. `visit_fn` checks it as a function, then checks
-its function signature with `check_start_header`: at most two parameters, each a plain
+block is ZK0327, reported at its start. `collect_fns` leaves the program start block and
+each [test block](../language/tests.md) (unit test, `FnDecl::test`) out of the function map, so no
+call finds them: a call of the name of a test is ZK0303, and a test can share its name
+with a function. `visit_fn` checks each of them as a function, and the program start
+block then has its function signature checked with `check_start_header`: at most two parameters, each a plain
 `စာသား စာရင်း` that the function cannot change (ZK0440), and no result or an integer one;
 a result kind is ZK0441.
 

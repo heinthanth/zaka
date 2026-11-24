@@ -82,6 +82,8 @@ modules and unsafe code. Follow the links to Learn for worked examples.
 | [Reading a result](reading-results.md) | keeping a whole result, testing which part it contains, and reading each part |
 | [Result kinds](result-kinds.md) | how to write a result kind, sides with no value, and lists and pointers of results |
 | [Optional values](optionals.md) | the optional kind (option type), the blank `အလွတ်`, and the reason Zaka has no NULL |
+| [Asserts](asserts.md) | the assert (assertion) and the debug assert, their messages, and the text of the stop |
+| [Tests](tests.md) | the test block (unit test), and how `zakac test` finds, runs and reports the tests |
 
 ### Data
 

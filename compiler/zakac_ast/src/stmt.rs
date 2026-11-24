@@ -586,6 +586,12 @@ pub struct FnDecl
     #[builder(default)]
     #[serde(default)]
     pub comptime: bool,
+    /// `true` for a test block, `<name> ဟူသော စမ်းသပ်ချက် သည် …`: it takes no
+    /// parameters and gives no result, no call can name it, and `zakac test`
+    /// runs it in place of the start block.
+    #[builder(default)]
+    #[serde(default)]
+    pub test: bool,
     /// `true` for the start block, where the program starts; no call can
     /// name it.
     #[builder(default)]

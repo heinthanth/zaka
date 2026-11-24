@@ -30,6 +30,7 @@ made, the *artifact*, while `run` goes to the end and runs the program.
 | `borrowck` (or `mkbck`) | run the flow checks and the pointer lint | the IR and a digest of each function | `.zkbck` / `.zkbckt` |
 | `build` | build the program for a target | the operations (instructions) of the VM, an executable or a lib (library) | `.zkc` / `.zkct` for the VM |
 | `run` | run the program | nothing: the program runs | |
+| `test` | run the [test blocks](../language/tests.md) (unit tests) of files and folders | a line for each test, and a count | |
 | `repl` | run statements as we write them, with no program start block | nothing: each statement runs | |
 | `lsp` | serve an editor | errors, colors and hovers, to the editor | |
 | `fmt` | format source files | each file, in place, or the formatted text | |
@@ -147,7 +148,7 @@ that were made when the artifact was written.
 ## Options of the compile stages
 
 The flags below steer the stages from `semcheck` on. Each group belongs to the stage named
-in its heading, to the stages after it, and to `build` and `run`.
+in its heading, to the stages after it, and to `build`, `run` and `test`.
 
 ### From `semcheck` on: the platform, lints and comptime rights
 
@@ -214,7 +215,7 @@ without it, the IR has the constant `3`.
 
 ### For the VM: results and scratch values
 
-These two belong to `build --backend vm` and to `run`, and change how the VM sets out its
+These two belong to `build --backend vm`, `run` and `test`, and change how the VM sets out its
 frames:
 
 | Flag | Value | Default | What it does |
@@ -233,7 +234,7 @@ results](../language/functions-results.md#lists-and-structs-as-results).
 | --- | --- | --- | --- |
 | `--release` | | off | build for release: leave out the source region of each operation, the embedded source, the imported files and the diagnostics of the artifact |
 
-`--release` belongs to each target of `build` and to `run`. A stop in a release build
+`--release` belongs to each target of `build`, to `run` and to `test`. A stop in a release build
 names the function and the index of the operation instead of the line (see [How a run
 ends](../vm/running.md#how-a-run-ends)), while a `.zkc` or `.zkct` built without
 `--release` keeps its lines, so `zakac run age.zkct` shows them. For the C and native
@@ -511,6 +512,56 @@ trap.zaka: the program stopped: integer division or remainder with zero as divis
 the heap when we give it and not otherwise, and `--shuffle-thread-order` cannot go with
 it. The `zaka_vm` program carries no Cranelift and runs each program on the VM.
 
+## test
+
+Run the [test blocks](../language/tests.md) (unit tests) of files and folders, each in a VM of
+its own.
+
+```text
+zakac test [flags] [PATH]...
+```
+
+Each `PATH` is a file or a folder, and a folder gives each `.zaka` file under it and its
+subfolders; the files of all the paths are sorted together. `test` runs the tests of each
+file and of each file it imports, each test once, in place of the program start block,
+and checks each file as a module, so a file of tests needs no program start block.
+
+`test` uses all the [compile flags](#options-of-the-compile-stages), `--overflow`,
+`--results`, `--scratch` and `--release`, and the rights flags of [run](#run):
+`--allow-read`, `--allow-write`, `--allow-env`, `--allow-ffi`, `-A` and
+`--no-permission-prompt`. It adds these:
+
+| Flag | Value | Default | What it does |
+| --- | --- | --- | --- |
+| `[PATH]...` | files and folders | the paths of `--paths` | where to find the tests |
+| `--paths` | `<PATH>`, or a comma list | `tests` | the files and folders to read when the command line names none |
+| `--filter` | `<WORD>` | | run the tests whose name, `<file>::<test>`, holds the word, and no other |
+| `--jit` | | off | run each test as native code made with Cranelift, in a process of its own, as `run --jit` runs a program |
+| `--max-steps` | `<OPS>` | `100000000` | the most operations one test runs on the VM; a test that runs more stops and fails |
+| `--time-limit` | `<SECONDS>` | `60` | the most seconds one test runs with `--jit`, where no operations are counted; a test that runs longer is killed and fails |
+
+```console
+$ zakac test
+test src/math.zaka::နှစ်ဆ ... ok
+test tests/math_test.zaka::သုည ... ok
+test tests/math_test.zaka::ဆယ် ... ok
+
+test result: ok. 3 passed, 0 failed
+$ zakac test --filter သုည tests
+test tests/math_test.zaka::သုည ... ok
+
+test result: ok. 1 passed, 0 failed
+```
+
+A test that fails shows `FAILED`, then what it printed and its stop, indented with two
+spaces. The exit code is 0 when each test passed and 1 when a test failed or a file did
+not compile; a path that does not exist gives 3 before a test runs. `--max-steps` does
+not hold under `--jit`, and `--time-limit` does not hold on the VM.
+[Tests](../language/tests.md#the-output) shows the whole output.
+
+In a config file, the `[test]` section holds these flags, as `paths = ["tests", "src"]`,
+`filter = "math"`, `jit = true`, `max-steps = 100000000` and `time-limit = 60`.
+
 ## repl
 
 Run statements as we write them, as a REPL (read-eval-print loop) does.
@@ -752,7 +803,7 @@ that is set wins over the file.
 | Code | Meaning |
 | --- | --- |
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
-| 1 | an error in the program, or the program stopped |
+| 1 | an error in the program, or the program stopped; for `test`, a test failed |
 | 2 | a mistake on the command line, such as an unknown flag or a value the flag does not accept |
 | 3 | a file could not be read or written, a config file has a mistake (a wrong value among them), or a flag does not go with the target of `build` |
 | other | for `run`, the result of the program start block, its lowest 8 bits |

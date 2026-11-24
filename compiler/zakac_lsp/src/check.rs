@@ -268,8 +268,9 @@ fn std_replica(module: &str) -> Option<PathBuf>
 #[cfg(target_arch = "wasm32")]
 fn std_replica(_module: &str) -> Option<PathBuf> { None }
 
-/// Whether an open file is a module for other files: it exports a name and
-/// has no start block. A module is checked with no start block required.
+/// Whether an open file is a module for other files, or a file of tests: it
+/// exports a name or holds a test block, and has no start block. A module is
+/// checked with no start block required.
 ///
 /// # Arguments
 ///
@@ -281,7 +282,7 @@ fn std_replica(_module: &str) -> Option<PathBuf> { None }
 fn is_module(lexed: &LexOutput) -> bool
 {
     let has = |kw| lexed.tokens.iter().any(|t| t.kind == TokenKind::Kw(kw));
-    has(Kw::Export) && !has(Kw::Program)
+    (has(Kw::Export) || has(Kw::Test)) && !has(Kw::Program)
 }
 
 /// The message of a compiler panic.

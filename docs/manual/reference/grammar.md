@@ -81,7 +81,7 @@ See [Source text and words](../language/words.md) and
 
 ```text
 file         = { import } { top-item } ;
-top-item     = declaration | start-block ;        (* another statement here is ZK0326 *)
+top-item     = declaration | start-block | test-decl ;  (* another statement here is ZK0326 *)
 import       = string-lit "မှ" items(name) ( "ကို" | "တို့ကို" ) "ထည့်သွင်းမည်" "။"
              | string-lit "ကို" "ထည့်သွင်းမည်" "။"
              | string-lit "ကို" "ပြန်လည်" "မျှဝေမည်" "။"
@@ -90,9 +90,15 @@ start-block  = "ပရိုဂရမ်" "သည်" [ params "လက်ခံ�
                { stmt }
                "ပရိုဂရမ်" done "။" ;
 done         = "ပြီးဆုံးပါပြီး" | "ပြီးဆုံးပါပြီ" | "ပြီးပါပြီး" | "ပြီးပါပြီ" ;
+test-decl    = name "ဟူသော" ( "စမ်းသပ်ချက်" | "စမ်းသပ်မှု" ) "သည်" fn-open "။"
+               [ notes ]
+               { stmt }
+               block-close "။" ;              (* a result, or a test in a block, is ZK0267 *)
 ```
 
-The last two forms are shares. For an import or a share after another statement, or
+A test block (unit test) is a function with no parameters that `zakac test` runs in place of the
+program start block; see [Tests](../language/tests.md). The last two forms of `import` are
+shares. For an import or a share after another statement, or
 inside a block, the parser reads it and reports an error. See
 [Modules](../language/modules.md) and
 [The program start block](../language/functions-start-block.md).

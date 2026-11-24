@@ -273,6 +273,7 @@ program:
       exported: false
       unchecked: false
       comptime: false
+      test: false
       start: true
       builtin: false
       external: false

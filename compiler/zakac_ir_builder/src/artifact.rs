@@ -112,6 +112,7 @@ pub fn run_loaded(
     let lower_options = LowerOptions::builder()
         .platform_bits(options.platform_bits)
         .debug_asserts(options.debug_asserts)
+        .maybe_test_at(options.test_at)
         .build();
     let plain =
         lower(&checked.program, &checked.kinds, &checked.structs, &lower_options);

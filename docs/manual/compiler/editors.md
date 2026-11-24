@@ -76,7 +76,9 @@ ships with `zakac`, so it matches the version of the compiler. See
 The server checks the files that the editor has open from their unsaved text, and reads
 each other file from the disk. A file that exports a name (`အများသုံးနိုင်သော`) and has no
 program start block is a module that other files import, so the server checks it as one:
-it needs no program start block, and ZK0327 is not reported for it. A change to one open
+it needs no program start block, and ZK0327 is not reported for it. So is a file with a
+[test block](../language/tests.md) (unit test) and no program start block, which `zakac test` checks
+as a module too. A change to one open
 file checks the other open files again, since one can import another. While a line does
 not parse, the compiler stops before the check, but the server checks the rest of the
 file all the same, so hover, going to a declaration and completion keep working, and it

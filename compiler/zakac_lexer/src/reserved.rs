@@ -208,6 +208,8 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ကိန်းရှင်", Kw::Var),
     ("တန်ဖိုး", Kw::Value),
     ("လုပ်ဆောင်ချက်", Kw::Function),
+    ("စမ်းသပ်ချက်", Kw::Test),
+    ("စမ်းသပ်မှု", Kw::Test),
     ("ပရိုဂရမ်", Kw::Program),
     ("ရလဒ်", Kw::Result),
     ("ရလဒ်ကောင်း", Kw::GoodResult),

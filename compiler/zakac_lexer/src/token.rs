@@ -576,6 +576,9 @@ pub enum Kw
     Value,
     /// `လုပ်ဆောင်ချက်`
     Function,
+    /// `စမ်းသပ်ချက်` or `စမ်းသပ်မှု`, "a test": after `<name> ဟူသော`, it opens a
+    /// test block, which `zakac test` runs
+    Test,
     /// `ပရိုဂရမ်`: opens the start block, as in `ပရိုဂရမ်သည်`
     Program,
     /// `ရလဒ်`

@@ -286,3 +286,42 @@ en = "malformed ops in %{func}: %{reason}"
 
 [vm.vet.module]
 en = "malformed ops: %{reason}"
+
+[vm.test.about]
+en = "Run the test blocks (<name> ဟူသော စမ်းသပ်ချက်) of the files and folders it is given, and of the files these import, each in a VM of its own."
+
+[vm.test.paths]
+en = "Files and folders to read; a folder gives each .zaka file under it. With none, the command reads the paths of --paths."
+
+[vm.test.search]
+en = "Files and folders to read when the command line names none, as the paths setting of [test] in zakac.toml does."
+
+[vm.test.filter]
+en = "Run the tests whose name, <file>::<test>, holds this word, and no other."
+
+[vm.test.line]
+en = "test %{name} ... %{state}"
+
+[vm.test.ok]
+en = "ok"
+
+[vm.test.failed]
+en = "FAILED"
+
+[vm.test.stopped]
+en = "  %{stop}"
+
+[vm.test.result]
+en = "test result: %{state}. %{passed} passed, %{failed} failed"
+
+[vm.test.jit]
+en = "Run each test as native code made with Cranelift, in a process of its own, as zakac run --jit runs a program."
+
+[vm.test.max_steps]
+en = "The most ops one test runs on the VM; a test that runs more stops and fails."
+
+[vm.test.time_limit]
+en = "The most seconds one test runs with --jit, where no ops are counted; a test that runs longer is killed and fails."
+
+[vm.test.time_out]
+en = "the test ran past %{seconds} seconds and was killed"

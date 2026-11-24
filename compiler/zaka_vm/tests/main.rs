@@ -16,6 +16,7 @@ mod samples;
 mod select;
 mod spoken;
 mod stepping;
+mod test_run;
 mod text_consts;
 mod threads;
 mod trait_values;

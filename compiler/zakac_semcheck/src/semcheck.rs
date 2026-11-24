@@ -221,6 +221,10 @@ pub struct SemcheckOptions
     /// program start block, so the file can leave the block out.
     #[builder(default)]
     pub repl: bool,
+    /// The test that `zakac test` runs in place of the start block, named by
+    /// the place where its name starts; `None` for a plain build, where each
+    /// test lowers to an empty function.
+    pub test_at: Option<u32>,
     /// Whether the lowering keeps the debug asserts; the check reads each
     /// assert whatever this holds.
     #[builder(default = true)]
@@ -2708,7 +2712,7 @@ impl Visitor for Checker
 
     fn visit_fn(&mut self, n: &FnDecl)
     {
-        do_if!(!n.start, self.refer(&n.name.name, n.name.span, n.name.span));
+        do_if!(!n.start && !n.test, self.refer(&n.name.name, n.name.span, n.name.span));
         // A function inside a function shares the locals around it that it
         // names, and the walk of the outer one goes on after it.
         let nested = self.func.is_some();

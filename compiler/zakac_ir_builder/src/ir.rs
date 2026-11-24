@@ -1429,6 +1429,10 @@ pub struct LowerOptions
     /// session text, the code of the imported files is left out too: it ran
     /// with the first chunk.
     pub repl_from: Option<u32>,
+    /// The test to run in place of the start block, named by the place where
+    /// its name starts; each other test lowers to an empty function, which
+    /// keeps the numbers of the functions after it.
+    pub test_at: Option<u32>,
     /// Whether the debug asserts, those after `ပရိုဂရမ်ရေးသားချိန်တွင်`, are
     /// kept; `--debug-asserts off` drops them. The check reads them all the
     /// same.

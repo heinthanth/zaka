@@ -90,7 +90,7 @@ max-depth = 8192        # run alone
 ```
 
 The sections are the names of the commands: `segment`, `lex`, `parse`, `semcheck`,
-`irgen`, `borrowck`, `build`, `run`, `lsp` and `fmt`. The program of one stage reads the
+`irgen`, `borrowck`, `build`, `run`, `test`, `lsp` and `fmt`. The program of one stage reads the
 section of its command, as that command does: `zakac_lexer` reads `[lex]`, `zaka_vm` reads
 `[run]`, the code generators read `[build]`, and `zakafmt` reads `[fmt]`. The editors read
 the `[fmt]` section of the nearest `zakac.toml` to format a file:
@@ -100,6 +100,17 @@ the `[fmt]` section of the nearest `zakac.toml` to format a file:
 indent = 2                      # two spaces for each level of block depth
 speech-mode = "spoken"          # reserved words in their spoken spellings
 import-order = "sorted"         # the stdlib imports first
+```
+
+`zakac test` reads `[test]`, where `paths` names the files and folders of the
+[tests](../language/tests.md) when the command line names none:
+
+```toml
+[test]
+paths = ["tests", "src"]        # read both folders
+filter = "math"                 # run the tests whose name holds "math"
+jit = true                      # run each test as native code
+time-limit = 60                 # the most seconds of one test with jit
 ```
 
 ## Values

@@ -5,6 +5,7 @@ pub mod machine;
 pub mod mem;
 pub mod print;
 mod statics;
+pub mod test_run;
 pub mod trap;
 pub mod vet;
 

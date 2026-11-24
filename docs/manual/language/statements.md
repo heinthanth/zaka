@@ -65,6 +65,7 @@ square brackets mark a part that can be left out.
 | return | `<value> ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။` | [Calls and returns](#calls-and-returns) |
 | function | `<name> ဟူသော လုပ်ဆောင်ချက် သည် …` | [Functions](functions.md) |
 | program start block | `ပရိုဂရမ်သည် …`, at most one | [Functions](functions-start-block.md) |
+| test block | `<name> ဟူသော စမ်းသပ်ချက် သည် …`, at the top level | [Tests](tests.md) |
 | add a cell | `<place> ထဲသို့ <value> ကို ထည့်မည်။` | [Lists](lists.md#adding-and-removing-cells) |
 | add to text | `<text> ထဲသို့ <value> ကို ထည့်မည်။` | [Text](text.md#changing-text) |
 | remove a cell | `<place> ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်။` | [Lists](lists.md#adding-and-removing-cells) |

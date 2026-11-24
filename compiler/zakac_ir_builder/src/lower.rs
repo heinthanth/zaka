@@ -118,7 +118,7 @@ pub fn lower(
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs).traits(trait_decls(program))
         .top_count(top_count as u32).platform(options.platform_bits)
         .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
-        .maybe_repl_from(options.repl_from).debug_asserts(options.debug_asserts).build();
+        .maybe_repl_from(options.repl_from).debug_asserts(options.debug_asserts).maybe_test_at(options.test_at).build();
     lowerer.scopes.push(HashMap::new());
     lowerer.nested.push(HashMap::new());
     lowerer.drops.push(Vec::new());
@@ -691,6 +691,9 @@ struct Lowerer<'k>
     /// In a REPL session, where the new chunk starts; see
     /// [`LowerOptions::repl_from`].
     repl_from: Option<u32>,
+    /// The test to run in place of the start block; see
+    /// [`LowerOptions::test_at`].
+    test_at: Option<u32>,
     /// Whether debug asserts are kept; see [`LowerOptions::debug_asserts`].
     #[builder(default = true)]
     debug_asserts: bool,
@@ -1042,8 +1045,20 @@ impl Lowerer<'_>
         let params = f.params.iter().map(|p| param_kind(p, self.structs)).collect();
         let ret = f.ret.as_ref().map(|k| DataKind::from_ast(k, self.structs).repr());
         let index = self.funcs.len() as u32;
-        do_if!(f.start, self.start = Some((index, params, ret, f.name.span)));
-        let func = self.func(f, None, &[]);
+        let run = f.test && self.test_at == Some(f.name.span.lo.as_u32());
+        // A test run in place of the start block leaves the start block out.
+        let start = f.start && self.test_at.is_none();
+        do_if!(start || run, self.start = Some((index, params, ret, f.name.span)));
+        // Each other test is an empty function, so a build carries no code of
+        // it, and each function after it keeps its number.
+        let mut empty = None;
+        if f.test && !run
+        {
+            let mut stub = f.clone();
+            stub.block.stmts.clear();
+            empty = Some(stub);
+        }
+        let func = self.func(empty.as_ref().unwrap_or(f), None, &[]);
         self.funcs.push(func);
     }
 

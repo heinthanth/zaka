@@ -275,6 +275,7 @@ impl Parser<'_>
     fn parse_stmt_node(&mut self) -> PResult<Stmt>
     {
         ret_if!(self.at_kind_decl(), self.parse_kind_decl());
+        ret_if!(self.at_test_decl(), self.parse_test_decl());
         ret_if!(self.at_fn_decl(), self.parse_fn_decl());
         ret_if!(self.at_builtin_kind(), self.parse_builtin_kind());
         ret_if!(self.at_trait_decl(), self.parse_trait_decl());
@@ -1460,6 +1461,57 @@ impl Parser<'_>
     ///
     /// `true` if one does.
     pub(crate) fn at_fn_decl(&self) -> bool { fn_head_at(self.cur.rest()).is_some() }
+
+    /// Whether a test block starts here: `<name> ဟူသော စမ်းသပ်ချက် သည်`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if one does.
+    fn at_test_decl(&self) -> bool
+    {
+        let named = matches!(self.peek().kind, TokenKind::Ident | TokenKind::RawIdent);
+        let words = [Kw::Called, Kw::Test, Kw::Thi];
+        named
+            && words
+                .iter()
+                .enumerate()
+                .all(|(i, w)| self.peek_n(i + 1).kind == TokenKind::Kw(*w))
+    }
+
+    /// Parse a test block: `<name> ဟူသော စမ်းသပ်ချက် သည် အောက်ပါတို့ကို
+    /// လုပ်ဆောင်မည်။ … လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။`. A test inside a block, or
+    /// one that gives a result, is parsed and reported.
+    ///
+    /// # Returns
+    ///
+    /// The test, a function with its test mark, or a diagnostic.
+    fn parse_test_decl(&mut self) -> PResult<Stmt>
+    {
+        let start = self.peek().span;
+        let top = !self.nested();
+        let name = self.parse_ident()?;
+        self.advance();
+        self.advance();
+        self.advance();
+        let mut stmt =
+            self.parse_fn_block(start, name, false, Vec::new(), Vec::new())?;
+        let Stmt::Fn(node) = &mut stmt
+        else
+        {
+            return Ok(stmt);
+        };
+        node.test = true;
+        let name = node.name.name.to_string();
+        do_if!(
+            !self.test_names.insert(name.clone()),
+            self.diags.push(diag::test_twice(node.name.span, &name))
+        );
+        do_if!(
+            !top || node.ret.is_some(),
+            self.diags.push(diag::test_shape(node.name.span))
+        );
+        Ok(stmt)
+    }
 
     /// Whether a struct or an enumeration declaration starts here:
     /// `<name> ဟူသော`, then the marks `အများသုံးနိုင်သော` or `မျှဝေနိုင်သော`, then

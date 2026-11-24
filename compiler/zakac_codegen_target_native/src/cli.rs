@@ -68,11 +68,60 @@ pub fn run_jit(
     matches: &ArgMatches, io: &mut CommandIO<'_>, gate: Gate, args: Vec<String>,
 ) -> Option<ExitCode>
 {
+    let input = Input::from(matches.get_one::<String>("input").map(String::as_str));
+    run_jit_input(matches, io, (gate, args), (input, semcheck_options(matches)))
+}
+
+/// Run one test of a file with the JIT, in place of the start block: the
+/// run `zakac test --jit` makes in a process of its own for each test, since
+/// a stop of native code ends its process.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of `zakac test`.
+/// * `io` - The standard streams.
+/// * `path` - The file.
+/// * `semcheck` - The check options, which name the test.
+///
+/// # Returns
+///
+/// The exit code.
+#[cfg(feature = "jit")]
+pub fn run_jit_test(
+    matches: &ArgMatches, io: &mut CommandIO<'_>, path: &std::path::Path,
+    semcheck: zakac_semcheck::semcheck::SemcheckOptions,
+) -> ExitCode
+{
+    let name = path.display().to_string().replace(std::path::MAIN_SEPARATOR, "/");
+    let run = (zaka_vm::cli::run_gate(matches), vec![name]);
+    let source = (Input::File(path.to_path_buf()), semcheck);
+    run_jit_input(matches, io, run, source).unwrap_or(ExitCode::Failure)
+}
+
+/// Run a program with the JIT, from its input and its check options.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the command.
+/// * `io` - The standard streams.
+/// * `run` - The rights of the run, and the arguments of the start block.
+/// * `source` - The input, and the check options.
+///
+/// # Returns
+///
+/// The exit code, or `None` for a program the JIT cannot run with no `--jit`.
+#[cfg(feature = "jit")]
+fn run_jit_input(
+    matches: &ArgMatches, io: &mut CommandIO<'_>, run: (Gate, Vec<String>),
+    source: (Input, zakac_semcheck::semcheck::SemcheckOptions),
+) -> Option<ExitCode>
+{
+    let (gate, args) = run;
+    let (input, semcheck) = source;
     // With no `--jit`, a program the JIT cannot run goes to the VM, which
     // checks it again and writes each diagnostic.
     let asked = matches.get_flag("jit");
     let info = CommandInfo::new("zakac run", env!("CARGO_PKG_VERSION"));
-    let input = Input::from(matches.get_one::<String>("input").map(String::as_str));
     let mut source_map = SourceMap::new();
     let source = load_artifact::<Arc<SourceFile>>(
         &input,
@@ -84,7 +133,7 @@ pub fn run_jit(
     let target = target_from(matches, BuildTarget::Native);
     // Native code holds the addresses of the host: platform kinds of another
     // width would size and place each value wrong.
-    let bits = semcheck_options(matches).platform_bits;
+    let bits = semcheck.platform_bits;
     let host_bits = usize::BITS as u16;
     let width = (bits != host_bits).then(|| Error::NotForNative {
         what: format!("--target-bits {bits} on a host of {host_bits} bits"),
@@ -94,7 +143,6 @@ pub fn run_jit(
     {
         return asked.then(|| report_command_error(io, &info, error));
     }
-    let semcheck = semcheck_options(matches);
     let source = source.unwrap();
     let loaded = zakac_semcheck::open_chains::load_settled(
         &source,

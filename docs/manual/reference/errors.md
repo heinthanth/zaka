@@ -148,6 +148,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0264 | a wait on several channels whose opener has no arm of a channel after it | [Threads](../language/threads.md#waiting-on-several-channels) |
 | ZK0265 | a wait on several channels with both a time limit and an arm of no data | [Threads](../language/threads.md#waiting-on-several-channels) |
 | ZK0266 | two marks of a declaration head with no `၊` between them | [Declarations](../language/declarations.md#marks) |
+| ZK0267 | a test block inside a function or a block, or one that gives a result | [Tests](../language/tests.md#mistakes) |
+| ZK0268 | two tests of one name in one file | [Tests](../language/tests.md#mistakes) |
 
 ### ZK03: names
 

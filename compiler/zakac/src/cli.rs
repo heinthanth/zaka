@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bon::Builder;
 use zaka_vm::cli::ZakaVm;
+use zaka_vm::test_run::ZakaTest;
 use zakac_borrow_checker::cli::ZakacBorrowChecker;
 use zakac_burmese_segmenter::cli::ZakacBurmeseSegmenter;
 use zakac_cli_common::clap;
@@ -87,6 +88,7 @@ impl Command for Zakac
             .add_subcommand::<ZakacBorrowChecker>(Some("borrowck"))
             .add_subcommand::<ZakacBuild>(Some("build"))
             .add_subcommand::<ZakaVm>(Some("run"))
+            .add_subcommand::<ZakaTest>(Some("test"))
             .add_subcommand::<ZakacRepl>(Some("repl"))
             .add_subcommand::<ZakacLsp>(Some("lsp"))
             .add_subcommand::<ZakacFormatter>(Some("fmt"))

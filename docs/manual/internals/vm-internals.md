@@ -57,6 +57,26 @@ back to the clone when the chunk traps. When the REPL runs the whole session aga
 chunks on a world in storage, stepping until the next operation is code of the new chunk
 (`in_chunk`), then sets the terminal world and the rights of the session and runs on.
 
+`zakac test` lives in `zaka_vm/src/test_run.rs` (`ZakaTest`). It walks the paths into a
+sorted list of `.zaka` files, loads each file with its imports, and finds the [test
+blocks](../language/tests.md) (unit tests) of the file and of the files it imports (`found_tests`),
+keeping each test once across the files and those whose name holds the
+word of `--filter`. It builds the program once with no test chosen, to write its
+diagnostics a single time (`compiles`), then builds it again for each test, with
+`SemcheckOptions::test_at` set to the place of the name of that test, and runs the module
+on a new machine through `run_in`, with the rights of `run` (`run_gate`). The output of the
+program goes to a buffer, which the command writes out when the test fails, together with
+each stop of the run, a stop of a thread included. The machine stops a test after
+`--max-steps` operations, as `run` does. A file that does not compile, and in which the
+parser found no test, writes one line for the file and counts one failure.
+
+With `--jit`, a stop of native code ends its process, so `run_jit_test` starts `zakac`
+again for each test, with hidden flags that name the file and the place of the test;
+that process (`one_jit_test`) builds the program with the test in place of the program
+start block and runs it as `run --jit` does. The parent reads its output and stop and
+waits for it no longer than `--time-limit` (`wait_limited`), and kills a process that
+runs past it.
+
 ## Calls and frames
 
 `call f` takes one block of the stack region for each local of `f`
@@ -478,6 +498,6 @@ target](c-backend.md#c-functions).
 
 `zaka_vm/tests` has `machine.rs` (hand-built modules, malformed operations included, which
 must trap and not panic), `traps.rs`, `heap.rs`, `rings.rs`, `threads.rs`, `callbacks.rs`,
-`host.rs`, `stepping.rs`, and `samples.rs`, which runs each program in `samples/` outside
+`host.rs`, `stepping.rs`, `test_run.rs` (the runs of `zakac test` over the files of `tests/inputs/test_blocks`), and `samples.rs`, which runs each program in `samples/` outside
 `diagnostics` and `mistakes` and compares its output with
 `tests/expected/<group>/<name>.out`.

@@ -48,6 +48,7 @@ The tests that run first, in this order:
 | Test | Form | Goes to |
 | --- | --- | --- |
 | `at_kind_decl` | `<name> ဟူသော [marks] ဒေတာအစုအဝေး\|ဒေတာအမျိုးအစားကွဲ` | `parse_kind_decl`: a struct or an enumeration |
+| `at_test_decl` | `<name> ဟူသော စမ်းသပ်ချက် သည်` | `parse_test_decl`: a test block (unit test); see [Test blocks](#test-blocks) |
 | `at_fn_decl` | `<name> [<…>] ဟူသော [marks] လုပ်ဆောင်ချက် သည်` | `parse_fn_decl`: a function |
 | `at_builtin_kind` | a data kind name, `စာရင်း` or `ဇယား`, then `သည်` and the compiler mark or kind parameters | `parse_builtin_kind` |
 | `at_trait_decl` | a name, its kind parameters, then `ဟူသည့်` | `parse_trait_decl` |
@@ -228,6 +229,24 @@ is `Stmt::Assert(AssertStmt { cond, debug, message, span })`, written `(assert .
 glued to `ရမည်`, such as `ငယ်ရမည်`, is no assert and ends as ZK0208. The check of names
 and data kinds tests the condition as that of an `if` (ZK0402) and the message as text
 (ZK0401); the lowering is on [The IR](codegen.md).
+
+## Test blocks
+
+```text
+<name> ဟူသော စမ်းသပ်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။ … လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+```
+
+`at_test_decl` sees a name, then `ဟူသော`, `Kw::Test` and `သည်`, with no mark between them;
+the lexer reads both `စမ်းသပ်ချက်` and `စမ်းသပ်မှု` as `Kw::Test`. It runs before
+`at_fn_decl`. `parse_test_decl` takes the four words and hands the rest to
+`parse_fn_block` with no kind parameters and no parameters, so the opener must follow `သည်`
+at once and a parameter there is ZK0201. The node is a `Stmt::Fn` with `FnDecl::test` set,
+written `test: true` in the text artifact of the tree. A test inside a block (`nested`), or one whose opener is
+`အောက်ပါတို့ကို လုပ်ဆောင်ကာ` with a result, is parsed in full and reported as ZK0267
+(`test_shape`). The parser of a file keeps the names of its tests in `test_names`, and a
+second test of a name there is ZK0268 (`test_twice`); the parser of another file starts
+with a blank set, so tests of two files can share a name. The check of names and data kinds and the lowering are on [Names and data
+kinds](semcheck.md#the-passes-in-order) and [The IR](codegen.md#lowering).
 
 ## Switches
 

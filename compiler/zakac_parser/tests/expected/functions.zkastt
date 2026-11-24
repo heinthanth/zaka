@@ -256,6 +256,7 @@ program:
       exported: false
       unchecked: false
       comptime: false
+      test: false
       start: false
       builtin: false
       external: false
@@ -303,6 +304,7 @@ program:
       exported: false
       unchecked: false
       comptime: false
+      test: false
       start: false
       builtin: false
       external: false

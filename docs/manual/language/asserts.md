@@ -9,7 +9,9 @@ An assert (assertion) states a condition that must hold at one point of a progra
 the condition is true, the program goes on as if the assert were not there; when it is
 false, the program stops (trap) with a message that names the assert and, for a
 comparison, the values on both sides. This page states the full rules, and the Learn book
-teaches asserts in [Asserts](../../learn/error-handling/asserts.md).
+teaches asserts in [Asserts](../../learn/error-handling/asserts.md). Asserts are also what a
+[test block](tests.md) (unit test) checks, and `zakac test` runs each test and reports the
+asserts that did not hold.
 
 ```zaka
 ပေါင်း ဟူသော လုပ်ဆောင်ချက် သည်

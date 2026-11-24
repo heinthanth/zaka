@@ -582,6 +582,9 @@ pub(crate) struct Parser<'t>
     /// and its own.
     #[builder(default)]
     pub(crate) hints: Vec<Hint>,
+    /// The names of the test blocks of the file so far.
+    #[builder(default)]
+    pub(crate) test_names: HashSet<String>,
 }
 
 impl<'t> Parser<'t>

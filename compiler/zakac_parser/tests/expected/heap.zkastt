@@ -200,6 +200,7 @@ program:
       exported: false
       unchecked: true
       comptime: false
+      test: false
       start: false
       builtin: false
       external: false

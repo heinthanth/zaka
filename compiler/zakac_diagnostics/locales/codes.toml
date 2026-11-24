@@ -1939,6 +1939,24 @@ en = "add \"၊\""
 [codes.ZK0266.explain]
 en = """A declaration can take several marks, each a word that ends in \"သော\", such as \"အများသုံးနိုင်သော\" and \"မျှဝေနိုင်သော\" before \"ဒေတာအစုအဝေး\", or \"လူ ကို အခြေခံသော\" after \"သည်\". Two marks stand with \"၊\" between them, as the items of a list do."""
 
+[codes.ZK0267.title]
+en = "test block out of shape"
+[codes.ZK0267.message]
+en = "a test block stands at the top level of a file, takes no parameters and gives no result"
+[codes.ZK0267.help]
+en = "write the test as \"<name> ဟူသော စမ်းသပ်ချက် သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\" at the top level"
+[codes.ZK0267.explain]
+en = """A test block, \"<name> ဟူသော စမ်းသပ်ချက် သည် ...\" or \"<name> ဟူသော စမ်းသပ်မှု သည် ...\", is a piece of the program that \"zakac test\" runs in place of the program start block, and that a build leaves out. Nothing calls it, so it takes no parameters and gives no result, and it belongs to the whole file, so it stands at the top level: a test inside a function or a block is refused."""
+
+[codes.ZK0268.title]
+en = "two tests with one name"
+[codes.ZK0268.message]
+en = "a test named \"%{name}\" stands in this file before"
+[codes.ZK0268.help]
+en = "give each test of a file a name of its own"
+[codes.ZK0268.explain]
+en = """\"zakac test\" reports each test as <file>::<name>, so two tests of one file cannot share a name: the report could not tell them apart. Tests of two files can share a name, and a test can share the name of a function."""
+
 [codes.ZK0264.title]
 en = "wait on channels with no channel"
 [codes.ZK0264.message]

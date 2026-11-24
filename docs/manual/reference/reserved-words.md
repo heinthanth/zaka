@@ -139,6 +139,7 @@ Each statement verb ends in `မည်`.
 | `ကိန်းရှင်` | "variable": to declare a variable | [Variables](../../learn/variables/README.md) |
 | `ကိန်းသေ` | "constant": to declare a constant | [Constants](../../learn/variables/constants.md) |
 | `လုပ်ဆောင်ချက်` | "function": in a function declaration and a function value | [Functions](../../learn/functions/README.md) |
+| `စမ်းသပ်ချက်`, `စမ်းသပ်မှု` | "test": to declare a test block (unit test), `<name> ဟူသော စမ်းသပ်ချက် သည် …`, which `zakac test` runs and a build leaves out; the two spellings are one word | [Tests](../language/tests.md) |
 | `ပရိုဂရမ်` | "program": in `ပရိုဂရမ်သည်`, to open the program start block (entry point), where the program starts | [Where a program starts](../../learn/programs/start.md) |
 | `ဒေတာ ပြောင်းလဲရန်` | "to change the data": right after `ကို` in a parameter, to make it a mutable parameter (`inout`), which the function can read and write; the changes go back to the caller's place when the call returns | [Mutable parameters](../language/functions-parameters.md#mutable-parameters) |
 | `ဒေတာ ထည့်ပေးရန်` | "to put the data in": right after `ကို` in a parameter, to make it a writable parameter (`out`), which the function writes before it reads; the caller's place counts as set after the call | [Writable parameters](../language/functions-parameters.md#writable-parameters) |

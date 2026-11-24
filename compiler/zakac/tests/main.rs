@@ -6,4 +6,5 @@ mod config_example;
 mod mutants;
 mod repl;
 mod target;
+mod test_jit;
 mod wasi;

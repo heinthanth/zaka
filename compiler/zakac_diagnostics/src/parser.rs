@@ -1059,6 +1059,37 @@ pub fn select_two_ends(span: Span) -> Diagnostic
     Diagnostic::new(Code::SelectTwoEnds, msg, span).with_help(t!("codes.ZK0265.help"))
 }
 
+/// A test block stands inside a block, or gives a result.
+///
+/// # Arguments
+///
+/// * `span` - The name of the test.
+///
+/// # Returns
+///
+/// The `ZK0267` diagnostic.
+pub fn test_shape(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::TestShape, t!("codes.ZK0267.message"), span)
+        .with_help(t!("codes.ZK0267.help"))
+}
+
+/// Two test blocks of one file share a name.
+///
+/// # Arguments
+///
+/// * `span` - The name of the second test.
+/// * `name` - The name.
+///
+/// # Returns
+///
+/// The `ZK0268` diagnostic.
+pub fn test_twice(span: Span, name: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::TestTwice, t!("codes.ZK0268.message", name = name), span)
+        .with_help(t!("codes.ZK0268.help"))
+}
+
 /// Two marks of a declaration head stand with no `၊` between them.
 ///
 /// # Arguments

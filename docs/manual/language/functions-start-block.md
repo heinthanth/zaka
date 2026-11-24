@@ -89,9 +89,9 @@ unsafe block (`စိတ်မချရသော်လည်း`) inside it, or 
 | Rule | Code |
 | --- | --- |
 | a program has one program start block, in the file given to `zakac run`; a second one is an error | ZK0325 |
-| a program file with no program start block is an error | ZK0327 |
+| a program file with no program start block is an error; a file of [test blocks](tests.md) (unit tests) under `zakac test` needs none | ZK0327 |
 | an imported file has no program start block | ZK0323 |
-| the top level of a file has declarations alone: functions, structs, variables, constants and imports; a statement that runs goes in the program start block or a function | ZK0326 |
+| the top level of a file has declarations alone: functions, [test blocks](tests.md), structs, variables, constants and imports; a statement that runs goes in the program start block or a function | ZK0326 |
 | each parameter is a `စာသား စာရင်း`, it is not a mutable or writable parameter, and there are two at most | ZK0440 |
 | A return value must have an integer data kind (type). A result kind (result type) raises the same error as other non-integer kinds. | ZK0441 |
 | the program start block cannot fail, so it has no pass-on ([Errors and results](error-handling.md#the-program-start-block)) | ZK0445 |

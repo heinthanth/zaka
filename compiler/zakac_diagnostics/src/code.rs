@@ -200,6 +200,10 @@ SelectNoArm = ("ZK0264", Level::Error),
 SelectTwoEnds = ("ZK0265", Level::Error),
 /// Two marks of a declaration head stand with no `၊` between them.
 MarksNeedSeparator = ("ZK0266", Level::Error),
+/// A test block stands inside a block, or gives a result.
+TestShape = ("ZK0267", Level::Error),
+/// Two test blocks of one file share a name.
+TestTwice = ("ZK0268", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

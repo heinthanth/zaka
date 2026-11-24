@@ -158,6 +158,8 @@ its message must be text.
 - `ဖြစ်ရမယ်` and `ပရိုဂရမ်ရေးသားချိန်မှာ` are the spoken spellings, and
   `ပရိုဂရမ်ရေးသားချိန်၌` is another written one ([Other
   spellings](../../manual/language/asserts.md#other-spellings)).
+- To check a function apart from the program, we put asserts in a test block (unit
+  test), which `zakac test` runs and a build leaves out ([Tests](tests.md)).
 - The full rules, the flag and the text of each stop are on
   [Asserts](../../manual/language/asserts.md), and the stop itself is on [When a program
   stops](../../manual/vm/traps.md#an-assert-that-does-not-hold).
@@ -180,4 +182,4 @@ its message must be text.
 - Give the assert a message with a template slot that writes the count.
 - Turn the assert into a debug assert, and run the program with `--debug-asserts off`.
 
-Next: [Optional values](../optionals/README.md).
+Next: [Tests](tests.md).
