@@ -118,7 +118,7 @@ operator printed as its short name (`add`, `lt`, ...).
 | control | `jump t`, `jump_if_false t`, `jump_if_true t`, `call f`, `fn_addr f`, `closure f k`, `call_value n`, `ret`, `result_addr`, `trap code` |
 | host and C | `host h`, `foreign c<n>`, `c_leave k`, `c_revoke`, `c_load k at o`, `c_store k at o` |
 | output | `print`, `print_text t`, `print_list k`, `print_enum k` (a member, found through its value and written as its name; a function value, written as the function it contains) |
-| failure | `halt cause [k]`, with `not_good`, `not_fault`, `no_data`, `closed_handle` and the other causes of `HaltCause` |
+| failure | `halt cause [k]`, with `not_good`, `not_fault`, `no_data`, `closed_handle`, `assert` and the other causes of `HaltCause` |
 | pointers | `ptr_add stride`, `ptr_sub stride`, `alloc stride`, `realloc stride`, `free`, `mem_blit stride`, `mem_move stride`, `mem_fill k`, `pin`, `obj_to_ptr`, `ptr_to_obj` |
 | lists | `index len [from f]`, `blit k`, `zero k`, `list_eq k`, `seq_eq k`, `static_seq s`, `seq_addr s`, `to_heap k`, `add_cell k`, `remove_cell k`, `insert_cell k`, `object_cell stride` |
 | views | `make_slice stride source`, `slice_cell stride [from f]`: the inner views that a range and a cell of a plain list read through |

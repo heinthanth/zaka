@@ -109,8 +109,10 @@ pub fn run_loaded(
         has_errors(&diagnostics),
         builder.checked(checked).diagnostics(diagnostics).build()
     );
-    let lower_options =
-        LowerOptions::builder().platform_bits(options.platform_bits).build();
+    let lower_options = LowerOptions::builder()
+        .platform_bits(options.platform_bits)
+        .debug_asserts(options.debug_asserts)
+        .build();
     let plain =
         lower(&checked.program, &checked.kinds, &checked.structs, &lower_options);
     let mut folded = plain.clone();

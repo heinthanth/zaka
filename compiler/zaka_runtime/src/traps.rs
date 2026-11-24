@@ -69,6 +69,11 @@ pub enum ZkTrap
     WrongVariant,
     /// The stack of a light task ran full.
     StackFull,
+    /// The condition of an assert did not hold; the stop shows its text.
+    Assert,
+    /// The condition of an assert with neither a message nor a comparison
+    /// did not hold.
+    AssertBare,
     /// The count of ids, the length of a table of them.
     Count,
 }
@@ -98,6 +103,8 @@ pub(crate) mod trap
     pub(crate) const BAD_UTF8: i32 = ZkTrap::BadUtf8 as i32;
     pub(crate) const NOT_GOOD: i32 = ZkTrap::NotGood as i32;
     pub(crate) const NOT_GOOD_BARE: i32 = ZkTrap::NotGoodBare as i32;
+    pub(crate) const ASSERT: i32 = ZkTrap::Assert as i32;
+    pub(crate) const ASSERT_BARE: i32 = ZkTrap::AssertBare as i32;
     pub(crate) const NOT_FAULT: i32 = ZkTrap::NotFault as i32;
     pub(crate) const NO_DATA: i32 = ZkTrap::NoData as i32;
     pub(crate) const NULL_DEREF: i32 = ZkTrap::NullDeref as i32;

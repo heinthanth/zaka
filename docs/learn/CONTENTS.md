@@ -44,6 +44,7 @@
   - [Passing a failure on](error-handling/passing.md)
   - [Reading a whole result](error-handling/results.md)
   - [Writing result kinds](error-handling/kinds.md)
+  - [Asserts](error-handling/asserts.md)
 - [Optional values](optionals/README.md)
 - [Lists](lists/README.md)
   - [Adding and removing cells](lists/growing.md)

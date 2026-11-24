@@ -116,6 +116,9 @@ pub enum Stmt
     Fn(FnDecl),
     /// `v ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။`
     Return(ReturnStmt),
+    /// `<cond> ဖြစ်ရမည်။`, with `ပရိုဂရမ်ရေးသားချိန်တွင်` in front for a debug
+    /// assert and `၊ မဟုတ်ပါက <text> ဟု ရပ်မည်` before the full stop for a message
+    Assert(AssertStmt),
     /// `f ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။`
     Call(CallStmt),
     /// Heap allocation into a place.
@@ -655,6 +658,23 @@ pub fn is_lib_path(lib: &str) -> bool
 {
     let ends = [".so", ".dylib", ".dll"].iter().any(|e| lib.ends_with(e));
     lib.contains(['/', '\\']) || ends || lib.contains(".so.")
+}
+
+/// An assert: the run stops when the condition does not hold.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct AssertStmt
+{
+    /// The condition that must hold.
+    pub cond: Expr,
+    /// `true` for a debug assert, written after `ပရိုဂရမ်ရေးသားချိန်တွင်`: the
+    /// check is kept unless `--debug-asserts off` drops it.
+    #[builder(default)]
+    #[serde(default)]
+    pub debug: bool,
+    /// The text the stop shows, after `မဟုတ်ပါက`.
+    pub message: Option<Expr>,
+    /// Source region.
+    pub span: Span,
 }
 
 /// Return statement.

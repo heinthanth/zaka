@@ -17,3 +17,6 @@ en = "Refuse unsafe code (စိတ်မချရသော), for lessons and pr
 
 [ir.repl]
 en = "REPL mode: the top-level statements of the file form its program start block, so the file can leave the block out."
+
+[ir.debug_asserts]
+en = "Keep the debug asserts (ပရိုဂရမ်ရေးသားချိန်တွင် … ဖြစ်ရမည်), or drop them with off. Each assert is checked whatever this holds."

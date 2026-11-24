@@ -49,6 +49,8 @@ const TARGET_BITS_ARG: &str = "target_bits";
 const FOLD_ARG: &str = "fold";
 const NO_UNSAFE_ARG: &str = "no-unsafe";
 const REPL_ARG: &str = "repl";
+/// The flag that keeps or drops the debug asserts.
+const DEBUG_ASSERTS_ARG: &str = "debug-asserts";
 /// Words the fold flag takes.
 const FOLD_WORDS: &[&str] = &["all", "none", "exprs", "consts", "branches"];
 /// Bit counts the platform-sized integer kinds can have.
@@ -105,8 +107,16 @@ pub fn attach_compile_args(cmd: clap::Command) -> clap::Command
         .action(ArgAction::SetTrue);
     let repl =
         Arg::new(REPL_ARG).long("repl").help(t!("ir.repl")).action(ArgAction::SetTrue);
+    let debug_asserts = Arg::new(DEBUG_ASSERTS_ARG)
+        .long(DEBUG_ASSERTS_ARG)
+        .value_name("ON_OFF")
+        .help(t!("ir.debug_asserts"))
+        .value_parser(["on", "off"])
+        .default_value("on");
     let cmd = attach_lint_args(attach_grant_args(cmd, Granted::Comptime));
-    attach_target_os_args(cmd.arg(target_bits).arg(fold).arg(no_unsafe).arg(repl))
+    attach_target_os_args(
+        cmd.arg(target_bits).arg(fold).arg(no_unsafe).arg(repl).arg(debug_asserts),
+    )
 }
 
 /// The check options from the command line.
@@ -128,8 +138,25 @@ pub fn semcheck_options(matches: &ArgMatches) -> SemcheckOptions
         .platform_bits(bits)
         .no_unsafe(no_unsafe)
         .repl(matches.get_flag(REPL_ARG))
+        .debug_asserts(debug_asserts(matches))
         .lint(lint_levels(matches))
         .build()
+}
+
+/// Whether the command line keeps the debug asserts: `--debug-asserts on`,
+/// the default, or no such flag on the command.
+///
+/// # Arguments
+///
+/// * `matches` - The matches of the CLI arguments.
+///
+/// # Returns
+///
+/// `false` for `--debug-asserts off`.
+pub fn debug_asserts(matches: &ArgMatches) -> bool
+{
+    let word = matches.try_get_one::<String>(DEBUG_ASSERTS_ARG).ok().flatten();
+    word.is_none_or(|w| w != "off")
 }
 
 /// The fold options from the command line: `all`, `none`, or a list of

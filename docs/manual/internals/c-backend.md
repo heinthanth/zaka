@@ -256,6 +256,8 @@ one:
 | --- | --- |
 | `not_good` with an error value | `zk_not_good(at, kind)`, which shows the error value |
 | `not_good` with none | `zk_not_good_bare()` |
+| `assert` with text | `zk_assert_failed(at, kind)`, which stops with `ZK_TRAP_ASSERT` and shows the text |
+| `assert` with none | `zk_assert_failed_bare()`, which stops with `ZK_TRAP_ASSERT_BARE` |
 | `not_fault` | `zk_not_fault()` |
 | `closed_handle` | `zk_closed_handle()` |
 | `null_from_c` (C returned NULL for a plain handle result) | `zk_plain_trap(ZK_TRAP_NULL_FROM_C)` |

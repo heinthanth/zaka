@@ -207,6 +207,12 @@ en = "the result holds a failure, not a good result"
 [vm.trap.not_good]
 en = "the result holds an error, not a good result: %{e}"
 
+[vm.trap.assert_bare]
+en = "an assert did not hold"
+
+[vm.trap.assert]
+en = "an assert did not hold: %{text}"
+
 [vm.trap.not_fault]
 en = "the result is a good result, not an error"
 

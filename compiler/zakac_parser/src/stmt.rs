@@ -7,6 +7,7 @@ use zakac_ast::kind::BASED_ON;
 use zakac_ast::kind::BaseKind;
 use zakac_ast::kind::Kind;
 use zakac_ast::stmt::AliasDecl;
+use zakac_ast::stmt::AssertStmt;
 use zakac_ast::stmt::BlockStmt;
 use zakac_ast::stmt::BreakStmt;
 use zakac_ast::stmt::CallStmt;
@@ -290,6 +291,7 @@ impl Parser<'_>
         match kw
         {
             Kw::If => self.parse_if(),
+            Kw::AtDevTime => self.parse_debug_assert(),
             Kw::ElseIf | Kw::Else =>
             {
                 Err(diag::else_without_if(tok.span, self.text_of(tok.span)))
@@ -370,12 +372,72 @@ impl Parser<'_>
             ClauseOut::Expr(first) => first,
         };
         let cond = self.parse_logical_rest(first, 0)?;
+        let start = cond.span();
+        ret_if!(self.at(Kw::MustBe), self.parse_assert_tail(cond, false, start));
         let is_while = self.at(Kw::While) || self.at(Kw::WhileIs);
         ret_if!(is_while, self.parse_while_tail(cond));
         ret_if!(self.at_receive_each(), self.parse_receive_each(cond));
         ret_if!(self.at(Kw::From), self.parse_counted_tail(cond));
         ret_if!(self.at_each_head(), self.parse_each_tail(cond));
         Err(diag::expected_stmt_verb(self.peek().span, &self.found()))
+    }
+
+    /// Parse `ပရိုဂရမ်ရေးသားချိန်တွင် <cond> ဖြစ်ရမည်`, a debug assert, with its
+    /// message and full stop.
+    ///
+    /// # Returns
+    ///
+    /// The assert, or a diagnostic.
+    fn parse_debug_assert(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let cond = self.parse_expr()?;
+        self.parse_assert_tail(cond, true, start)
+    }
+
+    /// Parse the rest of an assert after its condition: `ဖြစ်ရမည်`, then
+    /// `၊ မဟုတ်ပါက <text> ဟု ရပ်မည်` for a message, then the full stop.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The condition.
+    /// * `debug` - Whether `ပရိုဂရမ်ရေးသားချိန်တွင်` opened the assert.
+    /// * `start` - Where the assert starts.
+    ///
+    /// # Returns
+    ///
+    /// The assert, or a diagnostic.
+    fn parse_assert_tail(
+        &mut self, cond: Expr, debug: bool, start: Span,
+    ) -> PResult<Stmt>
+    {
+        self.expect(Kw::MustBe)?;
+        let message = self.parse_assert_message()?;
+        let stop = self.expect_stop()?;
+        let span = start.to(&stop.span);
+        #[rustfmt::skip]
+        let node = AssertStmt::builder().cond(cond).debug(debug).maybe_message(message)
+            .span(span).build();
+        Ok(Stmt::Assert(node))
+    }
+
+    /// Parse `၊ မဟုတ်ပါက <text> ဟု ရပ်မည်`, the message of an assert, when it
+    /// stands next.
+    ///
+    /// # Returns
+    ///
+    /// The text, `None` with no message, or a diagnostic.
+    fn parse_assert_message(&mut self) -> PResult<Option<Expr>>
+    {
+        let comma = self.peek().kind == TokenKind::Punct(Punct::ListSep);
+        let if_not = self.peek_n(1).kind == TokenKind::Kw(Kw::IfNot);
+        ret_if!(!(comma && if_not), Ok(None));
+        self.advance();
+        self.advance();
+        let message = self.parse_operand()?;
+        self.expect(Kw::Hu)?;
+        self.expect(Kw::Stop)?;
+        Ok(Some(message))
     }
 
     /// Parse `"<file>" မှ <name> [(၊ <name>)* နှင့် <name>] (တို့ကို|ကို) ထည့်သွင်းမည်။`. An

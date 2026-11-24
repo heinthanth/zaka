@@ -454,15 +454,21 @@ impl FnGen<'_, '_>
             cause == HaltCause::NullFromC,
             self.line("zk_plain_trap(ZK_TRAP_NULL_FROM_C);")
         );
+        let assert = cause == HaltCause::Assert;
+        let (shown, bare) = tern!(
+            assert,
+            ("zk_assert_failed", "zk_assert_failed_bare"),
+            ("zk_not_good", "zk_not_good_bare")
+        );
         let Some(e) = value
         else
         {
-            return self.line("zk_not_good_bare();");
+            return self.line(&format!("{bare}();"));
         };
         let v = self.expr(e);
         let at = self.addressed(&v, e.kind);
         let k = self.shared.descr.of(e.kind);
-        self.line(&format!("zk_not_good({at}, {k});"));
+        self.line(&format!("{shown}({at}, {k});"));
     }
 
     /// Drop a fresh value that holds text once it is read: the text a

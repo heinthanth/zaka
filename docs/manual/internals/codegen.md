@@ -249,6 +249,7 @@ with no data, and for a few other stops that the lowering writes out. Its `cause
 | `ClosedHandle`, `NullFromC` | a closed handle, or NULL from C for a plain handle result (see [C functions](vm-internals.md#c-functions)) |
 | `NoRow` | a write inside a row of a ဇယား that has no row for the index |
 | `StepNotPositive`, `ThreadsNotPositive` | a step of a parallel loop, or its count of threads, that is zero or less |
+| `assert` (`HaltCause::Assert`) | the condition of an assert did not hold; the value is the text to show, or none for an assert with neither a message nor a comparison |
 
 ## Expressions
 
@@ -402,6 +403,15 @@ An optional is the same struct with the tag and one field, `some`, for the data
 blank struct, has none, so `အလွတ်` is the all-zero value. `has_data` and `lacks_data` read
 the tag. `ထဲမှ ဒေတာ` is a `result_part` whose wrong part is an optional with no data, and
 it halts with `HaltCause::NoData`, with no value to show.
+
+An [assert](../language/asserts.md) (`AssertStmt`) lowers in `assert_stmt` to an `if` on
+the negated condition whose branch builds the text and halts with `HaltCause::Assert`. For
+a comparison, `assert_sides` first keeps each side in a hidden slot (as the subject of a
+switch is kept), so the test and the text read the same values and each side runs once;
+a side of an enumeration kind is written as the name of its member. The message is lowered
+inside the branch, so its statements run when the assert fails. A debug assert
+(`AssertStmt.debug`) lowers to nothing when `LowerOptions.debug_asserts` is off, which
+`--debug-asserts off` sets.
 
 Where a place wants an optional or a result and the value is a plain one,
 `coerce_lowered` wraps it as the good side (tag 1 and the value), and `make_fault` builds

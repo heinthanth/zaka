@@ -92,7 +92,7 @@ is a deep one. See [Values and objects](../language/objects.md).
 | `လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်` | "mark the function as succeeded": to end the function with a good result that has no value | [Writing result kinds](../../learn/error-handling/kinds.md) |
 | `လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်` | "mark the function as not succeeded": to end the function with a failure that has no error value | [Writing result kinds](../../learn/error-handling/kinds.md) |
 | `၊ မအောင်မြင်ပါက အမှားအယွင်းကို ပြန်ပေးမည်` | "if it fails, return the error value": at the end of a call statement, to pass a failure on | [Errors and results](../../learn/error-handling/README.md) |
-| `ရပ်မည်` | "will stop": to leave a loop (`break`) | [Break and continue](../../learn/control-flow/break-continue.md) |
+| `ရပ်မည်` | "will stop": to leave a loop (`break`), and at the end of the message of an assert, `မဟုတ်ပါက <text> ဟု ရပ်မည်` | [Break and continue](../../learn/control-flow/break-continue.md), [Asserts](../language/asserts.md#the-message) |
 | `ထည့်မည်` | "will add": to add a value at the end of a list or text, `l ထဲသို့ v ကို ထည့်မည်`, or in front of cell `i`, `l ၏ အကွက် i ၏ အရှေ့တွင် v ကို ထည့်မည်`; a call of the core module's function `ထည့်` with `မည်`, so not a reserved word | [Adding and removing cells](../../learn/lists/growing.md) |
 | `ဖျက်မည်` | "will remove": to remove the last cell of a list, `l ၏ နောက်ဆုံးအကွက်ကို ဖျက်မည်`; a call of the core module's function `ဖျက်` with `မည်`, so not a reserved word | [Adding and removing cells](../../learn/lists/growing.md) |
 | `အစားထိုးမည်` | "will replace": to put `v` in place of cells `a` to `b` of text `t`, `t ၏ အကွက် a မှ b ထိကို v ဖြင့် အစားထိုးမည်`; a call of the core module's function `အစားထိုး` with `မည်`, so not a reserved word | [Text](../../learn/text/changing.md#replacing-part-of-text) |
@@ -121,6 +121,9 @@ Each statement verb ends in `မည်`.
 | `လျှင်`, `ဖြစ်လျှင်` | "then": after the condition of an `if` and the cases of a switch arm | [If and else](../../learn/control-flow/if-else.md) |
 | `ထိုသို့မဟုတ်ဘဲ` | "if not so, but": to start an else-if branch | [If and else](../../learn/control-flow/if-else.md) |
 | `သို့မဟုတ်ပါက` | "otherwise": to start the else branch | [If and else](../../learn/control-flow/if-else.md) |
+| `ဖြစ်ရမည်` | "must be so": after the condition of an assert, `<condition> ဖြစ်ရမည်` | [Asserts](../../learn/error-handling/asserts.md) |
+| `မဟုတ်ပါက` | "if not": after `ဖြစ်ရမည်၊`, to give the message of an assert, `မဟုတ်ပါက <text> ဟု ရပ်မည်` | [Asserts](../language/asserts.md#the-message) |
+| `ပရိုဂရမ်ရေးသားချိန်တွင်` | "at the time of writing the program": in front of an assert, to make a debug assert, which `--debug-asserts off` drops; also written `ပရိုဂရမ်ရေးသားချိန်၌` | [Asserts](../language/asserts.md#debug-asserts) |
 | `နေသရွေ့`, `ဖြစ်နေသရွေ့` | "as long as": after the condition of a while loop | [While loops](../../learn/control-flow/while.md) |
 | `ရေတွက်၍`, `တိုး၍`, `လျှော့၍` | "counting", "increasing", "decreasing": at the end of the head of a counted loop | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `ယူ၍` | "each cell", "each character", "taking": in the head of a loop over each cell of a list or each character of text | [Lists](../../learn/lists/README.md#walking-a-list) |
@@ -368,6 +371,8 @@ use the spoken spellings once it allows them (ZK0510), as explained in
 | `လုပ်ဆောင်နိုင်တဲ့` | `လုပ်ဆောင်နိုင်သော` |
 | `ရင်` | `လျှင်` |
 | `ဖြစ်ရင်` | `ဖြစ်လျှင်` |
+| `ဖြစ်ရမယ်` | `ဖြစ်ရမည်` |
+| `ပရိုဂရမ်ရေးသားချိန်မှာ` | `ပရိုဂရမ်ရေးသားချိန်တွင်` |
 | `အောင်မြင်တဲ့သတင်း` | `အောင်မြင်သည့်သတင်း` |
 | `မအောင်မြင်တဲ့သတင်း` | `မအောင်မြင်သည့်သတင်း` |
 | `ရှိကောင်းရှိနိုင်တဲ့` | `ရှိကောင်းရှိနိုင်သော` |

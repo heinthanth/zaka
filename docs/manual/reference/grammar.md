@@ -251,7 +251,7 @@ See [Declarations and assignment](../language/declarations.md#declarations),
 stmt         = var-decl | fn-decl | block | if-stmt | switch-stmt
              | while-loop | counted-loop | each-loop | generic-loop | channel-loop
              | lock-block | select | break | continue | return | call-stmt | verb-stmt
-             | collector-stmt ;
+             | assert-stmt | collector-stmt ;
 
 block        = block-open "။" { stmt } block-close "။" ;
 block-open   = "အောက်ပါတို့ကို လုပ်ဆောင်မည်"
@@ -285,6 +285,9 @@ return       = value "ကို" "ပြန်ပေးမည်" "။"
              | "ပြန်ပေးမည်" "။"
              | "လုပ်ဆောင်ချက် အောင်မြင်သည်ဟု သတ်မှတ်မည်" "။"
              | "လုပ်ဆောင်ချက် မအောင်မြင်ပါဟု သတ်မှတ်မည်" "။" ;
+
+assert-stmt  = [ "ပရိုဂရမ်ရေးသားချိန်တွင်" ] expr "ဖြစ်ရမည်"   (* a debug assert with the first word *)
+               [ "၊" "မဟုတ်ပါက" value "ဟု" "ရပ်မည်" ] "။" ;   (* the message, a text *)
 
 verb-stmt    = value ( "ကို" | "ဟု" ) "ပြသမည်" "။"
              | value "ကို" value "ဟု" "ထားမည်" "။"

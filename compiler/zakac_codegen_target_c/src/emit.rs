@@ -885,6 +885,8 @@ pub fn trap_texts() -> Vec<(&'static str, String)>
         ("ZK_TRAP_THREAD_WAITED", t!("target_c.trap.thread_waited")),
         ("ZK_TRAP_WRONG_VARIANT", t!("target_c.trap.wrong_variant")),
         ("ZK_TRAP_STACK_FULL", t!("target_c.trap.stack_full")),
+        ("ZK_TRAP_ASSERT", t!("target_c.trap.assert")),
+        ("ZK_TRAP_ASSERT_BARE", t!("target_c.trap.assert_bare")),
     ];
     pairs.into_iter().map(|(n, t)| (n, t.to_string())).collect()
 }

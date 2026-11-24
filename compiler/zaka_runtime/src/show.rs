@@ -1123,6 +1123,26 @@ fn push_table(s: &mut Vec<Step>, p: *const u8, k: &ZkKind)
     s.push(Step::Piece(b"["));
 }
 
+// ---- asserts ----
+
+/// Stop the run: the condition of an assert did not hold; the stop shows the
+/// text of the assert, its message and the values of its comparison.
+///
+/// # Arguments
+///
+/// * `p` - The text.
+/// * `k` - Its kind.
+#[unsafe(export_name = stamped!("assert_failed"))]
+pub extern "C" fn zk_assert_failed(p: *const u8, k: *const ZkKind) -> !
+{
+    let text = shown(p, repr(kind(k)) as *const ZkKind);
+    stop_owned(trap::ASSERT, vec![("text".to_string(), text)])
+}
+
+/// Stop the run: the condition of an assert with no text did not hold.
+#[unsafe(export_name = stamped!("assert_failed_bare"))]
+pub extern "C" fn zk_assert_failed_bare() -> ! { zk_plain_trap(trap::ASSERT_BARE) }
+
 // ---- results ----
 
 /// Stop the run: a result that failed was read as good; the stop names its

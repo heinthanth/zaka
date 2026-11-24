@@ -102,7 +102,8 @@ Each caller of such a function must decide what to do when it fails. [Passing a 
 on](passing.md) shows how we send the error value up to the caller's caller, and [Reading
 a whole result](results.md) shows how we keep the result and check which part it
 contains. After those, [Writing result kinds](kinds.md) shows how we write the data kind of
-a result for a variable, a parameter, a field or a result clause.
+a result for a variable, a parameter, a field or a result clause. Last, [Asserts](asserts.md)
+shows how we stop the program when a condition that must hold does not.
 
 ## Details
 

@@ -405,4 +405,4 @@ error[ZK0476]: an error value goes where a result kind with an error side is wan
 - Keep the results of three calls in a list of results, and print each cell with a test in
   `အကယ်၍`.
 
-Next: [Optional values](../optionals/README.md).
+Next: [Asserts](asserts.md).

@@ -22,6 +22,8 @@
 # fold = "all"             # --fold <LIST>: all, none, or a list of exprs, consts
                            # and branches
 # no-unsafe = false        # --no-unsafe: refuse unsafe code (စိတ်မချရသော)
+# debug-asserts = "on"     # --debug-asserts <ON_OFF>: keep the debug asserts
+                           # (ပရိုဂရမ်ရေးသားချိန်တွင် … ဖြစ်ရမည်), or drop them
 
 # Commands: borrowck, build, run.
 

@@ -119,6 +119,23 @@ fn a_thread_that_stops_writes_its_own_line()
     assert!(!stderr.contains("the program stopped"), "{stderr}");
 }
 
+/// A failed assert stops with its message and the values of its comparison,
+/// and `--debug-asserts off` drops the debug asserts alone.
+#[test]
+fn asserts_stop_and_the_flag_drops_debug_asserts()
+{
+    let text = "ပရိုဂရမ်ရေးသားချိန်တွင် ၁ == ၂ ဖြစ်ရမည်။\n\"နောက်\" ဟု ပြသမည်။\n၂ + ၂ == ၅ \
+                ဖြစ်ရမည်၊ မဟုတ်ပါက \"သင်္ချာ\" ဟု ရပ်မည်။";
+    let (code, stdout, stderr) = run_vm(&[], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.contains("an assert did not hold: ၁ == ၂"), "{stderr}");
+    let (code, stdout, stderr) = run_vm(&["--debug-asserts", "off"], text);
+    assert_eq!(code, ExitCode::Failure);
+    assert_eq!(stdout, "နောက်\n");
+    assert!(stderr.contains("did not hold: သင်္ချာ (၄ == ၅)"), "{stderr}");
+}
+
 #[test]
 fn limits_come_from_flags()
 {

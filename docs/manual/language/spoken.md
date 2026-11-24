@@ -74,7 +74,7 @@ consonant with its marks, the unit of Burmese writing):
 | `၏` | `ရဲ့` | "of" |
 
 A reserved word that contains one of these parts as a whole vanna has a spoken spelling
-too: `ထားမယ်`, `ပြန်ပေးမယ်`, `ဖြစ်တယ်`, `ထဲမှာ`, `ဖြစ်ရင်`, `ဒီနေရာမှာ`,
+too: `ထားမယ်`, `ပြန်ပေးမယ်`, `ဖြစ်တယ်`, `ထဲမှာ`, `ဖြစ်ရင်`, `ဖြစ်ရမယ်`, `ဒီနေရာမှာ`,
 `မှတ်ယူနိုင်ပါတယ်`. The match is a whole vanna, so the `မှ` inside `မှတ်` remains as it is.
 The [reserved words](../reference/reserved-words.md#spoken-spellings) page lists each
 spelling.

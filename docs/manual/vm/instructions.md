@@ -370,6 +370,7 @@ trap, and a cause with a data kind first pops a value to show:
 | `null_from_c` | C returned NULL for a handle result written with no optional | none | null from C |
 | `step_not_positive` | the step of a parallel counted loop is zero or negative | none | step not positive |
 | `threads_not_positive` | a parallel loop or map was split into zero or fewer threads | none | threads not positive |
+| `assert` | the condition of an [assert](../language/asserts.md) did not hold | the text to show, of data kind `text`, or none for an assert with neither a message nor a comparison | [assert](traps.md#an-assert-that-does-not-hold) |
 
 A [whole result](../language/reading-results.md#reads) is explained in the language pages.
 

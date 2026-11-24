@@ -267,6 +267,13 @@ pub enum TrapKind
         /// no error value.
         text: String,
     },
+    /// The condition of an assert did not hold.
+    Assert
+    {
+        /// The message of the assert, then the values of the comparison;
+        /// blank for an assert with neither.
+        text: String,
+    },
     /// A good result was converted to its error value.
     NotFault,
     /// An optional that holds no data was read.
@@ -405,6 +412,8 @@ impl fmt::Display for TrapKind
                 t!("vm.trap.not_good_bare")
             }
             TrapKind::NotGood { text } => t!("vm.trap.not_good", e = text),
+            TrapKind::Assert { text } if text.is_empty() => t!("vm.trap.assert_bare"),
+            TrapKind::Assert { text } => t!("vm.trap.assert", text = text),
             TrapKind::NotFault => t!("vm.trap.not_fault"),
             TrapKind::NoData => t!("vm.trap.no_data"),
             TrapKind::NoRow => t!("vm.trap.no_row"),
@@ -478,6 +487,7 @@ impl TrapKind
             | TrapKind::NoPlaceToInsert { .. }
             | TrapKind::SliceOutOfRange { .. }
             | TrapKind::NotGood { .. }
+            | TrapKind::Assert { .. }
             | TrapKind::NotFault
             | TrapKind::NoData
             | TrapKind::NoRow

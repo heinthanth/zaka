@@ -170,6 +170,9 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::Comptime
         | Kw::Then
         | Kw::ThenIs
+        | Kw::MustBe
+        | Kw::IfNot
+        | Kw::AtDevTime
         | Kw::ElseIf
         | Kw::Else
         | Kw::While

@@ -491,7 +491,7 @@ impl<M: Module> FnGen<'_, '_, M>
             HaltCause::ThreadsNotPositive => Some(("zk_threads_not_positive", None)),
             HaltCause::ClosedHandle => Some(("zk_closed_handle", None)),
             HaltCause::NullFromC => Some(("zk_plain_trap", Some(plain(10)))),
-            HaltCause::NotGood => None,
+            HaltCause::NotGood | HaltCause::Assert => None,
         };
         if let Some((name, code)) = stop
         {
@@ -503,16 +503,22 @@ impl<M: Module> FnGen<'_, '_, M>
             let c = self.b.ins().iconst(types::I32, code);
             return self.rt_stop(name, &[types::I32], &[c]);
         }
+        let assert = cause == HaltCause::Assert;
+        let (shown, bare) = tern!(
+            assert,
+            ("zk_assert_failed", "zk_assert_failed_bare"),
+            ("zk_not_good", "zk_not_good_bare")
+        );
         let Some(e) = value
         else
         {
-            return self.rt_stop("zk_not_good_bare", &[], &[]);
+            return self.rt_stop(bare, &[], &[]);
         };
         let ptr = self.s.ptr;
         let v = self.expr(e);
         let at = self.addressed(v, e.kind);
         let k = self.descr(e.kind);
-        self.rt_stop("zk_not_good", &[ptr, ptr], &[at, k]);
+        self.rt_stop(shown, &[ptr, ptr], &[at, k]);
     }
 
     /// Let go of each block a value holds.

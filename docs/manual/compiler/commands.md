@@ -175,13 +175,14 @@ We give a lint flag again, or a comma list, to name more than one group or code.
 front end reads the groups `naturalness`, `spoken` and `duplicates`, and the checker reads
 the rest; [Lint names](#lint-names) lists them.
 
-### From `irgen` on: folding, unsafe code and REPL mode
+### From `irgen` on: folding, unsafe code, REPL mode and debug asserts
 
 | Flag | Value | Default | What it does |
 | --- | --- | --- | --- |
 | `--fold` | `all`, `none`, or a comma list of `exprs`, `consts` and `branches` | `all` | the foldings to run |
 | `--no-unsafe` | | off | refuse each use of `စိတ်မချရသော`, on a function or a block, with ZK0471 |
 | `--repl` | | off | REPL mode: the statements at the top level of the file that we run form its program start block, so the file can leave the block out ([REPL mode](../language/functions-start-block.md#repl-mode)) |
+| `--debug-asserts` | `on` or `off` | `on` | keep the [debug asserts](../language/asserts.md#debug-asserts), `ပရိုဂရမ်ရေးသားချိန်တွင် … ဖြစ်ရမည်`, or drop them with `off`; the check of names and data kinds reads each assert with either value, and a plain assert remains in each build |
 
 `--fold` changes the IR, not what the program does:
 
@@ -237,7 +238,8 @@ names the function and the index of the operation instead of the line (see [How 
 ends](../vm/running.md#how-a-run-ends)), while a `.zkc` or `.zkct` built without
 `--release` keeps its lines, so `zakac run age.zkct` shows them. For the C and native
 targets, `--release` also leaves out the debug info: [Building
-programs](build.md#debug-info-and-release) has the details.
+programs](build.md#debug-info-and-release) has the details. `--release` keeps the debug
+asserts; `--debug-asserts off` drops them.
 
 ## Lint names
 

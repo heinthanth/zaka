@@ -13,6 +13,7 @@ use zakac_ast::kind::Kind;
 use zakac_ast::name::Name;
 use zakac_ast::stmt::AddStmt;
 use zakac_ast::stmt::AllocStmt;
+use zakac_ast::stmt::AssertStmt;
 use zakac_ast::stmt::AssignStmt;
 use zakac_ast::stmt::BlitStmt;
 use zakac_ast::stmt::BlockStmt;
@@ -220,6 +221,10 @@ pub struct SemcheckOptions
     /// program start block, so the file can leave the block out.
     #[builder(default)]
     pub repl: bool,
+    /// Whether the lowering keeps the debug asserts; the check reads each
+    /// assert whatever this holds.
+    #[builder(default = true)]
+    pub debug_asserts: bool,
 }
 
 impl SemcheckOptions
@@ -2612,6 +2617,14 @@ impl Visitor for Checker
     {
         self.expect_bool(&n.cond);
         self.visit_block(&n.block);
+    }
+
+    // An assert gives no fact to the statements after it: a debug assert
+    // can be dropped, and a fact from it would then prove what no check holds.
+    fn visit_assert(&mut self, n: &AssertStmt)
+    {
+        self.expect_bool(&n.cond);
+        do_if!(let Some(m) = &n.message, self.expect_kind(m, Some(DataKind::TEXT)));
     }
 
     fn visit_while(&mut self, n: &WhileStmt)

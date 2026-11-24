@@ -404,6 +404,7 @@ and the sections after it give the details.
 | return | in a function; a value just when the function has a result, and the value converts to the result kind |
 | results and optionals | the table under "Results, errors and optionals" below |
 | leave for C | `visit_leave`: the value is of a function kind (ZK0462) |
+| assert | `visit_assert`: a `bool` condition (ZK0402) and a text message (ZK0401), for a debug assert as well, whatever `--debug-asserts` holds; the assert gives no fact to the statements after it, since a dropped debug assert would leave that fact with no check behind it |
 | call | the function exists; one argument for each parameter; each converts; the mutable parameters follow the rule below |
 | heap sentences | the target is a place of a pointer kind (ZK0417); the size is `usize` |
 | blit, fill | `visit_blit`, `visit_fill`: below |

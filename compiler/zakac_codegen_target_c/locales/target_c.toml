@@ -138,6 +138,12 @@ en = "the result holds an error, not a good result: %{e}"
 [target_c.trap.not_good_bare]
 en = "the result holds a failure, not a good result"
 
+[target_c.trap.assert]
+en = "an assert did not hold: %{text}"
+
+[target_c.trap.assert_bare]
+en = "an assert did not hold"
+
 [target_c.trap.not_fault]
 en = "the result is a good result, not an error"
 

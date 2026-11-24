@@ -39,6 +39,7 @@ use crate::kind::TableParts;
 use crate::stmt::AddStmt;
 use crate::stmt::AliasDecl;
 use crate::stmt::AllocStmt;
+use crate::stmt::AssertStmt;
 use crate::stmt::AssignStmt;
 use crate::stmt::BlitStmt;
 use crate::stmt::BlockStmt;
@@ -140,6 +141,7 @@ ContinueStmt => "continue", visit_continue;
 FnDecl => "fn", visit_fn;
 Param => "param", visit_param;
 ReturnStmt => "return", visit_return;
+AssertStmt => "assert", visit_assert;
 CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
@@ -221,6 +223,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Continue(s) => s,
         Stmt::Fn(s) => s,
         Stmt::Return(s) => s,
+        Stmt::Assert(s) => s,
         Stmt::Call(s) => s,
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
@@ -355,6 +358,8 @@ pub trait Visitor
     fn visit_param(&mut self, n: &Param) { walk_param(self, n) }
     /// Visit a return statement.
     fn visit_return(&mut self, n: &ReturnStmt) { walk_return(self, n) }
+    /// Visit an assert.
+    fn visit_assert(&mut self, n: &AssertStmt) { walk_assert(self, n) }
     /// Visit a call statement.
     fn visit_call_stmt(&mut self, n: &CallStmt) { walk_call_stmt(self, n) }
     /// Visit a heap allocation.
@@ -499,6 +504,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Continue(s) => v.visit_continue(s),
         Stmt::Fn(s) => v.visit_fn(s),
         Stmt::Return(s) => v.visit_return(s),
+        Stmt::Assert(s) => v.visit_assert(s),
         Stmt::Call(s) => v.visit_call_stmt(s),
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
@@ -695,6 +701,15 @@ pub fn walk_return<V: Visitor + ?Sized>(v: &mut V, n: &ReturnStmt)
 {
     v.enter(n);
     do_if!(let Some(value) = &n.value, v.visit_expr(value));
+    v.leave(n);
+}
+
+/// Visit the condition and the message of an assert.
+pub fn walk_assert<V: Visitor + ?Sized>(v: &mut V, n: &AssertStmt)
+{
+    v.enter(n);
+    v.visit_expr(&n.cond);
+    do_if!(let Some(message) = &n.message, v.visit_expr(message));
     v.leave(n);
 }
 
@@ -1325,6 +1340,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Continue(s) => v.visit_span_mut(&mut s.span),
         Stmt::Fn(s) => walk_fn_mut(v, s),
         Stmt::Return(s) => walk_return_mut(v, s),
+        Stmt::Assert(s) => walk_assert_mut(v, s),
         Stmt::Call(s) => walk_call_stmt_mut(v, s),
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
@@ -1581,6 +1597,14 @@ pub fn walk_return_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut ReturnStmt)
 {
     v.visit_span_mut(&mut n.span);
     opt_expr_mut(v, &mut n.value);
+}
+
+/// Visit the condition and the message of an assert.
+pub fn walk_assert_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut AssertStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_expr_mut(&mut n.cond);
+    opt_expr_mut(v, &mut n.message);
 }
 
 /// Visit the callee and arguments of a call statement.

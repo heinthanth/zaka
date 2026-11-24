@@ -136,6 +136,8 @@ is first used, as in "data kind (type)".
 | ring collector | cycle collector, garbage collector for reference cycles | | [Values and objects](../language/objects.md) |
 | unsafe code | unsafe code | `စိတ်မချရသော` | [Unsafe Zaka](../language/unsafe.md) |
 | the program stops | trap, panic, runtime error | | [When a program stops](../vm/traps.md) |
+| assert | assertion, `assert!`, `assert` | `<condition> ဖြစ်ရမည်` | [Asserts](../language/asserts.md) |
+| debug assert | `debug_assert!`, an assertion that a build can leave out | `ပရိုဂရမ်ရေးသားချိန်တွင် <condition> ဖြစ်ရမည်` | [Asserts](../language/asserts.md#debug-asserts) |
 | flow checker | borrow checker, ownership and definite-assignment analysis | | [The flow checker](../internals/borrow-checker.md) |
 | names and data kinds | name resolution and type checking (semantic analysis) | | [Names and data kinds](../internals/semcheck.md) |
 | the VM | virtual machine, bytecode interpreter | | [The VM](../vm/README.md) |

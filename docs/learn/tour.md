@@ -485,6 +485,7 @@ Docs: [Enumerations](../manual/language/enums.md).
 "<message>" ဟူသော အမှားအယွင်း ကို ပြန်ပေးမည်။
 အကယ်၍ <result> ထဲတွင် အမှားအယွင်း ရှိလျှင် <block>
 <optional> ထဲမှ ဒေတာ၊ မရှိလျှင် <fallback>
+<condition> ဖြစ်ရမည်၊ မဟုတ်ပါက "<message>" ဟု ရပ်မည်။
 ```
 
 ```zaka
@@ -523,6 +524,7 @@ Docs: [Enumerations](../manual/language/enums.md).
 | `အလွတ်` | `None` |
 | `စားခွဲ(က၊ ခ)?` | `divide(k, kh)?` |
 | `ခ ထဲမှ ဒေတာ၊ မရှိလျှင် ၀` | `kh.unwrap_or(0)` |
+| `က > ၀ ဖြစ်ရမည်။` | `assert!(k > 0)` |
 
 A result kind (result type) contains either a good result (`Ok` value) or an error value
 (error), and an optional kind (option type) contains either data or the blank (`None`,
@@ -534,9 +536,11 @@ Rust.
 To check a result, we use `ထဲတွင် အမှားအယွင်း ရှိလျှင်`, and to read an optional, we test it
 with `ထဲတွင် ဒေတာ ရှိလျှင်` or give a fallback with `ထဲမှ ဒေတာ၊ မရှိလျှင် <value>`. Nothing
 but a pointer can be null, and reading `ထဲမှ ဒေတာ` from a blank optional stops the program.
+For a mistake that should never happen, an assert (assertion), `<condition> ဖြစ်ရမည်။`,
+stops the program when the condition is false and shows both sides of a comparison.
 
-Learn: [Errors and results](error-handling/README.md), [Optional values](optionals/README.md).
-Docs: [Errors and results](../manual/language/error-handling.md), [Optional values](../manual/language/optionals.md).
+Learn: [Errors and results](error-handling/README.md), [Asserts](error-handling/asserts.md), [Optional values](optionals/README.md).
+Docs: [Errors and results](../manual/language/error-handling.md), [Asserts](../manual/language/asserts.md), [Optional values](../manual/language/optionals.md).
 
 ## Generics and traits
 

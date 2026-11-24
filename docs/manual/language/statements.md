@@ -60,6 +60,7 @@ square brackets mark a part that can be left out.
 | generic loop | `ကိန်းရှင် <name> သည် <kind> တစ်<measure word> [ဖြစ်၍ တန်ဖိုးသည် <value>]` or `ကိန်းရှင် <name> သည် <value>`, then `ဖြစ်ကာ <condition> နေသရွေ့` and a block with `[ပြီးလျှင် <statement>]` last | [Generic loops](control-flow.md#generic-loops) |
 | break | `ကွင်းဆက် ကို ရပ်မည်။` | [Break and continue](control-flow.md#break-and-continue) |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` | [Break and continue](control-flow.md#break-and-continue) |
+| assert | `[ပရိုဂရမ်ရေးသားချိန်တွင်] <condition> ဖြစ်ရမည်`, then `[၊ မဟုတ်ပါက <text> ဟု ရပ်မည်]` and `။` | [Asserts](asserts.md) |
 | call | `<name> ဟူသော လုပ်ဆောင်ချက်ကို [<arguments> တို့ဖြင့်] လုပ်ဆောင်မည်။` | [Calls and returns](#calls-and-returns) |
 | return | `<value> ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။` | [Calls and returns](#calls-and-returns) |
 | function | `<name> ဟူသော လုပ်ဆောင်ချက် သည် …` | [Functions](functions.md) |
@@ -89,6 +90,7 @@ these verbs:
 | `ထားမည်` | assign | `ကို` after the place, `ဟု` after the value |
 | `ပြန်ပေးမည်` | return a value | `ကို` after the value, and after an error value, `<e> ဟူသော အမှားအယွင်း` |
 | `နေသရွေ့` | while loop | none: it follows the condition |
+| `ဖြစ်ရမည်` | assert | none: it follows the condition |
 | `မှ … အထိ … အနေဖြင့်` | counted loop | `မှ` after the first bound, `အထိ` after the second |
 
 Each statement verb ends in `မည်` ("will"), while the declaration verb `ဖြစ်ပါစေ` ("let it

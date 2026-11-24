@@ -199,8 +199,8 @@ right.
 ## The options
 
 `zakac run` accepts the [compile options](../compiler/commands.md) (`--target-bits`,
-`--fold`, `--lint-allow`, `--lint-warn`, `--lint-error`, `--no-unsafe`, `--overflow`,
-`--results`, `--scratch`, `--release`) and these options of the VM:
+`--fold`, `--lint-allow`, `--lint-warn`, `--lint-error`, `--no-unsafe`, `--debug-asserts`,
+`--overflow`, `--results`, `--scratch`, `--release`) and these options of the VM:
 
 | Option | Default | Effect |
 | --- | --- | --- |

@@ -2321,6 +2321,7 @@ impl Machine
         Err(match cause
         {
             HaltCause::NotGood => TrapKind::NotGood { text: shown },
+            HaltCause::Assert => TrapKind::Assert { text: shown },
             HaltCause::NotFault => TrapKind::NotFault,
             HaltCause::NoData => TrapKind::NoData,
             HaltCause::NoRow => TrapKind::NoRow,

@@ -205,6 +205,15 @@ stop names the function alone (`(in addfee)`) and each backtrace line is a funct
 It also leaves out the debug info. The native target and the Cranelift runs of `zakac run`
 leave out the same table under `--release`.
 
+`--release` keeps the [asserts](../language/asserts.md) of the program, the debug asserts
+among them. To build without the debug asserts, `ပရိုဂရမ်ရေးသားချိန်တွင် … ဖြစ်ရမည်`, we add
+`--debug-asserts off`, a compile flag that each target takes
+([Commands](commands.md#options-of-the-compile-stages)):
+
+```console
+$ zakac build --backend c --release --debug-asserts off age.zaka
+```
+
 ## The native target
 
 ```text

@@ -48,6 +48,16 @@ fn a_read_of_another_member_stops_the_program()
     stops_with(&path, &[], "၇\n", "the value is another member than the one read");
 }
 
+/// A failed assert stops the program with its message and both values of
+/// its comparison.
+#[test]
+fn a_failed_assert_stops_the_program()
+{
+    let path = c_inputs().join("failed_assert.zaka");
+    let trap = "an assert did not hold: က မမှန်ပါ (၇ == ၈)";
+    stops_with(&path, &[], "၇\n", trap);
+}
+
 /// An overflow stops the program under `--overflow stop`.
 #[test]
 fn an_overflow_stops_the_program()

@@ -530,6 +530,14 @@ pub enum Kw
     Then,
     /// `ဖြစ်လျှင်`
     ThenIs,
+    /// `ဖြစ်ရမည်`, "must be": ends the condition of an assert, as `ဖြစ်လျှင်`
+    /// ends one of a conditional
+    MustBe,
+    /// `မဟုတ်ပါက`, "if not": after an assert, opens the text the stop shows
+    IfNot,
+    /// `ပရိုဂရမ်ရေးသားချိန်တွင်`, "while the program is written": in front of an
+    /// assert, it makes a debug assert, which `--debug-asserts off` drops
+    AtDevTime,
     /// `ထိုသို့မဟုတ်ဘဲ`
     ElseIf,
     /// `သို့မဟုတ်ပါက`

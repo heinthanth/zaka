@@ -61,6 +61,7 @@ Then the reserved word at the start:
 | First word | Goes to | Notes |
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | with its `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` arms |
+| `ပရိုဂရမ်ရေးသားချိန်တွင်` (`Kw::AtDevTime`) | `parse_debug_assert` | a debug assert; see [Asserts](#asserts) |
 | `ထိုသို့မဟုတ်ဘဲ`, `သို့မဟုတ်ပါက` | an error | an else with no `if`, ZK0211 |
 | `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | a declaration or a generic loop |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the program start block (entry point) |
@@ -104,6 +105,7 @@ For each other sentence, `parse_expr_headed` runs the clause engine in statement
 | --- | --- | --- |
 | a statement | | the statement a statement verb closed (an assignment, a return, a call statement, a leave) |
 | a switch head | | `parse_switch` |
+| a value | `ဖြစ်ရမည်` | an assert, `parse_assert_tail`; see [Asserts](#asserts) |
 | a value | `နေသရွေ့` | a while loop, `parse_while_tail` |
 | a value | `မှ ရရှိသော ဒေတာတိုင်း ကို` | a loop over a channel, `parse_receive_each` |
 | a value | `မှ` | a counted loop, `parse_counted_tail` |
@@ -111,7 +113,7 @@ For each other sentence, `parse_expr_headed` runs the clause engine in statement
 | a value | each other token | ZK0203, which lists the endings a statement can have |
 
 The value is first joined with the logical words after it (`parse_logical_rest`), so the
-condition of a while loop can be a logical expression. The forms of each loop:
+condition of a while loop or an assert can be a logical expression. The forms of each loop:
 
 ```text
 <cond> နေသရွေ့ <block>
@@ -203,6 +205,29 @@ program start block, an external function or a C function declared inside a bloc
 (ZK0214) and still parses it. A function with statements inside a block parses as at the
 top level, a `Stmt::Fn` among the statements of the block, and the check of names and
 data kinds declares it in its scope.
+
+## Asserts
+
+```text
+[ပရိုဂရမ်ရေးသားချိန်တွင်] <cond> ဖြစ်ရမည်[၊ မဟုတ်ပါက <text> ဟု ရပ်မည်]။
+```
+
+An assert has two starts. A plain one starts with its condition, so it reaches
+`finish_expr_headed` as a value; when the token after the value (and its logical words) is
+`ဖြစ်ရမည်` (`Kw::MustBe`), `parse_assert_tail` reads the rest. A debug assert starts with
+`ပရိုဂရမ်ရေးသားချိန်တွင်` (`Kw::AtDevTime`), which `parse_stmt_node` matches as a reserved
+word: `parse_debug_assert` takes the word, reads the condition with `parse_expr`, and goes
+on to the same `parse_assert_tail`.
+
+`parse_assert_tail` expects `ဖြစ်ရမည်`, then lets `parse_assert_message` look for `၊`
+with `မဟုတ်ပါက` (`Kw::IfNot`) after it. With both there, it reads one operand as the message
+and expects `ဟု` and `ရပ်မည်` (`Kw::Stop`, the verb of `break` too); with no `မဟုတ်ပါက`
+after the `၊`, the assert has no message. The full stop ends the statement, and the node
+is `Stmt::Assert(AssertStmt { cond, debug, message, span })`, written `(assert ...)` or
+`(debug-assert ...)` in the tree. `ဖြစ်ရမည်` is a reserved word of its own, so a verb
+glued to `ရမည်`, such as `ငယ်ရမည်`, is no assert and ends as ZK0208. The check of names
+and data kinds tests the condition as that of an `if` (ZK0402) and the message as text
+(ZK0401); the lowering is on [The IR](codegen.md).
 
 ## Switches
 

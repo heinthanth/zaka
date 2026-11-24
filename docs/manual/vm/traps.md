@@ -98,6 +98,7 @@ to the section that explains it.
 | [no data](#an-optional-read-with-no-data) | `the optional holds no data` | the data read from an [optional](../language/optionals.md) that is blank |
 | [no row](#a-write-through-a-missing-row) | `no row of the ဇယား has this index` | a write inside the value of a [row of a table](../language/tables.md#writing-inside-a-row) that does not exist |
 | [wrong member](#a-read-of-the-data-of-another-member) | `the value is another member than the one read` | the data of a [member](../language/enums.md#reading-the-data) read from a value of an enumeration that is another member |
+| [assert](#an-assert-that-does-not-hold) | `an assert did not hold: T`, or `an assert did not hold` | an [assert](../language/asserts.md), `<condition> ဖြစ်ရမည်`, whose condition is false |
 | [thread trapped](#threads) | `the thread N this waits for stopped at a trap` | a wait for a thread that stopped, under `--trap unwind` |
 | [thread waited](#threads) | `the thread N this waits for gave its result to an earlier wait` | a second wait for the same thread |
 | [lock broken](#threads) | `the lock of this object is broken: the thread that held it stopped at a trap` | a lock block on an object whose holder stopped inside its lock |
@@ -499,6 +500,34 @@ operation `halt`, with the cause `no_row`:
 ```text
 ["က": [၁၊ ၂]]
 the program stopped: no row of the ဇယား has this index
+```
+
+## An assert that does not hold
+
+An [assert](../language/asserts.md), `<condition> ဖြစ်ရမည်။`, stops the run with the trap
+`assert` when its condition is false. The message reads `an assert did not hold: T`, where
+`T` is the message of the assert, then the two sides of a comparison with its sign:
+`<message> (<left> <sign> <right>)`, or `<left> <sign> <right>` with no message, each value
+shown as `ပြသမည်` shows it. An assert with neither a message nor a comparison stops with
+the bare `an assert did not hold`. A debug assert, after `ပရိုဂရမ်ရေးသားချိန်တွင်`, stops
+in the same manner, unless `--debug-asserts off` dropped it from the build.
+
+The assert itself is not the mistake: it reports that an earlier step left a value it
+should not have. To fix it, we find the step that gave the wrong value, and we change the
+assert when the rule it states is wrong. The stop comes from the operation `halt`, with
+the cause `assert`:
+
+```zaka-stop
+ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် အရေ သည် ၃ ဖြစ်ပါစေ။
+"အစ" ဟု ပြသမည်။
+အရေ > ၅ ဖြစ်ရမည်၊ မဟုတ်ပါက "အရေ နည်းနေသည်" ဟု ရပ်မည်။
+ပရိုဂရမ် ပြီးဆုံးပါပြီး။
+```
+
+```text
+အစ
+the program stopped: an assert did not hold: အရေ နည်းနေသည် (၃ > ၅)
 ```
 
 ## Threads

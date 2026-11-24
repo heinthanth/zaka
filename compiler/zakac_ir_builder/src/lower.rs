@@ -118,7 +118,7 @@ pub fn lower(
     let mut lowerer = Lowerer::builder().kinds(kinds).structs(structs).traits(trait_decls(program))
         .top_count(top_count as u32).platform(options.platform_bits)
         .sigs(unit_sigs[0].clone()).unit_sigs(unit_sigs)
-        .maybe_repl_from(options.repl_from).build();
+        .maybe_repl_from(options.repl_from).debug_asserts(options.debug_asserts).build();
     lowerer.scopes.push(HashMap::new());
     lowerer.nested.push(HashMap::new());
     lowerer.drops.push(Vec::new());
@@ -691,6 +691,9 @@ struct Lowerer<'k>
     /// In a REPL session, where the new chunk starts; see
     /// [`LowerOptions::repl_from`].
     repl_from: Option<u32>,
+    /// Whether debug asserts are kept; see [`LowerOptions::debug_asserts`].
+    #[builder(default = true)]
+    debug_asserts: bool,
     /// The globals that hold the box of a variable a closure shares: the
     /// variables of the start block of a REPL session.
     #[builder(default)]
@@ -1200,6 +1203,7 @@ impl Lowerer<'_>
             st::Stmt::Fn(f) => self.nested_fn(f, out),
             st::Stmt::Return(n) if n.fault => self.fault_return(n, out),
             st::Stmt::Return(n) => self.return_stmt(n, out),
+            st::Stmt::Assert(n) => self.assert_stmt(n, out),
             st::Stmt::Call(n) if n.pass =>
             {
                 self.pending = 0;
@@ -1808,6 +1812,84 @@ impl Lowerer<'_>
         let kind = self.shown_kind(e);
         ret_if!(kind.as_enum().is_none(), lowered);
         Expr::builder().kind(kind).node(lowered.node).span(lowered.span).build()
+    }
+
+    /// Lower an assert to a test that stops the run when the condition does
+    /// not hold. The stop shows the message and, for a comparison, both of
+    /// its operands, which run once: each is kept in a hidden slot first.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The assert.
+    /// * `out` - The list the statements go to.
+    fn assert_stmt(&mut self, n: &st::AssertStmt, out: &mut Vec<Stmt>)
+    {
+        ret_if!(n.debug && !self.debug_asserts);
+        let span = n.span;
+        let cond = self.expr(&n.cond);
+        let (cond, sides) = self.assert_sides(cond, out);
+        // An enumeration side shows the name of its member, as a print does.
+        let written = compared(&n.cond);
+        let sides = sides.map(|(op, lhs, rhs)| match written
+        {
+            Some((l, r)) => (op, self.member_shown(l, lhs), self.member_shown(r, rhs)),
+            None => (op, lhs, rhs),
+        });
+        // The message runs when the assert fails, and at no other time.
+        let (mut then, message) = match &n.message
+        {
+            Some(m) => self.with_pre(|l| Some(l.expr(m))),
+            None => (Vec::new(), None),
+        };
+        let shown = assert_text(message, sides, span);
+        then.push(Stmt::Halt { cause: HaltCause::Assert, value: shown, span });
+        let failed = node_expr(DataKind::Bool, prefix_node(PrefixOp::Not, cond), span);
+        out.extend(std::mem::take(&mut self.pre));
+        out.push(Stmt::If { cond: failed, then, els: Vec::new(), span });
+    }
+
+    /// A lowered value labelled with its enumeration kind, so the text of a
+    /// failed assert writes the name of the member; each other value as it is.
+    ///
+    /// # Arguments
+    ///
+    /// * `e` - The written value.
+    /// * `lowered` - The lowered value.
+    ///
+    /// # Returns
+    ///
+    /// The value.
+    fn member_shown(&self, e: &ast::Expr, lowered: Expr) -> Expr
+    {
+        let kind = self.shown_kind(e);
+        ret_if!(kind.as_enum().is_none(), lowered);
+        Expr::builder().kind(kind).node(lowered.node).span(lowered.span).build()
+    }
+
+    /// The comparison of an assert with each operand kept in a hidden slot,
+    /// so a failed assert can show both without running them again.
+    ///
+    /// # Arguments
+    ///
+    /// * `cond` - The lowered condition.
+    /// * `out` - The list the statements that keep the operands go to.
+    ///
+    /// # Returns
+    ///
+    /// The condition, and the operator and both operands for a comparison.
+    fn assert_sides(
+        &mut self, cond: Expr, out: &mut Vec<Stmt>,
+    ) -> (Expr, Option<(CmpOp, Expr, Expr)>)
+    {
+        let ExprNode::Compare { op, lhs, rhs } = cond.node
+        else
+        {
+            return (cond, None);
+        };
+        let lhs = self.switch_subject(*lhs, out);
+        let rhs = self.switch_subject(*rhs, out);
+        let test = compare_node(op, lhs.clone(), rhs.clone());
+        (node_expr(cond.kind, test, cond.span), Some((op, lhs, rhs)))
     }
 
     /// Lower an `if` chain; later arms nest in the `else` of earlier ones.
@@ -5150,6 +5232,83 @@ fn char_place(e: &ast::Expr) -> Option<(&ast::Expr, &ast::Expr, u8)>
 fn node_expr(kind: DataKind, node: ExprNode, span: Span) -> Expr
 {
     Expr::builder().kind(kind).node(node).span(span).build()
+}
+
+/// The two operands of a written comparison, in signs or in words.
+///
+/// # Arguments
+///
+/// * `e` - The condition.
+///
+/// # Returns
+///
+/// The left and the right operand, or `None` for a condition of another form.
+fn compared(e: &ast::Expr) -> Option<(&ast::Expr, &ast::Expr)>
+{
+    use ast::InfixOp as I;
+    match ungrouped(e)
+    {
+        ast::Expr::Infix(n)
+            if matches!(n.op, I::Eq | I::Ne | I::Lt | I::Gt | I::Le | I::Ge) =>
+        {
+            Some((&n.lhs, &n.rhs))
+        }
+        ast::Expr::Verb(n) if is_cmp_verb(n.op) =>
+        {
+            tern!(let [l, r] = n.args.as_slice(), Some((l, r)), None)
+        }
+        _ => None,
+    }
+}
+
+/// Whether a verb compares two values.
+///
+/// # Arguments
+///
+/// * `op` - The verb.
+///
+/// # Returns
+///
+/// `true` for `==`, `!=`, `<`, `>`, `<=` and `>=` in words.
+fn is_cmp_verb(op: VerbOp) -> bool
+{
+    matches!(
+        op,
+        VerbOp::Eq | VerbOp::Ne | VerbOp::Gt | VerbOp::Le | VerbOp::Lt | VerbOp::Ge
+    )
+}
+
+/// The text a failed assert shows: its message, then the comparison with
+/// the values of both operands, `<message> (<lhs> <op> <rhs>)`.
+///
+/// # Arguments
+///
+/// * `message` - The lowered message, when the assert has one.
+/// * `sides` - The operator and both operands, for a comparison.
+/// * `span` - The source region.
+///
+/// # Returns
+///
+/// The text, or `None` with neither a message nor a comparison.
+fn assert_text(
+    message: Option<Expr>, sides: Option<(CmpOp, Expr, Expr)>, span: Span,
+) -> Option<Expr>
+{
+    let has_message = message.is_some();
+    let mut pieces: Vec<FmtPiece> = message.map(FmtPiece::Value).into_iter().collect();
+    if let Some((op, lhs, rhs)) = sides
+    {
+        let sign: &str = op.into();
+        let (open, close) = tern!(has_message, (" (", ")"), ("", ""));
+        pieces.push(FmtPiece::Text(open.into()));
+        pieces.push(FmtPiece::Value(lhs));
+        pieces.push(FmtPiece::Text(format!(" {sign} ")));
+        pieces.push(FmtPiece::Value(rhs));
+        pieces.push(FmtPiece::Text(close.into()));
+    }
+    pieces.retain(|p| !matches!(p, FmtPiece::Text(t) if t.is_empty()));
+    ret_if!(pieces.is_empty(), None);
+    Some(node_expr(DataKind::TEXT, ExprNode::Format(pieces), span))
 }
 
 /// The read of a slot.

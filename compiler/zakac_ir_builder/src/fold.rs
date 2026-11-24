@@ -997,9 +997,12 @@ fn splice_piece(out: &mut Vec<FmtPiece>, piece: FmtPiece)
 {
     let text = match piece
     {
-        // A function value prints as the name of its function, which the
-        // text of its constant does not hold.
-        FmtPiece::Value(e) if e.kind.is_fn() => return out.push(FmtPiece::Value(e)),
+        // A function value prints as the name of its function, and a member
+        // of an enumeration as its name; the text of a constant holds neither.
+        FmtPiece::Value(e) if e.kind.is_fn() || e.kind.as_enum().is_some() =>
+        {
+            return out.push(FmtPiece::Value(e));
+        }
         FmtPiece::Text(text) => text,
         FmtPiece::Value(e) => match e.node
         {

@@ -1429,6 +1429,11 @@ pub struct LowerOptions
     /// session text, the code of the imported files is left out too: it ran
     /// with the first chunk.
     pub repl_from: Option<u32>,
+    /// Whether the debug asserts, those after `ပရိုဂရမ်ရေးသားချိန်တွင်`, are
+    /// kept; `--debug-asserts off` drops them. The check reads them all the
+    /// same.
+    #[builder(default = true)]
+    pub debug_asserts: bool,
 }
 
 impl Default for LowerOptions
@@ -1553,6 +1558,8 @@ pub enum HaltCause
     ThreadsNotPositive,
     /// The data of a variant was read from a value of another variant.
     WrongVariant,
+    /// The condition of an assert did not hold.
+    Assert,
 }
 
 /// The name of a function a reader knows: the name the program writes. The
