@@ -97,8 +97,8 @@ is first used, as in "data kind (type)".
 | Zaka term | Standard term | Burmese | Page |
 | --- | --- | --- | --- |
 | module | module, one source file | | [Modules](../language/modules.md) |
-| core module | prelude, built-in functions | | [The core module](../language/core.md) |
-| stdlib | standard library | `"စံကား/<name>"` | [The stdlib](../language/stdlib.md) |
+| core module | prelude, built-in functions | | [The core module](../stdlib/core.md) |
+| stdlib | standard library | `"စံကား/<name>"` | [The stdlib](../stdlib/README.md) |
 | package | package, crate | `"<dep>/<module>"` | [Packages](../language/packages.md) |
 | dep | dependency | | [Packages](../language/packages.md#deps) |
 | repo | repository | | [Packages](../language/packages.md#git-deps-and-the-lock-file) |

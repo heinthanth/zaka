@@ -432,7 +432,7 @@ variables of `zakac`. A program with no program start block ignores them.
 $ zakac run greet.zaka -- ကက ခခ
 ```
 
-A program that uses the stdlib module [`"စံကား/အဝင်အထွက်"`](../language/io.md) reads the
+A program that uses the stdlib module [`"စံကား/အဝင်အထွက်"`](../stdlib/io.md) reads the
 standard input of `zakac`, and reads and writes files on disk relative to the folder the
 command runs in:
 

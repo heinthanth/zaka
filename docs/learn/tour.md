@@ -679,7 +679,7 @@ its `zakac.toml` and imports `"<package>/<module>"`; `zakac fetch` pins the pack
 come from git.
 
 Learn: [Modules](modules/README.md), [Packages](modules/packages.md), [The stdlib](stdlib/README.md).
-Docs: [Modules](../manual/language/modules.md), [Packages](../manual/language/packages.md), [The stdlib](../manual/language/stdlib.md).
+Docs: [Modules](../manual/language/modules.md), [Packages](../manual/language/packages.md), [The stdlib](../manual/stdlib/README.md).
 
 ## Threads
 

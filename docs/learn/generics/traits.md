@@ -326,7 +326,7 @@ same as in the notes block of a generic function.
   means the same as `T တွင် နံပါတ်နှင့်တူသော ဂုဏ်သတ္တိ ရှိသည်။` in its notes block
   ([Generics and traits](../../manual/language/generics.md)).
 - **Operators.** The full list of the functions that operators call is on [The core
-  module](../../manual/language/core.md).
+  module](../../manual/stdlib/core.md).
 - **Threads.** The built-in trait `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` marks the data
   kinds that a [thread](../threads/README.md) can use.
 

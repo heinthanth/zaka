@@ -7,7 +7,7 @@ description: The stdlib module of input and output - its streams and its error e
 
 A program reads and writes through the functions of the stdlib module
 `"စံကား/အဝင်အထွက်"` (input and output, I/O). Each one is an [external
-function](functions-c.md#external-functions), which means that the VM does its work, and
+function](../language/functions-c.md#external-functions), which means that the VM does its work, and
 each one can fail with a member of the enumeration `အချက်အလက်အဝင်အထွက်အမှားအယွင်း`. The
 Learn book teaches the module in [Input and output](../../learn/io/README.md). A program
 imports the names that it needs:
@@ -31,15 +31,15 @@ imports the names that it needs:
 | `<text> ကို <stream> သို့ ရေး` | writes the text to the stream, with no line break |
 | `<name> ဟူသည့် ပတ်ဝန်းကျင်ကိန်းရှင် ကို ဖတ်` | the variable of the environment with that name, as text, or `မတွေ့ခြင်း` when it is not set |
 
-We call these functions as [preposition calls](functions-sentences.md#prepositions), and
+We call these functions as [preposition calls](../language/functions-sentences.md#prepositions), and
 the other call forms work too. `ရေး` is [two functions with one
-name](functions-overloads.md): the data kind (type) of the argument at `သို့` chooses
+name](../language/functions-overloads.md): the data kind (type) of the argument at `သို့` chooses
 between a file path and a stream.
 
 ## Calling a function that can fail
 
 The result of each function can be a failure, so a call passes the failure on, reads the
-whole result, or both ([Errors and results](error-handling.md)). The program start block
+whole result, or both ([Errors and results](../language/error-handling.md)). The program start block
 cannot pass a failure on, so a program does its input and output in a function that can
 fail, and the program start block reads the whole result:
 
@@ -166,12 +166,12 @@ no right. The pages and the explorer run in storage and grant each right.
   (`တခြားအကြောင်းအရင်း`), and a name that is not UTF-8 text fails the listing
   (`စာသားဖွဲ့စည်းပုံမမှန်ခြင်း`).
 - Each of these functions, and `ဖိုင်ကိုဖတ်` and `ရေး` on a file, accepts a path as text
-  or as a `ဖိုင်လမ်းကြောင်း` of [the path module](stdlib.md#paths), which this module
+  or as a `ဖိုင်လမ်းကြောင်း` of [the path module](path.md), which this module
   imports.
 - The prepositions `လမ်းကြောင်းရှိ အရာကို` and `ဖိုင်တွဲထဲမှ အမည်များကို` contain several
   words. In a file that imports these functions, `လမ်းကြောင်းရှိ`, `အရာကို`, `ဖိုင်တွဲထဲမှ`,
   `အမည်များကို` and `နေရာတွင်` are taken as words of their prepositions ([What the
-  flexible grammar costs](functions-sentences.md#what-the-flexible-grammar-costs)).
+  flexible grammar costs](../language/functions-sentences.md#what-the-flexible-grammar-costs)).
 - In a world in storage (a Learn page, the explorer), the folders are those that the
   program made and each folder above a file. On disk, each call is the call of the OS.
 
@@ -206,9 +206,9 @@ no right. The pages and the explorer run in storage and grant each right.
 
 ## What the stdlib contains
 
-The other [standard library modules](stdlib.md) cover text, paths, lists, math and time.
+The other [standard library modules](README.md) cover text, paths, lists, math and time.
 A table has its own reads and walks in the language
-([Tables](tables.md)).
+([Tables](../language/tables.md)).
 
 ## The rules
 
@@ -217,6 +217,6 @@ A table has its own reads and walks in the language
 - A program read from storage (the explorer, a Learn page, standard input) can import from
   the stdlib, but from no other file (ZK0232).
 - The VM fixes the set of external functions, so a program cannot declare others
-  ([External functions](functions-c.md#external-functions), ZK0334).
+  ([External functions](../language/functions-c.md#external-functions), ZK0334).
 - A program that imports from this module reads the path module too, because this module
   imports it.

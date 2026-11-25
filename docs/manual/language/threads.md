@@ -95,8 +95,8 @@ value, and `<thread> ကို စောင့်မည်။` to wait for it an
   [channel](#channels).
 - `<thread> ကို စောင့်မည်။` takes the result too, and drops it. When no wait takes the
   result of a thread, the result is dropped as the program ends.
-- `စောင့်` is a verb of [the core module](core.md), so a function of the same name in the
-  program joins it as an overload ([Verbs on structs](core.md#verbs-on-structs)).
+- `စောင့်` is a verb of [the core module](../stdlib/core.md), so a function of the same name in the
+  program joins it as an overload ([Verbs on structs](../stdlib/core.md#verbs-on-structs)).
 
 ```zaka
 အော် ဟူသော လုပ်ဆောင်ချက် သည်
@@ -175,7 +175,7 @@ sleeps. The program start block can sleep too, as it is a thread of its own.
   A count of seconds is turned into milliseconds before the sleep.
 - A sleep is no wait for another thread, so a thread that waits for a sleeping one is no
   deadlock: the program goes on once the sleep ends.
-- Both forms are sentence calls of the verb `စောင့်` of [the core module](core.md), which a
+- Both forms are sentence calls of the verb `စောင့်` of [the core module](../stdlib/core.md), which a
   wait for a thread uses too. The preposition `မီလီစက္ကန့်` or `စက္ကန့်` tells a sleep from a
   wait.
 

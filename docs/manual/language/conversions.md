@@ -116,7 +116,7 @@ error[ZK0408]: cannot convert isize to bool
 
 When the table has no pair for two data kinds, a conversion goes through one of the two
 conversion [traits](traits.md#built-in-traits) (`From` and `TryFrom`) of the [core
-module](core.md):
+module](../stdlib/core.md):
 
 | Trait | Its function | Use |
 | --- | --- | --- |
@@ -219,7 +219,7 @@ numbers are declared in no file, so to read a number or a character from text we
 `စမ်းသပ်ပြောင်းလဲ` from `"စံကား/စာသား"`, which brings each of these functions.
 
 A failure to read a number is a member of `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း`, which the [core
-module](core.md) declares, so it needs no import: `ဗလာစာသား` (blank text),
+module](../stdlib/core.md) declares, so it needs no import: `ဗလာစာသား` (blank text),
 `ကိန်းဂဏန်းမဟုတ်သောစာလုံးပါခြင်း` (a character that is no part of the number) or
 `အကန့်အသတ်ကျော်ခြင်း` (a number outside the range of its data kind). A text with no
 character or with more than one fails with a member of `စာလုံးဖတ်ခြင်းအမှားအယွင်း`, which

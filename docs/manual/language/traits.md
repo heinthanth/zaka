@@ -267,7 +267,7 @@ not.
 
 ## Built-in traits
 
-The [core module](core.md) declares the built-in traits with the compiler mark (ZK0349
+The [core module](../stdlib/core.md) declares the built-in traits with the compiler mark (ZK0349
 outside the core module). The built-in data kinds have them through a rule of the
 compiler, and a struct has them through its functions, which its operators then call.
 
@@ -311,7 +311,7 @@ still free to use as names.
 | ZK0346 | a function of a trait block that is not one of its trait |
 | ZK0347 | two functions that give a data kind one function of a trait |
 | ZK0348 | a trait block outside the file of its data kind and the file of its trait |
-| ZK0349 | the compiler mark outside the [core module](core.md) |
+| ZK0349 | the compiler mark outside the [core module](../stdlib/core.md) |
 | ZK0351 | a trait block that takes the defaults of its trait when none is left to take (warning) |
 
 The errors of kind parameters, calls and hints are on [Generics](generics.md#errors).

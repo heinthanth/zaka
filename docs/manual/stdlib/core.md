@@ -35,7 +35,7 @@ T တွင် ပေါင်းနိုင်သော ဂုဏ်သတ္�
 ## The parts of the core module
 
 The source of the core module is the `core` folder inside the `stdlib` folder of the
-source tree. Its `mod.zaka` [shares](modules.md#sharing-imported-names) four parts, and a
+source tree. Its `mod.zaka` [shares](../language/modules.md#sharing-imported-names) four parts, and a
 program cannot import one part on its own:
 
 | File | What it declares |
@@ -43,7 +43,7 @@ program cannot import one part on its own:
 | `kinds.zaka` | the built-in data kinds, and the facts of the target |
 | `traits.zaka` | the built-in traits |
 | `verbs.zaka` | the verbs and the counts that the compiler provides |
-| `heap.zaka` | the [heap statements](heap.md#heap-statements) |
+| `heap.zaka` | the [heap statements](../language/heap.md#heap-statements) |
 
 A verb is a function that we call as a sentence, such as `က နှင့် ခ ၏ ပေါင်းလဒ် ကို
 ပြသမည်`. Its arguments are whole clauses, and its function signature in the core module
@@ -67,8 +67,8 @@ parameters, `ယေဘုယျဒေတာအမျိုးအစား A က�
 
 | What is marked | What the mark means |
 | --- | --- |
-| a data kind | names a built-in data kind, so that it can have a doc comment: `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, and, with their kind parameters, the list `စာရင်း`, the table `ဇယား`, the thread `အပြိုင်လုပ်ငန်း` and the channel `ဒေတာလမ်းကြောင်း`. Those four end in a [written-as hint](generics.md#written-as-hints), such as `A စာရင်း` or `K ဖြင့် ညွှန်းသော V ဇယား`, which shows how a program writes them. |
-| a trait | the built-in data kinds have the trait through a rule of the compiler, and each data kind that a program declares has it through its functions, under the rules of [Traits](traits.md) |
+| a data kind | names a built-in data kind, so that it can have a doc comment: `ကိန်းပြည့်`, `ဒဿမကိန်း`, `စာလုံး`, `စာသား`, `မှန်မှားတန်ဖိုး`, and, with their kind parameters, the list `စာရင်း`, the table `ဇယား`, the thread `အပြိုင်လုပ်ငန်း` and the channel `ဒေတာလမ်းကြောင်း`. Those four end in a [written-as hint](../language/generics.md#written-as-hints), such as `A စာရင်း` or `K ဖြင့် ညွှန်းသော V ဇယား`, which shows how a program writes them. |
+| a trait | the built-in data kinds have the trait through a rule of the compiler, and each data kind that a program declares has it through its functions, under the rules of [Traits](../language/traits.md) |
 | a function | the function has no block, because each call of it is written as a sentence of the language, and its prepositions are the words of that sentence |
 | a constant | the constant has no value in the source, and the compiler gives it the value of the target that it builds for |
 
@@ -77,16 +77,16 @@ The marked functions are the verbs and the counts:
 - `ပြသ` is the sentence `<value> ကို ပြသမည်။` (or `ဟု`).
 - `ထည့်`, `ဖျက်` and `အစားထိုး` are the sentences that add, remove and replace, and
   `ကူးထည့်` is the sentence that puts a duplicate (copy) of a value into a place, or a
-  duplicate of all with `အကုန်ကူးထည့်` ([Values and objects](objects.md)).
+  duplicate of all with `အကုန်ကူးထည့်` ([Values and objects](../language/objects.md)).
 - `စောင့်`, `ပို့`, `ပိတ်`, `ပေါင်းထည့်` and `နုတ်ယူ`, with a second `အစားထိုး`, are the
-  sentences of [threads](threads.md): wait, send, close, and the steps on an atomic
+  sentences of [threads](../language/threads.md): wait, send, close, and the steps on an atomic
   number.
 - `အကွက်အရေအတွက်`, `စာလုံးအရေအတွက်` and `အညွှန်းအရေအတွက်` are the counts that we read
   after `၏`.
 
 A function that a file declares with one of these names joins the overloads of the verb,
 as [Verbs on structs](#verbs-on-structs) shows. The five marked constants are the facts
-that a [compile-time conditional](compile-time.md#the-facts-of-the-target) reads, and a
+that a [compile-time conditional](../language/compile-time.md#the-facts-of-the-target) reads, and a
 file that names one sees it without an import.
 
 The mark belongs to the modules of the stdlib, which include the core module, and in
@@ -105,10 +105,10 @@ another file it is ZK0349.
 | `နှိုင်းယှဉ်နိုင်သော` | the data kinds that work with `< > <= >=`: the numbers, the characters, and each data kind with `ငယ်မငယ်စစ်` and `ကြီးမကြီးစစ်` |
 | `တူမတူစစ်ဆေးနိုင်သော` | the data kinds that work with `==` and `!=`: all data kinds |
 | `စာသားအဖြစ်ပြောင်းလဲပြသနိုင်သော` | the data kinds that `ပြသမည်` prints: all data kinds except a handle of a data kind from outside |
-| `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | the data kinds that convert to another with `အဖြစ် ပြောင်းလဲသော ရလဒ်`, through the compiler's table or a `ပြောင်းလဲ`, and those that convert with a failure, through a `စမ်းသပ်ပြောင်းလဲ` ([Conversions](conversions.md#conversions-through-traits)) |
-| `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း` | the failure of a number read from text, or of an integer that does not fit its kind ([Conversions](conversions.md#integers-that-must-fit)) |
+| `ပြောင်းလဲနိုင်သော`, `စမ်းသပ်ပြောင်းလဲနိုင်သော` | the data kinds that convert to another with `အဖြစ် ပြောင်းလဲသော ရလဒ်`, through the compiler's table or a `ပြောင်းလဲ`, and those that convert with a failure, through a `စမ်းသပ်ပြောင်းလဲ` ([Conversions](../language/conversions.md#conversions-through-traits)) |
+| `ကိန်းဂဏန်းဖတ်ခြင်းအမှားအယွင်း` | the failure of a number read from text, or of an integer that does not fit its kind ([Conversions](../language/conversions.md#integers-that-must-fit)) |
 | `စမ်းသပ်ပြောင်းလဲ`, generic over two integer kinds | the conversion of one integer to another that fails when the value does not fit, which `ပြောင်းလဲသော ရလဒ်ကောင်း` calls |
-| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile time](compile-time.md#the-facts-of-the-target)) |
+| `အလုပ်လုပ်မည့်ကွန်ပျူတာစနစ်`, `အလုပ်လုပ်မည့်စီပီယူဗိသုကာပုံစံ`, `အလုပ်လုပ်မည့်အပလီကေးရှင်းဘိုင်နရီကြားခံစနစ်`, `အလုပ်လုပ်မည့်ပလက်ဖောင်းဘစ်`, `ကွန်ပိုင်လာအထွက်ကုဒ်အမျိုးအစား` | the OS, the CPU, the ABI, the platform bit count and the code of the target ([Compile time](../language/compile-time.md#the-facts-of-the-target)) |
 
 - A name that a file declares hides the name of the core module, so a trait named
   `ပေါင်းနိုင်သော` in a file is the file's own trait.

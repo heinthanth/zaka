@@ -206,8 +206,8 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0346 | a function of a trait block that is not a function of its trait | [Traits](../language/traits.md#trait-blocks) |
 | ZK0347 | two functions that both give a data kind the same function of a trait | [Traits](../language/traits.md#when-a-data-kind-has-a-trait) |
 | ZK0348 | a trait block in a file that declares neither its data kind nor its trait | [Traits](../language/traits.md#trait-blocks) |
-| ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The core module](../language/core.md) |
-| ZK0350 | warning: a function with the same name, data kinds and prepositions as a function of the core module, which then replaces that function in each call | [The core module](../language/core.md#verbs-on-structs) |
+| ZK0349 | the compiler mark `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` outside the modules of the stdlib | [The core module](../stdlib/core.md) |
+| ZK0350 | warning: a function with the same name, data kinds and prepositions as a function of the core module, which then replaces that function in each call | [The core module](../stdlib/core.md#verbs-on-structs) |
 | ZK0351 | warning: a trait block that asks for the defaults of its trait, though no function it leaves out has a default | [Traits](../language/traits.md#trait-blocks) |
 | ZK0352 | a call written as a sentence that leaves out a phrase of its function signature, or uses a different phrase | [Functions](../language/functions-sentences.md#starting-and-ending-phrases) |
 | ZK0353 | an enumeration gives some members constant values and lets others hold data | [Enumerations](../language/enums.md#members-that-hold-data) |

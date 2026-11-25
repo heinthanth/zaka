@@ -191,23 +191,23 @@ lists `day.txt` afterwards.
 
 - **Math and time.** Import `နှစ်ထပ်ကိန်းရင်း` from `"စံကား/သင်္ချာ"` to find a square
   root. Import `ကြာချိန်နာရီကိုဖတ်` from `"စံကား/အချိန်"` and subtract two readings to
-  measure elapsed milliseconds. See [Math](../../manual/language/stdlib.md#math) and
-  [Time](../../manual/language/stdlib.md#time) for runnable examples.
+  measure elapsed milliseconds. See [Math](../../manual/stdlib/math.md) and
+  [Time](../../manual/stdlib/time.md) for runnable examples.
 - **More functions.** Each module has more functions than this page shows: for example,
   `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
   and `စီ` sorts a list with a function that compares two cells. [The
-  stdlib](../../manual/language/stdlib.md) lists each function with its rules and its cost.
+  stdlib](../../manual/stdlib/README.md) lists each function with its rules and its cost.
 - **The sign form.** Each stdlib function also works in the sign form, such as
   `ခွဲ("က၊ခ"၊ "၊")` ([The sign form](../functions/results.md#the-sign-form)).
 - **Places in text count u8s.** A function that returns a place in text, such as `ရှာ`,
   counts the u8s (bytes) of the text, so a Burmese letter takes three ([Cells](../text/characters.md#cells)).
 - **Paths as a data kind.** A path that the module returns is a `ဖိုင်လမ်းကြောင်း`, which
   prints as its text, and each function accepts text as well
-  ([Paths](../../manual/language/stdlib.md#paths)).
+  ([Paths](../../manual/stdlib/path.md)).
 - **Generic list functions.** The list functions work on a list of each data kind, because
   each one is generic ([Generics](../generics/README.md)).
 - **The rest of the file calls.** The I/O module can also remove, move and test a path:
-  see [Files and folders](../../manual/language/io.md#files-and-folders).
+  see [Files and folders](../../manual/stdlib/io.md#files-and-folders).
 
 ## Recap
 

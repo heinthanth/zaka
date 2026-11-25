@@ -123,7 +123,7 @@ too. Each package has the stdlib as a dep named `စံကား`, which no `zak
 
 A module of the stdlib has the name its table gives it and no other: a path after `စံကား/`
 reads no file, so `"စံကား/io"` is ZK0270 though the file is `io.zaka`. [The
-stdlib](stdlib.md) lists the modules.
+stdlib](../stdlib/README.md) lists the modules.
 
 ## Tests of deps
 

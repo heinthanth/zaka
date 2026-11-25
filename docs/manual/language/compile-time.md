@@ -42,7 +42,7 @@ whole chain one that the compiler settles. The other arms are written as in a pl
 
 ## The facts of the target
 
-A condition reads the five facts of the target, which [the core module](core.md) declares
+A condition reads the five facts of the target, which [the core module](../stdlib/core.md) declares
 as constants:
 
 | Constant | Values |
@@ -243,7 +243,7 @@ the arguments.
   a run](../vm/running.md#permissions) are. A path in the program starts from the folder
   of the program. Nothing is asked, so an effect without the right stops the run.
 - Reading input stops the run.
-- The clocks in [the time module](stdlib.md#time) both read zero during a comptime run.
+- The clocks in [the time module](../stdlib/time.md) both read zero during a comptime run.
 - The language server and the explorer run a call with reads under the folder of the
   program at most, and with no write or C call, whatever flags are given.
 - A run has a cap on its operations (50 000 000, or 1 000 000 in the language server and

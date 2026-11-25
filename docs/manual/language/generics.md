@@ -404,7 +404,7 @@ still name the same data kind.
 ```
 
 The [list](lists.md) and the [table](tables.md) get their hints from the [core
-module](core.md): `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`. `စာရင်း` and `ဇယား` are names,
+module](../stdlib/core.md): `A စာရင်း` and `K ဖြင့် ညွှန်းသော V ဇယား`. `စာရင်း` and `ဇယား` are names,
 not reserved words, so the long form and the sign form name them too:
 `ကိန်းပြည့် ကို အစားထိုးအသုံးပြုသည့် စာရင်း`, `ဇယား<စာသား၊ ကိန်းပြည့်>`. A file that declares
 a data kind with either name hides the one of the core module.

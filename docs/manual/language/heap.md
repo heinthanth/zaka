@@ -60,7 +60,7 @@ at the address in the place"), and the words after that tell the two apart.
 
 Each heap statement is a [call written as a
 sentence](functions-sentences.md#starting-and-ending-phrases) of a function of [the core
-module](core.md): `သိမ်းထား`, `ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and
+module](../stdlib/core.md): `သိမ်းထား`, `ပြန်လည်စွန့်လွှတ်`, `နေရာအချဲ့အချုံ့လုပ်`, `ဖြည့်`, `ကူးယူ` and
 `ပြောင်းထည့်`. These names are not reserved words, so a file that declares a function with
 one of these names hides the function of the core module. As in each sentence call, an
 argument is a whole clause: a name, a number, a size, `ပ ၏ တန်ဖိုး`, a field or a

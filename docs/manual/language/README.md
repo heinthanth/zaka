@@ -42,8 +42,10 @@ rules.
 
 ## The pages of this chapter
 
-This chapter starts with source text and statements, then covers functions, data,
-modules and unsafe code. Follow the links to Learn for worked examples.
+This chapter starts with source text and statements, then covers data, functions, errors,
+generic code and modules, and ends with unsafe code and C. The modules that the compiler
+carries have a chapter of their own, [The stdlib](../stdlib/README.md). Follow the links to
+Learn for worked examples.
 
 ### The basics
 
@@ -58,6 +60,21 @@ modules and unsafe code. Follow the links to Learn for worked examples.
 | [Blocks, branches and loops](control-flow.md) | blocks, the if statement, while, counted, each-cell and generic loops, break and continue |
 | [Names and scope](scope.md) | what opens a scope, shadowing, constants and counters, and the errors ZK0301 to ZK0308 |
 
+### Data
+
+| Page | What it covers |
+| --- | --- |
+| [Lists](lists.md) | list kinds (dynamic arrays), literals, cells, adding and removing cells, and ranges |
+| [Counted lists and storage](counted-lists.md) | counted lists (fixed-size arrays), static data, and how a list is stored |
+| [Tables](tables.md) | the table kind (map): rows, indexes (keys), loops over rows, and how a table is stored |
+| [Text](text.md) | text (strings), template literals, joining, cells and characters, and changing text |
+| [How text is stored](text-storage.md) | the three words of text, heap growth, duplicates and static text |
+| [Structs](structs.md) | the struct declaration, its measure word, literals, fields, and how a struct is stored |
+| [Values and objects](objects.md) | values that are duplicated, shared objects (reference types), deep duplicates, and reference counting |
+| [Structs based on structs](based-structs.md) | a struct that holds the fields of another struct, and the functions it takes on |
+| [Enumerations](enums.md) | enumerations (enums), their members and values, and the switch statement |
+| [Kind aliases](aliases.md) | a second name for a data kind (type alias) |
+
 ### Functions
 
 | Page | What it covers |
@@ -68,8 +85,6 @@ modules and unsafe code. Follow the links to Learn for worked examples.
 | [Function calls](functions-calls.md) | the forms of a call, how arguments are checked, calls on a value with `၏`, and recursion |
 | [Calls written as sentences](functions-sentences.md) | prepositions after the arguments, starting and ending phrases, and the cost of this grammar |
 | [One name, several functions](functions-overloads.md) | overloaded functions and how a call picks one |
-| [External and C functions](functions-c.md) | functions that the VM serves or a C lib provides, and the data kinds that cross to C |
-| [Functions C can call](functions-exports.md) | functions that a Zaka lib exports to C |
 | [The program start block](functions-start-block.md) | the block where each program starts (entry point, `main`), its arguments, environment and exit code |
 | [Function values](function-values.md) | function kinds, a function as a value, calls through a function value, and comparing and printing function values |
 | [Closures](closures.md) | nested functions, the variables that these capture, closures as values, and closures given to C |
@@ -82,35 +97,31 @@ modules and unsafe code. Follow the links to Learn for worked examples.
 | [Reading a result](reading-results.md) | keeping a whole result, testing which part it contains, and reading each part |
 | [Result kinds](result-kinds.md) | how to write a result kind, sides with no value, and lists and pointers of results |
 | [Optional values](optionals.md) | the optional kind (option type), the blank `အလွတ်`, and the reason Zaka has no NULL |
+| [Cleanup](cleanup.md) | code that runs when its block ends, and code that runs when the function fails |
 | [Asserts](asserts.md) | the assert (assertion) and the debug assert, their messages, and the text of the stop |
 | [Tests](tests.md) | the test block (unit test), and how `zakac test` finds, runs and reports the tests |
 
-### Data
-
-| Page | What it covers |
-| --- | --- |
-| [Lists](lists.md) | list kinds (dynamic arrays), literals, cells, adding and removing cells, and ranges |
-| [Counted lists and storage](counted-lists.md) | counted lists (fixed-size arrays), static data, and how a list is stored |
-| [Tables](tables.md) | the table kind (map): rows, indexes (keys), loops over rows, and how a table is stored |
-| [Text](text.md) | text (strings), template literals, joining, cells and characters, and changing text |
-| [How text is stored](text-storage.md) | the three words of text, heap growth, duplicates and static text |
-| [Structs](structs.md) | the struct declaration, its measure word, literals, fields, and how a struct is stored |
-| [Values and objects](objects.md) | values that are duplicated, shared objects (reference types), deep duplicates, and reference counting |
-| [Enumerations](enums.md) | enumerations (enums), their members and values, and the switch statement |
-| [Kind aliases](aliases.md) | a second name for a data kind (type alias) |
-
-### Programs in the large
+### Generic code
 
 | Page | What it covers |
 | --- | --- |
 | [Generics](generics.md) | functions, structs and aliases with kind parameters (type parameters), and instances |
 | [Traits](traits.md) | traits (interfaces), trait blocks, default functions and the built-in traits |
+| [Trait values](trait-values.md) | a value of each struct that has a trait, and calls that pick the function when the program runs |
+
+### Programs in several files
+
+| Page | What it covers |
+| --- | --- |
+| [Modules](modules.md) | a program in several files: exports, imports, and names across files |
+| [Packages](packages.md) | a program that uses the modules of another folder, and the stdlib as a package |
+
+### Threads and compile time
+
+| Page | What it covers |
+| --- | --- |
 | [Threads](threads.md) | running a function on a thread, waiting for its result, channels, locks, atomic numbers and parallel loops |
 | [Compile time](compile-time.md) | the compile-time conditional on the target, and comptime functions |
-| [The core module](core.md) | the module that each file sees with no import (prelude) |
-| [Modules](modules.md) | a program in several files: exports, imports, and names across files |
-| [Input and output](io.md) | reading lines and files, writing files and streams |
-| [The stdlib](stdlib.md) | the modules of the stdlib (standard library) that are written in Zaka |
 
 ### Wording
 
@@ -119,19 +130,21 @@ modules and unsafe code. Follow the links to Learn for worked examples.
 | [Natural wording](naturalness.md) | which particle and which ending fit Burmese best, and the warnings for the others |
 | [Spoken Burmese](spoken.md) | the spoken spellings of the reserved words and how to turn them on |
 
-### Unsafe code
+### Unsafe code and C
 
 | Page | What it covers |
 | --- | --- |
 | [Unsafe Zaka](unsafe.md) | unsafe functions and blocks, safe wrappers, and the checks on unsafe code |
 | [Pointers and addresses](pointers.md) | the pointer kind, the null address, reading and writing through a pointer, and pointer arithmetic |
 | [The heap and owned pointers](heap.md) | the heap statements and owned pointers |
+| [External and C functions](functions-c.md) | functions that the VM serves or a C lib provides, and the data kinds that cross to C |
+| [Functions C can call](functions-exports.md) | functions that a Zaka lib exports to C |
 
 The pages before Unsafe Zaka state the rules of safe Zaka. In safe code each value is
 duplicated, each shared object is shared, and the VM frees each block when its last use
-goes, so none of those pages talks about addresses. The last three pages state the rules of
-unsafe code: pointers, the heap, owned pointers and the checks that the compiler runs on
-that code.
+goes, so none of those pages talks about addresses. The last pages state the rules of unsafe
+code and C: pointers, the heap, owned pointers, the checks that the compiler runs on that
+code, and the functions that cross to C and back.
 
 The error codes (`ZK0101` and the rest) are listed in [Error
 messages](../reference/errors.md), and the words of the language in [Reserved

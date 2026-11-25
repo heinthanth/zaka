@@ -402,7 +402,7 @@ A [whole result](../language/reading-results.md#reads) is explained in the langu
 | `c_store k at o` | addr value → | write a field of data kind `k` at offset `o` of the struct C keeps, from unsafe code: a number or a true/false value as it is, a counted list from the block whose address is the value. A guard has checked that the handle is open |
 | `c_load k at o` | addr → value | read a field of data kind `k` at offset `o` of the struct that C keeps at the address on top, the address a [handle](../language/functions-c.md#data-kinds-from-outside-the-program) points at, in the storage of C. A number or a true/false value is pushed. For a counted list of numbers, the operation pops the address of a block under it, writes the cells there, and pushes that address; for a text field, a `char *`, it does the same with the string copied up to its zero octet, as an optional of text, with no data for NULL. A guard of the wrapper has checked that the handle is open (`halt closed_handle`) |
 
-The [stdlib](../language/stdlib.md) declares host functions for I/O, math and time.
+The [stdlib](../stdlib/README.md) declares host functions for I/O, math and time.
 `zakac run` uses the terminal, disk and OS clocks. The books and the Explorer use
 a world in storage with a virtual clock. [Host functions](../internals/vm-internals.md#host-functions)
 describes the function table.

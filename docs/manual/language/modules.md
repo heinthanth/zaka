@@ -87,7 +87,7 @@ exports.
 - The file is a string. Its path is relative to the folder of the importing file, with
   `/` between folders, and `..` is the folder above.
 - A path that starts with `စံကား/` names a module of the stdlib (standard library), such
-  as `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)). The compiler carries its source, so
+  as `"စံကား/အဝင်အထွက်"` ([Input and output](../stdlib/io.md)). The compiler carries its source, so
   it is never read from disk, and a program read from storage can import it too. Another
   name after `စံကား/` is ZK0270.
 - A path whose first part is the name of a dep that the `zakac.toml` of the package lists
@@ -222,7 +222,7 @@ other value fits.
 
 A program on standard input, in the compiler explorer or on a Learn page has no folder.
 Each import in it is ZK0232, and the program does not go on to the check. An import from
-the stdlib is the exception ([Input and output](io.md#the-rules)).
+the stdlib is the exception ([Input and output](../stdlib/io.md#the-rules)).
 
 ## The compiler
 

@@ -243,7 +243,7 @@ prints `ဖတ်၍မရ` ("cannot read").
 - **What the module has.** Besides `ရေး`, `ဖိုင်ကိုဖတ်` and `စာကြောင်းတစ်ကြောင်းဖတ်`, the
   module has standard error (`စံပြုအမှား`), and calls to add to a file, remove it, move
   it, make a folder and list a folder. [Input and
-  output](../../manual/language/io.md#what-the-module-contains) lists each name, and [The
+  output](../../manual/stdlib/io.md#what-the-module-contains) lists each name, and [The
   stdlib](../stdlib/README.md#files-and-folders) shows the folder calls.
 - **The members of the error enumeration.** Besides `မတွေ့ခြင်း`,
   `ခွင့်ပြုချက်မရှိခြင်း` and `အဝင်အချက်အလက်အဆုံးကိုရောက်ခြင်း`, a call can fail with

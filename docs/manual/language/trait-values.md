@@ -204,7 +204,7 @@ So each function of the trait takes the trait's data kind as its first parameter
 in no other parameter, gives it back as its whole result or not at all, and has no kind
 parameters of its own. A trait that breaks one of these rules is ZK0360 where it is used as
 a data kind, and so is a trait that the compiler gives, such as the operator traits of the
-[core module](core.md), which have no functions to run:
+[core module](../stdlib/core.md), which have no functions to run:
 
 ```zaka-error ZK0360
 ငယ်စဉ်ကြီးလိုက်စီနိုင်သော ဟူသည့် ဂုဏ်သတ္တိ သည် ယေဘုယျဒေတာအမျိုးအစား A ကိုအစားထိုးသုံးနိုင်၍

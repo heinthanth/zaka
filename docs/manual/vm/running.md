@@ -190,7 +190,7 @@ terminal never asks.
 
 A refused read or write of a file, and a refused variable, fail with the error
 `ခွင့်ပြုချက်မရှိခြင်း`, which the program can handle as it handles other failures of the
-[io module](../language/io.md). A refused C call, and a program start block that reads the
+[io module](../stdlib/io.md). A refused C call, and a program start block that reads the
 environment with no env right, have no result to fail with, so the program stops with the
 `permission denied` [trap](traps.md), which names the flag. The books and the Explorer
 run in storage, with no file or variable of the host to reach, so their runs have each

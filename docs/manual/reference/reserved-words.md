@@ -302,7 +302,7 @@ The words inside these endings, `လည်း` ("also"), `မှတ်ယူန�
 | `အစားထိုးအသုံးပြု၍` | "putting in place": after the data kinds of a call that we write arguments first | [Generics](../language/generics.md#calls) |
 | `::` | before the data kinds that we give a generic in the sign form, `f::<ကိန်းပြည့်>(၁)` | [Generics](../language/generics.md#calls) |
 | `ဟူသည့်` | "called": after the name of a trait in its declaration, `<name> ဟူသည့် ဂုဏ်သတ္တိ` | [Traits](../language/traits.md) |
-| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": on a data kind, a trait or a function of the core module, where an external function uses `ပြင်ပမှလာသော` | [The core module](../language/core.md#the-compiler-mark) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | "included inside the compiler": on a data kind, a trait or a function of the core module, where an external function uses `ပြင်ပမှလာသော` | [The core module](../stdlib/core.md#the-compiler-mark) |
 | `ရေးသားရာတွင်` | "when written": to start the written-as hint of a generic struct, data kind or trait, which ends with `ဟု` | [Generics](../language/generics.md#written-as-hints) |
 | `ရေးသားနိုင်သည်`, `ရေးသားနိုင်ပြီး` | "can be written", "can be written, and": at the end of a written-as hint, in a struct or a data kind and in the first line of a trait | [Generics](../language/generics.md#written-as-hints) |
 | `အခြားလုပ်ဆောင်ချက်များကိုလည်း`, `မူရင်းအတိုင်း`, `ဆက်ခံမည်` | "the other functions too", "as in the original", "will inherit": in the last line of a trait block, to use the defaults of the trait, `<trait> ဂုဏ်သတ္တိ၏ အခြားလုပ်ဆောင်ချက်များကိုလည်း မူရင်းအတိုင်း ဆက်ခံမည်။` | [Traits](../language/traits.md#trait-blocks) |
@@ -315,7 +315,7 @@ The words inside these endings, `လည်း` ("also"), `မှတ်ယူန�
 | `သတိပြုစရာများ` | "the notes": the first word of the last line of a notes block | [Generics](../language/generics.md#the-notes-block) |
 | `ရှိသည်` | "has": at the end of a constraint in a notes block, `A တွင် … ဂုဏ်သတ္တိ ရှိသည်။` | [Generics](../language/generics.md#the-notes-block) |
 
-The names of the traits that the [core module](../language/core.md) declares are not reserved
+The names of the traits that the [core module](../stdlib/core.md) declares are not reserved
 words, so a name that a program declares hides the trait of the core module.
 
 ## Modules

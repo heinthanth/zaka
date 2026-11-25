@@ -105,7 +105,7 @@ function signature has its marks after `သည်`.
 | --- | --- | --- |
 | `"<C name>" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော` | a struct that a lib gives to C under the C name | [Functions C can call](functions-exports.md) |
 | `ပြင်ပမှ လာသော` | a data kind from outside the program: a handle to a struct that C keeps, with the fields C gives; without fields, the declaration ends with `ဖြစ်သည်။` | [C functions](functions-c.md#data-kinds-from-outside-the-program) |
-| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | a struct that the compiler provides, allowed in the core module alone (ZK0349) | [The core module](core.md) |
+| `ကွန်ပိုင်လာထဲတွင် တစ်ပါတည်းပါဝင်သော` | a struct that the compiler provides, allowed in the core module alone (ZK0349) | [The core module](../stdlib/core.md) |
 
 ```text
 point ဟူသော ဒေတာအစုအဝေးသည် "point" အမည်ဖြင့် ပြင်ပမှ ယူသုံးနိုင်သော ဒေတာအစုအဝေး ဖြစ်၍ ၎င်းတွင် x ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု နှင့် y ဟူသော ၃၂ ဘစ် ကိန်းပြည့် တစ်ခု တို့ပါဝင်သည်။
