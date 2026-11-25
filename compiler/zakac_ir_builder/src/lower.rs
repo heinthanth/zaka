@@ -650,10 +650,11 @@ struct Lowerer<'k>
     #[builder(default)]
     drops: Vec<Vec<(Place, DataKind)>>,
     /// The lowered code of each mark of each open scope that runs when the
-    /// scope ends, in the order of the marks, innermost scope last; each exit
-    /// of a scope runs its code, the last mark first, before its drops.
+    /// scope ends, in the order of the marks, innermost scope last, each with
+    /// whether it runs at a failure alone; each exit of a scope runs its code,
+    /// the last mark first, before its drops.
     #[builder(default)]
-    defers: Vec<Vec<Vec<Stmt>>>,
+    defers: Vec<Vec<(bool, Vec<Stmt>)>>,
     /// The index of the scope of the block of each open loop, innermost
     /// last; `break` and `continue` leave the scopes from there on.
     #[builder(default)]
@@ -839,18 +840,76 @@ impl Lowerer<'_>
     /// The drop statements.
     fn drops_from(&self, depth: usize, span: Span) -> Vec<Stmt>
     {
-        // Each scope runs its marked code, drops its places, then gives back
-        // the locks it holds.
+        let mut out = self.marked_from(depth, None, span);
+        out.extend(self.places_from(depth, span));
+        out
+    }
+
+    /// The code of the marks of the open scopes from `depth` on, the
+    /// innermost scope first and the last mark of each scope first. Code
+    /// marked to run at a failure alone stands under the test of `failed`,
+    /// and is left out with no test: the exit gives back no failure.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The index of the outermost scope to leave.
+    /// * `failed` - The test that the function gives back a failure, at an exit
+    ///   that can.
+    /// * `span` - The source region of the exit.
+    ///
+    /// # Returns
+    ///
+    /// The statements.
+    fn marked_from(&self, depth: usize, failed: Option<&Expr>, span: Span)
+    -> Vec<Stmt>
+    {
+        let marks =
+            (depth..self.defers.len()).rev().flat_map(|s| self.defers[s].iter().rev());
+        let code = |(failure, code): &(bool, Vec<Stmt>)| -> Option<Vec<Stmt>> {
+            ret_if!(!failure, Some(code.clone()));
+            let cond = failed?.clone();
+            Some(vec![Stmt::If { cond, then: code.clone(), els: Vec::new(), span }])
+        };
+        marks.filter_map(code).flatten().collect()
+    }
+
+    /// The drops of the places of the open scopes from `depth` on and the
+    /// locks they give back, the innermost scope first and the latest place
+    /// of each scope first.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The index of the outermost scope to leave.
+    /// * `span` - The source region of the exit.
+    ///
+    /// # Returns
+    ///
+    /// The statements.
+    fn places_from(&self, depth: usize, span: Span) -> Vec<Stmt>
+    {
         let scope = |s: usize| {
-            let marked = self.defers[s].iter().rev().flatten().cloned();
             let drops = self.drops[s].iter().rev();
             let drops =
                 drops.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span));
             let held = self.locks.iter().rev().filter(move |(t, _)| *t == s);
-            let unlocks = held.map(|(_, obj)| Stmt::Unlock { obj: obj.clone(), span });
-            marked.chain(drops).chain(unlocks)
+            drops.chain(held.map(|(_, obj)| Stmt::Unlock { obj: obj.clone(), span }))
         };
         (depth..self.drops.len()).rev().flat_map(scope).collect()
+    }
+
+    /// Whether code marked to run at a failure alone stands in the open
+    /// scopes from `depth` on.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The index of the outermost scope to leave.
+    ///
+    /// # Returns
+    ///
+    /// `true` when one does.
+    fn failure_marks_from(&self, depth: usize) -> bool
+    {
+        self.defers[depth.min(self.defers.len())..].iter().flatten().any(|(f, _)| *f)
     }
 
     /// The statements that leave a function from scope `depth` on: each
@@ -867,9 +926,31 @@ impl Lowerer<'_>
     /// The statements.
     fn exit_drops(&mut self, depth: usize, span: Span) -> Vec<Stmt>
     {
+        self.exit_drops_with(depth, span, None)
+    }
+
+    /// The statements that leave a function from scope `depth` on: the code
+    /// of the marks, so it can still change a parameter marked `ဒေတာ
+    /// ပြောင်းလဲရန်`, then each such shared parameter copied back to the
+    /// caller, then the drops.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The first scope of the function.
+    /// * `span` - The source region of the exit.
+    /// * `failed` - The test that the exit gives back a failure, for the code
+    ///   marked to run at a failure alone.
+    ///
+    /// # Returns
+    ///
+    /// The statements.
+    fn exit_drops_with(
+        &mut self, depth: usize, span: Span, failed: Option<Expr>,
+    ) -> Vec<Stmt>
+    {
         let backs =
             self.frame.as_ref().map(|f| f.write_backs.clone()).unwrap_or_default();
-        let mut out = Vec::new();
+        let mut out = self.marked_from(depth, failed.as_ref(), span);
         for (addr, boxed) in backs
         {
             let cell = self.edit_addr(boxed, span);
@@ -882,7 +963,7 @@ impl Lowerer<'_>
                 tern!(kind.holds_text(), self.replace(&dest, value, &mut out), value);
             out.push(Stmt::Store { addr: caller, value, span });
         }
-        out.extend(self.drops_from(depth, span));
+        out.extend(self.places_from(depth, span));
         out
     }
 
@@ -972,7 +1053,8 @@ impl Lowerer<'_>
     fn defer(&mut self, n: &st::DeferStmt)
     {
         let code = self.block(&n.block.stmts);
-        self.defers.last_mut().expect("a scope is open").push(code);
+        let marks = self.defers.last_mut().expect("a scope is open");
+        marks.push((n.failure, code));
     }
 
     /// Lower the block of a loop in its own scope.
@@ -3388,9 +3470,37 @@ impl Lowerer<'_>
     fn leave_with(&mut self, value: Expr, span: Span, out: &mut Vec<Stmt>)
     {
         let depth = self.frame.as_ref().map_or(0, |f| f.depth);
+        // Code marked to run at a failure tests the value that leaves, so the
+        // value takes its slot first.
+        ret_if!(
+            self.failure_marks_from(depth),
+            self.leave_failing(value, depth, span, out)
+        );
         let drops = self.exit_drops(depth, span);
         ret_if!(drops.is_empty(), out.push(Stmt::Return { value: Some(value), span }));
         let (kind, place) = (value.kind, self.hidden(value.kind, span));
+        out.push(Stmt::Set { place, value, span });
+        out.extend(drops);
+        out.push(Stmt::Return { value: Some(read(place, kind, span)), span });
+    }
+
+    /// Give back a struct of the kind the function gives back, through the
+    /// code marked to run at a failure when the struct holds one.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The struct.
+    /// * `depth` - The first scope of the function.
+    /// * `span` - The source region.
+    /// * `out` - The list the statements go to.
+    fn leave_failing(
+        &mut self, value: Expr, depth: usize, span: Span, out: &mut Vec<Stmt>,
+    )
+    {
+        let (kind, place) = (value.kind, self.hidden(value.kind, span));
+        let fault = self.frame.as_ref().and_then(|f| f.fault);
+        let failed = fault.map(|f| f.failed(place, self.platform, span));
+        let drops = self.exit_drops_with(depth, span, failed);
         out.push(Stmt::Set { place, value, span });
         out.extend(drops);
         out.push(Stmt::Return { value: Some(read(place, kind, span)), span });

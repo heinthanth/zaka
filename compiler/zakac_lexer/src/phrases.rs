@@ -35,6 +35,8 @@ pub static PHRASES: &[(&[Kw], Kw)] = &[
     (&[Kw::CallLeave, Kw::WillRevoke], Kw::RevokeCall),
     // ... ကို ပြန်လည် မျှဝေမည်။ — shares imported names again
     (&[Kw::Again, Kw::WillShare], Kw::Reshare),
+    // မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် — code that runs when its block ends through a failure
+    (&[Kw::FailedAnd, Kw::Tasks, Kw::DoneWhich, Kw::AtTheTime], Kw::WhenTasksFail),
     // လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် — code that runs when its block ends
     (&[Kw::Tasks, Kw::DoneWhich, Kw::AtTheTime], Kw::WhenTasksDone),
     // လုပ်ဆောင်စရာများ ပြီး(ဆုံး)?ပါပြီ(း)?။

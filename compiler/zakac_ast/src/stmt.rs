@@ -698,6 +698,11 @@ pub struct DeferStmt
 {
     /// The marked code: one statement, or a block.
     pub block: BlockStmt,
+    /// `true` for code after `မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်`: it runs at
+    /// an exit that gives back a failure of the function, and at no other.
+    #[builder(default)]
+    #[serde(default)]
+    pub failure: bool,
     /// Source region, from the mark to the end of the code.
     pub span: Span,
 }

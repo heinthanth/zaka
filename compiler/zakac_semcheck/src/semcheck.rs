@@ -2714,6 +2714,8 @@ impl Visitor for Checker
 
     fn visit_defer(&mut self, n: &DeferStmt)
     {
+        let fails = self.func.as_ref().is_some_and(|f| f.fault.is_some());
+        do_if!(n.failure && !fails, self.report(rd::failure_mark_never_runs(n.span)));
         let outer = self.defer_at.replace(self.loop_depth);
         self.visit_block(&n.block);
         self.defer_at = outer;

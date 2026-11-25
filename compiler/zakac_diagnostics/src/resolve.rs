@@ -152,6 +152,22 @@ pub fn defer_leaves(span: Span) -> Diagnostic
         .with_help(t!("codes.ZK0365.help"))
 }
 
+/// Code marked to run when its function fails stands in a function that
+/// cannot fail.
+///
+/// # Arguments
+///
+/// * `span` - The marked code.
+///
+/// # Returns
+///
+/// The `ZK0366` diagnostic.
+pub fn failure_mark_never_runs(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::FailureMarkNeverRuns, t!("codes.ZK0366.message"), span)
+        .with_help(t!("codes.ZK0366.help"))
+}
+
 /// A break stands outside a loop.
 ///
 /// # Arguments

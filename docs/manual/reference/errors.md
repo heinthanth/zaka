@@ -223,6 +223,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0363 | a struct based on a data kind that is no struct and no shared object | [Structs based on structs](../language/based-structs.md#the-head-and-the-literal) |
 | ZK0364 | a field, a function or a part that two parts of a struct have at one depth | [Structs based on structs](../language/based-structs.md#fields-and-functions-of-parts) |
 | ZK0365 | a return, a break or continue of a loop around it, or a pass-on of a failure inside code marked to run when its block ends | [Statements](../language/statements.md) |
+| ZK0366 | code marked to run when its function fails, in a function that cannot fail | [Statements](../language/statements.md) |
 
 ### ZK04: data kinds
 

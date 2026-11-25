@@ -193,6 +193,7 @@ pub static RESERVED: &[(&str, Kw)] = &[
     ("ပရိုဂရမ်ရေးသားချိန်တွင်", Kw::AtDevTime),
     ("ပြီးသည့်", Kw::DoneWhich),
     ("အခါတွင်", Kw::AtTheTime),
+    ("မအောင်မြင်၍", Kw::FailedAnd),
     ("ထိုသို့မဟုတ်ဘဲ", Kw::ElseIf),
     ("သို့မဟုတ်ပါက", Kw::Else),
     ("နေသရွေ့", Kw::While),

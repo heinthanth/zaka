@@ -28,3 +28,12 @@ fn a_mark_alone_in_a_branch_is_zk0272()
     let twice = "လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် ၁ ကို ပြသမည်။";
     assert_eq!(codes(twice), [Code::DeferAlone]);
 }
+
+#[test]
+fn the_failure_mark_reads_as_its_own_form()
+{
+    let text = "မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် ၁ ကို ပြသမည်။";
+    assert!(stmt(text).starts_with("(defer-failure (block"), "{}", stmt(text));
+    let glued = "မအောင်မြင်၍လုပ်ဆောင်စရာများပြီးသည့်အခါတွင် ၁ ကို ပြသမည်။";
+    assert_eq!(stmt(glued), stmt(text));
+}

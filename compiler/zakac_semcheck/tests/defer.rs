@@ -62,3 +62,20 @@ fn a_loop_or_a_function_inside_marked_code_leaves_as_it_likes()
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။",
     ));
 }
+
+#[test]
+fn a_failure_mark_in_a_function_that_cannot_fail_is_zk0366()
+{
+    let mark = "မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် ၁ ကို ပြသမည်။";
+    assert_eq!(codes(&in_fn(mark)), [Code::FailureMarkNeverRuns]);
+    assert_eq!(codes(mark), [Code::FailureMarkNeverRuns]);
+    ok(&format!(
+        "စမ်း ဟူသော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ
+ကိန်းပြည့် သို့မဟုတ် အမှားအယွင်းအနေဖြင့် စာသား ရှိနိုင်သော ဒေတာဆဲလ် တစ်ခု ကို ပြန်ပေးမည်။
+{mark}
+၁ ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+စမ်း() ကို ပြသမည်။"
+    ));
+}

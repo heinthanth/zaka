@@ -294,7 +294,7 @@ impl Parser<'_>
         {
             Kw::If => self.parse_if(),
             Kw::AtDevTime => self.parse_debug_assert(),
-            Kw::WhenTasksDone => self.parse_defer(),
+            Kw::WhenTasksDone | Kw::WhenTasksFail => self.parse_defer(),
             Kw::ElseIf | Kw::Else =>
             {
                 Err(diag::else_without_if(tok.span, self.text_of(tok.span)))
@@ -406,10 +406,13 @@ impl Parser<'_>
     /// The marked code, or a diagnostic.
     fn parse_defer(&mut self) -> PResult<Stmt>
     {
-        let start = self.bump().span;
+        let mark = self.bump();
+        let failure = mark.kind == TokenKind::Kw(Kw::WhenTasksFail);
         let block = self.parse_branch(true)?;
-        let span = start.to(&block.span);
-        Ok(Stmt::Defer(DeferStmt::builder().block(block).span(span).build()))
+        let span = mark.span.to(&block.span);
+        #[rustfmt::skip]
+        let node = DeferStmt::builder().block(block).failure(failure).span(span).build();
+        Ok(Stmt::Defer(node))
     }
 
     /// Parse the rest of an assert after its condition: `ဖြစ်ရမည်`, then

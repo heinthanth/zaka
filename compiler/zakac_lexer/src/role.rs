@@ -176,6 +176,8 @@ pub fn kw_role(kw: Kw) -> TokenRole
         | Kw::DoneWhich
         | Kw::AtTheTime
         | Kw::WhenTasksDone
+        | Kw::FailedAnd
+        | Kw::WhenTasksFail
         | Kw::ElseIf
         | Kw::Else
         | Kw::While

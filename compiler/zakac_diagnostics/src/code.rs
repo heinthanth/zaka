@@ -359,6 +359,9 @@ BaseNameTwice = ("ZK0364", Level::Error),
 /// code: a return, a break or continue of a loop around it, or a pass-on of a
 /// failure.
 DeferLeaves = ("ZK0365", Level::Error),
+/// Code marked to run when its function fails stands in a function that
+/// cannot fail, so it never runs.
+FailureMarkNeverRuns = ("ZK0366", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

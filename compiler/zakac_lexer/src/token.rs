@@ -547,6 +547,13 @@ pub enum Kw
     /// statement or a block, it marks code that runs when the block around it
     /// ends, at each exit of that block
     WhenTasksDone,
+    /// `မအောင်မြင်၍`, "as it failed": in front of `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်`, the
+    /// code runs at an exit that gives back a failure, and at no other
+    FailedAnd,
+    /// `မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်`, "when the tasks end as it failed":
+    /// marks code that runs when the block around it ends through a failure
+    /// of the function
+    WhenTasksFail,
     /// `ထိုသို့မဟုတ်ဘဲ`
     ElseIf,
     /// `သို့မဟုတ်ပါက`
