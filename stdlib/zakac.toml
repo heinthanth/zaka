@@ -9,5 +9,6 @@
 "စာရင်း" = "list.zaka"
 "သင်္ချာ" = "math.zaka"
 "အချိန်" = "time.zaka"
+"စာလုံး" = "char.zaka"
 # The core, which each file reads with no import; its parts are in core/.
 "အခြေခံအုတ်မြစ်" = "core/mod.zaka"

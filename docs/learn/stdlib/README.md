@@ -193,6 +193,9 @@ lists `day.txt` afterwards.
   root. Import `ကြာချိန်နာရီကိုဖတ်` from `"စံကား/အချိန်"` and subtract two readings to
   measure elapsed milliseconds. See [Math](../../manual/stdlib/math.md) and
   [Time](../../manual/stdlib/time.md) for runnable examples.
+- **Characters.** Import `ဂဏန်းဟုတ်မဟုတ်စစ်` or `ဗမာအက္ခရာဟုတ်မဟုတ်စစ်` from
+  `"စံကား/စာလုံး"` to test one character, as a lexer does. See
+  [Characters](../../manual/stdlib/char.md).
 - **More functions.** Each module has more functions than this page shows: for example,
   `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
   and `စီ` sorts a list with a function that compares two cells. [The
