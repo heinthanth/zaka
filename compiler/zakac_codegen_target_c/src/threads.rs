@@ -30,8 +30,9 @@ const PART_ALIGN: u32 = 16;
 /// The guard of a thread and the function that jumps back to it.
 pub const GUARD: &str = "\
 /* A longjmp of 64-bit Windows unwinds each frame it leaves; clearing the frame
-   of the buffer makes it restore the registers alone, as on each other OS. */
-#if defined(_WIN64) && defined(ZK_LIB_PLAIN_JUMP)
+   of the buffer makes it restore the registers alone, as on each other OS.
+   ZK_LIB_UNWIND keeps the unwind. */
+#if defined(_WIN64) && !defined(ZK_LIB_UNWIND)
 #define ZK_THREAD_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
 #define ZK_THREAD_NO_UNWIND(buf) ((void)(buf))

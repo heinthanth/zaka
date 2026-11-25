@@ -26,11 +26,12 @@
 /* The status of each call after a call stopped on a trap. */
 #define ZK_STOPPED (-1)
 
-/* A longjmp of 64-bit Windows unwinds each frame it leaves, through the unwind
-   tables the code of C, of Cranelift and of the runtime gives. ZK_LIB_PLAIN_JUMP
-   clears the frame in the buffer, so the jump restores the registers alone, as
-   it does on each other OS. */
-#if defined(_WIN64) && defined(ZK_LIB_PLAIN_JUMP)
+/* A longjmp of 64-bit Windows unwinds each frame it leaves, and the handler of
+   each frame runs as it does: the jump of a trap left a program of two libs to
+   crash now and then (0xC0000005 with MinGW). Clearing the frame in the buffer
+   makes the jump restore the registers alone, as it does on each other OS;
+   ZK_LIB_UNWIND keeps the unwind. */
+#if defined(_WIN64) && !defined(ZK_LIB_UNWIND)
 #define ZK_LIB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
 #define ZK_LIB_NO_UNWIND(buf) ((void)(buf))
