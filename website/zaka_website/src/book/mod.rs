@@ -1,3 +1,4 @@
+pub mod reference;
 pub mod render;
 
 pub use zaka_web_ui_common::site::DOCS_URL;

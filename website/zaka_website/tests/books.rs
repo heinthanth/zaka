@@ -3,9 +3,11 @@ use zaka_website::book::Page;
 use zaka_website::book::chapters;
 use zaka_website::book::neighbours;
 use zaka_website::book::page_at;
+use zaka_website::book::reference::reference;
 use zaka_website::book::render::Block;
 use zaka_website::book::render::FILE_FENCE;
 use zaka_website::book::render::Head;
+use zaka_website::book::render::MODULE_FIELD;
 use zaka_website::book::render::Sample;
 use zaka_website::book::render::anchor;
 use zaka_website::book::render::link_target;
@@ -21,6 +23,7 @@ use zakac_lexer::lexer::LexerOptions;
 use zakac_lexer::lexer::lex;
 use zakac_lexer::token::Kw;
 use zakac_lexer::token::TokenKind;
+use zakac_parser::load::STD_MODULES;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
 
@@ -567,4 +570,27 @@ fn a_next_link_names_the_page_that_follows()
         }
     }
     assert!(wrong.is_empty(), "next links to another page: {wrong:#?}");
+}
+
+#[test]
+fn each_stdlib_module_has_one_page()
+{
+    let pages = |name: &str| {
+        let line = format!("\n{MODULE_FIELD}: {name}\n");
+        all_pages().filter(|p| p.text.contains(&line)).count()
+    };
+    let wrong: Vec<_> =
+        STD_MODULES.iter().map(|(name, ..)| *name).filter(|n| pages(n) != 1).collect();
+    assert!(wrong.is_empty(), "modules with no page, or with two: {wrong:?}");
+}
+
+#[test]
+fn a_module_page_shows_the_reference_of_its_module()
+{
+    let text = reference("စံကား/စာသား").expect("the text module");
+    assert!(text.contains("\n### ရှာ\n"), "{text}");
+    assert!(text.contains("**Returns**"), "{text}");
+    let page = all_pages().find(|p| p.path == "stdlib/text.md");
+    let heads = render(page.expect("the text page")).heads;
+    assert!(heads.iter().any(|h| h.text == "Functions"), "{heads:?}");
 }

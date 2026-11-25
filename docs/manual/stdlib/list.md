@@ -1,6 +1,7 @@
 ---
 title: The list module
 description: Sort, search, reverse and remove the cells of a list.
+module: စံကား/စာရင်း
 ---
 
 # The list module
@@ -11,15 +12,6 @@ new list and leaves its argument as it was.
 
 Each function of the list module is [generic](../language/generics.md), so it accepts a list of each
 data kind.
-
-| Call | What it returns |
-| --- | --- |
-| `<list> ကို ငယ်စဉ်ကြီးလိုက်စီ` | the cells from the smallest to the largest; the cell kind must work with `<` (`နှိုင်းယှဉ်နိုင်သော`) |
-| `<list> ကို (<function>) ကိုသုံး၍ စီ` | the cells in the order given by the comparison function, which returns true when its first argument comes before its second |
-| `<list> မှ <number> အကွက်ကို ဖယ်` | the list without the cell at a number counted from 0; a number outside the list stops the program |
-| `<list> ထဲတွင် <value> ၏ အကွက်နေရာကိုရှာ` | the first cell number, from 0, whose cell has the value, or blank data |
-| `<value> ကို <list> ထဲတွင် ပါမပါစစ်` | whether a cell has the value |
-| `<list> ကို ပြောင်းပြန်စီ` | the cells from the last to the first |
 
 - Both sorts are a merge sort, which takes `n × log n` steps for `n` cells, and cells where
   neither comes before the other keep their order. Text does not work with `<`, so we sort a

@@ -1,20 +1,14 @@
 ---
 title: The time module
 description: Clocks and UTC formatting.
+module: စံကား/အချိန်
 ---
 
 # The time module
 
 The time module, `"စံကား/အချိန်"`, reads clocks and writes a time as UTC text.
 
-Import these functions from `"စံကား/အချိန်"`. A clock reading is a signed 64-bit integer
-in milliseconds.
-
-| Call | What it gives |
-| --- | --- |
-| `ကြာချိန်နာရီကိုဖတ်()` | a reading from a monotonic clock with an unspecified origin. Subtract two readings to measure elapsed time |
-| `ယူနစ်အချိန်ကိုဖတ်()` | the current wall-clock time in milliseconds since 1970-01-01T00:00:00Z |
-| `အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း(ms)` | UTC text such as `1970-01-01T00:00:00.001Z`, or an `အချိန်အမှားအယွင်း` for a date outside 0000 through 9999 |
+A clock reading is a signed 64-bit integer in milliseconds.
 
 UTC formatting uses Western digits and three fractional digits. Negative stamps refer
 to instants before 1970. The explorer uses a virtual clock that starts at the Unix epoch

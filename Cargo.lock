@@ -6803,6 +6803,7 @@ dependencies = [
  "zaka_vm",
  "zaka_web_builder",
  "zaka_web_ui_common",
+ "zakac_ast",
  "zakac_borrow_checker",
  "zakac_codegen_target_c",
  "zakac_codegen_target_vm",

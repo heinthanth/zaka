@@ -57,6 +57,9 @@ and one set of tests serve both books.
 
 - Each page starts with front matter (`title`, `description`), then a `# Title`. `##`
   heads make the "On this page" list; no other heads get anchors.
+- A stdlib page, `manual/stdlib/<module>.md`, names its module in the front matter
+  (`module: စံကား/<name>`). The site adds the reference of the module after the page: each
+  exported name with its declaration and its `///` lines, read from the stdlib source.
 - Link with relative `.md` paths. A link from one book to the other goes through the
   `docs/` folder: `../../manual/reference/errors.md` from a Learn page.
 - Code fences run in the tests:
@@ -113,7 +116,8 @@ touches:
 - **Learn and Docs** (`docs/learn/`, `docs/manual/`): the language page of the feature
   and its Learn page, both `CONTENTS.md` files, `reference/errors.md` (codes and short
   kind names), `reference/reserved-words.md`, `reference/grammar.md` (productions),
-  `reference/terms.md` (a new Zaka term), `compiler/commands.md` and `compiler/build.md`
+  `reference/terms.md` (a new Zaka term), the `///` lines and the `stdlib/` page of a
+  stdlib module that changes, `compiler/commands.md` and `compiler/build.md`
   (flags), `vm/instructions.md`, `vm/traps.md` and `vm/traps-unsafe.md` (operations and
   traps), `learn/tour.md` when a feature changes what a newcomer sees, and the
   `internals/` page of each stage the change touches. Long topics are split into sibling

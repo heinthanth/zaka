@@ -1,6 +1,7 @@
 ---
 title: Input and output
 description: The stdlib module of input and output - its streams and its error enumeration, reading a line, reading and writing a file, files and folders, writing to a stream, and the rights a run needs.
+module: စံကား/အဝင်အထွက်
 ---
 
 # Input and output

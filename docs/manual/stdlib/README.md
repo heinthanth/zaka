@@ -22,6 +22,8 @@ each module its name, and each program has it as the dep `စံကား`
 | [`"စံကား/သင်္ချာ"`](math.md) | `stdlib/math.zaka` | math constants and functions on 64-bit floats |
 | [`"စံကား/အချိန်"`](time.md) | `stdlib/time.zaka` | clocks and UTC formatting |
 
+Each module page starts with what the module is for and an example, then lists each name
+that the module exports, with its declaration and its doc comments, taken from the source.
 The source of each module is in the stdlib folder of the compiler, and an editor opens it
 through go to definition. The examples on the module pages use sentence forms, including
 calls with [argument particles](../language/functions-sentences.md#prepositions) and

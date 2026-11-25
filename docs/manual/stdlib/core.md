@@ -1,6 +1,7 @@
 ---
 title: The core module
 description: The stdlib module that each file sees with no import - its parts, the compiler mark, what it declares, the verbs a program can take over, and operators on structs.
+module: စံကား/အခြေခံအုတ်မြစ်
 ---
 
 # The core module

@@ -203,6 +203,14 @@ en = "Learn"
 en = "Docs"
 [website.learn.contents]
 en = "Contents"
+[website.stdlib.kinds]
+en = "Data kinds"
+[website.stdlib.traits]
+en = "Traits"
+[website.stdlib.functions]
+en = "Functions"
+[website.stdlib.constants]
+en = "Constants"
 [website.learn.reference]
 en = "Reference"
 [website.learn.chapters]

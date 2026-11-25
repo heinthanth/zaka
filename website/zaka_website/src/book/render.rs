@@ -39,6 +39,10 @@ pub const INPUT_FENCE: &str = "stdin";
 /// files: it is painted as Zaka, but a page cannot run it on its own.
 pub const FILE_FENCE: &str = "zaka-file";
 
+/// The front matter field of a stdlib page: the import name of its module,
+/// whose reference the page shows after its own text.
+pub const MODULE_FIELD: &str = "module";
+
 /// A page of a book, set for the site.
 #[derive(Debug, Clone, PartialEq, Builder)]
 pub struct Rendered
@@ -136,8 +140,14 @@ impl Built
 pub fn render(page: &Page) -> Rendered
 {
     let (front, text) = front_matter(page.text);
-    let events: Vec<Event<'static>> =
-        Parser::new_ext(text, Options::ENABLE_TABLES).collect();
+    // A stdlib page names its module; the reference of the module follows it.
+    let module = front.iter().find(|(k, _)| *k == MODULE_FIELD);
+    let reference = module.and_then(|(_, m)| super::reference::reference(m));
+    let events: Vec<Event<'static>> = [Some(text), reference]
+        .into_iter()
+        .flatten()
+        .flat_map(|t| Parser::new_ext(t, Options::ENABLE_TABLES))
+        .collect();
     let mut rest: Rest = events.into_iter().peekable();
     let mut built = Built::default();
     while let Some(event) = rest.next()

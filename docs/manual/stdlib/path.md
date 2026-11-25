@@ -1,6 +1,7 @@
 ---
 title: The path module
 description: The path kind and the functions that build a path and take it apart.
+module: စံကား/လမ်းကြောင်း
 ---
 
 # The path module
@@ -14,16 +15,6 @@ has the text of the path. Text converts to a path, and a path prints as its text
 function below accepts a path or text, as two functions with one name, and a path that it
 returns is a `ဖိုင်လမ်းကြောင်း`. Both `/` and `\` separate the parts of a path, and a path
 that the module makes uses `/`.
-
-| Call | What it returns |
-| --- | --- |
-| `<a> ကို <b> နှင့် ဖိုင်လမ်းကြောင်းဆက်` | `b` after `a`, with one separator between them, or an absolute `b` alone |
-| `<path> ၏ ဖိုင်အမည်` | the last part: `ဖိုင်.txt` of `a/ဖိုင်.txt` |
-| `<path> ၏ ဖိုင်အမည်နောက်တွဲ` | the extension without its `.`, or blank data; a name that starts with `.` has none |
-| `<path> ၏ ဖိုင်အမည်အရှေ့ပိုင်း` | the file name without its extension |
-| `<path> ၏ ဖိုင်တွဲလမ်းကြောင်း` | the folder that contains the path: `a` of `a/b`, `/` of `/b`, blank for a path of one part |
-| `<path> ကို ဖိုင်လမ်းကြောင်းအပြည့်အစုံဟုတ်မဟုတ်စစ်` | whether the path starts with `/` or `\`, or with a drive such as `C:` |
-| `<path> ကို ရှင်းလင်းသေသပ်အောင်ပြုလုပ်` | the path with no `.` part, each `..` removing the part before it, and no separator twice in a row; `.` when nothing is left |
 
 The names of the path parts read as properties. Write `p ၏ ဖိုင်အမည်` to get the
 file name or `p ၏ ဖိုင်တွဲလမ်းကြောင်း` to get the folder that contains it
