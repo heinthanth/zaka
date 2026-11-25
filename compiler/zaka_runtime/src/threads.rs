@@ -375,11 +375,14 @@ fn wait_until(
     while !came(&st)
     {
         let seen = st.changes;
-        // A light task that waits is counted through its place in the list of
-        // parked tasks.
-        do_if!(counted, st.running -= 1);
-        do_if!(counted && !task, st.parked += 1);
-        if counted && st.running == 0 && st.alarms == 0 && !outside_acts()
+        // A light task remains counted as running until `park_task` files it
+        // with the parked tasks, under the lock: counted nowhere while its OS
+        // thread switches to another stack, it would let another waiter see no
+        // thread running and stop the program as a deadlock it is not.
+        let os_wait = counted && !task;
+        do_if!(os_wait, st.running -= 1);
+        do_if!(os_wait, st.parked += 1);
+        if os_wait && st.running == 0 && st.alarms == 0 && !outside_acts()
         {
             drop(st);
             deadlock();
@@ -452,11 +455,18 @@ fn park_until_changed(
 pub(crate) fn park_task(task: Box<Task>, seen: u64, key: Key)
 {
     let mut st = state();
-    ret_if!(st.changes == seen, st.parked_tasks.park(key, task));
-    // A change came since the task looked: it looks again, counted as running.
-    st.running += 1;
+    if st.changes != seen
+    {
+        // A change came since the task looked: it looks again, counted as
+        // running all along.
+        drop(st);
+        return crate::tasks::wake(vec![task]);
+    }
+    st.running -= 1;
+    st.parked_tasks.park(key, task);
+    let stuck = st.running == 0 && st.alarms == 0 && !outside_acts();
     drop(st);
-    crate::tasks::wake(vec![task]);
+    do_if!(stuck, deadlock());
 }
 
 /// Whether a program runs, as against a C lib, whose OS threads come from C.
