@@ -372,8 +372,32 @@ stdlib (standard library) from `STD_MODULES`, which the build script writes from
 `[package.modules]` table of `stdlib/zakac.toml`, each file through `include_str!`:
 `import_std` registers it in the source map as a file named after the module
 (`std_file`), and reads it as each imported file, once. A name the stdlib does not have is
-ZK0270, as a module a package lacks; the stdlib has no path to fall back on. `std_replicas` is the folder where a language server writes copies of the stdlib,
-so an editor can open a declaration of the stdlib.
+ZK0270, as a module a package lacks; the stdlib has no path to fall back on.
+`std_replicas` is the folder where a language server writes copies of the stdlib, so an
+editor can open a declaration of the stdlib.
+
+### Packages
+
+`Loader::import_path` reads each other import. When the first part of the path, up to the
+first `/` (`dep_and_module`), is a key of the `[dependencies]` of the nearest `zakac.toml`
+of the importing file, the import reads a module of that dep: `module_path` looks the rest
+up in the `[package.modules]` of the dep (`Manifest::module_file`), else takes
+`<rest>.zaka` under its root, and reports ZK0270 when neither file is there. A git dep
+(`Source::Git`) reads its root from the lock file of the package of the file that is run
+(`Loader::lock`, `checkout_dir` in the cache of `cache_root`), and a rev that the lock does
+not pin, or a checkout that is not there, is ZK0271. A path that names no dep goes beside
+the importing file, as before, except that a missing file whose path does not end in
+`.zaka` is ZK0269 (`beside_or_unknown`). `package.rs` holds the manifest, the lock and the
+folder of a checkout; `zakac fetch` (`compiler/zakac/src/fetch.rs`) is the one place that
+runs `git` and writes the lock.
+
+The loader reads manifests and lock files through the file loader of the source map, as
+it reads sources, and keeps each manifest once (`Loader::manifests`). It keys each file on
+its absolute path (`known_as`) in `done` and on the chain, so a file that one import reaches
+through a dep and another beside the importer is read once. A unit of a file under the
+root of a dep has `Unit::package` set, which `zakac test` reads to leave the tests of deps
+out, and messages name such a file `<dep>/<path>`. The parser owns these codes too:
+ZK0269 to ZK0271.
 
 A root whose name is not a real file, such as standard input or the text of the explorer,
 is parsed once with `Loaded::single`, and `refuse_imports` reports each import in it

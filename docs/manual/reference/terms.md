@@ -99,6 +99,9 @@ is first used, as in "data kind (type)".
 | module | module, one source file | | [Modules](../language/modules.md) |
 | core module | prelude, built-in functions | | [The core module](../language/core.md) |
 | stdlib | standard library | `"စံကား/<name>"` | [The stdlib](../language/stdlib.md) |
+| package | package, crate | `"<dep>/<module>"` | [Packages](../language/packages.md) |
+| dep | dependency | | [Packages](../language/packages.md#deps) |
+| repo | repository | | [Packages](../language/packages.md#git-deps-and-the-lock-file) |
 | lib | library | | [Native programs](../compiler/native.md) |
 | generic | generic, type parameter | | [Generics](../language/generics.md) |
 | kind parameter | type parameter | | [Generics](../language/generics.md) |

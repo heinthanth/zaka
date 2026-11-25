@@ -34,6 +34,7 @@ made, the *artifact*, while `run` goes to the end and runs the program.
 | `repl` | run statements as we write them, with no program start block | nothing: each statement runs | |
 | `lsp` | serve an editor | errors, colors and hovers, to the editor | |
 | `fmt` | format source files | each file, in place, or the formatted text | |
+| `fetch` | clone the git deps of a [package](../language/packages.md) and pin each one in `zakac.lock` | the lock file | |
 
 [Stages](stages.md) shows what each artifact contains. Each stage also builds as a
 program apart from `zakac`, with the same flags as its command: `zakac_burmese_segmenter`,
@@ -771,6 +772,35 @@ samples/basics/rough.zaka
 $ zakac fmt samples
 ```
 
+## fetch
+
+Clone each git dep of a [package](../language/packages.md) and of its deps into the cache
+folder, and pin each one to a commit in `zakac.lock`, beside the `zakac.toml` of the
+package.
+
+```text
+zakac fetch [PATH]
+```
+
+`PATH` is a folder of the package or its `zakac.toml`, and the working folder when we
+leave it out; the nearest `zakac.toml` from there upward names the package. `fetch` walks
+the path deps and the git deps of the package, and the deps of those, and runs `git` for
+each git dep that the lock does not pin, or whose checkout left the cache. A checkout
+that the lock pins and the cache holds remains as it is, so a second `fetch` reaches the
+network for new revs alone.
+
+```console
+$ zakac fetch
+fetched json: https://example.org/zaka-json.git at v1.2.0, commit 1a97de1ae314
+git checkouts pinned in zakac.lock: 1
+```
+
+The checkouts go in `zakac/git/<repo>-<hash>/<commit>` under the cache folder of the user,
+or under the folder that `ZAKAC_CACHE` names. `build`, `run`, `test` and `lsp` read the
+lock and the cache and never run `git`. `git` must be on the `PATH`; a folder with no
+`zakac.toml` above it, or a clone or a checkout that fails, gives exit code 3 with the
+reason.
+
 ## Config file
 
 We can also set each flag in a TOML config file: `zakac.toml` beside the sources, a file of
@@ -789,7 +819,8 @@ root of the repo lists each setting with its default.
 | `ZAKA_BACKTRACE` | how much of the stack a stop lists, in `run` and in a native executable: `full` lists each call and `0` none; unset or another value gives a short backtrace (see [How a run ends](../vm/running.md#how-a-run-ends)) |
 | `CC` | the C compiler of `build --backend c` and `--backend native` when we leave out `--cc` |
 | `CFLAGS`, `LDFLAGS` | flags for the C compiler and the linker of `build --backend c`, split on white space; each `--cc-flag` and `--ld-flag` comes after them, and `--backend native` reads `LDFLAGS` |
-| `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when we leave out `--cache` |
+| `XDG_CACHE_HOME` | the cache folder of the user, where `build --backend c` and `--backend native` keep their files when we leave out `--cache`, and where `fetch` keeps its checkouts |
+| `ZAKAC_CACHE` | the folder where `fetch` keeps the checkouts of git deps, and where the other commands look for them, in place of the cache folder of the user |
 | `XDG_CONFIG_HOME` | the config folder of the user, where the commands look for `zakac/config.toml` |
 | `ZAKAC_NO_CONFIG` | when it is set, the commands read no config file except the one `--config` names (see [Where the files are](configuration.md#where-the-files-are)) |
 | `LC_ALL`, `LC_MESSAGES`, `LANG`, `LANGUAGE` | the language of the messages (see [The language of messages](diagnostics.md#the-language-of-messages)) |
@@ -805,7 +836,7 @@ that is set wins over the file.
 | 0 | the stage finished, with warnings at most; for `run`, the program ended |
 | 1 | an error in the program, or the program stopped; for `test`, a test failed |
 | 2 | a mistake on the command line, such as an unknown flag or a value the flag does not accept |
-| 3 | a file could not be read or written, a config file has a mistake (a wrong value among them), or a flag does not go with the target of `build` |
+| 3 | a file could not be read or written, a config file has a mistake (a wrong value among them), a flag does not go with the target of `build`, or `fetch` could not run `git` |
 | other | for `run`, the result of the program start block, its lowest 8 bits |
 
 Messages go to standard error, and the artifact or the program's output go to standard

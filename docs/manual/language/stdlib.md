@@ -9,6 +9,8 @@ The stdlib (standard library) is a set of modules that the compiler carries, and
 program imports the names it needs from each one, as it does from its own files
 ([Modules](modules.md)). The Learn book teaches it in [The
 stdlib](../../learn/stdlib/README.md). These modules ship with [the core module](core.md).
+The stdlib is a package: `stdlib/zakac.toml` gives each module its name, and each program
+has it as the dep `စံကား` ([Packages](packages.md#the-stdlib-as-a-package)).
 
 | Module | File | What it has |
 | --- | --- | --- |

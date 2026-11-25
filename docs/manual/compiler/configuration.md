@@ -113,6 +113,20 @@ jit = true                      # run each test as native code
 time-limit = 60                 # the most seconds of one test with jit
 ```
 
+Two sections set no flag: `[dependencies]` lists the deps of the package, and `[package]`
+tells of the package itself, as `[package.modules]` gives Burmese names to its files.
+[Packages](../language/packages.md) has their rules, and the commands leave both sections to
+the compiler, which reads the nearest `zakac.toml` of each file for them:
+
+```toml
+[dependencies]
+"ပုံသဏ္ဌာန်" = { path = "../shapes" }
+json = { git = "https://example.org/zaka-json.git", rev = "v1.2.0" }
+
+[package.modules]
+"စတုရန်း" = "square.zaka"
+```
+
 ## Values
 
 A value is text, a number, `true` or `false`, or a list of these:
@@ -193,7 +207,8 @@ $ zakac run --config team.toml age.zaka
 zakac: the config file team.toml sets run.max-dept, which no command here takes
 ```
 
-The same goes for a file that is not TOML, and for a `--config` file that does not exist.
+The same goes for a file that is not TOML, for a `--config` file that does not exist, and
+for a dep with neither `path` nor `git` and `rev`, or a dep named `စံကား`.
 A value that the flag does not accept, such as `overflow = "loud"`, names the file too,
 with the reason from the flag:
 

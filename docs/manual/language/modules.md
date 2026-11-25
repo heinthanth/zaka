@@ -90,6 +90,8 @@ exports.
   as `"စံကား/အဝင်အထွက်"` ([Input and output](io.md)). The compiler carries its source, so
   it is never read from disk, and a program read from storage can import it too. Another
   name after `စံကား/` is ZK0270.
+- A path whose first part is the name of a dep that the `zakac.toml` of the package lists
+  names a module of that package ([Packages](packages.md)).
 - The imports of a file come first, together with its
   [shares](#sharing-imported-names). An import or a share after a declaration or a
   statement, or inside a block, is ZK0230.

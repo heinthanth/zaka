@@ -67,6 +67,7 @@
   - [Trait values](generics/trait-values.md)
 - [Modules](modules/README.md)
   - [Module mistakes](modules/mistakes.md)
+  - [Packages](modules/packages.md)
 - [Threads](threads/README.md)
   - [Channels](threads/channels.md)
   - [Sharing between threads](threads/sharing.md)

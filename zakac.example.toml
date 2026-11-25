@@ -178,3 +178,16 @@
                            # one statement goes on a line of its own
 # wrap-long-lines = true   # --wrap-long-lines <BOOL>: wrap each other line wider
                            # than max-width
+
+# ---------------------------------------------------------------------- packages
+# No command reads these two sections as flags: the compiler reads them from
+# the nearest zakac.toml of each file (docs/manual/language/packages.md).
+
+# [dependencies]           # each dep, under the name its imports start with
+# "ပုံသဏ္ဌာန်" = { path = "../shapes" }   # a folder beside this package
+# "json" = { git = "https://example.org/zaka-json.git", rev = "v1.2.0" }
+                           # a git repo at a commit, tag or branch; run
+                           # zakac fetch once, which writes zakac.lock
+
+# [package.modules]        # the Burmese import name of each file of this package
+# "စတုရန်း" = "square.zaka"

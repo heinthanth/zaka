@@ -671,8 +671,12 @@ importing file, and each file is read once, even when several files import it. T
 import each other are an error (ZK0231). `ပြသမည်` and the other built-ins come from
 the core module (prelude), so these need no import.
 
-Learn: [Modules](modules/README.md), [The stdlib](stdlib/README.md).
-Docs: [Modules](../manual/language/modules.md), [The stdlib](../manual/language/stdlib.md).
+A project uses another project, a package: it lists the package under `[dependencies]` in
+its `zakac.toml` and imports `"<package>/<module>"`; `zakac fetch` pins the packages that
+come from git.
+
+Learn: [Modules](modules/README.md), [Packages](modules/packages.md), [The stdlib](stdlib/README.md).
+Docs: [Modules](../manual/language/modules.md), [Packages](../manual/language/packages.md), [The stdlib](../manual/language/stdlib.md).
 
 ## Threads
 

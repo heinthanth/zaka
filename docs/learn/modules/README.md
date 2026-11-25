@@ -240,6 +240,8 @@ one file changes it, the others see the change.
 - **The stdlib.** We import a module of the stdlib (standard library) in the same form, with
   a path that starts with `စံကား/`, as in `"စံကား/စာရင်း" မှ ဖယ် ကို ထည့်သွင်းမည်။`
   ([The stdlib](../stdlib/README.md)).
+- **Other projects.** A program can import the modules of another project, a package that
+  its `zakac.toml` lists ([Packages](packages.md)).
 - **The full rules.** [Modules](../../manual/language/modules.md) has the full rules,
   including [passing imported names
   on](../../manual/language/modules.md#sharing-imported-names).

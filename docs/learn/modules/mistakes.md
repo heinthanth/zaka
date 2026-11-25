@@ -246,4 +246,4 @@ To fix it, we save the program in a file next to `math.zaka` and run that file.
   known at compile time.
 - A program without a file cannot import.
 
-Next: [Threads](../threads/README.md).
+Next: [Packages](packages.md).

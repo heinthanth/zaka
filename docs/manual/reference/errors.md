@@ -149,9 +149,9 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0266 | two marks of a declaration head with no `၊` between them | [Declarations](../language/declarations.md#marks) |
 | ZK0267 | a test block inside a function or a block, or one that gives a result | [Tests](../language/tests.md#mistakes) |
 | ZK0268 | two tests of one name in one file | [Tests](../language/tests.md#mistakes) |
-| ZK0269 | an import that names no file and no package of the nearest `zakac.toml` | [Modules](../language/modules.md) |
-| ZK0270 | an import of a package module that the package does not have, the stdlib (`စံကား/`) among them | [Modules](../language/modules.md) |
-| ZK0271 | an import of a git dep that `zakac fetch` has not fetched | [Modules](../language/modules.md) |
+| ZK0269 | an import that names no file and no package of the nearest `zakac.toml` | [Packages](../language/packages.md#mistakes) |
+| ZK0270 | an import of a package module that the package does not have, the stdlib (`စံကား/`) among them | [Packages](../language/packages.md#mistakes) |
+| ZK0271 | an import of a git dep that `zakac fetch` has not fetched | [Packages](../language/packages.md#mistakes) |
 
 ### ZK03: names
 

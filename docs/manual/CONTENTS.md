@@ -45,6 +45,7 @@
   - [Compile time](language/compile-time.md)
   - [The core module](language/core.md)
   - [Modules](language/modules.md)
+  - [Packages](language/packages.md)
   - [Input and output](language/io.md)
   - [The stdlib](language/stdlib.md)
   - [Natural wording](language/naturalness.md)
