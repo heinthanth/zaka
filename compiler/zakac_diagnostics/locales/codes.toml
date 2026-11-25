@@ -1957,6 +1957,26 @@ en = "give each test of a file a name of its own"
 [codes.ZK0268.explain]
 en = """\"zakac test\" reports each test as <file>::<name>, so two tests of one file cannot share a name: the report could not tell them apart. Tests of two files can share a name, and a test can share the name of a function."""
 
+[codes.ZK0269.title]
+en = "unknown package"
+[codes.ZK0269.message]
+en = "no file \"%{p}\" and no package named \"%{n}\""
+[codes.ZK0269.help]
+en = "list the package under [dependencies] in zakac.toml: \"%{n}\" = { path = \"<folder>\" }"
+[codes.ZK0269.explain]
+en = """An import that names no file beside the importing file reads a package: its first part is the name of a dep that the nearest zakac.toml lists under [dependencies], and the rest names a module of that package. The nearest zakac.toml lists no dep of this name, or there is no zakac.toml above the file."""
+
+[codes.ZK0270.title]
+en = "no such module in a package"
+[codes.ZK0270.message]
+en = "the package \"%{d}\" has no module \"%{n}\""
+[codes.ZK0270.help]
+en = "its [package.modules] table lists %{l}, and it holds no file %{f}"
+[codes.ZK0270.help_file]
+en = "it lists no module under [package.modules], and it holds no file %{f}"
+[codes.ZK0270.explain]
+en = """An import \"<dep>/<name>\" reads the file that the [package.modules] table in the zakac.toml of the dep gives the name. A name the table does not list reads the file <name>.zaka under the root of the dep. Neither is there."""
+
 [codes.ZK0264.title]
 en = "wait on channels with no channel"
 [codes.ZK0264.message]

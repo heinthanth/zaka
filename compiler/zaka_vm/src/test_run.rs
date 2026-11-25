@@ -234,7 +234,7 @@ fn walk(path: &Path, files: &mut Vec<PathBuf>)
 }
 
 /// The test blocks of a program: those of the file that is run and of each
-/// file it imports.
+/// file it imports, save the files of its deps, whose tests are their own.
 ///
 /// # Arguments
 ///
@@ -262,7 +262,7 @@ fn found_tests(program: &Program, path: &Path) -> Vec<Found>
         #[rustfmt::skip]
         let test = Found::builder().file(file).name(f.name.name.to_string())
             .at(f.name.span.lo.as_u32()).build();
-        f.test.then_some(test)
+        (f.test && !program.units[unit as usize].package).then_some(test)
     };
     program.stmts.iter().enumerate().filter_map(found).collect()
 }

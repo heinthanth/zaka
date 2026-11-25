@@ -84,6 +84,9 @@ en = "the native target links for this host, %{host}, not for %{target}: give --
 [errors.config_not_toml]
 en = "the config file %{p} is not valid TOML: %{e}"
 
+[errors.dep_named_std]
+en = "the config file %{p} lists a dep named \"စံကား\", the name of the stdlib: pick another name"
+
 [errors.config_unknown_name]
 en = "the config file %{p} sets %{name}, which no command here takes"
 

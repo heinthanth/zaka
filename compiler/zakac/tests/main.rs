@@ -4,6 +4,7 @@ mod backtrace;
 mod c_libs;
 mod config_example;
 mod mutants;
+mod packages;
 mod repl;
 mod target;
 mod test_jit;

@@ -47,6 +47,11 @@ pub struct Unit
     pub name: String,
     /// The index in `Program::stmts` of the first statement of the file.
     pub first_stmt: u32,
+    /// Whether the file is part of a package the program depends on, whose
+    /// tests `zakac test` leaves out.
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub package: bool,
 }
 
 impl Program

@@ -1,4 +1,5 @@
 use zakac_i18n::t;
+use zakac_rust_sugars::tern;
 use zakac_span::pos::Pos;
 use zakac_span::span::Span;
 
@@ -1088,6 +1089,54 @@ pub fn test_twice(span: Span, name: &str) -> Diagnostic
 {
     Diagnostic::new(Code::TestTwice, t!("codes.ZK0268.message", name = name), span)
         .with_help(t!("codes.ZK0268.help"))
+}
+
+/// An import names no file and a package that the nearest `zakac.toml`
+/// does not list.
+///
+/// # Arguments
+///
+/// * `span` - The import path.
+/// * `path` - The import path, as written.
+/// * `name` - Its first part.
+///
+/// # Returns
+///
+/// The `ZK0269` diagnostic.
+pub fn unknown_package(span: Span, path: &str, name: &str) -> Diagnostic
+{
+    Diagnostic::new(
+        Code::UnknownPackage,
+        t!("codes.ZK0269.message", p = path, n = name),
+        span,
+    )
+    .with_help(t!("codes.ZK0269.help", n = name))
+}
+
+/// An import names a module that a package does not have.
+///
+/// # Arguments
+///
+/// * `span` - The import path.
+/// * `dep` - The package, as the import names it.
+/// * `name` - The module.
+/// * `listed` - The names its `[package.modules]` table lists, joined.
+/// * `file` - The file the name would read.
+///
+/// # Returns
+///
+/// The `ZK0270` diagnostic.
+pub fn no_package_module(
+    span: Span, dep: &str, name: &str, listed: &str, file: &str,
+) -> Diagnostic
+{
+    let msg = t!("codes.ZK0270.message", d = dep, n = name);
+    let help = tern!(
+        listed.is_empty(),
+        t!("codes.ZK0270.help_file", f = file),
+        t!("codes.ZK0270.help", l = listed, f = file)
+    );
+    Diagnostic::new(Code::NoPackageModule, msg, span).with_help(help)
 }
 
 /// Two marks of a declaration head stand with no `၊` between them.

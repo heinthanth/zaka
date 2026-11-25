@@ -25,6 +25,7 @@ use zakac_ast::stmt::is_lib_path;
 use zakac_ast::target::FACTS;
 use zakac_ast::target::FactValue;
 use zakac_ast::target::Target;
+use zakac_cli_common::config::LOCAL_FILE;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_host_errors::Error;
@@ -43,6 +44,7 @@ use zakac_lexer::token::TokenKind;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_session::artifact::EmbeddedFile;
 use zakac_span::filename::FileName;
 use zakac_span::source_file::SourceFile;
@@ -58,6 +60,9 @@ use crate::comptime::settle;
 use crate::glued::GluedEnds;
 use crate::hint::Hint;
 use crate::hint::exported_hints;
+use crate::package::Manifest;
+use crate::package::dep_and_module;
+use crate::package::read_manifest;
 use crate::parser::parse;
 use crate::parser::parse_with;
 use crate::rings::AUTO;
@@ -609,6 +614,13 @@ struct Loader<'a>
     /// Each condition still open, with its place.
     #[builder(default)]
     open: Vec<(Span, CondPlace)>,
+    /// The manifest of each package read so far, indexed on its
+    /// `zakac.toml`.
+    #[builder(default)]
+    manifests: HashMap<PathBuf, Arc<Manifest>>,
+    /// The root of each dep read so far, with the name its imports give it.
+    #[builder(default)]
+    dep_roots: Vec<(PathBuf, String)>,
 }
 
 impl Loader<'_>
@@ -697,7 +709,10 @@ impl Loader<'_>
         let unit = self.units.len() as u32;
         let name = self.shown(&path);
         let first_stmt = self.stmts.len() as u32;
-        self.units.push(Unit::builder().name(name).first_stmt(first_stmt).build());
+        let package = self.dep_roots.iter().any(|(root, _)| path.starts_with(root));
+        #[rustfmt::skip]
+        self.units.push(Unit::builder().name(name).first_stmt(first_stmt).package(package)
+            .build());
         self.structs.push(exported_structs(&program));
         self.prepositions.push(exported_prepositions(&program));
         self.hints.push(exported_hints(&program));
@@ -705,7 +720,7 @@ impl Loader<'_>
         self.exports.push(own.collect());
         do_for!((name, origin, from) in shared, self.pass_on(&name, origin, from));
         self.stmts.extend(program.stmts);
-        self.done.insert(path, unit);
+        self.done.insert(known_as(&path), unit);
         Ok(unit)
     }
 
@@ -722,8 +737,13 @@ impl Loader<'_>
     /// The name.
     fn shown(&self, path: &Path) -> String
     {
-        let name =
-            path.strip_prefix(&self.folder).unwrap_or(path).display().to_string();
+        let in_dep = self.dep_roots.iter().find_map(|(root, name)| {
+            let rest = path.strip_prefix(root).ok()?;
+            Some(format!("{name}/{}", rest.display()))
+        });
+        let name = in_dep.unwrap_or_else(|| {
+            path.strip_prefix(&self.folder).unwrap_or(path).display().to_string()
+        });
         name.replace(std::path::MAIN_SEPARATOR, "/")
     }
 
@@ -750,10 +770,14 @@ impl Loader<'_>
             self.diagnostics.push(diag::import_needs_file(n.span, &n.path.lit.value));
             return Ok(None);
         }
-        let folder = importer.parent().unwrap_or(Path::new(""));
-        let path = normalize(&folder.join(&n.path.lit.value));
-        ret_if!(let Some(unit) = self.done.get(&path), Ok(Some(*unit)));
-        if let Some(at) = self.chain.iter().position(|p| *p == path)
+        let Some(path) = self.import_path(importer, n)?
+        else
+        {
+            return Ok(None);
+        };
+        let key = known_as(&path);
+        ret_if!(let Some(unit) = self.done.get(&key), Ok(Some(*unit)));
+        if let Some(at) = self.chain.iter().position(|p| known_as(p) == key)
         {
             let names: Vec<String> =
                 self.chain[at..].iter().map(|p| self.shown(p)).collect();
@@ -766,6 +790,162 @@ impl Loader<'_>
         })?;
         self.imports.push(EmbeddedFile::of(&file));
         self.visit(file, path).map(Some)
+    }
+}
+
+impl Loader<'_>
+{
+    /// The file an import from disk reads: a module of a dep, when the first
+    /// part of the path names a dep of the package of the importer, else the
+    /// file beside the importer.
+    ///
+    /// # Arguments
+    ///
+    /// * `importer` - The path of the importing file.
+    /// * `n` - The import.
+    ///
+    /// # Returns
+    ///
+    /// The normalized path; `None` for a package or a module that is not
+    /// there, which is reported; or the error of a manifest.
+    fn import_path(
+        &mut self, importer: &Path, n: &ImportStmt,
+    ) -> zakac_host_errors::Result<Option<PathBuf>>
+    {
+        let folder = importer.parent().unwrap_or(Path::new(""));
+        let beside = normalize(&folder.join(&n.path.lit.value));
+        let written = canonical(&n.path.lit.value).into_owned();
+        let Some((head, rest)) = dep_and_module(&written)
+        else
+        {
+            return Ok(Some(beside));
+        };
+        let manifest = self.manifest_near(folder)?;
+        let dep = manifest.and_then(|m| Some(m.root.join(&m.deps.get(head)?.path)));
+        let Some(root) = dep
+        else
+        {
+            return Ok(self.beside_or_unknown(beside, n, head));
+        };
+        self.module_path(&normalize(&root), n, head, rest)
+    }
+
+    /// The file beside the importer that an import names, unless the file is
+    /// not there and the path, with no `.zaka` at its end, reads as the name
+    /// of a package, which is reported.
+    ///
+    /// # Arguments
+    ///
+    /// * `beside` - The file beside the importer.
+    /// * `n` - The import.
+    /// * `head` - The first part of its path.
+    ///
+    /// # Returns
+    ///
+    /// The path, or `None` when it was reported.
+    fn beside_or_unknown(
+        &mut self, beside: PathBuf, n: &ImportStmt, head: &str,
+    ) -> Option<PathBuf>
+    {
+        let written = &n.path.lit.value;
+        let file = written.ends_with(".zaka");
+        ret_if!(
+            file || self.source_map.file_loader().file_exists(&beside),
+            Some(beside)
+        );
+        self.diagnostics.push(diag::unknown_package(n.path.span, written, head));
+        None
+    }
+
+    /// The file a module of a dep is: the file the `[package.modules]` table
+    /// of the dep gives it, else `<name>.zaka` under the root of the dep.
+    ///
+    /// # Arguments
+    ///
+    /// * `root` - The normalized root of the dep.
+    /// * `n` - The import.
+    /// * `head` - The name of the dep.
+    /// * `rest` - The name of the module.
+    ///
+    /// # Returns
+    ///
+    /// The normalized path; `None` for a module that is not there, which is
+    /// reported; or the error of a root that is not there or of a manifest.
+    fn module_path(
+        &mut self, root: &Path, n: &ImportStmt, head: &str, rest: &str,
+    ) -> zakac_host_errors::Result<Option<PathBuf>>
+    {
+        let known = self.dep_roots.iter().any(|(r, _)| r == root);
+        do_if!(!known, self.dep_roots.push((root.to_path_buf(), head.to_string())));
+        let own = root.join(LOCAL_FILE);
+        let found = self.source_map.file_loader().file_exists(&own);
+        let manifest = tern!(found, Some(self.manifest_at(&own)?), None);
+        let bare = || Arc::new(Manifest::builder().root(root.to_path_buf()).build());
+        let manifest = manifest.unwrap_or_else(bare);
+        let (file, _) = manifest.module_file(rest);
+        let file = normalize(&file);
+        ret_if!(self.source_map.file_loader().file_exists(&file), Ok(Some(file)));
+        if !found && !root.is_dir()
+        {
+            let ctx = IOErrorContext::new(root.to_path_buf(), IOErrorAction::Read);
+            return Err(Error::from_io(std::io::ErrorKind::NotFound.into(), ctx));
+        }
+        let names: Vec<&str> =
+            manifest.package.modules.keys().map(String::as_str).collect();
+        let shown = self.shown(&file);
+        #[rustfmt::skip]
+        let diag = diag::no_package_module(n.path.span, head, rest, &names.join(", "),
+            &shown);
+        self.diagnostics.push(diag);
+        Ok(None)
+    }
+
+    /// The manifest of the package a folder is in: the nearest `zakac.toml`
+    /// from the folder up, the folder as written first, then from the
+    /// absolute folder, so a relative folder reaches the folders above the
+    /// working folder too.
+    ///
+    /// # Arguments
+    ///
+    /// * `folder` - The folder.
+    ///
+    /// # Returns
+    ///
+    /// The manifest, `None` with no `zakac.toml` above the folder, or the
+    /// error of its read.
+    fn manifest_near(
+        &mut self, folder: &Path,
+    ) -> zakac_host_errors::Result<Option<Arc<Manifest>>>
+    {
+        let here = tern!(folder.as_os_str().is_empty(), Path::new("."), folder);
+        let whole =
+            std::path::absolute(here).map_or_else(|_| here.into(), |f| normalize(&f));
+        let loader = self.source_map.file_loader();
+        let mut files =
+            folder.ancestors().chain(whole.ancestors()).map(|d| d.join(LOCAL_FILE));
+        let Some(file) = files.find(|f| loader.file_exists(f))
+        else
+        {
+            return Ok(None);
+        };
+        self.manifest_at(&file).map(Some)
+    }
+
+    /// The manifest of a `zakac.toml`, read once.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file.
+    ///
+    /// # Returns
+    ///
+    /// The manifest, or the error of its read.
+    fn manifest_at(&mut self, file: &Path) -> zakac_host_errors::Result<Arc<Manifest>>
+    {
+        ret_if!(let Some(read) = self.manifests.get(file), Ok(read.clone()));
+        let read = Arc::new(read_manifest(self.source_map.file_loader(), file)?);
+        self.manifests.insert(file.to_path_buf(), read.clone());
+        Ok(read)
     }
 }
 
@@ -1426,6 +1606,25 @@ fn normalize(path: &Path) -> PathBuf
         }
     }
     out
+}
+
+/// The path a file is known by among the files read and the files being
+/// read: absolute, so a file that two imports reach, one through a dep and
+/// one beside the importer, is one file. The names of the stdlib stay as
+/// they are.
+///
+/// # Arguments
+///
+/// * `path` - The normalized path.
+///
+/// # Returns
+///
+/// The path to compare.
+fn known_as(path: &Path) -> PathBuf
+{
+    let std = path.to_str().is_some_and(|p| p.starts_with(STD_PREFIX));
+    ret_if!(std || path.is_absolute(), path.to_path_buf());
+    std::path::absolute(path).map_or_else(|_| path.to_path_buf(), |p| normalize(&p))
 }
 
 /// Make the lib path of each C function of a file absolute: a relative one

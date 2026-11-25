@@ -32,7 +32,7 @@
    the buffer makes the x86-64 jump restore the registers alone, as it does on
    each other OS; ZK_LIB_UNWIND keeps the unwind. The jump buffer of ARM64 holds
    no such frame, and its longjmp keeps the unwind. */
-#if defined(_WIN64) && (defined(_M_X64) || defined(__x86_64__)) && \
+#if defined(_WIN64) && (defined(_M_X64) || defined(__x86_64__)) &&                     \
     !defined(_M_ARM64EC) && !defined(ZK_LIB_UNWIND)
 #define ZK_LIB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else

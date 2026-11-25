@@ -38,6 +38,10 @@ pub const CONFIG_FLAG: &str = "config";
 /// or inside the section of a command (`[run.lint]`, `[build.comptime]`).
 const FLAG_GROUPS: &[&str] = &["lint", "comptime", "target"];
 
+/// The sections of a config file that packages read, not the flags:
+/// `[dependencies]` and `[package]`.
+pub const PACKAGE_SECTIONS: &[&str] = &["dependencies", "package"];
+
 /// The flags each command shares, which a config file cannot set.
 const SHARED: &[&str] = &["help", "version", CONFIG_FLAG];
 
@@ -285,7 +289,9 @@ pub fn check_file(
 ) -> zakac_host_errors::Result<()>
 {
     let whole = cmd.has_subcommands();
-    table.iter().try_for_each(|(name, value)| match value
+    let mut flags =
+        table.iter().filter(|(name, _)| !PACKAGE_SECTIONS.contains(&name.as_str()));
+    flags.try_for_each(|(name, value)| match value
     {
         Value::Table(inner) =>
         {
@@ -776,6 +782,15 @@ mod tests
         assert!(check_file(&table, &lexer, Some("lex"), "t").is_ok());
         let table = parse_text("[lex]\nx = 1", "t").unwrap();
         assert!(check_file(&table, &lexer, Some("lex"), "t").is_err());
+    }
+
+    #[test]
+    fn the_package_sections_are_left_to_packages()
+    {
+        let text = "[dependencies]\nshapes = { path = \"../shapes\" \
+                    }\n[package.modules]\n\"က\" = \"a.zaka\"\n";
+        let table = parse_text(text, "t.toml").unwrap();
+        check_file(&table, &tree(), None, "t.toml").unwrap();
     }
 
     #[test]

@@ -7236,6 +7236,7 @@ dependencies = [
  "serde",
  "tempfile",
  "termcolor",
+ "toml 1.1.6+spec-1.1.0",
  "zakac_ast",
  "zakac_burmese_segmenter",
  "zakac_cli_common",

@@ -136,6 +136,11 @@ pub enum Error
     {
         path: String, msg: String
     },
+    #[error("{}", t!("errors.dep_named_std", p = path))]
+    DepNamedStd
+    {
+        path: String
+    },
     #[error("{}", t!("errors.config_unknown_name", p = path, name = name))]
     ConfigUnknownName
     {

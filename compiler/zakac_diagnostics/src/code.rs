@@ -204,6 +204,10 @@ MarksNeedSeparator = ("ZK0266", Level::Error),
 TestShape = ("ZK0267", Level::Error),
 /// Two test blocks of one file share a name.
 TestTwice = ("ZK0268", Level::Error),
+/// An import names a package that the nearest `zakac.toml` does not list.
+UnknownPackage = ("ZK0269", Level::Error),
+/// An import names a module that a package does not have.
+NoPackageModule = ("ZK0270", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
