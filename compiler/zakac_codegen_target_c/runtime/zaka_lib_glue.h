@@ -27,11 +27,13 @@
 #define ZK_STOPPED (-1)
 
 /* A longjmp of 64-bit Windows unwinds each frame it leaves, and the handler of
-   each frame runs as it does: the jump of a trap left a program of two libs to
-   crash now and then (0xC0000005 with MinGW). Clearing the frame in the buffer
-   makes the jump restore the registers alone, as it does on each other OS;
-   ZK_LIB_UNWIND keeps the unwind. */
-#if defined(_WIN64) && !defined(ZK_LIB_UNWIND)
+   each frame runs as it does: on x86-64 the jump of a trap left a program of
+   two libs to crash now and then (0xC0000005 with MinGW). Clearing the frame in
+   the buffer makes the x86-64 jump restore the registers alone, as it does on
+   each other OS; ZK_LIB_UNWIND keeps the unwind. The jump buffer of ARM64 holds
+   no such frame, and its longjmp keeps the unwind. */
+#if defined(_WIN64) && (defined(_M_X64) || defined(__x86_64__)) && \
+    !defined(_M_ARM64EC) && !defined(ZK_LIB_UNWIND)
 #define ZK_LIB_NO_UNWIND(buf) (((_JUMP_BUFFER *)(buf))->Frame = 0)
 #else
 #define ZK_LIB_NO_UNWIND(buf) ((void)(buf))
