@@ -208,6 +208,9 @@ UnknownPackage = ("ZK0269", Level::Error),
 NoPackageModule = ("ZK0270", Level::Error),
 /// An import names a git dep that `zakac fetch` has not fetched.
 PackageNotFetched = ("ZK0271", Level::Error),
+/// Code marked to run when its block ends is the one statement of a branch,
+/// so it would run at once.
+DeferAlone = ("ZK0272", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.
@@ -352,6 +355,10 @@ BaseNotAStruct = ("ZK0363", Level::Error),
 /// A name reaches a field or a function through two parts of a struct at
 /// one depth.
 BaseNameTwice = ("ZK0364", Level::Error),
+/// A statement inside code that runs when its block ends would leave that
+/// code: a return, a break or continue of a loop around it, or a pass-on of a
+/// failure.
+DeferLeaves = ("ZK0365", Level::Error),
 
 // kinds: ZK04xx
 /// A value does not convert to the kind its place expects.

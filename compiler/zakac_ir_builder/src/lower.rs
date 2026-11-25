@@ -122,6 +122,7 @@ pub fn lower(
     lowerer.scopes.push(HashMap::new());
     lowerer.nested.push(HashMap::new());
     lowerer.drops.push(Vec::new());
+    lowerer.defers.push(Vec::new());
     let mut main = Vec::new();
     // The code of the statements that ran in earlier chunks of a REPL session;
     // each is still lowered, so each slot and function keeps its number.
@@ -648,6 +649,11 @@ struct Lowerer<'k>
     /// scope ends.
     #[builder(default)]
     drops: Vec<Vec<(Place, DataKind)>>,
+    /// The lowered code of each mark of each open scope that runs when the
+    /// scope ends, in the order of the marks, innermost scope last; each exit
+    /// of a scope runs its code, the last mark first, before its drops.
+    #[builder(default)]
+    defers: Vec<Vec<Vec<Stmt>>>,
     /// The index of the scope of the block of each open loop, innermost
     /// last; `break` and `continue` leave the scopes from there on.
     #[builder(default)]
@@ -818,8 +824,10 @@ impl Lowerer<'_>
         Place::Local(frame.locals.len() as u32 - 1)
     }
 
-    /// The drops of the places of the open scopes from `depth` on, the
-    /// innermost scope first and the latest place of each scope first.
+    /// The statements that leave the open scopes from `depth` on, the
+    /// innermost scope first: in each scope, the code of its marks that runs
+    /// when it ends, the last mark first, then the drops of its places, the
+    /// latest place first, then the locks it gives back.
     ///
     /// # Arguments
     ///
@@ -831,13 +839,16 @@ impl Lowerer<'_>
     /// The drop statements.
     fn drops_from(&self, depth: usize, span: Span) -> Vec<Stmt>
     {
-        // Each scope drops its places, then gives back the locks it holds.
+        // Each scope runs its marked code, drops its places, then gives back
+        // the locks it holds.
         let scope = |s: usize| {
+            let marked = self.defers[s].iter().rev().flatten().cloned();
             let drops = self.drops[s].iter().rev();
             let drops =
                 drops.map(|&(place, kind)| drop_stmt(Dest::Slot(place), kind, span));
             let held = self.locks.iter().rev().filter(move |(t, _)| *t == s);
-            drops.chain(held.map(|(_, obj)| Stmt::Unlock { obj: obj.clone(), span }))
+            let unlocks = held.map(|(_, obj)| Stmt::Unlock { obj: obj.clone(), span });
+            marked.chain(drops).chain(unlocks)
         };
         (depth..self.drops.len()).rev().flat_map(scope).collect()
     }
@@ -925,7 +936,9 @@ impl Lowerer<'_>
         self.scopes.push(HashMap::new());
         self.nested.push(HashMap::new());
         self.drops.push(Vec::new());
+        self.defers.push(Vec::new());
         f(self);
+        self.defers.pop();
         self.drops.pop();
         self.nested.pop();
         self.scopes.pop();
@@ -947,6 +960,19 @@ impl Lowerer<'_>
             let end = stmts.last().map_or(Span::default(), |s| s.span());
             do_if!(!leaves, out.extend(l.drops_from(l.drops.len() - 1, end)));
         });
+    }
+
+    /// Lower code marked to run when the scope around it ends, where the mark
+    /// stands, so its names resolve there, and keep it for each exit of that
+    /// scope.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The marked code.
+    fn defer(&mut self, n: &st::DeferStmt)
+    {
+        let code = self.block(&n.block.stmts);
+        self.defers.last_mut().expect("a scope is open").push(code);
     }
 
     /// Lower the block of a loop in its own scope.
@@ -997,6 +1023,7 @@ impl Lowerer<'_>
             self.saved.push(top.unwrap_or_default());
             self.scopes.push(HashMap::new());
             self.drops = vec![Vec::new()];
+            self.defers = vec![Vec::new()];
             self.locks.clear();
         }
         self.sigs = self.unit_sigs[unit as usize].clone();
@@ -1181,6 +1208,7 @@ impl Lowerer<'_>
             st::Stmt::Assign(n) => self.assign(n, out),
             st::Stmt::Print(n) => out.push(self.print(n)),
             st::Stmt::Block(n) => self.scoped_stmts(&n.stmts, out),
+            st::Stmt::Defer(n) => self.defer(n),
             st::Stmt::If(n) => out.push(self.if_stmt(n)),
             st::Stmt::While(n) => out.push(self.while_stmt(n)),
             st::Stmt::Counted(n) if n.parallel && !self.counter_wider(n) =>

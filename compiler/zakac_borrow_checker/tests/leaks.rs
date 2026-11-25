@@ -481,3 +481,24 @@ fn a_leak_at_the_end_of_a_function_that_can_fail_points_at_its_end()
     );
     assert_eq!(lines(&text), [(Code::BlockLeaked, 11)]);
 }
+
+#[test]
+fn a_free_marked_to_run_when_the_block_ends_covers_each_exit()
+{
+    let text = |freed: &str, last: &str| {
+        format!(
+            "စမ်း ဟူသော လုပ်ဆောင်ချက် သည်
+က ဟူသော ကိန်းပြည့် တစ်ခု ကို လက်ခံပြီး
+အောက်ပါတို့ကို လုပ်ဆောင်မည်။
+ကိန်းရှင် ပ သည် ကိန်းပြည့် လိပ်စာ တစ်ခု ဖြစ်ပါစေ။
+မင်မိုရီတွင် ကိန်းပြည့် ၄ ခုစာ နေရာယူ၍ လိပ်စာကို ပ တွင် သိမ်းထားမည်။
+{freed}အကယ်၍ က သည် ၀ နှင့် ညီလျှင် ပြန်ပေးမည်။
+{last}လုပ်ဆောင်စရာများ ပြီးပါပြီး။
+"
+        )
+    };
+    let free = "လိပ်စာ ပ ရှိ မင်မိုရီကို ပြန်လည်စွန့်လွှတ်မည်။\n";
+    // Freed at the end alone, the block leaks at the return in the middle.
+    assert_eq!(lines(&text("", free)), [(Code::BlockLeaked, 6)]);
+    ok(&text(&format!("လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် {free}"), ""));
+}

@@ -538,6 +538,15 @@ pub enum Kw
     /// `ပရိုဂရမ်ရေးသားချိန်တွင်`, "while the program is written": in front of an
     /// assert, it makes a debug assert, which `--debug-asserts off` drops
     AtDevTime,
+    /// `ပြီးသည့်`, "that are done": after `လုပ်ဆောင်စရာများ`, the middle word of the
+    /// mark of code that runs when its block ends
+    DoneWhich,
+    /// `အခါတွင်`, "at the time": the last word of that mark
+    AtTheTime,
+    /// `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်`, "when the tasks are done": in front of a
+    /// statement or a block, it marks code that runs when the block around it
+    /// ends, at each exit of that block
+    WhenTasksDone,
     /// `ထိုသို့မဟုတ်ဘဲ`
     ElseIf,
     /// `သို့မဟုတ်ပါက`

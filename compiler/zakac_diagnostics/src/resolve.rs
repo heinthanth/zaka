@@ -136,6 +136,22 @@ pub fn const_without_init(span: Span, name: &str) -> Diagnostic
     Diagnostic::new(Code::ConstWithoutInit, t!("codes.ZK0308.message", n = name), span)
 }
 
+/// A statement inside code that runs when its block ends would leave that
+/// code.
+///
+/// # Arguments
+///
+/// * `span` - The statement.
+///
+/// # Returns
+///
+/// The `ZK0365` diagnostic.
+pub fn defer_leaves(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::DeferLeaves, t!("codes.ZK0365.message"), span)
+        .with_help(t!("codes.ZK0365.help"))
+}
+
 /// A break stands outside a loop.
 ///
 /// # Arguments

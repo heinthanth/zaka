@@ -1121,6 +1121,22 @@ pub fn no_package_module(
     Diagnostic::new(Code::NoPackageModule, msg, span).with_help(help)
 }
 
+/// Code marked to run when its block ends is the one statement of a branch,
+/// so it would run at once.
+///
+/// # Arguments
+///
+/// * `span` - The marked code.
+///
+/// # Returns
+///
+/// The `ZK0272` diagnostic.
+pub fn defer_alone(span: Span) -> Diagnostic
+{
+    Diagnostic::new(Code::DeferAlone, t!("codes.ZK0272.message"), span)
+        .with_help(t!("codes.ZK0272.help"))
+}
+
 /// An import names a module that the stdlib does not have: the stdlib is a
 /// package the compiler carries, whose names have no path to fall back on.
 ///

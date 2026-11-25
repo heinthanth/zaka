@@ -17,6 +17,7 @@ use zaka_vm::machine::RunOptions;
 use zaka_vm::machine::drive;
 use zaka_vm::trap::Backtrace;
 use zakac_ast::stmt::START_NAME;
+use zakac_ast::stmt::Stmt;
 use zakac_borrow_checker::borrow_check;
 use zakac_borrow_checker::options::BorrowCheckOptions;
 use zakac_cli_common::clap;
@@ -51,6 +52,23 @@ use zakac_semcheck::artifact::Checked;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::filename::FileName;
 use zakac_span::source_map::SourceMap;
+
+/// Whether a chunk marks code at its top level to run when its block ends.
+///
+/// # Arguments
+///
+/// * `chunk` - The chunk.
+///
+/// # Returns
+///
+/// `true` when it does.
+fn marks_top_level(chunk: &str) -> bool
+{
+    let mut sm = SourceMap::new();
+    let file = sm.new_source_file(FileName::Custom(FILE_NAME.into()), chunk.into());
+    let parsed = parse(&file, &lex(&file, &LexerOptions::default()));
+    parsed.program.stmts.iter().any(|s| matches!(s, Stmt::Defer(_)))
+}
 
 /// The name of the program a session builds, as messages show it.
 const FILE_NAME: &str = "<repl>";
@@ -166,6 +184,13 @@ impl Session
     fn take(&mut self, chunk: &str, gate: &Gate, io: &mut CommandIO<'_>)
     {
         ret_if!(chunk.trim().is_empty());
+        // The session runs its earlier chunks again for each new one, so code
+        // marked to run when the top level ends would run again and again.
+        if marks_top_level(chunk)
+        {
+            let _ = writeln!(io.stderr, "{}", t!("repl.defer"));
+            return;
+        }
         let first = self.compile(chunk);
         let failed =
             |c: &Compiled| c.emitted.diagnostics().iter().any(|d| d.is_error());

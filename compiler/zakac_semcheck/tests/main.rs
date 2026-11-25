@@ -6,6 +6,7 @@ mod cli;
 mod common;
 mod conversions;
 mod counts;
+mod defer;
 mod edits;
 mod embedding;
 mod exports;

@@ -9,5 +9,8 @@ en = "Zaka REPL. Write statements and press Enter. :exit or Ctrl-D leaves, :clea
 [repl.reset]
 en = "The session starts again: the statements so far are gone."
 
+[repl.defer]
+en = "\"လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်\" runs code when its block ends, and a session has no end of its own: write it inside a function or a block"
+
 [repl.unknown]
 en = "unknown command %{c}: the commands are :exit, :clear and :reset"

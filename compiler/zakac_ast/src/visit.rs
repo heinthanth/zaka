@@ -49,6 +49,7 @@ use crate::stmt::CallStmt;
 use crate::stmt::ContinueStmt;
 use crate::stmt::CountedStmt;
 use crate::stmt::DeclStmt;
+use crate::stmt::DeferStmt;
 use crate::stmt::EachStmt;
 use crate::stmt::EnumDecl;
 use crate::stmt::EnumMember;
@@ -142,6 +143,7 @@ FnDecl => "fn", visit_fn;
 Param => "param", visit_param;
 ReturnStmt => "return", visit_return;
 AssertStmt => "assert", visit_assert;
+DeferStmt => "defer", visit_defer;
 CallStmt => "call_stmt", visit_call_stmt;
 AllocStmt => "alloc", visit_alloc;
 ResizeStmt => "resize", visit_resize;
@@ -224,6 +226,7 @@ fn stmt_node(n: &Stmt) -> &dyn Node
         Stmt::Fn(s) => s,
         Stmt::Return(s) => s,
         Stmt::Assert(s) => s,
+        Stmt::Defer(s) => s,
         Stmt::Call(s) => s,
         Stmt::Alloc(s) => s,
         Stmt::Resize(s) => s,
@@ -360,6 +363,8 @@ pub trait Visitor
     fn visit_return(&mut self, n: &ReturnStmt) { walk_return(self, n) }
     /// Visit an assert.
     fn visit_assert(&mut self, n: &AssertStmt) { walk_assert(self, n) }
+    /// Visit code that runs when its block ends.
+    fn visit_defer(&mut self, n: &DeferStmt) { walk_defer(self, n) }
     /// Visit a call statement.
     fn visit_call_stmt(&mut self, n: &CallStmt) { walk_call_stmt(self, n) }
     /// Visit a heap allocation.
@@ -505,6 +510,7 @@ pub fn walk_stmt<V: Visitor + ?Sized>(v: &mut V, n: &Stmt)
         Stmt::Fn(s) => v.visit_fn(s),
         Stmt::Return(s) => v.visit_return(s),
         Stmt::Assert(s) => v.visit_assert(s),
+        Stmt::Defer(s) => v.visit_defer(s),
         Stmt::Call(s) => v.visit_call_stmt(s),
         Stmt::Alloc(s) => v.visit_alloc(s),
         Stmt::Resize(s) => v.visit_resize(s),
@@ -710,6 +716,14 @@ pub fn walk_assert<V: Visitor + ?Sized>(v: &mut V, n: &AssertStmt)
     v.enter(n);
     v.visit_expr(&n.cond);
     do_if!(let Some(message) = &n.message, v.visit_expr(message));
+    v.leave(n);
+}
+
+/// Visit the block of code that runs when its block ends.
+pub fn walk_defer<V: Visitor + ?Sized>(v: &mut V, n: &DeferStmt)
+{
+    v.enter(n);
+    v.visit_block(&n.block);
     v.leave(n);
 }
 
@@ -1341,6 +1355,7 @@ pub fn walk_stmt_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut Stmt)
         Stmt::Fn(s) => walk_fn_mut(v, s),
         Stmt::Return(s) => walk_return_mut(v, s),
         Stmt::Assert(s) => walk_assert_mut(v, s),
+        Stmt::Defer(s) => walk_defer_mut(v, s),
         Stmt::Call(s) => walk_call_stmt_mut(v, s),
         Stmt::Alloc(s) => v.visit_alloc_mut(s),
         Stmt::Resize(s) => v.visit_resize_mut(s),
@@ -1605,6 +1620,13 @@ pub fn walk_assert_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut AssertStmt)
     v.visit_span_mut(&mut n.span);
     v.visit_expr_mut(&mut n.cond);
     opt_expr_mut(v, &mut n.message);
+}
+
+/// Visit the block of code that runs when its block ends.
+pub fn walk_defer_mut<V: VisitorMut + ?Sized>(v: &mut V, n: &mut DeferStmt)
+{
+    v.visit_span_mut(&mut n.span);
+    v.visit_block_mut(&mut n.block);
 }
 
 /// Visit the callee and arguments of a call statement.

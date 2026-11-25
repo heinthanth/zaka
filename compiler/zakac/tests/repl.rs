@@ -268,3 +268,12 @@ fn a_chunk_has_the_rights_of_the_flags_alone()
     assert!(out.starts_with("အမှားအယွင်း("), "{out}{err}");
     assert!(!std::env::temp_dir().join("zaka-repl-denied.txt").exists());
 }
+
+#[test]
+fn a_mark_at_the_top_of_a_session_is_refused()
+{
+    let input = "လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် ၁ ကို ပြသမည်။\n၂ ကို ပြသမည်။\n";
+    let (out, err) = session(input);
+    assert_eq!(out, "၂\n", "{err}");
+    assert!(err.contains("လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်"), "{err}");
+}

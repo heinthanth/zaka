@@ -223,6 +223,7 @@ impl ToSexpr for Stmt
                 let message = s.message.iter().map(ToSexpr::to_sexpr);
                 list(word, std::iter::once(s.cond.to_sexpr()).chain(message))
             }
+            Stmt::Defer(s) => list("defer", std::iter::once(s.block.to_sexpr())),
             Stmt::Call(s) =>
             {
                 let word = tern!(s.pass, "call-pass", "call");

@@ -1979,6 +1979,24 @@ en = "run \"zakac fetch\" in the package, which clones each git dep and pins it 
 [codes.ZK0271.explain]
 en = """A dep with git = \"<url>\" and rev = \"<commit>\" is read from a checkout in the cache, at the commit that zakac.lock pins the rev to. A build never reaches the network: \"zakac fetch\" clones the repo and writes the lock. The lock has no commit for this rev, or the checkout is not in the cache."""
 
+[codes.ZK0272.title]
+en = "marked code alone in a branch"
+[codes.ZK0272.message]
+en = "code marked to run when its block ends is the one statement of this branch, so it would run at once"
+[codes.ZK0272.help]
+en = "put it in a block with the statements it should follow, or leave out the mark"
+[codes.ZK0272.explain]
+en = """Code after \"လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်\" runs when the block around it ends. A branch written as one statement, such as the arm of \"အကယ်၍ … လျှင် <statement>\" or a loop on one line, is a block of that one statement, so the marked code would end its block as it ran: the mark would change nothing."""
+
+[codes.ZK0365.title]
+en = "a statement leaves marked code"
+[codes.ZK0365.message]
+en = "this statement would leave the code that runs when its block ends"
+[codes.ZK0365.help]
+en = "marked code runs to its end at an exit of its block: it cannot return, leave a loop around it, or pass a failure on"
+[codes.ZK0365.explain]
+en = """Code after \"လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်\" runs at an exit of the block around it: its end, a return, a break or continue that leaves it, or a pass-on of a failure. Such code runs to its end, so a return, a break or continue of a loop around the marked code, or a pass-on of a failure inside it, is refused: it would leave the block before its cleanup ends. A loop inside the marked code can break and continue as each loop can, and a failure inside it is handled there."""
+
 [codes.ZK0264.title]
 en = "wait on channels with no channel"
 [codes.ZK0264.message]

@@ -6,6 +6,7 @@ mod clause;
 mod cli;
 mod common;
 mod comptime;
+mod defer;
 mod expr;
 mod generics;
 mod heap;

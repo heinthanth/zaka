@@ -124,6 +124,9 @@ pub enum Stmt
     /// `<cond> ဖြစ်ရမည်။`, with `ပရိုဂရမ်ရေးသားချိန်တွင်` in front for a debug
     /// assert and `၊ မဟုတ်ပါက <text> ဟု ရပ်မည်` before the full stop for a message
     Assert(AssertStmt),
+    /// `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် <statement or block>`: code that runs when the
+    /// block around it ends
+    Defer(DeferStmt),
     /// `f ဟူသော လုပ်ဆောင်ချက်ကို ... လုပ်ဆောင်မည်။`
     Call(CallStmt),
     /// Heap allocation into a place.
@@ -685,6 +688,17 @@ pub struct AssertStmt
     /// The text the stop shows, after `မဟုတ်ပါက`.
     pub message: Option<Expr>,
     /// Source region.
+    pub span: Span,
+}
+
+/// Code marked with `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်`: it runs when the block around
+/// it ends, at each exit of that block, the last mark of a block first.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Builder)]
+pub struct DeferStmt
+{
+    /// The marked code: one statement, or a block.
+    pub block: BlockStmt,
+    /// Source region, from the mark to the end of the code.
     pub span: Span,
 }
 

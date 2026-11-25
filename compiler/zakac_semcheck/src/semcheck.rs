@@ -22,6 +22,7 @@ use zakac_ast::stmt::CallStmt;
 use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::DeferStmt;
 use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::EnumDecl;
@@ -782,6 +783,11 @@ pub(crate) struct Checker
     /// The round of a parallel loop around the current statement, inside the
     /// function.
     pub round: Option<RoundCtx>,
+    /// The number of loops around the code marked to run when its block
+    /// ends, when the current statement is inside such code of the function:
+    /// a return, a pass-on, and a break or continue at that depth would leave
+    /// it.
+    pub defer_at: Option<u32>,
     /// The function around the current statement.
     pub func: Option<FnCtx>,
     /// The part each result variable is proven to hold here: `true` for a
@@ -1525,6 +1531,7 @@ impl Checker
             !pass,
             do_if!(dropped, self.report(kd::failure_not_passed(span, name)))
         );
+        ret_if!(self.defer_at.is_some(), self.report(rd::defer_leaves(span)));
         let own = self.func.as_ref().and_then(|f| f.fault);
         let Some((_, want)) = own.and_then(DataKind::fallible_parts)
         else
@@ -2171,6 +2178,14 @@ impl Checker
         self.unchecked = outer;
     }
 
+    /// Whether a break or a continue here would leave the code marked to run
+    /// when its block ends: no loop of its own stands inside that code.
+    ///
+    /// # Returns
+    ///
+    /// `true` when it would.
+    fn leaves_defer(&self) -> bool { self.defer_at == Some(self.loop_depth) }
+
     /// Run `f` with one more loop around it.
     ///
     /// # Arguments
@@ -2697,9 +2712,17 @@ impl Visitor for Checker
         self.scopes.pop();
     }
 
+    fn visit_defer(&mut self, n: &DeferStmt)
+    {
+        let outer = self.defer_at.replace(self.loop_depth);
+        self.visit_block(&n.block);
+        self.defer_at = outer;
+    }
+
     fn visit_break(&mut self, n: &BreakStmt)
     {
         do_if!(self.loop_depth == 0, self.report(rd::break_outside_loop(n.span)));
+        do_if!(self.leaves_defer(), self.report(rd::defer_leaves(n.span)));
         // A break of a loop inside the round is fine.
         let leaves = self.round.is_some_and(|r| r.depth == self.loop_depth);
         do_if!(leaves, self.report(od::round_leaves(n.span)));
@@ -2708,6 +2731,7 @@ impl Visitor for Checker
     fn visit_continue(&mut self, n: &ContinueStmt)
     {
         do_if!(self.loop_depth == 0, self.report(rd::continue_outside_loop(n.span)));
+        do_if!(self.leaves_defer(), self.report(rd::defer_leaves(n.span)));
     }
 
     fn visit_fn(&mut self, n: &FnDecl)
@@ -2723,8 +2747,10 @@ impl Visitor for Checker
         do_if!(nested, self.declare_nested(n));
         let outer = self.func.take();
         let depth = std::mem::take(&mut self.loop_depth);
-        // A function inside a round runs in the round, as its own function.
+        // A function inside a round runs in the round, as its own function;
+        // one inside marked code is its own function too.
         let round = self.round.take();
+        let defer_at = self.defer_at.take();
         let proven = std::mem::take(&mut self.proven);
         let touched = std::mem::take(&mut self.touched);
         let given = n.ret.as_ref().map(|k| self.written_kind(k, KindUse::Result));
@@ -2763,6 +2789,7 @@ impl Visitor for Checker
         self.unchecked = outer_unchecked;
         self.loop_depth = depth;
         self.round = round;
+        self.defer_at = defer_at;
         (self.proven, self.touched) =
             tern!(nested, (proven, touched), Default::default());
     }
@@ -2770,6 +2797,7 @@ impl Visitor for Checker
     fn visit_return(&mut self, n: &ReturnStmt)
     {
         do_if!(self.round.is_some(), self.report(od::round_leaves(n.span)));
+        do_if!(self.defer_at.is_some(), self.report(rd::defer_leaves(n.span)));
         let Some(func) = self.func.clone()
         else
         {

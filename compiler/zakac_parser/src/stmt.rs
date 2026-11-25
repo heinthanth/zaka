@@ -15,6 +15,7 @@ use zakac_ast::stmt::ContinueStmt;
 use zakac_ast::stmt::CountMode;
 use zakac_ast::stmt::CountedStmt;
 use zakac_ast::stmt::DeclStmt;
+use zakac_ast::stmt::DeferStmt;
 use zakac_ast::stmt::EachPart;
 use zakac_ast::stmt::EachStmt;
 use zakac_ast::stmt::EnumDecl;
@@ -293,6 +294,7 @@ impl Parser<'_>
         {
             Kw::If => self.parse_if(),
             Kw::AtDevTime => self.parse_debug_assert(),
+            Kw::WhenTasksDone => self.parse_defer(),
             Kw::ElseIf | Kw::Else =>
             {
                 Err(diag::else_without_if(tok.span, self.text_of(tok.span)))
@@ -394,6 +396,20 @@ impl Parser<'_>
         let start = self.bump().span;
         let cond = self.parse_expr()?;
         self.parse_assert_tail(cond, true, start)
+    }
+
+    /// Parse `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် <statement>` or the mark before a block:
+    /// code that runs when the block around it ends.
+    ///
+    /// # Returns
+    ///
+    /// The marked code, or a diagnostic.
+    fn parse_defer(&mut self) -> PResult<Stmt>
+    {
+        let start = self.bump().span;
+        let block = self.parse_branch(true)?;
+        let span = start.to(&block.span);
+        Ok(Stmt::Defer(DeferStmt::builder().block(block).span(span).build()))
     }
 
     /// Parse the rest of an assert after its condition: `ဖြစ်ရမည်`, then
@@ -834,6 +850,8 @@ impl Parser<'_>
         self.depth -= 1;
         let stmt = stmt?;
         let span = stmt.span();
+        // Marked code alone in a branch would end the branch as it ran.
+        ret_if!(matches!(stmt, Stmt::Defer(_)), Err(diag::defer_alone(span)));
         Ok(BlockStmt::builder().stmts(vec![stmt]).single(true).span(span).build())
     }
 

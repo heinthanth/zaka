@@ -152,6 +152,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0269 | an import that names no file and no package of the nearest `zakac.toml` | [Packages](../language/packages.md#mistakes) |
 | ZK0270 | an import of a package module that the package does not have, the stdlib (`စံကား/`) among them | [Packages](../language/packages.md#mistakes) |
 | ZK0271 | an import of a git dep that `zakac fetch` has not fetched | [Packages](../language/packages.md#mistakes) |
+| ZK0272 | code marked to run when its block ends, alone in a one-statement branch, where it would run at once | [Statements](../language/statements.md) |
 
 ### ZK03: names
 
@@ -221,6 +222,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0362 | a warning of the lint group `duplicates`: a plain value goes into a trait value whose trait has a function that changes its first parameter | [Trait values](../language/trait-values.md#changes-through-a-trait-value) |
 | ZK0363 | a struct based on a data kind that is no struct and no shared object | [Structs based on structs](../language/based-structs.md#the-head-and-the-literal) |
 | ZK0364 | a field, a function or a part that two parts of a struct have at one depth | [Structs based on structs](../language/based-structs.md#fields-and-functions-of-parts) |
+| ZK0365 | a return, a break or continue of a loop around it, or a pass-on of a failure inside code marked to run when its block ends | [Statements](../language/statements.md) |
 
 ### ZK04: data kinds
 
