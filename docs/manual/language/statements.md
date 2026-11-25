@@ -61,6 +61,7 @@ square brackets mark a part that can be left out.
 | break | `ကွင်းဆက် ကို ရပ်မည်။` | [Break and continue](control-flow.md#break-and-continue) |
 | continue | `နောက်တစ်ကြိမ်ဆီသို့ ကျော်မည်။` | [Break and continue](control-flow.md#break-and-continue) |
 | assert | `[ပရိုဂရမ်ရေးသားချိန်တွင်] <condition> ဖြစ်ရမည်`, then `[၊ မဟုတ်ပါက <text> ဟု ရပ်မည်]` and `။` | [Asserts](asserts.md) |
+| cleanup | `[မအောင်မြင်၍] လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် <statement or block>` | [Cleanup](cleanup.md) |
 | call | `<name> ဟူသော လုပ်ဆောင်ချက်ကို [<arguments> တို့ဖြင့်] လုပ်ဆောင်မည်။` | [Calls and returns](#calls-and-returns) |
 | return | `<value> ကို ပြန်ပေးမည်။` or `ပြန်ပေးမည်။` | [Calls and returns](#calls-and-returns) |
 | function | `<name> ဟူသော လုပ်ဆောင်ချက် သည် …` | [Functions](functions.md) |

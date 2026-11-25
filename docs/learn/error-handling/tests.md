@@ -217,4 +217,4 @@ we can run one test while we work on it, or the tests of one file.
 - Move the test into a file under `tests` that imports the function, then run
   `zakac test` with no file named.
 
-Next: [Optional values](../optionals/README.md).
+Next: [Cleanup](cleanup.md).

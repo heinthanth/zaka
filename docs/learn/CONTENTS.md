@@ -46,6 +46,7 @@
   - [Writing result kinds](error-handling/kinds.md)
   - [Asserts](error-handling/asserts.md)
   - [Tests](error-handling/tests.md)
+  - [Cleanup](error-handling/cleanup.md)
 - [Optional values](optionals/README.md)
 - [Lists](lists/README.md)
   - [Adding and removing cells](lists/growing.md)

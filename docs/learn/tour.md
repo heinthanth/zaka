@@ -541,8 +541,11 @@ stops the program when the condition is false and shows both sides of a comparis
 test block (unit test), `<name> ဟူသော စမ်းသပ်ချက် သည် …`, holds asserts that `zakac test`
 runs, as `cargo test` runs a `#[test]` function, and a build leaves it out.
 
-Learn: [Errors and results](error-handling/README.md), [Asserts](error-handling/asserts.md), [Tests](error-handling/tests.md), [Optional values](optionals/README.md).
-Docs: [Errors and results](../manual/language/error-handling.md), [Asserts](../manual/language/asserts.md), [Tests](../manual/language/tests.md), [Optional values](../manual/language/optionals.md).
+A cleanup (defer), `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် <statement>`, runs when its block
+ends, at each exit, and `မအောင်မြင်၍` in front of it runs it at a failure alone (errdefer).
+
+Learn: [Errors and results](error-handling/README.md), [Asserts](error-handling/asserts.md), [Tests](error-handling/tests.md), [Cleanup](error-handling/cleanup.md), [Optional values](optionals/README.md).
+Docs: [Errors and results](../manual/language/error-handling.md), [Asserts](../manual/language/asserts.md), [Tests](../manual/language/tests.md), [Cleanup](../manual/language/cleanup.md), [Optional values](../manual/language/optionals.md).
 
 ## Generics and traits
 

@@ -63,6 +63,7 @@ Then the reserved word at the start:
 | --- | --- | --- |
 | `အကယ်၍` | `parse_if` | with its `ထိုသို့မဟုတ်ဘဲ` and `သို့မဟုတ်ပါက` arms |
 | `ပရိုဂရမ်ရေးသားချိန်တွင်` (`Kw::AtDevTime`) | `parse_debug_assert` | a debug assert; see [Asserts](#asserts) |
+| `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်` (`Kw::WhenTasksDone`), `မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်` (`Kw::WhenTasksFail`) | `parse_defer` | a cleanup; see [Cleanup](#cleanup) |
 | `ထိုသို့မဟုတ်ဘဲ`, `သို့မဟုတ်ပါက` | an error | an else with no `if`, ZK0211 |
 | `ကိန်းရှင်`, `ကိန်းသေ` | `parse_decl_or_loop` | a declaration or a generic loop |
 | `ပရိုဂရမ်` | `parse_fn_decl` | the program start block (entry point) |
@@ -229,6 +230,24 @@ is `Stmt::Assert(AssertStmt { cond, debug, message, span })`, written `(assert .
 glued to `ရမည်`, such as `ငယ်ရမည်`, is no assert and ends as ZK0208. The check of names
 and data kinds tests the condition as that of an `if` (ZK0402) and the message as text
 (ZK0401); the lowering is on [The IR](codegen.md).
+
+## Cleanup
+
+```text
+[မအောင်မြင်၍] လုပ်ဆောင်စရာများပြီးသည့် အခါတွင် <statement or block>
+```
+
+The lexer joins `လုပ်ဆောင်စရာများ` (`Kw::Tasks`), `ပြီးသည့်` (`Kw::DoneWhich`) and `အခါတွင်`
+(`Kw::AtTheTime`) into the phrase `Kw::WhenTasksDone`, and `မအောင်မြင်၍` (`Kw::FailedAnd`) in
+front of them into `Kw::WhenTasksFail`, with or without spaces. `parse_defer` takes the
+phrase and reads the code through `parse_branch`, so a single statement stands in a block
+of its own, and the node is `Stmt::Defer(DeferStmt { block, failure, span })`, written
+`(defer ...)` or `(defer-failure ...)` in the tree. `parse_branch` reports a cleanup that
+it reads as the one statement of a branch (ZK0272), since the cleanup would end that branch
+as it ran. The check of names keeps `defer_at`, the number of loops around the cleanup, and
+reports a return, a pass-on (`check_pass`), and a `break` or `continue` at that depth inside
+it (ZK0365), and a cleanup on failure in a function that cannot fail (ZK0366); the lowering
+is on [The IR](codegen.md#lowering), under "Cleanups".
 
 ## Test blocks
 

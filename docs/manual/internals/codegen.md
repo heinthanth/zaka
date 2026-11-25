@@ -579,6 +579,22 @@ slot, which the blit fills.
   then `(drop l0)`, then `(set l0 (take (addr l1)))`, so the value is worked out from the
   old text before the old text is freed.
 
+### Cleanups
+
+Each open scope keeps the lowered code of its cleanups in `Lowerer::defers`, beside its
+drops (`drops`) and its locks (`locks`), each with whether it runs at a failure alone.
+`defer` lowers the code where the mark stands, so its names resolve there, and adds it to
+the innermost scope; a cleanup reached later than an exit is not part of that exit. Each
+exit writes the code: `drops_from` (the end of a block, `break` and `continue`) and
+`exit_drops_with` (a return and a pass-on) emit `marked_from` first, the innermost scope
+first and the last mark of each scope first, then the parameters marked `ဒေတာ ပြောင်းလဲရန်`
+go back to the caller, then `places_from` gives the drops and the unlocks. A cleanup on
+failure stands under the test of the tag of the value that leaves: `leave_with`, the one exit
+with a failure (a pass-on, a return of an error value or of a whole result), calls
+`leave_failing`, which puts the value in a hidden slot first. Other exits leave such code
+out. The code is copied to each exit, so the later stages see plain statements, and the
+checker sees a free in a cleanup on each path.
+
 ### Several files and the program start block
 
 - A program of several files gives one module. As in the check, each file has its own

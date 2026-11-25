@@ -140,6 +140,8 @@ is first used, as in "data kind (type)".
 | unsafe code | unsafe code | `စိတ်မချရသော` | [Unsafe Zaka](../language/unsafe.md) |
 | the program stops | trap, panic, runtime error | | [When a program stops](../vm/traps.md) |
 | assert | assertion, `assert!`, `assert` | `<condition> ဖြစ်ရမည်` | [Asserts](../language/asserts.md) |
+| cleanup | `defer` | `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်` | [Cleanup](../language/cleanup.md) |
+| cleanup on failure | `errdefer` | `မအောင်မြင်၍ လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်` | [Cleanup](../language/cleanup.md#cleanup-on-failure) |
 | debug assert | `debug_assert!`, an assertion that a build can leave out | `ပရိုဂရမ်ရေးသားချိန်တွင် <condition> ဖြစ်ရမည်` | [Asserts](../language/asserts.md#debug-asserts) |
 | test block | unit test, test function, `#[test]` | `<name> ဟူသော စမ်းသပ်ချက် သည် …` | [Tests](../language/tests.md) |
 | flow checker | borrow checker, ownership and definite-assignment analysis | | [The flow checker](../internals/borrow-checker.md) |

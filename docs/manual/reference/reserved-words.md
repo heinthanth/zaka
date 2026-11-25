@@ -124,6 +124,8 @@ Each statement verb ends in `မည်`.
 | `ဖြစ်ရမည်` | "must be so": after the condition of an assert, `<condition> ဖြစ်ရမည်` | [Asserts](../../learn/error-handling/asserts.md) |
 | `မဟုတ်ပါက` | "if not": after `ဖြစ်ရမည်၊`, to give the message of an assert, `မဟုတ်ပါက <text> ဟု ရပ်မည်` | [Asserts](../language/asserts.md#the-message) |
 | `ပရိုဂရမ်ရေးသားချိန်တွင်` | "at the time of writing the program": in front of an assert, to make a debug assert, which `--debug-asserts off` drops; also written `ပရိုဂရမ်ရေးသားချိန်၌` | [Asserts](../language/asserts.md#debug-asserts) |
+| `လုပ်ဆောင်စရာများပြီးသည့် အခါတွင်` | "at the time the tasks are done": in front of a statement or a block, a cleanup that runs when the block around it ends; its words are `လုပ်ဆောင်စရာများ`, `ပြီးသည့်` and `အခါတွင်` (also written `အခါ၌`) | [Cleanup](../language/cleanup.md) |
+| `မအောင်မြင်၍` | "as it failed": in front of the cleanup mark, a cleanup that runs at a failure alone; also written `မအောင်မြင်ပြီး` and `မအောင်မြင်ကာ` | [Cleanup](../language/cleanup.md#cleanup-on-failure) |
 | `နေသရွေ့`, `ဖြစ်နေသရွေ့` | "as long as": after the condition of a while loop | [While loops](../../learn/control-flow/while.md) |
 | `ရေတွက်၍`, `တိုး၍`, `လျှော့၍` | "counting", "increasing", "decreasing": at the end of the head of a counted loop | [Counted loops](../../learn/control-flow/counted-loops.md) |
 | `အကွက်တိုင်း`, `စာလုံးတိုင်း`, `ယူ၍` | "each cell", "each character", "taking": in the head of a loop over each cell of a list or each character of text | [Lists](../../learn/lists/README.md#walking-a-list) |
@@ -374,6 +376,8 @@ use the spoken spellings once it allows them (ZK0510), as explained in
 | `ဖြစ်ရင်` | `ဖြစ်လျှင်` |
 | `ဖြစ်ရမယ်` | `ဖြစ်ရမည်` |
 | `ပရိုဂရမ်ရေးသားချိန်မှာ` | `ပရိုဂရမ်ရေးသားချိန်တွင်` |
+| `ပြီးတဲ့` | `ပြီးသည့်` |
+| `အခါမှာ` | `အခါတွင်` |
 | `အောင်မြင်တဲ့သတင်း` | `အောင်မြင်သည့်သတင်း` |
 | `မအောင်မြင်တဲ့သတင်း` | `မအောင်မြင်သည့်သတင်း` |
 | `ရှိကောင်းရှိနိုင်တဲ့` | `ရှိကောင်းရှိနိုင်သော` |
