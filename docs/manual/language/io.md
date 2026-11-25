@@ -213,7 +213,7 @@ A table has its own reads and walks in the language
 ## The rules
 
 - An import path that starts with `စံကား/` names a module of the stdlib, which the
-  compiler carries, so it is never read from disk. Another name after `စံကား/` is ZK0238.
+  compiler carries, so it is never read from disk. Another name after `စံကား/` is ZK0270.
 - A program read from storage (the explorer, a Learn page, standard input) can import from
   the stdlib, but from no other file (ZK0232).
 - The VM fixes the set of external functions, so a program cannot declare others

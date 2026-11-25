@@ -122,7 +122,6 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0234 | a data kind with no measure word (`တစ်<word>`) after it, in a declaration, a parameter, a field, a result, a function kind, a conversion, a size, a default arm or after a literal | [Measure words](../language/kinds.md#measure-words) |
 | ZK0235 | an enumeration declared inside a block | [Enumeration mistakes](../../learn/enums/mistakes.md#an-enumeration-declared-inside-a-block) |
 | ZK0236 | a switch arm after the default arm | [Enumeration mistakes](../../learn/enums/mistakes.md#an-arm-after-the-default-arm) |
-| ZK0238 | an import from `စံကား/` that names no module of the stdlib | [Input and output](../language/io.md) |
 | ZK0239 | a function kind with parameters inside a list of parameters or fields, not in parentheses | [Function values](../language/function-values.md) |
 | ZK0240 | a kind alias declared inside a block | [Kind aliases](../language/aliases.md#errors) |
 | ZK0241 | a preposition string after `ဝိဘတ်` with a word that a preposition cannot contain, or a first preposition that starts with `ကို သုံး၍` | [Functions](../language/functions.md) |
@@ -151,7 +150,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0267 | a test block inside a function or a block, or one that gives a result | [Tests](../language/tests.md#mistakes) |
 | ZK0268 | two tests of one name in one file | [Tests](../language/tests.md#mistakes) |
 | ZK0269 | an import that names no file and no package of the nearest `zakac.toml` | [Modules](../language/modules.md) |
-| ZK0270 | an import of a package module that the package does not have | [Modules](../language/modules.md) |
+| ZK0270 | an import of a package module that the package does not have, the stdlib (`စံကား/`) among them | [Modules](../language/modules.md) |
 | ZK0271 | an import of a git dep that `zakac fetch` has not fetched | [Modules](../language/modules.md) |
 
 ### ZK03: names

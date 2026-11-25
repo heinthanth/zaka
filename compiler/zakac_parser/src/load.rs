@@ -109,28 +109,13 @@ macro_rules! core_part {
     };
 }
 
-/// A row of [`STD_MODULES`]: the import name, the file name in the `stdlib`
-/// folder of the source tree, and the source of that file.
-macro_rules! std_module {
-    ($name:expr, $file:literal) => {
-        ($name, $file, include_str!(concat!("../../../stdlib/", $file)))
-    };
-}
-
 /// The modules of the stdlib: the name a program imports, the file in the
 /// source tree, and the source, which the compiler carries, so a program read
-/// from storage imports them too. Each name is in normalized spelling, as an
-/// import path is.
-pub static STD_MODULES: &[(&str, &str, &str)] = &[
-    std_module!("စံကား/အဝင်အထွက်", "io.zaka"),
-    std_module!("စံကား/စာသား", "text.zaka"),
-    std_module!("စံကား/လမ်းကြောင်း", "path.zaka"),
-    std_module!("စံကား/စာရင်း", "list.zaka"),
-    std_module!("စံကား/သင်္ချာ", "math.zaka"),
-    std_module!("စံကား/အချိန်", "time.zaka"),
-    // The core shares the parts in `CORE_PARTS`.
-    std_module!(CORE, "core/mod.zaka"),
-];
+/// from storage imports them too. The build script writes the table from the
+/// `[package.modules]` table of `stdlib/zakac.toml`, whose names are in
+/// normalized spelling, as an import path is.
+pub static STD_MODULES: &[(&str, &str, &str)] =
+    include!(concat!(env!("OUT_DIR"), "/std_modules.rs"));
 
 /// The parts of the core, each a file of the `core` folder of the stdlib
 /// that `core/mod.zaka` shares: its path in the `stdlib` folder and its
@@ -1392,9 +1377,12 @@ impl Loader<'_>
         let Some((_, _, src)) = STD_MODULES.iter().find(|(module, ..)| *module == name)
         else
         {
-            let list: Vec<&str> =
-                STD_MODULES.iter().map(|(module, ..)| *module).collect();
-            let diag = diag::unknown_std_module(n.path.span, &name, &list.join(", "));
+            let short = |m: &'static str| m.strip_prefix(STD_PREFIX).unwrap_or(m);
+            let list: Vec<&str> = STD_MODULES.iter().map(|(m, ..)| short(m)).collect();
+            let dep = STD_PREFIX.trim_end_matches('/');
+            let module = name.strip_prefix(STD_PREFIX).unwrap_or(&name);
+            #[rustfmt::skip]
+            let diag = diag::no_std_module(n.path.span, dep, module, &list.join(", "));
             self.diagnostics.push(diag);
             return None;
         };

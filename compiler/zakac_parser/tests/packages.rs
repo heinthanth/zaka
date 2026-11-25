@@ -174,3 +174,31 @@ fn packages_read_through_the_loader_of_the_source_map()
         loaded.program.units.iter().map(|u| u.name.as_str()).collect();
     assert_eq!(names, ["shapes/circle.zaka", "main.zaka"]);
 }
+
+#[test]
+fn the_stdlib_table_comes_from_its_manifest_in_normalized_spelling()
+{
+    use zakac_ast::stmt::CORE;
+    use zakac_lexer::spelling::canonical;
+    use zakac_parser::load::STD_MODULES;
+    let manifest = include_str!("../../../stdlib/zakac.toml");
+    let modules = manifest.split("[package.modules]").nth(1).unwrap();
+    let listed = modules.lines().filter(|l| l.starts_with('"')).count();
+    assert_eq!(STD_MODULES.len(), listed);
+    STD_MODULES.iter().for_each(|(name, ..)| assert_eq!(canonical(name), *name));
+    assert!(STD_MODULES.iter().any(|(name, ..)| *name == CORE));
+}
+
+#[test]
+fn a_module_the_stdlib_lacks_is_zk0270_with_no_path_to_fall_back_on()
+{
+    for path in ["စံကား/မရှိ", "စံကား/io"]
+    {
+        let mut loader = MemFileLoader::new();
+        loader.insert("/s/main.zaka", format!("\"{path}\" မှ က ကို ထည့်သွင်းမည်။\n"));
+        let mut sm = SourceMap::with_loader(Arc::new(loader));
+        let file = sm.load_file(Path::new("/s/main.zaka")).unwrap();
+        let loaded = load(&file, &mut sm, &LexerOptions::default()).unwrap();
+        assert_eq!(codes(&loaded), [Code::NoPackageModule], "{path}");
+    }
+}

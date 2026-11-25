@@ -368,10 +368,11 @@ the first file, remain valid. The parser owns the codes of this step: ZK0229 to 
 ### The stdlib and programs with no file
 
 An import whose path starts with `စံကား/` (`STD_PREFIX`, `is_std`) reads a module of the
-stdlib (standard library) from `STD_MODULES`, which `include_str!` fills from `stdlib/`:
+stdlib (standard library) from `STD_MODULES`, which the build script writes from the
+`[package.modules]` table of `stdlib/zakac.toml`, each file through `include_str!`:
 `import_std` registers it in the source map as a file named after the module
 (`std_file`), and reads it as each imported file, once. A name the stdlib does not have is
-ZK0238. `std_replicas` is the folder where a language server writes copies of the stdlib,
+ZK0270, as a module a package lacks; the stdlib has no path to fall back on. `std_replicas` is the folder where a language server writes copies of the stdlib,
 so an editor can open a declaration of the stdlib.
 
 A root whose name is not a real file, such as standard input or the text of the explorer,

@@ -1,0 +1,13 @@
+# The stdlib: a package the compiler carries, imported as "စံကား/<name>".
+# Each module has the one name this table gives it; a file the table does not
+# list cannot be imported.
+
+[package.modules]
+"အဝင်အထွက်" = "io.zaka"
+"စာသား" = "text.zaka"
+"လမ်းကြောင်း" = "path.zaka"
+"စာရင်း" = "list.zaka"
+"သင်္ချာ" = "math.zaka"
+"အချိန်" = "time.zaka"
+# The core, which each file reads with no import; its parts are in core/.
+"အခြေခံအုတ်မြစ်" = "core/mod.zaka"

@@ -139,8 +139,6 @@ DeclNeedsClassifier = ("ZK0234", Level::Error),
 NestedEnum = ("ZK0235", Level::Error),
 /// A switch arm follows the default arm.
 ArmAfterDefault = ("ZK0236", Level::Error),
-/// An import names a module the stdlib does not have.
-UnknownStdModule = ("ZK0238", Level::Error),
 /// A function kind with parameters stands bare in a parameter or field list.
 FnKindNeedsParens = ("ZK0239", Level::Error),
 /// A kind alias is declared inside a block.

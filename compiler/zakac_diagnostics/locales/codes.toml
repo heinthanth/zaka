@@ -318,15 +318,6 @@ en = "the default arm \"တခြား ... တစ်ခု ဖြစ်လျ�
 [codes.ZK0236.explain]
 en = """A switch runs the first arm whose case equals its subject, and the default arm \"တခြား <kind> တစ်<classifier> ဖြစ်လျှင်\" when none does. An arm after the default arm could never run, so the default arm must be the last. Move this arm above the default arm."""
 
-[codes.ZK0238.title]
-en = "unknown stdlib module"
-[codes.ZK0238.message]
-en = "the stdlib has no module \"%{n}\""
-[codes.ZK0238.help]
-en = "the stdlib has %{l}"
-[codes.ZK0238.explain]
-en = """An import whose path starts with \"စံကား/\" reads a module of the stdlib, which the compiler carries, never a file of that name. This name is none of its modules."""
-
 [codes.ZK0239.title]
 en = "function kind not in parentheses"
 [codes.ZK0239.message]
@@ -1972,10 +1963,12 @@ en = "no such module in a package"
 en = "the package \"%{d}\" has no module \"%{n}\""
 [codes.ZK0270.help]
 en = "its [package.modules] table lists %{l}, and it holds no file %{f}"
+[codes.ZK0270.help_std]
+en = "the stdlib has %{l}"
 [codes.ZK0270.help_file]
 en = "it lists no module under [package.modules], and it holds no file %{f}"
 [codes.ZK0270.explain]
-en = """An import \"<dep>/<name>\" reads the file that the [package.modules] table in the zakac.toml of the dep gives the name. A name the table does not list reads the file <name>.zaka under the root of the dep. Neither is there."""
+en = """An import \"<dep>/<name>\" reads the file that the [package.modules] table in the zakac.toml of the dep gives the name. A name the table does not list reads the file <name>.zaka under the root of the dep. Neither is there. The stdlib, \"စံကား\", is a package the compiler carries: it reads the names of its table alone, never a file of that name."""
 
 [codes.ZK0271.title]
 en = "package not fetched"

@@ -592,24 +592,6 @@ pub fn decl_needs_classifier(span: Span, kind: &str, classifier: &str) -> Diagno
         .with_help(t!("codes.ZK0234.help", k = kind, c = classifier))
 }
 
-/// An import names a module the stdlib does not have.
-///
-/// # Arguments
-///
-/// * `span` - The path of the import.
-/// * `name` - The path.
-/// * `list` - The modules of the stdlib.
-///
-/// # Returns
-///
-/// The `ZK0238` diagnostic, with the modules as a hint.
-pub fn unknown_std_module(span: Span, name: &str, list: &str) -> Diagnostic
-{
-    let msg = t!("codes.ZK0238.message", n = name);
-    Diagnostic::new(Code::UnknownStdModule, msg, span)
-        .with_help(t!("codes.ZK0238.help", l = list))
-}
-
 /// A function kind with parameters stands bare in a list of parameters or
 /// fields, where its parameters would run into the entries before it.
 ///
@@ -1137,6 +1119,26 @@ pub fn no_package_module(
         t!("codes.ZK0270.help", l = listed, f = file)
     );
     Diagnostic::new(Code::NoPackageModule, msg, span).with_help(help)
+}
+
+/// An import names a module that the stdlib does not have: the stdlib is a
+/// package the compiler carries, whose names have no path to fall back on.
+///
+/// # Arguments
+///
+/// * `span` - The import path.
+/// * `dep` - The name of the stdlib.
+/// * `name` - The module.
+/// * `list` - The modules of the stdlib, joined.
+///
+/// # Returns
+///
+/// The `ZK0270` diagnostic, with the modules as a hint.
+pub fn no_std_module(span: Span, dep: &str, name: &str, list: &str) -> Diagnostic
+{
+    let msg = t!("codes.ZK0270.message", d = dep, n = name);
+    Diagnostic::new(Code::NoPackageModule, msg, span)
+        .with_help(t!("codes.ZK0270.help_std", l = list))
 }
 
 /// An import names a git dep that `zakac fetch` has not fetched.

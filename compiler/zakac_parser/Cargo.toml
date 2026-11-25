@@ -33,6 +33,7 @@ tempfile = { workspace = true }
 
 [build-dependencies]
 cargo-build = { workspace = true }
+toml = { workspace = true }
 
 [[test]]
 name = "tests"
