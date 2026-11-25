@@ -993,6 +993,7 @@ impl<M: Module> FnGen<'_, '_, M>
             HostFn::ReadEnv => ("zk_host_read_env", vec![v[0]]),
             HostFn::MonotonicMs => ("zk_host_monotonic_ms", vec![]),
             HostFn::UnixMs => ("zk_host_unix_ms", vec![]),
+            HostFn::RandomSeed => ("zk_host_random_seed", vec![]),
             HostFn::FormatUtc => ("zk_host_format_utc", vec![v[0]]),
             HostFn::ParseFloat => ("zk_host_parse_float", vec![v[0]]),
             _ =>

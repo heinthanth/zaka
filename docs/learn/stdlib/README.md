@@ -196,6 +196,9 @@ lists `day.txt` afterwards.
 - **Characters.** Import `ဂဏန်းဟုတ်မဟုတ်စစ်` or `ဗမာအက္ခရာဟုတ်မဟုတ်စစ်` from
   `"စံကား/စာလုံး"` to test one character, as a lexer does. See
   [Characters](../../manual/stdlib/char.md).
+- **Random numbers.** Import `ကျပန်းထုတ်စက်ပြုလုပ်` and `ကျပန်းကိန်းပြည့်ထုတ်` from
+  `"စံကား/ကျပန်း"` to roll a dice or pick a number in a range. See [Random
+  numbers](../../manual/stdlib/random.md).
 - **More functions.** Each module has more functions than this page shows: for example,
   `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
   and `စီ` sorts a list with a function that compares two cells. [The

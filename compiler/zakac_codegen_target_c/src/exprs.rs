@@ -984,6 +984,7 @@ impl FnGen<'_, '_>
             HostFn::ReadEnv => format!("zk_host_read_env({slot}, {r}, {})", v[0]),
             HostFn::MonotonicMs => format!("zk_host_monotonic_ms({slot})"),
             HostFn::UnixMs => format!("zk_host_unix_ms({slot})"),
+            HostFn::RandomSeed => format!("zk_host_random_seed({slot})"),
             HostFn::FormatUtc => format!("zk_host_format_utc({slot}, {r}, {})", v[0]),
             HostFn::ParseFloat => format!("zk_host_parse_float({slot}, {r}, {})", v[0]),
             _ =>

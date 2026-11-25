@@ -60,6 +60,7 @@
   - [Math](stdlib/math.md)
   - [Time](stdlib/time.md)
   - [Characters](stdlib/char.md)
+  - [Random numbers](stdlib/random.md)
 - [The compiler](compiler/README.md)
   - [Commands](compiler/commands.md)
   - [Building programs](compiler/build.md)

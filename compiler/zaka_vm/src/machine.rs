@@ -115,7 +115,8 @@ pub struct RunOptions
     /// What a thread does when it traps.
     #[builder(default)]
     pub trap: TrapMode,
-    /// Clock reads return zero during a comptime run so a build is repeatable.
+    /// Clock reads and random seeds return zero during a comptime run so a
+    /// build is repeatable.
     #[builder(default)]
     pub fixed_clock: bool,
     /// The seed that shuffles the turns of the threads: each turn takes a count

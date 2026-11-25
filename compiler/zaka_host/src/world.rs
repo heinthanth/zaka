@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::hash_map::RandomState;
 use std::fmt::Debug;
+use std::hash::BuildHasher;
 use std::io;
 use std::io::BufRead;
 
@@ -157,6 +159,10 @@ pub trait World: Debug + Send + Sync
     /// Milliseconds since the Unix epoch. A world in storage starts at the
     /// epoch and advances with its virtual clock.
     fn unix_ms(&mut self) -> i64;
+
+    /// Bits to seed a random generator. A world in storage gives a fixed
+    /// seed, so a run in the explorer repeats.
+    fn random_seed(&mut self) -> i64;
 
     /// Let a count of milliseconds pass, while no thread of the program can
     /// run.
@@ -392,6 +398,9 @@ fn mem_path(path: &str) -> String
     tern!(path == ".", String::new(), path.to_string())
 }
 
+/// The seed a world in storage gives a random generator.
+const MEM_SEED: i64 = 0x2545_F491_4F6C_DD1D;
+
 impl World for MemWorld
 {
     fn read_line(&mut self) -> io::Result<Option<String>>
@@ -515,6 +524,8 @@ impl World for MemWorld
 
     fn unix_ms(&mut self) -> i64 { i64::try_from(self.clock).unwrap_or(i64::MAX) }
 
+    fn random_seed(&mut self) -> i64 { MEM_SEED }
+
     fn sleep_ms(&mut self, ms: u64) { self.clock = self.clock.saturating_add(ms); }
 
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
@@ -610,6 +621,13 @@ impl World for TermWorld
     }
 
     fn unix_ms(&mut self) -> i64 { crate::time::unix_ms() }
+
+    fn random_seed(&mut self) -> i64
+    {
+        // RandomState takes its hash seeds from the OS, so its hash of one
+        // fixed value differs on each run.
+        RandomState::new().hash_one(0_u8).cast_signed()
+    }
 
     fn sleep_ms(&mut self, ms: u64)
     {

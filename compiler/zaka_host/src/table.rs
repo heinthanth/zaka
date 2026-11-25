@@ -129,6 +129,8 @@ host_fns! {
     MonotonicMs = "ကြာချိန်နာရီကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(monotonic_ms);
     /// Read the UTC clock, in Unix milliseconds.
     UnixMs = "ယူနစ်အချိန်ကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(unix_ms);
+    /// Bits to seed a random generator.
+    RandomSeed = "ကျပန်းမျိုးစေ့ဖန်တီး"() -> Some(I64), None, None, HostAction::Effect(random_seed);
     /// Format one Unix millisecond stamp in UTC.
     FormatUtc = "အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း"(I64) -> Some(TEXT), Some(TIME_ERROR), None, HostAction::Effect(format_utc);
     /// Read text as a 64-bit float: the conversion of text to `ဒဿမကိန်း`.
@@ -224,6 +226,11 @@ fn monotonic_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
 fn unix_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
 {
     HostValue::Int(e.world.unix_ms())
+}
+
+fn random_seed(_: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    HostValue::Int(e.world.random_seed())
 }
 
 fn format_utc(args: &Args, _: &mut Effects<'_>) -> HostValue
@@ -456,6 +463,18 @@ mod tests
         assert!(world.files.is_empty());
         let env = vec![text("HOME")];
         assert_eq!(run_with(HostFn::ReadEnv, env, &mut world, &mut gate).0, refused);
+    }
+
+    #[test]
+    fn a_world_in_storage_gives_a_fixed_random_seed()
+    {
+        let seed = |w: &mut MemWorld| run(HostFn::RandomSeed, vec![], w).0;
+        let mut world = MemWorld::default();
+        let first = seed(&mut world);
+        assert_eq!(first, seed(&mut world));
+        assert_ne!(first, HostValue::Int(0));
+        let term = || crate::world::World::random_seed(&mut crate::world::TermWorld);
+        assert_ne!(term(), term());
     }
 
     #[test]
