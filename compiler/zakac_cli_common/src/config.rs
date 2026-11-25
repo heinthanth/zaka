@@ -151,6 +151,21 @@ fn search_paths() -> Vec<PathBuf>
     paths
 }
 
+/// The var that names the cache folder of `zakac` in place of the user's
+/// cache folder: tests set it, to keep their checkouts apart.
+pub const CACHE_VAR: &str = "ZAKAC_CACHE";
+
+/// The cache folder: the one [`CACHE_VAR`] names, else the user's.
+///
+/// # Returns
+///
+/// The folder, or `None` when the user has no cache folder.
+pub fn cache_root() -> Option<PathBuf>
+{
+    let named = std::env::var_os(CACHE_VAR).map(PathBuf::from);
+    named.or_else(|| etcetera::choose_base_strategy().ok().map(|b| b.cache_dir()))
+}
+
 /// The nearest [`LOCAL_FILE`] in a folder or a folder above it.
 ///
 /// # Arguments

@@ -87,6 +87,15 @@ en = "the config file %{p} is not valid TOML: %{e}"
 [errors.dep_named_std]
 en = "the config file %{p} lists a dep named \"စံကား\", the name of the stdlib: pick another name"
 
+[errors.bad_dep]
+en = "the config file %{p} lists the dep \"%{name}\" with neither path = \"<folder>\" nor git = \"<url>\" with rev = \"<commit>\""
+
+[errors.no_manifest]
+en = "no zakac.toml in %{p} or a folder above it: a package starts at its zakac.toml"
+
+[errors.git_failed]
+en = "git could not fetch %{url}: %{msg}"
+
 [errors.config_unknown_name]
 en = "the config file %{p} sets %{name}, which no command here takes"
 

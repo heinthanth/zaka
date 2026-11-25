@@ -1,0 +1,13 @@
+_version = 2
+
+[fetch.about]
+en = "Clone each git dep of a package and of its deps into the cache, and pin each one to a commit in zakac.lock. Builds read the lock and never reach the network."
+
+[fetch.path]
+en = "A folder of the package, or its zakac.toml [default: the working folder]"
+
+[fetch.fetched]
+en = "fetched %{name}: %{url} at %{rev}, commit %{commit}"
+
+[fetch.done]
+en = "git checkouts pinned in zakac.lock: %{n}"

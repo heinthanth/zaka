@@ -1139,6 +1139,22 @@ pub fn no_package_module(
     Diagnostic::new(Code::NoPackageModule, msg, span).with_help(help)
 }
 
+/// An import names a git dep that `zakac fetch` has not fetched.
+///
+/// # Arguments
+///
+/// * `span` - The import path.
+/// * `dep` - The dep, as the import names it.
+///
+/// # Returns
+///
+/// The `ZK0271` diagnostic.
+pub fn package_not_fetched(span: Span, dep: &str) -> Diagnostic
+{
+    Diagnostic::new(Code::PackageNotFetched, t!("codes.ZK0271.message", d = dep), span)
+        .with_help(t!("codes.ZK0271.help"))
+}
+
 /// Two marks of a declaration head stand with no `၊` between them.
 ///
 /// # Arguments

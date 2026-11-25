@@ -141,6 +141,21 @@ pub enum Error
     {
         path: String
     },
+    #[error("{}", t!("errors.bad_dep", p = path, name = name))]
+    BadDep
+    {
+        path: String, name: String
+    },
+    #[error("{}", t!("errors.no_manifest", p = path))]
+    NoManifest
+    {
+        path: String
+    },
+    #[error("{}", t!("errors.git_failed", url = url, msg = msg))]
+    GitFailed
+    {
+        url: String, msg: String
+    },
     #[error("{}", t!("errors.config_unknown_name", p = path, name = name))]
     ConfigUnknownName
     {

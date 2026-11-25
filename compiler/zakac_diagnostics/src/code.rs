@@ -208,6 +208,8 @@ TestTwice = ("ZK0268", Level::Error),
 UnknownPackage = ("ZK0269", Level::Error),
 /// An import names a module that a package does not have.
 NoPackageModule = ("ZK0270", Level::Error),
+/// An import names a git dep that `zakac fetch` has not fetched.
+PackageNotFetched = ("ZK0271", Level::Error),
 
 // resolve: ZK03xx
 /// A name is used without a declaration in scope.

@@ -152,6 +152,7 @@ explains how a message is set out and when a message stops the compiler.
 | ZK0268 | two tests of one name in one file | [Tests](../language/tests.md#mistakes) |
 | ZK0269 | an import that names no file and no package of the nearest `zakac.toml` | [Modules](../language/modules.md) |
 | ZK0270 | an import of a package module that the package does not have | [Modules](../language/modules.md) |
+| ZK0271 | an import of a git dep that `zakac fetch` has not fetched | [Modules](../language/modules.md) |
 
 ### ZK03: names
 

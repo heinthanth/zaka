@@ -1977,6 +1977,15 @@ en = "it lists no module under [package.modules], and it holds no file %{f}"
 [codes.ZK0270.explain]
 en = """An import \"<dep>/<name>\" reads the file that the [package.modules] table in the zakac.toml of the dep gives the name. A name the table does not list reads the file <name>.zaka under the root of the dep. Neither is there."""
 
+[codes.ZK0271.title]
+en = "package not fetched"
+[codes.ZK0271.message]
+en = "the package \"%{d}\" comes from git and is not fetched"
+[codes.ZK0271.help]
+en = "run \"zakac fetch\" in the package, which clones each git dep and pins it in zakac.lock"
+[codes.ZK0271.explain]
+en = """A dep with git = \"<url>\" and rev = \"<commit>\" is read from a checkout in the cache, at the commit that zakac.lock pins the rev to. A build never reaches the network: \"zakac fetch\" clones the repo and writes the lock. The lock has no commit for this rev, or the checkout is not in the cache."""
+
 [codes.ZK0264.title]
 en = "wait on channels with no channel"
 [codes.ZK0264.message]

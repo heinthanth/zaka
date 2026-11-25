@@ -26,6 +26,7 @@ use zakac_ast::target::FACTS;
 use zakac_ast::target::FactValue;
 use zakac_ast::target::Target;
 use zakac_cli_common::config::LOCAL_FILE;
+use zakac_cli_common::config::cache_root;
 use zakac_diagnostics::Diagnostic;
 use zakac_diagnostics::parser as diag;
 use zakac_host_errors::Error;
@@ -60,8 +61,13 @@ use crate::comptime::settle;
 use crate::glued::GluedEnds;
 use crate::hint::Hint;
 use crate::hint::exported_hints;
+use crate::package::LOCK_FILE;
+use crate::package::Lock;
 use crate::package::Manifest;
+use crate::package::Source;
+use crate::package::checkout_dir;
 use crate::package::dep_and_module;
+use crate::package::read_lock;
 use crate::package::read_manifest;
 use crate::parser::parse;
 use crate::parser::parse_with;
@@ -621,6 +627,8 @@ struct Loader<'a>
     /// The root of each dep read so far, with the name its imports give it.
     #[builder(default)]
     dep_roots: Vec<(PathBuf, String)>,
+    /// The lock file of the package of the file that is run, once read.
+    lock: Option<Arc<Lock>>,
 }
 
 impl Loader<'_>
@@ -821,13 +829,77 @@ impl Loader<'_>
             return Ok(Some(beside));
         };
         let manifest = self.manifest_near(folder)?;
-        let dep = manifest.and_then(|m| Some(m.root.join(&m.deps.get(head)?.path)));
-        let Some(root) = dep
+        let found =
+            manifest.as_ref().and_then(|m| Some((m, m.deps.get(head)?.source()?)));
+        let Some((manifest, source)) = found
         else
         {
             return Ok(self.beside_or_unknown(beside, n, head));
         };
-        self.module_path(&normalize(&root), n, head, rest)
+        let root = match source
+        {
+            Source::Path(path) => normalize(&manifest.root.join(path)),
+            Source::Git(url, rev) =>
+            {
+                let Some(root) = self.checkout(url, rev)?
+                else
+                {
+                    self.diagnostics.push(diag::package_not_fetched(n.path.span, head));
+                    return Ok(None);
+                };
+                root
+            }
+        };
+        self.module_path(&root, n, head, rest)
+    }
+
+    /// The checkout of a git dep: the folder in the cache of the commit the
+    /// lock file of the program pins its rev to.
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - The URL of the repo.
+    /// * `rev` - The rev.
+    ///
+    /// # Returns
+    ///
+    /// The folder; `None` when the lock has no commit for the rev or the
+    /// checkout is not there; or the error of the lock file.
+    fn checkout(
+        &mut self, url: &str, rev: &str,
+    ) -> zakac_host_errors::Result<Option<PathBuf>>
+    {
+        let lock = self.lock()?;
+        let Some(commit) = lock.commit_of(url, rev)
+        else
+        {
+            return Ok(None);
+        };
+        let dir = cache_root().map(|cache| checkout_dir(&cache, url, commit));
+        let there =
+            dir.as_ref().is_some_and(|d| self.source_map.file_loader().file_exists(d));
+        Ok(dir.filter(|_| there))
+    }
+
+    /// The lock file of the package of the file that is run, read once: the
+    /// one beside its nearest `zakac.toml`. The deps of deps read it too,
+    /// since `zakac fetch` pins each git dep there.
+    ///
+    /// # Returns
+    ///
+    /// The lock, one with no checkouts when there is no lock file, or the
+    /// error of its read.
+    fn lock(&mut self) -> zakac_host_errors::Result<Arc<Lock>>
+    {
+        ret_if!(let Some(lock) = &self.lock, Ok(lock.clone()));
+        let folder = self.folder.clone();
+        let manifest = self.manifest_near(&folder)?;
+        let file = manifest.map(|m| m.root.join(LOCK_FILE));
+        let loader = self.source_map.file_loader();
+        let read = file.map(|f| read_lock(loader, &f)).transpose()?.unwrap_or_default();
+        let lock = Arc::new(read);
+        self.lock = Some(lock.clone());
+        Ok(lock)
     }
 
     /// The file beside the importer that an import names, unless the file is
