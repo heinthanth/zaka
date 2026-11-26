@@ -265,6 +265,8 @@ jobs:
     name: VS Code extension
     needs: check
     runs-on: ubuntu-latest
+    # The tokens of the marketplaces live in the environment of the releases.
+    environment: production
     env:
       MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:wasm-pack
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
