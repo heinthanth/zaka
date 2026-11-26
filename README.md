@@ -47,6 +47,17 @@ cargo build --release -p zakac
 
 Much of the code, tests and docs here were written with the help of different AI models such as Anthropic Claude, OpenAI GPT, Alibaba Qwen, Google Gemini, etc. I designed the language, wrote the initial code, directed the work and reviewed the changes. And the unit tests, integration tests cover each compiler stage and each runnable example in Learn and Docs. Even so, AI-written code can hold mistakes that look correct. Treat Zaka as an experimental project, and please report what seems wrong as an issue.
 
+## Acknowledgement
+
+I'm grateful to [Robert Nystrom](https://github.com/munificent) for
+[*Crafting Interpreters*](https://craftinginterpreters.com/). I came to compiler
+development knowing nothing about it, and the book was a companion from the first page:
+whenever I was stuck, its clear explanations and complete code showed me the next step.
+
+I'm also grateful to Sayar [Thet Khine](https://github.com/mrthetkhine). When I heard that
+he had created UCSY Language, I was so impressed that I wanted to build a language too.
+That wish started me on the path that led to Zaka.
+
 ## Credits
 
 Zaka stands on the work of others. Fonts, crates and packages in [CREDITS.md](CREDITS.md). Special thanks to [PhoenixDigitalArt](https://www.facebook.com/PhoenixDigitalArt)
