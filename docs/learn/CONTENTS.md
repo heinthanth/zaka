@@ -1,7 +1,11 @@
 # Contents
 
-[Zaka through Examples](README.md)
+[Learn Zaka](README.md)
 
+- [Get started](get-started/README.md)
+  - [Installation](get-started/installation.md)
+  - [Editor setup](get-started/editors.md)
+  - [Quick start](get-started/quick-start.md)
 - [Hello, world](hello/README.md)
   - [Comments](hello/comments.md)
   - [Printing](hello/printing.md)

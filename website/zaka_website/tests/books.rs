@@ -268,7 +268,7 @@ fn the_contents_hold_each_page_once()
     let numbered = chapters(Book::Learn).iter().filter(|c| c.number.is_some()).count();
     assert!(numbered >= 9, "{numbered}");
     let first = page_at(Book::Learn, "").expect("the title page is there");
-    assert_eq!(neighbours(&first).1.map(|p| p.slug), Some("hello"));
+    assert_eq!(neighbours(&first).1.map(|p| p.slug), Some("get-started"));
 }
 
 #[test]

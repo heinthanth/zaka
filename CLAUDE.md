@@ -50,6 +50,7 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Build and publish the site | `mise run pages:publish` (the release snapshots, `dist`, then Cloudflare Pages) |
 | Make a release | Publish it on GitHub with the tag `v<version>` of `zakac` and the extension; `.github/workflows/release.yml` attaches the executables, the `.vsix` and the site snapshot, and publishes the extension when `VSCE_PAT` / `OVSX_PAT` are set |
 | Snapshot the site of a release | `mise run pages:snapshot -- [ref] [version]` (the working tree when no ref; to `target/site-snapshots`), then `pages:snapshot-upload <tag>` when a release ships |
+| Install scripts | `website/zaka_website/install/install.sh` and `install.ps1`, which `pages:build` serves at the site root; `ZAKA_RELEASES` points them at a test server |
 | Serve `dist` as the host does | `mise run pages:serve` (wrangler, 404 pages included) |
 
 ## Learn and Docs pages
@@ -98,7 +99,9 @@ and one set of tests serve both books.
   such as a function or a declaration inside it) with its pattern line (`<name> ဟူသော <kind> တစ်ခု`) and a word-for-word gloss,
   one idea in each `##` section, `## Details` for the edge rules (with links to Docs),
   `## Recap`, `## Hands on`, then `Next:`. `learn/tour.md` is the fast path for a reader
-  who knows another language.
+  who knows another language. The Get started chapter (`learn/get-started/`), which
+  installs Zaka and sets up an editor, is the exception: its pages are setup steps, with
+  `##` sections and a `Next:` line alone.
 - Write the prose in plain English, the words a developer would use when talking to a
   workmate: "Zaka uses Burmese sentences", not "Zaka reads as Burmese". Sentences of
   medium length that join related ideas, not a row of short ones. Say how a form is used,

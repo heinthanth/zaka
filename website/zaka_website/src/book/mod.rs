@@ -9,7 +9,8 @@ pub use zaka_web_ui_common::site::LEARN_URL;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Book
 {
-    /// Learn: Zaka taught through examples, at [`LEARN_URL`].
+    /// Learn: the setup of Zaka, then the language taught through examples, at
+    /// [`LEARN_URL`].
     Learn,
     /// Docs: the manual of the language, the compiler and the machine, at
     /// [`DOCS_URL`].

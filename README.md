@@ -19,9 +19,22 @@ Zaka is a programming language based on a subset of Burmese. Burmese sentences a
 
 ## Install
 
-Each [release](../../releases) holds `zakac` and `zakafmt` for macOS (Apple
+On macOS and Linux:
+
+```sh
+curl -fsSL https://zaka-lang.org/install.sh | sh
+```
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://zaka-lang.org/install.ps1 | iex
+```
+
+Each [release](../../releases) also holds `zakac` and `zakafmt` for macOS (Apple
 silicon), Linux and Windows (x86_64 and ARM64 each), and the VS Code extension
-(`.vsix`).
+(`.vsix`). [Get started](https://zaka-lang.org/learn/get-started/) covers the install,
+the editors and a first program.
 
 ## Building from source
 

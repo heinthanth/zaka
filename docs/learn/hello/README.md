@@ -88,8 +88,8 @@ We can run a program in two places:
    zakac run hello.zaka
    ```
 
-Both print `မင်္ဂလာပါ ကမ္ဘာကြီး`. To build `zakac` on a computer, see [How to run the
-examples](../README.md#how-to-run-the-examples).
+Both print `မင်္ဂလာပါ ကမ္ဘာကြီး`. To install `zakac` on a computer, see
+[Installation](../get-started/installation.md).
 
 ## More than one line
 

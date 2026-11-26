@@ -1,9 +1,9 @@
 ---
-title: Zaka through Examples
-description: Learn the Zaka programming language one small, runnable example at a time.
+title: Learn Zaka
+description: Set up Zaka, then learn the language one small, runnable example at a time.
 ---
 
-# Zaka through Examples
+# Learn Zaka
 
 Zaka (စံကား) is a programming language based on a subset of Burmese. A Zaka sentence
 (statement) such as `"မင်္ဂလာပါ" ဟု ပြသမည်။` prints "hello". We put the sentences we want
@@ -47,21 +47,16 @@ control over how much work a program does and where it stores its data.
 
 ## How to run the examples
 
-The fastest option is the online **[Zaka Explorer](/explorer/)**.
-Paste a program into the editor and press **Run**.
+The fastest option is the online **[Zaka Explorer](/explorer/)**. Paste a program into the
+editor and press **Run**.
 
-To run programs on a computer, we build the compiler, `zakac`, from the Zaka source
-folder, which needs [Rust](https://www.rust-lang.org/tools/install) installed first.
-
-```sh
-cargo build --release -p zakac
-```
-
-Save a program in a file whose name ends in `.zaka` (or `.zk`). Run it with `--repl`
-to support examples that leave out the program start block.
+To run programs on a computer, [Get started](get-started/README.md) installs the compiler,
+`zakac`, and sets up an editor. Save a program in a file whose name ends in `.zaka` (or
+`.zk`), and run it with `--repl` to support examples that leave out the program start
+block:
 
 ```sh
-./target/release/zakac run --repl hello.zaka
+zakac run --repl hello.zaka
 ```
 
 ## A note on the examples
@@ -73,8 +68,8 @@ to support examples that leave out the program start block.
 - When an example is meant to fail, the page points this out and shows the message the
   compiler prints.
 
-Start with [Hello, world](hello/README.md), or browse the [table of
-contents](CONTENTS.md).
+Start with [Get started](get-started/README.md), or go straight to [Hello,
+world](hello/README.md), or browse the [table of contents](CONTENTS.md).
 
 These pages teach through examples, so some details are left out. The
 [Docs](../manual/README.md) contain the full rules of the language, explain how the
