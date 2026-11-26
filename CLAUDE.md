@@ -17,6 +17,7 @@ and hosts a compiler explorer that runs in the browser.
 | `compiler/zakac_lsp` | the language server (`zakac lsp`, feature `server`): errors, colors, hover, completion, definitions, uses, renames and the outline; the explorer runs the same code in the page |
 | `editors/vscode` | the VS Code extension: a Rust client built with wasm-pack; its manifest, comment rules and grammar are TOML that `build.rs` turns into JSON |
 | `editors/zed` | the Zed extension; outside the workspace, as Zed builds it on its own |
+| `editors/treesitter` | the tree-sitter grammar and its highlight queries, written from the tables of the lexer (a test in `zakac_lexer`); the parser in `src/` is generated and committed |
 | `website/zaka_website` | the pre-rendered Leptos site: home page, Learn, Docs |
 | `website/zaka_explorer` | the compiler explorer: its own Trunk app (WASM, feature `csr`), and an island of the site at `/explorer/` |
 | `website/zaka_web_ui_common` | UI parts, theme tokens and site URLs that the site and the explorer share |
@@ -47,6 +48,7 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Format | `mise run format` (rustfmt, clang-format on the C runtime headers, then `zakac fmt` on the samples and the stdlib; run after each edit) |
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |
+| Write the tree-sitter grammar | `mise run editor:treesitter` (the grammar and queries from the lexer, then `tree-sitter generate` and `tree-sitter test`); again after a change to the reserved words |
 | Build the VS Code extension | `mise run editor:build-vscode` (wasm-pack, bun, vsce); `editor:install-vscode` and `editor:install-cursor` install it |
 | Build and publish the site | `mise run pages:publish` (the release snapshots, `dist`, then Cloudflare Pages) |
 | Make a release | Set the version of `compiler/zakac` and `editors/vscode`, commit, then push the tag `v<version>` on main (`git tag v0.1.0 && git push origin v0.1.0`); `.github/workflows/release.yml` builds the executables, the `.vsix` and the site snapshot as artifacts, and once each build passed, pushes the Docker image `ghcr.io/zaka-lang/zaka` (the `release` stage of the `Dockerfile`), makes the release with each file and notes GitHub writes, and publishes the extension when `VSCE_PAT` / `OVSX_PAT` are set, whose tokens the build checks; all or none. A tag with a dash, as `v0.2.0-rc.1`, makes a prerelease: no site snapshot, no marketplace publishing and no `latest` tag on its image. A run from the Actions tab with a tag builds the files of that release again |

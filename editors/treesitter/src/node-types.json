@@ -1,0 +1,1821 @@
+[
+  {
+    "type": "control",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "delimiter",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "kind",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "op",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "particle",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "char",
+          "named": true
+        },
+        {
+          "type": "control",
+          "named": true
+        },
+        {
+          "type": "delimiter",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "kind",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "op",
+          "named": true
+        },
+        {
+          "type": "particle",
+          "named": true
+        },
+        {
+          "type": "raw_identifier",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        },
+        {
+          "type": "truth",
+          "named": true
+        },
+        {
+          "type": "verb",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "string_content",
+          "named": true
+        },
+        {
+          "type": "template_slot",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "truth",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "verb",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "!",
+    "named": false
+  },
+  {
+    "type": "!=",
+    "named": false
+  },
+  {
+    "type": "\"",
+    "named": false
+  },
+  {
+    "type": "%",
+    "named": false
+  },
+  {
+    "type": "&",
+    "named": false
+  },
+  {
+    "type": "&&",
+    "named": false
+  },
+  {
+    "type": "(",
+    "named": false
+  },
+  {
+    "type": ")",
+    "named": false
+  },
+  {
+    "type": "*",
+    "named": false
+  },
+  {
+    "type": "+",
+    "named": false
+  },
+  {
+    "type": "-",
+    "named": false
+  },
+  {
+    "type": "/",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": "::",
+    "named": false
+  },
+  {
+    "type": "<",
+    "named": false
+  },
+  {
+    "type": "<<",
+    "named": false
+  },
+  {
+    "type": "<=",
+    "named": false
+  },
+  {
+    "type": "==",
+    "named": false
+  },
+  {
+    "type": ">",
+    "named": false
+  },
+  {
+    "type": ">=",
+    "named": false
+  },
+  {
+    "type": ">>",
+    "named": false
+  },
+  {
+    "type": "?",
+    "named": false
+  },
+  {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
+    "type": "^",
+    "named": false
+  },
+  {
+    "type": "char",
+    "named": true
+  },
+  {
+    "type": "comment",
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "escape_sequence",
+    "named": true
+  },
+  {
+    "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "number",
+    "named": true
+  },
+  {
+    "type": "raw_identifier",
+    "named": true
+  },
+  {
+    "type": "string_content",
+    "named": true
+  },
+  {
+    "type": "template_slot",
+    "named": true
+  },
+  {
+    "type": "|",
+    "named": false
+  },
+  {
+    "type": "||",
+    "named": false
+  },
+  {
+    "type": "~",
+    "named": false
+  },
+  {
+    "type": "ကနဦးတန်ဖိုး",
+    "named": false
+  },
+  {
+    "type": "ကနေ",
+    "named": false
+  },
+  {
+    "type": "ကနေစကာ",
+    "named": false
+  },
+  {
+    "type": "ကနေစပြီး",
+    "named": false
+  },
+  {
+    "type": "ကနေစ၍",
+    "named": false
+  },
+  {
+    "type": "ကိန်းပြည့်",
+    "named": false
+  },
+  {
+    "type": "ကိန်းရှင်",
+    "named": false
+  },
+  {
+    "type": "ကိန်းသေ",
+    "named": false
+  },
+  {
+    "type": "ကို",
+    "named": false
+  },
+  {
+    "type": "ကျော်မည်",
+    "named": false
+  },
+  {
+    "type": "ကျော်မယ်",
+    "named": false
+  },
+  {
+    "type": "ကြီး",
+    "named": false
+  },
+  {
+    "type": "ကွက်",
+    "named": false
+  },
+  {
+    "type": "ကွင်းဆက်",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်လာထဲတွင်",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်လာထဲမှာ",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်လာထဲ၌",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်းလုပ်ချိန်တွင်",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်းလုပ်ချိန်မှာ",
+    "named": false
+  },
+  {
+    "type": "ကွန်ပိုင်းလုပ်ချိန်၌",
+    "named": false
+  },
+  {
+    "type": "ခုစာ",
+    "named": false
+  },
+  {
+    "type": "ခုမြောက်",
+    "named": false
+  },
+  {
+    "type": "ခုရှိတဲ့",
+    "named": false
+  },
+  {
+    "type": "ခုရှိသော",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုခွင့်",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမည်",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမယ်",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုခွင့်ပြုမည်",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုခွင့်ပြုမယ်",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "ခေါ်ဆိုနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "ခြားနားလဒ်",
+    "named": false
+  },
+  {
+    "type": "ဂုဏ်သတ္တိ",
+    "named": false
+  },
+  {
+    "type": "ငယ်",
+    "named": false
+  },
+  {
+    "type": "စမ်းသပ်ချက်",
+    "named": false
+  },
+  {
+    "type": "စမ်းသပ်မှု",
+    "named": false
+  },
+  {
+    "type": "စာရင်း",
+    "named": false
+  },
+  {
+    "type": "စာရင်းအလွတ်",
+    "named": false
+  },
+  {
+    "type": "စာလုံး",
+    "named": false
+  },
+  {
+    "type": "စာလုံးတိုင်း",
+    "named": false
+  },
+  {
+    "type": "စာသား",
+    "named": false
+  },
+  {
+    "type": "စားကြွင်း",
+    "named": false
+  },
+  {
+    "type": "စားတဲ့",
+    "named": false
+  },
+  {
+    "type": "စားလဒ်",
+    "named": false
+  },
+  {
+    "type": "စားသော",
+    "named": false
+  },
+  {
+    "type": "စိတ်မချရတဲ့",
+    "named": false
+  },
+  {
+    "type": "စိတ်မချရပေမယ့်",
+    "named": false
+  },
+  {
+    "type": "စိတ်မချရသော",
+    "named": false
+  },
+  {
+    "type": "စိတ်မချရသော်လည်း",
+    "named": false
+  },
+  {
+    "type": "စီ",
+    "named": false
+  },
+  {
+    "type": "ဆက်ခံမည်",
+    "named": false
+  },
+  {
+    "type": "ဆက်ခံမယ်",
+    "named": false
+  },
+  {
+    "type": "ဆက်ထားတဲ့",
+    "named": false
+  },
+  {
+    "type": "ဆက်ထားသည့်",
+    "named": false
+  },
+  {
+    "type": "ဆီကို",
+    "named": false
+  },
+  {
+    "type": "ဆီသို့",
+    "named": false
+  },
+  {
+    "type": "ဆုံလဒ်",
+    "named": false
+  },
+  {
+    "type": "ဇယား",
+    "named": false
+  },
+  {
+    "type": "ဇယားအလွတ်",
+    "named": false
+  },
+  {
+    "type": "ညာကို",
+    "named": false
+  },
+  {
+    "type": "ညာသို့",
+    "named": false
+  },
+  {
+    "type": "ညီ",
+    "named": false
+  },
+  {
+    "type": "ညွှန်းတဲ့",
+    "named": false
+  },
+  {
+    "type": "ညွှန်းသော",
+    "named": false
+  },
+  {
+    "type": "တခြား",
+    "named": false
+  },
+  {
+    "type": "တစ်ခုတည်း",
+    "named": false
+  },
+  {
+    "type": "တစ်ပါတည်းပါဝင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "တစ်ပါတည်းပါဝင်သော",
+    "named": false
+  },
+  {
+    "type": "တန်ဖိုး",
+    "named": false
+  },
+  {
+    "type": "တယ်",
+    "named": false
+  },
+  {
+    "type": "တို့",
+    "named": false
+  },
+  {
+    "type": "တို့ကို",
+    "named": false
+  },
+  {
+    "type": "တို့ပါတဲ့",
+    "named": false
+  },
+  {
+    "type": "တို့ပါသော",
+    "named": false
+  },
+  {
+    "type": "တို့ဖြင့်",
+    "named": false
+  },
+  {
+    "type": "တိုးကာ",
+    "named": false
+  },
+  {
+    "type": "တိုးပြီး",
+    "named": false
+  },
+  {
+    "type": "တိုး၍",
+    "named": false
+  },
+  {
+    "type": "တဲ့",
+    "named": false
+  },
+  {
+    "type": "တွင်",
+    "named": false
+  },
+  {
+    "type": "ထက်",
+    "named": false
+  },
+  {
+    "type": "ထည့်ပေးဖို့",
+    "named": false
+  },
+  {
+    "type": "ထည့်ပေးရန်",
+    "named": false
+  },
+  {
+    "type": "ထည့်သွင်းမည်",
+    "named": false
+  },
+  {
+    "type": "ထည့်သွင်းမည့်",
+    "named": false
+  },
+  {
+    "type": "ထည့်သွင်းမယ်",
+    "named": false
+  },
+  {
+    "type": "ထည့်သွင်းမယ့်",
+    "named": false
+  },
+  {
+    "type": "ထားမည်",
+    "named": false
+  },
+  {
+    "type": "ထားမယ်",
+    "named": false
+  },
+  {
+    "type": "ထိ",
+    "named": false
+  },
+  {
+    "type": "ထိုသို့မဟုတ်ဘဲ",
+    "named": false
+  },
+  {
+    "type": "ထဲကနေ",
+    "named": false
+  },
+  {
+    "type": "ထဲကို",
+    "named": false
+  },
+  {
+    "type": "ထဲတွင်",
+    "named": false
+  },
+  {
+    "type": "ထဲမှ",
+    "named": false
+  },
+  {
+    "type": "ထဲမှာ",
+    "named": false
+  },
+  {
+    "type": "ထဲသို့",
+    "named": false
+  },
+  {
+    "type": "ထဲ၌",
+    "named": false
+  },
+  {
+    "type": "ဒါမှမဟုတ်",
+    "named": false
+  },
+  {
+    "type": "ဒါမှမဟုတ်ဘဲ",
+    "named": false
+  },
+  {
+    "type": "ဒါမှမဟုတ်ရင်",
+    "named": false
+  },
+  {
+    "type": "ဒါမှမဟုတ်လျှင်",
+    "named": false
+  },
+  {
+    "type": "ဒီနေရာမှာ",
+    "named": false
+  },
+  {
+    "type": "ဒဿမကိန်း",
+    "named": false
+  },
+  {
+    "type": "နုတ်လဒ်",
+    "named": false
+  },
+  {
+    "type": "နေရာယူကာ",
+    "named": false
+  },
+  {
+    "type": "နေရာယူပြီး",
+    "named": false
+  },
+  {
+    "type": "နေရာယူ၍",
+    "named": false
+  },
+  {
+    "type": "နေသရွေ့",
+    "named": false
+  },
+  {
+    "type": "နောက်ဆုံးစာလုံး",
+    "named": false
+  },
+  {
+    "type": "နောက်ဆုံးအကွက်",
+    "named": false
+  },
+  {
+    "type": "နောက်တစ်ကြိမ်ဆီကို",
+    "named": false
+  },
+  {
+    "type": "နောက်တစ်ကြိမ်ဆီသို့",
+    "named": false
+  },
+  {
+    "type": "နဲ့",
+    "named": false
+  },
+  {
+    "type": "နဲ့အတူ",
+    "named": false
+  },
+  {
+    "type": "နှင့်",
+    "named": false
+  },
+  {
+    "type": "နှင့်အတူ",
+    "named": false
+  },
+  {
+    "type": "ပရိုဂရမ်",
+    "named": false
+  },
+  {
+    "type": "ပရိုဂရမ်ရေးသားချိန်တွင်",
+    "named": false
+  },
+  {
+    "type": "ပရိုဂရမ်ရေးသားချိန်မှာ",
+    "named": false
+  },
+  {
+    "type": "ပရိုဂရမ်ရေးသားချိန်၌",
+    "named": false
+  },
+  {
+    "type": "ပါ",
+    "named": false
+  },
+  {
+    "type": "ပါတဲ့",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်ကာ",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်တယ်",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်ရမည်",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်ရမယ်",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်သည်",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်၍",
+    "named": false
+  },
+  {
+    "type": "ပါဝင်၏",
+    "named": false
+  },
+  {
+    "type": "ပါသော",
+    "named": false
+  },
+  {
+    "type": "ပေါင်းစုလဒ်",
+    "named": false
+  },
+  {
+    "type": "ပေါင်းလဒ်",
+    "named": false
+  },
+  {
+    "type": "ပြင်ပ",
+    "named": false
+  },
+  {
+    "type": "ပြန်ပေးတဲ့",
+    "named": false
+  },
+  {
+    "type": "ပြန်ပေးမည်",
+    "named": false
+  },
+  {
+    "type": "ပြန်ပေးမယ်",
+    "named": false
+  },
+  {
+    "type": "ပြန်ပေးသည့်",
+    "named": false
+  },
+  {
+    "type": "ပြန်ပေးသော",
+    "named": false
+  },
+  {
+    "type": "ပြန်လည်",
+    "named": false
+  },
+  {
+    "type": "ပြန်လည်မျှဝေမည်",
+    "named": false
+  },
+  {
+    "type": "ပြန်လည်မျှဝေမယ်",
+    "named": false
+  },
+  {
+    "type": "ပြန်လည်ရုပ်သိမ်းမည်",
+    "named": false
+  },
+  {
+    "type": "ပြန်လည်ရုပ်သိမ်းမယ်",
+    "named": false
+  },
+  {
+    "type": "ပြီးဆုံးပါပြီ",
+    "named": false
+  },
+  {
+    "type": "ပြီးဆုံးပါပြီး",
+    "named": false
+  },
+  {
+    "type": "ပြီးတဲ့",
+    "named": false
+  },
+  {
+    "type": "ပြီးပါပြီ",
+    "named": false
+  },
+  {
+    "type": "ပြီးပါပြီး",
+    "named": false
+  },
+  {
+    "type": "ပြီးရင်",
+    "named": false
+  },
+  {
+    "type": "ပြီးလျှင်",
+    "named": false
+  },
+  {
+    "type": "ပြီးသည့်",
+    "named": false
+  },
+  {
+    "type": "ပြုမည်",
+    "named": false
+  },
+  {
+    "type": "ပြုမယ်",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းပြန်ပြောင်းလဒ်",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းလဲတဲ့",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းလဲနိုင်",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းလဲဖို့",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းလဲရန်",
+    "named": false
+  },
+  {
+    "type": "ပြောင်းလဲသော",
+    "named": false
+  },
+  {
+    "type": "ဖြင့်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ကာ",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်တယ်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်နေသရွေ့",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ပါစေ",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ပြီး",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ရင်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ရမည်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်ရမယ်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်လျှင်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်သည်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်အောင်",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်၍",
+    "named": false
+  },
+  {
+    "type": "ဖြစ်၏",
+    "named": false
+  },
+  {
+    "type": "ဘစ်",
+    "named": false
+  },
+  {
+    "type": "ဘစ်အလိုက်",
+    "named": false
+  },
+  {
+    "type": "ဘယ်ကို",
+    "named": false
+  },
+  {
+    "type": "ဘယ်သို့",
+    "named": false
+  },
+  {
+    "type": "ဘိုက်စာ",
+    "named": false
+  },
+  {
+    "type": "ဘူလီယန်",
+    "named": false
+  },
+  {
+    "type": "မကြီး",
+    "named": false
+  },
+  {
+    "type": "မငယ်",
+    "named": false
+  },
+  {
+    "type": "မင်မိုရီ",
+    "named": false
+  },
+  {
+    "type": "မညီ",
+    "named": false
+  },
+  {
+    "type": "မည်",
+    "named": false
+  },
+  {
+    "type": "မည်သည်ကိုမှ",
+    "named": false
+  },
+  {
+    "type": "မည့်",
+    "named": false
+  },
+  {
+    "type": "မညွှန်းတဲ့",
+    "named": false
+  },
+  {
+    "type": "မညွှန်းသော",
+    "named": false
+  },
+  {
+    "type": "မမှန်",
+    "named": false
+  },
+  {
+    "type": "မယ်",
+    "named": false
+  },
+  {
+    "type": "မယ့်",
+    "named": false
+  },
+  {
+    "type": "မရှိ",
+    "named": false
+  },
+  {
+    "type": "မရှိနေ",
+    "named": false
+  },
+  {
+    "type": "မဟုတ်",
+    "named": false
+  },
+  {
+    "type": "မဟုတ်ပါက",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်ကာ",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်တဲ့သတင်း",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်ပါ",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်ပါက",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်သည့်သတင်း",
+    "named": false
+  },
+  {
+    "type": "မအောင်မြင်၍",
+    "named": false
+  },
+  {
+    "type": "မူရင်းအတိုင်း",
+    "named": false
+  },
+  {
+    "type": "မျိုးပြပစ္စည်းမှာ",
+    "named": false
+  },
+  {
+    "type": "မျှဝေနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "မျှဝေနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "မျှဝေမည်",
+    "named": false
+  },
+  {
+    "type": "မျှဝေမယ်",
+    "named": false
+  },
+  {
+    "type": "မြှောက်လဒ်",
+    "named": false
+  },
+  {
+    "type": "မှ",
+    "named": false
+  },
+  {
+    "type": "မှစကာ",
+    "named": false
+  },
+  {
+    "type": "မှစပြီး",
+    "named": false
+  },
+  {
+    "type": "မှစ၍",
+    "named": false
+  },
+  {
+    "type": "မှတ်ချက်",
+    "named": false
+  },
+  {
+    "type": "မှတ်ဉာဏ်",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်ကာ",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်ပါတယ်",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်ပါသည်",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်ပါ၏",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "မှတ်ယူနိုင်၍",
+    "named": false
+  },
+  {
+    "type": "မှန်",
+    "named": false
+  },
+  {
+    "type": "မှန်မှားတန်ဖိုး",
+    "named": false
+  },
+  {
+    "type": "မှာ",
+    "named": false
+  },
+  {
+    "type": "ယူကာ",
+    "named": false
+  },
+  {
+    "type": "ယူပြီး",
+    "named": false
+  },
+  {
+    "type": "ယူသုံးနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "ယူသုံးနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "ယူ၍",
+    "named": false
+  },
+  {
+    "type": "ယေဘုယျအချက်အလက်အမျိုးအစား",
+    "named": false
+  },
+  {
+    "type": "ရင်",
+    "named": false
+  },
+  {
+    "type": "ရပ်မည်",
+    "named": false
+  },
+  {
+    "type": "ရပ်မယ်",
+    "named": false
+  },
+  {
+    "type": "ရလဒ်",
+    "named": false
+  },
+  {
+    "type": "ရလဒ်ကောင်း",
+    "named": false
+  },
+  {
+    "type": "ရေတွက်ကာ",
+    "named": false
+  },
+  {
+    "type": "ရေတွက်ပြီး",
+    "named": false
+  },
+  {
+    "type": "ရေတွက်၍",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်ကာ",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်တယ်",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်သည်",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်၍",
+    "named": false
+  },
+  {
+    "type": "ရေးသားနိုင်၏",
+    "named": false
+  },
+  {
+    "type": "ရေးသားရာတွင်",
+    "named": false
+  },
+  {
+    "type": "ရေးသားရာမှာ",
+    "named": false
+  },
+  {
+    "type": "ရေးသားရာ၌",
+    "named": false
+  },
+  {
+    "type": "ရွေ့တဲ့",
+    "named": false
+  },
+  {
+    "type": "ရွေ့သော",
+    "named": false
+  },
+  {
+    "type": "ရှိ",
+    "named": false
+  },
+  {
+    "type": "ရှိကောင်းရှိနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "ရှိကောင်းရှိနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "ရှိစေဖို့",
+    "named": false
+  },
+  {
+    "type": "ရှိစေရန်",
+    "named": false
+  },
+  {
+    "type": "ရှိစေအောင်",
+    "named": false
+  },
+  {
+    "type": "ရှိတယ်",
+    "named": false
+  },
+  {
+    "type": "ရှိတဲ့",
+    "named": false
+  },
+  {
+    "type": "ရှိနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "ရှိနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "ရှိနေ",
+    "named": false
+  },
+  {
+    "type": "ရှိသည်",
+    "named": false
+  },
+  {
+    "type": "ရှိသည့်",
+    "named": false
+  },
+  {
+    "type": "ရှိသော",
+    "named": false
+  },
+  {
+    "type": "ရှိ၏",
+    "named": false
+  },
+  {
+    "type": "လက္ခဏာမဲ့",
+    "named": false
+  },
+  {
+    "type": "လက္ခဏာရှိ",
+    "named": false
+  },
+  {
+    "type": "လက်ခံကာ",
+    "named": false
+  },
+  {
+    "type": "လက်ခံတဲ့",
+    "named": false
+  },
+  {
+    "type": "လက်ခံပြီး",
+    "named": false
+  },
+  {
+    "type": "လက်ခံမည်",
+    "named": false
+  },
+  {
+    "type": "လက်ခံမယ်",
+    "named": false
+  },
+  {
+    "type": "လက်ခံသည့်",
+    "named": false
+  },
+  {
+    "type": "လက်ခံသော",
+    "named": false
+  },
+  {
+    "type": "လက်ခံ၍",
+    "named": false
+  },
+  {
+    "type": "လည်း",
+    "named": false
+  },
+  {
+    "type": "လည်းကောင်း",
+    "named": false
+  },
+  {
+    "type": "လာတဲ့",
+    "named": false
+  },
+  {
+    "type": "လာသော",
+    "named": false
+  },
+  {
+    "type": "လိပ်စာ",
+    "named": false
+  },
+  {
+    "type": "လို့",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်ကာ",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်ချက်",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်ချက်တစ်ခု",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်ချက်များ",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်စရာများ",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်နိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်နိုင်သော",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်မည်",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်မယ်",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်သော",
+    "named": false
+  },
+  {
+    "type": "လုပ်ဆောင်၍",
+    "named": false
+  },
+  {
+    "type": "လုံးစာ",
+    "named": false
+  },
+  {
+    "type": "လုံးမြောက်",
+    "named": false
+  },
+  {
+    "type": "လျှင်",
+    "named": false
+  },
+  {
+    "type": "လျှော့ကာ",
+    "named": false
+  },
+  {
+    "type": "လျှော့ပြီး",
+    "named": false
+  },
+  {
+    "type": "လျှော့၍",
+    "named": false
+  },
+  {
+    "type": "ဝိဘတ်",
+    "named": false
+  },
+  {
+    "type": "သည်",
+    "named": false
+  },
+  {
+    "type": "သည့်",
+    "named": false
+  },
+  {
+    "type": "သတိပြုစရာများ",
+    "named": false
+  },
+  {
+    "type": "သတိပြုဖို့မှာ",
+    "named": false
+  },
+  {
+    "type": "သတိပြုရန်မှာ",
+    "named": false
+  },
+  {
+    "type": "သတိပြုရမည်မှာ",
+    "named": false
+  },
+  {
+    "type": "သတိပြုရမယ်မှာ",
+    "named": false
+  },
+  {
+    "type": "သတ်မှတ်မည်",
+    "named": false
+  },
+  {
+    "type": "သတ်မှတ်မယ်",
+    "named": false
+  },
+  {
+    "type": "သို့မဟုတ်",
+    "named": false
+  },
+  {
+    "type": "သို့မဟုတ်ပါက",
+    "named": false
+  },
+  {
+    "type": "သုံးကာ",
+    "named": false
+  },
+  {
+    "type": "သုံးတဲ့",
+    "named": false
+  },
+  {
+    "type": "သုံးပြီး",
+    "named": false
+  },
+  {
+    "type": "သုံးမည့်",
+    "named": false
+  },
+  {
+    "type": "သုံးမယ့်",
+    "named": false
+  },
+  {
+    "type": "သုံးသည့်",
+    "named": false
+  },
+  {
+    "type": "သုံးသော",
+    "named": false
+  },
+  {
+    "type": "သုံး၍",
+    "named": false
+  },
+  {
+    "type": "သော",
+    "named": false
+  },
+  {
+    "type": "ဟု",
+    "named": false
+  },
+  {
+    "type": "ဟူတဲ့",
+    "named": false
+  },
+  {
+    "type": "ဟူသည့်",
+    "named": false
+  },
+  {
+    "type": "ဟူသော",
+    "named": false
+  },
+  {
+    "type": "အကယ်၍",
+    "named": false
+  },
+  {
+    "type": "အကုန်",
+    "named": false
+  },
+  {
+    "type": "အကွက်",
+    "named": false
+  },
+  {
+    "type": "အကွက်တိုင်း",
+    "named": false
+  },
+  {
+    "type": "အခါတွင်",
+    "named": false
+  },
+  {
+    "type": "အခါမှာ",
+    "named": false
+  },
+  {
+    "type": "အခါ၌",
+    "named": false
+  },
+  {
+    "type": "အချက်အလက်",
+    "named": false
+  },
+  {
+    "type": "အချက်အလက်ဆဲလ်",
+    "named": false
+  },
+  {
+    "type": "အချက်အလက်အစုအဝေး",
+    "named": false
+  },
+  {
+    "type": "အချက်အလက်အမျိုးအစား",
+    "named": false
+  },
+  {
+    "type": "အချက်အလက်အမျိုးအစားကွဲ",
+    "named": false
+  },
+  {
+    "type": "အခြားတန်ဖိုးများ",
+    "named": false
+  },
+  {
+    "type": "အခြားတန်ဖိုးများနဲ့အတူ",
+    "named": false
+  },
+  {
+    "type": "အခြားတန်ဖိုးများနှင့်အတူ",
+    "named": false
+  },
+  {
+    "type": "အခြားလုပ်ဆောင်ချက်များကိုလည်း",
+    "named": false
+  },
+  {
+    "type": "အခြေ",
+    "named": false
+  },
+  {
+    "type": "အစစကားစု",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးသုံးနိုင်ကာ",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးသုံးနိုင်ပြီး",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးသုံးနိုင်၍",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးအသုံးပြုကာ",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးအသုံးပြုတဲ့",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးအသုံးပြုပြီး",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးအသုံးပြုသည့်",
+    "named": false
+  },
+  {
+    "type": "အစားထိုးအသုံးပြု၍",
+    "named": false
+  },
+  {
+    "type": "အဆုံးစကားစု",
+    "named": false
+  },
+  {
+    "type": "အညွှန်း",
+    "named": false
+  },
+  {
+    "type": "အညွှန်းတိုင်း",
+    "named": false
+  },
+  {
+    "type": "အတန်းတိုင်း",
+    "named": false
+  },
+  {
+    "type": "အထိ",
+    "named": false
+  },
+  {
+    "type": "အနုတ်",
+    "named": false
+  },
+  {
+    "type": "အနေဖြင့်",
+    "named": false
+  },
+  {
+    "type": "အပိုင်အနေဖြင့်",
+    "named": false
+  },
+  {
+    "type": "အဖြစ်",
+    "named": false
+  },
+  {
+    "type": "အဖြစ်ကို",
+    "named": false
+  },
+  {
+    "type": "အဖြစ်သို့",
+    "named": false
+  },
+  {
+    "type": "အမည်ဖြင့်",
+    "named": false
+  },
+  {
+    "type": "အများသုံးနိုင်တဲ့",
+    "named": false
+  },
+  {
+    "type": "အများသုံးနိုင်ဖို့",
+    "named": false
+  },
+  {
+    "type": "အများသုံးနိုင်ရန်",
+    "named": false
+  },
+  {
+    "type": "အများသုံးနိုင်သော",
+    "named": false
+  },
+  {
+    "type": "အမျိုးအစား",
+    "named": false
+  },
+  {
+    "type": "အမှားအယွင်း",
+    "named": false
+  },
+  {
+    "type": "အရွယ်အစား",
+    "named": false
+  },
+  {
+    "type": "အရှေ့တွင်",
+    "named": false
+  },
+  {
+    "type": "အရှေ့မှာ",
+    "named": false
+  },
+  {
+    "type": "အရှေ့၌",
+    "named": false
+  },
+  {
+    "type": "အလွတ်",
+    "named": false
+  },
+  {
+    "type": "အောက်",
+    "named": false
+  },
+  {
+    "type": "အောက်ပါ",
+    "named": false
+  },
+  {
+    "type": "အောင်မြင်တယ်",
+    "named": false
+  },
+  {
+    "type": "အောင်မြင်တဲ့သတင်း",
+    "named": false
+  },
+  {
+    "type": "အောင်မြင်သည်",
+    "named": false
+  },
+  {
+    "type": "အောင်မြင်သည့်သတင်း",
+    "named": false
+  },
+  {
+    "type": "အောင်မြင်၏",
+    "named": false
+  },
+  {
+    "type": "ဤနေရာတွင်",
+    "named": false
+  },
+  {
+    "type": "ဤနေရာ၌",
+    "named": false
+  },
+  {
+    "type": "၊",
+    "named": false
+  },
+  {
+    "type": "။",
+    "named": false
+  },
+  {
+    "type": "၌",
+    "named": false
+  },
+  {
+    "type": "၎င်း",
+    "named": false
+  },
+  {
+    "type": "၏",
+    "named": false
+  }
+]

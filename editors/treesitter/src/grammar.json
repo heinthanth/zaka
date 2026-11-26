@@ -1,0 +1,1885 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "zaka",
+  "word": "identifier",
+  "rules": {
+    "source_file": {
+      "content": {
+        "name": "_item",
+        "type": "SYMBOL"
+      },
+      "type": "REPEAT"
+    },
+    "_item": {
+      "members": [
+        {
+          "name": "control",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "verb",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "op",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "particle",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "kind",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "truth",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "identifier",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "raw_identifier",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "number",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "char",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "string",
+          "type": "SYMBOL"
+        },
+        {
+          "name": "delimiter",
+          "type": "SYMBOL"
+        },
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        },
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "control": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကိန်းရှင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ကိန်းသေ"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွင်းဆက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်လာထဲတွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်လာထဲမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်လာထဲ၌"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်းလုပ်ချိန်တွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်းလုပ်ချိန်မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွန်ပိုင်းလုပ်ချိန်၌"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "ဂုဏ်သတ္တိ"
+        },
+        {
+          "type": "STRING",
+          "value": "စမ်းသပ်ချက်"
+        },
+        {
+          "type": "STRING",
+          "value": "စမ်းသပ်မှု"
+        },
+        {
+          "type": "STRING",
+          "value": "စာလုံးတိုင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "စိတ်မချရတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "စိတ်မချရပေမယ့်"
+        },
+        {
+          "type": "STRING",
+          "value": "စိတ်မချရသော"
+        },
+        {
+          "type": "STRING",
+          "value": "စိတ်မချရသော်လည်း"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆက်ခံမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆက်ခံမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "တခြား"
+        },
+        {
+          "type": "STRING",
+          "value": "တစ်ပါတည်းပါဝင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "တစ်ပါတည်းပါဝင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "တို့"
+        },
+        {
+          "type": "STRING",
+          "value": "တိုးကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "တိုးပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "တိုး၍"
+        },
+        {
+          "type": "STRING",
+          "value": "တွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်သွင်းမည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်သွင်းမယ့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထိုသို့မဟုတ်ဘဲ"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲကနေ"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲမှ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒါမှမဟုတ်ဘဲ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒါမှမဟုတ်ရင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒါမှမဟုတ်လျှင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒီနေရာမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "နေရာယူကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "နေရာယူပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "နေရာယူ၍"
+        },
+        {
+          "type": "STRING",
+          "value": "နေသရွေ့"
+        },
+        {
+          "type": "STRING",
+          "value": "နောက်တစ်ကြိမ်ဆီကို"
+        },
+        {
+          "type": "STRING",
+          "value": "နောက်တစ်ကြိမ်ဆီသို့"
+        },
+        {
+          "type": "STRING",
+          "value": "နဲ့အတူ"
+        },
+        {
+          "type": "STRING",
+          "value": "နှင့်အတူ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပရိုဂရမ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပရိုဂရမ်ရေးသားချိန်တွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပရိုဂရမ်ရေးသားချိန်မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပရိုဂရမ်ရေးသားချိန်၌"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်ရမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်ရမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြင်ပ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်ပေးတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်ပေးသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်ပေးသော"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးဆုံးပါပြီ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးဆုံးပါပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးပါပြီ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးပါပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးရင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးလျှင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြီးသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်နေသရွေ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ရင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ရမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ရမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်လျှင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်အောင်"
+        },
+        {
+          "type": "STRING",
+          "value": "မင်မိုရီ"
+        },
+        {
+          "type": "STRING",
+          "value": "မည်"
+        },
+        {
+          "type": "STRING",
+          "value": "မယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မဟုတ်ပါက"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်ပါက"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "မူရင်းအတိုင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "မျိုးပြပစ္စည်းမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "မျှဝေနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "မျှဝေနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ဉာဏ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်ပါတယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်ပါသည်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်ပါ၏"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ယူနိုင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ယူကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ယူပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ယူသုံးနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ယူသုံးနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "ယူ၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ယေဘုယျအချက်အလက်အမျိုးအစား"
+        },
+        {
+          "type": "STRING",
+          "value": "ရင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေတွက်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေတွက်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေတွက်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်တယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်သည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားနိုင်၏"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားရာတွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားရာမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ရေးသားရာ၌"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိ"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိစေဖို့"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိစေရန်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိစေအောင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိတယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိနေ"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိသည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိ၏"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံသော"
+        },
+        {
+          "type": "STRING",
+          "value": "လက်ခံ၍"
+        },
+        {
+          "type": "STRING",
+          "value": "လည်း"
+        },
+        {
+          "type": "STRING",
+          "value": "လည်းကောင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "လာတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "လာသော"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်ချက်"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်ချက်တစ်ခု"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်ချက်များ"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်စရာများ"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်နိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်နိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်မည်"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်မယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "လျှင်"
+        },
+        {
+          "type": "STRING",
+          "value": "လျှော့ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "လျှော့ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "လျှော့၍"
+        },
+        {
+          "type": "STRING",
+          "value": "သတိပြုစရာများ"
+        },
+        {
+          "type": "STRING",
+          "value": "သတိပြုဖို့မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "သတိပြုရန်မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "သတိပြုရမည်မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "သတိပြုရမယ်မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "သို့မဟုတ်ပါက"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးမည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးမယ့်"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံးသော"
+        },
+        {
+          "type": "STRING",
+          "value": "သုံး၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ဟူသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "အကယ်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "အကွက်တိုင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အခါတွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "အခါမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "အခါ၌"
+        },
+        {
+          "type": "STRING",
+          "value": "အချက်အလက်အစုအဝေး"
+        },
+        {
+          "type": "STRING",
+          "value": "အချက်အလက်အမျိုးအစား"
+        },
+        {
+          "type": "STRING",
+          "value": "အချက်အလက်အမျိုးအစားကွဲ"
+        },
+        {
+          "type": "STRING",
+          "value": "အခြားတန်ဖိုးများ"
+        },
+        {
+          "type": "STRING",
+          "value": "အခြားတန်ဖိုးများနဲ့အတူ"
+        },
+        {
+          "type": "STRING",
+          "value": "အခြားတန်ဖိုးများနှင့်အတူ"
+        },
+        {
+          "type": "STRING",
+          "value": "အခြားလုပ်ဆောင်ချက်များကိုလည်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးသုံးနိုင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးသုံးနိုင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးသုံးနိုင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးအသုံးပြုကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးအသုံးပြုတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးအသုံးပြုပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးအသုံးပြုသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "အစားထိုးအသုံးပြု၍"
+        },
+        {
+          "type": "STRING",
+          "value": "အညွှန်းတိုင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အတန်းတိုင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အမည်ဖြင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "အများသုံးနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "အများသုံးနိုင်ဖို့"
+        },
+        {
+          "type": "STRING",
+          "value": "အများသုံးနိုင်ရန်"
+        },
+        {
+          "type": "STRING",
+          "value": "အများသုံးနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "အမျိုးအစား"
+        },
+        {
+          "type": "STRING",
+          "value": "အောက်ပါ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဤနေရာတွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဤနေရာ၌"
+        },
+        {
+          "type": "STRING",
+          "value": "၌"
+        },
+        {
+          "type": "STRING",
+          "value": "၎င်း"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "verb": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကျော်မည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ကျော်မယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုခွင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုခွင့်ပြန်လည်ရုပ်သိမ်းမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုခွင့်ပြုမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခေါ်ဆိုခွင့်ပြုမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်သွင်းမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်သွင်းမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထားမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထားမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်တယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်သည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါဝင်၏"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်ပေးမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်ပေးမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်လည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်လည်မျှဝေမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်လည်မျှဝေမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်လည်ရုပ်သိမ်းမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြန်လည်ရုပ်သိမ်းမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြုမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြုမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်တယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ပါစေ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်သည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်၏"
+        },
+        {
+          "type": "STRING",
+          "value": "မျှဝေမည်"
+        },
+        {
+          "type": "STRING",
+          "value": "မျှဝေမယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရပ်မည်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရပ်မယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "သတ်မှတ်မည်"
+        },
+        {
+          "type": "STRING",
+          "value": "သတ်မှတ်မယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အကုန်"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "op": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ကွက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခုမြောက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခြားနားလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ငယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "စားကြွင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "စားတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "စားလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "စားသော"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆက်ထားတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆက်ထားသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆုံလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ညာကို"
+        },
+        {
+          "type": "STRING",
+          "value": "ညာသို့"
+        },
+        {
+          "type": "STRING",
+          "value": "ညီ"
+        },
+        {
+          "type": "STRING",
+          "value": "တစ်ခုတည်း"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒါမှမဟုတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "နုတ်လဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "နောက်ဆုံးစာလုံး"
+        },
+        {
+          "type": "STRING",
+          "value": "နောက်ဆုံးအကွက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပေါင်းစုလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပေါင်းလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းပြန်ပြောင်းလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းလဲတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းလဲနိုင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းလဲသော"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်ပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြစ်၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘစ်အလိုက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘယ်ကို"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘယ်သို့"
+        },
+        {
+          "type": "STRING",
+          "value": "မကြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "မငယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မညီ"
+        },
+        {
+          "type": "STRING",
+          "value": "မဟုတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မြှောက်လဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရွေ့တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ရွေ့သော"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "လုပ်ဆောင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "လုံးမြောက်"
+        },
+        {
+          "type": "STRING",
+          "value": "သည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "သို့မဟုတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အကွက်"
+        },
+        {
+          "type": "STRING",
+          "value": "အညွှန်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အနုတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အရွယ်အစား"
+        },
+        {
+          "type": "STRING",
+          "value": "အရှေ့တွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "အရှေ့မှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "အရှေ့၌"
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "STRING",
+          "value": "::"
+        },
+        {
+          "type": "STRING",
+          "value": "+"
+        },
+        {
+          "type": "STRING",
+          "value": "-"
+        },
+        {
+          "type": "STRING",
+          "value": "*"
+        },
+        {
+          "type": "STRING",
+          "value": "/"
+        },
+        {
+          "type": "STRING",
+          "value": "%"
+        },
+        {
+          "type": "STRING",
+          "value": "&"
+        },
+        {
+          "type": "STRING",
+          "value": "|"
+        },
+        {
+          "type": "STRING",
+          "value": "^"
+        },
+        {
+          "type": "STRING",
+          "value": "~"
+        },
+        {
+          "type": "STRING",
+          "value": "!"
+        },
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "STRING",
+          "value": ">"
+        },
+        {
+          "type": "STRING",
+          "value": "<="
+        },
+        {
+          "type": "STRING",
+          "value": ">="
+        },
+        {
+          "type": "STRING",
+          "value": "=="
+        },
+        {
+          "type": "STRING",
+          "value": "!="
+        },
+        {
+          "type": "STRING",
+          "value": "<<"
+        },
+        {
+          "type": "STRING",
+          "value": ">>"
+        },
+        {
+          "type": "STRING",
+          "value": "&&"
+        },
+        {
+          "type": "STRING",
+          "value": "||"
+        },
+        {
+          "type": "STRING",
+          "value": "?"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "particle": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကနေ"
+        },
+        {
+          "type": "STRING",
+          "value": "ကနေစကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ကနေစပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "ကနေစ၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ကို"
+        },
+        {
+          "type": "STRING",
+          "value": "ခုရှိတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ခုရှိသော"
+        },
+        {
+          "type": "STRING",
+          "value": "စီ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆီကို"
+        },
+        {
+          "type": "STRING",
+          "value": "ဆီသို့"
+        },
+        {
+          "type": "STRING",
+          "value": "တယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "တို့ကို"
+        },
+        {
+          "type": "STRING",
+          "value": "တို့ပါတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "တို့ပါသော"
+        },
+        {
+          "type": "STRING",
+          "value": "တို့ဖြင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ထက်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်ပေးဖို့"
+        },
+        {
+          "type": "STRING",
+          "value": "ထည့်ပေးရန်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထိ"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲကို"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲသို့"
+        },
+        {
+          "type": "STRING",
+          "value": "နဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "နှင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါ"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ပါသော"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းလဲဖို့"
+        },
+        {
+          "type": "STRING",
+          "value": "ပြောင်းလဲရန်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဖြင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "မည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "မယ့်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှ"
+        },
+        {
+          "type": "STRING",
+          "value": "မှစကာ"
+        },
+        {
+          "type": "STRING",
+          "value": "မှစပြီး"
+        },
+        {
+          "type": "STRING",
+          "value": "မှစ၍"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိသည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိသော"
+        },
+        {
+          "type": "STRING",
+          "value": "လို့"
+        },
+        {
+          "type": "STRING",
+          "value": "ဝိဘတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "သည်"
+        },
+        {
+          "type": "STRING",
+          "value": "သော"
+        },
+        {
+          "type": "STRING",
+          "value": "ဟု"
+        },
+        {
+          "type": "STRING",
+          "value": "ဟူတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ဟူသော"
+        },
+        {
+          "type": "STRING",
+          "value": "အစစကားစု"
+        },
+        {
+          "type": "STRING",
+          "value": "အဆုံးစကားစု"
+        },
+        {
+          "type": "STRING",
+          "value": "အထိ"
+        },
+        {
+          "type": "STRING",
+          "value": "အနေဖြင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "အပိုင်အနေဖြင့်"
+        },
+        {
+          "type": "STRING",
+          "value": "အဖြစ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အဖြစ်ကို"
+        },
+        {
+          "type": "STRING",
+          "value": "အဖြစ်သို့"
+        },
+        {
+          "type": "STRING",
+          "value": "အောက်"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "kind": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကိန်းပြည့်"
+        },
+        {
+          "type": "STRING",
+          "value": "ခုစာ"
+        },
+        {
+          "type": "STRING",
+          "value": "စာရင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "စာလုံး"
+        },
+        {
+          "type": "STRING",
+          "value": "စာသား"
+        },
+        {
+          "type": "STRING",
+          "value": "ဇယား"
+        },
+        {
+          "type": "STRING",
+          "value": "ညွှန်းတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ညွှန်းသော"
+        },
+        {
+          "type": "STRING",
+          "value": "တန်ဖိုး"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲတွင်"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲမှာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ထဲ၌"
+        },
+        {
+          "type": "STRING",
+          "value": "ဒဿမကိန်း"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘစ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘိုက်စာ"
+        },
+        {
+          "type": "STRING",
+          "value": "ဘူလီယန်"
+        },
+        {
+          "type": "STRING",
+          "value": "မရှိ"
+        },
+        {
+          "type": "STRING",
+          "value": "မရှိနေ"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်တဲ့သတင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်ပါ"
+        },
+        {
+          "type": "STRING",
+          "value": "မအောင်မြင်သည့်သတင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "မှတ်ချက်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှန်မှားတန်ဖိုး"
+        },
+        {
+          "type": "STRING",
+          "value": "ရလဒ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ရလဒ်ကောင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိကောင်းရှိနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိကောင်းရှိနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိနိုင်တဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "ရှိနိုင်သော"
+        },
+        {
+          "type": "STRING",
+          "value": "လက္ခဏာမဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "လက္ခဏာရှိ"
+        },
+        {
+          "type": "STRING",
+          "value": "လိပ်စာ"
+        },
+        {
+          "type": "STRING",
+          "value": "လုံးစာ"
+        },
+        {
+          "type": "STRING",
+          "value": "အချက်အလက်"
+        },
+        {
+          "type": "STRING",
+          "value": "အချက်အလက်ဆဲလ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အခြေ"
+        },
+        {
+          "type": "STRING",
+          "value": "အမှားအယွင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အလွတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အောင်မြင်တယ်"
+        },
+        {
+          "type": "STRING",
+          "value": "အောင်မြင်တဲ့သတင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အောင်မြင်သည်"
+        },
+        {
+          "type": "STRING",
+          "value": "အောင်မြင်သည့်သတင်း"
+        },
+        {
+          "type": "STRING",
+          "value": "အောင်မြင်၏"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "truth": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "ကနဦးတန်ဖိုး"
+        },
+        {
+          "type": "STRING",
+          "value": "စာရင်းအလွတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "ဇယားအလွတ်"
+        },
+        {
+          "type": "STRING",
+          "value": "မည်သည်ကိုမှ"
+        },
+        {
+          "type": "STRING",
+          "value": "မညွှန်းတဲ့"
+        },
+        {
+          "type": "STRING",
+          "value": "မညွှန်းသော"
+        },
+        {
+          "type": "STRING",
+          "value": "မမှန်"
+        },
+        {
+          "type": "STRING",
+          "value": "မှန်"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "delimiter": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "၊"
+        },
+        {
+          "type": "STRING",
+          "value": "။"
+        },
+        {
+          "type": "STRING",
+          "value": "၏"
+        }
+      ],
+      "type": "CHOICE"
+    },
+    "identifier": {
+      "type": "PATTERN",
+      "value": "[\\p{L}\\p{M}_\\u{104C}-\\u{104E}][\\p{L}\\p{M}\\p{N}_\\u{104C}-\\u{104E}]*"
+    },
+    "raw_identifier": {
+      "type": "PATTERN",
+      "value": "\\{[^}\\n]*\\}"
+    },
+    "number": {
+      "type": "PATTERN",
+      "value": "[0-9\\u{1040}-\\u{1049}][0-9A-Za-z_\\u{1040}-\\u{1049}]*(\\.[0-9\\u{1040}-\\u{1049}]+)?"
+    },
+    "char": {
+      "type": "PATTERN",
+      "value": "'([^'\\\\\\n]|\\\\.)*'"
+    },
+    "string": {
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\""
+        },
+        {
+          "content": {
+            "members": [
+              {
+                "name": "string_content",
+                "type": "SYMBOL"
+              },
+              {
+                "name": "escape_sequence",
+                "type": "SYMBOL"
+              },
+              {
+                "name": "template_slot",
+                "type": "SYMBOL"
+              }
+            ],
+            "type": "CHOICE"
+          },
+          "type": "REPEAT"
+        },
+        {
+          "content": {
+            "content": {
+              "type": "STRING",
+              "value": "\""
+            },
+            "type": "PREC",
+            "value": 1
+          },
+          "type": "IMMEDIATE_TOKEN"
+        }
+      ],
+      "type": "SEQ"
+    },
+    "string_content": {
+      "content": {
+        "content": {
+          "type": "PATTERN",
+          "value": "[^\"\\\\{}\\n]+"
+        },
+        "type": "PREC",
+        "value": 1
+      },
+      "type": "IMMEDIATE_TOKEN"
+    },
+    "escape_sequence": {
+      "content": {
+        "content": {
+          "type": "PATTERN",
+          "value": "\\\\.|\\{\\{|\\}\\}"
+        },
+        "type": "PREC",
+        "value": 1
+      },
+      "type": "IMMEDIATE_TOKEN"
+    },
+    "template_slot": {
+      "content": {
+        "content": {
+          "type": "PATTERN",
+          "value": "\\{[^{}\\n]*\\}"
+        },
+        "type": "PREC",
+        "value": 1
+      },
+      "type": "IMMEDIATE_TOKEN"
+    },
+    "comment": {
+      "content": {
+        "content": {
+          "members": [
+            {
+              "type": "PATTERN",
+              "value": "//[^\\n]*"
+            },
+            {
+              "type": "PATTERN",
+              "value": "မှတ်ချက်([ \\t][^\\n]*)?"
+            }
+          ],
+          "type": "CHOICE"
+        },
+        "type": "PREC",
+        "value": 1
+      },
+      "type": "TOKEN"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "[\\s\\u{200B}]"
+    },
+    {
+      "name": "comment",
+      "type": "SYMBOL"
+    }
+  ]
+}

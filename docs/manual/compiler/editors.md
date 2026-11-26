@@ -198,9 +198,23 @@ An editor with an LSP client runs `zakac lsp` with no arguments for files that e
   `modifier`, `type`, `enumMember`, `variable`, `number`, `string`, `comment`), so a theme
   colors them with no extra rules.
 
+## Tree-sitter grammar
+
+The folder `editors/treesitter` holds a tree-sitter grammar of Zaka, for editors that color
+code through tree-sitter. It colors words, not sentences: each reserved word and kind name
+under its role, names, numbers, characters, strings with their slots and escapes, comments
+and signs. The lexer is its source. A test of `zakac_lexer` writes the grammar
+(`src/grammar.json`) and its highlight queries (`queries/highlights.scm`) from the tables
+of reserved words, and fails when the files are stale; `mise run editor:treesitter` writes
+them, makes the parser (`src/parser.c`) with the tree-sitter CLI, and runs the tests in
+`test/corpus`.
+
 ## Not done
 
 - Find uses and rename reach the open files and the files those import. A file that
   imports the name but is neither open nor imported is left as it is.
+- The tree-sitter grammar splits words at spaces and signs, as the segmenter does not run
+  in it, so a word glued to the next one, as in `တစ်ခုကို`, colors as a name. The colors of
+  the server split such a word.
 - The server does not run the program or the code generator, so the messages of a
   target, such as a construct the C target cannot build, show at build time.

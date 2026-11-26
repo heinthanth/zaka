@@ -11,4 +11,5 @@ mod phrases;
 mod reserved;
 mod spoken;
 mod text;
+mod treesitter;
 mod words;

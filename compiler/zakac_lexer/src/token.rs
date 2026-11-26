@@ -2,6 +2,7 @@ use bon::Builder;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::AsRefStr;
+use strum::EnumIter;
 use strum::EnumString;
 use strum::IntoStaticStr;
 use zakac_diagnostics::Diagnostic;
@@ -115,7 +116,7 @@ pub struct NumberShape
 
 /// Punctuation and operator tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(AsRefStr, EnumString)]
+#[derive(AsRefStr, EnumString, EnumIter)]
 #[serde(rename_all = "snake_case")]
 pub enum Punct
 {

@@ -1,0 +1,44 @@
+==================
+Words, literals and comments
+==================
+
+// a comment
+ကိန်းရှင် x ဟူသော ကိန်းပြည့် တစ်ခုကို ၄၂ ဟု သတ်မှတ်မည်။
+"x သည် {x} ဖြစ်သည်၊ {{ }}\n" ဟု ပြသမည်။
+'က' ဟု ပြသမည်။
+{a b} ကို မှန် ဟု သတ်မှတ်မည်။
+
+---
+
+(source_file
+  (comment)
+  (control)
+  (identifier)
+  (particle)
+  (kind)
+  (identifier)
+  (number)
+  (particle)
+  (verb)
+  (delimiter)
+  (string
+    (string_content)
+    (template_slot)
+    (string_content)
+    (escape_sequence)
+    (string_content)
+    (escape_sequence)
+    (escape_sequence))
+  (particle)
+  (identifier)
+  (delimiter)
+  (char)
+  (particle)
+  (identifier)
+  (delimiter)
+  (raw_identifier)
+  (particle)
+  (truth)
+  (particle)
+  (verb)
+  (delimiter))
