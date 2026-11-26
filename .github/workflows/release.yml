@@ -63,6 +63,9 @@ jobs:
     needs: check
     if: needs.check.outputs.prerelease != 'true'
     runs-on: ubuntu-latest
+    # The font secret and the site origin live in the environment of the site,
+    # which lets in release tags (v*) as well as main.
+    environment: production
     env:
       ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
       ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
