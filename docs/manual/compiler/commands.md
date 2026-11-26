@@ -408,7 +408,8 @@ zakac run [flags] [INPUT] [-- ARGS...]
 | `--allow-write` | `[=<PATHS>]` | none | let it write, append to, remove and move files and make folders |
 | `--allow-env` | `[=<NAMES>]` | none | let it read environment variables, and give the program start block the environment: all variables, or those named |
 | `--allow-ffi` | | off | let it call C functions |
-| `-A`, `--allow-all` | | off | grant all four |
+| `--allow-run` | `[=<PROGRAMS>]` | none | let it run other programs: all, or those named |
+| `-A`, `--allow-all` | | off | grant all five |
 | `--no-permission-prompt` | | off | ask nothing on a terminal, so an effect with no right is denied at once |
 
 A program that passes a limit stops with a message, listed in [When a program
@@ -529,7 +530,7 @@ and checks each file as a module, so a file of tests needs no program start bloc
 
 `test` uses all the [compile flags](#options-of-the-compile-stages), `--overflow`,
 `--results`, `--scratch` and `--release`, and the rights flags of [run](#run):
-`--allow-read`, `--allow-write`, `--allow-env`, `--allow-ffi`, `-A` and
+`--allow-read`, `--allow-write`, `--allow-env`, `--allow-ffi`, `--allow-run`, `-A` and
 `--no-permission-prompt`. It adds these:
 
 | Flag | Value | Default | What it does |

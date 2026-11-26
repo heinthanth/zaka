@@ -151,7 +151,7 @@ for each test and runs the test in that process of its own; the report is the sa
 
 `zakac test` takes the flags of the compile stages, such as `--debug-asserts off`,
 `--no-unsafe`, `--overflow` and the lint flags, and the rights flags of `zakac run`
-(`--allow-read`, `--allow-write`, `--allow-env`, `--allow-ffi`, `-A` and
+(`--allow-read`, `--allow-write`, `--allow-env`, `--allow-ffi`, `--allow-run`, `-A` and
 `--no-permission-prompt`). [Commands](../compiler/commands.md#test) lists them.
 
 ```console

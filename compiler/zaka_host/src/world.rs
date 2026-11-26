@@ -137,6 +137,20 @@ pub trait World: Debug + Send + Sync
     /// Its value, `None` when it is not set, or the error.
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>;
 
+    /// Run another program and wait for it to end. It reads the standard
+    /// input of the run, and its standard output and error come back as text.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - The name or path of the program.
+    /// * `args` - Its arguments.
+    ///
+    /// # Returns
+    ///
+    /// Its exit code (-1 when a signal ended it), its output and its error
+    /// output, or the error of a program that did not start.
+    fn run_program(&mut self, program: &str, args: &[String]) -> io::Result<Ran>;
+
     /// Give standard input more text, as a terminal does when a line is
     /// entered. A world that cannot take more does nothing.
     ///
@@ -398,6 +412,18 @@ fn mem_path(path: &str) -> String
     tern!(path == ".", String::new(), path.to_string())
 }
 
+/// What a program another program ran left behind.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ran
+{
+    /// Its exit code, -1 when a signal ended it.
+    pub code: i64,
+    /// What it wrote to standard output.
+    pub out: String,
+    /// What it wrote to standard error.
+    pub err: String,
+}
+
 /// Bits from the OS source of secure random numbers: the kernel on a host,
 /// `crypto.getRandomValues` in a browser. Each world reads the same source,
 /// since a fixed stand-in would not be secure.
@@ -549,6 +575,11 @@ impl World for MemWorld
         Ok(self.env.get(name).cloned())
     }
 
+    fn run_program(&mut self, _: &str, _: &[String]) -> io::Result<Ran>
+    {
+        Err(io::ErrorKind::Unsupported.into())
+    }
+
     fn boxed(&self) -> Box<dyn World> { Box::new(self.clone()) }
 }
 
@@ -626,6 +657,18 @@ impl World for TermWorld
     fn read_env(&mut self, name: &str) -> io::Result<Option<String>>
     {
         Ok(std::env::var(name).ok())
+    }
+
+    fn run_program(&mut self, program: &str, args: &[String]) -> io::Result<Ran>
+    {
+        let out = std::process::Command::new(program)
+            .args(args)
+            .stdin(std::process::Stdio::inherit())
+            .output()?;
+        let text = |b: Vec<u8>| String::from_utf8_lossy(&b).into_owned();
+        #[rustfmt::skip]
+        return Ok(Ran { code: out.status.code().map_or(-1, i64::from), out: text(out.stdout),
+            err: text(out.stderr) });
     }
 
     fn now_ms(&mut self) -> u64

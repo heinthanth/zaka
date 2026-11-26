@@ -995,6 +995,7 @@ impl<M: Module> FnGen<'_, '_, M>
             HostFn::UnixMs => ("zk_host_unix_ms", vec![]),
             HostFn::RandomSeed => ("zk_host_random_seed", vec![]),
             HostFn::SecureRandom => ("zk_host_secure_random", vec![]),
+            HostFn::RunProgram => ("zk_host_run_program", vec![v[0], v[1]]),
             HostFn::FormatUtc => ("zk_host_format_utc", vec![v[0]]),
             HostFn::ParseFloat => ("zk_host_parse_float", vec![v[0]]),
             _ =>

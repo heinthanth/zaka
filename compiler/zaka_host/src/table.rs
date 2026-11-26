@@ -133,6 +133,9 @@ host_fns! {
     RandomSeed = "ကျပန်းမျိုးစေ့ဖန်တီး"() -> Some(I64), None, None, HostAction::Effect(random_seed);
     /// Bits from the OS source of secure random numbers, fresh on each call.
     SecureRandom = "လုံခြုံသောဘစ်များဖတ်"() -> Some(I64), None, None, HostAction::Effect(secure_random);
+    /// Run another program with a list of arguments: its exit code, output
+    /// and error output, as text.
+    RunProgram = "ပရိုဂရမ်မောင်းနှင်ပြီးစာသားများယူ"(TEXT, TEXT_LIST) -> Some(TEXT_LIST), Some(IO_ERROR), Some(Right::Run), HostAction::Effect(run_program);
     /// Format one Unix millisecond stamp in UTC.
     FormatUtc = "အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း"(I64) -> Some(TEXT), Some(TIME_ERROR), None, HostAction::Effect(format_utc);
     /// Read text as a 64-bit float: the conversion of text to `ဒဿမကိန်း`.
@@ -218,6 +221,22 @@ fn read_env(args: &Args, e: &mut Effects<'_>) -> HostValue
     let value = name.and_then(|n| e.world.read_env(&n));
     let value = value.and_then(|v| v.ok_or_else(|| io::ErrorKind::NotFound.into()));
     text_or_fault(value)
+}
+
+/// Run [`HostFn::RunProgram`].
+fn run_program(args: &Args, e: &mut Effects<'_>) -> HostValue
+{
+    let program = e.allow(Right::Run, args.text(0));
+    let ran = program.and_then(|p| e.world.run_program(&p, args.texts(1)));
+    match ran
+    {
+        Ok(r) => HostValue::Good(Some(Box::new(HostValue::Texts(vec![
+            r.code.to_string(),
+            r.out,
+            r.err,
+        ])))),
+        Err(err) => HostValue::Fault(Box::new(HostValue::Member(io_member(&err)))),
+    }
 }
 
 fn monotonic_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
@@ -482,6 +501,19 @@ mod tests
         assert_ne!(first, HostValue::Int(0));
         let term = || crate::world::World::random_seed(&mut crate::world::TermWorld);
         assert_ne!(term(), term());
+    }
+
+    #[test]
+    fn a_world_in_storage_runs_no_program_and_the_right_comes_first()
+    {
+        let text = |t: &str| HostValue::Text(t.to_string());
+        let args = || vec![text("git"), HostValue::Texts(vec!["--version".into()])];
+        let fails = |m: u32| HostValue::Fault(Box::new(HostValue::Member(m)));
+        let mut world = MemWorld::default();
+        assert_eq!(run(HostFn::RunProgram, args(), &mut world).0, fails(OTHER));
+        let mut gate = Gate::new(Grants::default());
+        let denied = run_with(HostFn::RunProgram, args(), &mut world, &mut gate).0;
+        assert_eq!(denied, fails(NO_PERMISSION));
     }
 
     #[test]

@@ -1,8 +1,9 @@
 //! The flags that grant a run its rights, as Deno names them:
 //! `--allow-read[=<paths>]`, `--allow-write[=<paths>]`,
-//! `--allow-env[=<names>]`, `--allow-ffi`, `--allow-all` (`-A`) and
-//! `--no-permission-prompt` for the run of a program; the same with `comptime-`
-//! in front for the runs of comptime calls, which never ask.
+//! `--allow-env[=<names>]`, `--allow-ffi`, `--allow-run[=<programs>]`,
+//! `--allow-all` (`-A`) and `--no-permission-prompt` for the run of a
+//! program; the same with `comptime-` in front for the runs of comptime calls,
+//! which never ask and never run another program.
 
 use clap::Arg;
 use clap::ArgAction;
@@ -81,6 +82,7 @@ pub fn attach_grant_args(cmd: clap::Command, who: Granted) -> clap::Command
     {
         return cmd;
     }
+    let cmd = cmd.arg(listed("run", "PROGRAMS"));
     let prompt = Arg::new("no-permission-prompt")
         .long("no-permission-prompt")
         .help(t!("cli.no_prompt"))
@@ -111,15 +113,18 @@ pub fn grants_from(matches: &ArgMatches, who: Granted) -> Grants
     let paths = |right: &str| list(right).map_or(Grant::None, |l| path_grant(&l));
     let names = |l: Vec<String>| tern!(l.is_empty(), Grant::All, Grant::Some(l));
     let env = list("env").map_or(Grant::None, names);
+    let run = list("run").map_or(Grant::None, names);
     let all = flag(&who.id("all"));
     let prompt = who == Granted::Run && !flag("no-permission-prompt");
+    // A comptime run never runs another program, even with each other right.
+    let run = tern!(who == Granted::Run && all, Grant::All, run);
     if all
     {
-        return Grants { prompt, ..Grants::all() };
+        return Grants { prompt, run, ..Grants::all() };
     }
     #[rustfmt::skip]
     return Grants::builder().read(paths("read")).write(paths("write")).env(env)
-        .ffi(flag(&who.id("ffi"))).prompt(prompt).build();
+        .ffi(flag(&who.id("ffi"))).run(run).prompt(prompt).build();
 }
 
 /// `Some` when a flag was given, for `?`.

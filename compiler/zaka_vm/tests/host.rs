@@ -78,7 +78,8 @@ Hein
 fn the_stdlib_declares_each_host_function()
 {
     let math_time = "\"စံကား/သင်္ချာ\" ကို ထည့်သွင်းမည်။\n\"စံကား/အချိန်\" ကို \
-                     ထည့်သွင်းမည်။\n\"စံကား/စာသား\" ကို ထည့်သွင်းမည်။\n\"စံကား/ကျပန်း\" ကို ထည့်သွင်းမည်။";
+                     ထည့်သွင်းမည်။\n\"စံကား/စာသား\" ကို ထည့်သွင်းမည်။\n\"စံကား/ကျပန်း\" ကို \
+                     ထည့်သွင်းမည်။\n\"စံကား/လုပ်ငန်းစဉ်\" ကို ထည့်သွင်းမည်။";
     let module = compile_checked(&format!("{IMPORT}\n{math_time}\n{WORK}"));
     let ops = module.funcs.iter().flat_map(|f| f.code.iter());
     let served: HashSet<HostFn> =

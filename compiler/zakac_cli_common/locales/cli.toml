@@ -44,7 +44,7 @@ en = "Grants the right to %{right}: each one, or those listed after =, with comm
 en = "Grants the right to call C functions."
 
 [cli.grant_all]
-en = "Grants each right: read, write, env and ffi."
+en = "Grants each right: read, write, env, ffi and, for a run, run."
 
 [cli.no_prompt]
 en = "Asks nothing for a right the run lacks: the effect is denied at once."

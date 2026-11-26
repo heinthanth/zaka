@@ -255,8 +255,8 @@ not a lint, such as ZK0301, keeps its level, and a name for it is an error of th
 The editor reads the `[lint]` section of the nearest `zakac.toml` too, so a project that
 allows the [spoken spellings](../language/spoken.md) shows no ZK0510 there either.
 
-The lint flags are not rights: `--allow-read`, `--allow-write`, `--allow-env` and
-`--allow-ffi` grant a run its [permissions](../vm/running.md#permissions), and these go with
+The lint flags are not rights: `--allow-read`, `--allow-write`, `--allow-env`,
+`--allow-ffi` and `--allow-run` grant a run its [permissions](../vm/running.md#permissions), and these go with
 the other flags of `run`.
 
 ## The example file

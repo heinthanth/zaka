@@ -11,5 +11,6 @@
 "အချိန်" = "time.zaka"
 "စာလုံး" = "char.zaka"
 "ကျပန်း" = "random.zaka"
+"လုပ်ငန်းစဉ်" = "process.zaka"
 # The core, which each file reads with no import; its parts are in core/.
 "အခြေခံအုတ်မြစ်" = "core/mod.zaka"

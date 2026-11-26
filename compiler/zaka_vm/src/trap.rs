@@ -765,5 +765,6 @@ pub fn denied_what(right: zaka_host::Right, subject: &str) -> String
         }
         zaka_host::Right::Env => t!("vm.permission.env", s = subject).to_string(),
         zaka_host::Right::Ffi => t!("vm.permission.ffi", s = subject).to_string(),
+        zaka_host::Right::Run => t!("vm.permission.run", s = subject).to_string(),
     }
 }

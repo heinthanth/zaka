@@ -5,6 +5,7 @@ mod c_libs;
 mod config_example;
 mod mutants;
 mod packages;
+mod process;
 mod repl;
 mod target;
 mod test_jit;

@@ -232,7 +232,8 @@ keep once the cache is gone.
 
 An executable has the rights its build granted, with the same flags that `zakac run`
 uses: `--allow-read[=<paths>]`, `--allow-write[=<paths>]`, `--allow-env[=<names>]`,
-`--allow-ffi` and `-A` ([Permissions](../vm/running.md#permissions)). The build writes them
+`--allow-ffi`, `--allow-run[=<programs>]` and `-A`
+([Permissions](../vm/running.md#permissions)). The build writes them
 into the executable, which checks each file effect, the environment of the program start
 block, each variable it reads and each C call against them, as the VM does:
 

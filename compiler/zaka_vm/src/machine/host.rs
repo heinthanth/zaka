@@ -16,6 +16,7 @@ use super::ISIZE;
 use super::Machine;
 use super::Step;
 use super::malformed;
+use crate::print::slice_parts;
 use crate::print::text_at;
 use crate::trap::TrapKind;
 
@@ -111,6 +112,8 @@ impl Machine
     fn host_value_at(&self, addr: u64, kind: DataKind) -> Result<HostValue, TrapKind>
     {
         ret_if!(kind.is_text(), Ok(HostValue::Text(text_at(&self.mem, addr)?)));
+        let texts = kind.as_seq().is_some_and(|s| s.cell.is_text());
+        ret_if!(texts, self.text_list_at(addr).map(HostValue::Texts));
         ret_if!(
             kind.as_enum().is_some(),
             Ok(HostValue::Member(self.int_at(addr, kind)?))
@@ -128,6 +131,22 @@ impl Machine
         let handle =
             handle.ok_or_else(|| malformed("the host takes no value of this kind"))?;
         Ok(HostValue::Stream(self.int_at(addr, handle)?))
+    }
+
+    /// The texts of a plain list of text at an address.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address of the header of the list.
+    ///
+    /// # Returns
+    ///
+    /// The texts, or a trap a read hits.
+    fn text_list_at(&self, addr: u64) -> Result<Vec<String>, TrapKind>
+    {
+        let stride = u64::from(DataKind::TEXT.size(self.module.platform_bits));
+        let (base, count) = slice_parts(&self.mem, addr)?;
+        (0..count).map(|i| text_at(&self.mem, base + i * stride)).collect()
     }
 
     /// The integer of a kind at an address, cut to 32 bits.

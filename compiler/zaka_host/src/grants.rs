@@ -28,6 +28,8 @@ pub enum Right
     Env,
     /// Call C functions.
     Ffi,
+    /// Run other programs.
+    Run,
 }
 
 /// What a run holds of one right.
@@ -70,6 +72,9 @@ pub struct Grants
     /// Calling C functions.
     #[builder(default)]
     pub ffi: bool,
+    /// Running other programs, matched against the name a call gives.
+    #[builder(default)]
+    pub run: Grant,
     /// Whether a run on a terminal can ask for a right it lacks.
     #[builder(default)]
     pub prompt: bool,
@@ -89,7 +94,7 @@ impl Grants
     {
         #[rustfmt::skip]
         return Grants::builder().read(Grant::All).write(Grant::All).env(Grant::All).ffi(true)
-            .build();
+            .run(Grant::All).build();
     }
 
     /// Whether the grants cover an effect.
@@ -111,13 +116,14 @@ impl Grants
             Right::Write => &self.write,
             Right::Env => &self.env,
             Right::Ffi => return self.ffi,
+            Right::Run => &self.run,
         };
         match grant
         {
             Grant::None => false,
             Grant::All => true,
             Grant::Some(_) if subject.is_empty() => false,
-            Grant::Some(list) if right == Right::Env =>
+            Grant::Some(list) if matches!(right, Right::Env | Right::Run) =>
             {
                 list.iter().any(|n| n == subject)
             }
@@ -138,6 +144,7 @@ impl Grants
             Right::Write => self.write = Grant::All,
             Right::Env => self.env = Grant::All,
             Right::Ffi => self.ffi = true,
+            Right::Run => self.run = Grant::All,
         }
     }
 }
@@ -439,6 +446,16 @@ mod tests
         assert!(grants.allows(Right::Env, "HOME"));
         assert!(!grants.allows(Right::Env, "PATH"));
         assert!(!grants.allows(Right::Env, ""));
+    }
+
+    #[test]
+    fn a_run_grant_names_its_programs()
+    {
+        let grants = Grants::builder().run(Grant::Some(vec!["git".into()])).build();
+        assert!(grants.allows(Right::Run, "git"));
+        assert!(!grants.allows(Right::Run, "sh"));
+        assert!(!Grants::default().allows(Right::Run, "git"));
+        assert!(Grants::all().allows(Right::Run, "sh"));
     }
 
     #[test]

@@ -107,7 +107,8 @@ flags](commands.md#options-of-the-compile-stages) and `--release`:
 | `--lib-name` | `<NAME>` | the name of the files | the name of a C lib (`--emit lib`) in `zk_reset_<NAME>`, `zk_last_trap_from_<NAME>` and the names it links under: ASCII letters, digits and `_`, starting with a letter or `_`; a file name that C cannot use needs it |
 | `--runtime-lib` | `<FILE>` | the runtime lib that `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; see [Cross builds](native.md#cross-builds) |
 | `--allow-read`, `--allow-write`, `--allow-env` | `[=<PATHS>]` or `[=<NAMES>]` | none | the rights the executable has, written into it, as `zakac run` grants them to a run |
-| `--allow-ffi`, `-A` (`--allow-all`) | | off | the right to call C functions, and all four rights |
+| `--allow-run` | `[=<PROGRAMS>]` | none | the right to run other programs: all, or those named |
+| `--allow-ffi`, `-A` (`--allow-all`) | | off | the right to call C functions, and all five rights |
 | `--no-permission-prompt` | | off | the executable asks nothing on a terminal for a right it lacks |
 
 **The cache.** The runtime lib is `libzaka_runtime.a`, or `zaka_runtime.lib` for MSVC,

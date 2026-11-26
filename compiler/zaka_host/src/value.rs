@@ -70,6 +70,29 @@ impl Args
         }
     }
 
+    /// The list of text argument at a place.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The place, counted from 0.
+    ///
+    /// # Returns
+    ///
+    /// The texts.
+    ///
+    /// # Panics
+    ///
+    /// When the argument is no list of text, which a matched declaration
+    /// rules out.
+    pub fn texts(&self, n: usize) -> &[String]
+    {
+        match self.0.get(n)
+        {
+            Some(HostValue::Texts(texts)) => texts,
+            other => panic!("argument {n} is no list of text: {other:?}"),
+        }
+    }
+
     /// The stream argument at a place.
     ///
     /// # Arguments

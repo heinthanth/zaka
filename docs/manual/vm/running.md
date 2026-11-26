@@ -159,15 +159,16 @@ the host needs one:
 | write | write or add to a file, remove, move, make a folder | `--allow-write[=<paths>]` |
 | env | read a variable, the environment of the program start block | `--allow-env[=<names>]` |
 | ffi | call a C function | `--allow-ffi` |
+| run | run another program ([the process module](../stdlib/process.md)) | `--allow-run[=<programs>]` |
 
 ```console
 $ zakac run --allow-read=data --allow-write=out report.zaka
 ```
 
-A flag with no list grants the right on each path or variable. With a list, with commas
-between its items, it grants the right on those alone: a path covers the files and
+A flag with no list grants the right on each path, variable or program. With a list, with
+commas between its items, it grants the right on those alone: a path covers the files and
 folders under it, and we write it relative to the folder the command runs in, with `.`
-and `..` worked out. `-A` (`--allow-all`) grants each right. Reading a line of standard
+and `..` worked out, while a program matches the name a call gives, as written. `-A` (`--allow-all`) grants each right. Reading a line of standard
 input and writing to the standard streams need no right.
 
 On a terminal, an effect with no right asks first, as Deno does:
@@ -180,21 +181,22 @@ The first letter of the answer counts, in either case:
 
 | Answer | Effect |
 | --- | --- |
-| `Y` | allows this path, variable or C function for the rest of the run |
+| `Y` | allows this path, variable, C function or program for the rest of the run |
 | `O` | allows this one effect; the next one asks again |
-| `N` | refuses this path, variable or C function for the rest of the run, with no second question |
-| `A` | allows the right on each path or variable for the rest of the run |
+| `N` | refuses this path, variable, C function or program for the rest of the run, with no second question |
+| `A` | allows the right on each path, variable or program for the rest of the run |
 
 Each other answer counts as `N`. `--no-permission-prompt` asks nothing, and a run with no
 terminal never asks.
 
-A refused read or write of a file, and a refused variable, fail with the error
-`ခွင့်ပြုချက်မရှိခြင်း`, which the program can handle as it handles other failures of the
+A refused read or write of a file, a refused variable and a refused program fail with the
+error `ခွင့်ပြုချက်မရှိခြင်း`, which the program can handle as it handles other failures of the
 [io module](../stdlib/io.md). A refused C call, and a program start block that reads the
 environment with no env right, have no result to fail with, so the program stops with the
 `permission denied` [trap](traps.md), which names the flag. The books and the Explorer
 run in storage, with no file or variable of the host to reach, so their runs have each
-right.
+right; a program run there fails with `တခြားအကြောင်းအရင်း`, since storage holds no program to
+run.
 
 ## The options
 

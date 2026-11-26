@@ -150,6 +150,12 @@ en = "the environment of the start block"
 [vm.permission.ffi]
 en = "calling the C function %{s}"
 
+[vm.permission.run]
+en = "running the program %{s}"
+
+[vm.trap.comptime_run]
+en = "a compile-time call cannot run the program %{s}: compile time reads the host and never changes it"
+
 [vm.permission.ask]
 en = "%{what}: allow it? [Y = from now on, O = once, N = no, A = each of this kind] "
 

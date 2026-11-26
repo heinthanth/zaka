@@ -12,6 +12,7 @@ use std::sync::OnceLock;
 use zaka_host::Gate;
 use zaka_host::Grant;
 use zaka_host::OnDenial;
+use zaka_host::Right;
 use zaka_host::TermWorld;
 use zakac_ast::expr::ConstTree;
 use zakac_ast::s_expr::ToSexpr;
@@ -128,6 +129,8 @@ impl VmRunner
         let mut grants = zakac_semcheck::comptime_calls::grants();
         grants.prompt = false;
         grants.on_denial = OnDenial::Stop;
+        // Compile time reads the host and never changes it.
+        grants.run = Grant::None;
         let folder = small.folder.clone().unwrap_or_default();
         if self.editor
         {
@@ -280,6 +283,12 @@ fn trapped(
 {
     let reason = match &trap.kind
     {
+        // A compile-time run reads the host and never changes it, so no
+        // flag grants it a run of another program.
+        TrapKind::PermissionDenied { right: Right::Run, subject } =>
+        {
+            t!("vm.trap.comptime_run", s = subject).to_string()
+        }
         TrapKind::PermissionDenied { right, subject } =>
         {
             let what = denied_what(*right, subject);

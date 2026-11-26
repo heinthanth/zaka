@@ -932,25 +932,43 @@ fn grants_data<M: Module>(
 {
     let id = s.anon(false);
     let mut b = Blob::new();
-    for grant in [&grants.read, &grants.write, &grants.env]
-    {
-        let (all, items) = match grant
-        {
-            Grant::None => (false, Vec::new()),
-            Grant::All => (true, Vec::new()),
-            Grant::Some(list) => (false, list.clone()),
-        };
-        let list =
-            (!items.is_empty()).then(|| text_list(s, &items, false)).transpose()?;
-        b.u32(u32::from(all));
-        b.u32(items.len() as u32);
-        b.ptr(list.map(|d| Target::Data(d, 0)));
-    }
+    do_for!(grant in [&grants.read, &grants.write, &grants.env], grant_row(s, &mut b, grant)?);
     b.u32(u32::from(grants.ffi));
     b.u32(0);
     b.ptr(None);
+    // Run comes after ffi, as `ZkRight` orders the rights.
+    grant_row(s, &mut b, &grants.run)?;
     define(s.m, id, b.done())?;
     Ok(id)
+}
+
+/// One row of the grants: whether it covers each name, the count of listed
+/// names, and the list.
+///
+/// # Arguments
+///
+/// * `s` - The shared state.
+/// * `b` - The data of the grants.
+/// * `grant` - The grant.
+///
+/// # Returns
+///
+/// `Ok`, or the error of the module.
+fn grant_row<M: Module>(
+    s: &mut Shared<'_, M>, b: &mut Blob, grant: &Grant,
+) -> cranelift_module::ModuleResult<()>
+{
+    let (all, items) = match grant
+    {
+        Grant::None => (false, Vec::new()),
+        Grant::All => (true, Vec::new()),
+        Grant::Some(list) => (false, list.clone()),
+    };
+    let list = (!items.is_empty()).then(|| text_list(s, &items, false)).transpose()?;
+    b.u32(u32::from(all));
+    b.u32(items.len() as u32);
+    b.ptr(list.map(|d| Target::Data(d, 0)));
+    Ok(())
 }
 
 /// The name of each function, with its code, then a NULL row.

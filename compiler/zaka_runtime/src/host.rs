@@ -339,6 +339,43 @@ pub extern "C" fn zk_host_list_folder(
     })
 }
 
+/// Run another program with a list of arguments, and wait for it to end: a
+/// good result holds its exit code, output and error output as text.
+#[unsafe(export_name = stamped!("host_run_program"))]
+pub extern "C" fn zk_host_run_program(
+    slot: *mut u8, ret: *const ZkKind, program: *const u8, args: *const u8,
+)
+{
+    let args = text_list_at(args);
+    with_right(slot, ret, Right::Run, program, |name, ret| {
+        flush_out();
+        match blocking(|| TermWorld.run_program(name, &args))
+        {
+            Err(e) => fault(slot, ret, io_member(&e)),
+            Ok(r) => good_names(slot, ret, &[r.code.to_string(), r.out, r.err]),
+        }
+    })
+}
+
+/// The texts of a plain list of text at a slot.
+///
+/// # Arguments
+///
+/// * `at` - The slot: three words.
+///
+/// # Returns
+///
+/// The texts.
+fn text_list_at(at: *const u8) -> Vec<String>
+{
+    let (base, count) = (zk_seq_base(at), zk_seq_len(at));
+    ret_if!(count == 0 || base.is_null(), Vec::new());
+    let cell = 3 * size_of::<usize>();
+    // SAFETY: the list holds `count` text cells at its base.
+    let row = |i: usize| text_at(unsafe { base.add(i * cell) });
+    (0..count).map(|i| String::from_utf8_lossy(row(i)).into_owned()).collect()
+}
+
 /// Write a good result that holds a list of names.
 ///
 /// # Arguments

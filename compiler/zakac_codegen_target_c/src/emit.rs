@@ -110,8 +110,8 @@ pub struct TableTexts
 /// The C names of the members of `enum zk_right`, in their order: the order
 /// of the grants, the permission texts and the flags of the table, which the
 /// native target writes one after another.
-pub const RIGHTS: [&str; 4] =
-    ["ZK_RIGHT_READ", "ZK_RIGHT_WRITE", "ZK_RIGHT_ENV", "ZK_RIGHT_FFI"];
+pub const RIGHTS: [&str; 5] =
+    ["ZK_RIGHT_READ", "ZK_RIGHT_WRITE", "ZK_RIGHT_ENV", "ZK_RIGHT_FFI", "ZK_RIGHT_RUN"];
 
 /// The texts of the table of a program.
 ///
@@ -121,12 +121,12 @@ pub const RIGHTS: [&str; 4] =
 pub fn table_texts() -> TableTexts
 {
     let trap = trap_texts().into_iter().map(|(_, t)| t).collect();
-    let words = ["read", "write", "env", "ffi", "env_all"];
+    let words = ["read", "write", "env", "ffi", "run", "env_all"];
     let permission = words.map(|k| {
         let mark = format!("target_c.permission.{k}");
         t!(&mark).to_string()
     });
-    let flags = ["read", "write", "env", "ffi"].map(|k| format!("--allow-{k}"));
+    let flags = ["read", "write", "env", "ffi", "run"].map(|k| format!("--allow-{k}"));
     let mut single = vec![
         ("ask_text", t!("target_c.permission.ask").to_string()),
         ("stopped_text", t!("target_c.stopped").to_string()),
@@ -1282,10 +1282,12 @@ pub fn debug_path(file: &SourceFile) -> String
 /// The C text.
 fn grants_source(grants: &Grants, fields: &mut Vec<(&'static str, String)>) -> String
 {
-    let rights = [&grants.read, &grants.write, &grants.env];
+    // The listed rights, each with its place in `RIGHTS`.
+    let rights =
+        [(0, &grants.read), (1, &grants.write), (2, &grants.env), (4, &grants.run)];
     let mut out = String::new();
     let mut entries = Vec::new();
-    for (n, grant) in rights.iter().enumerate()
+    for (n, grant) in rights
     {
         let (all, items) = match grant
         {

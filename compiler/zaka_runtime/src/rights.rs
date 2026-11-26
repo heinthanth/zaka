@@ -54,6 +54,7 @@ pub enum ZkRight
     Write,
     Env,
     Ffi,
+    Run,
     /// The count of rights, the length of a table of them.
     Count,
 }
@@ -74,6 +75,7 @@ fn right_of(n: i32) -> Right
         n if n == ZkRight::Read as i32 => Right::Read,
         n if n == ZkRight::Write as i32 => Right::Write,
         n if n == ZkRight::Env as i32 => Right::Env,
+        n if n == ZkRight::Run as i32 => Right::Run,
         _ => Right::Ffi,
     }
 }
@@ -95,6 +97,7 @@ fn number_of(right: Right) -> usize
         Right::Write => ZkRight::Write,
         Right::Env => ZkRight::Env,
         Right::Ffi => ZkRight::Ffi,
+        Right::Run => ZkRight::Run,
     };
     id as usize
 }
@@ -125,11 +128,14 @@ fn grant_of(g: &ZkGrant) -> Grant
 fn build_gate() -> Gate
 {
     let p = prog();
-    // SAFETY: the table holds a grant for each of the four rights.
-    let g = unsafe { std::slice::from_raw_parts(p.grants, 4) };
+    // SAFETY: the table holds a grant for each right.
+    let g = unsafe { std::slice::from_raw_parts(p.grants, ZkRight::Count as usize) };
+    let at = |r: ZkRight| &g[r as usize];
     #[rustfmt::skip]
-    let grants = Grants::builder().read(grant_of(&g[0])).write(grant_of(&g[1]))
-        .env(grant_of(&g[2])).ffi(g[3].all != 0).prompt(p.grant_prompt != 0).build();
+    let grants = Grants::builder().read(grant_of(at(ZkRight::Read)))
+        .write(grant_of(at(ZkRight::Write))).env(grant_of(at(ZkRight::Env)))
+        .ffi(at(ZkRight::Ffi).all != 0).run(grant_of(at(ZkRight::Run)))
+        .prompt(p.grant_prompt != 0).build();
     Gate::new(grants).with_asker(Box::new(TermAsker))
 }
 
@@ -186,7 +192,15 @@ fn env_grant() -> Grant { with_gate(|g| g.grants.env.clone()).unwrap_or(Grant::N
 fn what(right: Right, subject: &str) -> Vec<u8>
 {
     let whole = right == Right::Env && subject.is_empty();
-    let n = if whole { 4 } else { number_of(right) };
+    // The text past the rights covers the whole environment.
+    let n = if whole
+    {
+        ZkRight::Count as usize
+    }
+    else
+    {
+        number_of(right)
+    };
     fill(row(prog().permission_text, n), &[("s", subject.as_bytes())])
 }
 

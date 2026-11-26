@@ -242,6 +242,8 @@ the arguments.
   `--comptime-allow-ffi` and `--comptime-allow-all`. These are granted as the [rights of
   a run](../vm/running.md#permissions) are. A path in the program starts from the folder
   of the program. Nothing is asked, so an effect without the right stops the run.
+- A run never runs another program, since compile time reads the host and never changes
+  it: no flag grants it, and [the process module](../stdlib/process.md) stops the run.
 - Reading input stops the run.
 - The clocks in [the time module](../stdlib/time.md) both read zero during a comptime run.
 - The language server and the explorer run a call with reads under the folder of the

@@ -213,5 +213,8 @@ en = "the environment of the start block"
 [target_c.permission.ffi]
 en = "calling the C function %{s}"
 
+[target_c.permission.run]
+en = "running the program %{s}"
+
 [target_c.permission.ask]
 en = "%{what}: allow it? [Y = from now on, O = once, N = no, A = each of this kind] "

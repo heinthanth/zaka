@@ -986,6 +986,10 @@ impl FnGen<'_, '_>
             HostFn::UnixMs => format!("zk_host_unix_ms({slot})"),
             HostFn::RandomSeed => format!("zk_host_random_seed({slot})"),
             HostFn::SecureRandom => format!("zk_host_secure_random({slot})"),
+            HostFn::RunProgram =>
+            {
+                format!("zk_host_run_program({slot}, {r}, {}, {})", v[0], v[1])
+            }
             HostFn::FormatUtc => format!("zk_host_format_utc({slot}, {r}, {})", v[0]),
             HostFn::ParseFloat => format!("zk_host_parse_float({slot}, {r}, {})", v[0]),
             _ =>
