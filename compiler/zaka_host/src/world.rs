@@ -398,6 +398,22 @@ fn mem_path(path: &str) -> String
     tern!(path == ".", String::new(), path.to_string())
 }
 
+/// Bits from the OS source of secure random numbers: the kernel on a host,
+/// `crypto.getRandomValues` in a browser. Each world reads the same source,
+/// since a fixed stand-in would not be secure.
+///
+/// # Returns
+///
+/// 64 fresh bits.
+///
+/// # Panics
+///
+/// When the OS has no source, where the hash maps of std fail as well.
+pub fn secure_random() -> i64
+{
+    getrandom::u64().expect("the OS gives random bits").cast_signed()
+}
+
 /// The seed a world in storage gives a random generator.
 const MEM_SEED: i64 = 0x2545_F491_4F6C_DD1D;
 

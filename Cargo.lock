@@ -6655,6 +6655,7 @@ version = "0.1.0"
 dependencies = [
  "bon",
  "chrono",
+ "getrandom 0.4.3",
  "serde",
  "strum",
  "zakac_rust_sugars",

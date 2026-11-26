@@ -303,3 +303,31 @@ i ကို i - ၁ ဟု ထားမည်။
 ပစ္စည်းများ ၏ အကွက် j ကို ယာယီ ဟု ထားမည်။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
 လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။
+
+/// Bits from the OS source of secure random numbers, fresh on each call. A
+/// compile-time call gives zero.
+လုံခြုံသောဘစ်များဖတ် ဟူသော လုပ်ဆောင်ချက် သည် ပြင်ပမှလာသော လုပ်ဆောင်ချက်ဖြစ်၍
+၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+
+/// Draws a 64-bit number from the OS source of secure random numbers: the
+/// kernel on a host, `crypto.getRandomValues` in the explorer. Unlike a
+/// `ကျပန်းထုတ်စက်`, no number it gave tells the next one, so it suits
+/// passwords and tokens. Each call asks the OS, so it is slower than a
+/// generator.
+///
+/// # Returns
+///
+/// A number from 0 to the largest unsigned 64-bit value, different on each
+/// run. A compile-time call gives zero, so a build repeats.
+///
+/// # Examples
+///
+/// ```zaka
+/// "စံကား/ကျပန်း" မှ လုံခြုံသောကျပန်းကိန်းထုတ် ကို ထည့်သွင်းမည်။
+///
+/// ကိန်းရှင် တိုကင် သည် လုံခြုံသောကျပန်းကိန်းထုတ်() ဖြစ်ပါစေ။
+/// ```
+လုံခြုံသောကျပန်းကိန်းထုတ် ဟူသော အများသုံးနိုင်သော လုပ်ဆောင်ချက် သည်
+အောက်ပါတို့ကို လုပ်ဆောင်ကာ လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။
+လုံခြုံသောဘစ်များဖတ်() ကို လက္ခဏာမဲ့ ၆၄ ဘစ် ကိန်းပြည့် တစ်ခု အဖြစ် ပြောင်းလဲသော ရလဒ် ကို ပြန်ပေးမည်။
+လုပ်ဆောင်စရာများ ပြီးဆုံးပါပြီး။

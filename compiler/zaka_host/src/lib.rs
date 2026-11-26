@@ -35,3 +35,4 @@ pub use world::Effects;
 pub use world::MemWorld;
 pub use world::TermWorld;
 pub use world::World;
+pub use world::secure_random;

@@ -21,6 +21,7 @@ crate	fastrand	2.5.0	Apache-2.0 OR MIT	https://github.com/smol-rs/fastrand
 crate	find-msvc-tools	0.1.12	MIT OR Apache-2.0	https://github.com/rust-lang/cc-rs
 crate	fontdb	0.24.0	MIT	https://github.com/RazrFalcon/fontdb
 crate	gen-lsp-types	0.11.0	MIT	https://github.com/ribru17/gen-lsp-types
+crate	getrandom	0.4.3	MIT OR Apache-2.0	https://github.com/rust-random/getrandom
 crate	headless_chrome	1.0.22	MIT	https://github.com/rust-headless-chrome/rust-headless-chrome
 crate	iced-x86	1.22.0	MIT	https://github.com/icedland/iced
 crate	imbl	7.0.2	MPL-2.0+	https://github.com/jneem/imbl

@@ -41,6 +41,7 @@ variable that holds it must be a `ကိန်းရှင်`.
 | `ကျပန်းဒဿမကိန်းထုတ်` | a `ဒဿမကိန်း` from 0 up to 1, with 1 left out |
 | `ကျပန်းရွေးထုတ်` | one cell of a list (`<list> မှ`), each cell with the same chance, as an optional that is `အလွတ်` for a list with no cells |
 | `ရောမွှေ` | nothing: it shuffles the list (`<list> ကို`) in place |
+| `လုံခြုံသောကျပန်းကိန်းထုတ်` | an unsigned 64-bit number from the OS source of secure random numbers; it takes no generator |
 
 ## Seeds
 
@@ -55,3 +56,22 @@ The generator is xorshift64, written in Zaka: shifts and exclusive ors on 64 bit
 `+` or `*`, so it runs the same whether an overflow stops the program or wraps. It suits
 games, samples and tests. It is not safe for secrets such as passwords, since its
 next numbers follow from the ones it gave.
+
+## Numbers for secrets
+
+`လုံခြုံသောကျပန်းကိန်းထုတ်()` asks the OS for each number: the kernel when a program runs
+on a host, and `crypto.getRandomValues` in the explorer; the books run it as a host does. No number
+it gave tells the next one, so it suits passwords and tokens, at the cost of a call to the
+OS each time. It never repeats a run, so the example prints a comparison and not the
+numbers, and a call at compile time reads zero.
+
+```zaka
+"စံကား/ကျပန်း" မှ လုံခြုံသောကျပန်းကိန်းထုတ် ကို ထည့်သွင်းမည်။
+ကိန်းရှင် က သည် လုံခြုံသောကျပန်းကိန်းထုတ်() ဖြစ်ပါစေ။
+ကိန်းရှင် ခ သည် လုံခြုံသောကျပန်းကိန်းထုတ်() ဖြစ်ပါစေ။
+က != ခ ကို ပြသမည်။
+```
+
+```text
+မှန်
+```

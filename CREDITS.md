@@ -76,6 +76,7 @@ thanks to all of these projects.
 | [find-msvc-tools](https://github.com/rust-lang/cc-rs) | 0.1.12 | MIT OR Apache-2.0 |
 | [fontdb](https://github.com/RazrFalcon/fontdb) | 0.24.0 | MIT |
 | [gen-lsp-types](https://github.com/ribru17/gen-lsp-types) | 0.11.0 | MIT |
+| [getrandom](https://github.com/rust-random/getrandom) | 0.4.3 | MIT OR Apache-2.0 |
 | [headless_chrome](https://github.com/rust-headless-chrome/rust-headless-chrome) | 1.0.22 | MIT |
 | [iced-x86](https://github.com/icedland/iced) | 1.22.0 | MIT |
 | [imbl](https://github.com/jneem/imbl) | 7.0.2 | MPL-2.0+ |

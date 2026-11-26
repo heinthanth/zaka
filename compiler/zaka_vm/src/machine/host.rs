@@ -47,7 +47,13 @@ impl Machine
         addrs.reverse();
         let slot = self.pop_ptr("host")?;
         if self.options.fixed_clock
-            && matches!(func, HostFn::MonotonicMs | HostFn::UnixMs | HostFn::RandomSeed)
+            && matches!(
+                func,
+                HostFn::MonotonicMs
+                    | HostFn::UnixMs
+                    | HostFn::RandomSeed
+                    | HostFn::SecureRandom
+            )
         {
             self.put_host_value(slot, ret, HostValue::Int(0))?;
             return self.push(Value::Ptr(slot));

@@ -438,6 +438,14 @@ pub extern "C" fn zk_host_random_seed(slot: *mut u8)
     unsafe { slot.cast::<i64>().write_unaligned(TermWorld.random_seed()) };
 }
 
+/// Read bits from the OS source of secure random numbers.
+#[unsafe(export_name = stamped!("host_secure_random"))]
+pub extern "C" fn zk_host_secure_random(slot: *mut u8)
+{
+    // SAFETY: the generated call passes an i64 result slot.
+    unsafe { slot.cast::<i64>().write_unaligned(zaka_host::secure_random()) };
+}
+
 /// Format a Unix millisecond stamp in UTC.
 #[unsafe(export_name = stamped!("host_format_utc"))]
 pub extern "C" fn zk_host_format_utc(slot: *mut u8, ret: *const ZkKind, ms: *const u8)

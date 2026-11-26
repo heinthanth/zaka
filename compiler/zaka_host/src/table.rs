@@ -131,6 +131,8 @@ host_fns! {
     UnixMs = "ယူနစ်အချိန်ကိုဖတ်"() -> Some(I64), None, None, HostAction::Effect(unix_ms);
     /// Bits to seed a random generator.
     RandomSeed = "ကျပန်းမျိုးစေ့ဖန်တီး"() -> Some(I64), None, None, HostAction::Effect(random_seed);
+    /// Bits from the OS source of secure random numbers, fresh on each call.
+    SecureRandom = "လုံခြုံသောဘစ်များဖတ်"() -> Some(I64), None, None, HostAction::Effect(secure_random);
     /// Format one Unix millisecond stamp in UTC.
     FormatUtc = "အိုင်အက်စ်အိုစာသားအဖြစ်ပြောင်း"(I64) -> Some(TEXT), Some(TIME_ERROR), None, HostAction::Effect(format_utc);
     /// Read text as a 64-bit float: the conversion of text to `ဒဿမကိန်း`.
@@ -231,6 +233,11 @@ fn unix_ms(_: &Args, e: &mut Effects<'_>) -> HostValue
 fn random_seed(_: &Args, e: &mut Effects<'_>) -> HostValue
 {
     HostValue::Int(e.world.random_seed())
+}
+
+fn secure_random(_: &Args, _: &mut Effects<'_>) -> HostValue
+{
+    HostValue::Int(crate::world::secure_random())
 }
 
 fn format_utc(args: &Args, _: &mut Effects<'_>) -> HostValue
@@ -475,6 +482,13 @@ mod tests
         assert_ne!(first, HostValue::Int(0));
         let term = || crate::world::World::random_seed(&mut crate::world::TermWorld);
         assert_ne!(term(), term());
+    }
+
+    #[test]
+    fn secure_random_bits_differ_on_each_call()
+    {
+        let draw = || run(HostFn::SecureRandom, vec![], &mut MemWorld::default()).0;
+        assert_ne!(draw(), draw());
     }
 
     #[test]
