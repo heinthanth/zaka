@@ -154,7 +154,7 @@ en = "the optional holds no data"
 en = "no row of the ဇယား has this index"
 
 [target_c.trap.wrong_variant]
-en = "the value is another member than the one read"
+en = "this read expects a different enum member"
 
 [target_c.trap.stack_full]
 en = "the stack of a light task, %{size} octets, ran full"

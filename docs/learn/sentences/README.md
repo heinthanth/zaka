@@ -41,7 +41,7 @@ words, we write the two numbers with `နှင့်` and `၏` and then the wo
 | `၏` | "of" | comes after the last number |
 | `ပေါင်းလဒ်` | "the sum" | adds the two numbers |
 | `ကို` | (the object) | comes after the value that `ပြသမည်` prints |
-| `ပြသမည်` | "please show" | the verb: print |
+| `ပြသမည်` | "will show" | the verb: print |
 | `။` | full stop | ends the sentence |
 
 ## The verb comes last

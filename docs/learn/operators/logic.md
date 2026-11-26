@@ -78,7 +78,7 @@ compiler stops with an error:
 ```
 
 ```text
-error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
+error[ZK0204]: "ပြသမည်" ends a statement and does not produce a value
 ```
 
 ## Joining comparisons

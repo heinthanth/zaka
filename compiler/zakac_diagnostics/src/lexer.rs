@@ -106,11 +106,12 @@ pub fn unknown_escape(span: Span, raw: &str) -> Diagnostic
 ///
 /// # Returns
 ///
-/// The `ZK0107` diagnostic.
+/// The `ZK0107` diagnostic, with a hint for text of more than one code point.
 pub fn bad_char_length(span: Span, count: usize) -> Diagnostic
 {
     let msg = t!("codes.ZK0107.message", n = count.to_string());
-    Diagnostic::new(Code::BadCharLength, msg, span)
+    let diag = Diagnostic::new(Code::BadCharLength, msg, span);
+    tern!(count > 1, diag.with_help(t!("codes.ZK0107.help")), diag)
 }
 
 /// A raw identifier reaches the end of the line.

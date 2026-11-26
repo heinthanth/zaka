@@ -148,7 +148,7 @@ When no verb uses an operand, the compiler finds it at the end of the sentence:
 ```
 
 ```text
-error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
+error[ZK0204]: "ပြသမည်" ends a statement and does not produce a value
 ```
 
 **The verb is the last word.** The compiler knows what a sentence does when it reaches the

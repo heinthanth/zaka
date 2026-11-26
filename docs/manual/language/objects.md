@@ -225,7 +225,7 @@ with each field at its [initial value](kinds.md#initial-values) (default value).
 ```
 
 ```text
-error[ZK0722]: "ခ" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "ခ" is set
 ```
 
 For an object that is there at some times and missing at others, we use an

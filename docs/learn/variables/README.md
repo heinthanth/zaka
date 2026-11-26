@@ -183,7 +183,7 @@ then is a mistake:
 ```
 
 ```text
-error[ZK0722]: "အရေအတွက်" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "အရေအတွက်" is set
 ```
 
 When we set the variable first, with `ထားမည်` from [Changing a variable](assignment.md),

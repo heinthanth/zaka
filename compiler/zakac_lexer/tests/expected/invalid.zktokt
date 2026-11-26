@@ -205,7 +205,7 @@ diagnostics:
   span:
     lo: 190
     hi: 191
-  help: lists are separated with "၊", not ","
+  help: separate list items with "၊"
 - code: ZK0104
   level: error
   message: string literal is missing its closing quote before the end of the line
@@ -215,11 +215,11 @@ diagnostics:
   help: null
 - code: ZK0107
   level: error
-  message: a character literal must hold one character, found 2
+  message: a character literal needs one Unicode code point, found 2
   span:
     lo: 210
     hi: 214
-  help: null
+  help: use double quotes to write text with more than one code point
 - code: ZK0108
   level: error
   message: raw identifier is missing its closing brace before the end of the line

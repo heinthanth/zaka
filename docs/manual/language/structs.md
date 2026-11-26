@@ -247,7 +247,7 @@ before it reads the struct ([Set before read](declarations.md#set-before-read)):
 ```
 
 ```text
-error[ZK0722]: "မ" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "မ" is set
 ```
 
 ## Struct literals

@@ -300,7 +300,7 @@ en = "Keeps the taken branch of an if on a constant, and drops a loop whose cond
 [explorer.problems.title]
 en = "Problems"
 [explorer.problems.none]
-en = "No problems: the code compiles clean."
+en = "No errors or warnings."
 [explorer.problems.errors]
 en = "Errors"
 [explorer.problems.warnings]
@@ -716,7 +716,7 @@ en = "The first %{shown} of %{len} octets."
 [explorer.run.output]
 en = "Output"
 [explorer.run.no_output]
-en = "The program wrote nothing so far."
+en = "No output."
 [explorer.run.input]
 en = "Standard input"
 [explorer.run.input_hint]
@@ -743,7 +743,7 @@ en = "Step %{at} of %{total}"
 [explorer.tour.welcome]
 en = "Welcome to Zaka Explorer"
 [explorer.tour.welcome_text]
-en = "Zaka Explorer shows how the Zaka compiler turns Burmese source into a running program. This short tour walks through each part of the page with a sample that builds a list of exam scores on the heap, sorts it and reports on it. Skip it at will; the code from before comes back."
+en = "Follow a gradebook program through the compiler and debugger. Select Skip tour to return to the previous program."
 [explorer.tour.samples]
 en = "Samples"
 [explorer.tour.samples_text]

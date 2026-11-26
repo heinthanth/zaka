@@ -19,6 +19,7 @@ use zakac_ast::stmt::Stmt;
 use zakac_ast::verb::Slot;
 use zakac_ast::verb::VerbOp;
 use zakac_ast::visit::Node;
+use zakac_lexer::token::Kw;
 use zakac_lexer::token::Particle;
 use zakac_lexer::token::Punct;
 use zakac_lexer::token::TokenKind;
@@ -281,8 +282,16 @@ impl Parser<'_>
     {
         let last = *self.callees_ahead().last()?;
         let name = self.callee_text(&self.peek_n(last));
-        let ends = self.call_end_at(last) == Some((2, false))
-            && self.peek_n(last + 2).kind == TokenKind::Punct(Punct::FullStop);
+        let after = self.peek_n(last + 2).kind;
+        // A block closer or the end of input still lets the call parser
+        // name the missing full stop.
+        let boundary = matches!(
+            after,
+            TokenKind::Punct(Punct::FullStop)
+                | TokenKind::Kw(Kw::BlockClose | Kw::ProgramClose)
+                | TokenKind::Eof
+        );
+        let ends = self.call_end_at(last) == Some((2, false)) && boundary;
         ret_if!(!VERB_FNS.contains(&name.as_str()) || !ends, None);
         self.attempt_clause_call(Mode::Stmt)
     }

@@ -58,7 +58,7 @@ en = "Learn Zaka"
 [website.hero.docs]
 en = "Read the Docs"
 [website.hero.lede]
-en = "Zaka is a programming language based on a subset of Burmese. Burmese sentences compile to instructions for the Zaka VM, or to machine code through Cranelift or C."
+en = "Zaka is a programming language based on a subset of Burmese. Run Zaka programs in the browser, or build native executables with Cranelift or C backend."
 
 # ---------------------------------------------------------------- traits
 
@@ -67,7 +67,7 @@ en = "Zaka in three words"
 [website.traits.natural]
 en = "Natural"
 [website.traits.natural_text]
-en = "Programs read as Burmese sentences: the verb comes last, particles mark each role and each kind takes its measure word. A check warns when the wording reads unnatural."
+en = "Verbs come last, particles mark the role of each phrase, and data kinds use measure words. The compiler flags wording that sounds unnatural in Burmese."
 [website.traits.natural_link]
 en = "Natural wording"
 [website.traits.safe]
@@ -112,9 +112,9 @@ en = "Modules and the stdlib"
 [website.features.stdlib_text]
 en = "Split a program into files and import names; the stdlib, written in Zaka, adds text, path, list and file helpers."
 [website.features.c]
-en = "Calling C"
+en = "C interop"
 [website.features.c_text]
-en = "Declare a C function with the lib it comes from, and call it from the VM or from a native build."
+en = "Call C functions from Zaka, and let C call Zaka through callbacks or exported functions."
 [website.features.editors]
 en = "Editors"
 [website.features.editors_text]
@@ -142,16 +142,16 @@ en = "Zaka at a glance"
 [website.glance.warning]
 en = "Warning"
 [website.glance.about]
-en = "Zaka turns plain Burmese into real programs. Write a sentence, and it runs."
+en = "This program adds two fruit prices and prints the total."
 [website.glance.about_run]
-en = "Behind it, a careful compiler checks each line, catches mistakes before the program runs, and explains each one in plain words."
+en = "The compiler flags ဟု on line 5 and suggests ကို for the number."
 
 # ---------------------------------------------------------------- close
 
 [website.close.head]
 en = "Explore the Zaka language."
 [website.close.text]
-en = "The explorer runs Zaka in the browser: it shows each stage from the words to the VM, steps through a run, and shows the C of the C target and the CLIF of the native target."
+en = "Run Zaka in the browser, step through a program, and inspect the C code or Cranelift IR the compiler generates."
 
 # ---------------------------------------------------------------- footer
 

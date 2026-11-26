@@ -34,9 +34,9 @@ Here is the greeting in Zaka:
 မင်္ဂလာပါ ကမ္ဘာကြီး
 ```
 
-The line with the greeting is a Burmese sentence (statement). Word for word, it means
-*"Hello, world" — thus, please show.* To print a line of text (string), put it in
-double quotes and follow it with `ဟု ပြသမည်။`.
+The greeting line is a Burmese sentence (statement). `ဟု` marks the quoted text and
+`ပြသမည်` means "will show". To print a line of text (string), put it in double quotes
+and follow it with `ဟု ပြသမည်။`.
 
 ```
 "<text>" ဟု ပြသမည်။
@@ -48,7 +48,7 @@ To print a different greeting, change the text between the quotes.
 | --- | --- | --- |
 | `"မင်္ဂလာပါ ကမ္ဘာကြီး"` | "Hello, world" | the text to print, in double quotes |
 | `ဟု` | "so" (quoting) | marks the preceding text as a quote |
-| `ပြသမည်` | "please show" | the command: print a line |
+| `ပြသမည်` | "will show" | the command: print a line |
 | `။` | full stop | ends the sentence |
 
 We end each Zaka sentence with `။`, the Burmese full stop. A new line does **not** end a
@@ -122,27 +122,27 @@ The page on [printing](printing.md) explains when to use each one.
 
 ## Forgetting the full stop
 
-When we leave out the `။`, the sentence does not end, so the compiler cannot make sense
-of the program and stops with an error:
+When we leave out the `။`, the compiler expects it before the next line of code:
 
-```zaka-error ZK0204
+```zaka-error ZK0201
 ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။
 "မင်္ဂလာပါ" ဟု ပြသမည်
 ပရိုဂရမ် ပြီးဆုံးပါပြီး။
 ```
 
 ```text
-error[ZK0204]: statement verb "ပြသမည်" cannot stand inside an expression
+error[ZK0201]: expected "။", found "ပရိုဂရမ် ပြီးဆုံးပါပြီး"
+help: insert "။"
 ```
 
-The message points at `ပြသမည်`, which is the last word before the missing `။`. Once we
-add the `။` back, the program runs.
+The fix inserts the missing `။` after `ပြသမည်`. With the full stop in place, the program
+runs.
 
 ## Details
 
 - **Other spellings of the block closer.** We can also write the last line in other
   forms, such as `ပရိုဂရမ် ပြီးပါပြီ။`. See [Four closing forms](../variables/scope.md#four-closing-forms).
-- **Error codes.** Each error message comes with a code such as `ZK0204`, and the [error
+- **Error codes.** Each error message comes with a code such as `ZK0201`, and the [error
   messages](../../manual/reference/errors.md) page lists the common ones.
 - **Fix hints.** When the compiler knows how to fix an error, it shows the line with the
   fix in place and puts `~` under the new text. In this example, the `။` at the end of

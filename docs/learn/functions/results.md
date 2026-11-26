@@ -263,7 +263,7 @@ would be left with no value, so that is an error too:
 ```
 
 ```text
-error[ZK0339]: function "ဆယ်ကျော်" gives back a result, but its block can reach its end without giving one back
+error[ZK0339]: function "ဆယ်ကျော်" can reach the end without returning a result
 ```
 
 ## Details

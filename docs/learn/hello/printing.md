@@ -5,7 +5,7 @@ description: Show values with ပြသမည်, and choose between ကို a
 
 # Printing
 
-`ပြသမည်` ("please show") prints a value and then starts a new line. Put a particle
+`ပြသမည်` ("will show") prints a value and then starts a new line. Put a particle
 (postposition) between the value and `ပြသမည်`. Use `ကို` for a value such as a number
 or a variable, and `ဟု` for text (string) in quotes or a full clause such as
 `၃ သည် ၂ ထက် ကြီးသည်` ("3 is greater than 2").
@@ -40,7 +40,7 @@ The two sentences print two lines, and use the two forms of a print sentence:
 | --- | --- | --- |
 | `ကို` | (the object) | after a plain value: a number, a character, a sum |
 | `ဟု` | "so" (quoting) | after text in quotes, or a sentence that ends in `သည်` or `ပါ` |
-| `ပြသမည်` | "please show" | print, then go to a new line |
+| `ပြသမည်` | "will show" | print, then go to a new line |
 | `။` | full stop | ends the sentence |
 
 ## Plain values with `ကို`
@@ -108,7 +108,7 @@ warning because the sentence sounds less natural in Burmese. A warning starts wi
 ```
 
 ```text
-warning[ZK0506]: a plain value is marked with "ကို", not quoted with "ဟု"
+warning[ZK0506]: use "ကို" to print this value
 ```
 
 Text in quotes with `ကို` gets the other warning:

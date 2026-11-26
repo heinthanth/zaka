@@ -7,7 +7,7 @@ en = "invalid character"
 [codes.ZK0101.message]
 en = "invalid character in \"%{w}\""
 [codes.ZK0101.help_comma]
-en = "lists are separated with \"၊\", not \",\""
+en = "separate list items with \"၊\""
 [codes.ZK0101.explain]
 en = """A word holds a character that cannot start or continue a token. Identifiers start with a letter, an underscore or an emoji and continue with letters, digits, underscores or emoji; operators are the ASCII punctuation the language defines. Other punctuation such as \",\", \";\", \"=\" on its own or \"?\" has no meaning in the language. The word is skipped and lexing goes on with the next one."""
 
@@ -51,7 +51,9 @@ en = """Inside a string or character literal, a backslash starts one of the esca
 [codes.ZK0107.title]
 en = "wrong character literal length"
 [codes.ZK0107.message]
-en = "a character literal must hold one character, found %{n}"
+en = "a character literal needs one Unicode code point, found %{n}"
+[codes.ZK0107.help]
+en = "use double quotes to write text with more than one code point"
 [codes.ZK0107.explain]
 en = """A character literal holds one Unicode scalar value between its quotes: one letter, one digit, one escape, or one emoji. This literal holds a different count. A Burmese vanna with its signs counts as several scalar values; use a string literal for text that is longer than one scalar value."""
 
@@ -105,7 +107,7 @@ en = """A statement that does not start with a reserved word is a clause that en
 [codes.ZK0204.title]
 en = "statement verb inside an expression"
 [codes.ZK0204.message]
-en = "statement verb \"%{v}\" cannot stand inside an expression"
+en = "\"%{v}\" ends a statement and does not produce a value"
 [codes.ZK0204.explain]
 en = """Statement verbs such as \"ပြသမည်\" and \"ထားမည်\" close a whole statement and produce no value. Here one appears inside parentheses, a call argument or a condition, where a value is needed. Move the statement out, or use a verb-noun such as \"ပေါင်းလဒ်\" that produces a value."""
 
@@ -133,7 +135,7 @@ en = """Each operand in a clause is followed with one particle that names its ro
 [codes.ZK0208.title]
 en = "clause without a verb"
 [codes.ZK0208.message]
-en = "operands wait for a verb: %{w}"
+en = "missing a verb for %{w}"
 [codes.ZK0208.explain]
 en = """In a clause, each operand is followed with the particle of its role, and a verb at the end takes the operands it needs. Here operands are left over at the end of the clause; the message lists them with their particles. Add the verb that takes them, or remove the stranded particle."""
 
@@ -643,7 +645,7 @@ en = """A function that comes from a C lib, \"<name> ဟူသော လုပ�
 [codes.ZK0339.title]
 en = "a function that can end with no result"
 [codes.ZK0339.message]
-en = "function \"%{n}\" gives back a result, but its block can reach its end without giving one back"
+en = "function \"%{n}\" can reach the end without returning a result"
 [codes.ZK0339.help]
 en = "end each path with \"<value> ကို ပြန်ပေးမည်။\""
 [codes.ZK0339.explain]
@@ -1504,7 +1506,7 @@ en = """Each value of a kind needs a value for each of its fields. When the fiel
 [codes.ZK0722.title]
 en = "a read before a value is set"
 [codes.ZK0722.message]
-en = "\"%{n}\" can be unset here: a path reaches this read with no value given to it"
+en = "this read can happen before \"%{n}\" is set"
 [codes.ZK0722.help]
 en = "give it a value on each path before the read, or declare it with a value"
 [codes.ZK0722.explain]
@@ -1630,11 +1632,11 @@ en = """The arm of no data, `မည်သည့်လမ်းကြောင်
 [codes.ZK0493.title]
 en = "the mark of threads on a value"
 [codes.ZK0493.message]
-en = "\"%{n}\" is no shared object: threads use its values as they are, so `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` adds no lock"
+en = "the thread mark has no effect on the plain struct \"%{n}\""
 [codes.ZK0493.help]
 en = "remove the mark, or add `မျှဝေနိုင်သော` after it to make each value an object that threads share"
 [codes.ZK0493.explain]
-en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` makes the objects of a shared struct ones that other threads can use, with a lock. A plain struct is a value: a thread that gets one gets a copy as soon as either side writes it, so threads use it with no mark and no lock, and the mark on it changes nothing."""
+en = """The mark `အပြိုင်လုပ်ငန်းများတွင် အသုံးပြုနိုင်သော` adds a lock that lets threads use a shared object. A thread that receives a plain struct gets a separate value as soon as either side writes to it. Threads can use plain structs without the mark."""
 
 [codes.ZK0494.title]
 en = "a value threads cannot use"
@@ -2092,7 +2094,7 @@ en = """\"ကို\" marks a thing: a name, a number, an arithmetic result. A w
 [codes.ZK0506.title]
 en = "value printed with \"ဟု\""
 [codes.ZK0506.message]
-en = "a plain value is marked with \"ကို\", not quoted with \"ဟု\""
+en = "use \"ကို\" to print this value"
 [codes.ZK0506.help]
 en = "write \"... ကို ပြသမည်။\""
 [codes.ZK0506.explain]

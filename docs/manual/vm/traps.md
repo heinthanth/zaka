@@ -97,7 +97,7 @@ to the section that explains it.
 | [not fault](#a-whole-result-read-as-the-wrong-part) | `the result is a good result, not an error` | the error value read from a whole result that holds a good result |
 | [no data](#an-optional-read-with-no-data) | `the optional holds no data` | the data read from an [optional](../language/optionals.md) that is blank |
 | [no row](#a-write-through-a-missing-row) | `no row of the ဇယား has this index` | a write inside the value of a [row of a table](../language/tables.md#writing-inside-a-row) that does not exist |
-| [wrong member](#a-read-of-the-data-of-another-member) | `the value is another member than the one read` | the data of a [member](../language/enums.md#reading-the-data) read from a value of an enumeration that is another member |
+| [wrong member](#a-read-of-the-data-of-another-member) | `this read expects a different enum member` | the data of a [member](../language/enums.md#reading-the-data) read from a value of an enumeration that is another member |
 | [assert](#an-assert-that-does-not-hold) | `an assert did not hold: T`, or `an assert did not hold` | an [assert](../language/asserts.md), `<condition> ဖြစ်ရမည်`, whose condition is false |
 | [thread trapped](#threads) | `the thread N this waits for stopped at a trap` | a wait for a thread that stopped, under `--trap unwind` |
 | [thread waited](#threads) | `the thread N this waits for gave its result to an earlier wait` | a second wait for the same thread |
@@ -475,7 +475,7 @@ it once the test holds. The stop comes from the operation `halt`, with the cause
 
 ```text
 အစ
-the program stopped: the value is another member than the one read
+the program stopped: this read expects a different enum member
 ```
 
 ## A write through a missing row

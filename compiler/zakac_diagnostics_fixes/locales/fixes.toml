@@ -5,6 +5,6 @@ en = "write \"%{w}\""
 [fixes.keep_particle]
 en = "keep the particle and write \"%{w}\""
 [fixes.near_name]
-en = "write \"%{w}\", the closest name in the file"
+en = "replace this name with \"%{w}\""
 [fixes.model_line]
 en = "rewrite the line"

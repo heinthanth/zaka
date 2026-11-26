@@ -122,7 +122,7 @@ reach its end with no return is ZK0339:
 ```
 
 ```text
-error[ZK0339]: function "မေ့" gives back a result, but its block can reach its end without giving one back
+error[ZK0339]: function "မေ့" can reach the end without returning a result
 ```
 
 The program start block is different: it can end without a return, and its exit code is

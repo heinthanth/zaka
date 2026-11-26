@@ -270,7 +270,7 @@ The rules of these forms:
 ```
 
 ```text
-error[ZK0204]: statement verb "ပြ မည်" cannot stand inside an expression
+error[ZK0204]: "ပြ မည်" ends a statement and does not produce a value
 ```
 
 A call can also put a preposition after each argument, and starting and ending phrases

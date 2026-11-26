@@ -33,7 +33,7 @@ error[ZK0301]: "အသတ်" is not declared
   |
 3 | အသတ် ကို ပြသမည်။
   | ^^^
-  = help: write "အသက်", the closest name in the file
+  = help: replace this name with "အသက်"
   |
 3 | အသက် ကို ပြသမည်။
   | ~~~

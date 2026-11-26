@@ -178,7 +178,7 @@ warning[ZK0505]: a sentence or a string is quoted with "ဟု", not marked with
 ```
 
 ```text
-warning[ZK0506]: a plain value is marked with "ကို", not quoted with "ဟု"
+warning[ZK0506]: use "ကို" to print this value
 ```
 
 ### ZK0507: parentheses that change nothing

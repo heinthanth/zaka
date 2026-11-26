@@ -57,8 +57,8 @@ pub fn expected_token(span: Span, expected: &str, found: &str) -> Diagnostic
 
 /// Attach the fixes that write a missing word: the word the grammar expects,
 /// when it is one word in quotes, after the last token read. It goes joined
-/// to that token first, then after a space, since a name joined to a particle
-/// reads as one longer name.
+/// to that token first. A word also gets a fix with a space, since a name
+/// joined to a particle reads as one longer name.
 ///
 /// # Arguments
 ///
@@ -80,7 +80,8 @@ pub fn with_missing_word(diag: Diagnostic, expected: &str, after: Pos) -> Diagno
     };
     let at = Span::new(after, after);
     let message = t!("codes.ZK0201.fix", t = word);
-    diag.with_fix(message.clone(), at, word).with_fix(message, at, format!(" {word}"))
+    let fixed = diag.with_fix(message.clone(), at, word);
+    tern!(word == "။", fixed, fixed.with_fix(message, at, format!(" {word}")))
 }
 
 /// An operand is missing.

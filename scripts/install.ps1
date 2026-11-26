@@ -15,8 +15,6 @@ if ($Help)
 {
     Write-Host @'
 Install zakac and zakafmt, the Zaka compiler and formatter, on Windows.
-The executables of the newest release go to %USERPROFILE%\.zaka\bin, which then
-joins the PATH of the user.
 
 Usage:
   irm https://zaka-lang.org/install.ps1 | iex

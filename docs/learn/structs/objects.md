@@ -197,7 +197,7 @@ object before the first read, the same as each other variable:
 ```
 
 ```text
-error[ZK0722]: "က" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "က" is set
 ```
 
 `ကနဦးတန်ဖိုး` for an `အကောင့်` is a new account with each field at its initial value

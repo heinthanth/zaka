@@ -10,6 +10,9 @@ paths, lists, files, folders, math and time. We can import and call these functi
 form as functions from our own modules. See [Modules](../modules/README.md) for how
 imports work.
 
+For a full list of modules, see the [stdlib reference](../../manual/stdlib/README.md)
+in Docs. Open a module page for its import path, function signatures and runnable examples.
+
 ## You will learn
 
 - How to import a function from the stdlib and call it in a sentence.

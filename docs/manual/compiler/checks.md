@@ -201,7 +201,7 @@ reaches with no function given is a read of an unset value, ZK0722, even under
 
 ```console
 $ zakac run --lint-allow mem call.zaka
-error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "ဖ" is set
 ```
 
 [Set before read](../language/declarations.md#set-before-read) has the rules of that check, for

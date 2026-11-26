@@ -186,7 +186,7 @@ first. A read that a path reaches with the variable unset is ZK0722.
 ```
 
 ```text
-error[ZK0722]: "အဆင့်" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "အဆင့်" is set
 ```
 
 ### What sets a variable and what reads it

@@ -111,6 +111,22 @@ fn statement_level_clause_errors()
 }
 
 #[test]
+fn a_core_verb_without_a_full_stop_gets_an_insert_fix()
+{
+    let text = "ပရိုဂရမ်သည် အောက်ပါတို့ကို လုပ်ဆောင်မည်။\n\"မင်္ဂလာပါ\" ဟု ပြသမည်";
+    let input = format!("{text}\nပရိုဂရမ် ပြီးဆုံးပါပြီး။\n");
+    let out = common::parse_text(&input);
+    assert_eq!(out.diagnostics.len(), 1, "{:?}", out.diagnostics);
+    let diag = &out.diagnostics[0];
+    assert_eq!(diag.code, Code::ExpectedToken);
+    assert_eq!(diag.fixes.len(), 1);
+    let edit = &diag.fixes[0].edits[0];
+    assert_eq!(edit.text, "။");
+    assert_eq!(edit.span.lo, edit.span.hi);
+    assert_eq!(diag.span.lo - edit.span.lo, 1);
+}
+
+#[test]
 fn comparisons_do_not_chain()
 {
     assert_eq!(expr_err("က သည် ခ နှင့် ညီ သည် ဂ နှင့် ညီသည်"), Code::ChainedComparison);

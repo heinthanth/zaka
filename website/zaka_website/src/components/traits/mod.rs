@@ -33,7 +33,7 @@ struct Trait
 const TRAITS: [Trait; 3] = [
     Trait { id: "website.traits.natural", slug: "language/naturalness" },
     Trait { id: "website.traits.safe", slug: "language/error-handling" },
-    Trait { id: "website.traits.portable", slug: "vm" },
+    Trait { id: "website.traits.portable", slug: "compiler/native" },
 ];
 
 /// The traits: Zaka in three words, each with what backs it and a link to

@@ -150,7 +150,7 @@ value): `လူ(အသက်: ၂၀၊ အမြင့်: ကနဦးတန�
 ```
 
 ```text
-error[ZK0722]: "ကျော်" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "ကျော်" is set
 ```
 
 A struct declared without a value counts as set once all of its fields are set. Here

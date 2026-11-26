@@ -153,7 +153,7 @@ the data. When the value is another member, the program stops:
 ```
 
 ```text
-the program stopped: the value is another member than the one read
+the program stopped: this read expects a different enum member
 ```
 
 ## Naming the data

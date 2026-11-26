@@ -45,7 +45,7 @@ fn an_optional_with_no_data_stops_the_program_when_read()
 fn a_read_of_another_member_stops_the_program()
 {
     let path = c_inputs().join("wrong_member.zaka");
-    stops_with(&path, &[], "၇\n", "the value is another member than the one read");
+    stops_with(&path, &[], "၇\n", "this read expects a different enum member");
 }
 
 /// A failed assert stops the program with its message and both values of

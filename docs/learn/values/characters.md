@@ -53,7 +53,7 @@ computer: `က`, then the vowel mark `ိ`, then `ု`. So `'ကို'` is the 
 ```
 
 ```text
-error[ZK0107]: a character literal must hold one character, found 3
+error[ZK0107]: a character literal needs one Unicode code point, found 3
 ```
 
 For a letter with marks, we use text (string) in double quotes, `"ကို"`, which

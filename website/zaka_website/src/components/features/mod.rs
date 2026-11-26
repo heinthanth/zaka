@@ -47,7 +47,11 @@ const FEATURES: [Feature; 8] = [
         slug: "function-values/closures",
     },
     Feature { id: "website.features.stdlib", book: Book::Learn, slug: "stdlib" },
-    Feature { id: "website.features.c", book: Book::Learn, slug: "functions/c" },
+    Feature {
+        id: "website.features.c",
+        book: Book::Manual,
+        slug: "language/functions-c",
+    },
     Feature {
         id: "website.features.editors",
         book: Book::Manual,

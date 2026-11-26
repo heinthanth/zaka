@@ -60,7 +60,7 @@ a Zaka character.
 
 ```text
 error[ZK0101]: invalid character in ","
-  = help: lists are separated with "၊", not ","
+  = help: separate list items with "၊"
 ```
 
 ## Words and spaces
@@ -372,7 +372,7 @@ xAy
 ```
 
 ```text
-error[ZK0107]: a character literal must hold one character, found 3
+error[ZK0107]: a character literal needs one Unicode code point, found 3
 ```
 
 ```zaka-error ZK0104

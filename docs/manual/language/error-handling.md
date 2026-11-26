@@ -111,7 +111,7 @@ Other loops do not end a path, because their condition can be false at the start
 ```
 
 ```text
-error[ZK0339]: function "ရှာ" gives back a result, but its block can reach its end without giving one back
+error[ZK0339]: function "ရှာ" can reach the end without returning a result
 ```
 
 ## Giving back an error value

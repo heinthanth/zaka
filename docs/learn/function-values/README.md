@@ -318,7 +318,7 @@ its first call, the same as each other variable:
 ```
 
 ```text
-error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "ဖ" is set
 ```
 
 When a function can be missing, we state it in its data kind with an

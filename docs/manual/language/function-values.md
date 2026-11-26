@@ -497,7 +497,7 @@ is ZK0479.
 ```
 
 ```text
-error[ZK0722]: "ဖ" can be unset here: a path reaches this read with no value given to it
+error[ZK0722]: this read can happen before "ဖ" is set
 ```
 
 For a function that is there at times and missing at others, we use an
@@ -660,7 +660,7 @@ wait for a verb (ZK0208), as with a parameter of such a function kind:
 ```
 
 ```text
-error[ZK0208]: operands wait for a verb: "ပြန်စာ" (ကို), "ဖိုင်" (no particle)
+error[ZK0208]: missing a verb for "ပြန်စာ" (ကို), "ဖိုင်" (no particle)
 ```
 
 When the compiler still treats the sentence as a call through a value whose function kind

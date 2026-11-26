@@ -32,7 +32,7 @@ diagnostics:
   help: null
 - code: ZK0204
   level: error
-  message: statement verb "ပြသမည်" cannot stand inside an expression
+  message: "\"ပြသမည်\" ends a statement and does not produce a value"
   span:
     lo: 80
     hi: 98
