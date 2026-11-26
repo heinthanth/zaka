@@ -202,6 +202,9 @@ lists `day.txt` afterwards.
 - **Other programs.** Import `မောင်းနှင်` from `"စံကား/လုပ်ငန်းစဉ်"` to run a program such
   as `git` and read its exit code and output; a run needs `--allow-run`. See [Running
   programs](../../manual/stdlib/process.md).
+- **Arenas.** In unsafe code, import `နေရာကွက်ပြုလုပ်` and `နေရာထုတ်` from
+  `"စံကား/နေရာကွက်"` to take a set of pieces from one heap block and free them together. See
+  [Arenas](../../manual/stdlib/arena.md).
 - **More functions.** Each module has more functions than this page shows: for example,
   `ရှာ` finds where a piece of text starts, `စာကြောင်းများအဖြစ်ခွဲ` splits text into lines,
   and `စီ` sorts a list with a function that compares two cells. [The

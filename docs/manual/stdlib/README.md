@@ -1,6 +1,6 @@
 ---
 title: The stdlib
-description: The stdlib modules for the core, text, paths, lists, I/O, math, time, characters, random numbers and other programs.
+description: The stdlib modules for the core, text, paths, lists, I/O, math, time, characters, random numbers, other programs and arenas.
 ---
 
 # The stdlib
@@ -24,6 +24,7 @@ each module its name, and each program has it as the dep `စံကား`
 | [`"စံကား/စာလုံး"`](char.md) | `stdlib/char.zaka` | tests on one character: digits, letters and white space |
 | [`"စံကား/ကျပန်း"`](random.md) | `stdlib/random.zaka` | a generator of random numbers, a pick from a list and a shuffle |
 | [`"စံကား/လုပ်ငန်းစဉ်"`](process.md) | `stdlib/process.zaka` | running another program, with its exit code and output |
+| [`"စံကား/နေရာကွက်"`](arena.md) | `stdlib/arena.zaka` | an arena: one heap block that hands out room and frees it all at once |
 
 Each module page starts with what the module is for and an example, then lists each name
 that the module exports, with its declaration and its doc comments, taken from the source.
