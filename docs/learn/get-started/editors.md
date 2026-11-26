@@ -87,10 +87,10 @@ page tells which letters a name can use.
 
 ## Terminal
 
-A program prints Burmese text to the terminal, and most terminals draw the letters of a
-Burmese word one at a time, so stacked consonants and vowel signs show apart.
-[Ghostty Myanmar](https://ghostty.myanmars.app/), a build of the Ghostty terminal by
-Saturngod, draws Burmese words as written, on macOS and Linux. Its source is on
-[GitHub](https://github.com/saturngod/ghostty).
+Zaka programs print Burmese text, and most terminals draw the letters of a Burmese word one
+at a time, so stacked consonants and vowel signs show apart and the output is hard to
+read. We recommend [Ghostty Myanmar](https://ghostty.myanmars.app/), a build of the Ghostty
+terminal from Saturngod that draws each Burmese word whole, as written, for macOS and Linux. Download it
+from its site; its source is on [GitHub](https://github.com/saturngod/ghostty).
 
 Next: [Quick start](quick-start.md).

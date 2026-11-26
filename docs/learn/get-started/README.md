@@ -36,7 +36,8 @@ Three short pages cover the setup, in order:
 1. [Installation](installation.md): install `zakac` and `zakafmt` with one command, or
    download them, or build them from source.
 2. [Editor setup](editors.md): the extension for VS Code and Cursor, Zed and other
-   editors, and the fonts and input methods for Burmese text.
+   editors, the fonts and input methods for Burmese text, and
+   [Ghostty Myanmar](editors.md#terminal), a terminal that draws Burmese text as written.
 3. [Quick start](quick-start.md): write a program in a file, run it, format it, and build
    it as an executable.
 

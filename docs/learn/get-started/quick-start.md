@@ -38,6 +38,9 @@ $ zakac run hello.zaka
 ၃
 ```
 
+When the Burmese letters show apart, the terminal cannot draw Burmese text, and
+[Editor setup](editors.md#terminal) recommends one that can.
+
 `zakac run` checks the program and runs it at once, as native code when it can and on the
 VM otherwise. When the program has a mistake, `zakac` prints the error with its code, such
 as `ZK0201`, and the line and column, and the
