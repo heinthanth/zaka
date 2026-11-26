@@ -64,7 +64,7 @@ installs that one.
 
 ## Download a release
 
-The [releases](https://github.com/heinthanth/zaka/releases) page holds an archive for each
+The [releases](https://github.com/zaka-lang/zaka/releases) page holds an archive for each
 platform: `zakac-<target>.tar.gz`, or `.zip` on Windows, where the target names the CPU and
 the OS, as `aarch64-apple-darwin` or `x86_64-pc-windows-msvc`. Unpack it and put its
 folder on the `PATH`.
@@ -82,32 +82,32 @@ On Windows, SmartScreen can warn about an executable it has not seen before. Cho
 
 ## Run in Docker
 
-Each release is also a Docker image, `ghcr.io/heinthanth/zaka`, for Linux on x86_64 and
+Each release is also a Docker image, `ghcr.io/zaka-lang/zaka`, for Linux on x86_64 and
 arm64, with `zakac` as its entry point. It needs no install: mount the folder of the
 program, and the words after the image name are the `zakac` command to run.
 
 ```sh
-docker run --rm -v "$PWD:/src" -w /src ghcr.io/heinthanth/zaka run hello.zaka
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/zaka-lang/zaka run hello.zaka
 ```
 
 The REPL needs `-it`, which keeps the terminal open for input:
 
 ```sh
-docker run --rm -it ghcr.io/heinthanth/zaka repl
+docker run --rm -it ghcr.io/zaka-lang/zaka repl
 ```
 
 The tag `latest` names the newest stable release, and a version names that release, as
-`ghcr.io/heinthanth/zaka:0.1.0`. The image holds no C compiler, so for
+`ghcr.io/zaka-lang/zaka:0.1.0`. The image holds no C compiler, so for
 `zakac build --backend native` or `--backend c`, build an image on it that adds one:
 
 ```dockerfile
-FROM ghcr.io/heinthanth/zaka
+FROM ghcr.io/zaka-lang/zaka
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
 ```
 
 To build the image from source, run `docker build -t zaka .` in the
-[Zaka repo](https://github.com/heinthanth/zaka), then use `zaka` in place of
-`ghcr.io/heinthanth/zaka`.
+[Zaka repo](https://github.com/zaka-lang/zaka), then use `zaka` in place of
+`ghcr.io/zaka-lang/zaka`.
 
 ## Check the install
 
@@ -123,10 +123,10 @@ shell.
 ## Build from source
 
 With [Rust](https://www.rust-lang.org/tools/install) installed, we build `zakac` from
-the [Zaka repo](https://github.com/heinthanth/zaka):
+the [Zaka repo](https://github.com/zaka-lang/zaka):
 
 ```sh
-git clone https://github.com/heinthanth/zaka
+git clone https://github.com/zaka-lang/zaka
 cd zaka
 cargo install --path compiler/zakac
 ```

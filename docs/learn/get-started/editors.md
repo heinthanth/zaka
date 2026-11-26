@@ -17,7 +17,7 @@ those import, and formats the file with the rules of `zakac fmt`. Install `zakac
 Install the Zaka extension from the extensions view of the editor: search for **Zaka**. It
 comes from the VS Code Marketplace in VS Code and from Open VSX in Cursor.
 
-Each [release](https://github.com/heinthanth/zaka/releases) also holds the extension as a
+Each [release](https://github.com/zaka-lang/zaka/releases) also holds the extension as a
 `.vsix` file, which installs from the command line:
 
 ```sh
@@ -35,7 +35,7 @@ not on the `PATH`, name it in the setting `zaka.server.path`, in the user settin
 
 ## Zed
 
-The Zed extension lives in the [Zaka repo](https://github.com/heinthanth/zaka), in the
+The Zed extension lives in the [Zaka repo](https://github.com/zaka-lang/zaka), in the
 folder `editors/zed`. Clone the repo, run **zed: install dev extension** in Zed, and pick
 that folder. Zed leaves the colors of a language server off until a setting asks for them,
 so turn them on for Zaka in the Zed settings:

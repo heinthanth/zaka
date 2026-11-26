@@ -40,8 +40,8 @@ Variables:
     return
 }
 
-$releases = if ($env:ZAKA_RELEASES) { $env:ZAKA_RELEASES } else { 'https://github.com/heinthanth/zaka/releases' }
-$api = if ($env:ZAKA_API) { $env:ZAKA_API } else { 'https://api.github.com/repos/heinthanth/zaka/releases' }
+$releases = if ($env:ZAKA_RELEASES) { $env:ZAKA_RELEASES } else { 'https://github.com/zaka-lang/zaka/releases' }
+$api = if ($env:ZAKA_API) { $env:ZAKA_API } else { 'https://api.github.com/repos/zaka-lang/zaka/releases' }
 $zakaHome = if ($Dir) { $Dir } else { Join-Path $HOME '.zaka' }
 $bin = Join-Path $zakaHome 'bin'
 $keepPath = $NoPath -or [bool]$env:ZAKA_NO_PATH

@@ -49,7 +49,7 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Serve the explorer | `mise run explorer:dev` |
 | Build the VS Code extension | `mise run editor:build-vscode` (wasm-pack, bun, vsce); `editor:install-vscode` and `editor:install-cursor` install it |
 | Build and publish the site | `mise run pages:publish` (the release snapshots, `dist`, then Cloudflare Pages) |
-| Make a release | Publish it on GitHub with the tag `v<version>` of `zakac` and the extension; `.github/workflows/release.yml` attaches the executables, the `.vsix` and the site snapshot, pushes the Docker image `ghcr.io/heinthanth/zaka` (the `release` stage of the `Dockerfile`), and publishes the extension when `VSCE_PAT` / `OVSX_PAT` are set; a prerelease gets no site snapshot, no marketplace publishing and no `latest` tag on its image |
+| Make a release | Publish it on GitHub with the tag `v<version>` of `zakac` and the extension; `.github/workflows/release.yml` attaches the executables, the `.vsix` and the site snapshot, pushes the Docker image `ghcr.io/zaka-lang/zaka` (the `release` stage of the `Dockerfile`), and publishes the extension when `VSCE_PAT` / `OVSX_PAT` are set; a prerelease gets no site snapshot, no marketplace publishing and no `latest` tag on its image |
 | Snapshot the site of a release | `mise run pages:snapshot -- [ref] [version]` (the working tree when no ref; to `target/site-snapshots`), then `pages:snapshot-upload <tag>` when a release ships |
 | Install scripts | `scripts/install.sh` and `scripts/install.ps1`, which `pages:build` serves at the site root; `ZAKA_RELEASES` points them at a test server |
 | Serve `dist` as the host does | `mise run pages:serve` (wrangler, 404 pages included) |

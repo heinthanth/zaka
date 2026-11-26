@@ -14,10 +14,10 @@ stops compilation at the end of the stage that found it. For a first run, see [H
 world](../../learn/hello/README.md#running-it).
 
 `zakac` comes as an executable for macOS, Linux and Windows, and as the Docker image
-`ghcr.io/heinthanth/zaka`, whose entry point is `zakac`:
+`ghcr.io/zaka-lang/zaka`, whose entry point is `zakac`:
 
 ```sh
-docker run --rm -v "$PWD:/src" -w /src ghcr.io/heinthanth/zaka run hello.zaka
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/zaka-lang/zaka run hello.zaka
 ```
 
 [Installation](../../learn/get-started/installation.md) covers each install method.

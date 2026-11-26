@@ -55,8 +55,8 @@ value()
   echo "$2"
 }
 
-releases="${ZAKA_RELEASES:-https://github.com/heinthanth/zaka/releases}"
-api="${ZAKA_API:-https://api.github.com/repos/heinthanth/zaka/releases}"
+releases="${ZAKA_RELEASES:-https://github.com/zaka-lang/zaka/releases}"
+api="${ZAKA_API:-https://api.github.com/repos/zaka-lang/zaka/releases}"
 version="${ZAKA_VERSION:-}"
 prerelease="${ZAKA_PRERELEASE:-}"
 zaka_home="${ZAKA_HOME:-$HOME/.zaka}"
