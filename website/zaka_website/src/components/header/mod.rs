@@ -16,9 +16,11 @@ use zaka_web_ui_common::controls::pickers::lang_icon_picker;
 use zaka_web_ui_common::controls::pickers::lang_picker;
 use zaka_web_ui_common::controls::pickers::theme_icon_picker;
 use zaka_web_ui_common::controls::pickers::theme_picker;
+use zaka_web_ui_common::controls::pickers::version_picker;
 use zaka_web_ui_common::icon::cross;
 use zaka_web_ui_common::icon::globe;
 use zaka_web_ui_common::icon::menu;
+use zaka_web_ui_common::icon::past;
 use zaka_web_ui_common::icon::swatches;
 use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::EXPLORER_FLUSH_EVENT;
@@ -144,6 +146,7 @@ pub fn SiteHeader(here: String) -> impl IntoView
             .child(t!("website.header.source"))
     });
     let pickers = div().class(ClassName::HEADER_PICKERS).child((
+        version_picker(),
         theme_icon_picker(theme),
         lang_icon_picker(|| send(EXPLORER_FLUSH_EVENT)),
     ));
@@ -197,8 +200,8 @@ fn settings_action() -> impl IntoView
         .child(t!("website.header.settings"))
 }
 
-/// The theme and language pickers of the menu, each across it, with an icon
-/// in front that tells what it picks.
+/// The version, theme and language pickers of the menu, each across it, with
+/// an icon in front that tells what it picks.
 ///
 /// # Arguments
 ///
@@ -210,6 +213,7 @@ fn settings_action() -> impl IntoView
 fn menu_pickers(theme: ThemeMode) -> impl IntoView
 {
     (
+        span().class(ClassName::HEADER_PICKER).child((past(), version_picker())),
         span()
             .class(ClassName::HEADER_PICKER)
             .child((swatches(), theme_picker(theme, false))),

@@ -84,6 +84,10 @@ const GLOBE: [&str; 3] = [
      0 1 4-10z",
 ];
 
+/// A clock with an arrow that turns it back, on a 24 unit grid.
+const PAST: [&str; 3] =
+    ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M12 7v5l4 2"];
+
 /// A magnifier, a lens with its handle, on a 24 unit grid.
 const SEARCH: [&str; 2] = ["M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z", "m21 21-4.3-4.3"];
 
@@ -362,6 +366,13 @@ pub fn restart() -> impl IntoView { line_icon(&RESTART) }
 ///
 /// The view.
 pub fn globe() -> impl IntoView { line_icon(&GLOBE) }
+
+/// A clock turned back, for the picker of the release.
+///
+/// # Returns
+///
+/// The view.
+pub fn past() -> impl IntoView { line_icon(&PAST) }
 
 /// A magnifier, for the search of the books.
 ///

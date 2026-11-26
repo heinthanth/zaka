@@ -1,11 +1,18 @@
 use std::iter::once;
 
+use leptos::html::span;
 use leptos::prelude::*;
+use leptos::task::spawn_local;
 use strum::IntoEnumIterator;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::Response;
 use zakac_i18n::SUPPORTED_LOCALES;
 use zakac_i18n::t;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 
+use crate::controls::ClassName;
 use crate::controls::dropdown::Choice;
 use crate::controls::dropdown::Dropdown;
 use crate::controls::dropdown::dropdown;
@@ -16,6 +23,12 @@ use crate::lang::AUTO_LANG;
 use crate::lang::lang_name;
 use crate::lang::store_lang;
 use crate::lang::stored_lang;
+use crate::site::HOME_URL;
+use crate::site::Release;
+use crate::site::SITE_BASE;
+use crate::site::VERSIONS_FILE;
+use crate::site::moved_path;
+use crate::site::read_releases;
 use crate::theme::Theme;
 use crate::theme::ThemeMode;
 
@@ -144,4 +157,116 @@ fn lang_spec(before_reload: impl Fn() + Send + Sync + 'static) -> Dropdown
     let current = RwSignal::new(AUTO_LANG.to_string());
     Effect::new(move |_| current.set(stored_lang()));
     picker(t!("web_ui.lang.name"), choices, current.into(), on_pick)
+}
+
+/// Picker of the release whose pages show: the latest at the root, and the
+/// snapshot of each old release under its base. A pick opens the same page in
+/// the other release. The list comes from [`VERSIONS_FILE`] once the page
+/// runs, so a snapshot lists the releases after it; until then, and on a site
+/// with no such file, the picker names the release of this page alone.
+///
+/// # Returns
+///
+/// The view.
+pub fn version_picker() -> impl IntoView
+{
+    let releases = RwSignal::new(Vec::<Release>::new());
+    Effect::new(move |_| {
+        spawn_local(async move { releases.set(fetch_releases().await) });
+    });
+    span()
+        .class(ClassName::VERSION_PICKER)
+        .class((ClassName::VERSION_PICKER_OLD, !SITE_BASE.is_empty()))
+        .child(move || dropdown(version_spec(&releases.get())))
+}
+
+/// What the version picker offers and where its pick goes.
+///
+/// # Arguments
+///
+/// * `releases` - The releases of [`VERSIONS_FILE`], the newest first.
+///
+/// # Returns
+///
+/// The dropdown.
+fn version_spec(releases: &[Release]) -> Dropdown
+{
+    let mut choices: Vec<Choice> = releases
+        .iter()
+        .enumerate()
+        .map(|(at, r)| {
+            let label = release_label(at, r);
+            Choice::builder().value(r.path.clone()).label(label).build()
+        })
+        .collect();
+    let own = Choice::builder().value(HOME_URL).label(own_label()).build();
+    do_if!(!choices.iter().any(|c| c.value == HOME_URL), choices.push(own));
+    let on_pick = |to: String| {
+        let location = window().location();
+        let here = location.pathname().unwrap_or_default();
+        ret_if!(to == HOME_URL);
+        let tail = format!(
+            "{}{}",
+            location.search().unwrap_or_default(),
+            location.hash().unwrap_or_default()
+        );
+        let _ =
+            location.set_href(&format!("{}{tail}", moved_path(&here, HOME_URL, &to)));
+    };
+    picker(
+        t!("web_ui.version.name"),
+        choices,
+        Signal::stored(HOME_URL.to_string()),
+        on_pick,
+    )
+}
+
+/// The text of a release in the version picker: the latest is marked as the
+/// latest, and the release of this page, when old, as old.
+///
+/// # Arguments
+///
+/// * `at` - Its place in the list, the newest first.
+/// * `release` - The release.
+///
+/// # Returns
+///
+/// The text.
+fn release_label(at: usize, release: &Release) -> String
+{
+    let version = format!("v{}", release.version);
+    ret_if!(at == 0, t!("web_ui.version.latest_of", version = version).to_string());
+    ret_if!(release.path == HOME_URL, own_label());
+    version
+}
+
+/// The text of the release of this page, from its base alone: the latest
+/// at the root, else the old release its base names.
+///
+/// # Returns
+///
+/// The text.
+fn own_label() -> String
+{
+    ret_if!(SITE_BASE.is_empty(), t!("web_ui.version.latest").to_string());
+    let version = SITE_BASE.trim_start_matches('/');
+    t!("web_ui.version.old", version = version).to_string()
+}
+
+/// The releases [`VERSIONS_FILE`] lists, read from the site.
+///
+/// # Returns
+///
+/// The releases, the newest first; none when the file is missing or does
+/// not parse.
+async fn fetch_releases() -> Vec<Release>
+{
+    let text = async {
+        let answer =
+            JsFuture::from(window().fetch_with_str(VERSIONS_FILE)).await.ok()?;
+        let answer: Response = answer.dyn_into().ok()?;
+        ret_if!(!answer.ok(), None);
+        JsFuture::from(answer.text().ok()?).await.ok()?.as_string()
+    };
+    text.await.map(|t| read_releases(&t)).unwrap_or_default()
 }

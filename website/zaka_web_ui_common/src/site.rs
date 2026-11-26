@@ -1,4 +1,6 @@
+use bon::Builder;
 use const_format::concatcp;
+use serde::Deserialize;
 use zakac_rust_sugars::tern;
 
 /// The path the site is served under, with no trailing slash: blank for the
@@ -52,6 +54,63 @@ pub fn rooted_in(base: &str, path: &str) -> String
 ///
 /// The path under [`SITE_BASE`].
 pub fn rooted(path: &str) -> String { rooted_in(SITE_BASE, path) }
+
+/// The list of the releases the site holds, at the root of the site: each
+/// snapshot reads it from there, so an old one learns of the releases after
+/// it.
+pub const VERSIONS_FILE: &str = "/versions.toml";
+
+/// One release in [`VERSIONS_FILE`].
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Builder)]
+pub struct Release
+{
+    /// Its version, as `0.1`.
+    #[builder(into)]
+    pub version: String,
+    /// The home page of its site, as `/v0.1/`; `/` for the latest.
+    #[builder(into)]
+    pub path: String,
+}
+
+/// The shape of [`VERSIONS_FILE`]: a `[[release]]` table for each release,
+/// the newest first, so the first is the latest.
+#[derive(Deserialize)]
+struct Releases
+{
+    /// The releases.
+    #[serde(default)]
+    release: Vec<Release>,
+}
+
+/// The releases a [`VERSIONS_FILE`] lists.
+///
+/// # Arguments
+///
+/// * `text` - The TOML text of the file.
+///
+/// # Returns
+///
+/// The releases, the newest first; none when the text does not parse.
+pub fn read_releases(text: &str) -> Vec<Release>
+{
+    toml::from_str::<Releases>(text).map(|r| r.release).unwrap_or_default()
+}
+
+/// The same page in the site of another release.
+///
+/// # Arguments
+///
+/// * `pathname` - The path of the page.
+/// * `home` - The home page of its site, as [`HOME_URL`] holds it.
+/// * `to` - The home page of the other site.
+///
+/// # Returns
+///
+/// The path in the other site; its home page for a path outside `home`.
+pub fn moved_path(pathname: &str, home: &str, to: &str) -> String
+{
+    format!("{to}{}", pathname.strip_prefix(home).unwrap_or_default())
+}
 
 /// The window event the header of the explorer page sends to open the
 /// settings of the explorer: the two are islands apart, with no signal in

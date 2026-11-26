@@ -6759,6 +6759,7 @@ dependencies = [
  "leptos-use-storage",
  "leptos-use-window",
  "rust-i18n",
+ "serde",
  "serde_json",
  "strum",
  "toml 1.1.6+spec-1.1.0",
