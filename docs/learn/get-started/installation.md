@@ -36,16 +36,24 @@ The script downloads the newest release for the computer, puts `zakac` and `zaka
 through the startup file of the shell on macOS and Linux, and in the `PATH` of the user on
 Windows. Open a new terminal afterwards, so it reads the new `PATH`.
 
-Three variables change what the script does:
+The options of the script change what it does, and `--help` (`-Help` on Windows) lists
+them. Each option has a variable as well, for a script that sets them in advance:
 
-| Variable | What it does |
-| --- | --- |
-| `ZAKA_VERSION` | installs that release in place of the newest, as `v0.1.0` |
-| `ZAKA_HOME` | installs into that folder in place of `~/.zaka` |
-| `ZAKA_NO_PATH` | when set, prints the `PATH` line in place of adding it |
+| macOS and Linux | Windows | Variable | What it does |
+| --- | --- | --- | --- |
+| `--version <tag>` | `-Version <tag>` | `ZAKA_VERSION` | installs that release in place of the newest, as `v0.1.0` |
+| `--dir <dir>` | `-Dir <dir>` | `ZAKA_HOME` | installs into that folder in place of `~/.zaka` |
+| `--no-path` | `-NoPath` | `ZAKA_NO_PATH` | prints the `PATH` line in place of adding it |
+
+The options follow `sh -s --` when the script comes through a pipe, and a PowerShell
+script block takes them on Windows:
 
 ```sh
-curl -fsSL https://zaka-lang.org/install.sh | ZAKA_VERSION=v0.1.0 sh
+curl -fsSL https://zaka-lang.org/install.sh | sh -s -- --version v0.1.0
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://zaka-lang.org/install.ps1))) -Version v0.1.0
 ```
 
 To update Zaka later, run the same command again.

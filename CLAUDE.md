@@ -24,6 +24,7 @@ and hosts a compiler explorer that runs in the browser.
 | `docs/manual/` | Docs: the full rules, the compiler, the VM, concepts, internals, reference (`/docs/`) |
 | `docs/*.internal.md` | design notes; gitignored, never published or cited |
 | `samples/` | example programs with their expected output |
+| `scripts/` | the install scripts, `install.sh` and `install.ps1`, which the site serves at its root |
 | `stdlib/` | the stdlib modules, in Zaka; the compiler carries each one (`STD_MODULES` in `zakac_parser/src/load.rs`), imported as `"စံကား/<name>"` |
 
 A program passes through: segmenter → lexer → parser → naturalness → names and kinds
@@ -50,7 +51,7 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Build and publish the site | `mise run pages:publish` (the release snapshots, `dist`, then Cloudflare Pages) |
 | Make a release | Publish it on GitHub with the tag `v<version>` of `zakac` and the extension; `.github/workflows/release.yml` attaches the executables, the `.vsix` and the site snapshot, and publishes the extension when `VSCE_PAT` / `OVSX_PAT` are set |
 | Snapshot the site of a release | `mise run pages:snapshot -- [ref] [version]` (the working tree when no ref; to `target/site-snapshots`), then `pages:snapshot-upload <tag>` when a release ships |
-| Install scripts | `website/zaka_website/install/install.sh` and `install.ps1`, which `pages:build` serves at the site root; `ZAKA_RELEASES` points them at a test server |
+| Install scripts | `scripts/install.sh` and `scripts/install.ps1`, which `pages:build` serves at the site root; `ZAKA_RELEASES` points them at a test server |
 | Serve `dist` as the host does | `mise run pages:serve` (wrangler, 404 pages included) |
 
 ## Learn and Docs pages

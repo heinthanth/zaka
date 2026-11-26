@@ -1,26 +1,72 @@
 #!/bin/sh
-# Install zakac and zakafmt on macOS or Linux:
-#
-#   curl -fsSL https://zaka-lang.org/install.sh | sh
-#
-# The executables of the newest release go to ~/.zaka/bin, which then joins the
-# PATH through the startup file of the shell. These variables change that:
-#
-#   ZAKA_VERSION   a release to install in place of the newest, as v0.1.0
-#   ZAKA_HOME      the folder to install into, in place of ~/.zaka
-#   ZAKA_NO_PATH   when set, the startup files are not changed
-#   ZAKA_RELEASES  where the releases are, for tests of this script
+# Install zakac and zakafmt, the Zaka compiler and formatter, on macOS or Linux.
+# `--help` lists the options; each has a variable as well, and the option wins.
 set -eu
 
-releases="${ZAKA_RELEASES:-https://github.com/heinthanth/zaka/releases}"
-zaka_home="${ZAKA_HOME:-$HOME/.zaka}"
-bin="$zaka_home/bin"
+usage()
+{
+  cat <<'HELP'
+Install zakac and zakafmt, the Zaka compiler and formatter, on macOS or Linux.
+
+Usage:
+  curl -fsSL https://zaka-lang.org/install.sh | sh
+  curl -fsSL https://zaka-lang.org/install.sh | sh -s -- [options]
+  sh install.sh [options]
+
+Options:
+  --version <tag>  install the release <tag>, as v0.1.0, in place of the newest
+  --dir <dir>      install into <dir>/bin, in place of ~/.zaka/bin
+  --no-path        print the PATH line, and leave the startup files as is
+  -h, --help       print this help
+
+Variables:
+  ZAKA_VERSION     as --version
+  ZAKA_HOME        as --dir
+  ZAKA_NO_PATH     as --no-path, when set
+  ZAKA_RELEASES    where the releases are, for tests of this script
+HELP
+}
 
 fail()
 {
   echo "zaka install: $1" >&2
   exit 1
 }
+
+# The value of an option, which must not be blank.
+value()
+{
+  [ -n "$2" ] || fail "$1 needs a value; see --help"
+  echo "$2"
+}
+
+releases="${ZAKA_RELEASES:-https://github.com/heinthanth/zaka/releases}"
+version="${ZAKA_VERSION:-}"
+zaka_home="${ZAKA_HOME:-$HOME/.zaka}"
+no_path="${ZAKA_NO_PATH:-}"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --version=*) version="$(value --version "${1#*=}")" ;;
+    --version)
+      version="$(value --version "${2:-}")"
+      shift
+      ;;
+    --dir=*) zaka_home="$(value --dir "${1#*=}")" ;;
+    --dir)
+      zaka_home="$(value --dir "${2:-}")"
+      shift
+      ;;
+    --no-path) no_path=1 ;;
+    *) fail "unknown option $1; see --help" ;;
+  esac
+  shift
+done
+bin="$zaka_home/bin"
 
 # The target of the release for this computer. A shell under Rosetta reports
 # x86_64 on Apple silicon, so the CPU of a Mac comes from sysctl.
@@ -45,8 +91,8 @@ if [ "$target" = x86_64-apple-darwin ]; then
 fi
 
 asset="zakac-$target.tar.gz"
-if [ -n "${ZAKA_VERSION:-}" ]; then
-  url="$releases/download/$ZAKA_VERSION/$asset"
+if [ -n "$version" ]; then
+  url="$releases/download/$version/$asset"
 else
   url="$releases/latest/download/$asset"
 fi
@@ -86,7 +132,7 @@ esac
 if [ "$os" = apple-darwin ] && [ "$profile" = "$HOME/.bashrc" ]; then
   profile="$HOME/.bash_profile"
 fi
-if [ -n "${ZAKA_NO_PATH:-}" ]; then
+if [ -n "$no_path" ]; then
   echo "Add $bin to the PATH: $line"
   exit 0
 fi

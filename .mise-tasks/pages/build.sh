@@ -10,7 +10,7 @@ mv dist/vendor/monaco dist/explorer/monaco
 cp -R target/fonts dist/fonts
 # The install scripts, at the root: `curl … | sh` and `irm … | iex` read them
 # as text.
-cp website/zaka_website/install/install.sh website/zaka_website/install/install.ps1 dist/
+cp scripts/install.sh scripts/install.ps1 dist/
 printf '/install.sh\n  Content-Type: text/plain; charset=utf-8\n/install.ps1\n  Content-Type: text/plain; charset=utf-8\n' \
   > dist/_headers
 # The index comes before the snapshots, so the search of the latest lists its
