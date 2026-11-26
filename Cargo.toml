@@ -31,6 +31,7 @@ clap = { version = "4.6.7", features = ["cargo", "string"] }
 codee = "0.3.5"
 console_error_panic_hook = "0.1.7"
 const_for = "0.1.6"
+const_format = "0.2.36"
 etcetera = "0.11.0"
 find-msvc-tools = "0.1.12"
 gen-lsp-types = { version = "0.11.0", features = ["url"] }

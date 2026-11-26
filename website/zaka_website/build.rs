@@ -30,16 +30,20 @@ const CONTENTS: &str = "CONTENTS.md";
 /// Rebuild when a sheet, a locale table or a page of a book changes; the
 /// sheet and `include_str!` macros read them. Then write the files in
 /// [`ASSETS`] to `OUT_DIR/assets` under hashed names, with their addresses
-/// under `/assets/` in `OUT_DIR/assets.rs`, and the page table of each book in
-/// [`BOOKS`] to its own file in `OUT_DIR`.
+/// under `/assets/` (after the base `ZAKA_SITE_BASE`, when set) in
+/// `OUT_DIR/assets.rs`, and the page table of each book in [`BOOKS`] to its own
+/// file in `OUT_DIR`.
 fn main()
 {
     cargo_build::rerun_if_changed!("src");
     cargo_build::rerun_if_changed!("locales");
     cargo_build::rerun_if_changed(BOOKS.map(|(folder, ..)| folder));
+    cargo_build::rerun_if_env_changed!("ZAKA_SITE_BASE");
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"));
-    let names =
-        zaka_web_builder::hash_files(&ASSETS, "/assets/", &[&out.join("assets")]);
+    // The snapshot of an old release is served under its base, such as `/v0.1`.
+    let base = std::env::var("ZAKA_SITE_BASE").unwrap_or_default();
+    let root = format!("{base}/assets/");
+    let names = zaka_web_builder::hash_files(&ASSETS, &root, &[&out.join("assets")]);
     std::fs::write(out.join("assets.rs"), names).expect("OUT_DIR can be written");
     BOOKS.iter().for_each(|(folder, book, file)| {
         std::fs::write(out.join(file), book_pages(folder, book))

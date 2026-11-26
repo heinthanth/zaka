@@ -65,6 +65,7 @@ thanks to all of these projects.
 | [codee](https://github.com/Synphonyte/codee) | 0.3.5 | MIT OR Apache-2.0 |
 | [console_error_panic_hook](https://github.com/rustwasm/console_error_panic_hook) | 0.1.7 | Apache-2.0/MIT |
 | [const_for](https://github.com/JENebel/const_for) | 0.1.6 | MIT |
+| [const_format](https://github.com/rodrimati1992/const_format_crates/) | 0.2.36 | Zlib |
 | [cranelift-codegen](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
 | [cranelift-frontend](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |
 | [cranelift-jit](https://github.com/bytecodealliance/wasmtime) | 0.137.1 | Apache-2.0 WITH LLVM-exception |

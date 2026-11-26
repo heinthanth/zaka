@@ -13,6 +13,7 @@ use pulldown_cmark::TagEnd;
 use pulldown_cmark_escape::escape_html;
 use zaka_web_ui_common::paint::Piece;
 use zaka_web_ui_common::paint::paint;
+use zaka_web_ui_common::site::rooted;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 
@@ -387,9 +388,9 @@ pub fn anchor(text: &str, taken: &[Head]) -> String
 
 /// Where a link of a page points on the site: a page of either book at its
 /// address and the contents of a book at the list on each of its pages; a
-/// path from the site root, as `/explorer/`, stands as written. A link names a
-/// file from the folder of its page, so `../../manual/reference/errors.md` on
-/// a Learn page reaches the manual.
+/// path from the site root, as `/explorer/`, goes under the base of the build.
+/// A link names a file from the folder of its page, so
+/// `../../manual/reference/errors.md` on a Learn page reaches the manual.
 ///
 /// # Arguments
 ///
@@ -401,7 +402,8 @@ pub fn anchor(text: &str, taken: &[Head]) -> String
 /// The target on the site; the same target when it is not a page.
 pub fn link_target(page: &Page, dest: &str) -> String
 {
-    let local = !dest.contains("://") && !dest.starts_with(['#', '/']);
+    ret_if!(dest.starts_with('/'), rooted(dest));
+    let local = !dest.contains("://") && !dest.starts_with('#');
     let (file, mark) = dest.split_once('#').unwrap_or((dest, ""));
     ret_if!(!local || !file.ends_with(".md"), dest.to_string());
     let mark = tern!(mark.is_empty(), String::new(), format!("#{mark}"));

@@ -1,3 +1,4 @@
+use const_format::concatcp;
 use leptos::children::ToChildren;
 use leptos::children::TypedChildren;
 use leptos::html::body;
@@ -38,6 +39,7 @@ use zaka_web_ui_common::shared_sheets;
 use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::EXPLORER_URL;
 use zaka_web_ui_common::site::HOME_URL;
+use zaka_web_ui_common::site::SITE_BASE;
 use zakac_i18n::t;
 
 use crate::assets::COVER_CARD;
@@ -98,9 +100,9 @@ const EXPLORER_WEIGHTS: [u16; 2] = [400, 600];
 /// its version. Deferred, so the page paints first; the islands set the
 /// scenes once started.
 pub const MOTION: [&str; 3] = [
-    "/vendor/gsap/3.12.5/gsap.min.js",
-    "/vendor/gsap/3.12.5/ScrollTrigger.min.js",
-    "/vendor/lenis/1.1.13/lenis.min.js",
+    concatcp!(SITE_BASE, "/vendor/gsap/3.12.5/gsap.min.js"),
+    concatcp!(SITE_BASE, "/vendor/gsap/3.12.5/ScrollTrigger.min.js"),
+    concatcp!(SITE_BASE, "/vendor/lenis/1.1.13/lenis.min.js"),
 ];
 
 /// The HTML document around the page.
@@ -129,8 +131,15 @@ pub fn shell(options: LeptosOptions) -> impl IntoView
         MOTION.map(|src| script().src(src).attr("defer", true)),
         AutoReload(AutoReloadProps::builder().options(options.clone()).build()),
         HydrationScripts(
-            HydrationScriptsProps::builder().options(options).islands(true).build(),
+            HydrationScriptsProps::builder()
+                .options(options)
+                .islands(true)
+                .root(SITE_BASE)
+                .build(),
         ),
+        // The snapshot of an old release is kept out of search engines, which send
+        // readers to the latest.
+        (!SITE_BASE.is_empty()).then(|| meta().name("robots").content("noindex")),
         MetaTags(),
     ));
     (doctype("html"), html().lang("en").child((head, body().child(app()))))
@@ -167,6 +176,9 @@ pub fn site_origin(options: &LeptosOptions) -> String
 fn page_tags(path: &str, title: String, description: String) -> impl IntoView + use<>
 {
     let origin = use_context::<Origin>().map(|o| o.0).unwrap_or_default();
+    // The canonical address of a page in an old snapshot is the same page at
+    // the root.
+    let path = path.strip_prefix(SITE_BASE).unwrap_or(path);
     let page = format!("{origin}{path}");
     let cover = format!("{origin}{COVER_CARD}");
     let name = |name: &'static str, content: String| {
@@ -356,7 +368,7 @@ fn home() -> impl IntoView
     ];
     let title = t!("website.page.title").to_string();
     (
-        page_tags("/", title, t!("website.page.description").to_string()),
+        page_tags(HOME_URL, title, t!("website.page.description").to_string()),
         header_sheet(),
         SiteHeader(SiteHeaderProps::builder().here(HOME_URL.to_string()).build())
             .into_any(),

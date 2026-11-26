@@ -1,3 +1,4 @@
+use zaka_web_ui_common::site::rooted_in;
 use zaka_website::book::Book;
 use zaka_website::book::Page;
 use zaka_website::book::chapters;
@@ -199,6 +200,16 @@ fn links_point_at_the_pages_of_the_site()
     );
     let title = page_at(Book::Learn, "").expect("the title page is there");
     assert_eq!(link_target(&title, "CONTENTS.md"), "/learn/#contents");
+}
+
+#[test]
+fn paths_from_the_root_go_under_the_base_of_an_old_snapshot()
+{
+    assert_eq!(rooted_in("/v0.1", "/explorer/"), "/v0.1/explorer/");
+    assert_eq!(rooted_in("/v0.1", "/docs/x/#top"), "/v0.1/docs/x/#top");
+    assert_eq!(rooted_in("", "/explorer/"), "/explorer/");
+    assert_eq!(rooted_in("/v0.1", "//cdn.example.org/a.js"), "//cdn.example.org/a.js");
+    assert_eq!(rooted_in("/v0.1", "counted-loops.md"), "counted-loops.md");
 }
 
 #[test]

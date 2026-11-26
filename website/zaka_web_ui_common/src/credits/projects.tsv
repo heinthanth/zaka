@@ -10,6 +10,7 @@ crate	clap	4.6.7	MIT OR Apache-2.0	https://github.com/clap-rs/clap
 crate	codee	0.3.5	MIT OR Apache-2.0	https://github.com/Synphonyte/codee
 crate	console_error_panic_hook	0.1.7	Apache-2.0/MIT	https://github.com/rustwasm/console_error_panic_hook
 crate	const_for	0.1.6	MIT	https://github.com/JENebel/const_for
+crate	const_format	0.2.36	Zlib	https://github.com/rodrimati1992/const_format_crates/
 crate	cranelift-codegen	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
 crate	cranelift-frontend	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime
 crate	cranelift-jit	0.137.1	Apache-2.0 WITH LLVM-exception	https://github.com/bytecodealliance/wasmtime

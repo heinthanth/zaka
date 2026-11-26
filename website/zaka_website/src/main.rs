@@ -5,10 +5,12 @@ use leptos_axum::generate_route_list_with_ssg;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 use zaka_web_ui_common::site::EXPLORER_URL;
+use zaka_web_ui_common::site::SITE_BASE;
 use zaka_website::ORIGIN_VAR;
 use zaka_website::app::shell;
 use zaka_website::book::Book;
 use zaka_website::set_origin;
+use zakac_rust_sugars::do_if;
 
 /// Env var that makes the server write the pages and stop, for a build.
 const ONCE_VAR: &str = "ZAKA_WEBSITE_ONCE";
@@ -69,7 +71,9 @@ async fn main()
     pages.generate(&options).await;
     let root: &str = options.site_root.as_ref();
     place_assets(root);
-    place_robots(root, origin.as_deref());
+    // The snapshot of an old release lives inside the site of the latest, whose
+    // root holds the rules for crawlers.
+    do_if!(SITE_BASE.is_empty(), place_robots(root, origin.as_deref()));
     if once
     {
         return;

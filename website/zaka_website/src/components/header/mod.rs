@@ -116,7 +116,7 @@ pub fn SiteHeader(here: String) -> impl IntoView
     let mark = move || tern!(theme.is_dark(), LOGO_DARK, LOGO_LIGHT);
     let brand = a()
         .class(ClassName::HEADER_BRAND)
-        .href(tern!(home, "#top", "/"))
+        .href(tern!(home, "#top", HOME_URL))
         .attr("aria-label", t!("website.header.home"))
         .child((
             img()

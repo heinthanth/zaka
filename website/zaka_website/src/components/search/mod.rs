@@ -1,4 +1,5 @@
 use bon::Builder;
+use const_format::concatcp;
 use js_sys::Array;
 use js_sys::Promise;
 use leptos::ev;
@@ -19,6 +20,7 @@ use zaka_web_ui_common::controls::modal::Modal;
 use zaka_web_ui_common::controls::modal::modal;
 use zaka_web_ui_common::icon::search as search_icon;
 use zaka_web_ui_common::sheet;
+use zaka_web_ui_common::site::SITE_BASE;
 use zakac_i18n::t;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
@@ -34,7 +36,8 @@ static SHEET: ComponentStyle = ComponentStyle::global_css("site-search", STYLE_S
 /// The inline script of the page shell: a global that imports the Pagefind
 /// module, which `pages:build` writes into `/pagefind/`. The import waits
 /// for the first search, so a page that never searches never fetches it.
-pub const LOADER: &str = "window.zakaPagefind=()=>import('/pagefind/pagefind.js')";
+pub const LOADER: &str =
+    concatcp!("window.zakaPagefind=()=>import('", SITE_BASE, "/pagefind/pagefind.js')");
 
 /// Element id of the title of the search modal, which names the dialog.
 const TITLE_ID: &str = "search-title";
