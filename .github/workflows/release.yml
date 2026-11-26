@@ -105,8 +105,9 @@ jobs:
     strategy:
       fail-fast: false
       # The platforms of the tests. Linux builds on the oldest Ubuntu runner,
-      # so the executable needs the oldest glibc. A Windows build carries the runtime lib of both ABIs, as
-      # the tests do: MSVC is the host, and the MinGW target is the other ABI.
+      # so the executable needs the oldest glibc. A Windows build carries the
+      # runtime lib of both ABIs, as the tests do: MSVC is the host, and the
+      # MinGW target is the other ABI.
       matrix:
         include:
           - os: ubuntu-22.04
@@ -135,10 +136,12 @@ jobs:
           ref: ${{ env.TAG }}
 
       # zakac carries the runtime lib of WASI on each host, and on Windows the
-      # one of the other ABI.
+      # one of the other ABI. Windows names its host toolchain, as the tests do:
+      # rustup on the ARM64 runner can default to the x64 one under emulation,
+      # which would pack an x64 zakac.exe under the ARM64 name.
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.arch && format('stable-{0}-pc-windows-msvc', matrix.arch) || 'stable' }}
           targets: ${{ matrix.other && format('{0}-pc-windows-{1},wasm32-wasip1,wasm32-wasip2', matrix.arch, matrix.other) || 'wasm32-wasip1,wasm32-wasip2' }}
 
       # The steps for Windows match those of the tests: MinGW gives the GNU
