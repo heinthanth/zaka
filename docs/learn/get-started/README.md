@@ -33,8 +33,8 @@ as it is.
 
 Three short pages cover the setup, in order:
 
-1. [Installation](installation.md): install `zakac` with one command, or
-   download them, or build them from source.
+1. [Installation](installation.md): install `zakac` with one command, download it, run it
+   in Docker, or build it from source.
 2. [Editor setup](editors.md): the extension for VS Code and Cursor, Zed and other
    editors, the fonts and input methods for Burmese text, and
    [Ghostty Myanmar](editors.md#terminal), a terminal that draws Burmese text as written.

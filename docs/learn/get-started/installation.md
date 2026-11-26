@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install zakac on macOS, Linux or Windows with one command, from a release download, or from source.
+description: Install zakac on macOS, Linux or Windows with one command, from a release download, in Docker, or from source.
 ---
 
 # Installation
@@ -79,6 +79,35 @@ xattr -d com.apple.quarantine zakac
 
 On Windows, SmartScreen can warn about an executable it has not seen before. Choose
 **More info**, then **Run anyway**.
+
+## Run in Docker
+
+Each release is also a Docker image, `ghcr.io/heinthanth/zaka`, for Linux on x86_64 and
+arm64, with `zakac` as its entry point. It needs no install: mount the folder of the
+program, and the words after the image name are the `zakac` command to run.
+
+```sh
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/heinthanth/zaka run hello.zaka
+```
+
+The REPL needs `-it`, which keeps the terminal open for input:
+
+```sh
+docker run --rm -it ghcr.io/heinthanth/zaka repl
+```
+
+The tag `latest` names the newest stable release, and a version names that release, as
+`ghcr.io/heinthanth/zaka:0.1.0`. The image holds no C compiler, so for
+`zakac build --backend native` or `--backend c`, build an image on it that adds one:
+
+```dockerfile
+FROM ghcr.io/heinthanth/zaka
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
+```
+
+To build the image from source, run `docker build -t zaka .` in the
+[Zaka repo](https://github.com/heinthanth/zaka), then use `zaka` in place of
+`ghcr.io/heinthanth/zaka`.
 
 ## Check the install
 

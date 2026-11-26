@@ -13,6 +13,15 @@ stages (compiler passes). Each stage uses the result of the previous stage, and 
 stops compilation at the end of the stage that found it. For a first run, see [Hello,
 world](../../learn/hello/README.md#running-it).
 
+`zakac` comes as an executable for macOS, Linux and Windows, and as the Docker image
+`ghcr.io/heinthanth/zaka`, whose entry point is `zakac`:
+
+```sh
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/heinthanth/zaka run hello.zaka
+```
+
+[Installation](../../learn/get-started/installation.md) covers each install method.
+
 ```text
 source text
     │

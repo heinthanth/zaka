@@ -10,3 +10,6 @@ website/zaka_explorer/target
 website/zaka_website/vendor/target
 website/zaka_web_ui_common/fonts/target
 website/zaka_web_ui_common/assets/fonts/PDA10BurmeseMono-Regular.ttf
+# The built site is left out; the release image copies in dist/docker alone.
+dist
+!dist/docker

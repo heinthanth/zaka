@@ -31,6 +31,12 @@ On Windows, in PowerShell:
 irm https://zaka-lang.org/install.ps1 | iex
 ```
 
+Or run it in Docker, with no install:
+
+```sh
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/heinthanth/zaka run hello.zaka
+```
+
 Each [release](../../releases) also holds `zakac` for macOS (Apple
 silicon), Linux and Windows (x86_64 and ARM64 each), and the VS Code extension
 (`.vsix`). [Get started](https://zaka-lang.org/learn/get-started/) covers the install,

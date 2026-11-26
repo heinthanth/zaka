@@ -1,11 +1,11 @@
 name: Release
 
-# A release published on GitHub gets its files here: zakac for
-# each platform, the VS Code extension, and the snapshot of the site, which
-# the site serves under /v<major>.<minor>/ once a newer release ships. The
-# extension also goes to the VS Code Marketplace and to Open VSX when their
-# tokens are set (VSCE_PAT, OVSX_PAT). Run it from the Actions tab with a tag
-# to build the files again; each file replaces the one of the same name.
+# A release published on GitHub gets its files here: zakac for each platform,
+# a Docker image of zakac on ghcr.io, the VS Code extension, and the snapshot of
+# the site, which the site serves under /v<major>.<minor>/ once a newer release
+# ships. The extension also goes to the VS Code Marketplace and to Open VSX when
+# their tokens are set (VSCE_PAT, OVSX_PAT). Run it from the Actions tab with a
+# tag to build the files again; each file replaces the one of the same name.
 on:
   release:
     types: [published]
@@ -206,6 +206,57 @@ jobs:
       - name: Attach it to the release
         shell: bash
         run: gh release upload "$TAG" "$PACK" --clobber
+
+  docker:
+    name: Docker image
+    needs: [check, zakac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PRERELEASE: ${{ needs.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # The image holds the Linux executables of this release, one for each
+      # CPU, under the names Docker gives the CPUs.
+      - name: Unpack the Linux executables
+        run: |
+          for pair in amd64:x86_64 arm64:aarch64; do
+            arch="${pair%%:*}"
+            target="${pair#*:}-unknown-linux-gnu"
+            gh release download "$TAG" --pattern "zakac-$target.tar.gz" --dir assets
+            tar -xzf "assets/zakac-$target.tar.gz" -C assets
+            mkdir -p "dist/docker/$arch"
+            cp "assets/zakac-$target/zakac" "dist/docker/$arch/zakac"
+          done
+
+      # The tags: the version, as 0.1.0, and latest for a stable release.
+      - name: Name the image
+        run: |
+          image="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          tags="$image:${TAG#v}"
+          if [ "$PRERELEASE" != true ]; then tags="$tags,$image:latest"; fi
+          echo "TAGS=$tags" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: release
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.TAGS }}
 
   vscode:
     name: VS Code extension
