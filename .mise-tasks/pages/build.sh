@@ -8,6 +8,11 @@ cp -R target/website dist
 cp -R target/vendor dist/vendor
 mv dist/vendor/monaco dist/explorer/monaco
 cp -R target/fonts dist/fonts
+# The install scripts, at the root: `curl … | sh` and `irm … | iex` read them
+# as text.
+cp website/zaka_website/install/install.sh website/zaka_website/install/install.ps1 dist/
+printf '/install.sh\n  Content-Type: text/plain; charset=utf-8\n/install.ps1\n  Content-Type: text/plain; charset=utf-8\n' \
+  > dist/_headers
 # The index comes before the snapshots, so the search of the latest lists its
 # own pages alone; each snapshot brings an index of its own.
 bunx pagefind@1.4.0 --site dist --output-path dist/pagefind

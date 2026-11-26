@@ -163,12 +163,14 @@ jobs:
         with:
           key: release-${{ matrix.target }}
 
+      # The names hold no version, so releases/latest/download/<name> always
+      # reaches the newest; the install scripts of the site read it there.
       - name: Build and pack zakac
         if: runner.os != 'Windows'
         run: |
           cargo build --release --locked -p zakac
           cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
-          name="zakac-$TAG-${{ matrix.target }}"
+          name="zakac-${{ matrix.target }}"
           mkdir "$name"
           cp target/release/zakac target/release/zakafmt LICENSE README.md "$name/"
           tar -czf "$name.tar.gz" "$name"
@@ -184,7 +186,7 @@ jobs:
           $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
           cargo build --release --locked -p zakac
           cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
-          $name = "zakac-$env:TAG-${{ matrix.target }}"
+          $name = "zakac-${{ matrix.target }}"
           New-Item -ItemType Directory $name | Out-Null
           Copy-Item target\release\zakac.exe, target\release\zakafmt.exe, LICENSE, README.md $name
           Compress-Archive -Path $name -DestinationPath "$name.zip"
