@@ -42,6 +42,7 @@ them. Each option has a variable as well, for a script that sets them in advance
 | macOS and Linux | Windows | Variable | What it does |
 | --- | --- | --- | --- |
 | `--version <tag>` | `-Version <tag>` | `ZAKA_VERSION` | installs that release in place of the newest, as `v0.1.0` |
+| `--prerelease` | `-Prerelease` | `ZAKA_PRERELEASE` | installs the newest release, prereleases included |
 | `--dir <dir>` | `-Dir <dir>` | `ZAKA_HOME` | installs into that folder in place of `~/.zaka` |
 | `--no-path` | `-NoPath` | `ZAKA_NO_PATH` | prints the `PATH` line in place of adding it |
 
@@ -56,7 +57,10 @@ curl -fsSL https://zaka-lang.org/install.sh | sh -s -- --version v0.1.0
 & ([scriptblock]::Create((irm https://zaka-lang.org/install.ps1))) -Version v0.1.0
 ```
 
-To update Zaka later, run the same command again.
+To update Zaka later, run the same command again. With no option, the script installs the
+newest stable release and passes over prereleases, such as `v0.2.0-beta.1`: `--prerelease`
+installs the newest release of either kind, and `--version` with the tag of a prerelease
+installs that one.
 
 ## Download a release
 

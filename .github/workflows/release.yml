@@ -29,6 +29,8 @@ jobs:
   check:
     name: Check the tag
     runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.kind.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,9 +48,20 @@ jobs:
             fi
           done
 
+      # A prerelease gets its executables and its .vsix, but no site snapshot,
+      # whose folder takes the major and minor numbers alone and so belongs to
+      # the final release, and no marketplace publishing, as the VS Code
+      # Marketplace refuses a version such as 0.2.0-beta.1.
+      - name: Whether the release is a prerelease
+        id: kind
+        run: |
+          prerelease="$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
   site:
     name: Site snapshot
     needs: check
+    if: needs.check.outputs.prerelease != 'true'
     runs-on: ubuntu-latest
     env:
       ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
@@ -223,9 +236,9 @@ jobs:
           gh release upload "$TAG" "$pack" --clobber
 
       - name: Publish to the VS Code Marketplace
-        if: env.VSCE_PAT != ''
+        if: env.VSCE_PAT != '' && needs.check.outputs.prerelease != 'true'
         run: bunx @vscode/vsce publish --packagePath "$PACK" --pat "$VSCE_PAT"
 
       - name: Publish to Open VSX
-        if: env.OVSX_PAT != ''
+        if: env.OVSX_PAT != '' && needs.check.outputs.prerelease != 'true'
         run: bunx ovsx publish "$PACK" --pat "$OVSX_PAT"

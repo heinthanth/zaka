@@ -15,15 +15,18 @@ Usage:
 
 Options:
   --version <tag>  install the release <tag>, as v0.1.0, in place of the newest
+  --prerelease     install the newest release, prereleases included
   --dir <dir>      install into <dir>/bin, in place of ~/.zaka/bin
   --no-path        print the PATH line, and leave the startup files as is
   -h, --help       print this help
 
 Variables:
   ZAKA_VERSION     as --version
+  ZAKA_PRERELEASE  as --prerelease, when set
   ZAKA_HOME        as --dir
   ZAKA_NO_PATH     as --no-path, when set
   ZAKA_RELEASES    where the releases are, for tests of this script
+  ZAKA_API         where the list of releases is, for tests of this script
 HELP
 }
 
@@ -31,6 +34,18 @@ fail()
 {
   echo "zaka install: $1" >&2
   exit 1
+}
+
+# Print what an address holds, through curl or wget.
+get()
+{
+  if command -v curl >/dev/null; then
+    curl -fsSL "$1"
+  elif command -v wget >/dev/null; then
+    wget -qO- "$1"
+  else
+    fail "the download needs curl or wget"
+  fi
 }
 
 # The value of an option, which must not be blank.
@@ -41,7 +56,9 @@ value()
 }
 
 releases="${ZAKA_RELEASES:-https://github.com/heinthanth/zaka/releases}"
+api="${ZAKA_API:-https://api.github.com/repos/heinthanth/zaka/releases}"
 version="${ZAKA_VERSION:-}"
+prerelease="${ZAKA_PRERELEASE:-}"
 zaka_home="${ZAKA_HOME:-$HOME/.zaka}"
 no_path="${ZAKA_NO_PATH:-}"
 
@@ -61,12 +78,16 @@ while [ $# -gt 0 ]; do
       zaka_home="$(value --dir "${2:-}")"
       shift
       ;;
+    --prerelease) prerelease=1 ;;
     --no-path) no_path=1 ;;
     *) fail "unknown option $1; see --help" ;;
   esac
   shift
 done
 bin="$zaka_home/bin"
+if [ -n "$version" ] && [ -n "$prerelease" ]; then
+  fail "--version and --prerelease do not go together; see --help"
+fi
 
 # The target of the release for this computer. A shell under Rosetta reports
 # x86_64 on Apple silicon, so the CPU of a Mac comes from sysctl.
@@ -90,6 +111,13 @@ if [ "$target" = x86_64-apple-darwin ]; then
   fail "no build for Intel Macs; build zakac from source: https://zaka-lang.org/learn/get-started/installation/"
 fi
 
+# releases/latest never names a prerelease, so the newest release of each kind
+# comes from the list of releases, the newest first.
+if [ -n "$prerelease" ]; then
+  version="$(get "$api?per_page=1" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)"
+  [ -n "$version" ] || fail "found no release in $api"
+fi
+
 asset="zakac-$target.tar.gz"
 if [ -n "$version" ]; then
   url="$releases/download/$version/$asset"
@@ -100,13 +128,7 @@ fi
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 echo "Downloading $url"
-if command -v curl >/dev/null; then
-  curl -fsSL "$url" -o "$work/$asset" || fail "the download failed"
-elif command -v wget >/dev/null; then
-  wget -q "$url" -O "$work/$asset" || fail "the download failed"
-else
-  fail "the download needs curl or wget"
-fi
+get "$url" >"$work/$asset" || fail "the download failed"
 tar -xzf "$work/$asset" -C "$work"
 mkdir -p "$bin"
 cp "$work/zakac-$target/zakac" "$work/zakac-$target/zakafmt" "$bin/"
