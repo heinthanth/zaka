@@ -81,6 +81,11 @@ jobs:
     name: Executables (${{ matrix.target }})
     needs: check
     runs-on: ${{ matrix.os }}
+    env:
+      # The lowest macOS the executables run on, whatever macOS builds them:
+      # Rust's own floor, which the runtime lib targets as well. Other hosts
+      # pass over it.
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
       fail-fast: false
       # Linux builds on the oldest Ubuntu runner, so the executable needs the
@@ -94,7 +99,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - os: macos-latest
             target: aarch64-apple-darwin
-          - os: macos-15-intel
+          - os: macos-26-intel
             target: x86_64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
