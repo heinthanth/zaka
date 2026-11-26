@@ -47,7 +47,9 @@ Cranelift code at once when it can and on the VM otherwise; `--vm` and `--jit` p
 | Serve the site | `mise run website:dev` (port 8000, live reload) |
 | Serve the explorer | `mise run explorer:dev` |
 | Build the VS Code extension | `mise run editor:build-vscode` (wasm-pack, bun, vsce); `editor:install-vscode` and `editor:install-cursor` install it |
-| Build and publish the site | `mise run pages:publish` (`dist`, then Cloudflare Pages) |
+| Build and publish the site | `mise run pages:publish` (the release snapshots, `dist`, then Cloudflare Pages) |
+| Snapshot the site of a release | `mise run pages:snapshot -- [ref] [version]` (the working tree when no ref; to `target/site-snapshots`), then `pages:snapshot-upload <tag>` when a release ships |
+| Serve `dist` as the host does | `mise run pages:serve` (wrangler, 404 pages included) |
 
 ## Learn and Docs pages
 
@@ -291,3 +293,12 @@ Stage artifacts in text form are YAML (a `# zakac-<stage>-artifact v1` line, the
 - Web fonts come from `@fontsource` packages that Trunk fetches, never from Google Fonts
   links. Build scripts (`zaka_web_builder`) content-hash our own asset files.
 - Text the reader sees goes in the locale tables (`locales/*.toml`), under the no-`y` rule.
+- The latest release is served at the root; each old release has a snapshot under
+  `/v<major>.<minor>/`, built once at its release with `ZAKA_SITE_BASE` and kept as a
+  GitHub release asset. A path from the site root goes through `SITE_BASE` (the
+  constants of `zaka_web_ui_common/src/site.rs`, or `rooted`), with two exceptions:
+  `/fonts/`, which the snapshots share with the latest (each snapshot brings the font
+  folders it names), and `/versions.toml`, the list of releases that `pages:build` writes
+  and the version picker of each snapshot reads. Its fields can be added to, never renamed
+  or removed: an old picker skips a field it does not know, but drops a list it cannot
+  read.

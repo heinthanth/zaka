@@ -1,6 +1,7 @@
-#!/usr/bin/env bun
-#MISE description="Build dist and publish it to Cloudflare Pages"
-#MISE depends=["pages:build"]
+#!/bin/sh
+#MISE description="Fetch the site snapshots of the releases, build dist and publish it to Cloudflare Pages"
 #MISE dir="{{config_root}}"
-
-bunx wrangler@4 pages deploy dist --project-name=$CLOUDFLARE_PAGES_PROJECT --branch=main --commit-dirty=true
+set -eu
+mise run pages:snapshot-fetch
+mise run pages:build
+bunx wrangler@4 pages deploy dist --project-name="$CLOUDFLARE_PAGES_PROJECT" --branch=main --commit-dirty=true

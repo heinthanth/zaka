@@ -28,7 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # mise installs the tools of mise.toml that the site build needs.
       - uses: jdx/mise-action@v5
 
       - uses: Swatinem/rust-cache@v2
@@ -44,5 +43,6 @@ jobs:
       - name: Build and publish to Cloudflare Pages
         run: mise run pages:publish
         env:
+          GH_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
