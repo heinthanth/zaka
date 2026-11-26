@@ -1,21 +1,24 @@
 name: Release
 
-# A release published on GitHub gets its files here: zakac for each platform,
-# a Docker image of zakac on ghcr.io, the VS Code extension, and the snapshot of
+# A tag v<version> pushed to main makes a release: zakac for each platform, a
+# Docker image of zakac on ghcr.io, the VS Code extension, and the snapshot of
 # the site, which the site serves under /v<major>.<minor>/ once a newer release
 # ships. The extension also goes to the VS Code Marketplace and to Open VSX when
-# their tokens are set (VSCE_PAT, OVSX_PAT). Run it from the Actions tab with a
-# tag to build the files again; each file replaces the one of the same name.
+# their tokens are set (VSCE_PAT, OVSX_PAT). A tag with a part after a dash,
+# as v0.2.0-rc.1, makes a prerelease. Run it from the Actions tab with a tag to
+# build the files of that release again; each file replaces the one of the same
+# name.
 #
 # All or none: the build jobs make each file as an artifact of the run and
 # publish nothing, and the publish job runs once each build passed. It
 # publishes in the order the steps can be undone: the image (a tag can be
-# pushed again), the files of the release (each can be replaced), and the
-# marketplaces last (a version there cannot be withdrawn), whose tokens the
-# extension job checks before.
+# pushed again), the release with each file (the release can be deleted, a file
+# replaced), and the marketplaces last (a version there cannot be withdrawn),
+# whose tokens the extension job checks before. GitHub writes the notes of the
+# release from the changes since the last one.
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
@@ -26,10 +29,10 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.release.tag_name || inputs.tag }}
+  group: release-${{ inputs.tag || github.ref_name }}
 
 env:
-  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  TAG: ${{ inputs.tag || github.ref_name }}
   GH_TOKEN: ${{ github.token }}
 
 jobs:
@@ -39,9 +42,19 @@ jobs:
     outputs:
       prerelease: ${{ steps.kind.outputs.prerelease }}
     steps:
+      # Each commit, to tell whether the tag is on main.
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      # A release comes from main alone, so a tag on another branch stops here.
+      - name: The tag is on main
+        run: |
+          if ! git merge-base --is-ancestor "$TAG" origin/main; then
+            echo "::error::the tag $TAG is not on main"
+            exit 1
+          fi
 
       # The files are named after the versions of zakac and of the extension,
       # so the tag must name both.
@@ -55,15 +68,18 @@ jobs:
             fi
           done
 
-      # A prerelease gets its executables and its .vsix, but no site snapshot,
+      # A tag with a part after a dash, as v0.2.0-rc.1, is a prerelease. It
+      # gets its executables, its .vsix and its image, but no site snapshot,
       # whose folder takes the major and minor numbers alone and so belongs to
-      # the final release, and no marketplace publishing, as the VS Code
-      # Marketplace refuses a version such as 0.2.0-beta.1.
+      # the final release, no marketplace publishing, as the VS Code
+      # Marketplace refuses a version such as 0.2.0-rc.1, and no latest tag.
       - name: Whether the release is a prerelease
         id: kind
         run: |
-          prerelease="$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)"
-          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          case "$TAG" in
+            *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
 
   site:
     name: Site snapshot
@@ -338,8 +354,21 @@ jobs:
           push: true
           tags: ${{ env.TAGS }}
 
-      - name: Attach the files to the release
-        run: gh release upload "$TAG" files/* --clobber
+      # The release appears with each file at once. A run from the Actions
+      # tab for a tag that has its release replaces the files, and leaves the
+      # notes as written.
+      - name: Make the release
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" files/* --clobber
+            exit 0
+          fi
+          if [ "$PRERELEASE" = true ]; then
+            kind=--prerelease
+          else
+            kind=--latest
+          fi
+          gh release create "$TAG" files/* --verify-tag --generate-notes --title "$TAG" "$kind"
 
       - name: Find the extension
         run: echo "VSIX=$(ls files/zaka-*.vsix)" >> "$GITHUB_ENV"
