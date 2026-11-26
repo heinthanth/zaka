@@ -1,4 +1,5 @@
 use zaka_web_ui_common::site::Release;
+use zaka_web_ui_common::site::lists_releases;
 use zaka_web_ui_common::site::moved_path;
 use zaka_web_ui_common::site::read_releases;
 
@@ -26,4 +27,16 @@ fn a_pick_opens_the_same_page_in_the_other_release()
     assert_eq!(moved_path("/v0.2/learn/", "/v0.2/", "/"), "/learn/");
     assert_eq!(moved_path("/v0.2/", "/v0.2/", "/v0.1/"), "/v0.1/");
     assert_eq!(moved_path("/elsewhere/", "/v0.2/", "/"), "/");
+}
+
+#[test]
+fn the_latest_lists_the_releases_once_there_are_two()
+{
+    let release = |v: &str, p: &str| Release::builder().version(v).path(p).build();
+    let one = [release("0.1", "/")];
+    let two = [release("0.2", "/"), release("0.1", "/v0.1/")];
+    assert!(!lists_releases("", &[]));
+    assert!(!lists_releases("", &one));
+    assert!(lists_releases("", &two));
+    assert!(lists_releases("/v0.1", &[]));
 }

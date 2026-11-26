@@ -159,21 +159,36 @@ fn lang_spec(before_reload: impl Fn() + Send + Sync + 'static) -> Dropdown
     picker(t!("web_ui.lang.name"), choices, current.into(), on_pick)
 }
 
-/// Picker of the release whose pages show: the latest at the root, and the
-/// snapshot of each old release under its base. A pick opens the same page in
-/// the other release. The list comes from [`VERSIONS_FILE`] once the page
-/// runs, so a snapshot lists the releases after it; until then, and on a site
-/// with no such file, the picker names the release of this page alone.
+/// The releases of [`VERSIONS_FILE`], read once the page runs; none until
+/// then, and none on a site with no such file. The pickers of a page share
+/// them, so the file is read once.
 ///
 /// # Returns
 ///
-/// The view.
-pub fn version_picker() -> impl IntoView
+/// The releases, the newest first.
+pub fn site_releases() -> RwSignal<Vec<Release>>
 {
     let releases = RwSignal::new(Vec::<Release>::new());
     Effect::new(move |_| {
         spawn_local(async move { releases.set(fetch_releases().await) });
     });
+    releases
+}
+
+/// Picker of the release whose pages show: the latest at the root, and the
+/// snapshot of each old release under its base. A pick opens the same page in
+/// the other release. Until the releases arrive, the picker names the release
+/// of this page alone; the page hides it while [`lists_releases`] is false.
+///
+/// # Arguments
+///
+/// * `releases` - The releases, from [`site_releases`].
+///
+/// # Returns
+///
+/// The view.
+pub fn version_picker(releases: RwSignal<Vec<Release>>) -> impl IntoView
+{
     span()
         .class(ClassName::VERSION_PICKER)
         .class((ClassName::VERSION_PICKER_OLD, !SITE_BASE.is_empty()))

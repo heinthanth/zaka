@@ -14,6 +14,7 @@ use wasm_bindgen::JsCast;
 use web_sys::Element;
 use zaka_web_ui_common::controls::pickers::lang_icon_picker;
 use zaka_web_ui_common::controls::pickers::lang_picker;
+use zaka_web_ui_common::controls::pickers::site_releases;
 use zaka_web_ui_common::controls::pickers::theme_icon_picker;
 use zaka_web_ui_common::controls::pickers::theme_picker;
 use zaka_web_ui_common::controls::pickers::version_picker;
@@ -26,6 +27,9 @@ use zaka_web_ui_common::sheet;
 use zaka_web_ui_common::site::EXPLORER_FLUSH_EVENT;
 use zaka_web_ui_common::site::EXPLORER_SETTINGS_EVENT;
 use zaka_web_ui_common::site::HOME_URL;
+use zaka_web_ui_common::site::Release;
+use zaka_web_ui_common::site::SITE_BASE;
+use zaka_web_ui_common::site::lists_releases;
 use zaka_web_ui_common::theme::ThemeMode;
 use zaka_web_ui_common::theme::theme_mode;
 use zakac_i18n::t;
@@ -145,8 +149,10 @@ pub fn SiteHeader(here: String) -> impl IntoView
             .attr("rel", "noopener noreferrer")
             .child(t!("website.header.source"))
     });
+    let releases = site_releases();
+    let listed = move || lists_releases(SITE_BASE, &releases.get());
     let pickers = div().class(ClassName::HEADER_PICKERS).child((
-        version_picker(),
+        move || listed().then(|| version_picker(releases)),
         theme_icon_picker(theme),
         lang_icon_picker(|| send(EXPLORER_FLUSH_EVENT)),
     ));
@@ -169,7 +175,7 @@ pub fn SiteHeader(here: String) -> impl IntoView
         .attr("data-chapter", move || chapter.get())
         .attr("data-moved", move || moved.get().then_some(""))
         .class((ClassName::HEADER_TOOL, on_explorer))
-        .child((brand, actions, menu_panel(theme, open, on_explorer)))
+        .child((brand, actions, menu_panel(theme, releases, open, on_explorer)))
 }
 
 /// The call to action: the link to the explorer.
@@ -201,19 +207,29 @@ fn settings_action() -> impl IntoView
 }
 
 /// The version, theme and language pickers of the menu, each across it, with
-/// an icon in front that tells what it picks.
+/// an icon in front that tells what it picks; the version picker while the
+/// page lists the releases.
 ///
 /// # Arguments
 ///
 /// * `theme` - The theme mode.
+/// * `releases` - The releases of the site.
 ///
 /// # Returns
 ///
 /// The view.
-fn menu_pickers(theme: ThemeMode) -> impl IntoView
+fn menu_pickers(theme: ThemeMode, releases: RwSignal<Vec<Release>>) -> impl IntoView
 {
+    let listed = move || lists_releases(SITE_BASE, &releases.get());
+    let version = move || {
+        listed().then(|| {
+            span()
+                .class(ClassName::HEADER_PICKER)
+                .child((past(), version_picker(releases)))
+        })
+    };
     (
-        span().class(ClassName::HEADER_PICKER).child((past(), version_picker())),
+        version,
         span()
             .class(ClassName::HEADER_PICKER)
             .child((swatches(), theme_picker(theme, false))),
@@ -267,6 +283,7 @@ fn send(name: &str)
 /// # Arguments
 ///
 /// * `theme` - The theme mode.
+/// * `releases` - The releases of the site.
 /// * `open` - Whether the menu is open.
 /// * `on_explorer` - Whether the page is the explorer.
 ///
@@ -274,7 +291,8 @@ fn send(name: &str)
 ///
 /// The view.
 fn menu_panel(
-    theme: ThemeMode, open: RwSignal<bool>, on_explorer: bool,
+    theme: ThemeMode, releases: RwSignal<Vec<Release>>, open: RwSignal<bool>,
+    on_explorer: bool,
 ) -> impl IntoView
 {
     let shut = move |_| open.set(false);
@@ -300,7 +318,9 @@ fn menu_panel(
                 (!on_explorer)
                     .then(|| link((EXPLORER_URL, "website.header.explorer_link"))),
             )),
-            div().class(ClassName::HEADER_MENU_PICKERS).child(menu_pickers(theme)),
+            div()
+                .class(ClassName::HEADER_MENU_PICKERS)
+                .child(menu_pickers(theme, releases)),
         ))
 }
 

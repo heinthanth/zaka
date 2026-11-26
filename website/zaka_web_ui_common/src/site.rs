@@ -96,6 +96,23 @@ pub fn read_releases(text: &str) -> Vec<Release>
     toml::from_str::<Releases>(text).map(|r| r.release).unwrap_or_default()
 }
 
+/// Whether a page lists the releases: the snapshot of an old release does,
+/// whatever the list holds, as its picker is what marks it old; the latest does
+/// once the site holds more than one release.
+///
+/// # Arguments
+///
+/// * `base` - The base of the page, as [`SITE_BASE`] holds it.
+/// * `releases` - The releases of [`VERSIONS_FILE`].
+///
+/// # Returns
+///
+/// `true` when it does.
+pub fn lists_releases(base: &str, releases: &[Release]) -> bool
+{
+    !base.is_empty() || releases.len() > 1
+}
+
 /// The same page in the site of another release.
 ///
 /// # Arguments
