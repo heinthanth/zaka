@@ -373,10 +373,12 @@ jobs:
       - name: Find the extension
         run: echo "VSIX=$(ls files/zaka-*.vsix)" >> "$GITHUB_ENV"
 
+      # This job sets up no tools through mise, so the CLIs of the
+      # marketplaces run on the Node of the runner.
       - name: Publish to the VS Code Marketplace
         if: env.VSCE_PAT != '' && env.PRERELEASE != 'true'
-        run: bunx @vscode/vsce publish --packagePath "$VSIX" --pat "$VSCE_PAT"
+        run: npx --yes @vscode/vsce publish --packagePath "$VSIX" --pat "$VSCE_PAT"
 
       - name: Publish to Open VSX
         if: env.OVSX_PAT != '' && env.PRERELEASE != 'true'
-        run: bunx ovsx publish "$VSIX" --pat "$OVSX_PAT"
+        run: npx --yes ovsx publish "$VSIX" --pat "$OVSX_PAT"
