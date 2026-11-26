@@ -1,0 +1,226 @@
+name: Release
+
+# A release published on GitHub gets its files here: zakac and zakafmt for
+# each platform, the VS Code extension, and the snapshot of the site, which
+# the site serves under /v<major>.<minor>/ once a newer release ships. The
+# extension also goes to the VS Code Marketplace and to Open VSX when their
+# tokens are set (VSCE_PAT, OVSX_PAT). Run it from the Actions tab with a tag
+# to build the files again; each file replaces the one of the same name.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag of the release, as v0.1.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag }}
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  check:
+    name: Check the tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # The files are named after the versions of zakac and of the extension,
+      # so the tag must name both.
+      - name: The tag names the version of zakac and of the extension
+        run: |
+          for crate in compiler/zakac editors/vscode; do
+            version="$(sed -n 's/^version = "\(.*\)"/\1/p' "$crate/Cargo.toml" | head -n 1)"
+            if [ "$TAG" != "v$version" ]; then
+              echo "::error::the tag $TAG does not match v$version, the version of $crate"
+              exit 1
+            fi
+          done
+
+  site:
+    name: Site snapshot
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      ZAKA_PDA_FONT_SECRET: ${{ secrets.ZAKA_PDA_FONT_SECRET }}
+      ZAKA_SITE_ORIGIN: ${{ vars.ZAKA_SITE_ORIGIN }}
+      ZAKA_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:trunk,cargo:cargo-leptos
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: jdx/mise-action@v5
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/trunk
+            ~/.cache/cargo-leptos
+          key: web-tools-${{ hashFiles('Cargo.lock', '**/Trunk.toml') }}
+          restore-keys: web-tools-
+
+      - name: Build the snapshot and attach it
+        run: |
+          mise run pages:snapshot
+          mise run pages:snapshot-upload -- "$TAG"
+
+  zakac:
+    name: Executables (${{ matrix.target }})
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # Linux builds on the oldest Ubuntu runner, so the executable needs the
+      # oldest glibc. A Windows build carries the runtime lib of both ABIs, as
+      # the tests do: MSVC is the host, and the MinGW target is the other ABI.
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            arch: x86_64
+            other: gnu
+            msystem: UCRT64
+            mingw: mingw-w64-ucrt-x86_64-gcc
+            mingw_bin: ucrt64
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            arch: aarch64
+            other: gnullvm
+            msystem: CLANGARM64
+            mingw: mingw-w64-clang-aarch64-clang
+            mingw_bin: clangarm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # zakac carries the runtime lib of WASI on each host, and on Windows the
+      # one of the other ABI.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: ${{ matrix.other && format('{0}-pc-windows-{1},wasm32-wasip1,wasm32-wasip2', matrix.arch, matrix.other) || 'wasm32-wasip1,wasm32-wasip2' }}
+
+      # The steps for Windows match those of the tests: MinGW gives the GNU
+      # ABI a compiler, and its folder alone joins the PATH.
+      - name: Install MinGW (Windows)
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          install: >-
+            ${{ matrix.mingw }}
+            make
+
+      - name: Put MinGW on the PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' '${{ matrix.mingw_bin }}\bin'
+          Add-Content -Path $env:GITHUB_PATH -Value $bin
+
+      - name: Set up the MSVC environment (Windows ARM64)
+        if: runner.os == 'Windows' && matrix.arch == 'aarch64'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
+      - name: Point the gnullvm target at clang (Windows ARM64)
+        if: runner.os == 'Windows' && matrix.arch == 'aarch64'
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER=clang"
+          Add-Content -Path $env:GITHUB_ENV -Value "CC_aarch64_pc_windows_gnullvm=clang"
+          Add-Content -Path $env:GITHUB_ENV -Value "AR_aarch64_pc_windows_gnullvm=llvm-ar"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Build and pack zakac
+        if: runner.os != 'Windows'
+        run: |
+          cargo build --release --locked -p zakac
+          cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
+          name="zakac-$TAG-${{ matrix.target }}"
+          mkdir "$name"
+          cp target/release/zakac target/release/zakafmt LICENSE README.md "$name/"
+          tar -czf "$name.tar.gz" "$name"
+          echo "PACK=$name.tar.gz" >> "$GITHUB_ENV"
+
+      # libffi of the GNU target builds with the MSYS tools, and the folders
+      # of Git leave the PATH, as in the tests.
+      - name: Build and pack zakac (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $kept = ($env:PATH -split ';') | Where-Object { $_ -notlike '*\Git\*' }
+          $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
+          cargo build --release --locked -p zakac
+          cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
+          $name = "zakac-$env:TAG-${{ matrix.target }}"
+          New-Item -ItemType Directory $name | Out-Null
+          Copy-Item target\release\zakac.exe, target\release\zakafmt.exe, LICENSE, README.md $name
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+          Add-Content -Path $env:GITHUB_ENV -Value "PACK=$name.zip"
+
+      - name: Attach it to the release
+        shell: bash
+        run: gh release upload "$TAG" "$PACK" --clobber
+
+  vscode:
+    name: VS Code extension
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:wasm-pack
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: jdx/mise-action@v5
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The extension runs the same in each editor and on each platform: its
+      # client is WASM, and it starts `zakac lsp` from the PATH.
+      - name: Build the extension and attach it
+        run: |
+          mise run editor:build-vscode
+          pack="$(ls editors/vscode/zaka-*.vsix)"
+          echo "PACK=$pack" >> "$GITHUB_ENV"
+          gh release upload "$TAG" "$pack" --clobber
+
+      - name: Publish to the VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: bunx @vscode/vsce publish --packagePath "$PACK" --pat "$VSCE_PAT"
+
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        run: bunx ovsx publish "$PACK" --pat "$OVSX_PAT"

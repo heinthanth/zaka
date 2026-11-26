@@ -17,6 +17,11 @@ Zaka is a programming language based on a subset of Burmese. Burmese sentences a
   browser, one stage at a time
 - [Samples](samples/): example programs with their expected output
 
+## Install
+
+Each [release](../../releases) holds `zakac` and `zakafmt` for macOS, Linux and
+Windows, and the VS Code extension (`.vsix`).
+
 ## Building from source
 
 ```sh
