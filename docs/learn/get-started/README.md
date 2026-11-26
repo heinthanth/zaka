@@ -33,7 +33,7 @@ as it is.
 
 Three short pages cover the setup, in order:
 
-1. [Installation](installation.md): install `zakac` and `zakafmt` with one command, or
+1. [Installation](installation.md): install `zakac` with one command, or
    download them, or build them from source.
 2. [Editor setup](editors.md): the extension for VS Code and Cursor, Zed and other
    editors, the fonts and input methods for Burmese text, and

@@ -1,13 +1,13 @@
 ---
 title: Installation
-description: Install zakac and zakafmt on macOS, Linux or Windows with one command, from a release download, or from source.
+description: Install zakac on macOS, Linux or Windows with one command, from a release download, or from source.
 ---
 
 # Installation
 
 The compiler, `zakac`, checks, runs and builds Zaka programs, and runs the language server
-for editors. The formatter, `zakafmt`, comes with it. Each release of Zaka holds both of
-them for these platforms:
+for editors, and its `fmt` command formats source files. Each release of Zaka holds it for
+these platforms:
 
 | OS | CPU |
 | --- | --- |
@@ -31,7 +31,7 @@ On Windows, run this in PowerShell:
 irm https://zaka-lang.org/install.ps1 | iex
 ```
 
-The script downloads the newest release for the computer, puts `zakac` and `zakafmt` in
+The script downloads the newest release for the computer, puts `zakac` in
 `~/.zaka/bin` (`%USERPROFILE%\.zaka\bin` on Windows), and adds that folder to the `PATH`:
 through the startup file of the shell on macOS and Linux, and in the `PATH` of the user on
 Windows. Open a new terminal afterwards, so it reads the new `PATH`.
@@ -74,7 +74,7 @@ macOS trusts it. The script above downloads with `curl`, which sets no such mark
 browser download, remove the mark once:
 
 ```sh
-xattr -d com.apple.quarantine zakac zakafmt
+xattr -d com.apple.quarantine zakac
 ```
 
 On Windows, SmartScreen can warn about an executable it has not seen before. Choose
@@ -100,10 +100,9 @@ the [Zaka repo](https://github.com/heinthanth/zaka):
 git clone https://github.com/heinthanth/zaka
 cd zaka
 cargo install --path compiler/zakac
-cargo install --path compiler/zakac_formatter --features cli
 ```
 
-`cargo install` puts the executables in `~/.cargo/bin`, which the Rust installer has
+`cargo install` puts `zakac` in `~/.cargo/bin`, which the Rust installer has
 added to the `PATH`. To build programs for WebAssembly as well
 ([WASI](../../manual/compiler/native.md#wasi)), add the targets of WASI to Rust first, with
 `rustup target add wasm32-wasip1 wasm32-wasip2`; without them, `zakac` builds with a

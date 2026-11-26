@@ -8,7 +8,7 @@ description: Set up VS Code, Cursor, Zed or another editor for Zaka, and the fon
 Each editor gets the same help with Zaka from the language server that `zakac` runs: it
 colors the words, shows errors as we write, shows the data kind (type) of a name on hover,
 completes names, goes to a declaration, renames a name in the open files and the files
-those import, and formats the file with the rules of `zakafmt`. Install `zakac` first, as
+those import, and formats the file with the rules of `zakac fmt`. Install `zakac` first, as
 [Installation](installation.md) shows, since each editor starts the server from the
 `PATH`.
 

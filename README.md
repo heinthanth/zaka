@@ -31,7 +31,7 @@ On Windows, in PowerShell:
 irm https://zaka-lang.org/install.ps1 | iex
 ```
 
-Each [release](../../releases) also holds `zakac` and `zakafmt` for macOS (Apple
+Each [release](../../releases) also holds `zakac` for macOS (Apple
 silicon), Linux and Windows (x86_64 and ARM64 each), and the VS Code extension
 (`.vsix`). [Get started](https://zaka-lang.org/learn/get-started/) covers the install,
 the editors and a first program.

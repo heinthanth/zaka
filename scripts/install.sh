@@ -1,12 +1,12 @@
 #!/bin/sh
-# Install zakac and zakafmt, the Zaka compiler and formatter, on macOS or Linux.
+# Install zakac, the Zaka compiler, on macOS or Linux.
 # `--help` lists the options; each has a variable as well, and the option wins.
 set -eu
 
 usage()
 {
   cat <<'HELP'
-Install zakac and zakafmt, the Zaka compiler and formatter, on macOS or Linux.
+Install zakac, the Zaka compiler, on macOS or Linux.
 
 Usage:
   curl -fsSL https://zaka-lang.org/install.sh | sh
@@ -131,8 +131,8 @@ echo "Downloading $url"
 get "$url" >"$work/$asset" || fail "the download failed"
 tar -xzf "$work/$asset" -C "$work"
 mkdir -p "$bin"
-cp "$work/zakac-$target/zakac" "$work/zakac-$target/zakafmt" "$bin/"
-chmod +x "$bin/zakac" "$bin/zakafmt"
+cp "$work/zakac-$target/zakac" "$bin/"
+chmod +x "$bin/zakac"
 echo "Installed $("$bin/zakac" --version | head -n 1) in $bin"
 
 # The PATH: a shell that finds the folder now needs nothing; else the line

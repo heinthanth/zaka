@@ -1,4 +1,4 @@
-# Install zakac and zakafmt, the Zaka compiler and formatter, on Windows.
+# Install zakac, the Zaka compiler, on Windows.
 # `-Help` lists the options; each has a variable as well, and the option wins.
 
 param(
@@ -15,7 +15,7 @@ $ProgressPreference = 'SilentlyContinue'
 if ($Help)
 {
     Write-Host @'
-Install zakac and zakafmt, the Zaka compiler and formatter, on Windows.
+Install zakac, the Zaka compiler, on Windows.
 
 Usage:
   irm https://zaka-lang.org/install.ps1 | iex
@@ -80,7 +80,7 @@ try
     Expand-Archive (Join-Path $work $asset) -DestinationPath $work
     New-Item -ItemType Directory -Force $bin | Out-Null
     $unpacked = Join-Path $work "zakac-$target"
-    Copy-Item (Join-Path $unpacked 'zakac.exe'), (Join-Path $unpacked 'zakafmt.exe') $bin -Force
+    Copy-Item (Join-Path $unpacked 'zakac.exe') $bin -Force
 }
 finally
 {

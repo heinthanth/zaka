@@ -68,8 +68,7 @@ zakac fmt hello.zaka
 zakac fmt .
 ```
 
-The editors run the same formatter, and `zakafmt` is the same command as a program of its
-own.
+The editors run the same formatter when they format a file.
 
 ## Build an executable
 

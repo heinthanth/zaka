@@ -1,6 +1,6 @@
 name: Release
 
-# A release published on GitHub gets its files here: zakac and zakafmt for
+# A release published on GitHub gets its files here: zakac for
 # each platform, the VS Code extension, and the snapshot of the site, which
 # the site serves under /v<major>.<minor>/ once a newer release ships. The
 # extension also goes to the VS Code Marketplace and to Open VSX when their
@@ -182,10 +182,9 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cargo build --release --locked -p zakac
-          cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
           name="zakac-${{ matrix.target }}"
           mkdir "$name"
-          cp target/release/zakac target/release/zakafmt LICENSE README.md "$name/"
+          cp target/release/zakac LICENSE README.md "$name/"
           tar -czf "$name.tar.gz" "$name"
           echo "PACK=$name.tar.gz" >> "$GITHUB_ENV"
 
@@ -198,10 +197,9 @@ jobs:
           $kept = ($env:PATH -split ';') | Where-Object { $_ -notlike '*\Git\*' }
           $env:PATH = ($kept -join ';') + ";${{ steps.msys2.outputs.msys2-location }}\usr\bin"
           cargo build --release --locked -p zakac
-          cargo build --release --locked -p zakac_formatter --features cli --bin zakafmt
           $name = "zakac-${{ matrix.target }}"
           New-Item -ItemType Directory $name | Out-Null
-          Copy-Item target\release\zakac.exe, target\release\zakafmt.exe, LICENSE, README.md $name
+          Copy-Item target\release\zakac.exe, LICENSE, README.md $name
           Compress-Archive -Path $name -DestinationPath "$name.zip"
           Add-Content -Path $env:GITHUB_ENV -Value "PACK=$name.zip"
 
