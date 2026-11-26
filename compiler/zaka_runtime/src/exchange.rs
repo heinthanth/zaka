@@ -169,6 +169,10 @@ pub extern "C" fn zk_from_c(from: *const u8, k: *const ZkKind, to: *mut u8, site
 /// * `own` - The value, in the form of the program.
 /// * `c` - The C form.
 /// * `step` - The step: the cell in each form and its kind.
+// The steps call the function that calls this one, so with this inlined, an
+// optimized build inlines the step, then this again, without end: unwinding
+// makes each round heavier, and LLVM's inliner runs for hours.
+#[inline(never)]
 fn each_cell(
     k: &ZkKind, own: *mut u8, c: *mut u8,
     step: &dyn Fn(*mut u8, *const ZkKind, *mut u8),
@@ -187,6 +191,8 @@ fn each_cell(
 /// * `own` - The value, in the form of the program.
 /// * `c` - The C form.
 /// * `step` - The step: the field in each form and its kind.
+// Kept out of line for the reason `each_cell` is.
+#[inline(never)]
 fn each_field(
     k: &ZkKind, own: *mut u8, c: *mut u8,
     step: &dyn Fn(*mut u8, *const ZkKind, *mut u8),
