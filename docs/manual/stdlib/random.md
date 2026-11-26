@@ -26,18 +26,18 @@ variable that holds it must be a `ကိန်းရှင်`.
 ```
 
 ```text
-၄
-၆
+၃
+၅
 ၀.၉၅၈၇၁၄၆၅၇၁၁၃၀၂၃၄
-ဒေတာ("ငှက်")
-[၄၊ ၅၊ ၁၊ ၂၊ ၃]
+ဒေတာ("ကြက်")
+[၄၊ ၅၊ ၃၊ ၁၊ ၂]
 ```
 
 | Function | Gives |
 | --- | --- |
 | `ကျပန်းထုတ်စက်ပြုလုပ်` | a generator: `<seed> ဖြင့်` for a fixed seed, `ကျပန်းထုတ်စက်ပြုလုပ်()` for a seed from the OS |
 | `ကျပန်းကိန်းထုတ်` | the next unsigned 64-bit number, never zero |
-| `ကျပန်းကိန်းပြည့်ထုတ်` | a `ကိန်းပြည့်` from `<a> မှ` to `<b> အထိ`, both ends included; the ends can come in either order |
+| `ကျပန်းကိန်းပြည့်ထုတ်` | a `ကိန်းပြည့်` from `<a> မှ` to `<b> အထိ`, both ends included, each with the same chance; the ends can come in either order and can span the whole range |
 | `ကျပန်းဒဿမကိန်းထုတ်` | a `ဒဿမကိန်း` from 0 up to 1, with 1 left out |
 | `ကျပန်းရွေးထုတ်` | one cell of a list (`<list> မှ`), each cell with the same chance, as an optional that is `အလွတ်` for a list with no cells |
 | `ရောမွှေ` | nothing: it shuffles the list (`<list> ကို`) in place |
