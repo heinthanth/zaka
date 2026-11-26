@@ -6,6 +6,13 @@ name: Release
 # ships. The extension also goes to the VS Code Marketplace and to Open VSX when
 # their tokens are set (VSCE_PAT, OVSX_PAT). Run it from the Actions tab with a
 # tag to build the files again; each file replaces the one of the same name.
+#
+# All or none: the build jobs make each file as an artifact of the run and
+# publish nothing, and the publish job runs once each build passed. It
+# publishes in the order the steps can be undone: the image (a tag can be
+# pushed again), the files of the release (each can be replaced), and the
+# marketplaces last (a version there cannot be withdrawn), whose tokens the
+# extension job checks before.
 on:
   release:
     types: [published]
@@ -88,10 +95,14 @@ jobs:
           key: web-tools-${{ hashFiles('Cargo.lock', '**/Trunk.toml') }}
           restore-keys: web-tools-
 
-      - name: Build the snapshot and attach it
-        run: |
-          mise run pages:snapshot
-          mise run pages:snapshot-upload -- "$TAG"
+      - name: Build the snapshot
+        run: mise run pages:snapshot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: target/site-snapshots/site-v*.tar.gz
+          if-no-files-found: error
 
   zakac:
     name: Executables (${{ matrix.target }})
@@ -209,35 +220,97 @@ jobs:
           Compress-Archive -Path $name -DestinationPath "$name.zip"
           Add-Content -Path $env:GITHUB_ENV -Value "PACK=$name.zip"
 
-      - name: Attach it to the release
-        shell: bash
-        run: gh release upload "$TAG" "$PACK" --clobber
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zakac-${{ matrix.target }}
+          path: ${{ env.PACK }}
+          if-no-files-found: error
 
-  docker:
-    name: Docker image
-    needs: [check, zakac]
+  vscode:
+    name: VS Code extension
+    needs: check
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    # The tokens of the marketplaces live in the environment of the releases.
+    environment: production
     env:
-      PRERELEASE: ${{ needs.check.outputs.prerelease }}
+      MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:wasm-pack
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      PUBLISH: ${{ needs.check.outputs.prerelease != 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
 
+      - uses: jdx/mise-action@v5
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The extension runs the same in each editor and on each platform: its
+      # client is WASM, and it starts `zakac lsp` from the PATH.
+      - name: Build the extension
+        run: mise run editor:build-vscode
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode
+          path: editors/vscode/zaka-*.vsix
+          if-no-files-found: error
+
+      # A token that cannot publish for the publisher fails the build here,
+      # before the publish job publishes anything.
+      - name: Check the token of the VS Code Marketplace
+        if: env.VSCE_PAT != '' && env.PUBLISH == 'true'
+        run: |
+          publisher="$(sed -n 's/^publisher = "\(.*\)"/\1/p' editors/vscode/extension.toml)"
+          bunx @vscode/vsce verify-pat "$publisher" --pat "$VSCE_PAT"
+
+      - name: Check the token of Open VSX
+        if: env.OVSX_PAT != '' && env.PUBLISH == 'true'
+        run: |
+          publisher="$(sed -n 's/^publisher = "\(.*\)"/\1/p' editors/vscode/extension.toml)"
+          bunx ovsx verify-pat "$publisher" --pat "$OVSX_PAT"
+
+  publish:
+    name: Publish
+    needs: [check, site, zakac, vscode]
+    # The site snapshot is skipped for a prerelease; each other build must
+    # pass, and a build that failed or was cancelled stops the publishing.
+    if: >-
+      !cancelled()
+      && needs.zakac.result == 'success'
+      && needs.vscode.result == 'success'
+      && (needs.site.result == 'success' || needs.site.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+      packages: write
+    env:
+      PRERELEASE: ${{ needs.check.outputs.prerelease }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # Each file the build jobs made, in one folder.
+      - uses: actions/download-artifact@v4
+        with:
+          path: files
+          merge-multiple: true
+
       # The image holds the Linux executables of this release, one for each
       # CPU, under the names Docker gives the CPUs.
-      - name: Unpack the Linux executables
+      - name: Unpack the Linux executables for the image
         run: |
           for pair in amd64:x86_64 arm64:aarch64; do
             arch="${pair%%:*}"
             target="${pair#*:}-unknown-linux-gnu"
-            gh release download "$TAG" --pattern "zakac-$target.tar.gz" --dir assets
-            tar -xzf "assets/zakac-$target.tar.gz" -C assets
-            mkdir -p "dist/docker/$arch"
-            cp "assets/zakac-$target/zakac" "dist/docker/$arch/zakac"
+            mkdir -p unpacked "dist/docker/$arch"
+            tar -xzf "files/zakac-$target.tar.gz" -C unpacked
+            cp "unpacked/zakac-$target/zakac" "dist/docker/$arch/zakac"
           done
 
       # The tags: the version, as 0.1.0, and latest for a stable release.
@@ -256,7 +329,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - uses: docker/build-push-action@v6
+      - name: Push the image
+        uses: docker/build-push-action@v6
         with:
           context: .
           target: release
@@ -264,38 +338,16 @@ jobs:
           push: true
           tags: ${{ env.TAGS }}
 
-  vscode:
-    name: VS Code extension
-    needs: check
-    runs-on: ubuntu-latest
-    # The tokens of the marketplaces live in the environment of the releases.
-    environment: production
-    env:
-      MISE_ENABLE_TOOLS: rust,bun,cargo-binstall,cargo:wasm-pack
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      OVSX_PAT: ${{ secrets.OVSX_PAT }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
+      - name: Attach the files to the release
+        run: gh release upload "$TAG" files/* --clobber
 
-      - uses: jdx/mise-action@v5
-
-      - uses: Swatinem/rust-cache@v2
-
-      # The extension runs the same in each editor and on each platform: its
-      # client is WASM, and it starts `zakac lsp` from the PATH.
-      - name: Build the extension and attach it
-        run: |
-          mise run editor:build-vscode
-          pack="$(ls editors/vscode/zaka-*.vsix)"
-          echo "PACK=$pack" >> "$GITHUB_ENV"
-          gh release upload "$TAG" "$pack" --clobber
+      - name: Find the extension
+        run: echo "VSIX=$(ls files/zaka-*.vsix)" >> "$GITHUB_ENV"
 
       - name: Publish to the VS Code Marketplace
-        if: env.VSCE_PAT != '' && needs.check.outputs.prerelease != 'true'
-        run: bunx @vscode/vsce publish --packagePath "$PACK" --pat "$VSCE_PAT"
+        if: env.VSCE_PAT != '' && env.PRERELEASE != 'true'
+        run: bunx @vscode/vsce publish --packagePath "$VSIX" --pat "$VSCE_PAT"
 
       - name: Publish to Open VSX
-        if: env.OVSX_PAT != '' && needs.check.outputs.prerelease != 'true'
-        run: bunx ovsx publish "$PACK" --pat "$OVSX_PAT"
+        if: env.OVSX_PAT != '' && env.PRERELEASE != 'true'
+        run: bunx ovsx publish "$VSIX" --pat "$OVSX_PAT"
