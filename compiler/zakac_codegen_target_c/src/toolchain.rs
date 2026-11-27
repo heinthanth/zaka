@@ -594,8 +594,12 @@ fn separate_runtime(
     Ok(())
 }
 
-/// Link the shared runtime of a lib beside it, from the whole of the runtime
-/// lib, with the names of the runtime alone given.
+/// Link the shared runtime of a lib beside it from the runtime lib, with the
+/// names of the runtime alone given. Each name is forced in (`--undefined`
+/// through a response file for GNU, `/INCLUDE:` for MSVC), so the link
+/// takes each member it needs once: the whole lib would bring the import
+/// members of Windows that Rust writes twice. The linker of macOS takes the
+/// whole lib (`-force_load`).
 ///
 /// # Arguments
 ///
@@ -612,27 +616,35 @@ fn shared_runtime(
 ) -> zakac_host_errors::Result<(Output, PathBuf)>
 {
     let out = plan.out.with_file_name(shared_runtime_file(plan.out));
-    let shown = archive.display();
-    let whole = match (Dialect::of(plan.abi), plan.abi)
-    {
-        (Dialect::Msvc, _) => vec![format!("/WHOLEARCHIVE:{shown}")],
-        (_, TargetAbi::Apple) => vec![format!("-Wl,-force_load,{shown}")],
-        _ => vec![
-            "-Wl,--whole-archive".into(),
-            shown.to_string(),
-            "-Wl,--no-whole-archive".into(),
-        ],
-    };
-    let flags: Vec<String> =
-        whole.into_iter().chain(plan.ldflags.iter().cloned()).collect();
-    let mut runtime = plan.clone();
-    (runtime.out, runtime.ldflags, runtime.libs) = (&out, &flags, &[]);
     let names = runtime_names();
     let dir = archive.parent().unwrap_or(Path::new("."));
-    let mut cmd = link_command(&runtime, linker, &[]);
+    let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
+    let forced = dir.join("zaka_runtime_names.rsp");
+    let text: String = names.iter().map(|n| format!("-Wl,--undefined={n}\n")).collect();
+    let context = || IOErrorContext::new(forced.clone(), IOErrorAction::Write);
+    do_if!(
+        !msvc,
+        std::fs::write(&forced, text).map_err(|e| Error::from_io(e, context()))?
+    );
+    let at = PathBuf::from(format!("@{}", forced.display()));
+    let force_load = PathBuf::from(format!("-Wl,-force_load,{}", archive.display()));
+    // The lib comes before the OS libs, which its members call.
+    let objects = match (msvc, plan.abi)
+    {
+        (true, _) => vec![archive.to_path_buf()],
+        (false, TargetAbi::Apple) => vec![force_load],
+        (false, _) => vec![at, archive.to_path_buf()],
+    };
+    // `cl` hands the options of its linker over in a response file of its
+    // own, where a response file is not read, so MSVC takes each name as an
+    // option.
+    let included = names.iter().filter(|_| msvc).map(|n| format!("/INCLUDE:{n}"));
+    let flags: Vec<String> = included.chain(plan.ldflags.iter().cloned()).collect();
+    let mut runtime = plan.clone();
+    (runtime.out, runtime.ldflags, runtime.libs) = (&out, &flags, &[]);
+    let mut cmd = link_command(&runtime, linker, &objects);
     cmd.args(export_flag(&runtime, &names, dir, "zaka_runtime_exports")?);
     let output = run(linker, cmd)?;
-    let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
     Ok((output, tern!(msvc, out.with_extension("dll.lib"), out)))
 }
 

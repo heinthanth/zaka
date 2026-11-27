@@ -222,8 +222,11 @@ fn plain_sources(src: &Path, to: &Path) -> Vec<String>
 {
     std::fs::create_dir_all(to).expect("OUT_DIR is writable");
     let files = std::fs::read_dir(src).expect("the runtime sources are readable");
+    // The order of a folder differs from host to host; the header does not.
+    let mut paths: Vec<PathBuf> = files.flatten().map(|e| e.path()).collect();
+    paths.sort();
     let mut names = Vec::new();
-    for path in files.flatten().map(|e| e.path())
+    for path in paths
     {
         let text = std::fs::read_to_string(&path).expect("a source file is readable");
         let lines = text.lines().map(|l| plain_line(l, &mut names));
