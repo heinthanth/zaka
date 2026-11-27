@@ -105,6 +105,7 @@ flags](commands.md#options-of-the-compile-stages) and `--release`:
 | `--ld-flag` | `<FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC); `-std=c11` remains |
 | `--lib-name` | `<NAME>` | the name of the files | the name of a C lib (`--emit lib`) in `zk_reset_<NAME>`, `zk_last_trap_from_<NAME>` and the names it links under: ASCII letters, digits and `_`, starting with a letter or `_`; a file name that C cannot use needs it |
+| `--runtime` | `embedded` or `shared` | `embedded` | how a C lib (`--emit lib`) carries the runtime: inside its static and shared lib, or as a shared runtime of its own beside them; see [A C lib](#a-c-lib) |
 | `--runtime-lib` | `<FILE>` | the runtime lib that `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; see [Cross builds](native.md#cross-builds) |
 | `--allow-read`, `--allow-write`, `--allow-env` | `[=<PATHS>]` or `[=<NAMES>]` | none | the rights the executable has, written into it, as `zakac run` grants them to a run |
 | `--allow-run` | `[=<PROGRAMS>]` | none | the right to run other programs: all, or those named |
@@ -368,10 +369,30 @@ files, or `--lib-name`: ASCII letters, digits and `_`.
 - Each lib carries the calls of the libs it calls through C on top of its own, and a trap
   lists the calls of its own lib alone.
 
+### The runtime as a shared lib
+
+With `--runtime shared`, the runtime is a shared lib of its own, written beside the lib:
+`libzaka_runtime_abi<N>.so`, `libzaka_runtime_abi<N>.dylib`, or
+`zaka_runtime_abi<N>.dll` with its import lib `zaka_runtime_abi<N>.dll.lib` for MSVC.
+
+- The static lib holds the objects of the program alone, and the shared lib links to the
+  shared runtime, which it finds in its own folder (`$ORIGIN`, `@loader_path`, or the
+  folder of a DLL).
+- The libs of one ABI built with it use one runtime in the process: one heap, one C
+  runtime and one libffi. On Windows `zk_free` then frees what each of those libs gave
+  back, whichever compiler built it.
+- The program ships the shared runtime beside the libs, and a program that links a static
+  lib links the shared runtime too:
+
+```console
+$ zakac build --backend c --emit lib --runtime shared mathlib.zaka
+$ cc main.c libmathlib.a libzaka_runtime_abi1.so -lm -Wl,-rpath,'$ORIGIN' -o main
+```
+
 ### Linking the lib
 
-A program that links the static lib also links the OS libs of the runtime, which the
-comment at the top of the `.h` file lists. The shared lib of macOS names itself
+A program that links the static lib also links the OS libs of the runtime, or the shared
+runtime with `--runtime shared`, which the comment at the top of the `.h` file lists. The shared lib of macOS names itself
 `@rpath/lib<name>.dylib`, so a program finds it through its run path
 (`-Wl,-rpath,<folder>`). When the shared lib is beside the static one, the linker of macOS
 picks the shared lib for `-l<name>`: give the static lib as a path, or keep it in a

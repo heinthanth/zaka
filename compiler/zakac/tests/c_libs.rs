@@ -12,6 +12,7 @@ use zakac_codegen_target_c::driver::runtime_lib;
 use zakac_codegen_target_c::toolchain::Dialect;
 use zakac_codegen_target_c::toolchain::Tool;
 use zakac_codegen_target_c::toolchain::find_cc_for;
+use zakac_codegen_target_c::toolchain::shared_runtime_file;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
 
@@ -192,15 +193,38 @@ fn os_libs() -> Vec<&'static str>
 /// What the program printed.
 fn run_c_program(cc: &Tool, dir: &Path, source: &str, libs: &[&str]) -> String
 {
+    let archives: Vec<PathBuf> =
+        libs.iter().map(|l| dir.join(static_file(l))).collect();
+    run_c_program_with(cc, dir, source, &archives)
+}
+
+/// Build a C program of the inputs with lib files of a folder, and run it: a
+/// shared lib among them is found in the folder at run time.
+///
+/// # Arguments
+///
+/// * `cc` - The C compiler.
+/// * `dir` - The folder of the libs and their headers.
+/// * `source` - The C file of the inputs.
+/// * `files` - The lib files, in link order.
+///
+/// # Returns
+///
+/// What the program printed.
+fn run_c_program_with(cc: &Tool, dir: &Path, source: &str, files: &[PathBuf])
+-> String
+{
     let stem = source.trim_end_matches(".c");
     let exe = dir.join(format!("{stem}{}", std::env::consts::EXE_SUFFIX));
-    let archives = libs.iter().map(|l| dir.join(static_file(l)));
+    let archives = files.iter();
     let mut cmd = cc.command();
     cmd.current_dir(dir);
     if Dialect::of(host_abi()) == Dialect::Gnu
     {
         cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join(source));
         cmd.args(archives).args(os_libs()).arg("-lm").arg("-o").arg(&exe);
+        // A DLL beside the program needs no run path.
+        do_if!(!cfg!(windows), _ = cmd.arg(format!("-Wl,-rpath,{}", dir.display())));
         ran(&mut cmd, &format!("the link of {source}"));
         return ran(&mut Command::new(&exe), source);
     }
@@ -442,6 +466,91 @@ fn libs_of_two_builds_of_one_abi_share_one_runtime()
         let printed = run_c_program(&cc, dir, "two_libs.c", &["mathlib", "twicelib"]);
         assert_eq!(printed, TWO_LIBS, "one runtime with the {backend} backend");
     }
+}
+
+/// The file of the shared lib of a lib, as the host names it.
+///
+/// # Arguments
+///
+/// * `name` - The name of the lib.
+///
+/// # Returns
+///
+/// The file name.
+fn shared_file(name: &str) -> String
+{
+    match std::env::consts::OS
+    {
+        "macos" => format!("lib{name}.dylib"),
+        "windows" => format!("{name}.dll"),
+        _ => format!("lib{name}.so"),
+    }
+}
+
+/// The file a program links to reach the shared runtime of the libs of a
+/// folder: the shared runtime, or its import lib for MSVC.
+///
+/// # Arguments
+///
+/// * `dir` - The folder.
+///
+/// # Returns
+///
+/// The file.
+fn shared_runtime_in(dir: &Path) -> PathBuf
+{
+    let file = shared_runtime_file(&dir.join(shared_file("mathlib")));
+    let msvc = Dialect::of(host_abi()) == Dialect::Msvc;
+    dir.join(tern!(msvc, format!("{file}.lib"), file))
+}
+
+#[test]
+fn libs_with_a_shared_runtime_link_into_one_program()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "mathlib", &["--runtime", "shared"]);
+        build_named(dir, backend, "twicelib", &["--runtime", "shared"]);
+        let runtime = shared_runtime_in(dir);
+        assert!(runtime.is_file(), "the shared runtime with the {backend} backend");
+        let statics = ["mathlib", "twicelib"].map(|l| dir.join(static_file(l)));
+        let files: Vec<PathBuf> =
+            statics.into_iter().chain([runtime.clone()]).collect();
+        let printed = run_c_program_with(&cc, dir, "two_libs.c", &files);
+        assert_eq!(printed, TWO_LIBS, "static libs with the {backend} backend");
+        // Shared libs that link the shared runtime: an import lib of MSVC
+        // stands for a DLL.
+        let shared = |l: &str| {
+            let file = dir.join(shared_file(l));
+            let msvc = Dialect::of(host_abi()) == Dialect::Msvc;
+            tern!(msvc, file.with_extension("dll.lib"), file)
+        };
+        let files = [shared("mathlib"), shared("twicelib"), runtime];
+        let printed = run_c_program_with(&cc, dir, "two_libs.c", &files);
+        assert_eq!(printed, TWO_LIBS, "shared libs with the {backend} backend");
+    }
+}
+
+#[test]
+fn a_runtime_mode_needs_a_lib()
+{
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::copy(c_inputs().join("mathlib.zaka"), dir.path().join("mathlib.zaka"))
+        .unwrap();
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_zakac"));
+    cmd.current_dir(dir.path()).env("ZAKAC_NO_CONFIG", "1");
+    cmd.args(["build", "--backend", "c", "--runtime", "shared", "mathlib.zaka"]);
+    let out = cmd.output().unwrap();
+    let told = String::from_utf8_lossy(&out.stderr);
+    assert!(!out.status.success(), "{told}");
+    assert!(told.contains("--runtime shared"), "{told}");
 }
 
 /// What the C program that calls threadlib.zaka prints.

@@ -19,6 +19,7 @@ use crate::driver::host_abi;
 use crate::driver::runtime_lib;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
+use crate::options::RuntimeLink;
 
 /// The flag form a C toolchain takes: the GNU form of gcc, Clang and `zig cc`,
 /// or the form of MSVC's `cl` and `clang-cl`. The ABI of the target picks it.
@@ -399,6 +400,9 @@ pub struct BuildPlan<'a>
     /// the lib, those of the runtime among them, remains inside it.
     #[builder(default)]
     pub exports: &'a [String],
+    /// How a C lib build carries the runtime.
+    #[builder(default)]
+    pub runtime: RuntimeLink,
 }
 
 /// What a build ran: the output of each step, and the tool of the step that
@@ -442,10 +446,30 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     let mut outputs = finished.collect::<zakac_host_errors::Result<Vec<Output>>>()?;
     ret_if!(outputs.iter().any(|o| !o.status.success()), Ok(failed(outputs, plan.cc)));
     let objects = sources.iter().map(|s| s.with_extension(object)).chain(libs);
-    let objects: Vec<PathBuf> = objects.collect();
+    let shared = plan.archive.is_some() && plan.runtime == RuntimeLink::Shared;
+    // A lib of a shared runtime links the runtime file in place of its members.
+    let (objects, runtime): (Vec<PathBuf>, Vec<PathBuf>) =
+        objects.partition(|o| !(shared && is_runtime(o)));
     let linker = plan.linker.unwrap_or(plan.cc);
-    let mut link = link_command(plan, linker, &objects);
-    link.args(export_flag(plan, &objects)?);
+    let mut linked = objects.clone();
+    if let Some(archive) = runtime.first()
+    {
+        let (output, file) = shared_runtime(plan, linker, archive)?;
+        let ok = output.status.success();
+        outputs.push(output);
+        ret_if!(!ok, Ok(failed(outputs, linker)));
+        linked.push(file);
+    }
+    let mut link = link_command(plan, linker, &linked);
+    do_if!(shared, _ = link.args(runtime_search(plan)));
+    let dir = objects.first().and_then(|o| o.parent()).unwrap_or(Path::new("."));
+    let own: Vec<String> = plan
+        .exports
+        .iter()
+        .filter(|n| !(shared && is_runtime_name(n)))
+        .cloned()
+        .collect();
+    link.args(export_flag(plan, &own, dir, "zaka_exports")?);
     let output = run(linker, link)?;
     let ok = output.status.success();
     outputs.push(output);
@@ -462,6 +486,132 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     Ok(Built::builder().outputs(outputs).build())
 }
 
+/// Whether a file among the objects is the runtime lib.
+///
+/// # Arguments
+///
+/// * `path` - The file.
+///
+/// # Returns
+///
+/// `true` for `libzaka_runtime.a` or `zaka_runtime.lib`.
+fn is_runtime(path: &Path) -> bool
+{
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or_default();
+    stem == "libzaka_runtime" || stem == "zaka_runtime"
+}
+
+/// Whether a name links to the runtime.
+///
+/// # Arguments
+///
+/// * `name` - The linked name.
+///
+/// # Returns
+///
+/// `true` for a name with the prefix of the runtime.
+fn is_runtime_name(name: &str) -> bool
+{
+    name.starts_with(crate::driver::runtime_prefix())
+}
+
+/// The file of the shared runtime of a lib: `libzaka_runtime_<tag>.so`,
+/// `.dylib`, or `zaka_runtime_<tag>.dll` beside a DLL, where the tag is the
+/// ABI of the runtime, such as `abi1`.
+///
+/// # Arguments
+///
+/// * `lib` - The shared lib of the lib, whose extension picks the form.
+///
+/// # Returns
+///
+/// The file name.
+pub fn shared_runtime_file(lib: &Path) -> String
+{
+    let tag = crate::driver::runtime_prefix().trim_start_matches("zk_rt_");
+    let tag = tag.trim_end_matches('_');
+    let ext =
+        lib.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
+    let dll = ext.eq_ignore_ascii_case("dll");
+    format!("{}zaka_runtime_{tag}.{ext}", tern!(dll, "", "lib"))
+}
+
+/// Link the shared runtime of a lib beside it, from the whole of the runtime
+/// lib, with the names of the runtime alone given.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `linker` - The program that links.
+/// * `archive` - The runtime lib.
+///
+/// # Returns
+///
+/// What the link wrote, and the file the lib links to: the shared runtime,
+/// or its import lib for MSVC.
+fn shared_runtime(
+    plan: &BuildPlan<'_>, linker: &Tool, archive: &Path,
+) -> zakac_host_errors::Result<(Output, PathBuf)>
+{
+    let out = plan.out.with_file_name(shared_runtime_file(plan.out));
+    let shown = archive.display();
+    let whole = match (Dialect::of(plan.abi), plan.abi)
+    {
+        (Dialect::Msvc, _) => vec![format!("/WHOLEARCHIVE:{shown}")],
+        (_, TargetAbi::Apple) => vec![format!("-Wl,-force_load,{shown}")],
+        _ => vec![
+            "-Wl,--whole-archive".into(),
+            shown.to_string(),
+            "-Wl,--no-whole-archive".into(),
+        ],
+    };
+    let flags: Vec<String> =
+        whole.into_iter().chain(plan.ldflags.iter().cloned()).collect();
+    let mut runtime = plan.clone();
+    (runtime.out, runtime.ldflags, runtime.libs) = (&out, &flags, &[]);
+    let names = runtime_names();
+    let dir = archive.parent().unwrap_or(Path::new("."));
+    let mut cmd = link_command(&runtime, linker, &[]);
+    cmd.args(export_flag(&runtime, &names, dir, "zaka_runtime_exports")?);
+    let output = run(linker, cmd)?;
+    let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
+    Ok((output, tern!(msvc, out.with_extension("dll.lib"), out)))
+}
+
+/// The linked name of each function and static of the runtime, as the header
+/// of the runtime maps them.
+///
+/// # Returns
+///
+/// The names.
+fn runtime_names() -> Vec<String>
+{
+    let header = crate::driver::RUNTIME.iter().find(|(n, _)| *n == "zaka_runtime.h");
+    let text = header.map_or("", |(_, t)| *t);
+    let plain = text.lines().filter_map(|l| l.strip_prefix("#define zk_"));
+    let plain = plain.filter_map(|rest| rest.split_whitespace().next());
+    plain.map(|n| crate::linked_name(&format!("zk_{n}"))).collect()
+}
+
+/// The flags that let a shared lib find the shared runtime beside it at run
+/// time: its run path, the folder of the lib itself. A DLL finds a DLL
+/// beside it with no flag.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+///
+/// # Returns
+///
+/// The flags.
+fn runtime_search(plan: &BuildPlan<'_>) -> Vec<String>
+{
+    let dll = plan.out.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
+    ret_if!(dll || Dialect::of(plan.abi) == Dialect::Msvc, Vec::new());
+    let origin = tern!(plan.abi == TargetAbi::Apple, "@loader_path", "$ORIGIN");
+    vec![format!("-Wl,-rpath,{origin}")]
+}
+
 /// Write the list of the names a shared lib gives, and give the flag of the
 /// linker that reads it: a version script for ELF, an exported-symbol list for
 /// Mach-O, and a module-definition file for a DLL, which GNU takes as an input
@@ -471,34 +621,35 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
 /// # Arguments
 ///
 /// * `plan` - What to build.
-/// * `objects` - The objects, in the folder the list goes to.
+/// * `names` - The names to give.
+/// * `dir` - The folder the list goes to.
+/// * `stem` - The name of the list, with no extension.
 ///
 /// # Returns
 ///
 /// The flag, none for an executable, or the error of a write.
 fn export_flag(
-    plan: &BuildPlan<'_>, objects: &[PathBuf],
+    plan: &BuildPlan<'_>, names: &[String], dir: &Path, stem: &str,
 ) -> zakac_host_errors::Result<Option<String>>
 {
-    ret_if!(plan.archive.is_none() || plan.exports.is_empty(), Ok(None));
+    ret_if!(plan.archive.is_none() || names.is_empty(), Ok(None));
     let dll = plan.out.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
     let msvc = Dialect::of(plan.abi) == Dialect::Msvc;
-    let dir = objects.first().and_then(|o| o.parent()).unwrap_or(Path::new("."));
     let apple = plan.abi == TargetAbi::Apple;
     let each = |line: &dyn Fn(&String) -> String| -> String {
-        plan.exports.iter().map(line).collect()
+        names.iter().map(line).collect()
     };
     let (file, text) = match (dll, apple)
     {
         (true, _) => (
-            "zaka_exports.def",
+            format!("{stem}.def"),
             format!("EXPORTS\n{}", each(&|n| format!("    {n}\n"))),
         ),
-        (false, true) => ("zaka_exports.txt", each(&|n| format!("_{n}\n"))),
+        (false, true) => (format!("{stem}.txt"), each(&|n| format!("_{n}\n"))),
         (false, false) =>
         {
             let names = each(&|n| format!("{n}; "));
-            ("zaka_exports.map", format!("{{ global: {names}local: *; }};\n"))
+            (format!("{stem}.map"), format!("{{ global: {names}local: *; }};\n"))
         }
     };
     let path = dir.join(file);
@@ -661,6 +812,10 @@ fn compile_flags(plan: &BuildPlan<'_>) -> Vec<String>
     // The objects of a C lib go into a shared lib too.
     let pic = plan.archive.is_some() && Dialect::of(plan.abi) == Dialect::Gnu;
     do_if!(pic, flags.push("-fPIC".into()));
+    // The data of a shared runtime comes through an import on Windows.
+    let shared = plan.archive.is_some() && plan.runtime == RuntimeLink::Shared;
+    let define = tern!(Dialect::of(plan.abi) == Dialect::Msvc, "/D", "-D");
+    do_if!(shared, flags.push(format!("{define}ZK_RUNTIME_SHARED")));
     flags.extend(plan.cflags.iter().cloned());
     flags
 }
@@ -722,9 +877,14 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     // the path the build wrote it to.
     let file = plan.out.file_name().map(|n| n.to_string_lossy().into_owned());
     let apple = plan.archive.is_some() && plan.abi == TargetAbi::Apple;
-    do_if!(let Some(file) = file.filter(|_| apple), {
+    do_if!(let Some(file) = file.clone().filter(|_| apple), {
         cmd.arg(format!("-Wl,-install_name,@rpath/{file}"));
     });
+    // An ELF lib names itself, so a lib linked to it records that name and not
+    // the path the build gave.
+    let dll = plan.out.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll"));
+    let elf = plan.archive.is_some() && plan.abi == TargetAbi::Gnu && !dll;
+    do_if!(let Some(file) = file.filter(|_| elf), _ = cmd.arg(format!("-Wl,-soname,{file}")));
     cmd.args(objects)
         .args(dialect.out(true, plan.out))
         .args(table.link_libs)

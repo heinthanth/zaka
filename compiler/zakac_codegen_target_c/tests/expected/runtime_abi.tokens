@@ -197,6 +197,11 @@ abi 1
 # define zk_pipe_close zk_rt_abi1_pipe_close
 # define zk_sleep zk_rt_abi1_sleep
 # define ZK_RT_LEVEL 1
+# if defined ( _WIN32 ) & & defined ( ZK_RUNTIME_SHARED )
+# define ZK_RT_DATA __declspec ( dllimport )
+# else
+# define ZK_RT_DATA
+# endif
 # ifndef ZAKA_RUNTIME_H
 # define ZAKA_RUNTIME_H
 # include < stddef.h >
@@ -390,8 +395,8 @@ zk_code code ;
 const void * none ;
 }
 zk_fnrec ;
-extern const struct zk_program * zk_prog ;
-extern uint8_t zk_halt ;
+extern ZK_RT_DATA const struct zk_program * zk_prog ;
+extern ZK_RT_DATA uint8_t zk_halt ;
 extern int32_t thread_guard ( ZkStep step , void * data ) ;
 extern void thread_leave ( int32_t trap ) ZK_NORETURN ;
 zk_code zk_cb_code ( zk_fn f , const struct zk_cb_shape * shape ) ;

@@ -351,7 +351,7 @@ Each target also uses all the [compile flags](#options-of-the-compile-stages) an
 `--release`. The VM target adds `--results` and `--scratch`, and the C and native targets
 add their own flags, which [Building programs](build.md#flags-of-the-c-and-native-targets)
 lists: `--checks`, `--max-depth`, `--max-heap`, `--trap`, `--cache`, `--cc`, `--linker`,
-`--cc-flag`, `--ld-flag`, `--no-default-flags`, `--lib-name`, `--runtime-lib` and the
+`--cc-flag`, `--ld-flag`, `--no-default-flags`, `--lib-name`, `--runtime`, `--runtime-lib` and the
 rights (`--allow-read` and the rest). A flag of another target, or an `--emit` word of
 another target, stops the build with an error and exit code 3:
 

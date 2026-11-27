@@ -59,6 +59,7 @@ use crate::lib_names::LibNames;
 use crate::options::Emit;
 use crate::options::RunCheck;
 use crate::options::RunChecks;
+use crate::options::RuntimeLink;
 use crate::options::TargetCOptions;
 use crate::toolchain;
 use crate::toolchain::BuildPlan;
@@ -80,6 +81,9 @@ const MAX_HEAP_ARG: &str = "max_heap";
 const TRAP_ARG: &str = "trap";
 /// The flag that names a C lib in the names C calls and in its link names.
 pub const LIB_NAME_ARG: &str = "lib_name";
+
+/// The id of `--runtime`.
+pub const RUNTIME_ARG: &str = "runtime";
 /// The flag of a release build, which leaves out the source line of each
 /// statement; `zakac build` gets it from the VM target, which shares it.
 const RELEASE_ARG: &str = "release";
@@ -207,6 +211,7 @@ pub const TARGET_ARGS: &[&str] = &[
     NO_DEFAULT_FLAGS_ARG,
     RUNTIME_LIB_ARG,
     LIB_NAME_ARG,
+    RUNTIME_ARG,
     "allow-read",
     "allow-write",
     "allow-env",
@@ -262,8 +267,33 @@ pub fn attach_target_args(cmd: clap::Command) -> clap::Command
         .long("lib-name")
         .value_name("NAME")
         .help(t!("target_c.lib_name"));
+    let runtime = Arg::new(RUNTIME_ARG)
+        .long("runtime")
+        .value_name("MODE")
+        .help(t!("target_c.runtime"))
+        .value_parser(PossibleValuesParser::new(words::<RuntimeLink>()))
+        .default_value("embedded");
     let cmd = cmd.arg(cache).arg(checks).arg(depth).arg(heap).arg(trap).arg(lib_name);
-    attach_toolchain_args(cmd)
+    attach_toolchain_args(cmd.arg(runtime))
+}
+
+/// How a C lib build carries the runtime, from `--runtime`, or the error of
+/// a mode other than `embedded` for a build that writes no lib.
+///
+/// # Arguments
+///
+/// * `matches` - The flags.
+/// * `lib` - Whether the build writes a C lib.
+///
+/// # Returns
+///
+/// The mode, or the error.
+pub fn runtime_link(matches: &ArgMatches, lib: bool) -> Result<RuntimeLink, Error>
+{
+    let given = matches.try_get_one::<String>(RUNTIME_ARG).ok().flatten();
+    let mode: RuntimeLink = given.and_then(|m| m.parse().ok()).unwrap_or_default();
+    ret_if!(lib || mode == RuntimeLink::Embedded, Ok(mode));
+    Err(Error::RuntimeWithoutLib { mode: mode.to_string() })
 }
 
 /// The names of a C lib: from `--lib-name`, or else the name of its files.
@@ -457,6 +487,9 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let source = source.unwrap();
     let emit: Emit = arg(EMIT_ARG).unwrap_or_default().parse().unwrap_or_default();
     let lib = emit == Emit::Lib;
+    let runtime = runtime_link(matches, lib);
+    ret_if!(let Err(error) = runtime, report_command_error(io, &info, error));
+    let runtime = runtime.unwrap();
     // A lib has no start block: its functions start the runtime.
     let checks = SemcheckOptions { as_module: lib, ..semcheck_options(matches) };
     let loaded = zakac_semcheck::open_chains::load_settled(
@@ -527,14 +560,14 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     let api =
         names.as_ref().map(|n| exports::api_names(&exports, n)).unwrap_or_default();
     let header = lib_files.as_ref().zip(names.as_ref()).map(|(f, n)| {
-        let links = static_links(built_for.abi, dialect, &libs);
+        let links = static_links(built_for.abi, dialect, &libs, runtime, &f.shared);
         let text = exports::header(&exports, target.platform_bits, n, &links);
         (f.header.clone(), text)
     });
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(target.checks).emit(emit)
         .files(&files).libs(&libs).maybe_archive(lib_files.as_ref().map(|f| f.archive.as_path()))
-        .maybe_header(header).debug_info(target.debug_info).exports(&api).build();
+        .maybe_header(header).debug_info(target.debug_info).exports(&api).runtime(runtime).build();
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
@@ -642,6 +675,9 @@ struct Job<'a>
     /// The names the shared lib of a C lib build gives.
     #[builder(default)]
     exports: &'a [String],
+    /// How a C lib build carries the runtime.
+    #[builder(default)]
+    runtime: RuntimeLink,
 }
 
 /// The files a C lib build writes, in one folder: the static lib, the shared
@@ -689,25 +725,34 @@ impl LibFiles
 }
 
 /// What a program that links the static lib of a C lib links with it: the
-/// OS libs of the runtime, libm, and the libs of the C functions the program
-/// calls.
+/// OS libs of the runtime, or the shared runtime, then libm, and the libs of
+/// the C functions the program calls.
 ///
 /// # Arguments
 ///
 /// * `abi` - The ABI of the lib.
 /// * `dialect` - The flag form of its toolchain.
 /// * `libs` - The link flags of the C functions of the program.
+/// * `runtime` - How the lib carries the runtime.
+/// * `shared` - The shared lib of the lib, beside which a shared runtime goes.
 ///
 /// # Returns
 ///
 /// The link flags.
 pub fn static_links(
     abi: zakac_ast::target::TargetAbi, dialect: toolchain::Dialect, libs: &[String],
+    runtime: RuntimeLink, shared: &Path,
 ) -> Vec<String>
 {
     let os =
         crate::driver::runtime_lib(abi).map(|r| r.native_libs().collect::<Vec<_>>());
     let os = os.unwrap_or_default().into_iter().map(String::from);
+    let file = toolchain::shared_runtime_file(shared);
+    let file =
+        tern!(abi == zakac_ast::target::TargetAbi::Msvc, format!("{file}.lib"), file);
+    let os: Vec<String> =
+        tern!(runtime == RuntimeLink::Shared, vec![file], os.collect());
+    let os = os.into_iter();
     let m = (dialect == toolchain::Dialect::Gnu).then(|| "-lm".to_string());
     os.chain(m).chain(libs.iter().cloned()).collect()
 }
@@ -734,7 +779,7 @@ fn build(
     #[rustfmt::skip]
     let link = Link::builder().cache(job.cache).out(job.out).checks(job.checks).sources(&sources)
         .libs(job.libs).abi(abi).maybe_archive(job.archive).debug_info(job.debug_info)
-        .exports(job.exports).build();
+        .exports(job.exports).runtime(job.runtime).build();
     let built = build_and_link(matches, io, info, link)?;
     let Some((path, text)) = job.header.filter(|_| built == ExitCode::Success)
     else
@@ -773,6 +818,9 @@ pub struct Link<'a>
     /// The names the shared lib of a C lib build gives.
     #[builder(default)]
     pub exports: &'a [String],
+    /// How a C lib build carries the runtime.
+    #[builder(default)]
+    pub runtime: RuntimeLink,
 }
 
 /// Compile C files and link them with objects and libs into an executable,
@@ -821,7 +869,7 @@ pub fn build_and_link(
         .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
         .ldflags(&ldflags).libs(job.libs).abi(job.abi).maybe_archive(job.archive)
-        .debug_info(job.debug_info).exports(job.exports).build();
+        .debug_info(job.debug_info).exports(job.exports).runtime(job.runtime).build();
     let built = toolchain::build(&plan)?;
     // `cl` writes the name of each file it compiles, and its errors, to
     // standard output, so a step of MSVC that succeeds shows none of it.

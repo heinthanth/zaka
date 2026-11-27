@@ -171,8 +171,35 @@ fn write_header(runtime: &Path, out: &Path)
         "\n/* The level of the runtime the lib is built for, which the runtime \
          checks. */\n#define ZK_RT_LEVEL {ZK_LEVEL}\n"
     );
-    let header = format!("{head}{defines}{level}\n{}", first_paragraphs(&text));
+    // A static of a shared runtime comes through an import on Windows.
+    let data = "\n/* A static of the runtime, marked for an import from a shared \
+                runtime on Windows. */\n#if defined(_WIN32) && \
+                defined(ZK_RUNTIME_SHARED)\n#define ZK_RT_DATA \
+                __declspec(dllimport)\n#else\n#define ZK_RT_DATA\n#endif\n";
+    let decls = first_paragraphs(&text);
+    let decls: String =
+        decls.lines().map(|l| format!("{}\n", data_marked(l))).collect();
+    let header = format!("{head}{defines}{level}{data}\n{decls}");
     write(&out.join("zaka_runtime.h"), header.as_bytes());
+}
+
+/// A line of the header with `ZK_RT_DATA` on the declaration of a static.
+///
+/// # Arguments
+///
+/// * `line` - The line.
+///
+/// # Returns
+///
+/// The line.
+fn data_marked(line: &str) -> String
+{
+    let Some(rest) = line.strip_prefix("extern ").filter(|r| !r.contains('('))
+    else
+    {
+        return line.to_string();
+    };
+    format!("extern ZK_RT_DATA {rest}")
 }
 
 /// Copy the sources of the runtime with each `export_name` of a macro read as

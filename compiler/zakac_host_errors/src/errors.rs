@@ -86,6 +86,11 @@ pub enum Error
     LibWithNoExports,
     #[error("{}", t!("errors.lib_on_wasi"))]
     LibOnWasi,
+    #[error("{}", t!("errors.runtime_without_lib", mode = mode))]
+    RuntimeWithoutLib
+    {
+        mode: String
+    },
     #[error("{}", t!("errors.lib_name", name = name))]
     LibName
     {

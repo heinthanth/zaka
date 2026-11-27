@@ -195,6 +195,8 @@ script does the same with `cargo:rustc-link-search=static` and
 - On Windows, a lib built with GNU and a lib built with MSVC each have their own C runtime,
   so a program that loads both frees what each returned with `zk_free_from_<name>()` of
   that lib.
+- `--runtime shared` puts the runtime in a shared lib of its own beside the lib, which
+  each lib built with it uses, so a program with several Zaka libs carries one runtime.
 - The full rules are in [Functions C can
   call](../../manual/language/functions-exports.md), and the flags in
   [Commands](../../manual/compiler/commands.md).

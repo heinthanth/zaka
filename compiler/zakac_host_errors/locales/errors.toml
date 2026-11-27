@@ -48,6 +48,9 @@ en = "no C compiler for %{triple} found: set WASI_SDK_PATH to the folder of wasi
 [errors.lib_with_no_exports]
 en = "a C lib needs a function that code outside can call: mark one with \"<C name>\" အမည်ဖြင့် ပြင်ပမှ ခေါ်ဆိုနိုင်သော"
 
+[errors.runtime_without_lib]
+en = "--runtime %{mode} picks how a C lib carries its runtime, so it needs --emit lib"
+
 [errors.lib_on_wasi]
 en = "a C lib cannot be built for WASI: build it for another OS"
 

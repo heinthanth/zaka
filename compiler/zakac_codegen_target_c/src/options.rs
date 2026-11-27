@@ -242,6 +242,21 @@ pub enum Emit
     Lib,
 }
 
+/// How a C lib build carries the runtime.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Display, EnumIter, EnumString, IntoStaticStr)]
+#[strum(serialize_all = "kebab-case")]
+pub enum RuntimeLink
+{
+    /// The static lib and the shared lib each hold the runtime.
+    #[default]
+    Embedded,
+    /// The runtime is a shared lib of its own beside the lib, which the
+    /// static lib and the shared lib link to: one runtime in the process for
+    /// each lib of its ABI.
+    Shared,
+}
+
 /// The choices of the C target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Builder)]
 pub struct TargetCOptions

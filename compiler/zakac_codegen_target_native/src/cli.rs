@@ -272,6 +272,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     use zakac_codegen_target_c::cli::build_and_link;
     use zakac_codegen_target_c::cli::input_path;
     use zakac_codegen_target_c::cli::lib_names;
+    use zakac_codegen_target_c::cli::runtime_link;
     use zakac_codegen_target_c::cli::target_options;
     use zakac_codegen_target_c::cli::with_exe;
     use zakac_codegen_target_c::driver::default_cache;
@@ -291,6 +292,9 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
         _ => Emit::Bin,
     };
     let lib = emit == Emit::Lib;
+    let runtime = runtime_link(matches, lib);
+    ret_if!(let Err(error) = runtime, report_command_error(io, &info, error));
+    let runtime = runtime.unwrap();
     let input = Input::from(arg("input"));
     let mut source_map = SourceMap::new();
     let source = load_artifact::<Arc<SourceFile>>(
@@ -424,7 +428,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
                     .sources(&sources).libs(&libs).abi(target.abi)
                     .maybe_archive(files.as_ref().map(|f| f.archive.as_path()))
-                    .debug_info(options.debug_info).exports(&api).build();
+                    .debug_info(options.debug_info).exports(&api).runtime(runtime).build();
                     build_and_link(matches, io, &info, link)
                 });
             let ok = built.as_ref().is_ok_and(|c| *c == ExitCode::Success);
@@ -434,7 +438,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                 return built
                     .unwrap_or_else(|error| report_command_error(io, &info, error));
             };
-            let links = static_links(target.abi, dialect, &libs);
+            let links = static_links(target.abi, dialect, &libs, runtime, &f.shared);
             let text = header(&exports, platform, &n, &links);
             written(f.header, text.as_bytes()).map(|_| ExitCode::Success)
         }
