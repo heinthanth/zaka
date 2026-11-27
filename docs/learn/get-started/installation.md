@@ -97,17 +97,25 @@ docker run --rm -it ghcr.io/zaka-lang/zaka repl
 ```
 
 The tag `latest` names the newest stable release, and a version names that release, as
-`ghcr.io/zaka-lang/zaka:0.1.0`. The image holds no C compiler, so for
-`zakac build --backend native` or `--backend c`, build an image on it that adds one:
+`ghcr.io/zaka-lang/zaka:0.1.0`. The image also holds GCC, so `zakac build --backend
+native` and `--backend c` work in it as well:
 
-```dockerfile
-FROM ghcr.io/zaka-lang/zaka
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
+```sh
+docker run --rm -v "$PWD:/src" -w /src ghcr.io/zaka-lang/zaka build --backend native hello.zaka
 ```
+
+Each tag comes in three variants, named with a suffix:
+
+| Suffix | C compiler | Example |
+| --- | --- | --- |
+| `-gcc` | GCC; the same image as the tag with no suffix | `latest-gcc`, `0.1.0-gcc` |
+| `-clang` | Clang in place of GCC | `latest-clang`, `0.1.0-clang` |
+| `-slim` | none: `zakac run` on the VM or as JIT code, and `zakac build --backend vm` | `latest-slim`, `0.1.0-slim` |
 
 To build the image from source, run `docker build -t zaka .` in the
 [Zaka repo](https://github.com/zaka-lang/zaka), then use `zaka` in place of
-`ghcr.io/zaka-lang/zaka`.
+`ghcr.io/zaka-lang/zaka`. Add `--build-arg CC_PACKAGES=clang` for the variant with Clang,
+or `--build-arg CC_PACKAGES=` for the one with no C compiler.
 
 ## Check the install
 

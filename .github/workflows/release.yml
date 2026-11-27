@@ -329,13 +329,24 @@ jobs:
             cp "unpacked/zakac-$target/zakac" "dist/docker/$arch/zakac"
           done
 
-      # The tags: the version, as 0.1.0, and latest for a stable release.
-      - name: Name the image
+      # The tags: the version, as 0.1.0, and latest for a stable release. The
+      # image with GCC holds the plain tags and the ones that end in -gcc; the
+      # image with Clang holds the ones that end in -clang, and the image with
+      # no C compiler the ones that end in -slim.
+      - name: Name the images
         run: |
           image="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
-          tags="$image:${TAG#v}"
-          if [ "$PRERELEASE" != true ]; then tags="$tags,$image:latest"; fi
-          echo "TAGS=$tags" >> "$GITHUB_ENV"
+          names="${TAG#v}"
+          if [ "$PRERELEASE" != true ]; then names="$names latest"; fi
+          gcc="" clang="" slim=""
+          for name in $names; do
+            gcc="$gcc,$image:$name,$image:$name-gcc"
+            clang="$clang,$image:$name-clang"
+            slim="$slim,$image:$name-slim"
+          done
+          echo "TAGS_GCC=${gcc#,}" >> "$GITHUB_ENV"
+          echo "TAGS_CLANG=${clang#,}" >> "$GITHUB_ENV"
+          echo "TAGS_SLIM=${slim#,}" >> "$GITHUB_ENV"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -345,14 +356,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Push the image
+      - name: Push the image with GCC
         uses: docker/build-push-action@v6
         with:
           context: .
           target: release
           platforms: linux/amd64,linux/arm64
+          build-args: CC_PACKAGES=gcc
           push: true
-          tags: ${{ env.TAGS }}
+          tags: ${{ env.TAGS_GCC }}
+
+      - name: Push the image with Clang
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: release
+          platforms: linux/amd64,linux/arm64
+          build-args: CC_PACKAGES=clang
+          push: true
+          tags: ${{ env.TAGS_CLANG }}
+
+      - name: Push the image with no C compiler
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: release
+          platforms: linux/amd64,linux/arm64
+          build-args: CC_PACKAGES=
+          push: true
+          tags: ${{ env.TAGS_SLIM }}
 
       # The release appears with each file at once. A run from the Actions
       # tab for a tag that has its release replaces the files, and leaves the
