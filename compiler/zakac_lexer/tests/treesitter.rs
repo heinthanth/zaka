@@ -1,7 +1,8 @@
 //! The tree-sitter grammar of `editors/treesitter`, written from the tables of
 //! the lexer: each reserved word and kind name in each of its spellings, under
 //! the role that colors it, and each sign. With `ZAKA_BLESS=1` the test writes
-//! the grammar and its highlight queries; without it, the test fails when the
+//! the grammar and its highlight queries, for the grammar and for the Zed
+//! extension; without it, the test fails when the
 //! files differ from what the lexer gives, so a new reserved word reaches the
 //! editors. `mise run editor:treesitter` then writes the parser from the
 //! grammar.
@@ -225,4 +226,12 @@ fn the_tree_sitter_grammar_holds_each_reserved_word()
 fn the_highlight_queries_name_each_role()
 {
     check("queries/highlights.scm", &highlights());
+}
+
+/// Zed reads the queries of a language from the folder of its extension, so
+/// that folder holds the same highlight queries as the grammar.
+#[test]
+fn the_zed_extension_holds_the_same_highlight_queries()
+{
+    check("../zed/languages/zaka/highlights.scm", &highlights());
 }

@@ -1,12 +1,20 @@
-# The Zaka language. It names no tree-sitter grammar: the zakac language
-# server colors the code, once the semantic_tokens setting is on for Zaka.
+# The Zaka language. The tree-sitter grammar of editors/treesitter colors the
+# words; the zakac language server colors them in full once the semantic_tokens
+# setting is on for Zaka.
 name = "Zaka"
+grammar = "zaka"
 path_suffixes = ["zaka", "zk"]
 line_comments = ["// "]
 
 [[brackets]]
 start = "("
 end = ")"
+close = true
+newline = false
+
+[[brackets]]
+start = "["
+end = "]"
 close = true
 newline = false
 

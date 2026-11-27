@@ -37,8 +37,10 @@ not on the `PATH`, name it in the setting `zaka.server.path`, in the user settin
 
 The Zed extension lives in the [Zaka repo](https://github.com/zaka-lang/zaka), in the
 folder `editors/zed`. Clone the repo, run **zed: install dev extension** in Zed, and pick
-that folder. Zed leaves the colors of a language server off until a setting asks for them,
-so turn them on for Zaka in the Zed settings:
+that folder. The extension colors the reserved words, literals and comments through its
+tree-sitter grammar. The language server colors the names as well, such as functions and
+data kinds, but Zed leaves the colors of a language server off until a setting asks for
+them, so turn them on for Zaka in the Zed settings:
 
 ```json
 {

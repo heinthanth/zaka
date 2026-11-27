@@ -148,7 +148,8 @@ turns into the JSON files VS Code reads.
 1. Put `zakac` on the `PATH`, or set its path (see [Which zakac](#which-zakac)).
 2. In Zed, run **zed: install dev extension** and pick the `editors/zed` folder.
 3. Turn on the colors of the server for Zaka in the Zed settings, because Zed leaves them
-   off until a setting asks for them:
+   off until a setting asks for them. Without the setting, the tree-sitter grammar of the
+   extension colors the words (see [Tree-sitter grammar](#tree-sitter-grammar)):
 
    ```json
    {
@@ -201,11 +202,13 @@ An editor with an LSP client runs `zakac lsp` with no arguments for files that e
 ## Tree-sitter grammar
 
 The folder `editors/treesitter` holds a tree-sitter grammar of Zaka, for editors that color
-code through tree-sitter. It colors words, not sentences: each reserved word and kind name
+code through tree-sitter; the Zed extension names it in its `extension.toml`, at a commit
+of the repo. It colors words, not sentences: each reserved word and kind name
 under its role, names, numbers, characters, strings with their slots and escapes, comments
 and signs. The lexer is its source. A test of `zakac_lexer` writes the grammar
 (`src/grammar.json`) and its highlight queries (`queries/highlights.scm`) from the tables
-of reserved words, and fails when the files are stale; `mise run editor:treesitter` writes
+of reserved words, writes the same queries into `editors/zed/languages/zaka`, and fails
+when the files are stale; `mise run editor:treesitter` writes
 them, makes the parser (`src/parser.c`) with the tree-sitter CLI, and runs the tests in
 `test/corpus`.
 

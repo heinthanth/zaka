@@ -9,3 +9,8 @@ repository = "https://github.com/zaka-lang/zaka"
 [language_servers.zakac]
 name = "zakac"
 languages = ["Zaka"]
+
+[grammars.zaka]
+repository = "https://github.com/zaka-lang/zaka"
+rev = "6f8ccde86e4782b2cf55f7feac2d75e2265fa2c3"
+path = "editors/treesitter"
