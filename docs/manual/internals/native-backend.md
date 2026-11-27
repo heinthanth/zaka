@@ -211,7 +211,7 @@ of the host and for an ABI whose runtime lib `zakac` carries, while `--emit obj`
 `--emit clif` accept another target.
 
 Cranelift code calls each function of the runtime under its linked name
-(`zk_rt_<version>_<hash>_<name>`, through `linked_name` of the C target). In a C lib,
+(`zk_rt_abi<N>_<name>`, through `linked_name` of the C target). In a C lib,
 `aot::object` renames, in the finished object, the names of the lib that C never calls
 (`LibNames::held`, then `symbol_mut`), the same as `zaka_lib_names.h` maps them for the
 glue.

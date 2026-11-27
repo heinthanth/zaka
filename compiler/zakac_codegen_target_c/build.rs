@@ -160,14 +160,18 @@ fn write_header(runtime: &Path, out: &Path)
     let mut text = Vec::new();
     made.write(&mut text);
     let text = String::from_utf8(text).expect("cbindgen writes UTF-8");
-    let prefix = runtime_prefix(&runtime.join(".."));
+    let prefix = runtime_prefix();
     println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");
+    println!("cargo:rustc-env=ZK_ABI={ZK_ABI}");
     let defines: String =
         names.iter().map(|n| format!("#define zk_{n} {prefix}{n}\n")).collect();
-    let head = "/* Each name of the runtime links with the version and the hash of \
-                the runtime\n   that zakac carries, so libs from other builds of \
-                zakac link beside it. */\n";
-    let header = format!("{head}{defines}\n{}", first_paragraphs(&text));
+    let head = "/* Each name of the runtime links with the ABI of the runtime that \
+                zakac carries,\n   so libs of another ABI link beside it. */\n";
+    let level = format!(
+        "\n/* The level of the runtime the lib is built for, which the runtime \
+         checks. */\n#define ZK_RT_LEVEL {ZK_LEVEL}\n"
+    );
+    let header = format!("{head}{defines}{level}\n{}", first_paragraphs(&text));
     write(&out.join("zaka_runtime.h"), header.as_bytes());
 }
 
@@ -276,12 +280,12 @@ fn build_runtime(
     };
     let names = std::env::vars().map(|(name, _)| name).filter(outer);
     do_for!(name in names, cmd.env_remove(&name));
-    // Rust derives the link names of each crate from its metadata, not its
+    // Rust derives the private names of each crate from its metadata, not its
     // sources: two builds of the runtime from other sources would clash in one
-    // program, so the prefix of the build, a hash of its sources, joins the
-    // metadata of each crate of the lib.
-    let prefix = runtime_prefix(&root.join("compiler"));
-    cmd.env("RUSTFLAGS", format!("-C metadata={prefix}"));
+    // program, so a hash of its sources joins the metadata of each crate of the
+    // lib.
+    let metadata = runtime_metadata(&root.join("compiler"));
+    cmd.env("RUSTFLAGS", format!("-C metadata={metadata}"));
     let floor = target.contains("apple")
         && std::env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none();
     do_if!(floor, _ = cmd.env("MACOSX_DEPLOYMENT_TARGET", MACOS_FLOOR));

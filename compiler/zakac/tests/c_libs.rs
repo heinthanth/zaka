@@ -332,27 +332,32 @@ fn host_triple() -> String
     host.expect("rustc names its host").trim().to_string()
 }
 
-/// A runtime lib built from the sources of the one `zakac` carries with a salt
-/// in its hash, so its names differ, as those of a lib from another build of
-/// `zakac` do: built once into `target/zaka-salted-runtime`, then reused, and
-/// put with its `native-libs.txt` into a folder.
+/// A runtime lib built from the sources of the one `zakac` carries as another
+/// build of `zakac` builds it: with other private names, through its metadata,
+/// and with a salt, names of another ABI. Built once into
+/// `target/zaka-salted-runtime/<metadata>`, then reused, and put with its
+/// `native-libs.txt` into a folder of the same name.
 ///
 /// # Arguments
 ///
 /// * `dir` - The folder.
+/// * `salt` - The salt, or `None` for the ABI of the runtime `zakac` carries.
+/// * `metadata` - The metadata of each crate of the lib.
 ///
 /// # Returns
 ///
 /// The lib.
-fn salted_runtime(dir: &Path) -> PathBuf
+fn salted_runtime(dir: &Path, salt: Option<&str>, metadata: &str) -> PathBuf
 {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let (triple, target) = (host_triple(), root.join("target/zaka-salted-runtime"));
+    let target = root.join("target/zaka-salted-runtime").join(metadata);
+    let triple = host_triple();
     let mut cmd = Command::new(std::env::var_os("CARGO").unwrap_or("cargo".into()));
-    cmd.current_dir(&root).env("ZAKA_RUNTIME_SALT", "a second build");
-    // Rust derives the link names of each crate from its metadata, as the
+    cmd.current_dir(&root).env_remove("ZAKA_RUNTIME_SALT");
+    do_if!(let Some(salt) = salt, _ = cmd.env("ZAKA_RUNTIME_SALT", salt));
+    // Rust derives the private names of each crate from its metadata, as the
     // build of `zakac` sets it for its own runtime.
-    cmd.env("RUSTFLAGS", "-C metadata=zk-rt-a-second-build");
+    cmd.env("RUSTFLAGS", format!("-C metadata={metadata}"));
     cmd.args(["rustc", "-p", "zaka_runtime", "--lib", "--crate-type", "staticlib"]);
     cmd.args(["--profile", "zaka-runtime", "--target", &triple, "--target-dir"]);
     cmd.arg(&target).args(["--", "--print", "native-static-libs"]);
@@ -367,7 +372,7 @@ fn salted_runtime(dir: &Path) -> PathBuf
     let line = told.lines().find_map(|l| l.split("native-static-libs: ").nth(1));
     let libs: String =
         line.unwrap_or("").split_whitespace().map(|f| format!("{f}\n")).collect();
-    let salted = dir.join("salted");
+    let salted = dir.join(metadata);
     std::fs::create_dir_all(&salted).unwrap();
     std::fs::write(salted.join("native-libs.txt"), libs).unwrap();
     let file =
@@ -403,7 +408,7 @@ fn libs_of_two_runtime_builds_link_into_one_program()
     };
     let dir = tempfile::tempdir().unwrap();
     let dir = dir.path();
-    let salted = salted_runtime(dir);
+    let salted = salted_runtime(dir, Some("a second build"), "zk-rt-a-second-build");
     let salted = salted.to_string_lossy().into_owned();
     for backend in ["c", "native"]
     {
@@ -413,6 +418,29 @@ fn libs_of_two_runtime_builds_link_into_one_program()
         assert_ne!(math, twice, "two builds of the runtime name their functions apart");
         let printed = run_c_program(&cc, dir, "two_libs.c", &["mathlib", "twicelib"]);
         assert_eq!(printed, TWO_LIBS, "two runtimes with the {backend} backend");
+    }
+}
+
+#[test]
+fn libs_of_two_builds_of_one_abi_share_one_runtime()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let dir = dir.path();
+    let other = salted_runtime(dir, None, "zk-rt-other-internals");
+    let other = other.to_string_lossy().into_owned();
+    for backend in ["c", "native"]
+    {
+        build_named(dir, backend, "mathlib", &[]);
+        build_named(dir, backend, "twicelib", &["--runtime-lib", &other]);
+        let (math, twice) = (runtime_of(dir, "mathlib"), runtime_of(dir, "twicelib"));
+        assert_eq!(math, twice, "two builds of one ABI name their functions alike");
+        let printed = run_c_program(&cc, dir, "two_libs.c", &["mathlib", "twicelib"]);
+        assert_eq!(printed, TWO_LIBS, "one runtime with the {backend} backend");
     }
 }
 

@@ -35,6 +35,12 @@ use crate::program::set_thread_prog;
 use crate::program::thread_prog;
 use crate::seqs::DropMark;
 
+/// The level and the version of the runtime, from its build script.
+mod abi
+{
+    include!(concat!(env!("OUT_DIR"), "/abi.rs"));
+}
+
 /// A C lib the runtime serves.
 pub struct ZkLib
 {
@@ -354,6 +360,8 @@ fn forget_latest(old: Option<&TrapRecord>)
 /// * `name` - Its name.
 /// * `slot` - The slot of the last trap of each lib, `zk_trap_slot_v1`.
 /// * `guard` - The function of its glue that runs a step as a call of the lib.
+/// * `level` - The level of the runtime the lib was built for; a runtime of a
+///   lower level ends the program with a message.
 ///
 /// # Returns
 ///
@@ -361,9 +369,10 @@ fn forget_latest(old: Option<&TrapRecord>)
 #[unsafe(export_name = stamped!("lib_open"))]
 pub extern "C" fn zk_lib_open(
     home: *mut *mut ZkLib, program: *const ZkProgram, leave: extern "C" fn(i32),
-    name: *const c_char, slot: *mut *const ZkTrapInfo, guard: Guard,
+    name: *const c_char, slot: *mut *const ZkTrapInfo, guard: Guard, level: u32,
 ) -> *mut ZkLib
 {
+    do_if!(level > abi::LEVEL, level_too_low(name, level));
     // SAFETY: the glue hands a static of its own, which the runtime alone
     // writes.
     let home = unsafe { AtomicPtr::from_ptr(home) };
@@ -387,6 +396,42 @@ pub extern "C" fn zk_lib_open(
     zk_lib_return(was);
     lib
 }
+
+/// End the program: a lib needs a runtime of a higher level than the one the
+/// program linked, which can lack the meaning the lib relies on.
+///
+/// # Arguments
+///
+/// * `name` - The name of the lib.
+/// * `level` - The level it needs.
+fn level_too_low(name: *const c_char, level: u32) -> !
+{
+    // SAFETY: the glue of the lib hands its name as a NUL-ended text.
+    let name = unsafe { CStr::from_ptr(name) }.to_string_lossy();
+    eprintln!(
+        "the Zaka lib {name} needs runtime level {level}, but the program linked \
+         level {} (zakac {}): link it with the runtime of a newer zakac",
+        abi::LEVEL,
+        abi::VERSION.to_string_lossy()
+    );
+    std::process::abort()
+}
+
+/// The feature level of the runtime within its ABI.
+///
+/// # Returns
+///
+/// The level.
+#[unsafe(export_name = stamped!("level"))]
+pub extern "C" fn zk_level() -> u32 { abi::LEVEL }
+
+/// The version of the `zakac` that built the runtime, for diagnostics.
+///
+/// # Returns
+///
+/// The version, a NUL-ended text that lives as long as the program.
+#[unsafe(export_name = stamped!("version"))]
+pub extern "C" fn zk_version() -> *const c_char { abi::VERSION.as_ptr() }
 
 /// Enter a lib for a call: its table and its traps serve the call.
 ///

@@ -350,11 +350,15 @@ files, or `--lib-name`: ASCII letters, digits and `_`.
 - Each name that a lib links under and C never calls has the form
   `zk_<name>_<hash>_...`, with a hash of the lib name, its program and the runtime, so two
   libs never clash.
-- The runtime links its names as `zk_rt_<version>_<hash>_...`, and the `.h` file maps
-  `zk_free` and `zk_last_trap` to them. The static libs from one `zakac` share one
-  runtime, and libs from two builds of `zakac` each keep their own. The build of each
-  runtime joins its hash to the metadata of each Rust crate in it, so no name of one
-  clashes with the other.
+- The runtime links its names as `zk_rt_abi<N>_...`, where `N` is the version of its
+  interface with generated code, and the `.h` file maps `zk_free` and `zk_last_trap` to
+  them. Static libs from builds of `zakac` with one ABI share one runtime, and libs of two
+  ABIs each keep their own. The build of each runtime joins a hash of its sources to the
+  metadata of each Rust crate in it, so no private name of one clashes with the other.
+- A lib checks the level of the runtime on its first call: a lib built with a newer
+  `zakac` of the same ABI needs a runtime of its level or higher, and the program ends
+  with a message when the runtime it linked is older. Link such libs in an order that
+  puts the lib of the newest `zakac` first.
 - A trap stops, or fails a call of, the lib it came from alone.
 - `--max-heap` caps each lib apart: a block counts toward the lib whose call made it, and
   text and lists that a lib gives to C count toward none, since C frees them.

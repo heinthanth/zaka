@@ -20,6 +20,9 @@ zakac_i18n::init!();
 /// place of `zk_`: the version of the runtime and a hash of its sources.
 pub const RUNTIME_PREFIX: &str = env!("ZK_NAME_PREFIX");
 
+/// The ABI of the runtime this compiler carries, `ZK_ABI`, as text.
+pub const RUNTIME_ABI: &str = env!("ZK_ABI");
+
 /// The name a function or a static of the runtime links under.
 ///
 /// # Arguments

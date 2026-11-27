@@ -5,6 +5,7 @@ use std::path::Path;
 
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 include!("stamp.rs");
 
@@ -13,6 +14,7 @@ fn main()
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=../zaka_host/src");
     println!("cargo:rerun-if-changed=stamp.rs");
+    println!("cargo:rerun-if-changed=../zakac/Cargo.toml");
     println!("cargo:rerun-if-env-changed=ZAKA_RUNTIME_SALT");
     // Light tasks run where the runtime can switch stacks: unix and Windows.
     println!("cargo::rustc-check-cfg=cfg(zk_tasks)");
@@ -20,7 +22,8 @@ fn main()
     let tasks = os_kinds.split(',').any(|f| f == "unix" || f == "windows");
     do_if!(tasks, println!("cargo:rustc-cfg=zk_tasks"));
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets it");
-    let prefix = runtime_prefix(&Path::new(&manifest).join(".."));
+    let prefix = runtime_prefix();
+    write_abi(&Path::new(&manifest).join(".."));
     println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");
     let files = std::fs::read_dir("src").expect("src is readable").flatten();
     let mut paths: Vec<_> = files.map(|e| e.path()).collect();
@@ -31,6 +34,24 @@ fn main()
     std::fs::write(dest, format!("&[\n{rows}]")).expect("OUT_DIR is writable");
     #[cfg(feature = "guard")]
     build_guard(&prefix);
+}
+
+/// Write the level and the version the runtime gives a lib, as `abi.rs` in
+/// `OUT_DIR`.
+///
+/// # Arguments
+///
+/// * `compiler` - The `compiler` folder of the repo.
+fn write_abi(compiler: &Path)
+{
+    let version = zakac_version(compiler);
+    let text = format!(
+        "/// The feature level of the runtime within its ABI.\npub const LEVEL: u32 = \
+         {ZK_LEVEL};\n/// The version of the `zakac` that built the runtime.\npub \
+         const VERSION: &std::ffi::CStr = c\"{version}\";\n"
+    );
+    let out = std::env::var("OUT_DIR").expect("cargo sets OUT_DIR");
+    std::fs::write(Path::new(&out).join("abi.rs"), text).expect("OUT_DIR is writable");
 }
 
 /// Compile the guard of a thread in C into the lib, each name with the prefix

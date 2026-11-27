@@ -320,9 +320,11 @@ and of a lib into `target/c-headers`, and `runtime/.clangd` points clangd there.
 
 ### Link names
 
-Each name the runtime exports links as `zk_rt_<version>_<hash>_<name>`: the version of the
-crate, and a hash of its sources and those of `zaka_host` (`zaka_runtime/stamp.rs`, which
-the build scripts of the runtime and of this crate both include). The Rust writes
+Each name the runtime exports links as `zk_rt_abi<N>_<name>`, where `N` is `ZK_ABI`, the
+version of the interface between generated code and the runtime (`zaka_runtime/stamp.rs`,
+which the build scripts of the runtime and of this crate both include). Libs from two
+builds of `zakac` with one ABI share one runtime in a program: the linker takes the first
+runtime that defines the names. Libs of two ABIs each keep their own. The Rust writes
 `#[unsafe(export_name = stamped!("alloc"))]`. cbindgen reads a duplicate of the sources
 with a plain `no_mangle` in its place, and the build script puts a `#define zk_alloc
 zk_rt_..._alloc` for each name before the declarations, so the C keeps the plain names.
@@ -332,9 +334,26 @@ of the JIT carries the linked names.
 A lib that `--runtime-lib` names brings its own prefix: `driver::prefix_in` reads it off
 the name of `zk_seq_new` in the lib, and `runtime_prefix` serves it to `linked_name` and to
 the header written into the cache. Each nested build of the runtime sets
-`RUSTFLAGS=-C metadata=<prefix>`, because Rust derives the link names of each crate from
-its metadata, not its sources, so two runtimes of other sources in one program would
-clash on them. `ZAKA_RUNTIME_SALT` joins the hash, for a test of two builds.
+`RUSTFLAGS=-C metadata=<metadata>`, with the version of the crate and a hash of its
+sources and those of `zaka_host` (`runtime_metadata`), because Rust derives the private
+names of each crate from its metadata, so two runtimes of other sources in one program
+would clash on them. `ZAKA_RUNTIME_SALT` gives a runtime names of an ABI of its own
+(`zk_rt_abi<N>s<hash>_`), for a test of two runtimes in one program.
+
+The runtime also gives its feature level within the ABI, `ZK_LEVEL` (`zk_level`), and the
+version of the `zakac` that built it (`zk_version`). The header defines `ZK_RT_LEVEL`, the
+level a lib is built for, and the glue passes it to `zk_lib_open`, which ends the program
+with a message when the runtime linked has a lower one. Two static libs of one ABI where
+the newer runtime adds a function fail at link time: the linker takes both runtimes and
+finds each name twice.
+
+The interface has a snapshot, `tests/expected/runtime_abi.tokens`: the tokens of
+`zaka_runtime.h`, `zaka_target_c_runtime.h` and `zaka_lib_glue.h` with no comments. Its
+test fails when the headers change while `ZK_ABI` stands. A change that breaks a lib built
+before (a signature, a struct form, an id, or the meaning of a function) raises `ZK_ABI`;
+an added function, or a change that breaks none, keeps it. In both cases `ZAKA_BLESS=1`
+refreshes the snapshot. A change of meaning under the same signature passes the snapshot,
+so it needs the same care.
 
 ### C libs
 

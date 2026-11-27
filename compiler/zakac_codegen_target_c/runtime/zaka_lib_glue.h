@@ -98,10 +98,11 @@ static int32_t zk_lib_guard(void (*step)(void *), void *data);
 static zk_lib_place zk_lib_in(void)
 {
     DO_IF(
-        zk_lib_self == NULL, zk_lib_open(
-                                 &zk_lib_self, &zk_the_program, zk_lib_leave,
-                                 ZK_LIB_NAME, &zk_trap_slot_v1, zk_lib_guard
-                             )
+        zk_lib_self == NULL,
+        zk_lib_open(
+            &zk_lib_self, &zk_the_program, zk_lib_leave, ZK_LIB_NAME, &zk_trap_slot_v1,
+            zk_lib_guard, ZK_RT_LEVEL
+        )
     );
     zk_lib_lock(zk_lib_self);
     return zk_lib_enter(zk_lib_self);

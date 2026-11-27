@@ -1,0 +1,778 @@
+abi 1
+# zaka_runtime.h
+# define zk_enter_call zk_rt_abi1_enter_call
+# define zk_leave_call zk_rt_abi1_leave_call
+# define zk_at_site zk_rt_abi1_at_site
+# define zk_fmod zk_rt_abi1_fmod
+# define zk_fmodf zk_rt_abi1_fmodf
+# define zk_to_c zk_rt_abi1_to_c
+# define zk_from_c zk_rt_abi1_from_c
+# define zk_free_all zk_rt_abi1_free_all
+# define zk_free zk_rt_abi1_free
+# define zk_start zk_rt_abi1_start
+# define zk_flush zk_rt_abi1_flush
+# define zk_finish zk_rt_abi1_finish
+# define zk_zero_divisor zk_rt_abi1_zero_divisor
+# define zk_shift_too_far zk_rt_abi1_shift_too_far
+# define zk_step_not_positive zk_rt_abi1_step_not_positive
+# define zk_threads_not_positive zk_rt_abi1_threads_not_positive
+# define zk_overflow zk_rt_abi1_overflow
+# define zk_too_deep zk_rt_abi1_too_deep
+# define zk_range_trap zk_rt_abi1_range_trap
+# define zk_plain_trap zk_rt_abi1_plain_trap
+# define zk_nums_trap zk_rt_abi1_nums_trap
+# define zk_addr_trap zk_rt_abi1_addr_trap
+# define zk_text_trap zk_rt_abi1_text_trap
+# define zk_null_deref zk_rt_abi1_null_deref
+# define zk_out_of_mem zk_rt_abi1_out_of_mem
+# define zk_emit zk_rt_abi1_emit
+# define zk_sink_open zk_rt_abi1_sink_open
+# define zk_sink_close zk_rt_abi1_sink_close
+# define zk_put_raw zk_rt_abi1_put_raw
+# define zk_put_line zk_rt_abi1_put_line
+# define zk_put_burmese zk_rt_abi1_put_burmese
+# define zk_put_u zk_rt_abi1_put_u
+# define zk_put_i zk_rt_abi1_put_i
+# define zk_put_fbits zk_rt_abi1_put_fbits
+# define zk_put_f32 zk_rt_abi1_put_f32
+# define zk_put_f64 zk_rt_abi1_put_f64
+# define zk_put_bool zk_rt_abi1_put_bool
+# define zk_put_char zk_rt_abi1_put_char
+# define zk_char_of zk_rt_abi1_char_of
+# define zk_host_read_line zk_rt_abi1_host_read_line
+# define zk_host_read_file zk_rt_abi1_host_read_file
+# define zk_host_write_file zk_rt_abi1_host_write_file
+# define zk_host_append_file zk_rt_abi1_host_append_file
+# define zk_host_write_stream zk_rt_abi1_host_write_stream
+# define zk_host_remove zk_rt_abi1_host_remove
+# define zk_host_make_folder zk_rt_abi1_host_make_folder
+# define zk_host_list_folder zk_rt_abi1_host_list_folder
+# define zk_host_run_program zk_rt_abi1_host_run_program
+# define zk_host_path_kind zk_rt_abi1_host_path_kind
+# define zk_host_rename zk_rt_abi1_host_rename
+# define zk_host_read_env zk_rt_abi1_host_read_env
+# define zk_host_math zk_rt_abi1_host_math
+# define zk_host_monotonic_ms zk_rt_abi1_host_monotonic_ms
+# define zk_host_unix_ms zk_rt_abi1_host_unix_ms
+# define zk_host_random_seed zk_rt_abi1_host_random_seed
+# define zk_host_secure_random zk_rt_abi1_host_secure_random
+# define zk_host_format_utc zk_rt_abi1_host_format_utc
+# define zk_host_parse_float zk_rt_abi1_host_parse_float
+# define zk_text_list zk_rt_abi1_text_list
+# define zk_text_of_c zk_rt_abi1_text_of_c
+# define zk_text_from_c zk_rt_abi1_text_from_c
+# define zk_threads_begin zk_rt_abi1_threads_begin
+# define zk_seq_new zk_rt_abi1_seq_new
+# define zk_seq_free zk_rt_abi1_seq_free
+# define zk_put_block zk_rt_abi1_put_block
+# define zk_ptr_add zk_rt_abi1_ptr_add
+# define zk_ptr_sub zk_rt_abi1_ptr_sub
+# define zk_alloc zk_rt_abi1_alloc
+# define zk_raw_free zk_rt_abi1_raw_free
+# define zk_realloc zk_rt_abi1_realloc
+# define zk_blit zk_rt_abi1_blit
+# define zk_fill zk_rt_abi1_fill
+# define zk_fn_check zk_rt_abi1_fn_check
+# define zk_fn_rec zk_rt_abi1_fn_rec
+# define zk_fn_code zk_rt_abi1_fn_code
+# define zk_fn_bound zk_rt_abi1_fn_bound
+# define zk_closure zk_rt_abi1_closure
+# define zk_fn_c zk_rt_abi1_fn_c
+# define zk_fn_dup zk_rt_abi1_fn_dup
+# define zk_fn_lend zk_rt_abi1_fn_lend
+# define zk_fn_size zk_rt_abi1_fn_size
+# define zk_fn_release zk_rt_abi1_fn_release
+# define zk_lib_lock zk_rt_abi1_lib_lock
+# define zk_lib_unlock zk_rt_abi1_lib_unlock
+# define zk_field_named zk_rt_abi1_field_named
+# define zk_eq zk_rt_abi1_eq
+# define zk_put_ptr zk_rt_abi1_put_ptr
+# define zk_put_fn zk_rt_abi1_put_fn
+# define zk_show zk_rt_abi1_show
+# define zk_row_find zk_rt_abi1_row_find
+# define zk_set_row zk_rt_abi1_set_row
+# define zk_remove_row zk_rt_abi1_remove_row
+# define zk_assert_failed zk_rt_abi1_assert_failed
+# define zk_assert_failed_bare zk_rt_abi1_assert_failed_bare
+# define zk_not_good zk_rt_abi1_not_good
+# define zk_not_good_bare zk_rt_abi1_not_good_bare
+# define zk_not_fault zk_rt_abi1_not_fault
+# define zk_no_data zk_rt_abi1_no_data
+# define zk_closed_handle zk_rt_abi1_closed_handle
+# define zk_seq_base zk_rt_abi1_seq_base
+# define zk_seq_len zk_rt_abi1_seq_len
+# define zk_seq_put zk_rt_abi1_seq_put
+# define zk_text_cstr zk_rt_abi1_text_cstr
+# define zk_text_cstr_free zk_rt_abi1_text_cstr_free
+# define zk_text_lit zk_rt_abi1_text_lit
+# define zk_halt zk_rt_abi1_halt
+# define zk_safe_point zk_rt_abi1_safe_point
+# define zk_halt_flag zk_rt_abi1_halt_flag
+# define zk_ring_stat zk_rt_abi1_ring_stat
+# define zk_rings zk_rt_abi1_rings
+# define zk_drop zk_rt_abi1_drop
+# define zk_dup_seqs zk_rt_abi1_dup_seqs
+# define zk_deep_seqs zk_rt_abi1_deep_seqs
+# define zk_lend_seqs zk_rt_abi1_lend_seqs
+# define zk_own zk_rt_abi1_own
+# define zk_obj_ptr zk_rt_abi1_obj_ptr
+# define zk_ptr_obj zk_rt_abi1_ptr_obj
+# define zk_pin zk_rt_abi1_pin
+# define zk_zero zk_rt_abi1_zero
+# define zk_to_heap zk_rt_abi1_to_heap
+# define zk_cell_of zk_rt_abi1_cell_of
+# define zk_object_cell zk_rt_abi1_object_cell
+# define zk_slice_cell zk_rt_abi1_slice_cell
+# define zk_make_slice zk_rt_abi1_make_slice
+# define zk_is_utf8 zk_rt_abi1_is_utf8
+# define zk_check_utf8 zk_rt_abi1_check_utf8
+# define zk_add_cell zk_rt_abi1_add_cell
+# define zk_insert_cell zk_rt_abi1_insert_cell
+# define zk_remove_cell zk_rt_abi1_remove_cell
+# define zk_add_text zk_rt_abi1_add_text
+# define zk_add_char zk_rt_abi1_add_char
+# define zk_insert_text zk_rt_abi1_insert_text
+# define zk_insert_char zk_rt_abi1_insert_char
+# define zk_set_char zk_rt_abi1_set_char
+# define zk_replace_text zk_rt_abi1_replace_text
+# define zk_replace_char zk_rt_abi1_replace_char
+# define zk_char_count zk_rt_abi1_char_count
+# define zk_char_at zk_rt_abi1_char_at
+# define zk_char_at_octet zk_rt_abi1_char_at_octet
+# define zk_text_eq zk_rt_abi1_text_eq
+# define zk_ffi_call zk_rt_abi1_ffi_call
+# define zk_cb_shape_of zk_rt_abi1_cb_shape_of
+# define zk_c_free zk_rt_abi1_c_free
+# define zk_lib_open zk_rt_abi1_lib_open
+# define zk_level zk_rt_abi1_level
+# define zk_version zk_rt_abi1_version
+# define zk_lib_enter zk_rt_abi1_lib_enter
+# define zk_lib_return zk_rt_abi1_lib_return
+# define zk_lib_trap zk_rt_abi1_lib_trap
+# define zk_last_trap zk_rt_abi1_last_trap
+# define zk_lib_forget zk_rt_abi1_lib_forget
+# define zk_lib_unwind zk_rt_abi1_lib_unwind
+# define zk_lib_jump zk_rt_abi1_lib_jump
+# define zk_lib_jump_set zk_rt_abi1_lib_jump_set
+# define zk_lib_let_go zk_rt_abi1_lib_let_go
+# define zk_lib_take_back zk_rt_abi1_lib_take_back
+# define zk_lib_state_of zk_rt_abi1_lib_state_of
+# define zk_lib_state_set zk_rt_abi1_lib_state_set
+# define zk_lib_status zk_rt_abi1_lib_status
+# define zk_lib_status_set zk_rt_abi1_lib_status_set
+# define zk_lib_free_in zk_rt_abi1_lib_free_in
+# define zk_lib_free_out zk_rt_abi1_lib_free_out
+# define zk_lib_drain zk_rt_abi1_lib_drain
+# define zk_ctx zk_rt_abi1_ctx
+# define zk_cb_code zk_rt_abi1_cb_code
+# define zk_cb_lent zk_rt_abi1_cb_lent
+# define zk_cb_end zk_rt_abi1_cb_end
+# define zk_cb_leave zk_rt_abi1_cb_leave
+# define zk_cb_revoke zk_rt_abi1_cb_revoke
+# define zk_cb_handle zk_rt_abi1_cb_handle
+# define zk_cb_opt_handle zk_rt_abi1_cb_opt_handle
+# define zk_allowed zk_rt_abi1_allowed
+# define zk_need_ffi zk_rt_abi1_need_ffi
+# define zk_allowed_env zk_rt_abi1_allowed_env
+# define zk_prog zk_rt_abi1_prog
+# define zk_thread_data zk_rt_abi1_thread_data
+# define zk_thread_start zk_rt_abi1_thread_start
+# define zk_task_start zk_rt_abi1_task_start
+# define zk_thread_detach zk_rt_abi1_thread_detach
+# define zk_thread_wait zk_rt_abi1_thread_wait
+# define zk_thread_taken zk_rt_abi1_thread_taken
+# define zk_thread_drop zk_rt_abi1_thread_drop
+# define zk_lock zk_rt_abi1_lock
+# define zk_unlock zk_rt_abi1_unlock
+# define zk_atomic_add zk_rt_abi1_atomic_add
+# define zk_atomic_load zk_rt_abi1_atomic_load
+# define zk_atomic_cas zk_rt_abi1_atomic_cas
+# define zk_atomic_set zk_rt_abi1_atomic_set
+# define zk_par_for zk_rt_abi1_par_for
+# define zk_par_map zk_rt_abi1_par_map
+# define zk_pipe_new zk_rt_abi1_pipe_new
+# define zk_pipe_send zk_rt_abi1_pipe_send
+# define zk_pipe_receive zk_rt_abi1_pipe_receive
+# define zk_select zk_rt_abi1_select
+# define zk_pipe_close zk_rt_abi1_pipe_close
+# define zk_sleep zk_rt_abi1_sleep
+# define ZK_RT_LEVEL 1
+# ifndef ZAKA_RUNTIME_H
+# define ZAKA_RUNTIME_H
+# include < stddef.h >
+# include < stdint.h >
+# if defined ( __GNUC__ )
+# define ZK_NORETURN __attribute__ ( ( noreturn ) )
+# else
+# define ZK_NORETURN
+# endif
+# define ZK_NO_SITE UINT32_MAX
+# define NO_SITE UINT32_MAX
+# if __STDC_VERSION__ > = 202311L
+# endif
+enum ZkSelect : uint32_t {
+ZK_SELECT_WAITS , ZK_SELECT_TIMED , ZK_SELECT_IDLE , }
+;
+# if __STDC_VERSION__ > = 202311L
+typedef enum ZkSelect ZkSelect ;
+# else
+typedef uint32_t ZkSelect ;
+# endif
+typedef enum zk_trap {
+ZK_TRAP_ZERO_DIVISOR , ZK_TRAP_SHIFT_TOO_FAR , ZK_TRAP_STEP_NOT_POSITIVE , ZK_TRAP_OVERFLOW , ZK_TRAP_INDEX_OUT_OF_RANGE , ZK_TRAP_CHAR_OUT_OF_RANGE , ZK_TRAP_END_BEFORE_START , ZK_TRAP_NULL_CALL , ZK_TRAP_NULL_OBJECT , ZK_TRAP_CLOSED_HANDLE , ZK_TRAP_NULL_FROM_C , ZK_TRAP_CLOSURE_ESCAPE , ZK_TRAP_NO_CELL_TO_REMOVE , ZK_TRAP_NO_CHAR_TO_REMOVE , ZK_TRAP_NO_PLACE_TO_INSERT , ZK_TRAP_SLICE_OUT_OF_RANGE , ZK_TRAP_TEXT_CUT , ZK_TRAP_BAD_UTF8 , ZK_TRAP_NOT_GOOD , ZK_TRAP_NOT_GOOD_BARE , ZK_TRAP_NOT_FAULT , ZK_TRAP_NO_DATA , ZK_TRAP_NO_ROW , ZK_TRAP_NULL_DEREF , ZK_TRAP_OUT_OF_MEM , ZK_TRAP_OVERLAP , ZK_TRAP_TOO_DEEP , ZK_TRAP_PERMISSION , ZK_TRAP_THREAD_TRAPPED , ZK_TRAP_DEADLOCK , ZK_TRAP_PIPE_CLOSED , ZK_TRAP_THREAD_STOPPED , ZK_TRAP_LOCK_BROKEN , ZK_TRAP_THREADS_NOT_POSITIVE , ZK_TRAP_THREAD_WAITED , ZK_TRAP_WRONG_VARIANT , ZK_TRAP_STACK_FULL , ZK_TRAP_ASSERT , ZK_TRAP_ASSERT_BARE , ZK_TRAP_COUNT , }
+zk_trap ;
+typedef enum zk_right {
+ZK_RIGHT_READ , ZK_RIGHT_WRITE , ZK_RIGHT_ENV , ZK_RIGHT_FFI , ZK_RIGHT_RUN , ZK_RIGHT_COUNT , }
+zk_right ;
+typedef enum zk_tag {
+ZK_TAG_SINT , ZK_TAG_UINT , ZK_TAG_FLOAT , ZK_TAG_CHAR , ZK_TAG_BOOL , ZK_TAG_PTR , ZK_TAG_FN , ZK_TAG_LIST , ZK_TAG_STRUCT , ZK_TAG_FALLIBLE , ZK_TAG_SEQ , ZK_TAG_TEXT , ZK_TAG_ENUM , }
+zk_tag ;
+typedef struct zk_lib zk_lib ;
+typedef void ( * ZkStep ) ( void * ) ;
+typedef void ( * zk_code ) ( void ) ;
+typedef const void * zk_fn ;
+typedef struct zk_cb_shape {
+void ( * bridge ) ( void * , void * * , uint8_t * ) ;
+void * ret ;
+void * * args ;
+uint32_t nargs ;
+}
+zk_cb_shape ;
+typedef struct zk_field {
+const char * name ;
+size_t offset ;
+const struct zk_kind * kind ;
+}
+zk_field ;
+typedef struct zk_member {
+const char * value ;
+const char * shown ;
+}
+zk_member ;
+typedef struct zk_kind {
+int32_t tag ;
+size_t size ;
+const struct zk_kind * cell ;
+size_t len ;
+const struct zk_field * fields ;
+const struct zk_member * members ;
+const char * name ;
+int32_t holds_text ;
+int32_t holds_borrow ;
+int32_t owns ;
+int32_t boxed ;
+}
+zk_kind ;
+typedef struct zk_frame {
+uint32_t func ;
+uint32_t site ;
+}
+zk_frame ;
+typedef struct zk_context {
+uint32_t depth ;
+struct zk_frame * frames ;
+size_t room ;
+uint32_t call_site ;
+}
+zk_context ;
+typedef struct zk_c_kind {
+uint32_t tag ;
+uint32_t count ;
+const struct zk_c_kind * const * members ;
+}
+zk_c_kind ;
+typedef struct zk_ffi_shape {
+const struct zk_c_kind * ret ;
+const struct zk_c_kind * const * args ;
+uint32_t nargs ;
+uint32_t nfixed ;
+uint32_t variadic ;
+}
+zk_ffi_shape ;
+typedef struct zk_cb_native_shape {
+void ( * bridge ) ( void * , void * * , uint8_t * ) ;
+const struct zk_c_kind * ret ;
+const struct zk_c_kind * const * args ;
+uint32_t nargs ;
+}
+zk_cb_native_shape ;
+typedef struct zk_grant {
+int32_t all ;
+int32_t count ;
+const char * const * items ;
+}
+zk_grant ;
+typedef struct zk_fn_name {
+zk_code code ;
+const char * name ;
+size_t crosses ;
+}
+zk_fn_name ;
+typedef struct zk_site {
+uint32_t file ;
+uint32_t line ;
+uint32_t col ;
+}
+zk_site ;
+typedef struct zk_program {
+uint32_t max_depth ;
+uint32_t debug_info ;
+uint64_t max_heap ;
+uint32_t checks ;
+const struct zk_grant * grants ;
+int32_t grant_prompt ;
+const char * const * permission_text ;
+const char * const * flag_text ;
+const char * ask_text ;
+const char * const * trap_text ;
+const char * stopped_text ;
+const char * true_text ;
+const char * false_text ;
+const char * null_text ;
+const char * where_text ;
+const char * in_text ;
+const char * backtrace_text ;
+const char * call_at_text ;
+const char * call_text ;
+const char * call_again_text ;
+const char * calls_more_text ;
+const char * full_hint_text ;
+const char * good_text ;
+const char * fault_text ;
+const char * good_bare ;
+const char * fault_bare ;
+const char * data_text ;
+const char * no_data_text ;
+const char * fn_lead ;
+const char * fn_tail ;
+const struct zk_fn_name * fn_names ;
+size_t fn_count ;
+const struct zk_site * sites ;
+const char * const * site_files ;
+}
+zk_program ;
+typedef struct zk_trap_frame {
+const char * function ;
+const char * file ;
+uint32_t line ;
+uint32_t column ;
+}
+zk_trap_frame ;
+typedef struct zk_trap_info {
+int32_t code ;
+const char * kind ;
+const char * message ;
+const char * lib ;
+struct zk_trap_frame where ;
+const struct zk_trap_frame * frames ;
+size_t frame_count ;
+}
+zk_trap_info ;
+typedef int32_t ( * zk_lib_guard_fn ) ( void ( * ) ( void * ) , void * ) ;
+typedef struct zk_lib_place {
+struct zk_lib * lib ;
+const struct zk_program * prog ;
+uint32_t base ;
+}
+zk_lib_place ;
+typedef struct zk_buf {
+uint8_t * data ;
+size_t len ;
+size_t cap ;
+struct zk_buf * prev ;
+}
+zk_buf ;
+typedef int32_t ( * ZkGuard ) ( ZkStep , void * ) ;
+typedef void ( * ZkRoundStep ) ( uint8_t * , size_t ) ;
+typedef void ( * ZkMapStep ) ( uint8_t * , uint8_t * ) ;
+typedef struct zk_fnrec {
+zk_code code ;
+const void * none ;
+}
+zk_fnrec ;
+extern const struct zk_program * zk_prog ;
+extern uint8_t zk_halt ;
+extern int32_t thread_guard ( ZkStep step , void * data ) ;
+extern void thread_leave ( int32_t trap ) ZK_NORETURN ;
+zk_code zk_cb_code ( zk_fn f , const struct zk_cb_shape * shape ) ;
+size_t zk_cb_lent ( void ) ;
+void zk_cb_end ( size_t from ) ;
+void zk_cb_leave ( zk_fn f , const struct zk_cb_shape * shape ) ;
+void zk_cb_revoke ( zk_fn f ) ;
+void zk_cb_handle ( uint8_t * out , void * const * addr , const struct zk_kind * list , uint32_t site ) ;
+void zk_cb_opt_handle ( uint8_t * out , size_t size , size_t ok_at , void * const * addr , const struct zk_kind * list , uint32_t site ) ;
+struct zk_context * zk_ctx ( void ) ;
+void zk_to_c ( const uint8_t * from , const struct zk_kind * k , uint8_t * to ) ;
+void zk_from_c ( const uint8_t * from , const struct zk_kind * k , uint8_t * to , uint32_t site ) ;
+void zk_free_all ( void * p ) ;
+void zk_free ( void * p ) ;
+void zk_ffi_call ( const void * code , const struct zk_ffi_shape * shape , void * * args , void * ret ) ;
+const struct zk_cb_shape * zk_cb_shape_of ( const struct zk_cb_native_shape * native ) ;
+void zk_c_free ( void * p ) ;
+extern void * c_malloc ( size_t size ) ;
+extern void * c_calloc ( size_t count , size_t size ) ;
+extern void * realloc ( void * p , size_t size ) ;
+extern void free ( void * p ) ;
+extern int32_t atexit ( void ( * f ) ( void ) ) ;
+extern size_t malloc_size ( const void * p ) ;
+extern size_t malloc_usable_size ( void * p ) ;
+extern size_t _msize ( void * p ) ;
+void zk_threads_begin ( void ) ;
+uint8_t * zk_seq_new ( size_t size ) ;
+void zk_seq_free ( uint8_t * base ) ;
+void zk_put_block ( uint8_t * to , const uint8_t * from , size_t size ) ;
+uint8_t * zk_ptr_add ( uint8_t * p , int64_t count , size_t stride , uint32_t site ) ;
+int64_t zk_ptr_sub ( const uint8_t * p , const uint8_t * q , size_t stride ) ;
+uint8_t * zk_alloc ( uint64_t count , size_t stride ) ;
+void zk_raw_free ( void * p ) ;
+uint8_t * zk_realloc ( uint8_t * p , uint64_t count , size_t stride ) ;
+void zk_blit ( const uint8_t * src , uint64_t count , uint8_t * dst , size_t stride , int32_t overlap ) ;
+void zk_fill ( uint8_t * dst , uint64_t count , const uint8_t * cell , size_t size ) ;
+zk_fn zk_fn_check ( zk_fn f , uint32_t site ) ;
+uint8_t * zk_fn_rec ( zk_fn f ) ;
+zk_code zk_fn_code ( zk_fn f ) ;
+int32_t zk_fn_bound ( zk_fn f ) ;
+zk_fn zk_closure ( uint8_t * record , zk_code thunk , const struct zk_kind * k ) ;
+zk_fn zk_fn_c ( zk_fn f , uint32_t site ) ;
+zk_fn zk_fn_dup ( zk_fn f ) ;
+zk_fn zk_fn_lend ( zk_fn f ) ;
+size_t zk_fn_size ( zk_fn f ) ;
+void zk_fn_release ( zk_fn f ) ;
+void zk_host_read_line ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * stream , const struct zk_kind * stream_kind ) ;
+void zk_host_read_file ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * path ) ;
+void zk_host_write_file ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * text , const uint8_t * path ) ;
+void zk_host_append_file ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * text , const uint8_t * path ) ;
+void zk_host_write_stream ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * text , const uint8_t * stream , const struct zk_kind * stream_kind ) ;
+void zk_host_remove ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * path ) ;
+void zk_host_make_folder ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * path ) ;
+void zk_host_list_folder ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * path ) ;
+void zk_host_run_program ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * program , const uint8_t * args ) ;
+void zk_host_path_kind ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * path ) ;
+void zk_host_rename ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * from , const uint8_t * to ) ;
+void zk_host_read_env ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * name ) ;
+void zk_host_math ( uint8_t * slot , uint32_t op , const uint8_t * first , const uint8_t * second ) ;
+void zk_host_monotonic_ms ( uint8_t * slot ) ;
+void zk_host_unix_ms ( uint8_t * slot ) ;
+void zk_host_random_seed ( uint8_t * slot ) ;
+void zk_host_secure_random ( uint8_t * slot ) ;
+void zk_host_format_utc ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * ms ) ;
+void zk_host_parse_float ( uint8_t * slot , const struct zk_kind * ret , const uint8_t * text ) ;
+void zk_text_list ( uint8_t * at , int32_t count , char * * items ) ;
+void zk_text_of_c ( uint8_t * out , const char * s , uint32_t site ) ;
+void zk_text_from_c ( uint8_t * out , size_t size , size_t ok_at , const char * s , uint32_t site ) ;
+void zk_lib_lock ( struct zk_lib * lib ) ;
+void zk_lib_unlock ( struct zk_lib * lib ) ;
+struct zk_lib * zk_lib_open ( struct zk_lib * * home , const struct zk_program * program , void ( * leave ) ( int32_t ) , const char * name , const struct zk_trap_info * * slot , zk_lib_guard_fn guard , uint32_t level ) ;
+uint32_t zk_level ( void ) ;
+const char * zk_version ( void ) ;
+struct zk_lib_place zk_lib_enter ( struct zk_lib * lib ) ;
+void zk_lib_return ( struct zk_lib_place was ) ;
+const struct zk_trap_info * zk_lib_trap ( const struct zk_lib * lib ) ;
+const struct zk_trap_info * zk_last_trap ( void ) ;
+void zk_lib_forget ( const struct zk_lib * lib ) ;
+void zk_lib_unwind ( void ) ;
+void * zk_lib_jump ( void ) ;
+void zk_lib_jump_set ( void * to ) ;
+void zk_lib_let_go ( void ) ;
+void zk_lib_take_back ( void ) ;
+int32_t zk_lib_state_of ( const struct zk_lib * lib ) ;
+void zk_lib_state_set ( const struct zk_lib * lib , int32_t state ) ;
+int32_t zk_lib_status ( void ) ;
+void zk_lib_status_set ( int32_t status ) ;
+int32_t zk_lib_free_in ( struct zk_lib * * home ) ;
+void zk_lib_free_out ( void ) ;
+void zk_lib_drain ( void ) ;
+void zk_enter_call ( uint32_t func ) ;
+void zk_leave_call ( void ) ;
+void zk_at_site ( uint32_t site ) ;
+double zk_fmod ( double a , double b ) ;
+float zk_fmodf ( float a , float b ) ;
+extern void * libc_realloc ( void * p , size_t size ) ;
+extern void libc_free ( void * p ) ;
+void zk_emit ( const void * s , size_t n ) ;
+void zk_sink_open ( struct zk_buf * buf ) ;
+void zk_sink_close ( uint8_t * slot ) ;
+void zk_put_raw ( const char * s , size_t n ) ;
+void zk_put_line ( void ) ;
+void zk_put_burmese ( const char * s ) ;
+void zk_put_u ( uint64_t v ) ;
+void zk_put_i ( int64_t v ) ;
+void zk_put_fbits ( int32_t bits , uint64_t raw ) ;
+void zk_put_f32 ( float v ) ;
+void zk_put_f64 ( double v ) ;
+void zk_put_bool ( uint8_t v ) ;
+void zk_put_char ( uint32_t c ) ;
+uint32_t zk_char_of ( int32_t negative , uint64_t v ) ;
+int32_t zk_allowed ( int32_t right , const char * subject ) ;
+void zk_need_ffi ( const char * name ) ;
+char * * zk_allowed_env ( char * * envp , int32_t * count ) ;
+uint8_t * zk_seq_base ( const uint8_t * at ) ;
+size_t zk_seq_len ( const uint8_t * p ) ;
+void zk_seq_put ( uint8_t * p , uint8_t * base , size_t len , size_t room ) ;
+char * zk_text_cstr ( const uint8_t * p ) ;
+void zk_text_cstr_free ( char * dup ) ;
+void zk_text_lit ( uint8_t * slot , const char * s , size_t len , size_t size ) ;
+void zk_safe_point ( void ) ;
+const uint8_t * zk_halt_flag ( void ) ;
+int64_t zk_ring_stat ( uint32_t n ) ;
+void zk_rings ( uint8_t act , uint64_t octets ) ;
+void zk_drop ( uint8_t * p , const struct zk_kind * k ) ;
+void zk_dup_seqs ( uint8_t * p , const struct zk_kind * k ) ;
+void zk_deep_seqs ( uint8_t * p , const struct zk_kind * k ) ;
+void zk_lend_seqs ( uint8_t * p , const struct zk_kind * k ) ;
+uint8_t * zk_own ( uint8_t * p , const struct zk_kind * k ) ;
+uint8_t * zk_obj_ptr ( const uint8_t * p ) ;
+void zk_ptr_obj ( uint8_t * p , uint8_t * base ) ;
+uint8_t * zk_pin ( uint8_t * p ) ;
+void zk_zero ( uint8_t * p , size_t size ) ;
+void zk_to_heap ( uint8_t * dst , const uint8_t * src , const struct zk_kind * list , int32_t fixed ) ;
+size_t zk_cell_of ( int64_t index , size_t len , int32_t first , uint32_t site ) ;
+uint8_t * zk_object_cell ( const uint8_t * p , uint32_t site ) ;
+uint8_t * zk_slice_cell ( const uint8_t * p , int64_t index , int32_t first , size_t stride , uint32_t site ) ;
+void zk_make_slice ( uint8_t * slot , uint8_t * base , uint64_t start , uint64_t len , size_t limit , size_t stride , int32_t text , uint32_t site ) ;
+int32_t zk_is_utf8 ( const uint8_t * s , size_t n ) ;
+void zk_check_utf8 ( const uint8_t * p , uint32_t site ) ;
+void zk_add_cell ( uint8_t * p , const struct zk_kind * k , uint8_t * src ) ;
+void zk_insert_cell ( uint8_t * p , const struct zk_kind * k , int64_t index , int32_t first , uint8_t * src ) ;
+void zk_remove_cell ( uint8_t * p , const struct zk_kind * k ) ;
+void zk_add_text ( uint8_t * p , const uint8_t * text ) ;
+void zk_add_char ( uint8_t * p , uint32_t c ) ;
+void zk_insert_text ( uint8_t * p , int64_t index , int32_t first , const uint8_t * text ) ;
+void zk_insert_char ( uint8_t * p , int64_t index , int32_t first , uint32_t c ) ;
+void zk_set_char ( uint8_t * p , int64_t index , int32_t first , uint32_t c ) ;
+void zk_replace_text ( uint8_t * p , int64_t start , int64_t end , int32_t chars , const uint8_t * text ) ;
+void zk_replace_char ( uint8_t * p , int64_t start , int64_t end , int32_t chars , uint32_t c ) ;
+size_t zk_char_count ( const uint8_t * p ) ;
+uint32_t zk_char_at ( const uint8_t * p , int64_t index , int32_t first , uint32_t site ) ;
+uint32_t zk_char_at_octet ( const uint8_t * p , uint64_t index , uint32_t site ) ;
+int32_t zk_text_eq ( const uint8_t * a , const uint8_t * b ) ;
+const struct zk_field * zk_field_named ( const struct zk_kind * k , const char * name ) ;
+int32_t zk_eq ( const uint8_t * a , const uint8_t * b , const struct zk_kind * k ) ;
+void zk_put_ptr ( const uint8_t * p ) ;
+void zk_put_fn ( zk_fn f ) ;
+void zk_show ( const uint8_t * p , const struct zk_kind * k , int32_t nested ) ;
+int64_t zk_row_find ( const uint8_t * p , const struct zk_kind * k , const uint8_t * index ) ;
+void zk_set_row ( uint8_t * p , const struct zk_kind * k , uint8_t * index , uint8_t * src ) ;
+void zk_remove_row ( uint8_t * p , const struct zk_kind * k , const uint8_t * index ) ;
+void zk_assert_failed ( const uint8_t * p , const struct zk_kind * k ) ZK_NORETURN ;
+void zk_assert_failed_bare ( void ) ZK_NORETURN ;
+void zk_not_good ( const uint8_t * p , const struct zk_kind * k ) ZK_NORETURN ;
+void zk_not_good_bare ( void ) ZK_NORETURN ;
+void zk_not_fault ( void ) ZK_NORETURN ;
+void zk_no_data ( void ) ZK_NORETURN ;
+void zk_closed_handle ( void ) ZK_NORETURN ;
+void zk_start ( int32_t argc , char * * argv , const struct zk_program * program ) ;
+void zk_flush ( void ) ;
+int32_t zk_finish ( int32_t status ) ;
+uint8_t * zk_thread_data ( size_t size ) ;
+size_t zk_thread_start ( ZkGuard guard , void ( * jump ) ( int32_t ) , ZkStep step , uint8_t * data , const struct zk_kind * ret , int32_t abort ) ;
+size_t zk_task_start ( ZkGuard guard , void ( * jump ) ( int32_t ) , ZkStep step , uint8_t * data , const struct zk_kind * ret , int32_t abort ) ;
+size_t zk_thread_detach ( size_t n ) ;
+uint8_t * zk_thread_wait ( size_t n , uint32_t site ) ;
+void zk_thread_taken ( size_t n ) ;
+void zk_thread_drop ( size_t n ) ;
+void zk_lock ( uint8_t * obj ) ;
+void zk_unlock ( uint8_t * obj ) ;
+void zk_atomic_add ( ptrdiff_t * at , ptrdiff_t v , int32_t sub ) ;
+ptrdiff_t zk_atomic_load ( ptrdiff_t * at ) ;
+ptrdiff_t zk_atomic_cas ( ptrdiff_t * at , ptrdiff_t expected , ptrdiff_t new_ ) ;
+void zk_atomic_set ( ptrdiff_t * at , ptrdiff_t v ) ;
+void zk_par_for ( size_t count , ZkRoundStep step , uint8_t * data , ZkGuard guard , void ( * jump ) ( int32_t ) , int32_t abort , size_t threads ) ;
+void zk_par_map ( uint8_t * src , const struct zk_kind * src_kind , uint8_t * out , const struct zk_kind * out_kind , ZkMapStep step , ZkGuard guard , void ( * jump ) ( int32_t ) , int32_t abort , size_t threads , uint32_t site ) ;
+size_t zk_pipe_new ( size_t room ) ;
+void zk_pipe_send ( size_t n , uint8_t * value , const struct zk_kind * k ) ;
+void zk_pipe_receive ( size_t n , uint8_t * out , const struct zk_kind * k , uint32_t site ) ;
+size_t zk_select ( const size_t * arms , size_t n , size_t ms , ZkSelect mode ) ;
+void zk_pipe_close ( size_t n ) ;
+void zk_sleep ( size_t ms ) ;
+void zk_zero_divisor ( void ) ZK_NORETURN ;
+void zk_shift_too_far ( uint64_t distance , uint32_t bits ) ZK_NORETURN ;
+void zk_step_not_positive ( void ) ZK_NORETURN ;
+void zk_threads_not_positive ( void ) ZK_NORETURN ;
+void zk_overflow ( const char * op , const char * kind ) ZK_NORETURN ;
+void zk_too_deep ( void ) ZK_NORETURN ;
+void zk_range_trap ( int32_t trap , int64_t index , int64_t lo , int64_t hi ) ZK_NORETURN ;
+void zk_plain_trap ( int32_t trap ) ZK_NORETURN ;
+void zk_nums_trap ( int32_t trap , int32_t n , const char * const * names , const int64_t * nums ) ZK_NORETURN ;
+void zk_addr_trap ( int32_t trap , const void * addr ) ZK_NORETURN ;
+void zk_text_trap ( int32_t trap , const char * e ) ZK_NORETURN ;
+void zk_null_deref ( const void * addr ) ZK_NORETURN ;
+void zk_out_of_mem ( uint64_t size ) ZK_NORETURN ;
+# endif
+# zaka_target_c_runtime.h
+# ifndef ZAKA_TARGET_C_RUNTIME_H
+# define ZAKA_TARGET_C_RUNTIME_H
+# pragma STDC FP_CONTRACT OFF
+# include < math.h >
+# include < stddef.h >
+# include < stdint.h >
+# include < stdlib.h >
+# include < string.h >
+# include "zaka_checks.h"
+# include "zaka_runtime.h"
+typedef int64_t zk_imax ;
+typedef uint64_t zk_umax ;
+_Static_assert ( sizeof ( size_t ) = = sizeof ( void * ) , "a word holds an address and a count" ) ;
+# define ZK_TRACK ( ZK_CHECK_DEPTH | | ZK_DEBUG_INFO )
+static inline zk_context * zk_enter ( uint32_t func ) {
+zk_context * c = zk_ctx ( ) ;
+c - > depth + + ;
+if ( ZK_CHECK_DEPTH & & c - > depth > ZK_MAX_DEPTH ) zk_too_deep ( ) ;
+if ( c - > depth > ZK_MAX_DEPTH ) return c ;
+c - > frames [ c - > depth ] .func = func ;
+c - > frames [ c - > depth ] .site = 0 ;
+return c ;
+}
+# define ZK_ENTER ( F ) zk_context * const zk_c = ZK_TRACK ? zk_enter ( F ) : NULL ; ( void ) zk_c
+# define ZK_HERE ( ) zk_context * const zk_c = ZK_TRACK ? zk_ctx ( ) : NULL ; ( void ) zk_c
+# define ZK_LEAVE ( ) do { if ( ZK_TRACK ) zk_c - > depth - - ; } while ( 0 )
+# define ZK_AT ( S ) do { if ( ZK_DEBUG_INFO & & zk_c - > depth < = ZK_MAX_DEPTH ) zk_c - > frames [ zk_c - > depth ] .site = ( S ) ; } while ( 0 )
+# define ZK_STOP_AT ( S , STOP ) ( zk_at_site ( S ) , STOP )
+# ifdef __GNUC__
+# define ZK_SAFE_POINT ( ) do { if ( __atomic_load_n ( & zk_halt , __ATOMIC_ACQUIRE ) ) zk_safe_point ( ) ; } while ( 0 )
+# else
+# define ZK_SAFE_POINT ( ) do { if ( * ( volatile uint8_t * ) & zk_halt ) zk_safe_point ( ) ; } while ( 0 )
+# endif
+# if ZK_CHECK_NULL
+# define ZK_NULL_CHECK ( p , s ) ( ( p ) = = NULL ? ZK_STOP_AT ( s , zk_null_deref ( p ) ) : ( void ) 0 )
+# else
+# define ZK_NULL_CHECK ( p , s ) ( ( void ) ( s ) )
+# endif
+# define ZK_MEM_OPS ( N , T ) static inline T zk_ld_ # # N ( const unsigned char * p , uint32_t s ) { T v ; ZK_NULL_CHECK ( p , s ) ; memcpy ( & v , p , sizeof v ) ; return v ; } static inline void zk_st_ # # N ( unsigned char * p , T v , uint32_t s ) { ZK_NULL_CHECK ( p , s ) ; memcpy ( p , & v , sizeof v ) ; }
+# if defined ( __GNUC__ )
+# define ZK_SMUL_TEST ( N , T , MIN , MAX ) static inline int zk_mul_ovf_ # # N ( T a , T b ) { T r ; return __builtin_mul_overflow ( a , b , & r ) ; }
+# define ZK_UMUL_TEST ( N , T , MAX ) ZK_SMUL_TEST ( N , T , 0 , MAX )
+# else
+# define ZK_SMUL_TEST ( N , T , MIN , MAX ) static inline int zk_mul_ovf_ # # N ( T a , T b ) { if ( a > 0 ) return b > 0 ? a > ( MAX ) / b : b < ( MIN ) / a ; return b > 0 ? a < ( MIN ) / b : ( a ! = 0 & & b < ( MAX ) / a ) ; }
+# define ZK_UMUL_TEST ( N , T , MAX ) static inline int zk_mul_ovf_ # # N ( T a , T b ) { return a ! = 0 & & b > ( MAX ) / a ; }
+# endif
+# define ZK_SIGNED_OPS ( N , T , W , MIN , MAX , BITS ) ZK_SMUL_TEST ( N , T , MIN , MAX ) static inline T zk_add_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( ( b > 0 & & a > ( MAX ) - b ) | | ( b < 0 & & a < ( MIN ) - b ) ) ZK_STOP_AT ( s , zk_overflow ( "+" , k ) ) ; return ( T ) ( a + b ) ; } static inline T zk_sub_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( ( b < 0 & & a > ( MAX ) + b ) | | ( b > 0 & & a < ( MIN ) + b ) ) ZK_STOP_AT ( s , zk_overflow ( "-" , k ) ) ; return ( T ) ( a - b ) ; } static inline T zk_mul_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( zk_mul_ovf_ # # N ( a , b ) ) ZK_STOP_AT ( s , zk_overflow ( "*" , k ) ) ; return ( T ) ( ( W ) a * ( W ) b ) ; } static inline T zk_neg_ # # N ( T a , const char * k , uint32_t s ) { if ( a = = ( MIN ) ) ZK_STOP_AT ( s , zk_overflow ( "neg" , k ) ) ; return ( T ) - a ; } static inline T zk_wadd_ # # N ( T a , T b ) { return ( T ) ( ( W ) a + ( W ) b ) ; } static inline T zk_wsub_ # # N ( T a , T b ) { return ( T ) ( ( W ) a - ( W ) b ) ; } static inline T zk_wmul_ # # N ( T a , T b ) { return ( T ) ( ( W ) a * ( W ) b ) ; } static inline T zk_wneg_ # # N ( T a ) { return ( T ) ( ( W ) 0 - ( W ) a ) ; } static inline T zk_div_ # # N ( T a , T b , int stop , const char * k , uint32_t s ) { if ( ZK_CHECK_DIVIDE & & b = = 0 ) ZK_STOP_AT ( s , zk_zero_divisor ( ) ) ; if ( b ! = - 1 | | a ! = ( MIN ) ) return ( T ) ( a / b ) ; if ( stop ) ZK_STOP_AT ( s , zk_overflow ( "/" , k ) ) ; return ( MIN ) ; } static inline T zk_rem_ # # N ( T a , T b , int stop , const char * k , uint32_t s ) { if ( ZK_CHECK_DIVIDE & & b = = 0 ) ZK_STOP_AT ( s , zk_zero_divisor ( ) ) ; if ( b ! = - 1 ) return ( T ) ( a % b ) ; if ( stop & & a = = ( MIN ) ) ZK_STOP_AT ( s , zk_overflow ( "%" , k ) ) ; return 0 ; } static inline T zk_shl_ # # N ( T a , zk_umax d , uint32_t s ) { if ( ZK_CHECK_SHIFT & & d > = ( BITS ) ) ZK_STOP_AT ( s , zk_shift_too_far ( d , ( BITS ) ) ) ; return ( T ) ( ( W ) a < < d ) ; } static inline T zk_shr_ # # N ( T a , zk_umax d , uint32_t s ) { if ( ZK_CHECK_SHIFT & & d > = ( BITS ) ) ZK_STOP_AT ( s , zk_shift_too_far ( d , ( BITS ) ) ) ; return a < 0 ? ( T ) ~ ( ~ a > > d ) : ( T ) ( a > > d ) ; } static inline T zk_f2i_ # # N ( double x ) { if ( x ! = x ) return 0 ; if ( x < = ( double ) ( MIN ) ) return ( MIN ) ; if ( x > = ( double ) ( MAX ) ) return ( MAX ) ; return ( T ) x ; } static inline uint32_t zk_char_ # # N ( T x ) { return zk_char_of ( x < 0 , ( zk_umax ) x ) ; }
+# define ZK_UNSIGNED_OPS ( N , T , W , MAX , BITS ) ZK_UMUL_TEST ( N , T , MAX ) static inline T zk_add_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( a > ( MAX ) - b ) ZK_STOP_AT ( s , zk_overflow ( "+" , k ) ) ; return ( T ) ( a + b ) ; } static inline T zk_sub_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( a < b ) ZK_STOP_AT ( s , zk_overflow ( "-" , k ) ) ; return ( T ) ( a - b ) ; } static inline T zk_mul_ # # N ( T a , T b , const char * k , uint32_t s ) { if ( zk_mul_ovf_ # # N ( a , b ) ) ZK_STOP_AT ( s , zk_overflow ( "*" , k ) ) ; return ( T ) ( ( W ) a * ( W ) b ) ; } static inline T zk_neg_ # # N ( T a , const char * k , uint32_t s ) { if ( a ! = 0 ) ZK_STOP_AT ( s , zk_overflow ( "neg" , k ) ) ; return 0 ; } static inline T zk_wadd_ # # N ( T a , T b ) { return ( T ) ( ( W ) a + ( W ) b ) ; } static inline T zk_wsub_ # # N ( T a , T b ) { return ( T ) ( ( W ) a - ( W ) b ) ; } static inline T zk_wmul_ # # N ( T a , T b ) { return ( T ) ( ( W ) a * ( W ) b ) ; } static inline T zk_wneg_ # # N ( T a ) { return ( T ) ( ( W ) 0 - ( W ) a ) ; } static inline T zk_div_ # # N ( T a , T b , int stop , const char * k , uint32_t s ) { ( void ) stop ; ( void ) k ; if ( ZK_CHECK_DIVIDE & & b = = 0 ) ZK_STOP_AT ( s , zk_zero_divisor ( ) ) ; return ( T ) ( a / b ) ; } static inline T zk_rem_ # # N ( T a , T b , int stop , const char * k , uint32_t s ) { ( void ) stop ; ( void ) k ; if ( ZK_CHECK_DIVIDE & & b = = 0 ) ZK_STOP_AT ( s , zk_zero_divisor ( ) ) ; return ( T ) ( a % b ) ; } static inline T zk_shl_ # # N ( T a , zk_umax d , uint32_t s ) { if ( ZK_CHECK_SHIFT & & d > = ( BITS ) ) ZK_STOP_AT ( s , zk_shift_too_far ( d , ( BITS ) ) ) ; return ( T ) ( ( W ) a < < d ) ; } static inline T zk_shr_ # # N ( T a , zk_umax d , uint32_t s ) { if ( ZK_CHECK_SHIFT & & d > = ( BITS ) ) ZK_STOP_AT ( s , zk_shift_too_far ( d , ( BITS ) ) ) ; return ( T ) ( a > > d ) ; } static inline T zk_f2i_ # # N ( double x ) { if ( x ! = x | | x < = 0 ) return 0 ; if ( x > = ( double ) ( MAX ) ) return ( MAX ) ; return ( T ) x ; } static inline uint32_t zk_char_ # # N ( T x ) { return zk_char_of ( 0 , ( zk_umax ) x ) ; }
+# endif
+ZK_MEM_OPS ( i8 , int8_t ) ZK_MEM_OPS ( i16 , int16_t ) ZK_MEM_OPS ( i32 , int32_t ) ZK_MEM_OPS ( i64 , int64_t ) ZK_MEM_OPS ( u8 , uint8_t ) ZK_MEM_OPS ( u16 , uint16_t ) ZK_MEM_OPS ( u32 , uint32_t ) ZK_MEM_OPS ( u64 , uint64_t ) ZK_MEM_OPS ( f32 , float ) ZK_MEM_OPS ( f64 , double ) ZK_MEM_OPS ( p , unsigned char * ) ZK_MEM_OPS ( fn , zk_fn ) ZK_SIGNED_OPS ( i8 , int8_t , uint64_t , INT8_MIN , INT8_MAX , 8 ) ZK_SIGNED_OPS ( i16 , int16_t , uint64_t , INT16_MIN , INT16_MAX , 16 ) ZK_SIGNED_OPS ( i32 , int32_t , uint64_t , INT32_MIN , INT32_MAX , 32 ) ZK_SIGNED_OPS ( i64 , int64_t , uint64_t , INT64_MIN , INT64_MAX , 64 ) ZK_UNSIGNED_OPS ( u8 , uint8_t , uint64_t , UINT8_MAX , 8 ) ZK_UNSIGNED_OPS ( u16 , uint16_t , uint64_t , UINT16_MAX , 16 ) ZK_UNSIGNED_OPS ( u32 , uint32_t , uint64_t , UINT32_MAX , 32 ) ZK_UNSIGNED_OPS ( u64 , uint64_t , uint64_t , UINT64_MAX , 64 )
+# zaka_lib_glue.h
+# ifndef ZAKA_LIB_GLUE_H
+# define ZAKA_LIB_GLUE_H
+# include < setjmp.h >
+# include "zaka_c_sugars.h"
+# include "zaka_lib_names.h"
+# include "zaka_runtime.h"
+# if defined ( _WIN32 )
+# define ZK_LIB_EXPORT __declspec ( dllexport )
+# else
+# define ZK_LIB_EXPORT
+# endif
+# define ZK_OK 0
+# define ZK_STOPPED ( - 1 )
+# if defined ( _WIN64 ) & & ( defined ( _M_X64 ) | | defined ( __x86_64__ ) ) & & ! defined ( _M_ARM64EC ) & & ! defined ( ZK_LIB_UNWIND )
+# define ZK_LIB_NO_UNWIND ( buf ) ( ( ( _JUMP_BUFFER * ) ( buf ) ) - > Frame = 0 )
+# else
+# define ZK_LIB_NO_UNWIND ( buf ) ( ( void ) ( buf ) )
+# endif
+typedef union {
+intptr_t i ;
+uintptr_t u ;
+float f ;
+double d ;
+void * p ;
+}
+zk_lib_result ;
+extern const zk_program zk_the_program ;
+void zk_lib_init ( void ) ;
+# if defined ( _WIN32 )
+__declspec ( selectany ) const zk_trap_info * zk_trap_slot_v1 = NULL ;
+# elif defined ( __GNUC__ )
+__attribute__ ( ( weak ) ) const zk_trap_info * zk_trap_slot_v1 = NULL ;
+# else
+static const zk_trap_info * zk_trap_slot_v1 = NULL ;
+# endif
+static zk_lib * zk_lib_self ;
+# define ZK_LIB_FRESH 0
+# define ZK_LIB_RUNS 1
+# define ZK_LIB_STOPPED 2
+# define ZK_LIB_STARTING 3
+_Noreturn static void zk_lib_leave ( int32_t trap ) {
+zk_lib_status_set ( trap + 1 ) ;
+longjmp ( * ( jmp_buf * ) zk_lib_jump ( ) , 1 ) ;
+}
+static int32_t zk_lib_guard ( void ( * step ) ( void * ) , void * data ) ;
+static zk_lib_place zk_lib_in ( void ) {
+DO_IF ( zk_lib_self = = NULL , zk_lib_open ( & zk_lib_self , & zk_the_program , zk_lib_leave , ZK_LIB_NAME , & zk_trap_slot_v1 , zk_lib_guard , ZK_RT_LEVEL ) ) ;
+zk_lib_lock ( zk_lib_self ) ;
+return zk_lib_enter ( zk_lib_self ) ;
+}
+static void zk_lib_begin ( void ) {
+RET_IF ( zk_lib_state_of ( zk_lib_self ) ! = ZK_LIB_FRESH ) ;
+zk_lib_state_set ( zk_lib_self , ZK_LIB_STARTING ) ;
+zk_lib_drain ( ) ;
+zk_lib_init ( ) ;
+zk_lib_state_set ( zk_lib_self , ZK_LIB_RUNS ) ;
+}
+static int32_t zk_lib_end ( jmp_buf * outer , zk_lib_place was , int32_t status ) {
+zk_lib_jump_set ( outer ) ;
+zk_lib_return ( was ) ;
+zk_lib_unlock ( zk_lib_self ) ;
+return status ;
+}
+static int32_t zk_lib_stop ( jmp_buf * outer , zk_lib_place was , uint32_t depth ) {
+zk_lib_state_set ( zk_lib_self , ZK_LIB_STOPPED ) ;
+zk_ctx ( ) - > depth = depth ;
+zk_lib_unwind ( ) ;
+zk_flush ( ) ;
+return zk_lib_end ( outer , was , zk_lib_status ( ) ) ;
+}
+static int32_t zk_lib_free_end ( jmp_buf * outer , zk_lib_place was , int32_t status ) {
+zk_lib_jump_set ( outer ) ;
+zk_lib_return ( was ) ;
+zk_lib_free_out ( ) ;
+return status ;
+}
+static int32_t zk_lib_fail ( jmp_buf * outer , zk_lib_place was , uint32_t depth ) {
+zk_ctx ( ) - > depth = depth ;
+zk_lib_unwind ( ) ;
+zk_flush ( ) ;
+return zk_lib_free_end ( outer , was , zk_lib_status ( ) ) ;
+}
+static int32_t zk_lib_guard ( void ( * step ) ( void * ) , void * data ) {
+jmp_buf zk_here ;
+zk_lib_place zk_was = zk_lib_in ( ) ;
+jmp_buf * zk_outer = ( jmp_buf * ) zk_lib_jump ( ) ;
+uint32_t zk_depth_was = zk_ctx ( ) - > depth ;
+RET_IF ( zk_lib_state_of ( zk_lib_self ) = = ZK_LIB_STOPPED , zk_lib_end ( zk_outer , zk_was , ZK_STOPPED ) ) ;
+if ( setjmp ( zk_here ) ! = 0 ) return zk_lib_stop ( zk_outer , zk_was , zk_depth_was ) ;
+ZK_LIB_NO_UNWIND ( zk_here ) ;
+zk_lib_jump_set ( & zk_here ) ;
+zk_lib_begin ( ) ;
+step ( data ) ;
+zk_flush ( ) ;
+return zk_lib_end ( zk_outer , zk_was , ZK_OK ) ;
+}
+static void zk_lib_go_threaded ( void * data ) {
+( void ) data ;
+zk_threads_begin ( ) ;
+}
+static int32_t zk_lib_free_begin ( void ) {
+int32_t state = zk_lib_free_in ( & zk_lib_self ) ;
+while ( state ! = ZK_LIB_RUNS & & state ! = ZK_LIB_STOPPED ) {
+zk_lib_guard ( zk_lib_go_threaded , NULL ) ;
+state = zk_lib_free_in ( & zk_lib_self ) ;
+}
+return state ;
+}
+ZK_LIB_EXPORT void zk_lib_reset ( void ) {
+RET_IF ( zk_lib_self = = NULL ) ;
+zk_lib_lock ( zk_lib_self ) ;
+zk_lib_forget ( zk_lib_self ) ;
+zk_lib_state_set ( zk_lib_self , ZK_LIB_FRESH ) ;
+zk_lib_unlock ( zk_lib_self ) ;
+}
+ZK_LIB_EXPORT const zk_trap_info * zk_lib_last_trap ( void ) {
+return zk_lib_trap ( zk_lib_self ) ;
+}
+ZK_LIB_EXPORT void zk_lib_free ( void * p ) {
+zk_free ( p ) ;
+}
+ZK_LIB_EXPORT void zk_lib_free_all ( void * p ) {
+zk_free_all ( p ) ;
+}
+# endif
