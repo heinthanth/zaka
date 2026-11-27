@@ -255,6 +255,10 @@ pub enum RuntimeLink
     /// static lib and the shared lib link to: one runtime in the process for
     /// each lib of its ABI.
     Shared,
+    /// The runtime is a static lib of its own beside the lib, which a program
+    /// links once after the libs; the static lib of the lib holds its program
+    /// alone, and its shared lib holds the runtime.
+    Separate,
 }
 
 /// The choices of the C target.

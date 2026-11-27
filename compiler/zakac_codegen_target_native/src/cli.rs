@@ -272,6 +272,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     use zakac_codegen_target_c::cli::build_and_link;
     use zakac_codegen_target_c::cli::input_path;
     use zakac_codegen_target_c::cli::lib_names;
+    use zakac_codegen_target_c::cli::pkg_config;
     use zakac_codegen_target_c::cli::runtime_link;
     use zakac_codegen_target_c::cli::target_options;
     use zakac_codegen_target_c::cli::with_exe;
@@ -280,6 +281,7 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     use zakac_codegen_target_c::exports::api_names;
     use zakac_codegen_target_c::ffi::link_libs_for;
     use zakac_codegen_target_c::options::RunCheck;
+    use zakac_codegen_target_c::options::RuntimeLink;
     use zakac_codegen_target_c::toolchain::Dialect;
 
     let info = CommandInfo::new("zakac build", env!("CARGO_PKG_VERSION"));
@@ -440,7 +442,11 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
             };
             let links = static_links(target.abi, dialect, &libs, runtime, &f.shared);
             let text = header(&exports, platform, &n, &links);
-            written(f.header, text.as_bytes()).map(|_| ExitCode::Success)
+            let pc = pkg_config(&f, &links, dialect)
+                .filter(|_| runtime == RuntimeLink::Separate);
+            let pc = pc.map_or(Ok(()), |(path, text)| written(path, text.as_bytes()));
+            pc.and_then(|_| written(f.header, text.as_bytes()))
+                .map(|_| ExitCode::Success)
         }
     };
     match done

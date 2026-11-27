@@ -12,6 +12,7 @@ use zakac_codegen_target_c::driver::runtime_lib;
 use zakac_codegen_target_c::toolchain::Dialect;
 use zakac_codegen_target_c::toolchain::Tool;
 use zakac_codegen_target_c::toolchain::find_cc_for;
+use zakac_codegen_target_c::toolchain::separate_runtime_file;
 use zakac_codegen_target_c::toolchain::shared_runtime_file;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::tern;
@@ -535,6 +536,37 @@ fn libs_with_a_shared_runtime_link_into_one_program()
         let files = [shared("mathlib"), shared("twicelib"), runtime];
         let printed = run_c_program_with(&cc, dir, "two_libs.c", &files);
         assert_eq!(printed, TWO_LIBS, "shared libs with the {backend} backend");
+    }
+}
+
+#[test]
+fn libs_with_a_separate_runtime_link_it_once()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "mathlib", &["--runtime", "separate"]);
+        build_named(dir, backend, "twicelib", &["--runtime", "separate"]);
+        let runtime = dir.join(separate_runtime_file(host_abi()));
+        assert!(runtime.is_file(), "the separate runtime with the {backend} backend");
+        let math = std::fs::metadata(dir.join(static_file("mathlib"))).unwrap().len();
+        let whole = std::fs::metadata(&runtime).unwrap().len();
+        assert!(math < whole, "the static lib holds its program alone");
+        let statics = ["mathlib", "twicelib"].map(|l| dir.join(static_file(l)));
+        let files: Vec<PathBuf> = statics.into_iter().chain([runtime]).collect();
+        let printed = run_c_program_with(&cc, dir, "two_libs.c", &files);
+        assert_eq!(printed, TWO_LIBS, "a separate runtime with the {backend} backend");
+        let gnu = Dialect::of(host_abi()) == Dialect::Gnu;
+        do_if!(
+            gnu,
+            assert!(dir.join("zaka-mathlib.pc").is_file(), "the pkg-config file")
+        );
     }
 }
 

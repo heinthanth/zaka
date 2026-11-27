@@ -58,7 +58,7 @@ en = "The name of a C lib in the names C calls (zk_reset_<name>, zk_last_trap_fr
 en = "A runtime lib built for another target (cargo build -p zaka_runtime --target <triple>), to build for that OS and CPU with a C compiler for it; native-libs.txt beside it lists the OS libs it needs, one flag a line."
 
 [target_c.runtime]
-en = "How a C lib carries its runtime: embedded in its static and shared lib, or shared, a runtime lib of its own beside them (libzaka_runtime_abi<N>.so, .dylib or zaka_runtime_abi<N>.dll) that each lib of its ABI links to."
+en = "How a C lib carries its runtime: embedded in its static and shared lib; shared, a runtime lib of its own beside them (libzaka_runtime_abi<N>.so, .dylib or zaka_runtime_abi<N>.dll) that each lib of its ABI links to; or separate, a static runtime lib beside the lib (libzaka_runtime_abi<N>.a) that a program links once, with a pkg-config file."
 
 [target_c.cc]
 en = "The C compiler, with the words before its flags (default: CC, then cc, gcc, clang or zig cc from the PATH)."

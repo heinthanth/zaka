@@ -197,6 +197,8 @@ script does the same with `cargo:rustc-link-search=static` and
   that lib.
 - `--runtime shared` puts the runtime in a shared lib of its own beside the lib, which
   each lib built with it uses, so a program with several Zaka libs carries one runtime.
+  `--runtime separate` puts it in a static lib of its own beside the lib instead, which the
+  program links once after the libs.
 - The full rules are in [Functions C can
   call](../../manual/language/functions-exports.md), and the flags in
   [Commands](../../manual/compiler/commands.md).

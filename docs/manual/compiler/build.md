@@ -105,7 +105,7 @@ flags](commands.md#options-of-the-compile-stages) and `--release`:
 | `--ld-flag` | `<FLAG>` | | one more flag for the linker; give it again for more |
 | `--no-default-flags` | | off | leave out the default C flags `-O2 -w -ffp-contract=off` (`/nologo /O2 /w /fp:precise /utf-8 /MD` for MSVC); `-std=c11` remains |
 | `--lib-name` | `<NAME>` | the name of the files | the name of a C lib (`--emit lib`) in `zk_reset_<NAME>`, `zk_last_trap_from_<NAME>` and the names it links under: ASCII letters, digits and `_`, starting with a letter or `_`; a file name that C cannot use needs it |
-| `--runtime` | `embedded` or `shared` | `embedded` | how a C lib (`--emit lib`) carries the runtime: inside its static and shared lib, or as a shared runtime of its own beside them; see [A C lib](#a-c-lib) |
+| `--runtime` | `embedded`, `shared` or `separate` | `embedded` | how a C lib (`--emit lib`) carries the runtime: inside its static and shared lib, as a shared runtime of its own beside them, or as a static runtime beside them; see [A C lib](#a-c-lib) |
 | `--runtime-lib` | `<FILE>` | the runtime lib that `zakac` carries | a runtime lib built for another target, with the OS libs it needs listed in `native-libs.txt` beside it; see [Cross builds](native.md#cross-builds) |
 | `--allow-read`, `--allow-write`, `--allow-env` | `[=<PATHS>]` or `[=<NAMES>]` | none | the rights the executable has, written into it, as `zakac run` grants them to a run |
 | `--allow-run` | `[=<PROGRAMS>]` | none | the right to run other programs: all, or those named |
@@ -389,10 +389,28 @@ $ zakac build --backend c --emit lib --runtime shared mathlib.zaka
 $ cc main.c libmathlib.a libzaka_runtime_abi1.so -lm -Wl,-rpath,'$ORIGIN' -o main
 ```
 
+### The runtime as a static lib of its own
+
+With `--runtime separate`, the static lib holds the objects of the program alone, and the
+runtime is a static lib beside it: `libzaka_runtime_abi<N>.a`, or `zaka_runtime_abi<N>.lib`
+for MSVC. The shared lib still holds the runtime.
+
+- A program with several Zaka libs of one ABI links the separate runtime once, after the
+  libs, so one runtime is in the program for certain, not through the order in which the
+  linker reads the libs.
+- A toolchain of the GNU form also gets `zaka-<name>.pc`, a pkg-config file whose `Libs`
+  line names the static lib, the separate runtime and the OS libs in link order:
+
+```console
+$ zakac build --backend c --emit lib --runtime separate mathlib.zaka
+$ cc main.c $(PKG_CONFIG_PATH=. pkg-config --cflags --libs zaka-mathlib) -o main
+```
+
 ### Linking the lib
 
-A program that links the static lib also links the OS libs of the runtime, or the shared
-runtime with `--runtime shared`, which the comment at the top of the `.h` file lists. The shared lib of macOS names itself
+A program that links the static lib also links the OS libs of the runtime, the shared
+runtime with `--runtime shared`, or the separate runtime with `--runtime separate`, which
+the comment at the top of the `.h` file lists. The shared lib of macOS names itself
 `@rpath/lib<name>.dylib`, so a program finds it through its run path
 (`-Wl,-rpath,<folder>`). When the shared lib is beside the static one, the linker of macOS
 picks the shared lib for `-l<name>`: give the static lib as a path, or keep it in a

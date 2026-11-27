@@ -163,6 +163,11 @@ fn write_header(runtime: &Path, out: &Path)
     let prefix = runtime_prefix();
     println!("cargo:rustc-env=ZK_NAME_PREFIX={prefix}");
     println!("cargo:rustc-env=ZK_ABI={ZK_ABI}");
+    println!("cargo:rustc-env=ZAKAC_VERSION={}", zakac_version(&runtime.join("..")));
+    println!(
+        "cargo:rerun-if-changed={}",
+        runtime.join("../zakac/Cargo.toml").display()
+    );
     let defines: String =
         names.iter().map(|n| format!("#define zk_{n} {prefix}{n}\n")).collect();
     let head = "/* Each name of the runtime links with the ABI of the runtime that \

@@ -559,15 +559,17 @@ pub fn command_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     do_if!(let Some(n) = &names, n.add_to(&mut files));
     let api =
         names.as_ref().map(|n| exports::api_names(&exports, n)).unwrap_or_default();
-    let header = lib_files.as_ref().zip(names.as_ref()).map(|(f, n)| {
+    let written = lib_files.as_ref().zip(names.as_ref()).map(|(f, n)| {
         let links = static_links(built_for.abi, dialect, &libs, runtime, &f.shared);
         let text = exports::header(&exports, target.platform_bits, n, &links);
-        (f.header.clone(), text)
+        let separate = runtime == RuntimeLink::Separate;
+        let pc = pkg_config(f, &links, dialect).filter(|_| separate);
+        std::iter::once((f.header.clone(), text)).chain(pc).collect::<Vec<_>>()
     });
     #[rustfmt::skip]
     let job = Job::builder().cache(&cache).out(&out).checks(target.checks).emit(emit)
         .files(&files).libs(&libs).maybe_archive(lib_files.as_ref().map(|f| f.archive.as_path()))
-        .maybe_header(header).debug_info(target.debug_info).exports(&api).runtime(runtime).build();
+        .written(written.unwrap_or_default()).debug_info(target.debug_info).exports(&api).runtime(runtime).build();
     let built = build(matches, io, &info, job);
     ret_if!(let Err(error) = built, report_command_error(io, &info, error));
     built.unwrap()
@@ -668,8 +670,10 @@ struct Job<'a>
     libs: &'a [String],
     /// The static lib of a C lib build, beside the shared lib `out` names.
     archive: Option<&'a Path>,
-    /// The header of a C lib build, and its text.
-    header: Option<(PathBuf, String)>,
+    /// The files a C lib build writes beside the libs once the libs are
+    /// built, the header first, each with its text.
+    #[builder(default)]
+    written: Vec<(PathBuf, String)>,
     /// Whether the build keeps the debug info.
     debug_info: bool,
     /// The names the shared lib of a C lib build gives.
@@ -750,11 +754,50 @@ pub fn static_links(
     let file = toolchain::shared_runtime_file(shared);
     let file =
         tern!(abi == zakac_ast::target::TargetAbi::Msvc, format!("{file}.lib"), file);
-    let os: Vec<String> =
-        tern!(runtime == RuntimeLink::Shared, vec![file], os.collect());
-    let os = os.into_iter();
+    let (apart, os): (Vec<String>, Vec<String>) = match runtime
+    {
+        RuntimeLink::Embedded => (Vec::new(), os.collect()),
+        RuntimeLink::Shared => (vec![file], Vec::new()),
+        RuntimeLink::Separate =>
+        {
+            (vec![toolchain::separate_runtime_file(abi)], os.collect())
+        }
+    };
     let m = (dialect == toolchain::Dialect::Gnu).then(|| "-lm".to_string());
-    os.chain(m).chain(libs.iter().cloned()).collect()
+    apart.into_iter().chain(os).chain(m).chain(libs.iter().cloned()).collect()
+}
+
+/// The pkg-config file of a lib whose runtime is separate, `zaka-<name>.pc`
+/// beside it, for a toolchain of the GNU form: the static lib, then what
+/// [`static_links`] names, each lib file found in the folder of the file.
+///
+/// # Arguments
+///
+/// * `files` - The files of the lib.
+/// * `links` - What a program that links the static lib links with it.
+/// * `dialect` - The flag form of its toolchain.
+///
+/// # Returns
+///
+/// The file and its text, or `None` for MSVC.
+pub fn pkg_config(
+    files: &LibFiles, links: &[String], dialect: toolchain::Dialect,
+) -> Option<(PathBuf, String)>
+{
+    ret_if!(dialect == toolchain::Dialect::Msvc, None);
+    let name = &files.name;
+    let path = files.header.with_file_name(format!("zaka-{name}.pc"));
+    let in_dir =
+        |l: &String| tern!(l.starts_with('-'), l.clone(), format!("${{libdir}}/{l}"));
+    let links: Vec<String> = links.iter().map(in_dir).collect();
+    let text = format!(
+        "libdir=${{pcfiledir}}\nincludedir=${{pcfiledir}}\n\nName: \
+         zaka-{name}\nDescription: The Zaka lib {name}\nVersion: {}\nCflags: \
+         -I${{includedir}}\nLibs: ${{libdir}}/lib{name}.a {}\n",
+        env!("ZAKAC_VERSION"),
+        links.join(" ")
+    );
+    Some((path, text))
 }
 
 /// Write the C into the cache, then compile it unless `--emit c`.
@@ -781,14 +824,13 @@ fn build(
         .libs(job.libs).abi(abi).maybe_archive(job.archive).debug_info(job.debug_info)
         .exports(job.exports).runtime(job.runtime).build();
     let built = build_and_link(matches, io, info, link)?;
-    let Some((path, text)) = job.header.filter(|_| built == ExitCode::Success)
-    else
+    ret_if!(built != ExitCode::Success, Ok(built));
+    for (path, text) in job.written
     {
-        return Ok(built);
-    };
-    std::fs::write(&path, text).map_err(|e| {
-        Error::from_io(e, IOErrorContext::new(path.clone(), IOErrorAction::Write))
-    })?;
+        std::fs::write(&path, text).map_err(|e| {
+            Error::from_io(e, IOErrorContext::new(path.clone(), IOErrorAction::Write))
+        })?;
+    }
     Ok(built)
 }
 

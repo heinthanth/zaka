@@ -446,13 +446,20 @@ pub fn build(plan: &BuildPlan<'_>) -> zakac_host_errors::Result<Built>
     let mut outputs = finished.collect::<zakac_host_errors::Result<Vec<Output>>>()?;
     ret_if!(outputs.iter().any(|o| !o.status.success()), Ok(failed(outputs, plan.cc)));
     let objects = sources.iter().map(|s| s.with_extension(object)).chain(libs);
-    let shared = plan.archive.is_some() && plan.runtime == RuntimeLink::Shared;
-    // A lib of a shared runtime links the runtime file in place of its members.
+    let apart = plan.archive.is_some() && plan.runtime != RuntimeLink::Embedded;
+    let shared = apart && plan.runtime == RuntimeLink::Shared;
+    // A lib that carries its runtime apart keeps it out of its static lib, and
+    // a lib of a shared runtime links the runtime file in place of its members.
     let (objects, runtime): (Vec<PathBuf>, Vec<PathBuf>) =
-        objects.partition(|o| !(shared && is_runtime(o)));
+        objects.partition(|o| !(apart && is_runtime(o)));
     let linker = plan.linker.unwrap_or(plan.cc);
     let mut linked = objects.clone();
-    if let Some(archive) = runtime.first()
+    if let Some(archive) = runtime.first().filter(|_| !shared)
+    {
+        separate_runtime(plan, archive)?;
+        linked.push(archive.clone());
+    }
+    if let Some(archive) = runtime.first().filter(|_| shared)
     {
         let (output, file) = shared_runtime(plan, linker, archive)?;
         let ok = output.status.success();
@@ -528,12 +535,63 @@ fn is_runtime_name(name: &str) -> bool
 /// The file name.
 pub fn shared_runtime_file(lib: &Path) -> String
 {
-    let tag = crate::driver::runtime_prefix().trim_start_matches("zk_rt_");
-    let tag = tag.trim_end_matches('_');
+    let tag = runtime_tag();
     let ext =
         lib.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
     let dll = ext.eq_ignore_ascii_case("dll");
     format!("{}zaka_runtime_{tag}.{ext}", tern!(dll, "", "lib"))
+}
+
+/// The tag of the runtime in the names of its files: its ABI, such as `abi1`.
+///
+/// # Returns
+///
+/// The tag.
+fn runtime_tag() -> &'static str
+{
+    let tag = crate::driver::runtime_prefix().trim_start_matches("zk_rt_");
+    tag.trim_end_matches('_')
+}
+
+/// The file of the separate runtime of a lib: `libzaka_runtime_<tag>.a`, or
+/// `zaka_runtime_<tag>.lib` for MSVC.
+///
+/// # Arguments
+///
+/// * `abi` - The ABI of the lib.
+///
+/// # Returns
+///
+/// The file name.
+pub fn separate_runtime_file(abi: TargetAbi) -> String
+{
+    let tag = runtime_tag();
+    let msvc = Dialect::of(abi) == Dialect::Msvc;
+    tern!(msvc, format!("zaka_runtime_{tag}.lib"), format!("libzaka_runtime_{tag}.a"))
+}
+
+/// Put the runtime lib beside the static lib of a lib, as its separate
+/// runtime.
+///
+/// # Arguments
+///
+/// * `plan` - What to build.
+/// * `archive` - The runtime lib.
+///
+/// # Returns
+///
+/// `Ok`, or the error of the write.
+fn separate_runtime(
+    plan: &BuildPlan<'_>, archive: &Path,
+) -> zakac_host_errors::Result<()>
+{
+    let to = plan
+        .archive
+        .unwrap_or(plan.out)
+        .with_file_name(separate_runtime_file(plan.abi));
+    let context = || IOErrorContext::new(to.clone(), IOErrorAction::Write);
+    std::fs::copy(archive, &to).map_err(|e| Error::from_io(e, context()))?;
+    Ok(())
 }
 
 /// Link the shared runtime of a lib beside it, from the whole of the runtime
