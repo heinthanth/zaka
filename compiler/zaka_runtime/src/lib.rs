@@ -33,6 +33,7 @@ pub mod ffi;
 mod fiber;
 pub mod heap;
 pub mod host;
+pub mod lib_lock;
 pub mod libs;
 mod local;
 pub mod native;

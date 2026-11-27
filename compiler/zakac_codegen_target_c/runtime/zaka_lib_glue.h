@@ -90,8 +90,8 @@ _Noreturn static void zk_lib_leave(int32_t trap)
 static int32_t zk_lib_guard(void (*step)(void *), void *data);
 
 /**
- * Enter the lib for a call, after the runtime makes its record on the first
- * call.
+ * Enter the lib for a call under its lock, after the runtime makes its record
+ * on the first call.
  *
  * @return The lib around the call, for zk_lib_end.
  */
@@ -103,6 +103,7 @@ static zk_lib_place zk_lib_in(void)
                                  ZK_LIB_NAME, &zk_trap_slot_v1, zk_lib_guard
                              )
     );
+    zk_lib_lock(zk_lib_self);
     return zk_lib_enter(zk_lib_self);
 }
 
@@ -121,7 +122,8 @@ static void zk_lib_begin(void)
 
 /**
  * End a call: the jump target and the lib go back to the call around it, and
- * the lib goes to the next thread that waits once the calls of this one end.
+ * the lock of the lib goes to the next thread that waits once the calls of
+ * this one end.
  *
  * @param outer The jump target of the call around this one, or NULL.
  * @param was The lib around the call.
@@ -132,7 +134,7 @@ static int32_t zk_lib_end(jmp_buf *outer, zk_lib_place was, int32_t status)
 {
     zk_lib_jump_set(outer);
     zk_lib_return(was);
-    zk_lib_unlock();
+    zk_lib_unlock(zk_lib_self);
     return status;
 }
 
@@ -201,7 +203,6 @@ static int32_t zk_lib_fail(jmp_buf *outer, zk_lib_place was, uint32_t depth)
 static int32_t zk_lib_guard(void (*step)(void *), void *data)
 {
     jmp_buf zk_here;
-    zk_lib_lock();
     zk_lib_place zk_was = zk_lib_in();
     jmp_buf *zk_outer = (jmp_buf *)zk_lib_jump();
     uint32_t zk_depth_was = zk_ctx()->depth;
@@ -254,10 +255,11 @@ static int32_t zk_lib_free_begin(void)
  */
 ZK_LIB_EXPORT void zk_lib_reset(void)
 {
-    zk_lib_lock();
+    RET_IF(zk_lib_self == NULL);
+    zk_lib_lock(zk_lib_self);
     zk_lib_forget(zk_lib_self);
     zk_lib_state_set(zk_lib_self, ZK_LIB_FRESH);
-    zk_lib_unlock();
+    zk_lib_unlock(zk_lib_self);
 }
 
 /**

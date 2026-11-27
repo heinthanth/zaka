@@ -184,8 +184,8 @@ script does the same with `cargo:rustc-link-search=static` and
   return a block as its own (ZK0490).
 - Several threads can call a lib. A function that reaches no mutable global and calls no
   C, itself or through the functions it calls, runs on several threads at once. Calls to
-  the other functions run one at a time, and the others wait until the call ends or waits
-  in a C function. C can call a function of the program from each thread, built with
+  the other functions run one at a time in each lib: the others of that lib wait until the
+  call ends or waits in a C function, while the calls of another lib go on. C can call a function of the program from each thread, built with
   `--allow-ffi` for the C functions that it calls.
 - Several Zaka libs can link into one program, from one build of `zakac` or from several.
   Each lib keeps its own names and its own `--max-heap`, and a stop affects just its own

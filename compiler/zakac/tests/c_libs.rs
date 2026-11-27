@@ -523,6 +523,34 @@ fn exports_that_reach_no_global_run_on_threads_at_once()
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn calls_of_two_libs_under_their_locks_run_at_once()
+{
+    let Some(cc) = host_cc()
+    else
+    {
+        return;
+    };
+    for backend in ["c", "native"]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        build_named(dir, backend, "spinlib", &[]);
+        build_named(dir, backend, "flaglib", &[]);
+        let exe = dir.join("lib_locks");
+        let mut cmd = cc.command();
+        cmd.args(["-std=c11", "-I"]).arg(dir).arg(c_inputs().join("lib_locks.c"));
+        cmd.arg(dir.join(static_file("spinlib")))
+            .arg(dir.join(static_file("flaglib")))
+            .args(os_libs())
+            .args(["-lm", "-pthread"]);
+        ran(cmd.arg("-o").arg(&exe), "the link of lib_locks.c");
+        let printed = ran_in_time(&exe);
+        assert_eq!(printed, "seen 1 set 0 1\n", "two locks with the {backend} backend");
+    }
+}
+
 /// The folder of the programs of these tests that call C.
 ///
 /// # Returns

@@ -570,11 +570,11 @@ pub fn lib_source(exports: &[Export<'_>], shapes: &[usize], platform: u16) -> St
     out
 }
 
-/// The lines of a wrapper that holds the lock of the libs: the lock and the
+/// The lines of a wrapper that holds the lock of its lib: the lock and the
 /// entry, the check for a stopped lib, the end of a trap, the start of the
 /// globals and the end.
 const LOCKED_PARTS: [&str; 5] = [
-    "    zk_lib_lock();\n    zk_lib_place zk_was = zk_lib_in();\n",
+    "    zk_lib_place zk_was = zk_lib_in();\n",
     "    RET_IF(\n        zk_lib_state_of(zk_lib_self) == ZK_LIB_STOPPED,\n        \
      zk_lib_end(zk_outer, zk_was, ZK_STOPPED)\n    );\n",
     "zk_lib_stop",

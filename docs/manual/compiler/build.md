@@ -324,12 +324,16 @@ Threads of C can call the lib:
 - The functions whose trap fails the call alone run on several threads at once, with no
   lock. Such a function reads constants alone, and the counts of the heap turn atomic at
   its first call.
-- The rest run one call at a time, under one lock for each lib of the runtime. The first
-  call of the lib sets its globals under that lock, and a reset waits for the calls with
-  no lock to end before the next call sets them again.
-- A call that waits in a C function lets go of the lock, so other threads can go into the
-  libs while it waits, and it takes the lock back once C returns, the same as Python lets
-  go of its lock around C.
+- The rest run one call at a time in each lib, under the lock of that lib, while the calls
+  of another lib go on at the same time. The first call of the lib sets its globals under
+  its lock, and a reset waits for the calls with no lock to end before the next call sets
+  them again.
+- A call that waits in a C function lets go of the lock of each lib its thread holds, so
+  other threads can go into those libs while it waits, and it takes the locks back once C
+  returns, the same as Python lets go of its lock around C.
+- A function of one lib that C calls back while a call of another lib waits in C holds
+  the locks of both libs. Two threads that do so in the opposite order wait on each other
+  forever, so calls back between two libs should go in one direction.
 - While it waits, another thread can change a global. So, as Rust does, the checker
   counts a call to C as a change of each global: a function that reaches C takes globals
   as duplicates, never as loans, and no value a call has is freed under it. A global that

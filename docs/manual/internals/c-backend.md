@@ -341,13 +341,23 @@ clash on them. `ZAKA_RUNTIME_SALT` joins the hash, for a test of two builds.
 The runtime keeps a record of each C lib it serves (`zaka_runtime/src/libs.rs`): its
 table, the jump back to its wrapper, its gate, its last trap and its heap count. Each
 wrapper enters its lib (`zk_lib_enter`, which also pushes a mark of the lends, the sink of
-the output and the drop queues) and returns to the lib around it, and a trap puts the
-mark back (`zk_lib_unwind`).
+the output, the drop queues and the count of the locks its OS thread holds) and returns
+to the lib around it, and a trap puts the mark back (`zk_lib_unwind`), letting go of each
+lock taken after the mark.
+
+Each lib has its own lock (`zaka_runtime/src/lib_lock.rs`: the OS thread that holds it, a
+depth and a condvar, in the record of the lib). A wrapper that writes globals takes it in
+`zk_lib_in` and gives it back in `zk_lib_end`, so the calls of two libs that write their
+own globals run at the same time. A thread-local list (`HOLDS`) keeps the libs whose lock
+the OS thread holds. Since calls of two libs now change counts at once, the second lib
+that opens turns the counts of the heap atomic.
 
 An export that `runs_free` (in the flow checker) marks runs with no lock (`FREE_PARTS` in
 `exports.rs`). `zk_lib_free_in` counts it in `FREE` once the lib runs and the counts are
-atomic, a trap fails the call alone (`zk_lib_fail`), and the ring collector and the start
-of the globals wait for `FREE` to drain. The state of a lib (`zk_lib_state_of`) and the
+atomic, a trap fails the call alone (`zk_lib_fail`), and the start of the globals waits
+for those calls to drain. `FREE` counts, from bit 32 up, the OS threads that hold the
+lock of a lib too (`locked_in`, `locked_out`, at the first lock and the last), and the ring
+collector runs once no count is left but its own OS thread's (`begin_collect`). The state of a lib (`zk_lib_state_of`) and the
 status of a trap (`zk_lib_status`) live in the runtime, so a call with no lock reads them
 with no race. The glue of each lib defines `zk_trap_slot_v1` weak (`selectany` on
 Windows), so the linker keeps one for the program, and each runtime writes each trap to
@@ -628,19 +638,21 @@ atomic before. A call after the lend with no leave stops with `ZK_TRAP_CLOSURE_E
 Each other call from another OS thread ends the program with a message and status 1.
 
 In a C lib, `run_in_lib` handles the call instead. On an OS thread with calls parked in C,
-it takes them back, runs the bridge and lets go again. On another OS thread, it runs the
+it takes them back with the lock of the lib of the closure, runs the bridge and lets go
+again. On another OS thread, it runs the
 bridge through the guard of the lib (`zk_lib_guard` of the glue, which `zk_lib_open`
 receives), whose `setjmp` catches a trap, and C gets zeros. Each function C calls goes
 through the bridge, a plain function too, so no call skips the lock of a lib or the
 thread rules of a program.
 
-A call to C in a lib lets go of the lock (`ZK_LIB_LET_GO` in each wrapper of
-`zaka_ffi.c`, which `ZK_LIB` of `zaka_lib_names.h` turns on, and `zk_ffi_call` for
-Cranelift code). `zk_lib_let_go` writes out the output, keeps the count of its holds in a
-thread-local list (`PARKED`) and lets go of the lock at each depth it held. The rest of
+A call to C in a lib lets go of the lock of each lib its OS thread holds
+(`ZK_LIB_LET_GO` in each wrapper of `zaka_ffi.c`, which `ZK_LIB` of `zaka_lib_names.h`
+turns on, and `zk_ffi_call` for Cranelift code). `zk_lib_let_go` writes out the output,
+keeps each lib and the depth it held in a thread-local list (`PARKED`) and lets go of each
+lock. The rest of
 the state of a call (the lib, its base, the table, the marks, the lends, the jump target,
-the sink and the drop queue) belongs to each OS thread. `zk_lib_take_back` waits for the
-lock and takes it back at that depth. The jump target of a trap lives in the runtime
+the sink and the drop queue) belongs to each OS thread. `zk_lib_take_back` waits for each
+lock and takes it back at its depth. The jump target of a trap lives in the runtime
 (`zk_lib_jump`, `zk_lib_jump_set`), not in the glue, since an OS thread that waits in C
 lets others into the same lib.
 

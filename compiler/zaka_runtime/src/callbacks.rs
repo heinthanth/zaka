@@ -117,10 +117,10 @@ fn cb<'a>(p: usize) -> &'a mut Cb
 }
 
 /// The code libffi runs when C calls a closure. In a C lib the lock of the
-/// libs lets one OS thread at a time in, see [`run_in_lib`]. In a program a
-/// call from an OS thread of C's own runs when the function can cross, see
-/// [`run_on_c_thread`], and ends the run otherwise. A call with no lend and no
-/// leave stops; else the bridge runs the thunk.
+/// closure's lib lets one OS thread at a time in, see [`run_in_lib`]. In a
+/// program a call from an OS thread of C's own runs when the function can
+/// cross, see [`run_on_c_thread`], and ends the run otherwise. A call with no
+/// lend and no leave stops; else the bridge runs the thunk.
 ///
 /// # Arguments
 ///
@@ -233,7 +233,8 @@ fn bridge(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
 
 /// A call C makes of a closure of a C lib. On an OS thread that waits in C with
 /// calls of a lib parked, the call goes on as part of them: it takes them
-/// back, and lets go again once it ends. On another OS thread, with no call of
+/// back with the lock of the closure's own lib, and lets go again once it
+/// ends. On another OS thread, with no call of
 /// a lib in progress, it runs as a call of the lib of the closure, through the
 /// guard of its glue: a trap stops that lib, and C gets a result of zeros.
 ///
@@ -247,7 +248,10 @@ fn run_in_lib(c: &Cb, ret: *mut c_void, args: *mut *mut c_void)
     if crate::libs::parked_here()
     {
         crate::libs::zk_lib_take_back();
+        let lib = c.lib as *mut crate::libs::ZkLib;
+        do_if!(!lib.is_null(), crate::lib_lock::zk_lib_lock(lib));
         bridge(c, ret, args);
+        do_if!(!lib.is_null(), crate::lib_lock::zk_lib_unlock(lib));
         crate::libs::zk_lib_let_go();
         return;
     }
