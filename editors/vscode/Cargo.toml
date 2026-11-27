@@ -2,7 +2,7 @@
 name = "zaka_vscode"
 version = "0.1.0"
 edition.workspace = true
-description = "Zaka (စံကား) for VS Code: errors while editing, colors, and kinds on hover, from the zakac language server."
+description = "Zaka language support"
 license = "MIT"
 repository = "https://github.com/zaka-lang/zaka"
 publish = false
