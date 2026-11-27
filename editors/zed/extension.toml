@@ -3,7 +3,7 @@ name = "Zaka"
 version = "0.1.0"
 schema_version = 1
 authors = ["Hein Thant Maung Maung"]
-description = "Zaka Language Server"
+description = "Zaka for Zed: errors while editing, colors, and kinds on hover, from the zakac language server."
 repository = "https://github.com/zaka-lang/zaka"
 
 [language_servers.zakac]
