@@ -57,12 +57,20 @@
 
 // The version picker: a small field with the version as its text; on the
 // snapshot of an old release, in the warning tone, so the reader sees it is
-// not the latest.
+// not the latest. Its wrapper takes the width the host sets, as the dropdown
+// in it does.
+.version-picker
+  display: inline-flex
+  width: var(--dropdown-width, auto)
+
 .version-picker .dropdown-trigger
   padding: 4px 8px
   font-size: 0.85em
 
-.version-picker-old .dropdown-trigger
+// The tone holds through the focus too, which would paint the border in the
+// accent.
+.version-picker-old .dropdown-trigger,
+.version-picker-old .dropdown-trigger:focus-visible
   color: var(--diag-warning)
   border-color: var(--diag-warning)
 

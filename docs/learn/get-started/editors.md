@@ -21,8 +21,8 @@ Each [release](https://github.com/zaka-lang/zaka/releases) also holds the extens
 `.vsix` file, which installs from the command line:
 
 ```sh
-code --install-extension zaka-0.1.0.vsix
-cursor --install-extension zaka-0.1.0.vsix
+code --install-extension zaka-0.2.0.vsix
+cursor --install-extension zaka-0.2.0.vsix
 ```
 
 Open a `.zaka` or `.zk` file, and the extension starts `zakac lsp`. To use a `zakac` that is

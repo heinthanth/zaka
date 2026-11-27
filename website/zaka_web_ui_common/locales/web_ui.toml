@@ -48,10 +48,6 @@ en = "Auto (browser)"
 
 [web_ui.version.name]
 en = "Version"
-[web_ui.version.latest]
-en = "Latest"
-[web_ui.version.latest_of]
-en = "Latest (%{version})"
 [web_ui.version.old]
 en = "%{version} (old)"
 

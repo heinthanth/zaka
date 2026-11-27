@@ -6589,7 +6589,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_explorer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "bon",
@@ -6651,7 +6651,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_host"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "chrono",
@@ -6663,7 +6663,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_html2png"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "headless_chrome",
  "url",
@@ -6671,7 +6671,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_runtime"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cc",
  "libc",
@@ -6685,7 +6685,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_vm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6717,7 +6717,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_vscode"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6732,7 +6732,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_web_builder"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cargo-build",
  "xxhash-rust",
@@ -6740,7 +6740,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_web_ui_common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "age",
  "bon",
@@ -6775,7 +6775,7 @@ dependencies = [
 
 [[package]]
 name = "zaka_website"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "bon",
@@ -6825,7 +6825,7 @@ dependencies = [
 
 [[package]]
 name = "zakac"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6858,7 +6858,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_ast"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "postcard",
@@ -6872,7 +6872,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_borrow_checker"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6903,7 +6903,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_burmese_alignment"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "fontdb",
@@ -6915,7 +6915,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_burmese_segmenter"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "clap",
@@ -6937,7 +6937,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_cli_common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6960,7 +6960,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_codegen_target_c"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -6994,7 +6994,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_codegen_target_native"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cranelift-codegen",
@@ -7029,7 +7029,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_codegen_target_vm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7059,7 +7059,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_consts"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "shadow-rs",
  "zakac_rust_sugars",
@@ -7067,7 +7067,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_diagnostics"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7083,7 +7083,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_diagnostics_fixes"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7097,7 +7097,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_formatter"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7119,7 +7119,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_host_errors"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "rust-i18n",
@@ -7129,7 +7129,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_i18n"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cargo-build",
  "rust-i18n",
@@ -7139,7 +7139,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_ir_builder"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7166,7 +7166,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_lexer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7193,7 +7193,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_lsp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7219,7 +7219,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_naturalness"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "zakac_ast",
@@ -7232,7 +7232,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_parser"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7258,7 +7258,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_reporter"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "serde",
@@ -7275,11 +7275,11 @@ dependencies = [
 
 [[package]]
 name = "zakac_rust_sugars"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "zakac_semcheck"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "cargo-build",
@@ -7307,7 +7307,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_session"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "postcard",
@@ -7323,7 +7323,7 @@ dependencies = [
 
 [[package]]
 name = "zakac_span"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "serde",

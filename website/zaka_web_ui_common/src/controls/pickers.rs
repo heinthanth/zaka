@@ -208,9 +208,8 @@ fn version_spec(releases: &[Release]) -> Dropdown
 {
     let mut choices: Vec<Choice> = releases
         .iter()
-        .enumerate()
-        .map(|(at, r)| {
-            let label = release_label(at, r);
+        .map(|r| {
+            let label = release_label(r);
             Choice::builder().value(r.path.clone()).label(label).build()
         })
         .collect();
@@ -236,36 +235,46 @@ fn version_spec(releases: &[Release]) -> Dropdown
     )
 }
 
-/// The text of a release in the version picker: the latest is marked as the
-/// latest, and the release of this page, when old, as old.
+/// The text of a release in the version picker: its version, and the
+/// release of this page, when old, marked as old.
 ///
 /// # Arguments
 ///
-/// * `at` - Its place in the list, the newest first.
 /// * `release` - The release.
 ///
 /// # Returns
 ///
 /// The text.
-fn release_label(at: usize, release: &Release) -> String
+fn release_label(release: &Release) -> String
 {
-    let version = format!("v{}", release.version);
-    ret_if!(at == 0, t!("web_ui.version.latest_of", version = version).to_string());
-    ret_if!(release.path == HOME_URL, own_label());
-    version
+    let old_own = release.path == HOME_URL && !SITE_BASE.is_empty();
+    ret_if!(old_own, own_label());
+    format!("v{}", release.version)
 }
 
-/// The text of the release of this page, from its base alone: the latest
-/// at the root, else the old release its base names.
+/// The text of the release of this page, from its base alone: at the root,
+/// the version of this build, else the old release its base names.
 ///
 /// # Returns
 ///
 /// The text.
 fn own_label() -> String
 {
-    ret_if!(SITE_BASE.is_empty(), t!("web_ui.version.latest").to_string());
+    ret_if!(SITE_BASE.is_empty(), format!("v{}", build_version()));
     let version = SITE_BASE.trim_start_matches('/');
     t!("web_ui.version.old", version = version).to_string()
+}
+
+/// The version of this build as the site names its releases: the major and
+/// the minor, as `0.2`.
+///
+/// # Returns
+///
+/// The version.
+fn build_version() -> &'static str
+{
+    let full = env!("CARGO_PKG_VERSION");
+    full.rsplit_once('.').map_or(full, |(minor, _)| minor)
 }
 
 /// The releases [`VERSIONS_FILE`] lists, read from the site.

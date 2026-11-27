@@ -121,7 +121,7 @@ or `--build-arg CC_PACKAGES=` for the one with no C compiler.
 
 ```console
 $ zakac --version
-Zaka Compiler (zakac v0.1.0+…)
+Zaka Compiler (zakac v0.2.0+…)
 ```
 
 When the shell reports that it cannot find `zakac`, the folder is not on the `PATH` of
