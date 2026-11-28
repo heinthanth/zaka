@@ -826,8 +826,13 @@ impl<'m> Flow<'m>
             {
                 // A drop the compiler wrote frees no block a variable holds: a
                 // slice of a list on the stack owns none, so the bad-free rule
-                // is left out.
+                // is left out. A drop of a box or a closure lets go of one
+                // count, and the caller holds a count of its own, so it is
+                // left out of what the function frees.
+                let counted = kind.is_box() || kind.is_fn();
+                let kept = counted.then(|| self.frees.clone());
                 check_heap(self, dest, Invalidation::Freed, *span, state);
+                do_if!(let Some(kept) = kept, self.frees = kept);
                 self.forget_freed(dest, state);
                 // The drop frees the text alone: an owner beside it keeps its
                 // block, for the leak checks to find.

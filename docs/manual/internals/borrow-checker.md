@@ -441,7 +441,7 @@ function can do to the storage it reaches:
 
 | Field | What it records |
 | --- | --- |
-| `frees` | the parameter and global paths it can free, resize or take over, through hooks too |
+| `frees` | the parameter and global paths it can free, resize or take over, through hooks too; the drop of a box or a closure at its exit lets go of one count, not of the block, and is left out |
 | `unfilled` | paths it freed and did not fill again, so the pointer there can be null after the call |
 | `result_from`, `result_roots` | which parameters or globals a pointer result can point into |
 | `renewed` | result paths that point into a block the function made or resized itself |
