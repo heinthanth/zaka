@@ -274,8 +274,9 @@ struct list<isize> အမှတ်များ = { count=0x2 }
 The console of cdb shows a Burmese name as `?` unless its code page is UTF-8; `.logopen
 /u <file>` writes a log in UTF-16 with the names whole.
 
-A few limits remain. An enumeration whose members hold no values shows the position of
-its member as a number. A list or struct parameter that the function never writes remains
+A few limits remain. A variable of an enumeration shows the value of its member (the
+position of the member when the members hold no values), while a field of a struct shows
+the name of the member, or the text of an enumeration of text values. A list or struct parameter that the function never writes remains
 in the storage of the caller and shows no value. Two locals of one name in one function
 both show, since the debug info has no scopes. `frame variable` and `info locals` read the
 Burmese names, while the expression parser of `p <name>` can fail on them. A
