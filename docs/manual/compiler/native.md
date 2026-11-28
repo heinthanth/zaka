@@ -214,15 +214,48 @@ statement, which names its line of the source, and compiles with `-g`. The nativ
 writes a DWARF line table, from the code of each statement to its line, and a subprogram
 with the Zaka name of each function. Both name the source with its absolute path.
 
+The native target also describes the parameters and locals of each function, the
+variables of the program start block among them, and the globals of the program, each
+under its Zaka name and with its data kind (type): numbers, characters and booleans,
+pointers, fixed lists, structs with their fields, and enumerations whose members hold
+numbers. `frame variable` in lldb and `info locals` in gdb show them; the debugger keeps
+its own spelling of a number kind, so an `isize` shows as `long`.
+
 ```console
 $ zakac build --backend native divide.zaka
 $ lldb ./divide
 (lldb) breakpoint set --file divide.zaka --line 4
 (lldb) run
+(lldb) frame variable
+(long) သုည = 0
 ```
 
-The debug info has lines alone, with no variables and no data kinds, so a debugger shows
-the registers and the raw storage of the program, not its values under their names. A
+Text and a plain list are three words in storage: the address of the first cell, the
+count of cells and the room of the heap block. To show text as a string and a plain list
+as its cells, we load the formatters of the debugger, which `zakac debug-script` prints
+([Commands](commands.md#debug-script)). lldb loads them from a file:
+
+```console
+$ zakac debug-script lldb > zaka_lldb.py
+$ lldb ./greet
+(lldb) command script import zaka_lldb.py
+(lldb) breakpoint set --file greet.zaka --line 4
+(lldb) run
+(lldb) frame variable
+(text) နှုတ်ခွန်း = "မင်္ဂလာပါ"
+(isize[]) အမှတ်များ = ([0] = 4, [1] = 5)
+```
+
+On Linux and Windows the executable carries the formatters of gdb in its
+`.debug_gdb_scripts` section, and gdb loads them once its auto-load safe path holds the
+folder of the executable (`add-auto-load-safe-path <folder>` in `~/.gdbinit`); `source`
+loads the output of `zakac debug-script gdb` as well.
+
+A few limits remain. An enumeration whose members hold no values shows the position of
+its member as a number. A list or struct parameter that the function never writes remains
+in the storage of the caller and shows no value. Two locals of one name in one function
+both show, since the debug info has no scopes. `frame variable` and `info locals` read the
+Burmese names, while the expression parser of `p <name>` can fail on them. A
 backtrace through the C target names each function in C (`zk_f0`), while the native
 target names it in Zaka. On macOS the debug info remains in the objects in the cache, which
 the executable names, and `dsymutil` copies it into a `.dSYM` beside the executable, to

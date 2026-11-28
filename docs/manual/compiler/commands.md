@@ -35,6 +35,7 @@ made, the *artifact*, while `run` goes to the end and runs the program.
 | `lsp` | serve an editor | errors, colors and hovers, to the editor | |
 | `fmt` | format source files | each file, in place, or the formatted text | |
 | `fetch` | clone the git deps of a [package](../language/packages.md) and pin each one in `zakac.lock` | the lock file | |
+| `debug-script` | print the formatters of lldb or gdb for text and plain lists | the script, to standard output | |
 
 [Stages](stages.md) shows what each artifact contains. Each stage also builds as a
 program apart from `zakac`, with the same flags as its command: `zakac_burmese_segmenter`,
@@ -771,6 +772,23 @@ Each flag is also a setting of the `[fmt]` section of `zakac.toml`, such as
 $ zakac fmt --check samples
 samples/basics/rough.zaka
 $ zakac fmt samples
+```
+
+## debug-script
+
+Print the formatters that show text as a string and a plain list as its cells in a
+debugger, for a native build with debug info ([Debuggers](native.md#debuggers)).
+
+```text
+zakac debug-script <lldb|gdb>
+```
+
+The script goes to standard output. lldb loads a saved copy with `command script import
+<file>`; gdb loads the copy each native build for Linux and Windows carries, or a saved
+copy with `source <file>`.
+
+```console
+$ zakac debug-script lldb > zaka_lldb.py
 ```
 
 ## fetch

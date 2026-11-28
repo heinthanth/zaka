@@ -199,8 +199,9 @@ A build with no `--release` carries debug info, so lldb and gdb stop on a line o
 
 - The C target writes a `#line` before each statement and compiles with `-g` (`/Z7`, and
   `/DEBUG` for the link, under MSVC).
-- The native target writes a DWARF line table and the Zaka name of each function into its
-  object.
+- The native target writes a DWARF line table, the Zaka name of each function, and its
+  parameters, locals and globals with their data kinds into its object; `zakac
+  debug-script` prints the formatters that show text and plain lists.
 
 `zakac build --backend c --release` writes no table of places and no marks for them, so a
 stop names the function alone (`(in addfee)`) and each backtrace line is a function name.

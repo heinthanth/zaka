@@ -86,7 +86,8 @@ and returns the product.
 | `jit.rs` | the JIT module: each runtime function from `zaka_runtime::exports()`, each C function from its lib, then the run |
 | `aot.rs` | the object module for the triple of the target, and the CLIF text |
 | `unwind.rs` | the unwind tables of 64-bit Windows (`.xdata` and `.pdata`), which `cranelift-object` does not write there, so a debugger and a `longjmp` can walk the frames; on ARM64, `arm_xdata` puts a header word (the length of the function, the words of codes, no epilog) before the codes of Cranelift and fills their last word with `end`, and a row of `.pdata` holds two image offsets |
-| `debug.rs` | the DWARF line table of an object: a row for the code of each statement, and a subprogram with the Zaka name of each function |
+| `debug.rs` | the DWARF of an object: a row of the line table for the code of each statement, a subprogram with the Zaka name of each function, its parameters and locals at their offsets from the frame pointer, the globals at their addresses, and the gdb formatters in `.debug_gdb_scripts` on ELF and COFF |
+| `dwarf_kinds.rs` | the DWARF of each data kind: a base, a pointer, a fixed list, a structure with its fields, text and plain lists as three words (`cells`, `count`, `room`), and an enumeration of number members |
 | `disasm.rs` | with the feature `disasm`, the listing of the machine code of an object (x86-64 through iced-x86, aarch64 through yaxpeax-arm), each function under its Zaka name and each call to the runtime named |
 | `main.rs` | the test program: `zakac run` with the JIT in place, so a stop ends a child process |
 
@@ -225,7 +226,7 @@ glue.
 | `tests/permissions.rs` | the rights of `zakac run --jit`, and the rights written into an executable |
 | `tests/forms.rs` | each sample is lowered into the test process, and its program table and each descriptor are read back through the Rust structs of `zaka_runtime`, field for field against what the compiler meant to write |
 | `tests/ffi_lib.rs` | the C lib of the C target's tests: structs as values, other values, text results, handles and closures given to C, through the JIT and as an executable; NULL from C where the program wants none stops the run |
-| `tests/debug_info.rs` | the DWARF line table maps the code of each statement to its source line, unless the build is for release |
+| `tests/debug_info.rs` | the DWARF line table maps the code of each statement to its source line, and each parameter, local and global has its name, its data kind and a place, unless the build is for release; an object for Linux carries the gdb formatters |
 | `tests/disasm.rs` | the listing of the machine code of an object, each function under its Zaka name, for x86-64 and aarch64 |
 | `tests/unwind.rs` | the unwind tables of 64-bit Windows in an object: `.xdata` with the unwind codes of each function, and `.pdata` with a row of three image offsets for each on x64 and two on ARM64 |
 
