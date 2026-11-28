@@ -251,7 +251,8 @@ On Linux and Windows the executable carries the formatters of gdb in its
 folder of the executable (`add-auto-load-safe-path <folder>` in `~/.gdbinit`); `source`
 loads the output of `zakac debug-script gdb` as well. gdb shows text as UTF-8 under a
 UTF-8 locale, and as octal escapes under another; on Windows it escapes the Burmese marks
-it cannot print, even after `set host-charset UTF-8`.
+it cannot print, even after `set host-charset UTF-8`. gdb has no support for Windows on
+ARM64; a build for the MSVC ABI there works in cdb and WinDbg (below).
 
 The debug info is DWARF, which gdb and lldb read, except in a native build for the MSVC
 ABI (`--target-abi msvc`), which carries CodeView instead: the linker of MSVC puts it in

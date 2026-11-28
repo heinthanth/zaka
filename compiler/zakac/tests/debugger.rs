@@ -144,7 +144,9 @@ fn lldb_shows_text_and_a_plain_list_through_the_script()
 #[test]
 fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
 {
-    ret_if!(!has("gdb") || cfg!(target_os = "macos"));
+    // gdb debugs no program on macOS or on Windows for ARM64.
+    let arm_windows = cfg!(all(windows, target_arch = "aarch64"));
+    ret_if!(!has("gdb") || cfg!(target_os = "macos") || arm_windows);
     let dir = tempfile::tempdir().unwrap();
     // gdb reads DWARF, which a build for the MSVC ABI replaces with CodeView.
     let Some((exe, line)) = built(dir.path(), &["--target-abi", "gnu"])
