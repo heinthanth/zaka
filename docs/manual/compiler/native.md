@@ -250,7 +250,8 @@ On Linux and Windows the executable carries the formatters of gdb in its
 `.debug_gdb_scripts` section, and gdb loads them once its auto-load safe path holds the
 folder of the executable (`add-auto-load-safe-path <folder>` in `~/.gdbinit`); `source`
 loads the output of `zakac debug-script gdb` as well. gdb shows text as UTF-8 under a
-UTF-8 locale, and as octal escapes under another.
+UTF-8 locale, and as octal escapes under another; on Windows it escapes the Burmese marks
+it cannot print, even after `set host-charset UTF-8`.
 
 A few limits remain. An enumeration whose members hold no values shows the position of
 its member as a number. A list or struct parameter that the function never writes remains
