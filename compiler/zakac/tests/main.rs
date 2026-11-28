@@ -3,6 +3,7 @@
 mod backtrace;
 mod c_libs;
 mod config_example;
+mod debugger;
 mod mutants;
 mod packages;
 mod process;

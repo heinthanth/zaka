@@ -1,0 +1,7 @@
+_version = 2
+
+[debug_script.about]
+en = "Print the formatters that show text as a string and a plain list as its cells in a debugger, for a native build with debug info. lldb loads the output with `command script import <file>`; gdb loads the one a build carries on Linux and Windows, or the output with `source <file>`."
+
+[debug_script.debugger]
+en = "The debugger: lldb or gdb"

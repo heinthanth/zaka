@@ -1,5 +1,6 @@
 mod build;
 mod cli;
+mod debug_script;
 mod fetch;
 mod repl;
 

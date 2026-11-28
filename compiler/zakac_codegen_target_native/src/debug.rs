@@ -36,12 +36,27 @@ use cranelift_object::object::write::Relocation;
 use cranelift_object::object::write::StandardSegment;
 use zakac_host_errors::Error;
 use zakac_rust_sugars::do_for;
+use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 
 use crate::dwarf_kinds::Kinds;
 use crate::emit::module_error;
+
+/// The formatters of lldb for text and plain lists, which
+/// `command script import` loads.
+pub const LLDB_SCRIPT: &str = include_str!("../debuggers/zaka_lldb.py");
+
+/// The pretty-printers of gdb for text and plain lists, which a build carries
+/// in `.debug_gdb_scripts` on ELF and COFF.
+pub const GDB_SCRIPT: &str = include_str!("../debuggers/zaka_gdb.py");
+
+/// The section gdb reads its scripts from.
+const GDB_SECTION: &str = ".debug_gdb_scripts";
+
+/// The mark of a script of Python text in [`GDB_SECTION`].
+const GDB_INLINE_PYTHON: u8 = 4;
 
 /// A parameter or a local of a function, as a debugger shows it.
 #[derive(Debug, Clone, bon::Builder)]
@@ -262,6 +277,7 @@ pub fn write(
     sections
         .for_each(|id, w: &RelocWriter| add_section(obj, &mut ids, id, w))
         .map_err(module_error)?;
+    do_if!(obj.format() != BinaryFormat::MachO, add_gdb_script(obj));
     let mut places = Vec::new();
     sections
         .for_each(|id, w: &RelocWriter| {
@@ -504,6 +520,25 @@ fn add_global(
     };
     die.set(gimli::DW_AT_decl_file, AttributeValue::FileIndex(Some(file)));
     die.set(gimli::DW_AT_decl_line, AttributeValue::Udata(line));
+}
+
+/// Add the pretty-printers of gdb to an object, as one script of Python text
+/// in [`GDB_SECTION`]: its mark, a line with its name, the script, then a NUL.
+/// gdb loads it once its auto-load safe path holds the executable.
+///
+/// # Arguments
+///
+/// * `obj` - The object.
+fn add_gdb_script(obj: &mut object::write::Object<'static>)
+{
+    let segment = obj.segment_name(StandardSegment::Debug).to_vec();
+    let name = GDB_SECTION.as_bytes().to_vec();
+    let section = obj.add_section(segment, name, SectionKind::Debug);
+    let mut data = vec![GDB_INLINE_PYTHON];
+    data.extend_from_slice(b"zaka_gdb.py\n");
+    data.extend_from_slice(GDB_SCRIPT.as_bytes());
+    data.push(0);
+    obj.append_section_data(section, &data, 1);
 }
 
 /// Add one debug section to the object, unless it is blank.

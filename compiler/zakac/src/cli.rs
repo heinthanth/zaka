@@ -24,6 +24,7 @@ use zakac_rust_sugars::ret_if;
 use zakac_semcheck::cli::ZakacSemcheck;
 
 use crate::build::ZakacBuild;
+use crate::debug_script::ZakacDebugScript;
 use crate::fetch::ZakacFetch;
 use crate::repl::ZakacRepl;
 
@@ -94,6 +95,7 @@ impl Command for Zakac
             .add_subcommand::<ZakacLsp>(Some("lsp"))
             .add_subcommand::<ZakacFormatter>(Some("fmt"))
             .add_subcommand::<ZakacFetch>(Some("fetch"))
+            .add_subcommand::<ZakacDebugScript>(Some("debug-script"))
     }
 
     /// Construct this command wrapper from a finished [`CommandSetup`].

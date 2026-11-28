@@ -24,6 +24,24 @@ use crate::common::native_target;
 /// The octets of the object.
 fn object_of(file: &str, debug_info: bool) -> Vec<u8>
 {
+    object_for(file, debug_info, &native_target())
+}
+
+/// The object of a file of `inputs/debug/` of the C target, for a target.
+///
+/// # Arguments
+///
+/// * `file` - The name of the file.
+/// * `debug_info` - Whether the build keeps the debug info.
+/// * `target` - The target.
+///
+/// # Returns
+///
+/// The octets of the object.
+fn object_for(
+    file: &str, debug_info: bool, target: &zakac_ast::target::Target,
+) -> Vec<u8>
+{
     let path = c_inputs().join("debug").join(file);
     let (sm, program) = checked(&path, OverflowMode::Stop);
     let options = TargetCOptions::builder().debug_info(debug_info).build();
@@ -33,7 +51,7 @@ fn object_of(file: &str, debug_info: bool) -> Vec<u8>
         sm.files(),
         options,
         &grants,
-        &native_target(),
+        target,
         false,
         None,
     );
@@ -192,4 +210,27 @@ fn each_parameter_and_local_has_its_kind_and_place()
 fn a_release_build_keeps_no_local()
 {
     assert!(vars_of(&object_of("vars.zaka", false)).is_empty());
+}
+
+#[test]
+fn an_object_for_linux_carries_the_script_of_gdb()
+{
+    use zakac_ast::target::TargetAbi;
+    use zakac_ast::target::TargetOs;
+
+    let linux = zakac_ast::target::Target {
+        os: TargetOs::Linux,
+        abi: TargetAbi::Gnu,
+        ..native_target()
+    };
+    let octets = object_for("vars.zaka", true, &linux);
+    let file = object::File::parse(&*octets).unwrap();
+    let section = file.section_by_name(".debug_gdb_scripts").unwrap();
+    let data = section.data().unwrap();
+    assert_eq!(data.first(), Some(&4));
+    let script = zakac_codegen_target_native::debug::GDB_SCRIPT;
+    assert!(data.windows(script.len()).any(|w| w == script.as_bytes()));
+    let release = object_for("vars.zaka", false, &linux);
+    let release = object::File::parse(&*release).unwrap();
+    assert!(release.section_by_name(".debug_gdb_scripts").is_none());
 }
