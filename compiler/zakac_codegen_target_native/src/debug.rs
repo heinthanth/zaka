@@ -52,6 +52,10 @@ pub const LLDB_SCRIPT: &str = include_str!("../debuggers/zaka_lldb.py");
 /// in `.debug_gdb_scripts` on ELF and COFF.
 pub const GDB_SCRIPT: &str = include_str!("../debuggers/zaka_gdb.py");
 
+/// The natvis of the debuggers of Windows for text and plain lists, which a
+/// link of MSVC puts in the PDB.
+pub const NATVIS: &str = include_str!("../debuggers/zaka.natvis");
+
 /// The section gdb reads its scripts from.
 const GDB_SECTION: &str = ".debug_gdb_scripts";
 

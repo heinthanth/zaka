@@ -1,6 +1,7 @@
 //! The formatters of the debuggers: `zakac debug-script` prints them, and lldb
 //! or gdb, when the host has one, shows text as a string and a plain list as
-//! its cells in a native build.
+//! its cells in a native build; cdb reads the CodeView and the natvis of a
+//! build for the MSVC ABI.
 
 use std::path::Path;
 use std::path::PathBuf;
@@ -10,6 +11,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 
 /// The program of the test: locals of each common kind, among them text and
 /// a plain list.
@@ -80,18 +82,19 @@ fn has(tool: &str) -> bool
 /// # Arguments
 ///
 /// * `dir` - The folder.
+/// * `flags` - More flags of the build.
 ///
 /// # Returns
 ///
 /// The executable and the line of the program to stop on, or `None` when
 /// the host links no native build.
-fn built(dir: &Path) -> Option<(PathBuf, usize)>
+fn built(dir: &Path, flags: &[&str]) -> Option<(PathBuf, usize)>
 {
     let text = std::fs::read_to_string(program()).unwrap();
     std::fs::write(dir.join("vars.zaka"), &text).unwrap();
     let args =
         ["build", "--backend", "native", "--cache", "cache", "-o", "vars", "vars.zaka"];
-    let out = zakac(dir, &args);
+    let out = zakac(dir, &[&args[..], flags].concat());
     ret_if!(!out.status.success(), None);
     let line = text.lines().position(|l| l.starts_with("ခ ကို ပြသမည်"))? + 1;
     Some((dir.join(format!("vars{}", std::env::consts::EXE_SUFFIX)), line))
@@ -112,7 +115,7 @@ fn lldb_shows_text_and_a_plain_list_through_the_script()
 {
     ret_if!(!has("lldb"));
     let dir = tempfile::tempdir().unwrap();
-    let Some((exe, line)) = built(dir.path())
+    let Some((exe, line)) = built(dir.path(), &[])
     else
     {
         return;
@@ -141,7 +144,7 @@ fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
 {
     ret_if!(!has("gdb") || cfg!(target_os = "macos"));
     let dir = tempfile::tempdir().unwrap();
-    let Some((exe, line)) = built(dir.path())
+    let Some((exe, line)) = built(dir.path(), &[])
     else
     {
         return;
@@ -159,4 +162,50 @@ fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
     let text = shown.lines().find(|l| l.starts_with("င = ")).unwrap_or_default();
     assert!(text.starts_with("င = \"") && text.ends_with('"'), "{shown}");
     assert!(shown.contains("ဆ = 2 cells = {4, 5}"), "{shown}");
+}
+
+/// The cdb of the Windows SDK for the CPU of the host, when it is installed.
+///
+/// # Returns
+///
+/// The path of `cdb.exe`, or `None` on another host or with no SDK debuggers.
+fn cdb() -> Option<PathBuf>
+{
+    let cpu = tern!(cfg!(target_arch = "aarch64"), "arm64", "x64");
+    let kits = PathBuf::from(r"C:\Program Files (x86)\Windows Kits\10\Debuggers");
+    Some(kits.join(cpu).join("cdb.exe")).filter(|p| cfg!(windows) && p.exists())
+}
+
+#[test]
+fn cdb_shows_the_codeview_and_natvis_of_an_msvc_build()
+{
+    let Some(cdb) = cdb()
+    else
+    {
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let Some((exe, line)) = built(dir.path(), &["--target-abi", "msvc"])
+    else
+    {
+        return;
+    };
+    // cdb writes a Unicode log, as its console shows a Burmese name as `?`.
+    let log = dir.path().join("cdb.log");
+    let steps = format!(
+        ".lines -e\nbp `vars.zaka:{line}`\ng\n.logopen /u {}\ndv /t\n.logclose\nq\n",
+        log.display()
+    );
+    let file = dir.path().join("steps.txt");
+    std::fs::write(&file, steps).unwrap();
+    let mut cmd = Command::new(cdb);
+    cmd.args(["-lines", "-y"]).arg(dir.path()).arg("-cf").arg(&file).arg(&exe);
+    let _ = within_a_minute(&mut cmd);
+    let raw = std::fs::read(&log).unwrap_or_default();
+    let units: Vec<u16> =
+        raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let shown = String::from_utf16_lossy(&units);
+    assert!(shown.contains("int64 က = 0n7"), "{shown}");
+    assert!(shown.contains("struct text င = \"မင်္ဂလာပါ"), "{shown}");
+    assert!(shown.contains("struct list<isize> ဆ = { count=0x2 }"), "{shown}");
 }

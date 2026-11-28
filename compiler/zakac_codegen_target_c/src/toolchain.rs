@@ -396,6 +396,9 @@ pub struct BuildPlan<'a>
     /// MSVC.
     #[builder(default)]
     pub debug_info: bool,
+    /// The natvis file a link of MSVC puts in the PDB, which shows text and
+    /// plain lists in the debuggers of Windows.
+    pub natvis: Option<&'a Path>,
     /// The names the shared lib of a C lib build gives; each other name of
     /// the lib, those of the runtime among them, remains inside it.
     #[builder(default)]
@@ -965,6 +968,22 @@ fn link_command(plan: &BuildPlan<'_>, linker: &Tool, objects: &[PathBuf]) -> Com
     cmd
 }
 
+/// The option of a link of MSVC that puts a natvis file in the PDB.
+///
+/// # Arguments
+///
+/// * `file` - The natvis file.
+///
+/// # Returns
+///
+/// `/NATVIS:<file>`.
+fn natvis_arg(file: &Path) -> OsString
+{
+    let mut arg = OsString::from("/NATVIS:");
+    arg.push(file);
+    arg
+}
+
 /// The rest of a link of MSVC: the objects and the libs, the executable, then
 /// the options of the linker after `/link` (the `/defaultlib:` rustc asks for
 /// and the user's link flags). A `link.exe` or `lld-link` given as the linker
@@ -1002,6 +1021,8 @@ fn msvc_link(
     implib.push(plan.out.with_extension("dll.lib"));
     do_if!(dll, _ = cmd.arg(implib));
     do_if!(plan.debug_info, _ = cmd.arg("/DEBUG"));
+    let natvis = plan.natvis.filter(|_| plan.debug_info);
+    do_if!(let Some(file) = natvis, _ = cmd.arg(natvis_arg(file)));
     cmd.args(options).args(plan.ldflags);
     cmd
 }

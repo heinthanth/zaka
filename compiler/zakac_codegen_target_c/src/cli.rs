@@ -857,6 +857,8 @@ pub struct Link<'a>
     /// Whether the build keeps the debug info.
     #[builder(default)]
     pub debug_info: bool,
+    /// The natvis file a link of MSVC puts in the PDB.
+    pub natvis: Option<&'a Path>,
     /// The names the shared lib of a C lib build gives.
     #[builder(default)]
     pub exports: &'a [String],
@@ -911,7 +913,8 @@ pub fn build_and_link(
         .sources(sources).out(job.out).checks(job.checks).sanitizers(sanitizers)
         .defaults(!matches.get_flag(NO_DEFAULT_FLAGS_ARG)).cflags(&cflags)
         .ldflags(&ldflags).libs(job.libs).abi(job.abi).maybe_archive(job.archive)
-        .debug_info(job.debug_info).exports(job.exports).runtime(job.runtime).build();
+        .debug_info(job.debug_info).maybe_natvis(job.natvis).exports(job.exports)
+        .runtime(job.runtime).build();
     let built = toolchain::build(&plan)?;
     // `cl` writes the name of each file it compiles, and its errors, to
     // standard output, so a step of MSVC that succeeds shows none of it.

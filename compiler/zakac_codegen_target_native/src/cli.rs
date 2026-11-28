@@ -284,6 +284,8 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
     use zakac_codegen_target_c::options::RuntimeLink;
     use zakac_codegen_target_c::toolchain::Dialect;
 
+    use crate::debug::NATVIS;
+
     let info = CommandInfo::new("zakac build", env!("CARGO_PKG_VERSION"));
     let arg = |name: &str| matches.get_one::<String>(name).map(String::as_str);
     let emit = match arg("emit")
@@ -426,11 +428,15 @@ pub fn build_main(matches: &ArgMatches, io: &mut CommandIO<'_>) -> ExitCode
                     written(obj.clone(), &made.octets)?;
                     let sources: Vec<PathBuf> =
                         std::iter::once(obj).chain(lib).collect();
+                    let natvis = cache.join("zaka.natvis");
+                    let msvc = dialect == Dialect::Msvc && options.debug_info;
+                    do_if!(msvc, written(natvis.clone(), NATVIS.as_bytes())?);
                     #[rustfmt::skip]
                 let link = Link::builder().cache(&cache).out(&exe).checks(checks)
                     .sources(&sources).libs(&libs).abi(target.abi)
                     .maybe_archive(files.as_ref().map(|f| f.archive.as_path()))
-                    .debug_info(options.debug_info).exports(&api).runtime(runtime).build();
+                    .debug_info(options.debug_info).maybe_natvis(msvc.then_some(natvis.as_path()))
+                    .exports(&api).runtime(runtime).build();
                     build_and_link(matches, io, &info, link)
                 });
             let ok = built.as_ref().is_ok_and(|c| *c == ExitCode::Success);
