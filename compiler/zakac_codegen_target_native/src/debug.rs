@@ -23,6 +23,7 @@ use cranelift_codegen::gimli::write::Range;
 use cranelift_codegen::gimli::write::RangeList;
 use cranelift_codegen::gimli::write::Sections;
 use cranelift_codegen::gimli::write::Writer;
+use cranelift_module::DataId;
 use cranelift_module::FuncId;
 use cranelift_object::ObjectProduct;
 use cranelift_object::object::Architecture;
@@ -91,13 +92,31 @@ pub struct LineTable
     pub files: Vec<String>,
     /// Bit count of the platform-sized kinds.
     pub platform: u16,
+    /// The globals the program names.
+    pub globals: Vec<GlobalVar>,
+}
+
+/// A global of the program, as a debugger shows it.
+#[derive(Debug, Clone, bon::Builder)]
+pub struct GlobalVar
+{
+    /// Its name.
+    #[builder(into)]
+    pub name: String,
+    /// Its kind.
+    pub kind: DataKind,
+    /// The site of its declaration.
+    pub site: Option<u32>,
+    /// Its storage.
+    pub id: DataId,
 }
 
 /// A place of a debug section of a Mach-O object whose value counts from the
-/// start of `__text`; the address of `__text` in the object, known once the
-/// object is written, goes into it then.
+/// start of the section of the code or data it points at; the address of
+/// that section in the object, known once the object is written, goes into
+/// it then.
 #[derive(Debug, Clone)]
-pub struct TextPlace
+pub struct SectionPlace
 {
     /// The name of the debug section, such as `__debug_line`.
     section: String,
@@ -105,14 +124,17 @@ pub struct TextPlace
     offset: u64,
     /// The size of the place, in octets.
     size: u8,
+    /// The name of the section it counts from, such as `__text`.
+    base: String,
 }
 
-/// What a debug section points at: a function of the code, or another debug
+/// What a debug section points at: a function or a global, or another debug
 /// section.
 #[derive(Debug, Clone, Copy)]
 enum Target
 {
-    /// The function at this index of the line table.
+    /// The function at this index of the line table, or, past the functions,
+    /// the global at this index less their count.
     Code(usize),
     /// The start of a debug section.
     Section(SectionId),
@@ -212,15 +234,16 @@ impl Writer for RelocWriter
 ///
 /// # Returns
 ///
-/// The places [`place_text`] fills in once the object is written, or the
+/// The places [`place_sections`] fills in once the object is written, or the
 /// error of the DWARF or of the object.
 pub fn write(
     product: &mut ObjectProduct, table: &LineTable,
-) -> Result<Vec<TextPlace>, Error>
+) -> Result<Vec<SectionPlace>, Error>
 {
     ret_if!(table.funcs.is_empty() || table.files.is_empty(), Ok(Vec::new()));
-    let fn_ids: Vec<object::write::SymbolId> =
-        table.funcs.iter().map(|f| product.function_symbol(f.id)).collect();
+    let fns = table.funcs.iter().map(|f| product.function_symbol(f.id));
+    let data = table.globals.iter().map(|g| product.data_symbol(g.id));
+    let syms: Vec<object::write::SymbolId> = fns.chain(data).collect();
     let obj = &mut product.object;
     // Each CPU Cranelift builds for here is little-endian.
     let endian = RunTimeEndian::Little;
@@ -242,15 +265,15 @@ pub fn write(
     let mut places = Vec::new();
     sections
         .for_each(|id, w: &RelocWriter| {
-            add_relocs(obj, &ids, &fn_ids, id, w, &mut places)
+            add_relocs(obj, &ids, &syms, id, w, &mut places)
         })
         .map_err(module_error)?;
     Ok(places)
 }
 
-/// Add the address of `__text` in a written Mach-O object to each place of
-/// its debug info that counts from the start of `__text`, as a debugger
-/// reads the debug info of an object as it stands.
+/// Add the address of a section of a written Mach-O object, such as `__text`,
+/// to each place of its debug info that counts from the start of that
+/// section, as a debugger reads the debug info of an object as it stands.
 ///
 /// # Arguments
 ///
@@ -260,21 +283,21 @@ pub fn write(
 /// # Returns
 ///
 /// `Ok`, or the error of an object that does not read back.
-pub fn place_text(octets: &mut [u8], places: &[TextPlace]) -> Result<(), Error>
+pub fn place_sections(octets: &mut [u8], places: &[SectionPlace]) -> Result<(), Error>
 {
     use object::Object;
     use object::ObjectSection;
 
     ret_if!(places.is_empty(), Ok(()));
     let file = object::File::parse(&*octets).map_err(module_error)?;
-    let text = file.section_by_name("__text").map_or(0, |s| s.address());
-    let start = |p: &TextPlace| {
+    let start = |p: &SectionPlace| {
+        let base = file.section_by_name(&p.base).map_or(0, |s| s.address());
         let section = file.section_by_name(&p.section)?;
-        section.file_range().map(|(at, _)| (at + p.offset, p.size))
+        section.file_range().map(|(at, _)| (at + p.offset, p.size, base))
     };
-    let at: Vec<(u64, u8)> = places.iter().filter_map(start).collect();
+    let at: Vec<(u64, u8, u64)> = places.iter().filter_map(start).collect();
     drop(file);
-    do_for!((offset, size) in at, add_at(octets, offset as usize, size as usize, text));
+    do_for!((offset, size, base) in at, add_at(octets, offset as usize, size as usize, base));
     Ok(())
 }
 
@@ -371,6 +394,12 @@ fn unit(
         };
         do_for!(v in &f.vars, add_var(&mut dwarf.unit, &mut kinds, routine, v, decl(v)));
     }
+    let globals = table.globals.iter().enumerate();
+    do_for!((n, g) in globals.filter(|(_, g)| !g.name.starts_with('%')), {
+        let decl = g.site.and_then(|s| table.sites.get(s as usize).copied()).map(|(file, line, _)| (files[file as usize], u64::from(line)));
+        let symbol = table.funcs.len() + n;
+        add_global(&mut dwarf.unit, &mut kinds, g, Address::Symbol { symbol, addend: 0 }, decl);
+    });
     dwarf.unit.line_program = lines;
     let ranges = dwarf.unit.ranges.add(RangeList(ranges));
     let root = dwarf.unit.root();
@@ -441,6 +470,42 @@ fn add_var(
     die.set(gimli::DW_AT_decl_line, AttributeValue::Udata(line));
 }
 
+/// Add a global to the unit: its name, its kind, its declaration and its
+/// address.
+///
+/// # Arguments
+///
+/// * `unit` - The unit.
+/// * `kinds` - The DIEs of the kinds so far.
+/// * `global` - The global.
+/// * `addr` - Its address.
+/// * `decl` - The file and line of its declaration.
+fn add_global(
+    unit: &mut gimli::write::Unit, kinds: &mut Kinds, global: &GlobalVar,
+    addr: Address, decl: Option<(gimli::write::FileId, u64)>,
+)
+{
+    let kind = kinds.die_of(unit, global.kind);
+    let root = unit.root();
+    let id = unit.add(root, gimli::DW_TAG_variable);
+    let die = unit.get_mut(id);
+    die.set(
+        gimli::DW_AT_name,
+        AttributeValue::String(global.name.clone().into_bytes()),
+    );
+    die.set(gimli::DW_AT_type, AttributeValue::UnitRef(kind));
+    let mut at = Expression::new();
+    at.op_addr(addr);
+    die.set(gimli::DW_AT_location, AttributeValue::Exprloc(at));
+    let Some((file, line)) = decl
+    else
+    {
+        return;
+    };
+    die.set(gimli::DW_AT_decl_file, AttributeValue::FileIndex(Some(file)));
+    die.set(gimli::DW_AT_decl_line, AttributeValue::Udata(line));
+}
+
 /// Add one debug section to the object, unless it is blank.
 ///
 /// # Arguments
@@ -476,8 +541,8 @@ fn add_section(
 ///
 /// * `obj` - The object.
 /// * `ids` - The section of the object of each debug section.
-/// * `fn_ids` - The name of each function in the object, in the order of the
-///   line table.
+/// * `syms` - The name of each function in the object, in the order of the line
+///   table, then of each global.
 /// * `id` - The debug section.
 /// * `w` - Its octets and places.
 ///
@@ -487,8 +552,8 @@ fn add_section(
 fn add_relocs(
     obj: &mut object::write::Object<'static>,
     ids: &HashMap<SectionId, object::write::SectionId>,
-    fn_ids: &[object::write::SymbolId], id: SectionId, w: &RelocWriter,
-    places: &mut Vec<TextPlace>,
+    syms: &[object::write::SymbolId], id: SectionId, w: &RelocWriter,
+    places: &mut Vec<SectionPlace>,
 ) -> Result<(), String>
 {
     let Some(&section) = ids.get(&id)
@@ -503,11 +568,12 @@ fn add_relocs(
         {
             Target::Code(n) if macho =>
             {
+                let (to, kind, addend, base) = in_section(obj, syms[n], r.addend);
                 let section = id.name().replace('.', "__");
-                places.push(TextPlace { section, offset: r.offset, size: r.size });
-                in_section(obj, fn_ids[n], r.addend)
+                places.push(SectionPlace { section, offset: r.offset, size: r.size, base });
+                (to, kind, addend)
             }
-            Target::Code(n) => (fn_ids[n], RelocationKind::Absolute, r.addend),
+            Target::Code(n) => (syms[n], RelocationKind::Absolute, r.addend),
             Target::Section(s) =>
             {
                 let Some(&to) = ids.get(&s) else { continue };
@@ -527,32 +593,33 @@ fn add_relocs(
     Ok(())
 }
 
-/// The place of a function in a Mach-O object, as clang writes it in debug
-/// info: against the section of the code, with the offset of the function in
-/// the section as the value in place. A debugger reads the debug info of the
-/// object as it stands, with no relocation applied, and finds each function
-/// at that offset through the debug map of the executable.
+/// The place of a function or a global in a Mach-O object, as clang writes it
+/// in debug info: against its section, with its offset in the section as the
+/// value in place. A debugger reads the debug info of the object as it
+/// stands, with no relocation applied, and finds each function and global at
+/// that offset through the debug map of the executable.
 ///
 /// # Arguments
 ///
 /// * `obj` - The object.
-/// * `at_fn` - The name of the function in the object.
-/// * `addend` - The offset from the start of the function.
+/// * `at` - The name of the function or global in the object.
+/// * `addend` - The offset from its start.
 ///
 /// # Returns
 ///
-/// What to relocate against, the kind of relocation, and the addend.
+/// What to relocate against, the kind of relocation, the addend, and the
+/// name of the section, whose address the place counts from.
 fn in_section(
-    obj: &mut object::write::Object<'static>, at_fn: object::write::SymbolId,
-    addend: i64,
-) -> (object::write::SymbolId, RelocationKind, i64)
+    obj: &mut object::write::Object<'static>, at: object::write::SymbolId, addend: i64,
+) -> (object::write::SymbolId, RelocationKind, i64, String)
 {
-    let found = obj.symbol(at_fn);
+    let found = obj.symbol(at);
     let object::write::SymbolSection::Section(section) = found.section
     else
     {
-        return (at_fn, RelocationKind::Absolute, addend);
+        return (at, RelocationKind::Absolute, addend, String::new());
     };
-    let at = found.value as i64 + addend;
-    (obj.section_symbol(section), RelocationKind::Absolute, at)
+    let value = found.value as i64 + addend;
+    let base = obj.section(section).name().unwrap_or_default().to_string();
+    (obj.section_symbol(section), RelocationKind::Absolute, value, base)
 }

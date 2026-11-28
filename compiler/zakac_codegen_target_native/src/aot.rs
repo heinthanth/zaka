@@ -133,7 +133,7 @@ pub fn object(
     let places = crate::debug::write(&mut product, &lowered.lines)?;
     crate::unwind::write(&mut product, &lowered.unwinds)?;
     let mut octets = product.emit().map_err(module_error)?;
-    crate::debug::place_text(&mut octets, &places)?;
+    crate::debug::place_sections(&mut octets, &places)?;
     #[rustfmt::skip]
     let object = Object { octets, clif: lowered.clif, export_shapes: lowered.export_shapes,
         threads: lowered.threads };

@@ -181,6 +181,9 @@ fn each_parameter_and_local_has_its_kind_and_place()
     has(false, "ခ", "f64");
     has(false, "ဂ", "bool");
     has(false, "င", "text");
+    // A local of the program start block, and a global.
+    has(false, "ကျော်", "လူ");
+    has(false, "အကြိမ်", "isize");
     // The names the compiler makes are left out.
     assert!(vars.iter().all(|(_, name, ..)| !name.starts_with('%')), "{vars:?}");
 }

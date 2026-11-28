@@ -56,6 +56,7 @@ use crate::blob::Target;
 use crate::blob::define;
 use crate::debug::FnLines;
 use crate::debug::FnVar;
+use crate::debug::GlobalVar;
 use crate::debug::LineTable;
 use crate::func::FnGen;
 use crate::unwind::FnUnwind;
@@ -584,7 +585,19 @@ fn line_table<M: Module>(
     funcs.retain(|f| names.contains_key(&f.id));
     funcs.iter_mut().for_each(|f| f.name = names[&f.id].clone());
     let files = s.files.iter().map(|f| debug_path(f)).collect();
-    LineTable { funcs, sites: s.sites.clone(), files, platform: s.platform() }
+    let module = s.module;
+    let globals = module.globals.iter().zip(s.globals.clone());
+    let global = |(g, id): (&zakac_ir_builder::ir::Slot, DataId)| {
+        let site = s.site_of(g.span);
+        GlobalVar::builder()
+            .name(g.name.clone())
+            .kind(g.kind)
+            .maybe_site(site)
+            .id(id)
+            .build()
+    };
+    let globals = globals.map(global).collect();
+    LineTable { funcs, sites: s.sites.clone(), files, platform: s.platform(), globals }
 }
 
 /// The error of a module, as the error of the build.
