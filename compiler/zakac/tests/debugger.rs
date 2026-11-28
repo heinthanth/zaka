@@ -146,18 +146,28 @@ fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
 {
     ret_if!(!has("gdb") || cfg!(target_os = "macos"));
     let dir = tempfile::tempdir().unwrap();
-    let Some((exe, line)) = built(dir.path(), &[])
+    // gdb reads DWARF, which a build for the MSVC ABI replaces with CodeView.
+    let Some((exe, line)) = built(dir.path(), &["--target-abi", "gnu"])
     else
     {
         return;
     };
+    // The commands go in files: a gdb of Windows can split an argument with a
+    // space in it. The safe path comes first, before the executable loads.
+    let first = dir.path().join("first.gdb");
+    std::fs::write(
+        &first,
+        format!("add-auto-load-safe-path {}\n", dir.path().display()),
+    )
+    .unwrap();
+    let steps = dir.path().join("steps.gdb");
+    std::fs::write(&steps, format!("break vars.zaka:{line}\nrun\ninfo locals\n"))
+        .unwrap();
     let mut cmd = Command::new("gdb");
     // gdb prints text as UTF-8 under a UTF-8 locale alone.
     cmd.env("LC_ALL", "C.UTF-8");
-    let safe = format!("add-auto-load-safe-path {}", dir.path().display());
-    cmd.arg("-batch").args(["-iex", &safe, "-ex", &format!("break vars.zaka:{line}")]);
-    let shown =
-        within_a_minute(cmd.args(["-ex", "run", "-ex", "info locals"]).arg(&exe));
+    cmd.arg("-batch").arg("-ix").arg(&first).arg("-x").arg(&steps);
+    let shown = within_a_minute(cmd.arg(&exe));
     // gdb escapes the letters its host charset cannot print (the marks of
     // Burmese on Windows), so the test reads the quotes of a string, not
     // its letters.

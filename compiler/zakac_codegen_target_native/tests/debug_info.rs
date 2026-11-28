@@ -12,7 +12,9 @@ use crate::common::c_inputs;
 use crate::common::checked;
 use crate::common::native_target;
 
-/// The object of a file of `inputs/debug/` of the C target.
+/// The object of a file of `inputs/debug/` of the C target, with DWARF: for the
+/// host, but for the GNU ABI where the host's is MSVC, whose objects hold
+/// CodeView instead.
 ///
 /// # Arguments
 ///
@@ -24,7 +26,12 @@ use crate::common::native_target;
 /// The octets of the object.
 fn object_of(file: &str, debug_info: bool) -> Vec<u8>
 {
-    object_for(file, debug_info, &native_target())
+    use zakac_ast::target::TargetAbi;
+
+    let host = native_target();
+    let msvc = host.abi == TargetAbi::Msvc;
+    let abi = if msvc { TargetAbi::Gnu } else { host.abi };
+    object_for(file, debug_info, &zakac_ast::target::Target { abi, ..host })
 }
 
 /// The object of a file of `inputs/debug/` of the C target, for a target.
@@ -412,9 +419,9 @@ fn an_enumeration_of_values_names_its_members()
 /// The names of the enumerations, and the enumerators.
 fn cv_enums_of(octets: &[u8]) -> (Vec<String>, Vec<(String, i64)>)
 {
-    use ms_codeview::types::fields::Field;
     use ms_codeview::types::TypeData;
     use ms_codeview::types::TypesIter;
+    use ms_codeview::types::fields::Field;
 
     let file = object::File::parse(octets).unwrap();
     let data = file.section_by_name(".debug$T").unwrap().data().unwrap();
