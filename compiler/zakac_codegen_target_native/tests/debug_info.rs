@@ -234,3 +234,78 @@ fn an_object_for_linux_carries_the_script_of_gdb()
     let release = object::File::parse(&*release).unwrap();
     assert!(release.section_by_name(".debug_gdb_scripts").is_none());
 }
+
+/// The names of the records of each kind in the `.debug$S` of an
+/// object, and the kinds of its subsections.
+///
+/// # Arguments
+///
+/// * `octets` - The object.
+///
+/// # Returns
+///
+/// The kind and name of each record, and the kind of each subsection.
+fn codeview_of(octets: &[u8]) -> (Vec<(u16, String)>, Vec<u32>)
+{
+    use ms_codeview::syms::SymData;
+    use ms_codeview::syms::SymIter;
+
+    let file = object::File::parse(octets).unwrap();
+    let section = file.section_by_name(".debug$S").unwrap();
+    let data = section.data().unwrap();
+    assert_eq!(data[..4], 4u32.to_le_bytes());
+    let word = |at: usize| u32::from_le_bytes(data[at..at + 4].try_into().unwrap());
+    let (mut at, mut kinds, mut records) = (4, Vec::new(), Vec::new());
+    while at + 8 <= data.len()
+    {
+        let (kind, len) = (word(at), word(at + 4) as usize);
+        kinds.push(kind);
+        let content = &data[at + 8..at + 8 + len];
+        let recs = SymIter::new(content).filter(|_| kind == 0xF1);
+        let named = recs.filter_map(|rec| {
+            let name = match rec.parse().ok()?
+            {
+                SymData::Proc(p) => p.name.to_string(),
+                SymData::RegRel(r) => r.name.to_string(),
+                SymData::Data(d) => d.name.to_string(),
+                _ => return None,
+            };
+            Some((rec.kind.0, name))
+        });
+        records.extend(named);
+        at += (8 + len).next_multiple_of(4);
+    }
+    (records, kinds)
+}
+
+#[test]
+fn an_object_for_msvc_carries_codeview_in_place_of_dwarf()
+{
+    use zakac_ast::target::TargetAbi;
+    use zakac_ast::target::TargetArch;
+    use zakac_ast::target::TargetOs;
+
+    let msvc = zakac_ast::target::Target {
+        os: TargetOs::Windows,
+        arch: TargetArch::X86_64,
+        abi: TargetAbi::Msvc,
+        ..native_target()
+    };
+    let octets = object_for("vars.zaka", true, &msvc);
+    let (records, kinds) = codeview_of(&octets);
+    let has = |kind: u16, name: &str| {
+        let want = (kind, name.to_string());
+        assert!(records.contains(&want), "{want:?} in {records:?}");
+    };
+    // S_LPROC32, S_REGREL32 and S_LDATA32.
+    has(0x110f, "တွက်");
+    has(0x110f, "ပရိုဂရမ်");
+    has(0x1111, "က");
+    has(0x1111, "င");
+    has(0x1111, "ကျော်");
+    has(0x110c, "အကြိမ်");
+    assert!(kinds.contains(&0xF2) && kinds.contains(&0xF4), "{kinds:x?}");
+    let file = object::File::parse(&*octets).unwrap();
+    assert!(file.section_by_name(".debug_info").is_none());
+    assert!(file.section_by_name(".debug_gdb_scripts").is_none());
+}

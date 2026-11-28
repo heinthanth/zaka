@@ -240,26 +240,34 @@ impl Writer for RelocWriter
     }
 }
 
-/// Add the DWARF of the line table to an object.
+/// Add the debug info of the line table to an object: DWARF, or CodeView for
+/// the MSVC ABI, whose linker cuts the names of the DWARF sections and makes
+/// the PDB from CodeView alone ([`crate::codeview`]).
 ///
 /// # Arguments
 ///
 /// * `product` - The object, once each function is in it.
 /// * `table` - The line table.
+/// * `msvc` - Whether the object is for the MSVC ABI.
 ///
 /// # Returns
 ///
 /// The places [`place_sections`] fills in once the object is written, or the
 /// error of the DWARF or of the object.
 pub fn write(
-    product: &mut ObjectProduct, table: &LineTable,
+    product: &mut ObjectProduct, table: &LineTable, msvc: bool,
 ) -> Result<Vec<SectionPlace>, Error>
 {
     ret_if!(table.funcs.is_empty() || table.files.is_empty(), Ok(Vec::new()));
     let fns = table.funcs.iter().map(|f| product.function_symbol(f.id));
     let data = table.globals.iter().map(|g| product.data_symbol(g.id));
-    let syms: Vec<object::write::SymbolId> = fns.chain(data).collect();
+    let labels: Vec<object::write::SymbolId> = fns.chain(data).collect();
     let obj = &mut product.object;
+    if msvc
+    {
+        crate::codeview::write(obj, table, &labels);
+        return Ok(Vec::new());
+    }
     // Each CPU Cranelift builds for here is little-endian.
     let endian = RunTimeEndian::Little;
     let address_size = obj.architecture().address_size().map_or(8, |s| s.bytes());
@@ -281,7 +289,7 @@ pub fn write(
     let mut places = Vec::new();
     sections
         .for_each(|id, w: &RelocWriter| {
-            add_relocs(obj, &ids, &syms, id, w, &mut places)
+            add_relocs(obj, &ids, &labels, id, w, &mut places)
         })
         .map_err(module_error)?;
     Ok(places)
@@ -413,8 +421,8 @@ fn unit(
     let globals = table.globals.iter().enumerate();
     do_for!((n, g) in globals.filter(|(_, g)| !g.name.starts_with('%')), {
         let decl = g.site.and_then(|s| table.sites.get(s as usize).copied()).map(|(file, line, _)| (files[file as usize], u64::from(line)));
-        let symbol = table.funcs.len() + n;
-        add_global(&mut dwarf.unit, &mut kinds, g, Address::Symbol { symbol, addend: 0 }, decl);
+        let addr = Address::Symbol { symbol: table.funcs.len() + n, addend: 0 };
+        add_global(&mut dwarf.unit, &mut kinds, g, addr, decl);
     });
     dwarf.unit.line_program = lines;
     let ranges = dwarf.unit.ranges.add(RangeList(ranges));
@@ -576,8 +584,8 @@ fn add_section(
 ///
 /// * `obj` - The object.
 /// * `ids` - The section of the object of each debug section.
-/// * `syms` - The name of each function in the object, in the order of the line
-///   table, then of each global.
+/// * `labels` - The name of each function in the object, in the order of the
+///   line table, then of each global.
 /// * `id` - The debug section.
 /// * `w` - Its octets and places.
 ///
@@ -587,7 +595,7 @@ fn add_section(
 fn add_relocs(
     obj: &mut object::write::Object<'static>,
     ids: &HashMap<SectionId, object::write::SectionId>,
-    syms: &[object::write::SymbolId], id: SectionId, w: &RelocWriter,
+    labels: &[object::write::SymbolId], id: SectionId, w: &RelocWriter,
     places: &mut Vec<SectionPlace>,
 ) -> Result<(), String>
 {
@@ -603,12 +611,12 @@ fn add_relocs(
         {
             Target::Code(n) if macho =>
             {
-                let (to, kind, addend, base) = in_section(obj, syms[n], r.addend);
+                let (to, kind, addend, base) = in_section(obj, labels[n], r.addend);
                 let section = id.name().replace('.', "__");
                 places.push(SectionPlace { section, offset: r.offset, size: r.size, base });
                 (to, kind, addend)
             }
-            Target::Code(n) => (syms[n], RelocationKind::Absolute, r.addend),
+            Target::Code(n) => (labels[n], RelocationKind::Absolute, r.addend),
             Target::Section(s) =>
             {
                 let Some(&to) = ids.get(&s) else { continue };

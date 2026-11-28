@@ -5,6 +5,7 @@
 pub mod aot;
 mod blob;
 pub mod cli;
+mod codeview;
 pub mod debug;
 #[cfg(feature = "disasm")]
 pub mod disasm;

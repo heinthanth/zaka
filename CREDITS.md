@@ -102,6 +102,7 @@ thanks to all of these projects.
 | [libffi](https://github.com/libffi-rs/libffi-rs) | 5.2.0 | MIT OR Apache-2.0 |
 | [libloading](https://github.com/nagisa/rust_libloading/) | 0.9.0 | ISC |
 | [lsp-server](https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server) | 0.10.0 | MIT OR Apache-2.0 |
+| [ms-codeview](https://github.com/microsoft/pdb-rs/) | 0.1.7 | MIT OR Apache-2.0 |
 | [num_enum](https://github.com/illicitonion/num_enum) | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
 | [object](https://github.com/gimli-rs/object) | 0.40.0 | Apache-2.0 OR MIT |
 | [postcard](https://github.com/jamesmunns/postcard) | 1.1.3 | MIT OR Apache-2.0 |

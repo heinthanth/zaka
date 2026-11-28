@@ -47,6 +47,7 @@ crate	libc	0.2.189	MIT OR Apache-2.0	https://github.com/rust-lang/libc
 crate	libffi	5.2.0	MIT OR Apache-2.0	https://github.com/libffi-rs/libffi-rs
 crate	libloading	0.9.0	ISC	https://github.com/nagisa/rust_libloading/
 crate	lsp-server	0.10.0	MIT OR Apache-2.0	https://github.com/rust-lang/rust-analyzer/tree/master/lib/lsp-server
+crate	ms-codeview	0.1.7	MIT OR Apache-2.0	https://github.com/microsoft/pdb-rs/
 crate	num_enum	0.7.6	BSD-3-Clause OR MIT OR Apache-2.0	https://github.com/illicitonion/num_enum
 crate	object	0.40.0	Apache-2.0 OR MIT	https://github.com/gimli-rs/object
 crate	postcard	1.1.3	MIT OR Apache-2.0	https://github.com/jamesmunns/postcard

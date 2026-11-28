@@ -130,7 +130,8 @@ pub fn object(
     let lowered = emit(&mut m, program, files, options, grants, "main", want_clif)?;
     let mut product = m.finish();
     do_if!(let Some(names) = names, rename(&mut product.object, names));
-    let places = crate::debug::write(&mut product, &lowered.lines)?;
+    let msvc = target.abi == TargetAbi::Msvc;
+    let places = crate::debug::write(&mut product, &lowered.lines, msvc)?;
     crate::unwind::write(&mut product, &lowered.unwinds)?;
     let mut octets = product.emit().map_err(module_error)?;
     crate::debug::place_sections(&mut octets, &places)?;
