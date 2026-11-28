@@ -201,7 +201,8 @@ A build with no `--release` carries debug info, so lldb and gdb stop on a line o
   `/DEBUG` for the link, under MSVC).
 - The native target writes a DWARF line table, the Zaka name of each function, and its
   parameters, locals and globals with their data kinds into its object; `zakac
-  debug-script` prints the formatters that show text and plain lists.
+  debug-script` prints the formatters that show text and plain lists. For the MSVC ABI it
+  writes the same as CodeView, and the PDB keeps a natvis file for text and plain lists.
 
 `zakac build --backend c --release` writes no table of places and no marks for them, so a
 stop names the function alone (`(in addfee)`) and each backtrace line is a function name.

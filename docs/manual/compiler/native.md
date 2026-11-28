@@ -253,11 +253,26 @@ loads the output of `zakac debug-script gdb` as well. gdb shows text as UTF-8 un
 UTF-8 locale, and as octal escapes under another; on Windows it escapes the Burmese marks
 it cannot print, even after `set host-charset UTF-8`.
 
-The debug info is DWARF, which gdb and lldb read. A native build for the MSVC ABI
-(`--target-abi msvc`) has none a debugger can use: the linker of MSVC keeps the DWARF
-sections but cuts their names to eight letters, and the PDB it writes holds no lines and
-no variables of the Zaka code, since the native target writes no CodeView. The GNU ABI,
-the default of MinGW, keeps the DWARF whole.
+The debug info is DWARF, which gdb and lldb read, except in a native build for the MSVC
+ABI (`--target-abi msvc`), which carries CodeView instead: the linker of MSVC puts it in
+the PDB beside the executable, which Visual Studio, WinDbg and cdb read. It holds the same
+functions, lines, parameters, locals and globals, with their data kinds; a plain list is
+named `list<isize>` there. The build also hands the linker a natvis file, which the PDB
+keeps, so these debuggers show text as a string and a plain list as its cells with no
+step of our own:
+
+```console
+> zakac build --backend native --target-abi msvc greet.zaka
+> cdb -lines greet.exe
+0:000> bp `greet.zaka:4`
+0:000> g
+0:000> dv /t
+struct text နှုတ်ခွန်း = "မင်္ဂလာပါ"
+struct list<isize> အမှတ်များ = { count=0x2 }
+```
+
+The console of cdb shows a Burmese name as `?` unless its code page is UTF-8; `.logopen
+/u <file>` writes a log in UTF-16 with the names whole.
 
 A few limits remain. An enumeration whose members hold no values shows the position of
 its member as a number. A list or struct parameter that the function never writes remains

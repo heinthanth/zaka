@@ -785,7 +785,8 @@ zakac debug-script <lldb|gdb>
 
 The script goes to standard output. lldb loads a saved copy with `command script import
 <file>`; gdb loads the copy each native build for Linux and Windows carries, or a saved
-copy with `source <file>`.
+copy with `source <file>`. A native build for the MSVC ABI needs neither: its PDB keeps a
+natvis file, which Visual Studio, WinDbg and cdb load.
 
 ```console
 $ zakac debug-script lldb > zaka_lldb.py
