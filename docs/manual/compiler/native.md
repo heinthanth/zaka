@@ -253,6 +253,12 @@ loads the output of `zakac debug-script gdb` as well. gdb shows text as UTF-8 un
 UTF-8 locale, and as octal escapes under another; on Windows it escapes the Burmese marks
 it cannot print, even after `set host-charset UTF-8`.
 
+The debug info is DWARF, which gdb and lldb read. A native build for the MSVC ABI
+(`--target-abi msvc`) has none a debugger can use: the linker of MSVC keeps the DWARF
+sections but cuts their names to eight letters, and the PDB it writes holds no lines and
+no variables of the Zaka code, since the native target writes no CodeView. The GNU ABI,
+the default of MinGW, keeps the DWARF whole.
+
 A few limits remain. An enumeration whose members hold no values shows the position of
 its member as a number. A list or struct parameter that the function never writes remains
 in the storage of the caller and shows no value. Two locals of one name in one function
