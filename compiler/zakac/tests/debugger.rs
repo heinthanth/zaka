@@ -147,6 +147,8 @@ fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
         return;
     };
     let mut cmd = Command::new("gdb");
+    // gdb prints text as UTF-8 under a UTF-8 locale alone.
+    cmd.env("LC_ALL", "C.UTF-8");
     let safe = format!("add-auto-load-safe-path {}", dir.path().display());
     cmd.arg("-batch").args(["-iex", &safe, "-ex", &format!("break vars.zaka:{line}")]);
     let shown =

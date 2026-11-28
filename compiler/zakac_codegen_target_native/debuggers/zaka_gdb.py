@@ -23,7 +23,8 @@ def seq_kind(val):
 
 
 class ZakaText:
-    """Text: the string of its `count` octets, read as UTF-8."""
+    """Text: the string of its `count` octets, read as UTF-8. gdb decodes
+    it, so a terminal of no UTF-8 shows escapes, not an error."""
 
     def __init__(self, val):
         self.val = val
@@ -32,9 +33,7 @@ class ZakaText:
         count = min(int(self.val["count"]), MOST)
         if count == 0:
             return ""
-        at = int(self.val["cells"])
-        raw = gdb.selected_inferior().read_memory(at, count).tobytes()
-        return raw.decode("utf-8", "replace")
+        return self.val["cells"].lazy_string(encoding="utf-8", length=count)
 
     def display_hint(self):
         return "string"
