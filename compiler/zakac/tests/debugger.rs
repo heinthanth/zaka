@@ -137,6 +137,8 @@ fn lldb_shows_text_and_a_plain_list_through_the_script()
     let shown = within_a_minute(cmd.args(["-o", "kill", "-o", "quit"]).arg(&exe));
     assert!(shown.contains("င = \"မင်္ဂလာပါ\""), "{shown}");
     assert!(shown.contains("ဆ = ([0] = 4, [1] = 5)"), "{shown}");
+    // An enumeration of number values shows its member, one of text its text.
+    assert!(shown.contains("ရောင် = ပိတ်ထား, ညွှန် = \"stop\""), "{shown}");
 }
 
 #[test]
@@ -162,6 +164,7 @@ fn gdb_shows_text_and_a_plain_list_through_the_script_of_the_build()
     let text = shown.lines().find(|l| l.starts_with("င = ")).unwrap_or_default();
     assert!(text.starts_with("င = \"") && text.ends_with('"'), "{shown}");
     assert!(shown.contains("ဆ = 2 cells = {4, 5}"), "{shown}");
+    assert!(shown.contains("ရောင် = ပိတ်ထား"), "{shown}");
 }
 
 /// The cdb of the Windows SDK for the CPU of the host, when it is installed.
@@ -193,7 +196,8 @@ fn cdb_shows_the_codeview_and_natvis_of_an_msvc_build()
     // cdb writes a Unicode log, as its console shows a Burmese name as `?`.
     let log = dir.path().join("cdb.log");
     let steps = format!(
-        ".lines -e\nbp `vars.zaka:{line}`\ng\n.logopen /u {}\ndv /t\n.logclose\nq\n",
+        ".lines -e\nbp `vars.zaka:{line}`\ng\n.logopen /u {}\ndv /t\ndx -r2 \
+         @$curframe.LocalVariables\n.logclose\nq\n",
         log.display()
     );
     let file = dir.path().join("steps.txt");
@@ -208,4 +212,8 @@ fn cdb_shows_the_codeview_and_natvis_of_an_msvc_build()
     assert!(shown.contains("int64 က = 0n7"), "{shown}");
     assert!(shown.contains("struct text င = \"မင်္ဂလာပါ\""), "{shown}");
     assert!(shown.contains("struct list<isize> ဆ = { count=0x2 }"), "{shown}");
+    // `dx` writes dots for the Burmese marks, so the test reads the value of
+    // the member and its kind, then the text an enumeration of text holds.
+    assert!(shown.contains("(13) [Type: အမှားများ]"), "{shown}");
+    assert!(shown.contains("\"stop\" [Type: text]"), "{shown}");
 }

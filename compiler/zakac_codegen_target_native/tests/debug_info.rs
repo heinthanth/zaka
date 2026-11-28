@@ -316,3 +316,147 @@ fn an_object_for_msvc_carries_codeview_in_place_of_dwarf()
     };
     assert!(names.iter().all(|n| holds(n)), "{names:?}");
 }
+
+/// The named DIEs of a tag in the DWARF of an object: the name of each, and
+/// its constant value or the name of its kind.
+///
+/// # Arguments
+///
+/// * `octets` - The object.
+/// * `tag` - The tag.
+///
+/// # Returns
+///
+/// The name, then the value or kind, of each DIE of the tag.
+fn dies_of(octets: &[u8], tag: gimli::DwTag) -> Vec<(String, String)>
+{
+    let file = object::File::parse(octets).unwrap();
+    let dwarf = dwarf_of(&file);
+    let mut found = Vec::new();
+    let mut headers = dwarf.units();
+    while let Some(header) = headers.next().unwrap()
+    {
+        let unit = dwarf.unit(header).unwrap();
+        let mut cursor = unit.entries();
+        while let Some(die) = cursor.next_dfs().unwrap()
+        {
+            found.extend(
+                Some(())
+                    .filter(|_| die.tag() == tag)
+                    .and_then(|_| named(&dwarf, &unit, die)),
+            );
+        }
+    }
+    found
+}
+
+/// The name of a DIE, and its constant value or the name of its kind.
+///
+/// # Arguments
+///
+/// * `dwarf` - The DWARF.
+/// * `unit` - The unit of the DIE.
+/// * `die` - The DIE.
+///
+/// # Returns
+///
+/// The pair, or `None` for a DIE with no name.
+fn named<'o>(
+    dwarf: &Dwarf<'o>, unit: &gimli::Unit<gimli::EndianSlice<'o, gimli::LittleEndian>>,
+    die: &gimli::DebuggingInformationEntry<gimli::EndianSlice<'o, gimli::LittleEndian>>,
+) -> Option<(String, String)>
+{
+    let text = |e: &gimli::DebuggingInformationEntry<_>| {
+        let name = dwarf.attr_string(unit, e.attr_value(gimli::DW_AT_name)?).ok()?;
+        Some(name.to_string_lossy().into_owned())
+    };
+    let value = die.attr_value(gimli::DW_AT_const_value).and_then(|v| v.sdata_value());
+    let kind = || match die.attr_value(gimli::DW_AT_type)?
+    {
+        gimli::AttributeValue::UnitRef(at) => text(&unit.entry(at).ok()?),
+        _ => None,
+    };
+    let second = value.map(|v| v.to_string()).or_else(kind)?;
+    Some((text(die)?, second))
+}
+
+#[test]
+fn an_enumeration_of_values_names_its_members()
+{
+    let octets = object_of("vars.zaka", true);
+    let pairs = |tag| dies_of(&octets, tag);
+    let enumerators = pairs(gimli::DW_TAG_enumerator);
+    let has = |list: &[(String, String)], a: &str, b: &str| {
+        let want = (a.to_string(), b.to_string());
+        assert!(list.contains(&want), "{want:?} in {list:?}");
+    };
+    // The member with no value takes the one before it, plus one.
+    has(&enumerators, "မတွေ့", "2");
+    has(&enumerators, "ပိတ်ထား", "13");
+    has(&enumerators, "ပြည့်နေ", "14");
+    let members = pairs(gimli::DW_TAG_member);
+    has(&members, "ရောင်", "အမှားများ");
+    // An enumeration of text values is the text it holds.
+    has(&members, "ညွှန်", "text");
+}
+
+/// The enumerations in the `.debug$T` of an object: the name of each
+/// `LF_ENUM`, and the name and value of each `LF_ENUMERATE`.
+///
+/// # Arguments
+///
+/// * `octets` - The object.
+///
+/// # Returns
+///
+/// The names of the enumerations, and the enumerators.
+fn cv_enums_of(octets: &[u8]) -> (Vec<String>, Vec<(String, i64)>)
+{
+    use ms_codeview::types::fields::Field;
+    use ms_codeview::types::TypeData;
+    use ms_codeview::types::TypesIter;
+
+    let file = object::File::parse(octets).unwrap();
+    let data = file.section_by_name(".debug$T").unwrap().data().unwrap();
+    let (mut enums, mut members) = (Vec::new(), Vec::new());
+    for rec in TypesIter::new(&data[4..])
+    {
+        match TypeData::parse_bytes(rec.kind, rec.data).unwrap()
+        {
+            TypeData::Enum(e) => enums.push(e.name.to_string()),
+            TypeData::FieldList(list) => members.extend(list.iter().filter_map(|f| {
+                let Field::Enumerate(e) = f
+                else
+                {
+                    return None;
+                };
+                Some((e.name.to_string(), i64::try_from(e.value).ok()?))
+            })),
+            _ => (),
+        }
+    }
+    (enums, members)
+}
+
+#[test]
+fn an_msvc_enumeration_of_values_names_its_members()
+{
+    use zakac_ast::target::TargetAbi;
+    use zakac_ast::target::TargetArch;
+    use zakac_ast::target::TargetOs;
+
+    let msvc = zakac_ast::target::Target {
+        os: TargetOs::Windows,
+        arch: TargetArch::X86_64,
+        abi: TargetAbi::Msvc,
+        ..native_target()
+    };
+    let (enums, members) = cv_enums_of(&object_for("vars.zaka", true, &msvc));
+    assert!(enums.contains(&"အမှားများ".to_string()), "{enums:?}");
+    let want = [("မတွေ့", 2), ("ပိတ်ထား", 13), ("ပြည့်နေ", 14)];
+    let want: Vec<(String, i64)> =
+        want.iter().map(|(n, v)| (n.to_string(), *v)).collect();
+    assert!(want.iter().all(|w| members.contains(w)), "{members:?}");
+    // An enumeration of text values is the text it holds, never an LF_ENUM.
+    assert!(!enums.contains(&"အမိန့်".to_string()), "{enums:?}");
+}
