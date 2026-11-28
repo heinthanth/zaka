@@ -308,4 +308,11 @@ fn an_object_for_msvc_carries_codeview_in_place_of_dwarf()
     let file = object::File::parse(&*octets).unwrap();
     assert!(file.section_by_name(".debug_info").is_none());
     assert!(file.section_by_name(".debug_gdb_scripts").is_none());
+    // The kinds: the names natvis matches, and a struct of the program.
+    let kinds = file.section_by_name(".debug$T").unwrap().data().unwrap();
+    let names = ["text", "list<isize>", "လူ"];
+    let holds = |name: &str| {
+        kinds.windows(name.len() + 1).any(|w| w == [name.as_bytes(), &[0]].concat())
+    };
+    assert!(names.iter().all(|n| holds(n)), "{names:?}");
 }

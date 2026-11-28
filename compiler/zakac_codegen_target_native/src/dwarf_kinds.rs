@@ -311,7 +311,7 @@ fn encode(unit: &mut Unit, id: UnitEntryId, ate: gimli::DwAte)
 ///
 /// The values, in the order of the members, or `None` when a member holds
 /// something else.
-fn int_members(members: &[(String, MemberValue)]) -> Option<Vec<i64>>
+pub(crate) fn int_members(members: &[(String, MemberValue)]) -> Option<Vec<i64>>
 {
     let value = |m: &MemberValue| match m
     {

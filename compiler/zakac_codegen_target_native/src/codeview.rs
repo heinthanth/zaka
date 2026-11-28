@@ -18,8 +18,8 @@ use ms_codeview::syms::SymKind;
 use ms_codeview::syms::builder::SymBuilder;
 use ms_codeview::types::TypeIndex;
 use zakac_rust_sugars::do_for;
-use zakac_semcheck::kind::DataKind;
 
+use crate::codeview_kinds::Kinds;
 use crate::debug::FnLines;
 use crate::debug::FnVar;
 use crate::debug::GlobalVar;
@@ -95,7 +95,8 @@ pub fn write(obj: &mut Object<'static>, table: &LineTable, labels: &[SymbolId])
     let program = Program { table, labels, frame };
     let mut out = SIGNATURE.to_le_bytes().to_vec();
     let mut places = Vec::new();
-    let (records, at) = records(&program, machine(arch));
+    let mut kinds = Kinds::new(table.platform);
+    let (records, at) = records(&program, &mut kinds, machine(arch));
     append(&mut out, RECORDS, &records, &at, &mut places);
     do_for!((n, f) in table.funcs.iter().enumerate(), {
         let (lines, at) = lines(table, f, labels[n]);
@@ -107,6 +108,8 @@ pub fn write(obj: &mut Object<'static>, table: &LineTable, labels: &[SymbolId])
     let section = obj.add_section(Vec::new(), b".debug$S".to_vec(), SectionKind::Debug);
     obj.append_section_data(section, &out, 4);
     do_for!(p in places, relocate(obj, section, p));
+    let section = obj.add_section(Vec::new(), b".debug$T".to_vec(), SectionKind::Debug);
+    obj.append_section_data(section, &kinds.out, 4);
 }
 
 /// The CodeView number of the frame pointer of a CPU.
@@ -200,12 +203,15 @@ fn relocate(
 /// # Arguments
 ///
 /// * `program` - The program.
+/// * `kinds` - The records of the kinds so far.
 /// * `machine` - The machine of `S_COMPILE3`.
 ///
 /// # Returns
 ///
 /// The records and their places.
-fn records(program: &Program<'_>, machine: u16) -> (Vec<u8>, Vec<Place>)
+fn records(
+    program: &Program<'_>, kinds: &mut Kinds, machine: u16,
+) -> (Vec<u8>, Vec<Place>)
 {
     let mut b = SymBuilder::new();
     let mut places = Vec::new();
@@ -223,13 +229,13 @@ fn records(program: &Program<'_>, machine: u16) -> (Vec<u8>, Vec<Place>)
         r.enc.strz("zakac".into());
     }
     do_for!((n, f) in program.table.funcs.iter().enumerate(), {
-        procedure(&mut b, program, f, program.labels[n], &mut places);
+        procedure(&mut b, program, kinds, f, program.labels[n], &mut places);
     });
     let globals = program.table.globals.iter().enumerate();
     let named = globals.filter(|(_, g)| !g.name.starts_with('%'));
     do_for!((n, g) in named, {
         let label = program.labels[program.table.funcs.len() + n];
-        global(&mut b, program.table.platform, g, label, &mut places);
+        global(&mut b, kinds, g, label, &mut places);
     });
     (b.finish(), places)
 }
@@ -241,12 +247,13 @@ fn records(program: &Program<'_>, machine: u16) -> (Vec<u8>, Vec<Place>)
 ///
 /// * `b` - The records so far.
 /// * `program` - The program.
+/// * `kinds` - The records of the kinds so far.
 /// * `f` - The function.
 /// * `label` - Its name in the object.
 /// * `places` - The places so far.
 fn procedure(
-    b: &mut SymBuilder, program: &Program<'_>, f: &FnLines, label: SymbolId,
-    places: &mut Vec<Place>,
+    b: &mut SymBuilder, program: &Program<'_>, kinds: &mut Kinds, f: &FnLines,
+    label: SymbolId, places: &mut Vec<Place>,
 )
 {
     {
@@ -272,7 +279,7 @@ fn procedure(
         r.enc.u16(0);
         r.enc.u32(FRAME_BASE_FP);
     }
-    do_for!(v in &f.vars, local(b, program, v));
+    do_for!(v in &f.vars, local(b, program.frame, kinds, v));
     b.record(SymKind::S_END);
 }
 
@@ -282,14 +289,16 @@ fn procedure(
 /// # Arguments
 ///
 /// * `b` - The records so far.
-/// * `program` - The program.
+/// * `frame` - The CodeView number of the frame pointer.
+/// * `kinds` - The records of the kinds so far.
 /// * `var` - The parameter or local.
-fn local(b: &mut SymBuilder, program: &Program<'_>, var: &FnVar)
+fn local(b: &mut SymBuilder, frame: u16, kinds: &mut Kinds, var: &FnVar)
 {
+    let kind = kinds.index(var.kind);
     let mut r = b.record(SymKind::S_REGREL32);
     r.enc.u32(var.at as i32 as u32);
-    r.enc.u32(kind_index(var.kind, program.table.platform).0);
-    r.enc.u16(program.frame);
+    r.enc.u32(kind);
+    r.enc.u16(frame);
     r.enc.strz(var.name.as_str().into());
 }
 
@@ -298,73 +307,23 @@ fn local(b: &mut SymBuilder, program: &Program<'_>, var: &FnVar)
 /// # Arguments
 ///
 /// * `b` - The records so far.
-/// * `platform` - Bit count of the platform-sized kinds.
+/// * `kinds` - The records of the kinds so far.
 /// * `g` - The global.
 /// * `label` - Its name in the object.
 /// * `places` - The places so far.
 fn global(
-    b: &mut SymBuilder, platform: u16, g: &GlobalVar, label: SymbolId,
+    b: &mut SymBuilder, kinds: &mut Kinds, g: &GlobalVar, label: SymbolId,
     places: &mut Vec<Place>,
 )
 {
+    let kind = kinds.index(g.kind);
     let mut r = b.record(SymKind::S_LDATA32);
-    r.enc.u32(kind_index(g.kind, platform).0);
+    r.enc.u32(kind);
     places.push(Place { offset: r.enc.len() as u32, label, index: false });
     r.enc.u32(0);
     places.push(Place { offset: r.enc.len() as u32, label, index: true });
     r.enc.u16(0);
     r.enc.strz(g.name.as_str().into());
-}
-
-/// The CodeView index of a data kind: a primitive for a number, a character,
-/// a boolean or an address.
-///
-/// # Arguments
-///
-/// * `kind` - The kind.
-/// * `platform` - Bit count of the platform-sized kinds.
-///
-/// # Returns
-///
-/// The index, `T_NOTYPE` for each other kind.
-fn kind_index(kind: DataKind, platform: u16) -> TypeIndex
-{
-    match kind
-    {
-        DataKind::Int(n) => int_index(n.signed, n.bits(platform)),
-        DataKind::Float(32) => TypeIndex::T_REAL32,
-        DataKind::Float(_) => TypeIndex::T_REAL64,
-        DataKind::Char => TypeIndex::T_CHAR32,
-        DataKind::Bool => TypeIndex::T_BOOL8,
-        DataKind::Task(_) => TypeIndex::T_UINT8,
-        DataKind::Ptr(_) | DataKind::Null | DataKind::Fn(_) => TypeIndex::T_64PVOID,
-        _ => TypeIndex::T_NOTYPE,
-    }
-}
-
-/// The CodeView index of an integer kind.
-///
-/// # Arguments
-///
-/// * `signed` - Whether it is signed.
-/// * `bits` - Its width.
-///
-/// # Returns
-///
-/// The index.
-fn int_index(signed: bool, bits: u16) -> TypeIndex
-{
-    match (signed, bits)
-    {
-        (true, 8) => TypeIndex::T_INT1,
-        (false, 8) => TypeIndex::T_UINT1,
-        (true, 16) => TypeIndex::T_INT2,
-        (false, 16) => TypeIndex::T_UINT2,
-        (true, 32) => TypeIndex::T_INT4,
-        (false, 32) => TypeIndex::T_UINT4,
-        (true, _) => TypeIndex::T_INT8,
-        (false, _) => TypeIndex::T_UINT8,
-    }
 }
 
 /// The lines of one function: its start and size, then a block of rows for
