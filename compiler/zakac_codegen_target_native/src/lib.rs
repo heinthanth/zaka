@@ -8,6 +8,7 @@ pub mod cli;
 pub mod debug;
 #[cfg(feature = "disasm")]
 pub mod disasm;
+mod dwarf_kinds;
 pub mod emit;
 mod exprs;
 mod ffi;

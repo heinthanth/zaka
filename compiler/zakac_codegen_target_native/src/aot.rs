@@ -17,6 +17,7 @@ use zakac_codegen_target_c::options::TargetCOptions;
 use zakac_host_errors::Error;
 use zakac_ir_builder::ir::Module as IrModule;
 use zakac_rust_sugars::do_if;
+use zakac_rust_sugars::tern;
 use zakac_span::source_file::SourceFile;
 
 use crate::emit::emit;
@@ -117,6 +118,9 @@ pub fn object(
         target.os == TargetOs::Windows && target.arch == TargetArch::Aarch64;
     let pic = if arm_windows { "false" } else { "true" };
     flags.set("is_pic", pic).map_err(module_error)?;
+    // The locals of the debug info count from the frame pointer.
+    let frames = tern!(options.debug_info, "true", "false");
+    flags.set("preserve_frame_pointers", frames).map_err(module_error)?;
     let isa = cranelift_codegen::isa::lookup_by_name(&triple(target))
         .map_err(module_error)?;
     let isa = isa.finish(settings::Flags::new(flags)).map_err(module_error)?;

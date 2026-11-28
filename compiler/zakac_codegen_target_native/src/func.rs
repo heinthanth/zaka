@@ -30,6 +30,7 @@ use zakac_ir_builder::ir::Place;
 use zakac_ir_builder::ir::Stmt;
 use zakac_rust_sugars::do_if;
 use zakac_rust_sugars::ret_if;
+use zakac_rust_sugars::tern;
 use zakac_semcheck::kind::DataKind;
 use zakac_span::span::Span;
 
@@ -688,6 +689,19 @@ impl<'s, 'm, M: Module> FnGen<'s, 'm, M>
     }
 
     // ---- the bodies ----
+
+    /// The stack slot of each local, in the order of the locals.
+    ///
+    /// # Returns
+    ///
+    /// The slots, `None` for a local in the storage of the caller.
+    pub fn slot_homes(&self) -> Vec<Option<StackSlot>>
+    {
+        self.homes
+            .iter()
+            .map(|h| tern!(let Home::Slot(s) = h, Some(*s), None))
+            .collect()
+    }
 
     /// Lower a function: its locals, its parameters copied in as the C target
     /// copies them, its statements, and its result.

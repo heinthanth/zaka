@@ -11,6 +11,7 @@ use cranelift_codegen::ir::Function;
 use cranelift_codegen::ir::GlobalValueData;
 use cranelift_codegen::ir::Signature;
 use cranelift_codegen::ir::SourceLoc;
+use cranelift_codegen::ir::StackSlot;
 use cranelift_codegen::ir::Type;
 use cranelift_codegen::ir::UserFuncName;
 use cranelift_codegen::ir::types;
@@ -54,6 +55,7 @@ use crate::blob::Blob;
 use crate::blob::Target;
 use crate::blob::define;
 use crate::debug::FnLines;
+use crate::debug::FnVar;
 use crate::debug::LineTable;
 use crate::func::FnGen;
 use crate::unwind::FnUnwind;
@@ -582,7 +584,7 @@ fn line_table<M: Module>(
     funcs.retain(|f| names.contains_key(&f.id));
     funcs.iter_mut().for_each(|f| f.name = names[&f.id].clone());
     let files = s.files.iter().map(|f| debug_path(f)).collect();
-    LineTable { funcs, sites: s.sites.clone(), files }
+    LineTable { funcs, sites: s.sites.clone(), files, platform: s.platform() }
 }
 
 /// The error of a module, as the error of the build.
@@ -663,11 +665,13 @@ fn define_fn<'m, M: Module>(
 ) -> String
 {
     let mut ctx = Context::new();
+    let homes;
     ctx.func.signature = sig;
     ctx.func.name = UserFuncName::user(0, id.as_u32());
     {
         let mut g = FnGen::new(s, &mut ctx.func, fctx);
         lower(&mut g);
+        homes = (g.func, g.slot_homes());
         g.finish();
     }
     let text = if want_clif
@@ -683,7 +687,11 @@ fn define_fn<'m, M: Module>(
     do_if!(let Err(e) = defined, s.missing(format!("{e:?}")));
     let base = ctx.func.params.base_srcloc();
     let code = ctx.compiled_code().filter(|_| s.options.debug_info);
-    do_if!(let Some(code) = code, s.lines.push(fn_lines(id, code, base)));
+    if let Some(code) = code
+    {
+        let vars = fn_vars(s, homes.0, &homes.1, code);
+        s.lines.push(FnLines { vars, ..fn_lines(id, code, base) });
+    }
     let unwind = ctx.compiled_code().and_then(|c| fn_unwind(id, c, s.m.isa()));
     s.unwinds.extend(unwind);
     text
@@ -747,6 +755,51 @@ fn fn_lines(
     let rows = rows.collect();
     #[rustfmt::skip]
     return FnLines::builder().id(id).name("").size(code.code_info().total_size).rows(rows).build();
+}
+
+/// The parameters and locals of a function that a debugger shows: each with
+/// a name the program wrote and a stack slot of its own, at its offset from
+/// the frame pointer.
+///
+/// # Arguments
+///
+/// * `s` - The shared state, for the site of each declaration.
+/// * `func` - The function, or `None` for code of the compiler alone.
+/// * `homes` - The stack slot of each local, `None` for one in the storage of
+///   the caller.
+/// * `code` - The compiled code, with the place of each stack slot.
+///
+/// # Returns
+///
+/// The parameters and locals.
+fn fn_vars<M: Module>(
+    s: &mut Shared<'_, M>, func: Option<&Func>, homes: &[Option<StackSlot>],
+    code: &cranelift_codegen::CompiledCode,
+) -> Vec<FnVar>
+{
+    let (Some(f), Some(frame)) = (func, code.buffer.frame_layout())
+    else
+    {
+        return Vec::new();
+    };
+    ret_if!(f.locals.len() != homes.len(), Vec::new());
+    let fp = i64::from(frame.frame_to_fp_offset);
+    let named = f.locals.iter().zip(homes).enumerate();
+    // A name the compiler made starts with `%`.
+    let named = named.filter(|(_, (slot, _))| !slot.name.starts_with('%'));
+    // shortcut: a list or struct parameter in the storage of the caller gets no
+    // place; give it a slot in builds with debug info if debuggers need it.
+    let slotted = named.filter_map(|(i, (slot, home))| home.map(|h| (i, slot, h)));
+    let var = |(i, slot, home): (usize, &zakac_ir_builder::ir::Slot, StackSlot)| {
+        FnVar::builder()
+            .name(slot.name.clone())
+            .kind(slot.kind)
+            .param(i < f.params as usize)
+            .maybe_site(s.site_of(slot.span))
+            .at(i64::from(frame.stackslots[home].offset) - fp)
+            .build()
+    };
+    slotted.map(var).collect()
 }
 
 /// Define each descriptor, with the tables of its fields and members.

@@ -1,7 +1,8 @@
 //! The DWARF of an object: a line table from the code of each statement to
 //! its line of the source, and a subprogram for each function with its name
 //! in Zaka, so a debugger stops on a line of Zaka and names the functions of a
-//! backtrace. Line tables alone: no variable and no kind.
+//! backtrace, with its parameters and locals and the globals of the program,
+//! each with the DWARF of its kind ([`crate::dwarf_kinds`]).
 
 use std::collections::HashMap;
 
@@ -15,6 +16,7 @@ use cranelift_codegen::gimli::write::Address;
 use cranelift_codegen::gimli::write::AttributeValue;
 use cranelift_codegen::gimli::write::DwarfUnit;
 use cranelift_codegen::gimli::write::EndianVec;
+use cranelift_codegen::gimli::write::Expression;
 use cranelift_codegen::gimli::write::LineProgram;
 use cranelift_codegen::gimli::write::LineString;
 use cranelift_codegen::gimli::write::Range;
@@ -23,6 +25,7 @@ use cranelift_codegen::gimli::write::Sections;
 use cranelift_codegen::gimli::write::Writer;
 use cranelift_module::FuncId;
 use cranelift_object::ObjectProduct;
+use cranelift_object::object::Architecture;
 use cranelift_object::object::BinaryFormat;
 use cranelift_object::object::RelocationEncoding;
 use cranelift_object::object::RelocationFlags;
@@ -34,8 +37,27 @@ use zakac_host_errors::Error;
 use zakac_rust_sugars::do_for;
 use zakac_rust_sugars::ret_if;
 use zakac_rust_sugars::tern;
+use zakac_semcheck::kind::DataKind;
 
+use crate::dwarf_kinds::Kinds;
 use crate::emit::module_error;
+
+/// A parameter or a local of a function, as a debugger shows it.
+#[derive(Debug, Clone, bon::Builder)]
+pub struct FnVar
+{
+    /// Its name.
+    #[builder(into)]
+    pub name: String,
+    /// Its kind.
+    pub kind: DataKind,
+    /// Whether it is a parameter.
+    pub param: bool,
+    /// The site of its declaration.
+    pub site: Option<u32>,
+    /// The offset of its stack slot from the frame pointer.
+    pub at: i64,
+}
 
 /// The lines of one function: where each run of its code starts, with the
 /// site of the statement the run belongs to.
@@ -51,6 +73,9 @@ pub struct FnLines
     pub size: u32,
     /// The offset of each run of code and its site, in the order of the code.
     pub rows: Vec<(u32, u32)>,
+    /// Its parameters and locals that live in a stack slot.
+    #[builder(default)]
+    pub vars: Vec<FnVar>,
 }
 
 /// What the line table of a program reads: its functions, its sites, and the
@@ -64,6 +89,8 @@ pub struct LineTable
     pub sites: Vec<(u32, u32, u32)>,
     /// The path of each source file, as a debugger opens it.
     pub files: Vec<String>,
+    /// Bit count of the platform-sized kinds.
+    pub platform: u16,
 }
 
 /// A place of a debug section of a Mach-O object whose value counts from the
@@ -199,7 +226,8 @@ pub fn write(
     let endian = RunTimeEndian::Little;
     let address_size = obj.architecture().address_size().map_or(8, |s| s.bytes());
     let encoding = Encoding { format: Format::Dwarf32, version: 4, address_size };
-    let mut dwarf = unit(encoding, table);
+    let frame = frame_register(obj.architecture());
+    let mut dwarf = unit(encoding, table, frame);
     let writer = RelocWriter {
         out: EndianVec::new(endian),
         relocs: Vec::new(),
@@ -278,11 +306,15 @@ fn add_at(octets: &mut [u8], at: usize, size: usize, value: u64)
 ///
 /// * `encoding` - The form of the DWARF.
 /// * `table` - The line table.
+/// * `frame` - The frame pointer of the CPU, or `None` for a CPU whose locals
+///   get no place.
 ///
 /// # Returns
 ///
 /// The unit.
-fn unit(encoding: Encoding, table: &LineTable) -> DwarfUnit
+fn unit(
+    encoding: Encoding, table: &LineTable, frame: Option<gimli::Register>,
+) -> DwarfUnit
 {
     let first = table.files[0].clone();
     let dir = std::path::Path::new(&first).parent().map(|p| p.display().to_string());
@@ -301,6 +333,7 @@ fn unit(encoding: Encoding, table: &LineTable) -> DwarfUnit
         lines.add_file(LineString::String(f.clone().into_bytes()), at, None)
     };
     let files: Vec<_> = table.files.iter().map(file).collect();
+    let mut kinds = Kinds::new(table.platform);
     let mut ranges = Vec::new();
     for (n, f) in table.funcs.iter().enumerate()
     {
@@ -319,11 +352,24 @@ fn unit(encoding: Encoding, table: &LineTable) -> DwarfUnit
         }
         lines.end_sequence(u64::from(f.size));
         ranges.push(Range::StartLength { begin, length: u64::from(f.size) });
-        let die = dwarf.unit.add(dwarf.unit.root(), gimli::DW_TAG_subprogram);
-        let die = dwarf.unit.get_mut(die);
+        let routine = dwarf.unit.add(dwarf.unit.root(), gimli::DW_TAG_subprogram);
+        let die = dwarf.unit.get_mut(routine);
         die.set(gimli::DW_AT_name, AttributeValue::String(f.name.clone().into_bytes()));
         die.set(gimli::DW_AT_low_pc, AttributeValue::Address(begin));
         die.set(gimli::DW_AT_high_pc, AttributeValue::Udata(u64::from(f.size)));
+        let Some(frame) = frame.filter(|_| !f.vars.is_empty())
+        else
+        {
+            continue;
+        };
+        let mut base = Expression::new();
+        base.op_reg(frame);
+        die.set(gimli::DW_AT_frame_base, AttributeValue::Exprloc(base));
+        let decl = |v: &FnVar| {
+            let (file, line, _) = site(v.site?)?;
+            Some((files[file as usize], u64::from(line)))
+        };
+        do_for!(v in &f.vars, add_var(&mut dwarf.unit, &mut kinds, routine, v, decl(v)));
     }
     dwarf.unit.line_program = lines;
     let ranges = dwarf.unit.ranges.add(RangeList(ranges));
@@ -338,6 +384,61 @@ fn unit(encoding: Encoding, table: &LineTable) -> DwarfUnit
     die.set(gimli::DW_AT_low_pc, AttributeValue::Address(Address::Constant(0)));
     die.set(gimli::DW_AT_ranges, AttributeValue::RangeListRef(ranges));
     dwarf
+}
+
+/// The DWARF number of the frame pointer of a CPU, which the locals of a
+/// function count from: each build with debug info keeps one.
+///
+/// # Arguments
+///
+/// * `arch` - The CPU.
+///
+/// # Returns
+///
+/// The register, or `None` for a CPU Cranelift builds for no other.
+fn frame_register(arch: Architecture) -> Option<gimli::Register>
+{
+    match arch
+    {
+        Architecture::Aarch64 => Some(gimli::AArch64::X29),
+        Architecture::X86_64 => Some(gimli::X86_64::RBP),
+        Architecture::Riscv64 => Some(gimli::RiscV::S0),
+        _ => None,
+    }
+}
+
+/// Add a parameter or a local to the DIE of its function: its name, its
+/// kind, its declaration and its place from the frame pointer.
+///
+/// # Arguments
+///
+/// * `unit` - The unit.
+/// * `kinds` - The DIEs of the kinds so far.
+/// * `routine` - The DIE of the function.
+/// * `var` - The parameter or local.
+/// * `decl` - The file and line of its declaration.
+fn add_var(
+    unit: &mut gimli::write::Unit, kinds: &mut Kinds,
+    routine: gimli::write::UnitEntryId, var: &FnVar,
+    decl: Option<(gimli::write::FileId, u64)>,
+)
+{
+    let kind = kinds.die_of(unit, var.kind);
+    let tag = tern!(var.param, gimli::DW_TAG_formal_parameter, gimli::DW_TAG_variable);
+    let id = unit.add(routine, tag);
+    let die = unit.get_mut(id);
+    die.set(gimli::DW_AT_name, AttributeValue::String(var.name.clone().into_bytes()));
+    die.set(gimli::DW_AT_type, AttributeValue::UnitRef(kind));
+    let mut at = Expression::new();
+    at.op_fbreg(var.at);
+    die.set(gimli::DW_AT_location, AttributeValue::Exprloc(at));
+    let Some((file, line)) = decl
+    else
+    {
+        return;
+    };
+    die.set(gimli::DW_AT_decl_file, AttributeValue::FileIndex(Some(file)));
+    die.set(gimli::DW_AT_decl_line, AttributeValue::Udata(line));
 }
 
 /// Add one debug section to the object, unless it is blank.
