@@ -206,6 +206,6 @@ fn cdb_shows_the_codeview_and_natvis_of_an_msvc_build()
         raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
     let shown = String::from_utf16_lossy(&units);
     assert!(shown.contains("int64 က = 0n7"), "{shown}");
-    assert!(shown.contains("struct text င = \"မင်္ဂလာပါ"), "{shown}");
+    assert!(shown.contains("struct text င = \"မင်္ဂလာပါ\""), "{shown}");
     assert!(shown.contains("struct list<isize> ဆ = { count=0x2 }"), "{shown}");
 }

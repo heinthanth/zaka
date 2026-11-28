@@ -6,7 +6,7 @@
      the MSVC ABI hands this file to link.exe, which puts it in the PDB. -->
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <Type Name="text">
-    <DisplayString>{cells,[count]s8}</DisplayString>
+    <DisplayString>"{cells,[count]s8b}"</DisplayString>
     <StringView>cells,[count]s8</StringView>
     <Expand>
       <Item Name="count">count</Item>
