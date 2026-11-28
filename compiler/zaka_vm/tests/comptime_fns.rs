@@ -19,6 +19,20 @@ use zakac_semcheck::open_chains::load_settled;
 use zakac_semcheck::semcheck::SemcheckOptions;
 use zakac_span::source_map::SourceMap;
 
+/// Held by each test that sets the grants: the grants are one value for the
+/// whole process, so two such tests on threads of one process must not overlap.
+static GRANTS_HELD: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Hold the grants for the rest of a test.
+///
+/// # Returns
+///
+/// The guard.
+fn hold_grants() -> std::sync::MutexGuard<'static, ()>
+{
+    GRANTS_HELD.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 /// The head of a comptime function `နှစ်ဆ` that doubles an integer.
 const DOUBLE: &str = "နှစ်ဆ ဟူသော ကွန်ပိုင်းလုပ်ချိန်တွင် လုပ်ဆောင်နိုင်သော လုပ်ဆောင်ချက် သည်\nn ဟူသော ကိန်းပြည့် \
                       တစ်ခု ကို လက်ခံပြီး အောက်ပါတို့ကို လုပ်ဆောင်ကာ ကိန်းပြည့် တစ်ခု ကို ပြန်ပေးမည်။\nn * ၂ ကို \
@@ -181,6 +195,7 @@ const FILES: &str =
 #[test]
 fn a_run_with_the_read_right_reads_a_file()
 {
+    let _held = hold_grants();
     zakac_semcheck::comptime_calls::set_grants(
         Grants::builder().read(Grant::All).build(),
     );
@@ -199,6 +214,7 @@ fn a_run_with_the_read_right_reads_a_file()
 #[test]
 fn a_run_with_no_right_cannot_read()
 {
+    let _held = hold_grants();
     zakac_semcheck::comptime_calls::set_grants(Grants::default());
     let main = format!(
         "{FILES}ကိန်းသေ ဖ သည် ဖတ်ယူ ဟူသော လုပ်ဆောင်ချက်ကို \"data.txt\" ဖြင့် လုပ်ဆောင်သော ရလဒ် \
@@ -214,6 +230,7 @@ fn a_run_with_no_right_cannot_read()
 #[test]
 fn a_write_needs_the_write_right()
 {
+    let _held = hold_grants();
     zakac_semcheck::comptime_calls::set_grants(
         Grants::builder().read(Grant::All).build(),
     );
